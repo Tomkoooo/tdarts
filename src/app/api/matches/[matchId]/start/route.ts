@@ -38,12 +38,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ to
     match.boardId = boardId;
     await match.save();
 
-    // Log all pending matches for debugging
-    const pendingMatches = await MatchModel.find({
-      tournamentId,
-      status: "pending",
-    }).lean<Match[]>();
-
     // Find the next pending match, excluding the current match
     const nextMatch = await MatchModel.findOne({
       tournamentId,

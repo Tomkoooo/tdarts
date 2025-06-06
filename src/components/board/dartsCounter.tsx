@@ -647,7 +647,7 @@ export default function DartsCounter({
   };
 
   return (
-    <div className="w-screen h-[90vh] bg-base-200 flex flex-col items-center justify-center p-6">
+    <div className="w-screen bg-base-200 flex flex-col items-center justify-center p-6">
       {showSetup ? (
         <>
           <h2 className="text-5xl font-bold text-gray-800 mb-8 text-center">
@@ -665,7 +665,7 @@ export default function DartsCounter({
         </>
       ) : (
         <div className="flex flex-col md:flex-row items-center gap-3 w-full">
-          <div className="flex md:flex-col  gap-6 w-full max-w-6xl">
+          <div className="flex flex-col sm:gap-1 md:gap-6 w-full max-w-6xl">
             <PlayerCard
               playerName={match.player1Name}
               score={player1State.score}

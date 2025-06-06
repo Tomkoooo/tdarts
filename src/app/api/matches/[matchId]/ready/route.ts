@@ -1,13 +1,11 @@
 import { connectMongo } from "@/lib/mongoose";
 import { getModels } from "@/lib/models";
 import { NextResponse } from "next/server";
-import { Board } from "@/types/boardSchema";
-import { Match } from "@/types/tournamentSchema";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ tournamentId: string; matchId: string }> }) {
   try {
     await connectMongo();
-    const { MatchModel, BoardModel } = getModels();
+    const { MatchModel } = getModels();
     const {  matchId } = await params;
     const {playerId} = await request.json();
 

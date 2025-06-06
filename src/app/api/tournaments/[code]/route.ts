@@ -21,8 +21,8 @@ interface PopulatedMatch {
   player2Status: "unready" | "ready";
   scorer?: { _id: string; name: string };
   stats: {
-    player1: { legsWon: number; average: number; checkoutRate: number; dartsThrown: number };
-    player2: { legsWon: number; average: number; checkoutRate: number; dartsThrown: number };
+    player1: { legsWon: number; average: number; checkoutRate: number; dartsThrown: number; highestCheckout: number; oneEighties: number; matchesWon?: number };
+    player2: { legsWon: number; average: number; checkoutRate: number; dartsThrown: number; highestCheckout: number; oneEighties: number; matchesWon?: number };
   };
   winner?: { _id: string; name: string };
   legs: {
@@ -138,63 +138,50 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       return NextResponse.json({ error: "Torna nem található" }, { status: 404 });
     }
 
-    // Aggregate oneEighties and highestCheckout from legs in finished matches
+    // Aggregate stats directly from the stats object in finished matches
     const matches = await MatchModel.find({
       tournamentId: tournament._id,
       status: "finished",
     })
-      .select("player1 player2 legs winner")
+      .select("player1 player2 stats")
       .populate("player1", "name")
       .populate("player2", "name")
-      .populate("winner", "name")
       .lean<PopulatedMatch[]>();
 
     const playerStats: { [key: string]: { oneEightiesCount: number; highestCheckout: number; matchesWon: number } } = {};
 
-    // Initialize stats for each player
-    tournament.players.forEach((player) => {
-      playerStats[player._id.toString()] = {
-        oneEightiesCount: 0,
-        highestCheckout: 0,
-        matchesWon: 0,
-      };
+    // Initialize stats for each player based on matches
+    matches.forEach((match) => {
+      const player1Id = match.player1._id.toString();
+      const player2Id = match.player2._id.toString();
+      if (!playerStats[player1Id]) {
+        playerStats[player1Id] = { oneEightiesCount: 0, highestCheckout: 0, matchesWon: 0 };
+      }
+      if (!playerStats[player2Id]) {
+        playerStats[player2Id] = { oneEightiesCount: 0, highestCheckout: 0, matchesWon: 0 };
+      }
     });
 
-    // Aggregate stats from legs and matches
+    // Aggregate stats from the stats object
     matches.forEach((match) => {
       const player1Id = match.player1._id.toString();
       const player2Id = match.player2._id.toString();
 
-      // Count matches won
-      if (match.winner) {
-        const winnerId = match.winner._id.toString();
-        if (winnerId === player1Id) playerStats[player1Id].matchesWon += 1;
-        else if (winnerId === player2Id) playerStats[player2Id].matchesWon += 1;
-      }
+      // Aggregate matchesWon, oneEighties, and highestCheckout from stats object
+      playerStats[player1Id].matchesWon += match.stats.player1.matchesWon || 0;
+      playerStats[player2Id].matchesWon += match.stats.player2.matchesWon || 0;
 
-      match.legs.forEach((leg) => {
-        // Count 180s
-        if (leg.oneEighties) {
-          playerStats[player1Id].oneEightiesCount += leg.oneEighties.player1.length || 0;
-          playerStats[player2Id].oneEightiesCount += leg.oneEighties.player2.length || 0;
-        }
-        // Find highest checkout
-        if (leg.highestCheckout && leg.highestCheckout.playerId) {
-          const checkoutPlayerId = leg.highestCheckout.playerId.toString();
-          const checkoutScore = leg.highestCheckout.score || 0;
-          if (checkoutPlayerId === player1Id) {
-            playerStats[player1Id].highestCheckout = Math.max(
-              playerStats[player1Id].highestCheckout,
-              checkoutScore
-            );
-          } else if (checkoutPlayerId === player2Id) {
-            playerStats[player2Id].highestCheckout = Math.max(
-              playerStats[player2Id].highestCheckout,
-              checkoutScore
-            );
-          }
-        }
-      });
+      playerStats[player1Id].oneEightiesCount += match.stats.player1.oneEighties || 0;
+      playerStats[player2Id].oneEightiesCount += match.stats.player2.oneEighties || 0;
+
+      playerStats[player1Id].highestCheckout = Math.max(
+        playerStats[player1Id].highestCheckout,
+        match.stats.player1.highestCheckout || 0
+      );
+      playerStats[player2Id].highestCheckout = Math.max(
+        playerStats[player2Id].highestCheckout,
+        match.stats.player2.highestCheckout || 0
+      );
     });
 
     // Update tournament players with aggregated stats
@@ -203,9 +190,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       players: tournament.players.map((player) => ({
         ...player,
         stats: {
-          matchesWon: playerStats[player._id.toString()].matchesWon,
-          oneEightiesCount: playerStats[player._id.toString()].oneEightiesCount,
-          highestCheckout: playerStats[player._id.toString()].highestCheckout,
+          matchesWon: playerStats[player._id.toString()]?.matchesWon || 0,
+          oneEightiesCount: playerStats[player._id.toString()]?.oneEightiesCount || 0,
+          highestCheckout: playerStats[player._id.toString()]?.highestCheckout || 0,
         },
       })),
       standing: tournament.standing || [],
@@ -220,8 +207,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
 
     const boardsWithMatches = await Promise.all(
       boards.map(async (board) => {
-        // Find the group corresponding to the board
-        const boardIndex = board.boardNumber - 1;
+        // Find the group corresponding to the boardß
         const group = updatedTournament.groups.find(g => g.boardNumber === board.boardNumber);
 
         if (board.status === "waiting") {

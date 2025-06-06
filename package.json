@@ -6,10 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest --runInBand"
   },
   "dependencies": {
-    "@g-loot/react-tournament-brackets": "^1.0.31-rc",
     "@headlessui/react": "^2.2.4",
     "@hookform/resolvers": "^5.0.1",
     "axios": "^1.9.0",
@@ -17,10 +17,13 @@
     "daisyui": "^5.0.35",
     "framer-motion": "^12.12.1",
     "install": "^0.13.0",
+    "jest": "^29.7.0",
     "mongoose": "^8.14.3",
     "motion": "^12.12.1",
     "next": "15.3.2",
+    "node-fetch": "^3.3.2",
     "npm": "^11.4.1",
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-brackets": "^0.4.7",
     "react-dom": "^19.0.0",
@@ -34,12 +37,15 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20",
+    "@types/qrcode.react": "^1.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "tailwindcss": "^4",
+    "ts-jest": "^29.3.4",
     "typescript": "^5"
   }
 }

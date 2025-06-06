@@ -1,4 +1,4 @@
-import {BoardSchema, MatchSchema, PlayerSchema, TournamentSchema, PlayerTournamentHistorySchema, ClubSchema}  from '@/types/index'
+import {BoardSchema, MatchSchema, PlayerSchema, QrTokenSchema, TournamentSchema, PlayerTournamentHistorySchema, ClubSchema}  from '@/types/index'
 import mongoose from 'mongoose'
 
 export function getModels() {
@@ -9,5 +9,6 @@ export function getModels() {
       MatchModel: mongoose.models.Match || mongoose.model('Match', MatchSchema),
       BoardModel: mongoose.models.Board || mongoose.model('Board', BoardSchema),
       ClubModel: mongoose.models.Club || mongoose.model('Club', ClubSchema),
+      QrTokenModel: mongoose.models.QrToken || mongoose.model('QrToken', QrTokenSchema),
     };
   }

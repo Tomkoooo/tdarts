@@ -24,7 +24,7 @@ export default function CheckoutPrompt({
       <h3 className="text-3xl font-bold text-gray-800 mb-6 text-center">Megerősítés</h3>
       <div className="space-y-6 flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <span className="italic font-medium text-2xl">
+          <span className=" font-medium text-2xl">
             Megerősiti hogy véget ért a leg, és a követekző leg indulhat:
           </span>
           <span className="italic text-lg">

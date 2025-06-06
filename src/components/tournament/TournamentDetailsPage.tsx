@@ -340,17 +340,32 @@ export default function TournamentDetailsPage() {
       const totalPlayers = tournament.players.length;
       const groupsCount = tournament.groups.length;
       if (groupsCount === 0) return [];
-
+  
+      // Hardcoded rule for 70+ players and 16 tables
+      if (totalPlayers > 70 && groupsCount === 16) {
+        const group = tournament.groups[groupIndex];
+        if (!group.standings) return [];
+  
+        // Sort standings by rank
+        const sortedStandings = [...group.standings].sort((a, b) => (a.rank || 0) - (b.rank || 0));
+  
+        // Top 3 players advance, the rest are eliminated
+        const eliminatedPlayers = sortedStandings.slice(3).map((s) => s.playerId._id);
+  
+        return eliminatedPlayers;
+      }
+  
+      // Default logic for other cases
       const qualifyingPlayers = Math.pow(2, Math.floor(Math.log2(totalPlayers)));
       const eliminatedPlayersCount = totalPlayers - qualifyingPlayers;
-
+  
       const groupSizes = tournament.groups.map((group) => group.players?.length || 0);
       const totalGroupPlayers = groupSizes.reduce((sum, size) => sum + size, 0);
-
+  
       const eliminationsPerGroup = groupSizes.map((size) =>
         Math.round((size / totalGroupPlayers) * eliminatedPlayersCount)
       );
-
+  
       let currentTotal = eliminationsPerGroup.reduce((sum, count) => sum + count, 0);
       while (currentTotal !== eliminatedPlayersCount) {
         const diff = eliminatedPlayersCount - currentTotal;
@@ -361,15 +376,15 @@ export default function TournamentDetailsPage() {
         eliminationsPerGroup[indexToAdjust] += diff > 0 ? 1 : -1;
         currentTotal += diff > 0 ? 1 : -1;
       }
-
+  
       const group = tournament.groups[groupIndex];
       const eliminatedInGroup = eliminationsPerGroup[groupIndex] || 0;
-
+  
       if (!group.standings || eliminatedInGroup <= 0) return [];
-
+  
       const sortedStandings = [...group.standings].sort((a, b) => (a.rank || 0) - (b.rank || 0));
       const eliminatedPlayers = sortedStandings.slice(-eliminatedInGroup).map((s) => s.playerId._id);
-
+  
       return eliminatedPlayers;
     };
   }, [tournament]);
@@ -431,7 +446,7 @@ export default function TournamentDetailsPage() {
           autoFetch={autoFetch}
           tournament={tournament} // Pass tournament to access standings
         />
-        <div className="flex-1">
+        <div className=" w-2/3">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body pt-0">
               {isModerator && (
@@ -482,7 +497,7 @@ export default function TournamentDetailsPage() {
                 matchFilter={matchFilter}
                 setMatchFilter={setMatchFilter}
               />
-              <BoardSection boards={boards} />
+              <BoardSection boards={boards} isModerator={isModerator} code={tournament.code} />
               <BracketSection tournament={tournament} />
             </div>
           </div>

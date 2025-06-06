@@ -102,9 +102,9 @@ function BracketSection({ tournament }: BracketSectionProps) {
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 w-3/4">
       <h2 className="text-xl font-bold ">Főtábla</h2>
-      <div className="w-full overflow-x-auto">
+      <div className=" overflow-x-auto">
         <Bracket
           rounds={bracketData.rounds}
           renderSeedComponent={(props: IRenderSeedProps) => (

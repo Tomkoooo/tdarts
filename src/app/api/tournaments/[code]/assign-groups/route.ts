@@ -147,7 +147,32 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
 
     const players = [...tournament.players];
     const boardCount = tournament.boardCount;
-    const playersPerGroup = Math.ceil(players.length / boardCount);
+
+    // Ensure exactly 16 groups (hardcoded requirement)
+    const desiredGroupCount = 16;
+    if (boardCount !== desiredGroupCount) {
+      console.warn(`A táblák száma (${boardCount}) nem egyezik a kívánt csoportok számával (${desiredGroupCount}), frissítve.`);
+      tournament.boardCount = desiredGroupCount;
+      await tournament.save();
+    }
+
+    if (players.length < desiredGroupCount * 2) {
+      throw new Error(
+        `Túl kevés játékos (${players.length}) a ${desiredGroupCount} csoporthoz, minimum ${desiredGroupCount * 2} szükséges`
+      );
+    }
+
+    // Distribute players evenly across 16 groups
+    const playersPerGroupBase = Math.floor(players.length / desiredGroupCount); // Base number of players per group
+    const extraPlayers = players.length % desiredGroupCount; // Remainder to distribute
+    const groupSizes: number[] = Array(desiredGroupCount).fill(playersPerGroupBase);
+
+    // Distribute the extra players: add 1 player to the first `extraPlayers` groups
+    for (let i = 0; i < extraPlayers; i++) {
+      groupSizes[i]++;
+    }
+
+    console.log(`Csoportméretek (${players.length} játékos, ${desiredGroupCount} csoport):`, groupSizes);
 
     // Shuffle players
     for (let i = players.length - 1; i > 0; i--) {
@@ -156,7 +181,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     }
 
     const boards = [];
-    for (let i = 1; i <= boardCount; i++) {
+    for (let i = 1; i <= desiredGroupCount; i++) {
       boards.push({
         tournamentId: tournament._id,
         boardId: uuidv4(),
@@ -166,20 +191,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       });
     }
     await BoardModel.insertMany(boards);
-    
+
     const groups = [];
-    for (let groupIndex = 0; groupIndex < boardCount; groupIndex++) {
-      const groupPlayers = players.slice(groupIndex * playersPerGroup, (groupIndex + 1) * playersPerGroup);
+    let playerIndex = 0;
+    for (let groupIndex = 0; groupIndex < desiredGroupCount; groupIndex++) {
+      const groupPlayerCount = groupSizes[groupIndex];
+      const groupPlayers = players.slice(playerIndex, playerIndex + groupPlayerCount);
+      playerIndex += groupPlayerCount;
+
       if (groupPlayers.length < 2) {
         console.warn(`Csoport ${groupIndex + 1} túl kevés játékossal (${groupPlayers.length}), kihagyva.`);
         continue;
       }
-    
+
       const numberedPlayers = groupPlayers.map((playerId, index) => ({
         playerId,
         number: index + 1,
       }));
-    
+
       const boardId = boards[groupIndex].boardId;
       if (!boardId) {
         throw new Error(`Nincs tábla a ${groupIndex + 1}. csoport számára`);
@@ -222,23 +251,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       });
     }
 
-    if (groups.length === 0) {
-      throw new Error("Nem sikerült csoportokat generálni: túl kevés játékos");
+    if (groups.length !== desiredGroupCount) {
+      throw new Error(
+        `Nem sikerült ${desiredGroupCount} csoportot generálni: ${groups.length} csoport készült`
+      );
     }
 
     tournament.groups = groups;
     tournament.status = "group";
     await tournament.save();
 
-   const boardsOnTournament = await BoardModel.find({ tournamentId: tournament._id }).lean<Board[]>();
-   //update the boards waitingPlayer with the first match palyers on the board
-   boardsOnTournament.forEach(async (board) => {
-      const firstMatch = await MatchModel.findOne({ boardId: board.boardId, status: "pending" }).sort({ createdAt: 1 }).lean<Match>();
+    const boardsOnTournament = await BoardModel.find({ tournamentId: tournament._id }).lean<Board[]>();
+    // Update the boards' waitingPlayers with the first match players on the board
+    for (const board of boardsOnTournament) {
+      const firstMatch = await MatchModel.findOne({ boardId: board.boardId, status: "pending" })
+        .sort({ createdAt: 1 })
+        .lean<Match>();
       if (firstMatch) {
         board.waitingPlayers = [firstMatch.player1, firstMatch.player2];
+        await BoardModel.updateOne(
+          { _id: board._id },
+          { $set: { waitingPlayers: board.waitingPlayers, status: "waiting" } }
+        );
       }
-      await BoardModel.updateOne({ _id: board._id }, { $set: { waitingPlayers: board.waitingPlayers, status: board.status } });
-    })
+    }
 
     return NextResponse.json({ message: "Csoportok és mérkőzések sikeresen újragenerálva" });
   } catch (error: any) {
