@@ -1,9 +1,9 @@
-const fetch = require('node-fetch').default;
+// Using the global fetch API available in modern Node.js
 
 // Environment variables
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const TOURNAMENT_CODE = process.env.TOURNAMENT_CODE || 'B415E921';
-const TOURNAMENT_ID = process.env.TOURNAMENT_ID || '684002d41cdba9a3b5b3fd9e';
+const TOURNAMENT_CODE = process.env.TOURNAMENT_CODE || '97057D2D';
+const TOURNAMENT_ID = process.env.TOURNAMENT_ID || '6843e7832c0d875fcf8aa9d8';
 
 // Interfaces
 interface Player {
@@ -11,6 +11,76 @@ interface Player {
   name: string;
 }
 
+const players = [
+  "Farkas Falvi Miklós",
+  "Csikesz László",
+  "Papp Renátó",
+  "Varga László",
+  "Zelizi Patrik",
+  "Dancsiné Erika",
+  "Dancsi Gyula",
+  "Faddi István",
+  "Baranyi Miklós",
+  "Turcsik Tamás",
+  "Brindus Lajos",
+  "Gulyás Ferenc",
+  "Ifj. Gulyás Ferenc",
+  "Behacker Norbert",
+  "Gaál Dániel",
+  "Palkó Ádám",
+  "Schneider Tamás",
+  "Lele Krisztián",
+  "Schöffer Dániel",
+  "Schöffer Zalán",
+  "Mucska Attila",
+  "Pálinkás László",
+  "Farkas Balázs",
+  "Simon András",
+  "Schuck László",
+  "Schuck Dominik",
+  "Kovács Angéla",
+  "Kovács Márti",
+  "Jámbor Zsolt",
+  "Tillinger Barna",
+  "Bezzegi Gábor",
+  "Knapp Ágoston",
+  "Baráth Jámos Lafo",
+  "Zsigmond László",
+  "Czakó Balázs",
+  "Horváth Dániel",
+  "Csapó Etelka",
+  "Krausz József",
+  "Barócsi Zsolt",
+  "Barócsi Vanessza",
+  "Kiszl Csaba",
+  "Paloka Csaba",
+  "Kántor Tamás",
+  "Solti Dénes",
+  "Szanka Csaba",
+  "Jeges Roland",
+  "Szanka Dániel",
+  "Henn Ármin",
+  "Novek István",
+  "Bősze András",
+  "Gyuricza Illés",
+  "Nagy Zoltán",
+  "Mocsari Máté",
+  "Mike Lőrinc",
+  "Mike Ákos",
+  "Mike Száva",
+  "Keindl Gergő",
+  "Cvikli Balázs",
+  "Csuta Gellért",
+  "Viczena Dávid",
+  "Pálinkás Imre",
+  "Azari Róbert Károly",
+  "Nemes Kálmán",
+  "Recsedényi József",
+  "Szőts István",
+  "Szanka Dominik",
+  "Lázár Márk",
+  "Gábor András"
+];
 interface Match {
   _id: string;
   matchReference: {
@@ -201,9 +271,10 @@ describe('Tournament Simulation', () => {
   });
 
   it('should add 76 players', async () => {
-    console.log('Adding 76 players...');
-    for (let i = 1; i <= 86; i++) {
-      await addPlayer(`Player${i}`);
+    console.log(players.length, 'players to add');
+   //add 78 player
+    for (let i = 0; i < 78; i++) {
+      await addPlayer(`player${i}`);
     }
     console.log('Players added');
   });

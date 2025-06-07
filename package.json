@@ -21,7 +21,7 @@
     "mongoose": "^8.14.3",
     "motion": "^12.12.1",
     "next": "15.3.2",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "npm": "^11.4.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",

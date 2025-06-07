@@ -74,12 +74,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     // Hardcoded total players for this scenario
     const totalPlayers = tournament.players.length;
     const minimumPlayersRequired = 70; // As per requirement
-    if (totalPlayers < 76) {
-      return NextResponse.json(
-        { error: `A játékosok száma jelenleg ${totalPlayers}, de 76 játékos szükséges` },
-        { status: 400 }
-      );
-    }
     if (totalPlayers < minimumPlayersRequired) {
       return NextResponse.json(
         { error: `Legalább ${minimumPlayersRequired} játékos szükséges (jelenleg ${totalPlayers} van)` },
