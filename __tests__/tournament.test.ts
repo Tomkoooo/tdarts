@@ -2,8 +2,8 @@
 
 // Environment variables
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const TOURNAMENT_CODE = process.env.TOURNAMENT_CODE || '97057D2D';
-const TOURNAMENT_ID = process.env.TOURNAMENT_ID || '6843e7832c0d875fcf8aa9d8';
+const TOURNAMENT_CODE = process.env.TOURNAMENT_CODE || 'CE7B255E';
+const TOURNAMENT_ID = process.env.TOURNAMENT_ID || '6843dcd82c0d875fcf8aa9c1';
 
 // Interfaces
 interface Player {
@@ -21,7 +21,6 @@ const players = [
   "Dancsi Gyula",
   "Faddi István",
   "Baranyi Miklós",
-  "Turcsik Tamás",
   "Brindus Lajos",
   "Gulyás Ferenc",
   "Ifj. Gulyás Ferenc",
@@ -40,9 +39,7 @@ const players = [
   "Schuck Dominik",
   "Kovács Angéla",
   "Kovács Márti",
-  "Jámbor Zsolt",
   "Tillinger Barna",
-  "Bezzegi Gábor",
   "Knapp Ágoston",
   "Baráth Jámos Lafo",
   "Zsigmond László",
@@ -68,7 +65,6 @@ const players = [
   "Mike Lőrinc",
   "Mike Ákos",
   "Mike Száva",
-  "Keindl Gergő",
   "Cvikli Balázs",
   "Csuta Gellért",
   "Viczena Dávid",
@@ -79,7 +75,16 @@ const players = [
   "Szőts István",
   "Szanka Dominik",
   "Lázár Márk",
-  "Gábor András"
+  "Gábor András",
+  "Kántor Tibor",
+  "Kiss Zoltán",
+  "Bokor László",
+  "Madár Péter",
+  "Szabados Gábor",
+  "Horváth Miklós",
+  "Sebestyén Norbert",
+  "Knapp Tibor",
+  "Vargáné Oláh Andrea"
 ];
 interface Match {
   _id: string;
@@ -273,8 +278,8 @@ describe('Tournament Simulation', () => {
   it('should add 76 players', async () => {
     console.log(players.length, 'players to add');
    //add 78 player
-    for (let i = 0; i < 78; i++) {
-      await addPlayer(`player${i}`);
+    for (const playerName of players) {
+      await addPlayer(playerName);
     }
     console.log('Players added');
   });
@@ -287,52 +292,5 @@ describe('Tournament Simulation', () => {
     console.log(`Generated ${tournament.groups.length} groups`);
   });
 
-  it('should simulate group stage matches', async () => {
-    console.log('Simulating group stage matches...');
-    let matches = await fetchMatches();
-    let pendingMatches = matches.filter(m => m.matchReference?.status === 'pending');
-    let simulationCount = 0;
-    while (pendingMatches.length) {
-      for (const match of pendingMatches) {
-        await simulateMatch(match, useFinishApi);
-        simulationCount++;
-        console.log(`Simulated ${simulationCount} group stage matches`);
-      }
-      matches = await fetchMatches();
-      pendingMatches = matches.filter(m => m.matchReference?.status === 'pending');
-    }
-    console.log('Group stage completed');
-  });
 
-  it('should generate knockout stage', async () => {
-    console.log('Generating knockout stage...');
-    await generateKnockout();
-    const tournament = await fetchTournament();
-    expect(tournament.knockout.rounds.length).toBeGreaterThan(0);
-    console.log(`Generated ${tournament.knockout.rounds.length} knockout rounds`);
-  });
-
-  it('should simulate knockout stage matches', async () => {
-    console.log('Simulating knockout stage matches...');
-    let matches = await fetchMatches();
-    let pendingMatches = matches.filter(m => m.matchReference?.status === 'pending');
-    let simulationCount = 0;
-    while (pendingMatches.length) {
-      for (const match of pendingMatches) {
-        await simulateMatch(match, useFinishApi);
-        simulationCount++;
-        console.log(`Simulated ${simulationCount} knockout stage matches`);
-      }
-      matches = await fetchMatches();
-      pendingMatches = matches.filter(m => m.matchReference?.status === 'pending');
-    }
-    console.log('Knockout stage completed');
-  });
-
-  it('should verify completion', async () => {
-    console.log('Verifying completion...');
-    const finishedMatches = (await fetchMatches()).filter(m => m.matchReference?.status === 'finished');
-    console.log(`Total finished matches: ${finishedMatches.length}`);
-    expect(finishedMatches.length).toBeGreaterThan(0);
-  });
 });

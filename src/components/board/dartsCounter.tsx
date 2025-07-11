@@ -564,7 +564,6 @@ export default function DartsCounter({
         setThrowHistory([]);
         setCurrentPlayer("player1");
         setLegStartingPlayer("player1");
-        setMatchType("bo3");
         setStartingPlayer("player1");
         setInputScore("");
         setIsDoubleAttempt(false);
