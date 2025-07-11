@@ -94,6 +94,7 @@ export class AuthService {
       if (!user) {
         throw new BadRequestError('User not found');
       }
+      await user.updateLastLogin(user._id);
       return user;
     } catch (error) {
       throw new BadRequestError('Invalid token');
