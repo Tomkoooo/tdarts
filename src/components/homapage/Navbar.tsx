@@ -52,7 +52,7 @@ const Navbar = () => {
               </a>
             ))}
             {user ? (
-              <Link href="/profil" className="flex items-center space-x-2 glass-button push-button">
+              <Link href="/profile" className="flex items-center space-x-2 glass-button push-button">
                 <IconUser className="w-5 h-5" />
                 <span>{user.username}</span>
               </Link>

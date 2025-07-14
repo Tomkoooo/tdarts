@@ -45,11 +45,67 @@ describe('AuthService', () => {
       username: 'test_user',
       name: 'Test User',
     });
-    const token = await AuthService.login('test_user', 'password123');
+    const token = await AuthService.login('test@example.com', 'password123');
     expect(token).toBeDefined();
   }, 15000);
 
   it('should throw error for invalid login credentials', async () => {
-    await expect(AuthService.login('test_user', 'wrongpassword')).rejects.toThrow(BadRequestError);
+    await expect(AuthService.login('test@example.com', 'wrongpassword')).rejects.toThrow(BadRequestError);
+  }, 15000);
+
+  it('should send reset password email', async () => {
+    await AuthService.register({
+      email: 'test@example.com',
+      password: 'password123',
+      username: 'test_user',
+      name: 'Test User',
+    });
+    await expect(AuthService.forgotPassword('test@example.com')).resolves.toBeUndefined();
+    const user = await UserModel.findOne({ email: 'test@example.com' });
+    expect(user?.codes.reset_password).toBeDefined();
+  }, 15000);
+
+  it('should throw error if user does not exist for forgot password', async () => {
+    await expect(AuthService.forgotPassword('nonexistent@example.com')).rejects.toThrow(BadRequestError);
+    await expect(AuthService.forgotPassword('nonexistent@example.com')).rejects.toThrow('User not found');
+  }, 15000);
+
+  it('should reset password with valid code', async () => {
+    await AuthService.register({
+      email: 'test@example.com',
+      password: 'password123',
+      username: 'test_user',
+      name: 'Test User',
+    });
+    const user = await UserModel.findOne({ email: 'test@example.com' });
+    const resetCode = await user!.generateResetPasswordCode();
+    await AuthService.resetPassword('test@example.com', resetCode, 'newpassword123');
+    const updatedUser = await UserModel.findOne({ email: 'test@example.com' }).select('+password');
+    expect(await updatedUser!.matchPassword('newpassword123')).toBe(true);
+    expect(updatedUser!.codes.reset_password).toBeUndefined();
+  }, 15000);
+
+  it('should throw error for invalid reset code', async () => {
+    await AuthService.register({
+      email: 'test@example.com',
+      password: 'password123',
+      username: 'test_user',
+      name: 'Test User',
+    });
+    await expect(
+      AuthService.resetPassword('test@example.com', 'invalid_code', 'newpassword123')
+    ).rejects.toThrow(BadRequestError);
+    await expect(
+      AuthService.resetPassword('test@example.com', 'invalid_code', 'newpassword123')
+    ).rejects.toThrow('Invalid reset code');
+  }, 15000);
+
+  it('should throw error if user does not exist for reset password', async () => {
+    await expect(
+      AuthService.resetPassword('nonexistent@example.com', 'some_code', 'newpassword123')
+    ).rejects.toThrow(BadRequestError);
+    await expect(
+      AuthService.resetPassword('nonexistent@example.com', 'some_code', 'newpassword123')
+    ).rejects.toThrow('User not found');
   }, 15000);
 });

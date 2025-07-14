@@ -1,5 +1,7 @@
 import { POST as register } from '@/app/api/auth/register/route';
 import { POST as login } from '@/app/api/auth/login/route';
+import { POST as forgotPassword } from '@/app/api/auth/forgot-password/route';
+import { POST as resetPassword } from '@/app/api/auth/reset-password/route';
 import { AuthService } from '@/database/services/auth.service';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
@@ -36,7 +38,7 @@ describe('Auth Routes', () => {
       const response = await register(request);
       const json = await response.json();
 
-      expect(response.status).toBe(200); // Updated to expect 200
+      expect(response.status).toBe(200);
       expect(json).toMatchObject({
         message: 'User registered',
       });
@@ -52,7 +54,20 @@ describe('Auth Routes', () => {
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'Email, password, and name are required' }); // Updated error message
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_type',
+            path: ['password'],
+            message: 'Required',
+          }),
+          expect.objectContaining({
+            code: 'invalid_type',
+            path: ['name'],
+            message: 'Required',
+          }),
+        ]),
+      });
     }, 15000);
   });
 
@@ -63,7 +78,7 @@ describe('Auth Routes', () => {
 
       const request = new Request('http://localhost:3000/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: 'test@example.com', password: 'password123' }), // Changed to email
+        body: JSON.stringify({ email: 'test@example.com', password: 'password123' }),
       });
 
       const response = await login(request);
@@ -78,14 +93,178 @@ describe('Auth Routes', () => {
     it('should return 400 for missing fields', async () => {
       const request = new Request('http://localhost:3000/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: 'test@example.com' }), // Changed to email
+        body: JSON.stringify({ email: 'test@example.com' }),
       });
 
       const response = await login(request);
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'Email and password are required' }); // Updated error message
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_type',
+            path: ['password'],
+            message: 'Required',
+          }),
+        ]),
+      });
+    }, 15000);
+  });
+
+  describe('POST /api/auth/forgot-password', () => {
+    it('should send reset password email', async () => {
+      (AuthService.forgotPassword as jest.Mock).mockResolvedValue(undefined);
+
+      const request = new Request('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com' }),
+      });
+
+      const response = await forgotPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json).toMatchObject({
+        message: 'Reset password email sent',
+      });
+    }, 15000);
+
+    it('should return 400 for missing email', async () => {
+      const request = new Request('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      const response = await forgotPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_type',
+            path: ['email'],
+            message: 'Required',
+          }),
+        ]),
+      });
+    }, 15000);
+
+    it('should return 400 for invalid email', async () => {
+      const request = new Request('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'invalid-email' }),
+      });
+
+      const response = await forgotPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            validation: 'email',
+            code: 'invalid_string',
+            path: ['email'],
+            message: 'Invalid email address',
+          }),
+        ]),
+      });
+    }, 15000);
+  });
+
+  describe('POST /api/auth/reset-password', () => {
+    it('should reset password with valid code', async () => {
+      (AuthService.resetPassword as jest.Mock).mockResolvedValue(undefined);
+
+      const request = new Request('http://localhost:3000/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'test@example.com',
+          code: 'valid_code',
+          newPassword: 'newpassword123',
+        }),
+      });
+
+      const response = await resetPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json).toMatchObject({
+        message: 'Password reset successfully',
+      });
+    }, 15000);
+
+    it('should return 400 for missing fields', async () => {
+      const request = new Request('http://localhost:3000/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', code: 'valid_code' }),
+      });
+
+      const response = await resetPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_type',
+            path: ['newPassword'],
+            message: 'Required',
+          }),
+        ]),
+      });
+    }, 15000);
+
+    it('should return 400 for invalid email', async () => {
+      const request = new Request('http://localhost:3000/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'invalid-email',
+          code: 'valid_code',
+          newPassword: 'newpassword123',
+        }),
+      });
+
+      const response = await resetPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            validation: 'email',
+            code: 'invalid_string',
+            path: ['email'],
+            message: 'Invalid email address',
+          }),
+        ]),
+      });
+    }, 15000);
+
+    it('should return 400 for missing code', async () => {
+      const request = new Request('http://localhost:3000/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'test@example.com',
+          newPassword: 'newpassword123',
+        }),
+      });
+
+      const response = await resetPassword(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(json).toMatchObject({
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_type',
+            path: ['code'],
+            message: 'Required',
+          }),
+        ]),
+      });
     }, 15000);
   });
 });

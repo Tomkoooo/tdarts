@@ -7,9 +7,11 @@ import Link from 'next/link';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { useUserContext } from '@/hooks/useUser';
 
 const Login: React.FC = () => {
   const router = useRouter();
+  const { setUser } = useUserContext();
 
   const handleLogin = async (data: { email: string; password: string }) => {
     console.log('Login data:', data);
@@ -19,24 +21,35 @@ const Login: React.FC = () => {
           headers: {
             'Content-Type': 'application/json',
           },
+        }).then((response) => {
+          // Extract the user from the response and set it in the context
+          const user = response.data.user;
+          setUser({
+            username: user.username,
+            name: user.name,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            isVerified: user.isVerified,
+          });
         }),
+        //TODO: nem állítja be a felhasználót a contextben, mert a promise-t nem várja meg
         {
           loading: 'Bejelentkezés folyamatban...',
           success: () => {
-            router.push('/'); // Navigálás a főoldalra
+            router.push('/'); // Navigate to the home page
             return 'Sikeres bejelentkezés!';
           },
           error: (error) => {
             console.error('Login error:', error);
             if (error.response && error.response.data.error) {
-              return error.response.data.error; // Szerver válaszból származó hiba
+              return error.response.data.error; // Error from the server response
             }
-            return 'Hiba történt a bejelentkezés során'; // Általános hibaüzenet
+            return 'Hiba történt a bejelentkezés során'; // General error message
           },
         }
       );
     } catch (error) {
-      // A toast.promise kezeli a hibákat, így itt nincs szükség további logikára
+      // toast.promise handles errors, so no additional logic is needed here
     }
   };
 

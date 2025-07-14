@@ -84,7 +84,7 @@ userSchema.methods.resetPassword = async function (newPassword: string, code: st
     if (this.codes.reset_password !== code) {
       throw new Error('Invalid reset password code');
     }
-    this.password = await bcrypt.hash(newPassword, 15);
+    this.password = newPassword; // Set the new password to trigger pre('save') hashing
     this.codes.reset_password = null;
     await this.save();
   } catch (error: any) {
