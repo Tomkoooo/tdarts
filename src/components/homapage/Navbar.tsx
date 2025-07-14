@@ -4,11 +4,12 @@ import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser } fro
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
+import IconDart from "./icons/IconDart";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user } = useUserContext();
+  const {user} = useUserContext()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,10 +53,16 @@ const Navbar = () => {
               </a>
             ))}
             {user ? (
-              <Link href="/profile" className="flex items-center space-x-2 glass-button push-button">
-                <IconUser className="w-5 h-5" />
-                <span>{user.username}</span>
-              </Link>
+              <div className="flex gap-2 items-center">
+                <Link href="/profile" className="flex items-center space-x-2 btn btn-primary glass-button push-button">
+                  <IconUser className="w-5 h-5" />
+                  <span>{user.username}</span>
+                </Link>
+                <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline btn-primary push-button">
+                <IconDart className="w-5 h-5" />
+                <span>Saját klub</span>
+                            </Link>
+              </div>
             ) : (
               <Link href="/auth/login" className="block glass-button push-button">
                 Bejelentkezés
@@ -88,14 +95,16 @@ const Navbar = () => {
                 </a>
               ))}
               {user ? (
-                <Link
-                  href="/profil"
-                  className="flex items-center space-x-3 glass-button push-button w-full mt-4"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
+                <div className="flex justify-between items-center">
+                <Link href="/profile" className="flex items-center space-x-2 btn btn-primary glass-button push-button">
                   <IconUser className="w-5 h-5" />
                   <span>{user.username}</span>
                 </Link>
+                <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline btn-primary push-button">
+                <IconDart className="w-5 h-5" />
+                <span>Saját klub</span>
+                            </Link>
+              </div>
               ) : (
                 <Link
                   href="/auth/login"

@@ -26,6 +26,7 @@ export default async function RootLayout({
     try {
       const user = await AuthService.verifyToken(token);
       initialUser = {
+        _id: user._id.toString(),
         username: user.username,
         name: user.name,
         email: user.email,

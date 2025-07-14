@@ -25,6 +25,7 @@ import { useUserContext } from "@/hooks/useUser";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Label from "@/components/ui/Label";
+import Link from "next/link";
 
 const updateProfileSchema = z.object({
   email: z.string().email("Érvényes email címet adj meg").optional(),
@@ -397,10 +398,10 @@ const ProfilePage: React.FC = () => {
                 <IconChartBar className="w-4 h-4" />
                 Statisztikák
               </Button>
-              <Button variant="outline" className="w-full opacity-50 cursor-not-allowed">
+              <Link href="/myclub" className="w-full btn btn-primary">
                 <IconUsers className="w-4 h-4" />
                 Klub regisztráció
-              </Button>
+              </Link>
               <Button variant="outline" className="w-full opacity-50 cursor-not-allowed">
                 <IconUserPlus className="w-4 h-4" />
                 Játékos regisztráció

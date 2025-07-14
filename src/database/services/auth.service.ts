@@ -38,7 +38,7 @@ export class AuthService {
     }
   }
 
-  static async login(email: string, password: string): Promise<{token: string, user: {username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean}}> {
+  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean}}> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password))) {

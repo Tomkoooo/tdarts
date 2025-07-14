@@ -1,4 +1,4 @@
-name: Run test suites
+name: Run Test Suites
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
           node-version: '16'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --f
 
       - name: Run tests
         run: npm run test

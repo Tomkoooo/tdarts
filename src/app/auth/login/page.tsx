@@ -25,6 +25,7 @@ const Login: React.FC = () => {
           // Extract the user from the response and set it in the context
           const user = response.data.user;
           setUser({
+            _id: user._id,
             username: user.username,
             name: user.name,
             email: user.email,

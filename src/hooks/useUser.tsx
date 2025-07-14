@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from "react";
 import { Toaster } from "react-hot-toast";
 
 export interface SimplifiedUser {
+  _id: string
   username: string;
   name: string;
   email: string;
