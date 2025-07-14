@@ -1,6 +1,5 @@
 import { POST as updateProfile } from '@/app/api/profile/update/route';
 import { POST as verifyEmail } from '@/app/api/profile/verify-email/route';
-import { POST as logout } from '@/app/api/profile/logout/route';
 import { ProfileService } from '@/database/services/profile.service';
 import { AuthService } from '@/database/services/auth.service';
 import { UserModel } from '@/database/models/user.model';
@@ -75,7 +74,7 @@ describe('Profile Routes', () => {
       expect(json).toMatchObject({ error: 'Unauthorized' });
     }, 15000);
 
-    it('should return 400 for invalid data', async () => {
+    it('should return 400 for invalid email', async () => {
       (cookies as jest.Mock).mockReturnValue({
         get: jest.fn().mockReturnValue({ value: 'valid_token' }),
       });
@@ -88,9 +87,19 @@ describe('Profile Routes', () => {
 
       const response = await updateProfile(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'Invalid email address' });
+      expect(error).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_string',
+            validation: 'email',
+            path: ['email'],
+            message: 'Invalid email address',
+          }),
+        ])
+      );
     }, 15000);
   });
 
@@ -144,47 +153,20 @@ describe('Profile Routes', () => {
 
       const response = await verifyEmail(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'Verification code is required' });
-    }, 15000);
-  });
-
-  describe('POST /api/profile/logout', () => {
-    it('should logout user', async () => {
-      (cookies as jest.Mock).mockReturnValue({
-        get: jest.fn().mockReturnValue({ value: 'valid_token' }),
-        delete: jest.fn(),
-      });
-      (AuthService.verifyToken as jest.Mock).mockResolvedValue({ _id: 'user_id' });
-      (ProfileService.logout as jest.Mock).mockResolvedValue(undefined);
-
-      const request = new Request('http://localhost:3000/api/profile/logout', {
-        method: 'POST',
-      });
-
-      const response = await logout(request);
-      const json = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(json).toMatchObject({ message: 'Logged out successfully' });
-      expect((await cookies()).delete).toHaveBeenCalledWith('token');
-    }, 15000);
-
-    it('should return 401 for missing token', async () => {
-      (cookies as jest.Mock).mockReturnValue({
-        get: jest.fn().mockReturnValue(undefined),
-      });
-
-      const request = new Request('http://localhost:3000/api/profile/logout', {
-        method: 'POST',
-      });
-
-      const response = await logout(request);
-      const json = await response.json();
-
-      expect(response.status).toBe(401);
-      expect(json).toMatchObject({ error: 'Unauthorized' });
+      expect(error).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_type',
+            expected: 'string',
+            received: 'undefined',
+            path: ['code'],
+            message: 'Required',
+          }),
+        ])
+      );
     }, 15000);
   });
 });

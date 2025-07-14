@@ -1,8 +1,13 @@
 import { AuthService } from '@/database/services/auth.service';
 import { UserModel } from '@/database/models/user.model';
 import { BadRequestError } from '@/middleware/errorHandle';
+import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 
 describe('AuthService', () => {
+  beforeAll(async () => {
+    await connectToDatabase();
+  }, 15000);
+
   beforeEach(async () => {
     await UserModel.deleteMany({});
   });
@@ -19,6 +24,7 @@ describe('AuthService', () => {
     expect(user).toBeDefined();
     expect(user?.username).toBe('test_user');
     expect(user?.name).toBe('Test User');
+    expect(user?.codes.verify_email).toBeDefined();
   }, 15000);
 
   it('should throw error if email already exists', async () => {
@@ -36,6 +42,14 @@ describe('AuthService', () => {
         name: 'Test User',
       })
     ).rejects.toThrow(BadRequestError);
+    await expect(
+      AuthService.register({
+        email: 'test@example.com',
+        password: 'password123',
+        username: 'test_user_2',
+        name: 'Test User',
+      })
+    ).rejects.toThrow('Email or username already exists');
   }, 15000);
 
   it('should login with correct credentials', async () => {
@@ -51,6 +65,7 @@ describe('AuthService', () => {
 
   it('should throw error for invalid login credentials', async () => {
     await expect(AuthService.login('test@example.com', 'wrongpassword')).rejects.toThrow(BadRequestError);
+    await expect(AuthService.login('test@example.com', 'wrongpassword')).rejects.toThrow('Invalid email or password');
   }, 15000);
 
   it('should send reset password email', async () => {
@@ -82,7 +97,7 @@ describe('AuthService', () => {
     await AuthService.resetPassword('test@example.com', resetCode, 'newpassword123');
     const updatedUser = await UserModel.findOne({ email: 'test@example.com' }).select('+password');
     expect(await updatedUser!.matchPassword('newpassword123')).toBe(true);
-    expect(updatedUser!.codes.reset_password).toBeUndefined();
+    expect(updatedUser!.codes.reset_password).toBeNull();
   }, 15000);
 
   it('should throw error for invalid reset code', async () => {

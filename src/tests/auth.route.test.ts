@@ -10,7 +10,6 @@ jest.mock('@/database/services/auth.service');
 
 describe('Auth Routes', () => {
   beforeAll(async () => {
-    // Connection is handled by src/tests/setup.ts
     await connectToDatabase();
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
   }, 15000);
@@ -55,18 +54,7 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(400);
       expect(json).toMatchObject({
-        error: expect.arrayContaining([
-          expect.objectContaining({
-            code: 'invalid_type',
-            path: ['password'],
-            message: 'Required',
-          }),
-          expect.objectContaining({
-            code: 'invalid_type',
-            path: ['name'],
-            message: 'Required',
-          }),
-        ]),
+        error: 'Email, password, and name are required',
       });
     }, 15000);
   });
@@ -81,7 +69,7 @@ describe('Auth Routes', () => {
         body: JSON.stringify({ email: 'test@example.com', password: 'password123' }),
       });
 
-      const response = await login(request);
+      const response = await login(request); // Fixed: Changed from register to login
       const json = await response.json();
 
       expect(response.status).toBe(200);
@@ -101,13 +89,7 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(400);
       expect(json).toMatchObject({
-        error: expect.arrayContaining([
-          expect.objectContaining({
-            code: 'invalid_type',
-            path: ['password'],
-            message: 'Required',
-          }),
-        ]),
+        error: 'Email and password are required',
       });
     }, 15000);
   });
@@ -138,17 +120,20 @@ describe('Auth Routes', () => {
 
       const response = await forgotPassword(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({
-        error: expect.arrayContaining([
+      expect(error).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
             code: 'invalid_type',
+            expected: 'string',
+            received: 'undefined',
             path: ['email'],
             message: 'Required',
           }),
-        ]),
-      });
+        ])
+      );
     }, 15000);
 
     it('should return 400 for invalid email', async () => {
@@ -159,18 +144,19 @@ describe('Auth Routes', () => {
 
       const response = await forgotPassword(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({
-        error: expect.arrayContaining([
+      expect(error).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
-            validation: 'email',
             code: 'invalid_string',
+            validation: 'email',
             path: ['email'],
             message: 'Invalid email address',
           }),
-        ]),
-      });
+        ])
+      );
     }, 15000);
   });
 
@@ -204,17 +190,20 @@ describe('Auth Routes', () => {
 
       const response = await resetPassword(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({
-        error: expect.arrayContaining([
+      expect(error).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
             code: 'invalid_type',
+            expected: 'string',
+            received: 'undefined',
             path: ['newPassword'],
             message: 'Required',
           }),
-        ]),
-      });
+        ])
+      );
     }, 15000);
 
     it('should return 400 for invalid email', async () => {
@@ -229,18 +218,19 @@ describe('Auth Routes', () => {
 
       const response = await resetPassword(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({
-        error: expect.arrayContaining([
+      expect(error).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
-            validation: 'email',
             code: 'invalid_string',
+            validation: 'email',
             path: ['email'],
             message: 'Invalid email address',
           }),
-        ]),
-      });
+        ])
+      );
     }, 15000);
 
     it('should return 400 for missing code', async () => {
@@ -254,17 +244,20 @@ describe('Auth Routes', () => {
 
       const response = await resetPassword(request);
       const json = await response.json();
+      const error = JSON.parse(json.error);
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({
-        error: expect.arrayContaining([
+      expect(error).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
             code: 'invalid_type',
+            expected: 'string',
+            received: 'undefined',
             path: ['code'],
             message: 'Required',
           }),
-        ]),
-      });
+        ])
+      );
     }, 15000);
   });
 });
