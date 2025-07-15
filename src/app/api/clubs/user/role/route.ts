@@ -4,22 +4,19 @@ import { BadRequestError } from '@/middleware/errorHandle';
 
 export async function GET(req: NextRequest) {
   try {
+    const clubId = req.nextUrl.searchParams.get('clubId');
     const userId = req.nextUrl.searchParams.get('userId');
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
+    if (!clubId || !userId) {
+      return NextResponse.json({ error: 'clubId and userId are required' }, { status: 400 });
     }
 
-    const {clubs}  = await ClubService.getUserClubs(userId);
-    return NextResponse.json(clubs, { status: 200 });
+    const role = await ClubService.getUserRoleInClub(userId, clubId);
+    return NextResponse.json({ role }, { status: 200 });
   } catch (error) {
     if (error instanceof BadRequestError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error('Error fetching user clubs:', error);
+    console.error('Error fetching user role:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

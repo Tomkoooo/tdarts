@@ -29,7 +29,7 @@ const MyClubPage = () => {
 
         if (userClubs.length > 0) {
           // Redirect to the first club's page if user is associated with a club
-          router.push(`/club/${userClubs[0]._id}`);
+          router.push(`/clubs/${userClubs[0]._id}`);
         }
       } catch (error) {
         toast.error('Hiba történt a klubok lekérdezése során');

@@ -21,13 +21,11 @@ export class ClubService {
   ): Promise<ClubDocument> {
     await connectMongo();
 
-    // Check if user exists
     const user = await UserModel.findById(creatorId);
     if (!user) {
       throw new BadRequestError('User not found');
     }
 
-    // Check if user is already in a club (as member, admin, or moderator)
     const existingClub = await ClubModel.findOne({
       $or: [
         { members: creatorId },
@@ -39,18 +37,17 @@ export class ClubService {
       throw new BadRequestError('User is already associated with a club');
     }
 
-    // Check if club name is unique
     const existingClubName = await ClubModel.findOne({ name: clubData.name });
     if (existingClubName) {
       throw new BadRequestError('Club name already exists');
     }
 
-    // Create new club with creator as admin
     const club = new ClubModel({
       ...clubData,
       admin: [creatorId],
       members: [creatorId],
       moderators: [],
+      tournamentPlayers: [],
       isActive: true,
     });
 
@@ -79,23 +76,22 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    // Check if user is admin
+    console.log(userId)
+
     if (!club.admin.includes(new Types.ObjectId(userId))) {
       throw new BadRequestError('Only admins can update club details');
     }
 
-    // Check if new name is unique (if provided)
     if (updates.name && updates.name !== club.name) {
       const existingClub = await ClubModel.findOne({
         name: updates.name,
-        _id: { $ne: club._id }, // Use club._id directly
+        _id: { $ne: club._id },
       });
       if (existingClub) {
         throw new BadRequestError('Club name already exists');
       }
     }
 
-    // Apply updates
     if (updates.name) club.name = updates.name;
     if (updates.description) club.description = updates.description;
     if (updates.location) club.location = updates.location;
@@ -113,20 +109,17 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    // Check if requester is admin or moderator
     const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
                         club.moderators.includes(new Types.ObjectId(requesterId));
     if (!isAuthorized) {
       throw new BadRequestError('Only admins or moderators can add members');
     }
 
-    // Check if user exists
     const user = await UserModel.findById(userId);
     if (!user) {
       throw new BadRequestError('User not found');
     }
 
-    // Check if user is already in a club
     const existingClub = await ClubModel.findOne({
       $or: [
         { members: userId },
@@ -138,7 +131,6 @@ export class ClubService {
       throw new BadRequestError('User is already associated with a club');
     }
 
-    // Add user to members
     if (!club.members.includes(new Types.ObjectId(userId))) {
       club.members.push(new Types.ObjectId(userId));
       await club.save();
@@ -155,19 +147,17 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    // Check if requester is admin or moderator
     const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
-                        club.moderators.includes(new Types.ObjectId(requesterId));
+                        club.moderators.includes(new Types.ObjectId(requesterId)) ||
+                        userId === requesterId;
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins or moderators can remove members');
+      throw new BadRequestError('Only admins, moderators, or the user themselves can remove members');
     }
 
-    // Prevent removing the last admin
     if (club.admin.includes(new Types.ObjectId(userId)) && club.admin.length === 1) {
       throw new BadRequestError('Cannot remove the last admin');
     }
 
-    // Remove user from members, moderators, and admin arrays
     club.members = club.members.filter((id: Types.ObjectId) => !id.equals(userId));
     club.moderators = club.moderators.filter((id: Types.ObjectId) => !id.equals(userId));
     club.admin = club.admin.filter((id: Types.ObjectId) => !id.equals(userId));
@@ -184,12 +174,10 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    // Check if requester is admin
     if (!club.admin.includes(new Types.ObjectId(requesterId))) {
       throw new BadRequestError('Only admins can add moderators');
     }
 
-    // Check if user exists and is a member
     const user = await UserModel.findById(userId);
     if (!user) {
       throw new BadRequestError('User not found');
@@ -198,7 +186,6 @@ export class ClubService {
       throw new BadRequestError('User must be a member to become a moderator');
     }
 
-    // Add user to moderators
     if (!club.moderators.includes(new Types.ObjectId(userId))) {
       club.moderators.push(new Types.ObjectId(userId));
       await club.save();
@@ -215,13 +202,53 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    // Check if requester is admin
     if (!club.admin.includes(new Types.ObjectId(requesterId))) {
       throw new BadRequestError('Only admins can remove moderators');
     }
 
-    // Remove user from moderators
     club.moderators = club.moderators.filter((id: Types.ObjectId) => !id.equals(userId));
+    await club.save();
+    return club;
+  }
+
+  static async addTournamentPlayer(clubId: string, playerName: string, requesterId: string): Promise<ClubDocument> {
+    await connectMongo();
+
+    const club = await ClubModel.findById(clubId);
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
+                        club.moderators.includes(new Types.ObjectId(requesterId));
+    if (!isAuthorized) {
+      throw new BadRequestError('Only admins or moderators can add tournament players');
+    }
+
+    if (club.tournamentPlayers.some((p: any) => p.name.toLowerCase() === playerName.toLowerCase())) {
+      throw new BadRequestError('Player already added');
+    }
+
+    club.tournamentPlayers.push({ name: playerName });
+    await club.save();
+    return club;
+  }
+
+  static async removeTournamentPlayer(clubId: string, playerName: string, requesterId: string): Promise<ClubDocument> {
+    await connectMongo();
+
+    const club = await ClubModel.findById(clubId);
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
+                        club.moderators.includes(new Types.ObjectId(requesterId));
+    if (!isAuthorized) {
+      throw new BadRequestError('Only admins or moderators can remove tournament players');
+    }
+
+    club.tournamentPlayers = club.tournamentPlayers.filter((p: any) => p.name.toLowerCase() !== playerName.toLowerCase());
     await club.save();
     return club;
   }
@@ -234,7 +261,6 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    // Check if requester is admin
     if (!club.admin.includes(new Types.ObjectId(requesterId))) {
       throw new BadRequestError('Only admins can deactivate clubs');
     }
@@ -244,18 +270,28 @@ export class ClubService {
     return club;
   }
 
-  static async getClub(clubId: string): Promise<ClubDocument> {
+  static async getClub(clubId: string): Promise<Club> {
     await connectMongo();
 
-    const club = await ClubModel.findById(clubId);
+    const club = await ClubModel.findById(clubId).populate('members admin moderators', 'name username');
     if (!club) {
       throw new BadRequestError('Club not found');
     }
 
-    return club;
+    const populatedClub: Club = {
+      ...club.toJSON(),
+      members: club.members.map((user: any) => ({
+        _id: user._id.toString(),
+        name: user.name,
+        username: user.username,
+      })),
+      tournamentPlayers: club.tournamentPlayers,
+    };
+
+    return populatedClub;
   }
 
-  static async getUserClubs(userId: string): Promise<ClubDocument[]> {
+  static async getUserClubs(userId: string): Promise<{ clubs: ClubDocument[], userRoleInClub: string }> {
     await connectMongo();
 
     const clubs = await ClubModel.find({
@@ -266,6 +302,49 @@ export class ClubService {
       ],
     });
 
-    return clubs;
+    const club = clubs[0];
+    const userObjectId = new Types.ObjectId(userId);
+    const userRoleInClub = club.admin.includes(userObjectId) ? 'admin' :
+                           club.moderators.includes(userObjectId) ? 'moderator' :
+                           club.members.includes(userObjectId) ? 'member' : 'none';
+
+    return { clubs, userRoleInClub };
+  }
+
+  static async getUserRoleInClub(userId: string, clubId: string): Promise<string> {
+    await connectMongo();
+
+    const club = await ClubModel.findById(clubId);
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const userObjectId = new Types.ObjectId(userId);
+    if (club.admin.includes(userObjectId)) {
+      return 'admin';
+    } else if (club.moderators.includes(userObjectId)) {
+      return 'moderator';
+    } else if (club.members.includes(userObjectId)) {
+      return 'member';
+    } else {
+      return 'none';
+    }
+  }
+
+  static async searchUsers(query: string): Promise<{ _id: string; name: string; username: string }[]> {
+    await connectMongo();
+
+    const users = await UserModel.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { username: { $regex: query, $options: 'i' } },
+      ],
+    }).limit(10);
+
+    return users.map(user => ({
+      _id: user._id.toString(),
+      name: user.name,
+      username: user.username,
+    }));
   }
 }

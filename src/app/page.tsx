@@ -13,9 +13,6 @@ const HomePage = () => {
       {/* Parallax Background */}
       <ParallaxBackground />
       
-      {/* Navigation */}
-      <Navbar />
-      
       {/* Main Content */}
       <main className="relative z-10">
         {/* Hero Section */}

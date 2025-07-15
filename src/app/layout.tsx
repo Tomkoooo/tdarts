@@ -3,6 +3,7 @@ import "./globals.css";
 import { cookies } from "next/headers";
 import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
+import Navbar from "@/components/homapage/Navbar";
 
 export const metadata: Metadata = {
   title: "tDarts",
@@ -43,8 +44,10 @@ export default async function RootLayout({
       <head>
         <meta name="color-scheme" content="only dark" />
       </head>
-      <body>
+      <body className="flex flex-col">
         <UserProvider initialUser={initialUser}>
+          {/* Navigation */}
+          <Navbar />
           {children}
         </UserProvider>
       </body>

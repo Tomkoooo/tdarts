@@ -109,7 +109,7 @@ export default function ClubsPage() {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn btn-primary btn-md"
+            className="btn btn-primary btn-outline btn-sm"
           >
             Új Klub Létrehozása
           </button>

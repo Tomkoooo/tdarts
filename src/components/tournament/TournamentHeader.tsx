@@ -86,7 +86,7 @@ function TournamentHeader({
       </div>
       <div className="flex flex-col gap-3">
         <div className="flex gap-2 items-center">
-          <button className="btn btn-primary btn-md" onClick={()=>(fetchTournament())} disabled={loading}>
+          <button className="btn btn-primary btn-outline btn-sm" onClick={()=>(fetchTournament())} disabled={loading}>
             {loading ? <span className="loading loading-spinner"></span> : "Frissítés"}
           </button>
           <div className="flex flex-col items-start justify-center">

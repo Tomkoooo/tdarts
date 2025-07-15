@@ -14,6 +14,7 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     admin: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    tournamentPlayers: [{ name: { type: String, required: true } }],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
@@ -22,13 +23,11 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
 );
 
 clubSchema.pre('save', async function (next) {
-  // Ensure name does not contain spaces
   const nameRegex = /^[^\s]+$/;
   if (!nameRegex.test(this.name)) {
     return next(new Error('Club name cannot contain spaces'));
   }
 
-  // Validate contact email format if provided
   if (this.contact?.email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.contact.email)) {
@@ -36,7 +35,6 @@ clubSchema.pre('save', async function (next) {
     }
   }
 
-  // Validate website URL format if provided
   if (this.contact?.website) {
     const urlRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/;
     if (!urlRegex.test(this.contact.website)) {
@@ -50,13 +48,11 @@ clubSchema.pre('save', async function (next) {
 
 clubSchema.methods.toJSON = function () {
   const club = this.toObject();
-  // Convert ObjectId arrays to string arrays for API response
   club.members = club.members.map((id: Types.ObjectId) => id.toString());
   club.admin = club.admin.map((id: Types.ObjectId) => id.toString());
   club.moderators = club.moderators.map((id: Types.ObjectId) => id.toString());
   return club;
 };
 
-// Export the Club model, reusing it if already defined
 export const ClubModel =
   mongoose.models.Club || mongoose.model<ClubDocument>('Club', clubSchema);
