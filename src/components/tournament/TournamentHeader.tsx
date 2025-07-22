@@ -44,7 +44,7 @@ function TournamentHeader({
     <div className="flex justify-between items-start mt-4">
       <div className="flex flex-col items-start gap-1 w-2/4">
         <h1 className="card-title text-2xl">{tournament.name}</h1>
-        <p className="font-semibold italic">{tournament.startTime.toString().replaceAll('T', ' ').replaceAll('-', ' ').split('.')[0]}</p>
+        <p className="font-semibold italic">{tournament.startDate.toString().replaceAll('T', ' ').replaceAll('-', ' ').split('.')[0]}</p>
         <div className="indent-2 italic text-md">
           {isLongDescription ? (
             <>

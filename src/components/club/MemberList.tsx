@@ -61,21 +61,7 @@ export default function MemberList({ members, userRole, userId, clubId, onAddMem
   };
 
   return (
-    <div className="glass-card p-8 bg-[hsl(var(--background)/0.3)] border-[hsl(var(--border)/0.5)] shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-primary">
-          Tagok
-        </h2>
-        {(userRole === 'admin' || userRole === 'moderator') && (
-          <button
-            className="btn btn-primary btn-outline btn-sm"
-            onClick={onAddMember}
-          >
-            <IconPlus className="w-5 h-5" />
-            Tag Hozzáadása
-          </button>
-        )}
-      </div>
+    <ul className="space-y-2">
       {members.length === 0 ? (
         <p className="text-[hsl(var(--muted-foreground))]">Nincsenek tagok.</p>
       ) : (
@@ -83,7 +69,7 @@ export default function MemberList({ members, userRole, userId, clubId, onAddMem
           {members.map(member => (
             <li
               key={member._id}
-              className="flex justify-between items-center p-2 bg-[hsl(var(--background)/0.5)] rounded-md hover:bg-[hsl(var(--primary)/0.1)] transition-all duration-200"
+              className="flex justify-between items-center p-2"
             >
               <span className="badge badge-primary badge-lg">{member.name} ({member.username})</span>
               <div className="flex gap-2">
@@ -124,6 +110,6 @@ export default function MemberList({ members, userRole, userId, clubId, onAddMem
           ))}
         </ul>
       )}
-    </div>
+    </ul>
   );
 }

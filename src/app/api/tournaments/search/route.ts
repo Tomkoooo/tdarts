@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       const startDate = new Date(date);
       const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 1);
-      query.startTime = {
+      query.startDate = {
         $gte: startDate,
         $lt: endDate,
       };

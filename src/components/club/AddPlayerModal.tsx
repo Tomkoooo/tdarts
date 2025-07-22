@@ -1,130 +1,104 @@
-import { useState } from 'react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
-import { IconSearch } from '@tabler/icons-react';
-import { Club } from '@/interface/club.interface';
+import React, { useState } from 'react';
+import { IconX } from '@tabler/icons-react';
+import PlayerSearch from './PlayerSearch';
 
 interface AddPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
   clubId: string;
   userId?: string;
-  existingMembers: { _id: string; name: string; username: string }[];
-  existingPlayers: { name: string }[];
-  onClubUpdated: (club: Club) => void;
   userRole: 'admin' | 'moderator' | 'member' | 'none';
+  onPlayerAdded: () => void;
 }
 
-export default function AddPlayerModal({ isOpen, onClose, clubId, userId, existingMembers, existingPlayers, onClubUpdated, userRole }: AddPlayerModalProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [playerSuggestions, setPlayerSuggestions] = useState<{ _id: string; name: string; username: string }[]>([]);
+export default function AddPlayerModal({
+  isOpen,
+  onClose,
+  clubId,
+  userId,
+  userRole,
+  onPlayerAdded
+}: AddPlayerModalProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  if (!isOpen) return null;
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 2) {
-      setPlayerSuggestions([]);
-      return;
-    }
-    try {
-      const response = await axios.get<{ players: { _id: string; name: string; username: string }[] }>(`/api/clubs/search?query=${encodeURIComponent(query)}`);
-      setPlayerSuggestions(response.data.players.filter(p => !existingMembers.some(m => m._id === p._id)));
-    } catch (error) {
-      toast.error('Játékosok keresése sikertelen');
-    }
+  const handlePlayerSelected = (player: any) => {
+    setSelectedPlayer(player);
   };
 
-  const handleAddMember = async (player: { _id: string; name: string }) => {
-    if (!userId || userRole !== 'admin' && userRole !== 'moderator') return;
-    const toastId = toast.loading('Tag hozzáadása...');
+  const handleAdd = async () => {
+    if (!selectedPlayer) return;
+    setLoading(true);
     try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/addMember`, {
-        userId: player._id,
-        requesterId: userId,
+      await fetch(`/api/clubs/${clubId}/addMember`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedPlayer._id,
+          requesterId: userId,
+          isGuest: selectedPlayer.isGuest,
+          name: selectedPlayer.name
+        }),
       });
-      onClubUpdated(response.data);
-      toast.success('Tag sikeresen hozzáadva!', { id: toastId });
+      onPlayerAdded();
       onClose();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Tag hozzáadása sikertelen', { id: toastId });
-    }
-  };
-
-  const handleAddTournamentPlayer = async () => {
-    if (!userId || !searchQuery || userRole !== 'admin' && userRole !== 'moderator') return;
-    if (existingPlayers.some(p => p.name.toLowerCase() === searchQuery.toLowerCase())) {
-      toast.error('Ez a játékos már hozzá van adva');
-      return;
-    }
-    const toastId = toast.loading('Játékos hozzáadása...');
-    try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/addTournamentPlayer`, {
-        playerName: searchQuery,
-        requesterId: userId,
-      });
-      onClubUpdated(response.data);
-      toast.success('Játékos sikeresen hozzáadva!', { id: toastId });
-      setSearchQuery('');
-      setPlayerSuggestions([]);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Játékos hozzáadása sikertelen', { id: toastId });
+    } catch (error) {
+      console.error('Hiba a játékos hozzáadása során:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <dialog open={isOpen} className="modal">
-      <div className="modal-box glass-card p-8 bg-[hsl(var(--background)/0.3)] border-[hsl(var(--border)/0.5)] shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl max-w-md">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-[hsl(0,80%,60%)] to-[hsl(20,80%,60%)] bg-clip-text text-transparent mb-4">
-          Tag vagy Játékos Hozzáadása
-        </h2>
-        <div className="form-control mb-4">
-          <label className="label">
-            <span className="label-text text-[hsl(var(--foreground))] font-medium">Keresés (név vagy felhasználónév)</span>
-          </label>
-          <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="input input-bordered w-full pl-10 bg-[hsl(var(--background)/0.5)] border-[hsl(var(--border)/0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] transition-all duration-200"
-              placeholder="Keresés név vagy felhasználónév alapján"
-            />
-          </div>
-          {playerSuggestions.length > 0 && (
-            <ul className="absolute z-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md mt-1 w-full max-h-40 overflow-auto">
-              {playerSuggestions.map(player => (
-                <li
-                  key={player._id}
-                  className="p-2 hover:bg-[hsl(var(--primary)/0.2)] hover:text-[hsl(var(--primary))] cursor-pointer"
-                  onClick={() => handleAddMember(player)}
-                >
-                  {player.name} ({player.username})
-                </li>
-              ))}
-            </ul>
-          )}
-          {(userRole === 'admin' || userRole === 'moderator') && searchQuery && (
-            <button
-              className="btn btn-primary btn-outline btn-sm mt-4"
-              onClick={handleAddTournamentPlayer}
-            >
-              Játékosként hozzáad: {searchQuery}
-            </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      {/* Modal */}
+      <div className="relative bg-base-200 rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-base-300">
+          <h2 className="text-xl font-semibold">Játékos hozzáadása</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-base-100 rounded-lg transition-colors"
+          >
+            <IconX size={20} />
+          </button>
+        </div>
+        {/* Content */}
+        <div className="p-4 space-y-4">
+          <PlayerSearch
+            onPlayerSelected={handlePlayerSelected}
+            placeholder="Keress játékost név vagy felhasználónév alapján..."
+            className="w-full"
+          />
+          {selectedPlayer && (
+            <div className="bg-base-100 rounded-lg p-3 flex items-center gap-3 shadow">
+              <span className="badge badge-neutral">{selectedPlayer.isGuest ? 'Vendég' : 'Regisztrált'}</span>
+              <span className="font-semibold text-base-content">{selectedPlayer.name}</span>
+            </div>
           )}
         </div>
-        <div className="modal-action">
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-base-300 bg-base-100">
           <button
-            type="button"
             onClick={onClose}
-            className="glass-button btn btn-sm btn-ghost"
+            className="btn btn-ghost btn-sm"
+            type="button"
           >
             Mégse
           </button>
+          <button
+            onClick={handleAdd}
+            className="btn btn-primary btn-sm"
+            disabled={!selectedPlayer || loading}
+            type="button"
+          >
+            Hozzáadás
+          </button>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button onClick={onClose}>close</button>
-      </form>
-    </dialog>
+    </div>
   );
 }

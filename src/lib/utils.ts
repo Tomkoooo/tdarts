@@ -1,0 +1,14 @@
+export const GenerateRandomHash = () => {
+    return Math.random().toString()
+}
+
+export const roundRobin = (num: number) => {
+    switch (num) {
+        case 3:
+            return [{player1: 1, player2: 2, scorer: 3}, {player1: 1, player2: 3, scorer: 2}, {player1: 2, player2: 3, scorer: 1}]
+        case 4:
+            return [{player1: 1, player2: 2, scorer: 3}, {player1: 3, player2: 4, scorer: 2}, {player1: 1, player2: 3, scorer: 4}, {player1: 2, player2: 4, scorer: 3}, {player1: 1, player2: 4, scorer: 2}, {player1: 2, player2: 3, scorer: 1}]
+        case 5:
+            return [{player1: 1, player2: 2, scorer: 5}, {player1: 3, player2: 4, scorer: 2}, {player1: 1, player2: 5, scorer: 4}, {player1: 3, player2: 2, scorer: 5}, {player1: 1, player2: 4, scorer: 3}, {player1: 2, player2: 5, scorer: 4}, {player1: 1, player2: 3, scorer: 2}, {player1: 4, player2: 5, scorer: 1}, {player1: 2, player2: 4, scorer: 3}, {player1: 3, player2: 5, scorer: 1}]
+    }
+}

@@ -5,6 +5,7 @@ import * as z from "zod";
 import { Player, Tournament } from "./TournamentDetailsPage";
 import toast from "react-hot-toast";
 import usePlayerStatsModal from "@/hooks/usePlayerStatsModal";
+import PlayerSearch from '../club/PlayerSearch';
 
 const playerSchema = z.object({
   playerInput: z.string().min(1, "A játékos neve kötelező"),
@@ -37,6 +38,7 @@ function PlayerManagement({
   setIsSidebarOpen,
   setSortBy,
   addPlayer,
+  removePlayer,
   loading,
   code,
   autoFetch,
@@ -62,6 +64,12 @@ function PlayerManagement({
     } catch (error) {
       console.error("Hiba a játékosok keresésekor:", error);
     }
+  };
+
+  // Új: PlayerSearch callback
+  const handlePlayerSelected = async (player: any) => {
+    await addPlayer(player._id);
+    // Frissítés, reset, stb. ha kell
   };
 
   const sortedPlayers = [...players].sort((a, b) => {
@@ -137,6 +145,12 @@ function PlayerManagement({
             </span>
           )}
         </div>
+        {/* Új: PlayerSearch csak admin/moderátor és group stage előtt */}
+        {isModerator && tournament.status === 'created' && (
+          <div className="mb-4">
+            <PlayerSearch onPlayerSelected={handlePlayerSelected} clubId={tournament.clubId} />
+          </div>
+        )}
         {isModerator && (
           <form
             onSubmit={playerForm.handleSubmit(({ playerInput }) => {
@@ -196,18 +210,18 @@ function PlayerManagement({
               } hover:bg-primary/10 transition-colors`}
             >
               <div className="flex flex-col">
-              <button
-                onClick={() => openPlayerStatsModal(player._id)}
-                className="text-base font-medium btn btn-ghost"
-              >
-                {player.name}
-                {getPlayerRank(player._id) && (
+                <button
+                  onClick={() => openPlayerStatsModal(player._id)}
+                  className="text-base font-medium btn btn-ghost"
+                >
+                  {player.name}
+                  {getPlayerRank(player._id) && (
                     <span className="ml-2 text-sm text-primary">
                       ({getPlayerRank(player._id)})
                     </span>
                   )}
-              </button>
-              <PlayerStatsModal />
+                </button>
+                <PlayerStatsModal />
                 <div className="text-sm">
                   {player.stats && player.stats.oneEightiesCount > 0 && (
                     <span className="text-success mr-2">
@@ -221,6 +235,16 @@ function PlayerManagement({
                   )}
                 </div>
               </div>
+              {/* Törlés gomb admin/moderátor számára, csak group stage előtt */}
+              {isModerator && tournament.status === 'created' && (
+                <button
+                  className="btn btn-xs btn-error ml-2"
+                  onClick={() => removePlayer(player._id)}
+                  title="Játékos törlése a tornából"
+                >
+                  Törlés
+                </button>
+              )}
             </li>
           ))}
         </ul>

@@ -1,5 +1,6 @@
 import mongoose, { Types } from 'mongoose';
 import { ClubDocument } from '@/interface/club.interface';
+import { TournamentModel } from './tournament.model';
 
 const clubSchema = new mongoose.Schema<ClubDocument>(
   {
@@ -11,10 +12,15 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
       phone: { type: String, default: null },
       website: { type: String, default: null },
     },
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
     admin: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    tournamentPlayers: [{ name: { type: String, required: true } }],
+    boards: [{
+      boardNumber: { type: Number, required: true },
+      name: { type: String },
+      description: { type: String },
+      isActive: { type: Boolean, default: true },
+    }],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
@@ -29,7 +35,7 @@ clubSchema.pre('save', async function (next) {
   }
 
   if (this.contact?.email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^ s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.contact.email)) {
       return next(new Error('Invalid contact email format'));
     }
@@ -42,6 +48,12 @@ clubSchema.pre('save', async function (next) {
     }
   }
 
+  //reindex the boardNumbers from 1
+  this.boards = this.boards.map((board, index) => ({
+    ...board,
+    boardNumber: index + 1,
+  }));
+
   this.updatedAt = new Date();
   next();
 });
@@ -53,6 +65,19 @@ clubSchema.methods.toJSON = function () {
   club.moderators = club.moderators.map((id: Types.ObjectId) => id.toString());
   return club;
 };
+
+// Virtual for tournaments belonging to the club
+clubSchema.virtual('tournaments', {
+  ref: 'Tournament',
+  localField: '_id',
+  foreignField: 'clubId',
+  justOne: false,
+  options: { select: '_id name code status startDate' },
+});
+
+// Enable virtuals for toJSON and toObject
+clubSchema.set('toObject', { virtuals: true });
+clubSchema.set('toJSON', { virtuals: true });
 
 export const ClubModel =
   mongoose.models.Club || mongoose.model<ClubDocument>('Club', clubSchema);

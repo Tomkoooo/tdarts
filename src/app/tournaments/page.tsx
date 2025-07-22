@@ -97,7 +97,7 @@ export default function Page() {
                     Létrehozva: {new Date(tournament.createdAt).toLocaleString()}
                   </p>
                   <p className="text-sm text-base-content/70">
-                    Kezdés: {new Date(tournament.startTime).toLocaleString()}
+                    Kezdés: {new Date(tournament.startDate).toLocaleString()}
                   </p>
                   <div className="card-actions justify-end">
                     <Link href={`/tournaments/${tournament.code}`}>

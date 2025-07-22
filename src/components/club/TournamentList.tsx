@@ -1,72 +1,102 @@
-import { useState } from 'react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
-import { Club } from '@/interface/club.interface';
+import React from 'react';
+import Link from 'next/link';
+import { IconTrophy, IconUsers, IconCalendar, IconArrowRight, IconDotsVertical } from '@tabler/icons-react';
 
-interface TournamentPlayerListProps {
-  players: { name: string }[];
+interface TournamentListProps {
+  tournaments: Array<{
+    _id: string;
+    name: string;
+    tournamentId: string;
+    status: 'pending' | 'active' | 'finished';
+    startDate?: string;
+  }>;
   userRole: 'admin' | 'moderator' | 'member' | 'none';
-  userId?: string;
-  clubId: string;
-  onAddPlayer: () => void;
-  onClubUpdated: (club: Club) => void;
+  onCreateTournament?: () => void;
 }
 
-export default function TournamentPlayerList({ players, userRole, userId, clubId, onAddPlayer, onClubUpdated }: TournamentPlayerListProps) {
-  const handleRemovePlayer = async (playerName: string) => {
-    if (!userId) return;
-    const toastId = toast.loading('Játékos törlése...');
-    try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/removeTournamentPlayer`, {
-        playerName,
-        requesterId: userId,
-      });
-      onClubUpdated(response.data);
-      toast.success(`${playerName} törölve!`, { id: toastId });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Játékos törlése sikertelen', { id: toastId });
-    }
-  };
+const statusColors = {
+  pending: 'bg-warning/10 text-warning',
+  active: 'bg-success/10 text-success',
+  finished: 'bg-base-300 text-base-content/60',
+};
 
+const statusLabels = {
+  pending: 'Várakozó',
+  active: 'Aktív',
+  finished: 'Befejezett',
+};
+
+export default function TournamentList({ tournaments, userRole, onCreateTournament }: TournamentListProps) {
+  console.log(tournaments);
   return (
-    <div className="glass-card p-8 bg-[hsl(var(--background)/0.3)] border-[hsl(var(--border)/0.5)] shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-primary">
-          Tornajátékosok
-        </h2>
-        {(userRole === 'admin' || userRole === 'moderator') && (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Tornák</h2>
+        {(userRole === 'admin' || userRole === 'moderator') && onCreateTournament && (
           <button
-            className="btn btn-primary btn-outline btn-sm"
-            onClick={onAddPlayer}
+            onClick={onCreateTournament}
+            className="btn btn-primary btn-sm"
           >
-            <IconPlus className="w-5 h-5" />
-            Játékos Hozzáadása
+            Új torna
           </button>
         )}
       </div>
-      {players && players.length === 0 ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Nincsenek tornajátékosok.</p>
+      {tournaments.length === 0 ? (
+        <div className="text-center py-12 bg-base-100 rounded-xl">
+          <IconTrophy size={48} className="mx-auto mb-4 text-base-content/40" />
+          <p className="text-base-content/60">
+            Még nincsenek tornák ebben a klubban.
+            {(userRole === 'admin' || userRole === 'moderator') && onCreateTournament && (
+              <button
+                onClick={onCreateTournament}
+                className="ml-2 text-primary hover:underline"
+              >
+                Hozz létre egyet!
+              </button>
+            )}
+          </p>
+        </div>
       ) : (
-        <ul className="space-y-2">
-          {players?.map(player => (
-            <li
-              key={player.name}
-              className="flex justify-between items-center p-2 bg-[hsl(var(--background)/0.5)] rounded-md hover:bg-[hsl(var(--secondary)/0.1)] transition-all duration-200"
-            >
-              <span className="badge badge-secondary badge-lg">{player.name}</span>
-              {(userRole === 'admin' || userRole === 'moderator') && (
-                <button
-                  className="glass-button btn btn-xs btn-error hover:scale-105 transition-all duration-300"
-                  onClick={() => handleRemovePlayer(player.name)}
-                >
-                  <IconTrash className="w-4 h-4" />
-                  Törlés
-                </button>
-              )}
-            </li>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tournaments.map((tournament) => (
+            <div key={tournament._id} className="relative group bg-base-100 rounded-xl p-6 shadow hover:shadow-lg transition-all border border-base-300 hover:border-primary/30 flex flex-col">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="font-semibold group-hover:text-primary transition-colors">
+                  {tournament.name}
+                </h3>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[tournament.status]}`}>
+                  {statusLabels[tournament.status]}
+                </span>
+                {(userRole === 'admin' || userRole === 'moderator') && (
+                  <div className="dropdown dropdown-end ml-2">
+                    <label tabIndex={0} className="btn btn-xs btn-ghost px-2">
+                      <IconDotsVertical size={16} />
+                    </label>
+                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
+                      <li><button className="text-error">Törlés</button></li>
+                      {/* <li><button>Szerkesztés</button></li> */}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 flex-1">
+                {tournament.startDate && (
+                  <div className="flex items-center text-sm text-base-content/60">
+                    <IconCalendar size={16} className="mr-2" />
+                    {new Date(tournament.startDate).toLocaleDateString('hu-HU')}
+                  </div>
+                )}
+              </div>
+              <Link
+                href={`/tournaments/${tournament.tournamentId}`}
+                className="mt-4 flex items-center justify-end text-primary hover:underline"
+              >
+                <span className="text-sm">Részletek</span>
+                <IconArrowRight size={16} className="ml-1 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

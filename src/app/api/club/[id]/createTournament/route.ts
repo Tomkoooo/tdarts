@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { ClubModel, TournamentModel, PlayerModel, PlayerTournamentHistoryModel } = getModels();
     const body = await req.json();
 
-    const { name, boardCount, description, startTime, players, tournamentPassword } = body;
+    const { name, boardCount, description, startDate, players, tournamentPassword } = body;
 
     // Validation
     if (!name || !boardCount || !tournamentPassword) {
@@ -24,8 +24,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!club) {
       return NextResponse.json({ error: "Club not found" }, { status: 404 });
     }
-
-    const moderatorPassword = club.password;
 
     // Unique player names
     const uniquePlayerNames = [...new Set((players || []).map((name: string) => name.trim()))].filter(
@@ -58,11 +56,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       name,
       boardCount: parseInt(boardCount),
       description: description || "",
-      startTime: startTime ? new Date(startTime) : undefined,
+      startDate: startDate ? new Date(startDate) : undefined,
       players: playerIds,
       status: "created",
       tournamentPassword,
-      moderatorPassword,
       clubId: id,
     });
 

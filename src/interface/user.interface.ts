@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 export interface IUser {
     _id: string;
     username: string;
@@ -16,14 +18,11 @@ export interface IUser {
     }
 }
 
-export interface IUserDocument extends Document, IUser {
-    matchPassword: (password: string) => Promise<boolean>;
-    generateResetPasswordCode: () => Promise<string>;
-    generateVerifyEmailCode: () => Promise<string>;
-    generateTwoFactorAuthCode: () => Promise<string>;
-    verifyEmail: () => Promise<void>;
-    resetPassword: (newPassword: string) => Promise<void>;
-    verifyTwoFactorAuth: (code: string) => Promise<boolean>;
-    updateLastLogin: () => Promise<void>;
-    toJSON: () => Omit<IUser, 'password'>;
+export interface UserDocument {
+  _id: string | mongoose.Types.ObjectId;
+  name: string;
+  username: string;
+  email: string;
+  isVerified: boolean;
+  // ...other fields as needed
 }

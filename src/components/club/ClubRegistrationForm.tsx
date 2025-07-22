@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Club } from '@/interface/club.interface';
+import PlayerSearch from './PlayerSearch';
 
 const clubSchema = z.object({
   name: z.string().min(3, 'A klub neve minimum 3 karakter legyen').regex(/^[^\s]+$/, 'A klub neve nem tartalmazhat szóközt'),
@@ -46,16 +47,35 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
     },
   });
 
+  const [boards, setBoards] = useState([{ boardNumber: 1, name: '', isActive: true }]);
+  const [players, setPlayers] = useState<any[]>([]);
+
+  const handleAddBoard = () => {
+    setBoards(prev => [...prev, { boardNumber: prev.length + 1, name: '', isActive: true }]);
+  };
+  const handleRemoveBoard = () => {
+    setBoards(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+  };
+  const handleBoardNameChange = (idx: number, name: string) => {
+    setBoards(prev => prev.map((b, i) => i === idx ? { ...b, name } : b));
+  };
+  const handlePlayerSelected = (player: any) => {
+    if (!players.some(p => p._id === player._id)) setPlayers(prev => [...prev, player]);
+  };
+
   const onSubmit = async (data: ClubFormData) => {
     try {
       await toast.promise(
-        axios.post<Club>('/api/clubs', { creatorId: userId, clubData: data }, {
+        axios.post<Club>('/api/clubs/create', {
+          creatorId: userId,
+          clubData: { ...data, boards, players },
+        }, {
           headers: { 'Content-Type': 'application/json' },
         }),
         {
           loading: 'Klub létrehozása folyamatban...',
           success: (response) => {
-            router.push(`/club/${response.data._id}`);
+            router.push(`/clubs/${response.data._id}`);
             return 'Klub sikeresen létrehozva!';
           },
           error: (error) => error.response?.data?.error || 'Hiba történt a klub létrehozása során',
@@ -176,6 +196,42 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
             />
           </div>
           {errors.contact?.website && <p className="form-error">{errors.contact.website.message}</p>}
+        </div>
+
+        <div className="mb-4">
+          <label className="form-label">Táblák száma</label>
+          <div className="flex gap-2 items-center">
+            <button type="button" className="btn btn-sm" onClick={handleRemoveBoard}>-</button>
+            <span>{boards.length}</span>
+            <button type="button" className="btn btn-sm" onClick={handleAddBoard}>+</button>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {boards.map((board, idx) => (
+              <li key={board.boardNumber} className="flex gap-2 items-center">
+                <span className="w-6">#{board.boardNumber}</span>
+                <input
+                  type="text"
+                  className="input input-sm"
+                  placeholder="Tábla neve (opcionális)"
+                  value={board.name}
+                  onChange={e => handleBoardNameChange(idx, e.target.value)}
+                />
+                <span className="text-xs text-muted">{board.isActive ? 'Aktív' : 'Inaktív'}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="mb-4">
+          <label className="form-label">Játékosok hozzáadása</label>
+          <PlayerSearch onPlayerSelected={handlePlayerSelected} />
+          <ul className="mt-2 space-y-1">
+            {players.map(player => (
+              <li key={player._id} className="flex gap-2 items-center">
+                <span>{player.name}</span>
+                {player.isGuest && <span className="text-xs text-muted">vendég</span>}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <button type="submit" className="form-button" disabled={isSubmitting}>

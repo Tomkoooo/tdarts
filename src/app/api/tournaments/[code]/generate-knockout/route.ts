@@ -12,7 +12,7 @@ interface Tournament {
   boardCount: number;
   status: "created" | "group" | "knockout" | "finished";
   players: string[];
-  startTime: Date;
+  startDate: Date;
   groups: {
     _id: string;
     players: {

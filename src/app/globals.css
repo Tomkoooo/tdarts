@@ -559,28 +559,48 @@ background-repeat: no-repeat;
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .container, .glass-card, .depth-card {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .glass-card {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .glass-card, .depth-card {
     padding: 1rem;
     border-radius: 0.75rem;
   }
-  
-  .depth-card {
-    padding: 1.5rem;
-  }
-  
   .glass-button {
     padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
+    font-size: 0.95rem;
   }
-
   .form-container {
     padding: 1rem;
   }
-
   .form-button {
     padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
+    font-size: 0.95rem;
+  }
+  .text-3xl, .text-4xl {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-card, .depth-card {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+  }
+  .form-container {
+    padding: 0.5rem;
+  }
+  .form-title {
+    font-size: 1.1rem;
   }
 }
 
@@ -605,4 +625,76 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(to bottom, oklch(61% 0.18 16), oklch(51% 0.18 16));
+}
+
+/* Modern Card Styles */
+.card-section {
+  background: linear-gradient(135deg, oklch(12% 0.025 12 / 0.95), oklch(8% 0.02 12 / 0.95));
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px 0 oklch(51% 0.18 16 / 0.12);
+  padding: 2rem 1.5rem;
+  margin-bottom: 2rem;
+  transition: box-shadow 0.2s;
+}
+.card-section:hover {
+  box-shadow: 0 8px 32px 0 oklch(51% 0.18 16 / 0.18);
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1.25rem;
+}
+
+/* Responsive Grid Utilities */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Utility for vertical spacing */
+.vspace {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Improved Button Styles */
+.btn-primary, .btn {
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  color: var(--primary-foreground);
+  box-shadow: 0 2px 8px 0 oklch(51% 0.18 16 / 0.12);
+}
+.btn-primary:hover {
+  background: linear-gradient(90deg, var(--primary-dark), var(--accent));
+  color: var(--primary-foreground);
+}
+
+/* Section Divider */
+.section-divider {
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  border: none;
+  margin: 2rem 0;
+}
+
+/* Subtle background pattern for depth */
+.bg-pattern {
+  background: repeating-linear-gradient(135deg, oklch(8% 0.02 12 / 0.1) 0 2px, transparent 2px 20px);
 }
