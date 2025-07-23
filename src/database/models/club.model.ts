@@ -1,6 +1,5 @@
 import mongoose, { Types } from 'mongoose';
 import { ClubDocument } from '@/interface/club.interface';
-import { TournamentModel } from './tournament.model';
 
 const clubSchema = new mongoose.Schema<ClubDocument>(
   {

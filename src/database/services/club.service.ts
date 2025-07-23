@@ -5,9 +5,8 @@ import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
-import { BoardModel } from '../models/board.model';
+import { BoardModel } from '@/database/models/board.model';
 import { TournamentModel } from '@/database/models/tournament.model';
-import { PlayerService } from './player.service';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
@@ -254,7 +253,7 @@ export class ClubService {
     if (!club.admin.includes(new Types.ObjectId(requesterId))) {
       throw new BadRequestError('Only admins can remove moderators');
     }
-    
+
     club.moderators = club.moderators.filter((_id: Types.ObjectId) => !_id.equals(playerUserRef.userRef));
     await club.save();
     return club;
@@ -332,7 +331,7 @@ export class ClubService {
 
     // Lekérjük a klubhoz tartozó tornákat külön
     const tournaments = await TournamentModel.find({ clubId: club._id })
-      .select('_id tournamentId tournamentSettings.name code status tournamentSettings.startDate tournamentSettings.description')
+      .select('_id tournamentId tournamentSettings.name code tournamentSettings.status tournamentSettings.startDate tournamentSettings.description')
       .lean();
 
     // Válasz: minden szereplőhöz role mező
@@ -380,7 +379,7 @@ export class ClubService {
         _id: t._id.toString(),
         name: t.tournamentSettings?.name || t.name,
         tournamentId: t.tournamentId,
-        status: t.status,
+        status: t.tournamentSettings?.status,
         startDate: t.tournamentSettings?.startDate, // vagy startTime, ha úgy van
         description: t.tournamentSettings?.description,
       })),

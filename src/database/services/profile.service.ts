@@ -1,5 +1,5 @@
 import { UserModel } from '@/database/models/user.model';
-import { IUserDocument } from '@/interface/user.interface';
+import { UserDocument as IUserDocument } from '@/interface/user.interface';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';

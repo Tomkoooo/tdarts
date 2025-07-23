@@ -1,5 +1,5 @@
-export const GenerateRandomHash = () => {
-    return Math.random().toString()
+export const GenerateRandomHash = (num: number) => {
+    return Math.random().toString(36).substring(2, 2 + num);
 }
 
 export const roundRobin = (num: number) => {

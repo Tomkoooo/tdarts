@@ -1,8 +1,4 @@
 import { Types, Document } from 'mongoose';
-import { PlayerDocument } from './player.interface';
-import { UserDocument } from './user.interface';
-import { TournamentDocument } from './tournament.interface';
-import { BoardDocument } from './board.interface';
 
 export interface Club {
   _id: string;

@@ -17,22 +17,24 @@ type Step = 'details' | 'settings';
 
 interface TournamentSettings {
   name: string;
+  description?: string;
+  startDate: string;
+  entryFee: number;
+  maxPlayers: number;
   format: TournamentFormat;
   startingScore: number;
-  password?: string;
-  maxPlayers: number;
-  description?: string;
-  startDate?: string;
+  tournamentPassword: string;
 }
 
 const defaultSettings: TournamentSettings = {
   name: '',
+  description: '',
+  startDate: '',
+  entryFee: 0,
+  maxPlayers: 16,
   format: 'group',
   startingScore: 501,
-  startDate: '',
-  maxPlayers: 16,
-  description: '',
-  password: '',
+  tournamentPassword: '',
 };
 
 export default function CreateTournamentModal({
@@ -71,12 +73,12 @@ export default function CreateTournamentModal({
       setCurrentStep('details');
       return;
     }
-    if (!settings.password) {
+    if (!settings.tournamentPassword) {
       setError('A torna jelszó kötelező');
       setCurrentStep('settings');
       return;
     }
-    if (!maxPlayers || maxPlayers < 4) {
+    if (!settings.maxPlayers || settings.maxPlayers < 4) {
       setError('A maximális létszám legalább 4 fő kell legyen');
       setCurrentStep('settings');
       return;
@@ -84,22 +86,15 @@ export default function CreateTournamentModal({
     try {
       const payload = {
         name: settings.name,
-        boardCount,
-        tournamentPassword: settings.password,
         description: settings.description,
         startDate: settings.startDate,
-        tournamentSettings: {
-          format: settings.format,
-          startingScore: settings.startingScore,
-          tournamentPassword: settings.password,
-          name: settings.name,
-          description: settings.description,
-          startDate: settings.startDate,
-          maxPlayers,
-        },
-        clubId
+        entryFee: settings.entryFee,
+        maxPlayers: settings.maxPlayers,
+        format: settings.format,
+        startingScore: settings.startingScore,
+        tournamentPassword: settings.tournamentPassword,
       };
-      const response = await fetch('/api/tournaments', {
+      const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -186,6 +181,16 @@ export default function CreateTournamentModal({
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Nevezési díj (Ft)</label>
+                <input
+                  type="number"
+                  value={settings.entryFee}
+                  onChange={e => handleSettingsChange('entryFee', parseInt(e.target.value))}
+                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  placeholder="Pl.: 2000"
+                />
+              </div>
             </div>
           )}
           {currentStep === 'settings' && (
@@ -212,26 +217,26 @@ export default function CreateTournamentModal({
                     className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Maximális létszám</label>
+                  <input
+                    type="number"
+                    min={4}
+                    value={settings.maxPlayers}
+                    onChange={e => handleSettingsChange('maxPlayers', Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                    placeholder="Maximális játékosok száma"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Torna jelszó (kötelező)</label>
                 <input
                   type="text"
-                  value={settings.password}
-                  onChange={(e) => handleSettingsChange('password', e.target.value)}
+                  value={settings.tournamentPassword}
+                  onChange={(e) => handleSettingsChange('tournamentPassword', e.target.value)}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                   placeholder="Jelszó a táblákhoz való csatlakozáshoz"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Maximális létszám</label>
-                <input
-                  type="number"
-                  min={4}
-                  value={maxPlayers}
-                  onChange={e => setMaxPlayers(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                  placeholder="Maximális játékosok száma"
                 />
               </div>
             </div>

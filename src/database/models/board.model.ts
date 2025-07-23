@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 export const BoardSchema = new mongoose.Schema<BoardDocument>({
   clubId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clubs', required: true },
-  boardId: { type: String, required: true, default: GenerateRandomHash() },
+  boardId: { type: String, required: true, default: GenerateRandomHash(16) },
   currentMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
   boardNumber: { type: Number },
   status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
