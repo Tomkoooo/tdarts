@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { IUserDocument } from '@/interface/user.interface';
+import { UserDocument } from '@/interface/user.interface';
 
-const userSchema = new mongoose.Schema<IUserDocument>(
+const userSchema = new mongoose.Schema<UserDocument>(
   {
     username: { type: String, required: true, unique: true },
     name: { type: String, required: true },
@@ -115,4 +115,4 @@ userSchema.methods.toJSON = function () {
 
 // Export the User model, reusing it if already defined
 export const UserModel =
-  mongoose.models.User || mongoose.model<IUserDocument>('User', userSchema);
+  mongoose.models.User || mongoose.model<UserDocument>('User', userSchema);

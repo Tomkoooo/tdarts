@@ -23,7 +23,7 @@ export default function ClubLayout({ children, userRole, clubId, clubName, summa
     { key: 'players', label: 'Játékosok', icon: <IconUsers size={18} /> },
     { key: 'tournaments', label: 'Versenyek', icon: <IconTrophy size={18} /> },
   ];
-  if (userRole === 'admin') {
+  if (userRole === 'admin' || userRole === 'moderator') {
     tabs.push({ key: 'settings', label: 'Beállítások', icon: <IconSettings size={18} /> });
   }
 

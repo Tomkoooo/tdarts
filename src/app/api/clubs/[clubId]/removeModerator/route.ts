@@ -9,6 +9,8 @@ export async function POST(req: NextRequest, { params }: { params: { clubId: str
       return NextResponse.json({ error: 'userId and requesterId are required' }, { status: 400 });
     }
 
+    console.log(userId, requesterId)
+
     const club = await ClubService.removeModerator(params.clubId, userId, requesterId);
     return NextResponse.json(club, { status: 200 });
   } catch (error) {

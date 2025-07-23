@@ -7,6 +7,7 @@ import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { BoardModel } from '../models/board.model';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { PlayerService } from './player.service';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
@@ -248,11 +249,13 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
+    const playerUserRef = await PlayerModel.findOne({ _id: userId }).select('userRef');
+
     if (!club.admin.includes(new Types.ObjectId(requesterId))) {
       throw new BadRequestError('Only admins can remove moderators');
     }
-
-    club.moderators = club.moderators.filter((id: Types.ObjectId) => !id.equals(userId));
+    
+    club.moderators = club.moderators.filter((_id: Types.ObjectId) => !_id.equals(playerUserRef.userRef));
     await club.save();
     return club;
   }
@@ -333,6 +336,31 @@ export class ClubService {
       .lean();
 
     // Válasz: minden szereplőhöz role mező
+    // For members, always include name, userRef, and username ("vendég" if not registered)
+    const membersWithUsernames = await Promise.all(club.members.map(async (player: any) => {
+      let username = 'vendég';
+      if (player.userRef) {
+        const user = await UserModel.findById(player.userRef).select('username');
+        if (user && user.username) username = user.username;
+      }
+
+      // Convert all admin and moderator IDs to string for comparison
+      const adminIds = club.admin.map((player: any) => player._id.toString());
+      const moderatorIds = club.moderators.map((player: any) => player._id.toString());
+      const userRefStr = player.userRef ? player.userRef.toString() : undefined;
+
+      const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
+      const isModerator = userRefStr ? moderatorIds.includes(userRefStr) : false;
+      const playerRole = isAdmin ? 'admin' : isModerator ? 'moderator' : 'member';
+
+      return {
+        _id: player._id.toString(),
+        name: player.name,
+        userRef: player.userRef,
+        username,
+        role: playerRole,
+      };
+    }));
     const result = {
       ...club.toJSON(),
       admin: club.admin.map((user: any) => ({
@@ -347,12 +375,7 @@ export class ClubService {
         username: user.username,
         role: 'moderator',
       })),
-      members: club.members.map((player: any) => ({
-        _id: player._id.toString(),
-        name: player.name,
-        userRef: player.userRef,
-        role: 'member',
-      })),
+      members: membersWithUsernames,
       tournaments: tournaments.map((t: any) => ({
         _id: t._id.toString(),
         name: t.tournamentSettings?.name || t.name,
@@ -383,7 +406,6 @@ export class ClubService {
     const userRoleInClub = club.admin.includes(userObjectId) ? 'admin' :
                            club.moderators.includes(userObjectId) ? 'moderator' :
                            club.members.includes(userObjectId) ? 'member' : 'none';
-
     return { clubs, userRoleInClub };
   }
 
@@ -397,12 +419,16 @@ export class ClubService {
 
     const userObjectId = new Types.ObjectId(userId);
     if (club.admin.includes(userObjectId)) {
+      console.log("admin")
       return 'admin';
     } else if (club.moderators.includes(userObjectId)) {
+      console.log('moderator')
       return 'moderator';
     } else if (club.members.includes(userObjectId)) {
+      console.log('member')
       return 'member';
     } else {
+      console.log('none')
       return 'none';
     }
   }

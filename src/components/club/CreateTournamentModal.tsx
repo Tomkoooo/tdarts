@@ -13,13 +13,14 @@ interface CreateTournamentModalProps {
 }
 
 type TournamentFormat = 'group' | 'knockout' | 'group_knockout';
-type Step = 'details' | 'settings' | 'players';
+type Step = 'details' | 'settings';
 
 interface TournamentSettings {
   name: string;
   format: TournamentFormat;
   startingScore: number;
   password?: string;
+  maxPlayers: number;
   description?: string;
   startDate?: string;
 }
@@ -29,6 +30,7 @@ const defaultSettings: TournamentSettings = {
   format: 'group',
   startingScore: 501,
   startDate: '',
+  maxPlayers: 16,
   description: '',
   password: '',
 };
@@ -43,7 +45,7 @@ export default function CreateTournamentModal({
 }: CreateTournamentModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [settings, setSettings] = useState<TournamentSettings>(defaultSettings);
-  const [players, setPlayers] = useState<any[]>([]);
+  const [maxPlayers, setMaxPlayers] = useState<number>(16);
   const [error, setError] = useState<string>('');
   const router = useRouter();
 
@@ -54,18 +56,9 @@ export default function CreateTournamentModal({
     setError('');
   };
 
-  const handleAddPlayer = (player: any) => {
-    if (players.some(p => p._id === player._id)) {
-      setError('Ez a játékos már hozzá van adva a tornához');
-      return;
-    }
-    setPlayers(prev => [...prev, player]);
-    setError('');
-  };
 
-  const handleRemovePlayer = (playerId: string) => {
-    setPlayers(prev => prev.filter(p => p._id !== playerId));
-  };
+
+
 
   const handleSubmit = async () => {
     if (!settings.name) {
@@ -83,22 +76,18 @@ export default function CreateTournamentModal({
       setCurrentStep('settings');
       return;
     }
-    if (players.length < 4) {
-      setError('Legalább 4 játékos szükséges a torna indításához');
-      setCurrentStep('players');
+    if (!maxPlayers || maxPlayers < 4) {
+      setError('A maximális létszám legalább 4 fő kell legyen');
+      setCurrentStep('settings');
       return;
     }
-
     try {
-      // Prepare payload for backend
       const payload = {
         name: settings.name,
         boardCount,
         tournamentPassword: settings.password,
         description: settings.description,
-        players: players.map(p => p._id),
         startDate: settings.startDate,
-        status: 'pending',
         tournamentSettings: {
           format: settings.format,
           startingScore: settings.startingScore,
@@ -106,6 +95,7 @@ export default function CreateTournamentModal({
           name: settings.name,
           description: settings.description,
           startDate: settings.startDate,
+          maxPlayers,
         },
         clubId
       };
@@ -114,14 +104,12 @@ export default function CreateTournamentModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
       if (!response.ok) throw new Error('Hiba történt a torna létrehozása során');
-
       const data = await response.json();
       onTournamentCreated();
       onClose();
-      if (data.code) {
-        router.push(`/tournaments/${data.code}`);
+      if (data.tournamentId || data.code) {
+        router.push(`/tournaments/${data.tournamentId || data.code}`);
       }
     } catch (err) {
       setError('Hiba történt a torna létrehozása során');
@@ -131,7 +119,6 @@ export default function CreateTournamentModal({
   const steps = [
     { id: 'details', label: 'Alapadatok' },
     { id: 'settings', label: 'Beállítások' },
-    { id: 'players', label: 'Játékosok' },
   ];
 
   if (!isOpen) return null;
@@ -236,41 +223,20 @@ export default function CreateTournamentModal({
                   placeholder="Jelszó a táblákhoz való csatlakozáshoz"
                 />
               </div>
-            </div>
-          )}
-          {currentStep === 'players' && (
-            <div className="space-y-4">
-              <PlayerSearch
-                onPlayerSelected={handleAddPlayer}
-                placeholder="Játékos hozzáadása a tornához..."
-              />
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Hozzáadott játékosok ({players.length})</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {players.map((player) => (
-                    <div
-                      key={player._id}
-                      className="flex items-center justify-between p-2 bg-base-100 rounded-lg"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="badge badge-neutral">{player.isGuest ? 'Vendég' : 'Regisztrált'}</span>
-                        <span>{player.name}</span>
-                      </span>
-                      {/* Hamburger menu for remove */}
-                      <div className="dropdown dropdown-end">
-                        <label tabIndex={0} className="btn btn-xs btn-ghost px-2">
-                          <IconDotsVertical size={16} />
-                        </label>
-                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
-                          <li><button className="text-error" onClick={() => handleRemovePlayer(player._id)}>Eltávolítás</button></li>
-                        </ul>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Maximális létszám</label>
+                <input
+                  type="number"
+                  min={4}
+                  value={maxPlayers}
+                  onChange={e => setMaxPlayers(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  placeholder="Maximális játékosok száma"
+                />
               </div>
             </div>
           )}
+
         </div>
         {/* Footer */}
         <div className="flex items-center mt-2 justify-end gap-2 p-4 roundend-xl background-blur-md b">
@@ -290,7 +256,7 @@ export default function CreateTournamentModal({
               Vissza
             </button>
           )}
-          {currentStep !== 'players' ? (
+          {currentStep !== 'settings' ? (
             <button
               onClick={() => setCurrentStep(steps[steps.findIndex(s => s.id === currentStep) + 1].id as Step)}
               className="btn btn-primary btn-sm"

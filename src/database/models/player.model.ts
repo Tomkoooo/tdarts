@@ -9,6 +9,8 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         matchesPlayed: { type: Number, default: 0 },
         legsWon: { type: Number, default: 0 },
         legsLost: { type: Number, default: 0 },
+        oneEightiesCount: { type: Number, default: 0 },
+        highestCheckout: { type: Number, default: 0 },
         avg: { type: Number, default: 0 },
     },
 });

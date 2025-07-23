@@ -23,6 +23,7 @@ export default function PlayerSearch({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [addedIds, setAddedIds] = useState<string[]>([]); // Track added players
+  const [justAddedId, setJustAddedId] = useState<string | null>(null); // For visual feedback
 
   // Debounced search (stable reference)
   const debouncedSearch = useRef(
@@ -92,7 +93,8 @@ export default function PlayerSearch({
     }
     onPlayerSelected({ ...player, _id: playerId });
     setAddedIds((prev) => [...prev, playerId]); // Mark as added
-    // Do NOT clear searchTerm, results, or close dropdown
+    setJustAddedId(playerId); // For feedback
+    setTimeout(() => setJustAddedId(null), 1200); // Remove feedback after 1.2s
   };
 
   const handleAddGuest = () => {
@@ -100,8 +102,27 @@ export default function PlayerSearch({
     handleSelect({ name: searchTerm, isGuest: true });
   };
 
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className={`relative ${className}`}>
+    <div ref={rootRef} className={`relative ${className}`}>
       <div className="relative">
         <input
           type="text"
@@ -129,19 +150,21 @@ export default function PlayerSearch({
                   key={player._id}
                   className="px-4 py-2 hover:bg-base-100 cursor-pointer flex items-center justify-between gap-2"
                 >
-                  <span>{player.name}</span>
-                  {(userRole === 'admin' || userRole === 'moderator') ? (
-                    <div className="dropdown dropdown-end">
-                      <label tabIndex={0} className="btn btn-xs btn-ghost px-2">
-                        <IconDotsVertical size={16} />
-                      </label>
-                      <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
-                        <li><button onClick={() => handleSelect(player)}>Hozzáadás</button></li>
-                      </ul>
-                    </div>
-                  ) : (
-                    <button className="btn btn-xs btn-primary" onClick={() => handleSelect(player)}>Kiválaszt</button>
-                  )}
+                  <span>
+                    {player.name}{' '}
+                    {player.username && player.username !== 'vendég' ? (
+                      <span className="text-base-content/50">(regisztrált)</span>
+                    ) : (
+                      <span className="text-base-content/50">(vendég)</span>
+                    )}
+                  </span>
+                  <button
+                    className={`btn btn-xs btn-primary ${justAddedId === player._id ? 'btn-success pointer-events-none' : ''}`}
+                    onClick={() => handleSelect(player)}
+                    disabled={justAddedId === player._id}
+                  >
+                    {justAddedId === player._id ? 'Hozzáadva' : 'Hozzáadás'}
+                  </button>
                 </li>
               ))}
             </ul>

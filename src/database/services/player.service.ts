@@ -22,4 +22,15 @@ export class PlayerService {
     await player.save();
     return player;
   }
+
+  /**
+   * Keres vagy létrehoz egy játékost név alapján (csak guest/név alapú játékosokhoz)
+   */
+  static async findOrCreatePlayerByName(name: string) {
+    let player = await PlayerModel.findOne({ name, userRef: { $exists: false } });
+    if (player) return player;
+    player = new PlayerModel({ name });
+    await player.save();
+    return player;
+  }
 } 

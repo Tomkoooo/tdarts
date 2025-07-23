@@ -19,5 +19,21 @@ export interface PlayerDocument {
         legsWon: number;
         legsLost: number;
         avg: number;
+        oneEightiesCount: number;
+        highestCheckout: number;
+    };
+}
+
+export interface Player {
+    _id: string;
+    name: string;
+    stats: {
+        tournamentsPlayed: (string | mongoose.Types.ObjectId)[]; // Tournament ref-ek
+        matchesPlayed: number;
+        legsWon: number;
+        legsLost: number;
+        avg: number;
+        oneEightiesCount: number;
+        highestCheckout: number;
     };
 }

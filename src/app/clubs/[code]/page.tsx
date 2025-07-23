@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -31,16 +31,23 @@ export default function ClubDetailPage() {
   const [boardAddOpen, setBoardAddOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
 
+  // Helper to fetch club data
+  const fetchClub = async () => {
+    if (!code) return;
+    const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`);
+    setClub(clubResponse.data);
+  };
+
   // Board handlers
   const handleAddBoard = async () => {
     if (!club || !user?._id) return;
     try {
       const toastId = toast.loading('Tábla hozzáadása...');
-      const res = await axios.post(`/api/clubs/${club._id}/addBoard`, {
+      await axios.post(`/api/clubs/${club._id}/addBoard`, {
         userId: user._id,
         name: newBoardName,
       });
-      setClub(res.data);
+      await fetchClub();
       setBoardAddOpen(false);
       setNewBoardName('');
       toast.success('Tábla hozzáadva!', { id: toastId });
@@ -53,12 +60,12 @@ export default function ClubDetailPage() {
     if (!club || !user?._id || !boardEdit) return;
     try {
       const toastId = toast.loading('Tábla szerkesztése...');
-      const res = await axios.post(`/api/clubs/${club._id}/editBoard`, {
+      await axios.post(`/api/clubs/${club._id}/editBoard`, {
         userId: user._id,
         boardNumber: boardEdit.boardNumber,
         name: boardEdit.name,
       });
-      setClub(res.data);
+      await fetchClub();
       setBoardEdit(null);
       toast.success('Tábla módosítva!', { id: toastId });
     } catch (err: any) {
@@ -71,11 +78,11 @@ export default function ClubDetailPage() {
     if (!window.confirm('Biztosan törlöd ezt a táblát?')) return;
     try {
       const toastId = toast.loading('Tábla törlése...');
-      const res = await axios.post(`/api/clubs/${club._id}/removeBoard`, {
+      await axios.post(`/api/clubs/${club._id}/removeBoard`, {
         userId: user._id,
         boardNumber,
       });
-      setClub(res.data);
+      await fetchClub();
       toast.success('Tábla törölve!', { id: toastId });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Tábla törlése sikertelen');
@@ -118,6 +125,7 @@ export default function ClubDetailPage() {
         userId: user._id,
         requesterId: user._id,
       });
+      await fetchClub();
       toast.success('Sikeresen kiléptél a klubból!', { id: toastId });
       router.push('/clubs');
     } catch (err: any) {
@@ -132,6 +140,7 @@ export default function ClubDetailPage() {
       await axios.post(`/api/clubs/${club._id}/deactivate`, {
         requesterId: user._id,
       });
+      await fetchClub();
       toast.success('Klub sikeresen deaktiválva!', { id: toastId });
       router.push('/clubs');
     } catch (err: any) {
@@ -150,11 +159,11 @@ export default function ClubDetailPage() {
         playerId = res.data._id;
       }
       const toastId = toast.loading('Játékos hozzáadása...');
-      const res2 = await axios.post(`/api/clubs/${club._id}/addMember`, {
+      await axios.post(`/api/clubs/${club._id}/addMember`, {
         userId: playerId, // must be userId (player to add)
         requesterId: user._id, // must be requesterId (admin/mod)
       });
-      setClub(res2.data);
+      await fetchClub();
       toast.success('Játékos hozzáadva!', { id: toastId });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Játékos hozzáadása sikertelen');
@@ -208,7 +217,12 @@ export default function ClubDetailPage() {
         <ul className="space-y-2">
           {club.members.map((member: any) => (
             <li key={member._id} className="text-lg">
-              {member.name} {member.userRef ? <span className="text-base-content/50">(regisztrált)</span> : null}
+              {member.name}{' '}
+              {member.userRef ? (
+                <span className="text-base-content/50">(regisztrált)</span>
+              ) : member.username === 'vendég' ? (
+                <span className="text-base-content/50">(vendég)</span>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -217,13 +231,15 @@ export default function ClubDetailPage() {
   );
 
   // Tournaments section
-  const tournamentsSection = (
+  const tournamentsSection: React.ReactNode = (
     <div className="space-y-4">
       <div className="mb-4">
       </div>
       <TournamentList
-        tournaments={(club.tournaments || []).map(t => ({
+        tournaments={(club.tournaments || []).map((t: any) => ({
           ...t,
+          userRole,
+          tournamentId: t.tournamentId,
           status: t.status as 'finished' | 'active' | 'pending',
           startDate: t.startDate,
         }))}
@@ -233,7 +249,7 @@ export default function ClubDetailPage() {
   );
 
   // Settings section (admin only)
-  const settingsSection = userRole === 'admin' ? (
+  const settingsSection = userRole === 'admin' || userRole === 'moderator' ? (
     <div className="space-y-6">
       <div className="card-section">
         <div className="section-header">
@@ -252,7 +268,7 @@ export default function ClubDetailPage() {
         isOpen={isEditClubModalOpen}
         onClose={() => setIsEditClubModalOpen(false)}
         club={club}
-        onClubUpdated={setClub}
+        onClubUpdated={fetchClub}
       />
       <CreateTournamentModal
         isOpen={isCreateTournamentModalOpen}
@@ -260,7 +276,7 @@ export default function ClubDetailPage() {
         clubId={club._id}
         userRole={userRole}
         boardCount={club.boards?.length || 0}
-        onTournamentCreated={() => setClub(club)}
+        onTournamentCreated={() => fetchClub()}
       />
       <div className="card-section">
         <div className="section-header">
@@ -274,12 +290,12 @@ export default function ClubDetailPage() {
         />
         <MemberList
           club={club}
-          members={club.members}
+          members={club.members as { _id: string; userRef?: string, role: 'admin' | 'moderator' | 'member'; name: string; username: string }[]}
           userRole={userRole}
           userId={user?._id}
           clubId={club._id}
           onAddMember={() => setIsAddPlayerModalOpen(true)}
-          onClubUpdated={setClub}
+          onClubUpdated={fetchClub}
         />
       </div>
       <div className="card-section">
@@ -343,15 +359,18 @@ export default function ClubDetailPage() {
         )}
       </div>
       <div className="flex flex-col md:flex-row gap-4 items-center justify-center vspace">
-        <button
-          className="btn btn-primary btn-outline flex items-center gap-2"
-          onClick={handleDeactivateClub}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Klub Deaktiválása
-        </button>
+        {userRole === 'admin' && (
+                  <button
+                  className="btn btn-primary btn-outline flex items-center gap-2"
+                  onClick={handleDeactivateClub}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Klub Deaktiválása
+                </button>
+        )}
+
         <button
           className="btn btn-primary btn-outline flex items-center gap-2"
           onClick={handleLeaveClub}
