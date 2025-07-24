@@ -33,4 +33,11 @@ export class PlayerService {
     await player.save();
     return player;
   }
+
+  static async findPlayerByUserId(userId: string): Promise<import('@/interface/player.interface').PlayerDocument | null> {
+    if (!userId || typeof userId !== 'string') {
+      return null;
+    }
+    return await PlayerModel.findOne({ userRef: userId });
+  }
 } 

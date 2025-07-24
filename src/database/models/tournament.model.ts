@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import { TournamentDocument } from '@/interface/tournament.interface';
-import { GenerateRandomHash } from '@/lib/utils';
+import "@/database/models/club.model";
+import "@/database/models/player.model";
+import "@/database/models/match.model";
 
 const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     tournamentId: { 
@@ -21,19 +23,19 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     tournamentPlayers: {
         type: [{
             playerReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
-            status: { type: String, enum: ['applied', 'confirmed', 'checked-in', 'eliminated', 'winner'], required: true },
-            groupId: { type: mongoose.Schema.Types.ObjectId, required: true },
-            groupOrdinalNumber: { type: Number, required: true },
-            groupStanding: { type: Number, required: true },
-            tournamentStanding: { type: Number, required: true },
+            status: { type: String, enum: ['applied', 'confirmed', 'checked-in', 'eliminated', 'winner'], required: true, default: 'applied' },
+            groupId: { type: mongoose.Schema.Types.ObjectId, default: null },
+            groupOrdinalNumber: { type: Number, default: null },
+            groupStanding: { type: Number,  default: null },
+            tournamentStanding: { type: Number,  default: null },
             stats: {
-                matchesWon: { type: Number, required: true },
-                matchesLost: { type: Number, required: true },
-                legsWon: { type: Number, required: true },
-                legsLost: { type: Number, required: true },
-                avg: { type: Number, required: true },
-                oneEightiesCount: { type: Number, required: true },
-                highestCheckout: { type: Number, required: true },
+                matchesWon: { type: Number, required: true, default: 0 },
+                matchesLost: { type: Number, required: true, default: 0 },
+                legsWon: { type: Number, required: true, default: 0 },
+                legsLost: { type: Number, required: true, default: 0 },
+                avg: { type: Number, required: true, default: 0 },
+                oneEightiesCount: { type: Number, required: true, default: 0 },
+                highestCheckout: { type: Number, required: true, default: 0 },
             }
         }]
     },

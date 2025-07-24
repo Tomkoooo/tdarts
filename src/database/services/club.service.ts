@@ -418,16 +418,12 @@ export class ClubService {
 
     const userObjectId = new Types.ObjectId(userId);
     if (club.admin.includes(userObjectId)) {
-      console.log("admin")
       return 'admin';
     } else if (club.moderators.includes(userObjectId)) {
-      console.log('moderator')
       return 'moderator';
     } else if (club.members.includes(userObjectId)) {
-      console.log('member')
       return 'member';
     } else {
-      console.log('none')
       return 'none';
     }
   }
