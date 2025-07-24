@@ -453,17 +453,9 @@ export class ClubService {
     if (!club.admin.includes(new Types.ObjectId(userId))) throw new BadRequestError('Only admins can add boards');
     // Determine next board number
     const nextBoardNumber = (club.boards?.length || 0) + 1;
-    const newBoard = new BoardModel({
-      clubId: club._id,
-      boardNumber: nextBoardNumber,
-      name: boardData.name,
-      description: boardData.description,
-    });
-    await newBoard.save();
     club.boards.push({
       boardNumber: nextBoardNumber,
       name: boardData.name,
-      description: boardData.description,
       isActive: true,
     });
     await club.save();

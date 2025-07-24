@@ -24,7 +24,7 @@ export interface TournamentPlayer {
 export interface TournamentGroup {
     _id: string;
     board: number;
-    matches: Matches[];
+    matches?: Matches[];
 }
 
 export interface Tournament {

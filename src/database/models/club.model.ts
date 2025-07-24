@@ -17,7 +17,9 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     boards: [{
       boardNumber: { type: Number, required: true },
       name: { type: String },
-      description: { type: String },
+      currentMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
+      nextMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
+      status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
       isActive: { type: Boolean, default: true },
     }],
     createdAt: { type: Date, default: Date.now },

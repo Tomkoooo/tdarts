@@ -42,13 +42,13 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     groups: [{
         type: {
             board: { type: Number, required: true },
-            matches: { type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true },
+            matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true }],
         }
     }],
     knockout: [{
         type: {
             round: { type: Number, required: true },
-            matches: { type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true },
+            matches: { type: [mongoose.Schema.Types.ObjectId], ref: 'Match', required: true, default: [] },
         }
     }],
     tournamentSettings: {

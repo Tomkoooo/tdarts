@@ -19,7 +19,9 @@ export interface Club {
   boards: Array<{
     boardNumber: number;
     name?: string;
-    description?: string;
+    currentMatch?: string;
+    nextMatch?: string;
+    status: 'idle' | 'waiting' | 'playing';
     isActive: boolean;
   }>;
   createdAt: Date;
@@ -35,11 +37,5 @@ export interface ClubDocument extends Document, Omit<Club, '_id' | 'members' | '
   members: Types.ObjectId[]; // Player ref
   admin: Types.ObjectId[]; // User ref
   moderators: Types.ObjectId[]; // User ref
-  boards: Array<{
-    boardNumber: number;
-    name?: string;
-    description?: string;
-    isActive: boolean;
-  }>;
   toJSON: () => Club;
 }
