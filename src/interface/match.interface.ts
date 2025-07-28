@@ -5,6 +5,8 @@ export interface MatchPlayer {
   legsWon: number;
   legsLost: number;
   average: number; // 0, ha nincs adat
+  highestCheckout?: number;
+  oneEightiesCount?: number;
 }
 
 export interface Throw {

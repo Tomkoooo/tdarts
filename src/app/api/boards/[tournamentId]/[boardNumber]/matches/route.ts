@@ -5,13 +5,7 @@ import { BadRequestError } from "@/middleware/errorHandle";
 
 export async function GET(request: NextRequest, { params }: { params: { tournamentId: string; boardNumber: string } }) {
     try {
-        const { tournamentId, boardNumber } = await params;
-        const { searchParams } = new URL(request.url);
-        const matchId = searchParams.get('matchId');
-
-        if (!matchId) {
-            throw new BadRequestError('Matchid is required')
-        }
+        const { tournamentId, boardNumber } = params;
         
         // Get tournament to find clubId
         const tournament = await TournamentService.getTournament(tournamentId);
@@ -22,12 +16,12 @@ export async function GET(request: NextRequest, { params }: { params: { tourname
         const clubId = tournament.clubId._id.toString();
         const boardNum = parseInt(boardNumber);
         
-        // Use MatchService to get the appropriate match
-        const match = await MatchService.getMatch(tournamentId, clubId, boardNum, matchId);
+        // Use MatchService to get all matches for the board
+        const matches = await MatchService.getBoardMatches(tournamentId, clubId, boardNum);
         
-        return NextResponse.json({ match });
+        return NextResponse.json({ matches });
     } catch (error) {
-        console.error('getCurrentMatch error:', error);
-        return NextResponse.json({ error: 'Failed to get match' }, { status: 500 });
+        console.error('getBoardMatches error:', error);
+        return NextResponse.json({ error: 'Failed to get matches' }, { status: 500 });
     }
-}
+} 

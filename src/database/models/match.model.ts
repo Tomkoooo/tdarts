@@ -35,6 +35,8 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   player1: { type: matchPlayerSchema, required: true },
   player2: { type: matchPlayerSchema, required: true },
   scorer: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
+  legsToWin: { type: Number},
+  startingPlayer: { type: Number},
   status: { type: String, enum: ['pending', 'ongoing', 'finished'], default: 'pending' },
   winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
   legs: [legSchema],
