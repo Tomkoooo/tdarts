@@ -41,12 +41,15 @@ const TournamentPage = () => {
         setUserPlayerStatus('none');
         setUserPlayerId(null);
       }
+
     } catch (err) {
       setError('Nem sikerült betölteni a tornát vagy a szerepeket.');
     } finally {
       setLoading(false);
     }
   }, [code, user]);
+
+  console.log(tournament);  
 
   useEffect(() => {
     fetchAll();

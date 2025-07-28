@@ -462,6 +462,16 @@ export class ClubService {
     return club;
   }
 
+  static async getBoard(clubId: string, boardNumber: number): Promise<any> {
+    await connectMongo();
+    const club = await ClubModel.findById(clubId);
+    if (!club) throw new BadRequestError('Club not found');
+    const board = club.boards.find((b: any) => b.boardNumber === boardNumber);
+    if (!board) throw new BadRequestError('Board not found');
+    return board;
+    
+  }
+
   static async updateBoard(clubId: string, userId: string, boardNumber: number, updates: { name?: string; description?: string }): Promise<ClubDocument> {
     await connectMongo();
     const club = await ClubModel.findById(clubId);

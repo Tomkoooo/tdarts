@@ -37,6 +37,8 @@ export interface Match {
   scorer: Types.ObjectId;
   status: 'pending' | 'ongoing' | 'finished';
   winnerId?: Types.ObjectId;
+  legsToWin?: number;
+  startingPlayer?: 1 | 2;
   legs?: Leg[];
   createdAt: Date;
   updatedAt: Date;
