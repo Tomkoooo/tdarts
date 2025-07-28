@@ -3,13 +3,13 @@ import { Matches } from './matches.interface';
 
 // Plain types (API, DTO, stb.)
 export interface TournamentPlayer {
-    _id: string;
-    playerReference: string;
+    _id?: string;
+    playerReference: string | PlayerDocument;
     status: 'applied' | 'confirmed' | 'checked-in' | 'eliminated' | 'winner';
-    groupId: string;
-    groupOrdinalNumber: number;
-    groupStanding: number;
-    tournamentStanding: number;
+    groupId?: string;
+    groupOrdinalNumber?: number;
+    groupStanding?: number;
+    tournamentStanding?: number;
     stats: {
         matchesWon: number;
         matchesLost: number;
@@ -24,7 +24,16 @@ export interface TournamentPlayer {
 export interface TournamentGroup {
     _id: string;
     board: number;
-    matches?: Matches[];
+    matches: string[];
+}
+
+export interface KnockoutRound {
+    round: number;
+    matches: {
+        player1: string | PlayerDocument;
+        player2: string | PlayerDocument;
+        matchReference?: string | MatchDocument;
+    }[];
 }
 
 export interface TournamentSettings {
@@ -39,23 +48,32 @@ export interface TournamentSettings {
     knockoutMethod?: 'automatic' | 'manual';
 }
 
-export interface Tournament {
+export interface PlayerDocument extends Document {
     _id: string;
+    name: string;
+    // Add other player fields as needed
+}
+
+export interface MatchDocument extends Document {
+    _id: string;
+    // Add other match fields as needed
+}
+
+export interface Tournament {
+    _id?: string;
     tournamentId: string;
-    clubId: string;
+    clubId: string | Document;
     tournamentPlayers: TournamentPlayer[];
-    tournamentSettings: TournamentSettings;
     groups: TournamentGroup[];
-    knockout: {
-        round: number;
-        matches: Matches[];
-    }[];
-    createdAt: Date;
-    updatedAt: Date;
-    isActive: boolean;
-    isDeleted: boolean;
-    isArchived: boolean;
-    isCancelled: boolean;
+    knockout: KnockoutRound[];
+    tournamentSettings: TournamentSettings;
+    seededPlayers?: string[] | PlayerDocument[];
+    createdAt?: Date;
+    updatedAt?: Date;
+    isActive?: boolean;
+    isDeleted?: boolean;
+    isArchived?: boolean;
+    isCancelled?: boolean;
 }
 
 // Document types (Mongoose)

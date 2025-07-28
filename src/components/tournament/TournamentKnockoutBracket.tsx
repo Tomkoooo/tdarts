@@ -282,6 +282,23 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
   return (
     <div className="mt-6">
+      <style jsx>{`
+        .scrollbar-thin::-webkit-scrollbar {
+          height: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: hsl(var(--b2));
+          border-radius: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: hsl(var(--bc) / 0.3);
+          border-radius: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--bc) / 0.5);
+        }
+      `}</style>
+      
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
         <div className="flex gap-2">
@@ -306,101 +323,182 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         </div>
       </div>
 
-            {/* Knockout Bracket Display */}
-      <div className="space-y-6">
-        {knockoutData
-          .filter((round) => {
-            // In manual mode, show all rounds (including empty ones)
-            // In automatic mode, only show rounds with matches
-            if (currentKnockoutMethod === 'manual') {
-              return true;
-            }
-            return round.matches && round.matches.length > 0;
-          })
-          .map((round, roundIndex) => {
-            console.log('Rendering round:', round.round, 'with matches:', round.matches.length);
-            console.log('userClubRole:', userClubRole, 'currentKnockoutMethod:', currentKnockoutMethod);
-            return (
-          <div key={round.round} className="card bg-base-200">
-            <div className="card-body">
-              <h3 className="card-title text-lg font-bold">
-                {roundIndex === 0 ? 'Első kör' : 
-                 roundIndex === knockoutData.filter(r => currentKnockoutMethod === 'manual' ? true : (r.matches && r.matches.length > 0)).length - 1 ? 'Döntő' : 
-                 `${roundIndex + 1}. kör`}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {round.matches && round.matches.length > 0 ? (
-                  round.matches.map((match) => (
-                    <div key={match.matchReference._id} className="card bg-base-100 shadow-md">
-                      <div className="card-body p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className={`badge badge-sm ${getStatusColor(match.matchReference.status || '')}`}>
-                            {getStatusText(match.matchReference.status || '')}
-                          </span>
-                          <span className="text-sm text-base-content/60">Tábla: {match.matchReference.boardReference}</span>
-                          {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                            <button
-                              className="btn btn-xs btn-ghost"
-                              onClick={() => handleMatchEdit(match)}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
+      {/* Knockout Bracket Display - Horizontal Layout */}
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100">
+        <div className="flex gap-20 min-w-max p-6" style={{ minHeight: '600px' }}>
+          {knockoutData
+            .filter((round) => {
+              // In manual mode, show all rounds (including empty ones)
+              // In automatic mode, only show rounds with matches
+              if (currentKnockoutMethod === 'manual') {
+                return true;
+              }
+              return round.matches && round.matches.length > 0;
+            })
+            .map((round, roundIndex) => {
+              console.log('Rendering round:', round.round, 'with matches:', round.matches.length);
+              console.log('userClubRole:', userClubRole, 'currentKnockoutMethod:', currentKnockoutMethod);
+              
+              const roundMatches = round.matches || [];
+              const nextRound = knockoutData[roundIndex + 1];
+              const nextRoundMatches = nextRound?.matches || [];
+              
+              // Calculate optimal height based on matches in this round and next round
+              const matchCardHeight = 220; // Approximate height of a match card
+              const matchSpacing = 30; // Space between matches (increased for better visibility)
+              
+              // Calculate round height based on bracket positioning
+              // Always use the maximum number of matches from any round to ensure consistent spacing
+              const allRounds = knockoutData.filter(r => currentKnockoutMethod === 'manual' ? true : (r.matches && r.matches.length > 0));
+              const maxMatchesInAnyRound = Math.max(...allRounds.map(r => (r.matches || []).length));
+              const roundHeight = Math.max(maxMatchesInAnyRound * (matchCardHeight + matchSpacing) + matchSpacing, 300);
+              
+              return (
+                <div key={round.round} className="flex flex-col relative min-w-[320px]">
+                  {/* Round Header */}
+                  <div className="text-center mb-6">
+                    <div className="flex items-center justify-center gap-2">
+                      <h3 className="text-lg font-bold">
+                        {roundIndex === 0 ? 'Első kör' : 
+                         roundIndex === knockoutData.filter(r => currentKnockoutMethod === 'manual' ? true : (r.matches && r.matches.length > 0)).length - 1 ? 'Döntő' : 
+                         `${roundIndex + 1}. kör`}
+                      </h3>
+                      
+                      {/* Add Match Button for Manual Mode - Next to Round Name */}
+                      {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
+                        <button
+                          className="btn btn-circle btn-xs btn-outline btn-primary"
+                          onClick={() => {
+                            console.log('Add match button clicked for round:', round.round);
+                            setSelectedRound(round.round);
+                            setShowAddMatchModal(true);
+                          }}
+                          title="Meccs hozzáadása"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-sm text-base-content/60 mt-1">
+                      {roundMatches.length} meccs
+                    </div>
+                  </div>
+                  
+                  {/* Matches Container */}
+                  <div 
+                    className="flex flex-col justify-around"
+                    style={{ minHeight: `${roundHeight}px` }}
+                  >
+                    {roundMatches.length > 0 ? (
+                      roundMatches.map((match, matchIndex) => {
+                        // Calculate which match in the next round this feeds into
+                        let nextMatchIndex = -1;
+                        if (nextRoundMatches.length > 0) {
+                          if (nextRoundMatches.length === roundMatches.length) {
+                            // Same number of matches - direct mapping (for rematches)
+                            nextMatchIndex = matchIndex;
+                          } else {
+                            // Standard knockout - calculate based on bracket structure
+                            const matchesPerNextMatch = roundMatches.length / nextRoundMatches.length;
+                            nextMatchIndex = Math.floor(matchIndex / matchesPerNextMatch);
+                          }
+                        }
                         
-                        <div className="space-y-2">
-                          <div className={`flex justify-between items-center p-2 rounded ${match.matchReference.winnerId === match.player1?._id ? 'bg-success/20' : 'bg-base-200'}`}>
-                            <span className="font-semibold">{match.player1?.name || 'TBD'}</span>
-                            <span className="text-lg font-bold">{match.matchReference.player1.legsWon || 0}</span>
+                        return (
+                          <div 
+                            key={match.matchReference._id} 
+                            className="relative"
+                          >
+                            {/* Connection Lines to Previous Round */}
+                            {roundIndex > 0 && (
+                              <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 z-5">
+                                {/* Longer horizontal line */}
+                                <div className="w-12 h-0.5 bg-base-300"></div>
+                                
+                                {/* Taller vertical line if 2x more matches in previous round */}
+                                {(() => {
+                                  const previousRound = knockoutData[roundIndex - 1];
+                                  const previousRoundMatches = previousRound?.matches || [];
+                                  return previousRoundMatches.length >= roundMatches.length * 2;
+                                })() && (
+                                  <div className="absolute top-1/2 left-0 w-0.5 bg-base-300" style={{ 
+                                    height: '260px',
+                                    transform: 'translateY(-130px)'
+                                  }}></div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Match Card */}
+                            <div className="card bg-base-100 shadow-lg border-2 border-base-200 min-w-[280px] max-w-[320px] hover:shadow-xl transition-shadow relative z-10">
+                              <div className="card-body p-4">
+                                <div className="flex justify-between items-center mb-3">
+                                  <span className={`badge badge-sm ${getStatusColor(match.matchReference.status || '')}`}>
+                                    {getStatusText(match.matchReference.status || '')}
+                                  </span>
+                                  <span className="text-xs text-base-content/60">Tábla: {match.matchReference.boardReference}</span>
+                                  {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                                    <button
+                                      className="btn btn-xs btn-ghost"
+                                      onClick={() => handleMatchEdit(match)}
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${match.matchReference.winnerId === match.player1?._id ? 'bg-success/20 border border-success/30' : 'bg-base-200'}`}>
+                                    <span className="font-medium truncate">{match.player1?.name || 'TBD'}</span>
+                                    <span className="text-lg font-bold ml-2">{match.matchReference.player1.legsWon || 0}</span>
+                                  </div>
+                                  <div className="text-center text-xs text-base-content/60 font-medium">vs</div>
+                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${match.matchReference.winnerId === match.player2?._id ? 'bg-success/20 border border-success/30' : 'bg-base-200'}`}>
+                                    <span className="font-medium truncate">{match.player2?.name || 'TBD'}</span>
+                                    <span className="text-lg font-bold ml-2">{match.matchReference.player2.legsWon || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Connection Lines to Next Round */}
+                            {nextMatchIndex >= 0 && (
+                              <div className="absolute -right-8 top-1/2 transform -translate-y-1/2 z-5">
+                                {/* Longer horizontal line */}
+                                <div className="w-24 h-0.5 bg-base-300"></div>
+                                
+                                {/* Taller vertical line if 2x more matches in next round */}
+                                {nextRoundMatches.length >= roundMatches.length * 2 && (
+                                  <div className="absolute top-1/2 right-0 w-0.5 bg-base-300" style={{ 
+                                    height: '60px',
+                                    transform: 'translateY(-50px)'
+                                  }}></div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-center text-sm text-base-content/60">vs</div>
-                          <div className={`flex justify-between items-center p-2 rounded ${match.matchReference.winnerId === match.player2?._id ? 'bg-success/20' : 'bg-base-200'}`}>
-                            <span className="font-semibold">{match.player2?.name || 'TBD'}</span>
-                            <span className="text-lg font-bold">{match.matchReference.player2.legsWon || 0}</span>
-                          </div>
+                        );
+                      })
+                    ) : (
+                      // Empty round message
+                      <div className="flex items-center justify-center h-full">
+                        <div className="alert alert-info">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <span className="text-sm">Nincsenek meccsek</span>
                         </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  // Empty round message
-                  <div className="col-span-full">
-                    <div className="alert alert-info">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      <span>Nincsenek meccsek ebben a körben.</span>
-                    </div>
+                    )}
                   </div>
-                )}
-                
-                {/* Add Match Button for Manual Mode */}
-                {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
-                  <div className="card bg-base-100 shadow-md border-dashed border-2 border-base-300">
-                    <div className="card-body p-4 flex items-center justify-center">
-                      <button
-                        className="btn btn-outline btn-primary"
-                        onClick={() => {
-                          console.log('Add match button clicked for round:', round.round);
-                          setSelectedRound(round.round);
-                          setShowAddMatchModal(true);
-                        }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Meccs hozzáadása
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
+                </div>
+              );
+            })}
+        </div>
       </div>
 
       {/* Generate Next Round Modal */}

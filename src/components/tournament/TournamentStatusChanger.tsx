@@ -12,11 +12,10 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   const [error, setError] = useState('');
   const [showKnockoutModal, setShowKnockoutModal] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState(8);
-  const [useSeededPlayers, setUseSeededPlayers] = useState(false);
-  const [seededPlayersCount, setSeededPlayersCount] = useState(4);
   const [knockoutMode, setKnockoutMode] = useState<'automatic' | 'manual'>('automatic');
   const code = tournament?.tournamentId;
   const tournamentStatus = tournament?.tournamentSettings?.status;
+  const tournamentFormat = tournament?.tournamentSettings?.format || 'group_knockout';
   const totalPlayers = tournament?.tournamentPlayers?.length || 0;
 
   // Generate available player counts (powers of 2, max totalPlayers)
@@ -26,25 +25,6 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
     while (count <= totalPlayers && count <= 32) { // Max 32 players for knockout
       counts.push(count);
       count *= 2;
-    }
-    return counts;
-  };
-
-  // Calculate maximum possible seeded players for a given bracket size
-  const getMaxSeededPlayers = (bracketSize: number) => {
-    if (bracketSize <= 2) return 0; // No seeding possible for 2 players
-    if (bracketSize <= 4) return 1; // Only 1 seeded player possible for 4 players
-    if (bracketSize <= 8) return 2; // 2 seeded players for 8 players
-    if (bracketSize <= 16) return 4; // 4 seeded players for 16 players
-    return 8; // 8 seeded players for 32 players
-  };
-
-  // Generate available seeded player counts
-  const getAvailableSeededCounts = (bracketSize: number) => {
-    const maxSeeded = getMaxSeededPlayers(bracketSize);
-    const counts = [];
-    for (let i = 1; i <= maxSeeded; i++) {
-      counts.push(i);
     }
     return counts;
   };
@@ -71,14 +51,29 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
     setError('');
     try {
       let response;
-      if (knockoutMode === 'automatic') {
-        response = await axios.post(`/api/tournaments/${code}/generateKnockout`, {
-          playersCount: selectedPlayers,
-          useSeededPlayers,
-          seededPlayersCount: useSeededPlayers ? seededPlayersCount : 0
-        });
+      
+      if (tournamentFormat === 'knockout') {
+        // For knockout-only tournaments, generate knockout directly from pending status
+        if (knockoutMode === 'automatic') {
+          response = await axios.post(`/api/tournaments/${code}/generateKnockout`, {
+            playersCount: selectedPlayers,
+            useSeededPlayers: false,
+            seededPlayersCount: 0
+          });
+        } else {
+          response = await axios.post(`/api/tournaments/${code}/generateManualKnockout`);
+        }
       } else {
-        response = await axios.post(`/api/tournaments/${code}/generateManualKnockout`);
+        // For group_knockout tournaments, use existing logic
+        if (knockoutMode === 'automatic') {
+          response = await axios.post(`/api/tournaments/${code}/generateKnockout`, {
+            playersCount: selectedPlayers,
+            useSeededPlayers: false,
+            seededPlayersCount: 0
+          });
+        } else {
+          response = await axios.post(`/api/tournaments/${code}/generateManualKnockout`);
+        }
       }
       
       if (response.data && response.data.success) {
@@ -94,25 +89,31 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
     }
   };
 
-  // Update seeded players count when bracket size changes
-  const handleBracketSizeChange = (newSize: number) => {
-    setSelectedPlayers(newSize);
-    const maxSeeded = getMaxSeededPlayers(newSize);
-    if (seededPlayersCount > maxSeeded) {
-      setSeededPlayersCount(maxSeeded);
+  const handleFinishTournament = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/finish`);
+      if (response.data && response.data.success) {
+        onRefetch();
+      } else {
+        setError(response.data?.error || 'Nem sikerült befejezni a tornát.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Nem sikerült befejezni a tornát.');
+    } finally {
+      setLoading(false);
     }
   };
 
   if (userClubRole !== 'admin' && userClubRole !== 'moderator') return null;
 
   const availablePlayerCounts = getAvailablePlayerCounts();
-  const availableSeededCounts = getAvailableSeededCounts(selectedPlayers);
-  const maxSeededPlayers = getMaxSeededPlayers(selectedPlayers);
 
   return (
     <div className="mb-4">
-      {/* Group Generation Button - only show when tournament is pending */}
-      {tournamentStatus === 'pending' && (
+      {/* Group Generation Button - only show when tournament is pending and format allows groups */}
+      {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && (
         <button 
           className="btn btn-secondary" 
           onClick={handleGenerateGroups} 
@@ -122,14 +123,27 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
         </button>
       )}
 
-      {/* Knockout Generation Button - only show when tournament is in group-stage */}
-      {tournamentStatus === 'group-stage' && (
+      {/* Knockout Generation Button - only show when tournament is in group-stage and format allows knockout */}
+      {tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout') && (
         <button 
           className="btn btn-primary" 
           onClick={() => setShowKnockoutModal(true)} 
           disabled={loading}
         >
           {loading ? 'Egyenes kiesés generálása...' : 'Egyenes kiesés generálása'}
+        </button>
+      )}
+
+      {/* Finish Tournament Button - show when tournament is in knockout stage or when format is group/knockout only */}
+      {(tournamentStatus === 'knockout' || 
+        (tournamentStatus === 'group-stage' && tournamentFormat === 'group') ||
+        (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
+        <button 
+          className="btn btn-success" 
+          onClick={handleFinishTournament} 
+          disabled={loading}
+        >
+          {loading ? 'Torna befejezése...' : 'Torna befejezése'}
         </button>
       )}
 
@@ -180,9 +194,26 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
             {/* Automatic Mode Settings */}
             {knockoutMode === 'automatic' && (
               <>
+                <div className="alert alert-warning mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <h3 className="font-bold">Kiemelt játékosok!</h3>
+                    <div className="text-xs">
+                      Az automatikus mód nem támogatja a kiemelt játékosokat. 
+                      <br />
+                      <strong>Javaslat:</strong> Válts manuális módra a pontos játékos párosításhoz.
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="text-center mb-6">
                   <p className="text-base-content/70 mb-4">
-                    Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:
+                    {tournamentFormat === 'knockout' 
+                      ? 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
+                      : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
+                    }
                   </p>
                   <p className="text-sm text-base-content/60">
                     Összesen {totalPlayers} játékos van a tornán
@@ -199,7 +230,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 <select 
                   className="select select-bordered w-full"
                   value={selectedPlayers}
-                  onChange={(e) => handleBracketSizeChange(parseInt(e.target.value))}
+                  onChange={(e) => setSelectedPlayers(parseInt(e.target.value))}
                 >
                   {availablePlayerCounts.map(count => (
                     <option key={count} value={count}>
@@ -218,67 +249,9 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
             {/* Seeded Players Section - Only for Automatic Mode */}
             {knockoutMode === 'automatic' && (
               <>
-                <div className="form-control mb-6">
-                  <label className="label cursor-pointer">
-                    <span className="label-text font-bold">Kiemelt játékosok használata</span>
-                    <input 
-                      type="checkbox" 
-                      className="checkbox checkbox-primary" 
-                      checked={useSeededPlayers}
-                      onChange={(e) => setUseSeededPlayers(e.target.checked)}
-                      disabled={maxSeededPlayers === 0}
-                    />
-                  </label>
-                  {maxSeededPlayers === 0 && (
-                    <label className="label">
-                      <span className="label-text-alt text-error">
-                        Kiemelt játékosok nem lehetségesek {selectedPlayers} játékosnál
-                      </span>
-                    </label>
-                  )}
-                </div>
-
-                {/* Seeded Players Count Selection */}
-                {useSeededPlayers && maxSeededPlayers > 0 && (
-                  <div className="form-control mb-6">
-                    <label className="label">
-                      <span className="label-text font-bold">Kiemelt játékosok száma:</span>
-                    </label>
-                    <select 
-                      className="select select-bordered w-full"
-                      value={seededPlayersCount}
-                      onChange={(e) => setSeededPlayersCount(parseInt(e.target.value))}
-                    >
-                      {availableSeededCounts.map(count => (
-                        <option key={count} value={count}>
-                          {count} kiemelt játékos
-                        </option>
-                      ))}
-                    </select>
-                    <label className="label">
-                      <span className="label-text-alt text-base-content/60">
-                        Maximum {maxSeededPlayers} kiemelt játékos lehetséges {selectedPlayers} játékosnál
-                      </span>
-                    </label>
-                    <label className="label">
-                      <span className="label-text-alt text-base-content/60">
-                        Kiemelt játékosok a csoportok tetejéről kerülnek ki
-                      </span>
-                    </label>
-                  </div>
-                )}
-
-                {/* Bracket Type Info */}
-                {useSeededPlayers && seededPlayersCount > 0 && (
-                  <div className="alert alert-info mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span>
-                      <strong>Double-knockout</strong> bracket lesz generálva {seededPlayersCount} kiemelt játékossal.
-                    </span>
-                  </div>
-                )}
+                {/* Removed seeded players checkbox */}
+                {/* Removed seeded players count selection */}
+                {/* Removed bracket type info */}
               </>
             )}
 
@@ -301,8 +274,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 onClick={() => {
                   setShowKnockoutModal(false);
                   setError('');
-                  setUseSeededPlayers(false);
-                  setSeededPlayersCount(4);
+                  // Removed seeded players state reset
                 }}
               >
                 Mégse

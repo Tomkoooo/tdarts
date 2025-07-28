@@ -70,6 +70,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             knockoutMethod: { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
         }
     },
+    seededPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
