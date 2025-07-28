@@ -27,7 +27,7 @@ export class MatchService {
 
         return matches.map(match => ({
             ...match.toObject(),
-            startingScore: startingScore,
+                startingScore: startingScore,
         }));
     }
 
@@ -62,32 +62,38 @@ export class MatchService {
         await match.save();
         
         // Tábla állapot frissítése
-        const tournament = await TournamentModel.findById(match.tournamentRef);
-        if (!tournament) throw new BadRequestError('Tournament not found');
-        const clubId = tournament.clubId.toString();
-        // Mivel a board a Club dokumentumon belül van, a Club-ot kell frissíteni
-        const club = await ClubModel.findById(clubId);
-        if (!club) throw new BadRequestError('Club not found');
+        if (match.type === 'knockout') {
+            // Use the new knockout board status update method
+            await TournamentService.updateBoardStatusAfterMatch(matchId);
+        } else {
+            // Group match - use existing logic
+            const tournament = await TournamentModel.findById(match.tournamentRef);
+            if (!tournament) throw new BadRequestError('Tournament not found');
+            const clubId = tournament.clubId.toString();
+            // Mivel a board a Club dokumentumon belül van, a Club-ot kell frissíteni
+            const club = await ClubModel.findById(clubId);
+            if (!club) throw new BadRequestError('Club not found');
 
-        // Keressük meg a megfelelő board-ot a club.boards tömbben
-        const boardIndex = club.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
-        if (boardIndex === -1) throw new BadRequestError('Board not found');
+            // Keressük meg a megfelelő board-ot a club.boards tömbben
+            const boardIndex = club.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
+            if (boardIndex === -1) throw new BadRequestError('Board not found');
 
-        // Következő pending meccs keresése ugyanerre a táblára és tornára
-        const nextMatch = await MatchModel.findOne({
-            boardReference: match.boardReference,
-            tournamentRef: match.tournamentRef,
-            status: 'pending',
-            _id: { $ne: matchId } // Ne a jelenlegi meccset adja vissza
-        });
+            // Következő pending meccs keresése ugyanerre a táblára és tornára
+            const nextMatch = await MatchModel.findOne({
+                boardReference: match.boardReference,
+                tournamentRef: match.tournamentRef,
+                status: 'pending',
+                _id: { $ne: matchId } // Ne a jelenlegi meccset adja vissza
+            });
 
-        // Frissítjük a board mezőit
-        club.boards[boardIndex].status = 'playing';
-        club.boards[boardIndex].currentMatch = matchId;
-        club.boards[boardIndex].nextMatch = nextMatch?._id || null;
+            // Frissítjük a board mezőit
+            club.boards[boardIndex].status = 'playing';
+            club.boards[boardIndex].currentMatch = matchId;
+            club.boards[boardIndex].nextMatch = nextMatch?._id || null;
 
-        // Mentsük el a club dokumentumot
-        await club.save();
+            // Mentsük el a club dokumentumot
+            await club.save();
+        }
         
         return match;
     }
@@ -186,8 +192,12 @@ export class MatchService {
         await this.updateTournamentPlayerStats(match.tournamentRef.toString(), match.player1.playerId.toString(), matchData.player1Stats);
         await this.updateTournamentPlayerStats(match.tournamentRef.toString(), match.player2.playerId.toString(), matchData.player2Stats);
 
-        // Update board status only if match was not finished before
-        if (!wasFinished) {
+        // Update board status for all matches (both new and updated)
+        if (match.type === 'knockout') {
+            // Use the new knockout board status update method
+            await TournamentService.updateBoardStatusAfterMatch(matchId);
+        } else {
+            // Group match - use existing logic
             const tournament = await TournamentModel.findById(match.tournamentRef);
             if (!tournament) throw new BadRequestError('Tournament not found');
             

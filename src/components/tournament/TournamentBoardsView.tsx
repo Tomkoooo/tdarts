@@ -8,47 +8,89 @@ const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament 
   const boards = tournament?.clubId?.boards || [];
 
   return (
-    <div className="mb-4">
-      <h2 className="text-xl font-semibold mb-2">Táblák</h2>
-      {boards.map((board: any, idx: number) => {
-        return (
-          <div key={board.boardNumber || idx} className="mb-4 p-3 border rounded">
-            <div className="font-semibold">Tábla #{board.boardNumber} {board.name ? `- ${board.name}` : ''}</div>
-            <div>Státusz: {board.status}</div>
-            
-            {/* Current match info */}
-            {board.currentMatch ? (
-              <div className="mt-2">
-                <div className="font-semibold">Aktuális meccs:</div>
-                <div>
-                  {board.currentMatch.player1?.playerId?.name || 'N/A'} vs. {board.currentMatch.player2?.playerId?.name || 'N/A'}
+    <div className="mt-6">
+      <h2 className="text-xl font-bold">Táblák</h2>
+      {boards.length === 0 ? (
+        <p>Nincsenek még táblák konfigurálva.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {boards.map((board: any, idx: number) => {
+            return (
+              <div key={board.boardNumber || idx} className="card bg-base-200 shadow-md">
+                <div className="card-body">
+                  <h3 className="card-title">Tábla {board.boardNumber} {board.name ? `- ${board.name}` : ''}</h3>
+                  <p
+                    className={`text-lg font-bold ${
+                      board.status === "idle"
+                        ? "text-gray-500"
+                        : board.status === "waiting"
+                        ? "text-warning"
+                        : board.status === "playing"
+                        ? "text-success"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Állapot:{" "}
+                    {board.status === "idle"
+                      ? "Üres"
+                      : board.status === "waiting"
+                      ? "Várakozik"
+                      : board.status === "playing"
+                      ? "Játékban"
+                      : "Ismeretlen"}
+                  </p>
+                  
+                  {board.status === "playing" && board.currentMatch ? (
+                    <div className="mt-2">
+                      <h4 className="font-semibold">Jelenlegi mérkőzés:</h4>
+                      <p className="text-md">
+                        <span className="font-bold">
+                          {board.currentMatch.player1?.playerId?.name || 'N/A'}
+                        </span> vs{" "}
+                        <span className="font-bold">
+                          {board.currentMatch.player2?.playerId?.name || 'N/A'}
+                        </span>
+                      </p>
+                      <p className="text-md">
+                        Állás:{" "}
+                        <span className="font-bold">
+                          {board.currentMatch.player1?.legsWon ?? 0} - {board.currentMatch.player2?.legsWon ?? 0}
+                        </span>
+                      </p>
+                      <p className="text-md">
+                        Eredményíró:{" "}
+                        <span className="font-bold">
+                          {board.currentMatch.scorer?.name || "Nincs"}
+                        </span>
+                      </p>
+                    </div>
+                  ) : board.status === "waiting" && board.nextMatch ? (
+                    <div className="mt-2">
+                      <h4 className="font-semibold">Következő mérkőzés:</h4>
+                      <p className="text-md">
+                        <span className="font-bold">
+                          {board.nextMatch.player1?.playerId?.name || 'N/A'}
+                        </span> vs{" "}
+                        <span className="font-bold">
+                          {board.nextMatch.player2?.playerId?.name || 'N/A'}
+                        </span>
+                      </p>
+                      <p className="text-md">
+                        Eredményíró:{" "}
+                        <span className="font-bold">
+                          {board.nextMatch.scorer?.name || "Nincs"}
+                        </span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-md italic">Nincs további információ.</p>
+                  )}
                 </div>
-                <div>Állás: {board.currentMatch.player1?.legsWon ?? 0} - {board.currentMatch.player2?.legsWon ?? 0}</div>
-                <div>Meccs státusz: {board.currentMatch.status}</div>
-                {board.currentMatch.scorer && (
-                  <div>Író: {board.currentMatch.scorer.name || 'N/A'}</div>
-                )}
               </div>
-            ) : (
-              <div className="text-base-content/60">Nincs aktuális meccs ezen a táblán.</div>
-            )}
-            
-            {/* Next match info (unless idle) */}
-            {board.status !== 'idle' && board.nextMatch && (
-              <div className="mt-2">
-                <div className="font-semibold">Következő meccs:</div>
-                <div>
-                  {board.nextMatch.player1?.playerId?.name || 'N/A'} vs. {board.nextMatch.player2?.playerId?.name || 'N/A'}
-                </div>
-                <div>Meccs státusz: {board.nextMatch.status}</div>
-                {board.nextMatch.scorer && (
-                  <div>Író: {board.nextMatch.scorer.name || 'N/A'}</div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

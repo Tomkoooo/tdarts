@@ -27,23 +27,24 @@ export interface TournamentGroup {
     matches?: Matches[];
 }
 
+export interface TournamentSettings {
+    status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout';
+    name: string;
+    description?: string;
+    startDate: Date;
+    maxPlayers: number;
+    format: 'group' | 'knockout' | 'group_knockout';
+    startingScore: number;
+    tournamentPassword: string;
+    knockoutMethod?: 'automatic' | 'manual';
+}
+
 export interface Tournament {
     _id: string;
     tournamentId: string;
     clubId: string;
     tournamentPlayers: TournamentPlayer[];
-    tournamentSettings: {
-        status: 'pending' | 'active' | 'finished' | 'group' | 'knockout';
-        name: string;
-        description?: string;
-        startDate: Date;
-        maxPlayers: number;
-        format: 'group' | 'knockout' | 'group_knockout';
-        startingScore: number;
-        boardCount: number;
-        entryFee: number;
-        tournamentPassword: string;
-    };
+    tournamentSettings: TournamentSettings;
     groups: TournamentGroup[];
     knockout: {
         round: number;

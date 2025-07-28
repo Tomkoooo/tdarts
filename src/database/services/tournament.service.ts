@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import { roundRobin } from '@/lib/utils';
 import { MatchModel } from '../models/match.model';
 import { ClubService } from './club.service';
+import { ClubModel } from '../models/club.model';
 
 export class TournamentService {
     static async createTournament(tournament: Partial<Omit<TournamentDocument, keyof Document>>): Promise<TournamentDocument> {
@@ -44,7 +45,10 @@ export class TournamentService {
                 }
             })
             .populate('tournamentPlayers.playerReference')
-            .populate('groups.matches');
+            .populate('groups.matches')
+            .populate('knockout.matches.player1')
+            .populate('knockout.matches.player2')
+            .populate('knockout.matches.matchReference');
         if (!tournament) {
             throw new BadRequestError('Tournament not found');
         }
@@ -254,7 +258,7 @@ export class TournamentService {
 
             // Assign updated groups (with matches) back to tournament
             tournament.groups = groups as any;
-
+            tournament.tournamentSettings.status = 'group-stage';
             await tournament.save();
             return true;
         } catch (err) {
@@ -412,5 +416,600 @@ export class TournamentService {
             throw new BadRequestError('Club not found');
         }
         return club.boards;
+    }
+
+    static async generateKnockout(tournamentId: string, options: {
+        playersCount: number;
+        useSeededPlayers: boolean;
+        seededPlayersCount: number;
+    }): Promise<boolean> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Validate tournament is in group-stage
+            if (tournament.tournamentSettings.status !== 'group-stage') {
+                throw new BadRequestError('Tournament must be in group-stage to generate knockout');
+            }
+
+            // Get all groups with their standings
+            const groups = tournament.groups;
+            if (!groups || groups.length === 0) {
+                throw new BadRequestError('No groups found');
+            }
+
+            // Get all players with their group standings
+            const groupPlayers = tournament.tournamentPlayers.filter((p: TournamentPlayerDocument) => p.groupId);
+            if (groupPlayers.length === 0) {
+                throw new BadRequestError('No players found in groups');
+            }
+
+            // Group players by their group and sort by standing
+            const playersByGroup = new Map<string, any[]>();
+            groupPlayers.forEach((player: TournamentPlayerDocument) => {
+                const groupId = player.groupId.toString();
+                if (!playersByGroup.has(groupId)) {
+                    playersByGroup.set(groupId, []);
+                }
+                playersByGroup.get(groupId)!.push(player);
+            });
+
+            // Sort players in each group by their standing
+            playersByGroup.forEach(players => {
+                players.sort((a, b) => (a.groupStanding || 0) - (b.groupStanding || 0));
+            });
+
+            let advancingPlayers: any[] = [];
+            let seededPlayers: any[] = [];
+
+            if (options.useSeededPlayers && options.seededPlayersCount > 0) {
+                // Collect seeded players (top players from each group)
+                const maxSeededPerGroup = Math.ceil(options.seededPlayersCount / groups.length);
+                let seededCount = 0;
+
+                for (const [groupId, players] of playersByGroup) {
+                    if (seededCount >= options.seededPlayersCount) break;
+                    
+                    const playersToSeed = Math.min(maxSeededPerGroup, options.seededPlayersCount - seededCount);
+                    for (let i = 0; i < playersToSeed && i < players.length; i++) {
+                        seededPlayers.push(players[i]);
+                        seededCount++;
+                    }
+                }
+
+                // Collect advancing players (remaining players to fill the bracket)
+                const remainingSlots = options.playersCount - seededPlayers.length;
+                const allPlayers = groupPlayers.filter((p: TournamentPlayerDocument) => 
+                    !seededPlayers.some(sp => sp._id.toString() === p._id.toString())
+                );
+
+                // Sort by group standing and take the best remaining players
+                allPlayers.sort((a: TournamentPlayerDocument, b: TournamentPlayerDocument) => {
+                    if (a.groupStanding !== b.groupStanding) {
+                        return (a.groupStanding || 0) - (b.groupStanding || 0);
+                    }
+                    // If same standing, sort by group performance
+                    const aStats = a.stats || {};
+                    const bStats = b.stats || {};
+                    const aPoints = (aStats.matchesWon || 0) * 2;
+                    const bPoints = (bStats.matchesWon || 0) * 2;
+                    if (aPoints !== bPoints) return bPoints - aPoints;
+                    
+                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                    return bLegDiff - aLegDiff;
+                });
+
+                advancingPlayers = allPlayers.slice(0, remainingSlots);
+            } else {
+                // No seeded players - take the best players overall
+                const allPlayers = [...groupPlayers];
+                allPlayers.sort((a, b) => {
+                    if (a.groupStanding !== b.groupStanding) {
+                        return (a.groupStanding || 0) - (b.groupStanding || 0);
+                    }
+                    const aStats = a.stats || {};
+                    const bStats = b.stats || {};
+                    const aPoints = (aStats.matchesWon || 0) * 2;
+                    const bPoints = (bStats.matchesWon || 0) * 2;
+                    if (aPoints !== bPoints) return bPoints - aPoints;
+                    
+                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                    return bLegDiff - aLegDiff;
+                });
+
+                advancingPlayers = allPlayers.slice(0, options.playersCount);
+            }
+
+            // Validate we have enough players
+            const totalPlayers = advancingPlayers.length + seededPlayers.length;
+            if (totalPlayers !== options.playersCount) {
+                throw new BadRequestError(`Expected ${options.playersCount} players but got ${totalPlayers}`);
+            }
+
+            // Shuffle players for fair matchups
+            const shuffledAdvancing = [...advancingPlayers].sort(() => Math.random() - 0.5);
+            const shuffledSeeded = [...seededPlayers].sort(() => Math.random() - 0.5);
+
+            // Generate knockout rounds
+            const knockoutRounds = this.generateKnockoutRounds(
+                shuffledAdvancing,
+                shuffledSeeded,
+                options.playersCount
+            );
+
+            // Create matches for the first round
+            const firstRoundMatches = knockoutRounds[0].matches;
+            const createdMatches: any[] = [];
+
+            // Get available boards
+            const club = await ClubModel.findById(tournament.clubId);
+            if (!club || !club.boards) {
+                throw new BadRequestError('Club boards not found');
+            }
+
+            // Filter active boards
+            const availableBoards = club.boards.filter((board: any) => board.isActive);
+            if (availableBoards.length === 0) {
+                throw new BadRequestError('No active boards available');
+            }
+
+            // Assign matches to boards in round-robin fashion
+            for (let i = 0; i < firstRoundMatches.length; i++) {
+                const matchData = firstRoundMatches[i];
+                if (matchData.player1 && matchData.player2) {
+                    const boardIndex: number = i % availableBoards.length;
+                    const assignedBoard: any = availableBoards[boardIndex];
+
+                    const match = await MatchModel.create({
+                        boardReference: assignedBoard.boardNumber,
+                        tournamentRef: tournament._id,
+                        type: 'knockout',
+                        round: 1,
+                        player1: {
+                            playerId: matchData.player1,
+                            legsWon: 0,
+                            legsLost: 0,
+                            average: 0,
+                        },
+                        player2: {
+                            playerId: matchData.player2,
+                            legsWon: 0,
+                            legsLost: 0,
+                            average: 0,
+                        },
+                        scorer: matchData.player1, // Default scorer
+                        status: 'pending',
+                        legs: [],
+                    });
+                    createdMatches.push(match);
+
+                    // Update the knockout structure with match reference
+                    const firstRoundIndex = knockoutRounds.findIndex((r: any) => r.round === 1);
+                    if (firstRoundIndex !== -1) {
+                        const matchIndex = knockoutRounds[firstRoundIndex].matches.findIndex((m: any) => 
+                            m.player1?.toString() === matchData.player1?.toString() && 
+                            m.player2?.toString() === matchData.player2?.toString()
+                        );
+                        if (matchIndex !== -1) {
+                            knockoutRounds[firstRoundIndex].matches[matchIndex].matchReference = match._id;
+                        }
+                    }
+
+                    // Update board status
+                    const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
+                    if (boardToUpdate) {
+                        boardToUpdate.status = 'waiting';
+                        boardToUpdate.nextMatch = match._id;
+                        boardToUpdate.currentMatch = null;
+                    }
+                }
+            }
+
+            // Update tournament with knockout structure
+            tournament.knockout = knockoutRounds;
+            tournament.tournamentSettings.status = 'knockout';
+            tournament.tournamentSettings.knockoutMethod = 'automatic';
+            await tournament.save();
+
+            // Save club with updated board statuses
+            await club.save();
+
+            return true;
+        } catch (err) {
+            console.error('generateKnockout error:', err);
+            return false;
+        }
+    }
+
+    private static generateKnockoutRounds(advancingPlayers: any[], seededPlayers: any[], totalPlayers: number): any[] {
+        const rounds: any[] = [];
+
+        // First round: advancing players play each other
+        const firstRoundMatches = [];
+        for (let i = 0; i < advancingPlayers.length; i += 2) {
+            if (i + 1 < advancingPlayers.length) {
+                firstRoundMatches.push({
+                    player1: advancingPlayers[i].playerReference,
+                    player2: advancingPlayers[i + 1].playerReference,
+                });
+            }
+        }
+        rounds.push({ round: 1, matches: firstRoundMatches });
+
+        // Second round: seeded players + first round winners (only if there are seeded players)
+        if (seededPlayers.length > 0) {
+            const secondRoundMatches = [];
+            const firstRoundWinners = firstRoundMatches.map((_, index) => `winner_${index}`);
+            
+            for (let i = 0; i < seededPlayers.length; i++) {
+                secondRoundMatches.push({
+                    player1: firstRoundWinners[i] || null,
+                    player2: seededPlayers[i].playerReference,
+                });
+            }
+            rounds.push({ round: 2, matches: secondRoundMatches });
+        }
+
+        // Don't create empty rounds in advance - they will be generated dynamically
+        return rounds;
+    }
+
+    static async generateNextKnockoutRound(tournamentId: string, currentRound: number): Promise<boolean> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Get current round matches
+            const currentRoundMatches = tournament.knockout.find((r: any) => r.round === currentRound);
+            if (!currentRoundMatches) {
+                throw new BadRequestError(`Round ${currentRound} not found`);
+            }
+
+            // Get all finished matches from current round
+            const matchIds = currentRoundMatches.matches
+                .map((m: any) => m.matchReference)
+                .filter(Boolean)
+                .map((ref: any) => typeof ref === 'object' ? ref._id : ref);
+            
+            console.log('Current round matches:', currentRoundMatches.matches);
+            console.log('Match IDs to check:', matchIds);
+            
+            const finishedMatches = await MatchModel.find({
+                _id: { $in: matchIds },
+                status: 'finished'
+            });
+
+            console.log('Found finished matches:', finishedMatches.length);
+
+            // For manual mode, allow generating next round even with no finished matches
+            if (tournament.tournamentSettings.knockoutMethod === 'manual' && finishedMatches.length === 0) {
+                // Create empty next round for manual mode
+                const nextRound = currentRound + 1;
+                const existingNextRound = tournament.knockout.find((r: any) => r.round === nextRound);
+                if (!existingNextRound) {
+                    tournament.knockout.push({
+                        round: nextRound,
+                        matches: [],
+                    });
+                    await tournament.save();
+                }
+                return true;
+            }
+
+            // For automatic mode, require finished matches
+            if (tournament.tournamentSettings.knockoutMethod === 'automatic' && finishedMatches.length === 0) {
+                throw new BadRequestError('No finished matches in current round');
+            }
+
+            // Get winners
+            const winners = finishedMatches
+                .filter(match => match.winnerId)
+                .map(match => match.winnerId);
+
+            if (winners.length < 2) {
+                throw new BadRequestError('Not enough winners to generate next round');
+            }
+
+            // Generate next round matches
+            const nextRound = currentRound + 1;
+            const nextRoundMatches: any[] = [];
+            const club = await ClubModel.findById(tournament.clubId);
+            const availableBoards = club?.boards?.filter((board: any) => board.isActive) || [];
+
+            if (availableBoards.length === 0) {
+                throw new BadRequestError('No active boards available');
+            }
+
+            // Create matches for next round
+            for (let i = 0; i < winners.length; i += 2) {
+                if (i + 1 < winners.length) {
+                    const player1 = winners[i];
+                    const player2 = winners[i + 1];
+                    const boardIndex: number = (nextRoundMatches.length) % availableBoards.length;
+                    const assignedBoard: any = availableBoards[boardIndex];
+
+                    const match: any = await MatchModel.create({
+                        boardReference: assignedBoard.boardNumber,
+                        tournamentRef: tournament._id,
+                        type: 'knockout',
+                        round: nextRound,
+                        player1: {
+                            playerId: player1,
+                            legsWon: 0,
+                            legsLost: 0,
+                            average: 0,
+                        },
+                        player2: {
+                            playerId: player2,
+                            legsWon: 0,
+                            legsLost: 0,
+                            average: 0,
+                        },
+                        scorer: player1, // Default scorer
+                        status: 'pending',
+                        legs: [],
+                    });
+
+                    nextRoundMatches.push({
+                        player1: player1,
+                        player2: player2,
+                        matchReference: match._id,
+                    });
+
+                    // Update board status
+                    const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
+                    if (boardToUpdate) {
+                        boardToUpdate.status = 'waiting';
+                        boardToUpdate.nextMatch = match._id;
+                        boardToUpdate.currentMatch = null;
+                    }
+                }
+            }
+
+            // Update tournament knockout structure
+            const existingNextRound = tournament.knockout.find((r: any) => r.round === nextRound);
+            if (existingNextRound) {
+                existingNextRound.matches = nextRoundMatches;
+            } else {
+                tournament.knockout.push({
+                    round: nextRound,
+                    matches: nextRoundMatches,
+                });
+            }
+
+            await tournament.save();
+            await club.save();
+
+            return true;
+        } catch (err) {
+            console.error('generateNextKnockoutRound error:', err);
+            return false;
+        }
+    }
+
+    static async updateBoardStatusAfterMatch(matchId: string): Promise<boolean> {
+        try {
+            await connectMongo();
+            const match = await MatchModel.findById(matchId);
+            if (!match) {
+                throw new BadRequestError('Match not found');
+            }
+
+            const tournament = await TournamentModel.findById(match.tournamentRef);
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            const club = await ClubModel.findById(tournament.clubId);
+            if (!club) {
+                throw new BadRequestError('Club not found');
+            }
+
+            // Find the board that had this match
+            const board = club.boards.find((b: any) => b.boardNumber === match.boardReference);
+            if (!board) {
+                throw new BadRequestError('Board not found');
+            }
+
+            // Update board status based on match status
+            if (match.status === 'finished') {
+                // Check if there are more matches in the current round
+                const currentRound = tournament.knockout.find((r: any) => 
+                    r.matches.some((m: any) => {
+                        const matchRef = typeof m.matchReference === 'object' ? m.matchReference._id : m.matchReference;
+                        return matchRef?.toString() === matchId;
+                    })
+                );
+
+                if (currentRound) {
+                    const unfinishedMatches = currentRound.matches.filter((m: any) => {
+                        const matchRef = typeof m.matchReference === 'object' ? m.matchReference._id : m.matchReference;
+                        return matchRef && matchRef.toString() !== matchId;
+                    });
+
+                    if (unfinishedMatches.length > 0) {
+                        // Set board to idle until next match is assigned
+                        board.status = 'idle';
+                        board.currentMatch = null;
+                        board.nextMatch = null;
+                    } else {
+                        // All matches in this round are finished, check if we need to generate next round
+                        const matchIds = currentRound.matches
+                            .map((m: any) => m.matchReference)
+                            .filter(Boolean)
+                            .map((ref: any) => typeof ref === 'object' ? ref._id : ref);
+                        
+                        const allMatchesFinished = await MatchModel.find({
+                            _id: { $in: matchIds },
+                            status: 'finished'
+                        });
+
+                        if (allMatchesFinished.length === currentRound.matches.length) {
+                            // Generate next round if there are enough winners
+                            const winners = allMatchesFinished
+                                .filter(m => m.winnerId)
+                                .map(m => m.winnerId);
+
+                            if (winners.length >= 2) {
+                                await this.generateNextKnockoutRound(tournament.tournamentId, currentRound.round);
+                            } else {
+                                // Tournament finished
+                                board.status = 'idle';
+                                board.currentMatch = null;
+                                board.nextMatch = null;
+                            }
+                        }
+                    }
+                } else {
+                    // Match not found in knockout structure, set board to idle
+                    board.status = 'idle';
+                    board.currentMatch = null;
+                    board.nextMatch = null;
+                }
+            } else if (match.status === 'ongoing') {
+                board.status = 'playing';
+                board.currentMatch = match._id;
+                board.nextMatch = null;
+            }
+
+            await club.save();
+            return true;
+        } catch (err) {
+            console.error('updateBoardStatusAfterMatch error:', err);
+            return false;
+        }
+    }
+
+    static async generateManualKnockout(tournamentId: string): Promise<boolean> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Validate tournament is in group-stage
+            if (tournament.tournamentSettings.status !== 'group-stage') {
+                throw new BadRequestError('Tournament must be in group-stage to generate knockout');
+            }
+
+            // Create empty first round for manual matches
+            const knockoutRounds = [{
+                round: 1,
+                matches: []
+            }];
+
+            // Update tournament with manual knockout structure
+            tournament.knockout = knockoutRounds;
+            tournament.tournamentSettings.status = 'knockout';
+            tournament.tournamentSettings.knockoutMethod = 'manual';
+            await tournament.save();
+
+            return true;
+        } catch (err) {
+            console.error('generateManualKnockout error:', err);
+            return false;
+        }
+    }
+
+    static async addManualMatch(tournamentId: string, matchData: {
+        round: number;
+        player1Id: string;
+        player2Id: string;
+    }): Promise<any> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Validate players exist in tournament
+            const player1 = tournament.tournamentPlayers.find((p: any) => 
+                p.playerReference.toString() === matchData.player1Id
+            );
+            const player2 = tournament.tournamentPlayers.find((p: any) => 
+                p.playerReference.toString() === matchData.player2Id
+            );
+
+            if (!player1 || !player2) {
+                throw new BadRequestError('One or both players not found in tournament');
+            }
+
+            // Find the round
+            const round = tournament.knockout.find((r: any) => r.round === matchData.round);
+            if (!round) {
+                throw new BadRequestError(`Round ${matchData.round} not found`);
+            }
+
+            // Get available boards
+            const club = await ClubModel.findById(tournament.clubId);
+            if (!club || !club.boards) {
+                throw new BadRequestError('Club boards not found');
+            }
+
+            const availableBoards = club.boards.filter((board: any) => board.isActive);
+            if (availableBoards.length === 0) {
+                throw new BadRequestError('No active boards available');
+            }
+
+            // Assign board in round-robin fashion
+            const boardIndex = round.matches.length % availableBoards.length;
+            const assignedBoard = availableBoards[boardIndex];
+
+            // Create match
+            const match = await MatchModel.create({
+                boardReference: assignedBoard.boardNumber,
+                tournamentRef: tournament._id,
+                type: 'knockout',
+                round: matchData.round,
+                player1: {
+                    playerId: matchData.player1Id,
+                    legsWon: 0,
+                    legsLost: 0,
+                    average: 0,
+                },
+                player2: {
+                    playerId: matchData.player2Id,
+                    legsWon: 0,
+                    legsLost: 0,
+                    average: 0,
+                },
+                scorer: matchData.player1Id, // Default scorer
+                status: 'pending',
+                legs: [],
+            });
+
+            // Add match to round
+            round.matches.push({
+                player1: matchData.player1Id,
+                player2: matchData.player2Id,
+                matchReference: match._id,
+            });
+
+            // Update board status
+            const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
+            if (boardToUpdate) {
+                boardToUpdate.status = 'waiting';
+                boardToUpdate.nextMatch = match._id;
+                boardToUpdate.currentMatch = null;
+            }
+
+            await tournament.save();
+            await club.save();
+
+            return match;
+        } catch (err) {
+            console.error('addManualMatch error:', err);
+            return false;
+        }
     }
 }

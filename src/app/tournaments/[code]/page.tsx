@@ -5,20 +5,21 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import TournamentInfo from '@/components/tournament/TournamentInfo';
 import TournamentPlayers from '@/components/tournament/TournamentPlayers';
-import TournamentGroupsGenerator from '@/components/tournament/TournamentGroupsGenerator';
+import TournamentGroupsGenerator from '@/components/tournament/TournamentStatusChanger';
 import TournamentGroupsView from '@/components/tournament/TournamentGroupsView';
 import TournamentBoardsView from '@/components/tournament/TournamentBoardsView';
+import TournamentKnockoutBracket from '@/components/tournament/TournamentKnockoutBracket';
 
 const TournamentPage = () => {
-  const { code } = useParams();
-  const [tournament, setTournament] = useState<any | null>(null);
+    const { code } = useParams();
+    const [tournament, setTournament] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userClubRole, setUserClubRole] = useState<'admin' | 'moderator' | 'member' | 'none'>('none');
   const [userPlayerStatus, setUserPlayerStatus] = useState<'applied' | 'checked-in' | 'none'>('none');
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
-  const { user } = useUserContext();
+    const { user } = useUserContext();
 
   // Bulk fetch for tournament and user role
   const fetchAll = useCallback(async () => {
@@ -32,7 +33,17 @@ const TournamentPage = () => {
       }
       const [tournamentRes, userRoleRes, playerIdRes] = await Promise.all(requests);
       setTournament(tournamentRes.data);
-      setPlayers(tournamentRes.data.tournamentPlayers || []);
+      
+      // Ensure tournamentPlayers are properly populated
+      const tournamentData = tournamentRes.data;
+      if (tournamentData.tournamentPlayers && Array.isArray(tournamentData.tournamentPlayers)) {
+        setPlayers(tournamentData.tournamentPlayers);
+        console.log('Tournament players:', tournamentData.tournamentPlayers);
+      } else {
+        setPlayers([]);
+        console.log('No tournament players found');
+      }
+      
       if (user?._id) {
         setUserClubRole(userRoleRes.data.userClubRole || 'none');
         setUserPlayerStatus(userRoleRes.data.userPlayerStatus || 'none');
@@ -51,7 +62,7 @@ const TournamentPage = () => {
     }
   }, [code, user]);
 
-  useEffect(() => {
+    useEffect(() => {
     fetchAll();
   }, [code, user, fetchAll]);
 
@@ -161,7 +172,7 @@ const TournamentPage = () => {
             </div>
 
             {/* Groups Generator Card */}
-            {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+            {(userClubRole === 'admin' || userClubRole === 'moderator') && tournament.tournamentSettings.status === "pending" && (
               <div className="card bg-base-100 shadow-xl">
                 <div className="card-body">
                   <h2 className="card-title text-2xl font-bold text-primary mb-4">
@@ -190,6 +201,27 @@ const TournamentPage = () => {
                     Csoportok és Meccsek
                   </h2>
                   <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
+                </div>
+              </div>
+            )}
+
+            {/* Knockout Bracket Card */}
+            {tournament.tournamentSettings?.status === 'knockout' && (
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body">
+                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Egyenes Kiesés
+                  </h2>
+                  <TournamentKnockoutBracket 
+                    tournamentCode={tournament.tournamentId} 
+                    userClubRole={userClubRole} 
+                    onRefetch={handleRefetch}
+                    tournamentPlayers={players}
+                    knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
+                  />
                 </div>
               </div>
             )}
@@ -250,6 +282,11 @@ const TournamentPage = () => {
                     </svg>
                     Frissítés
                   </button>
+                  <TournamentGroupsGenerator
+                    tournament={tournament}
+                    userClubRole={userClubRole}
+                    onRefetch={handleRefetch}
+                  />
                 </div>
               </div>
             </div>

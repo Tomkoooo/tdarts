@@ -48,12 +48,18 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     knockout: [{
         type: {
             round: { type: Number, required: true },
-            matches: { type: [mongoose.Schema.Types.ObjectId], ref: 'Match', required: true, default: [] },
+            matches: [{
+                type: {
+                    player1: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+                    player2: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+                    matchReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' }
+                }
+            }]
         }
     }],
     tournamentSettings: {
         type: {
-            status: { type: String, enum: ['pending', 'active', 'finished', 'group', 'knockout'], required: true },
+            status: { type: String, enum: ['pending', 'active', 'finished', 'group-stage', 'knockout'], required: true },
             name: { type: String, required: true },
             description: { type: String, default: null },
             startDate: { type: Date, required: true, default: Date.now },
@@ -61,6 +67,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             format: { type: String, enum: ['group', 'knockout', 'group_knockout'], required: true },
             startingScore: { type: Number, required: true },
             tournamentPassword: { type: String, required: true },
+            knockoutMethod: { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
         }
     },
     createdAt: { type: Date, default: Date.now },
