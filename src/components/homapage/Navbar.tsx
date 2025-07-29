@@ -58,7 +58,7 @@ const Navbar = () => {
                   <IconUser className="w-5 h-5" />
                   <span>{user.username}</span>
                 </Link>
-                <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline btn-primary push-button">
+                <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline push-button">
                 <IconDart className="w-5 h-5" />
                 <span>Saját klub</span>
                             </Link>

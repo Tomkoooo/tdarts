@@ -56,7 +56,6 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
         // For knockout-only tournaments, generate knockout directly from pending status
         if (knockoutMode === 'automatic') {
           response = await axios.post(`/api/tournaments/${code}/generateKnockout`, {
-            playersCount: selectedPlayers,
             useSeededPlayers: false,
             seededPlayersCount: 0
           });
@@ -123,8 +122,9 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
         </button>
       )}
 
-      {/* Knockout Generation Button - only show when tournament is in group-stage and format allows knockout */}
-      {tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout') && (
+      {/* Knockout Generation Button - show when tournament is in group-stage and format allows knockout, OR when format is knockout and status is pending */}
+      {(tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
+       (tournamentStatus === 'pending' && tournamentFormat === 'knockout') && (
         <button 
           className="btn btn-primary" 
           onClick={() => setShowKnockoutModal(true)} 
@@ -211,7 +211,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 <div className="text-center mb-6">
                   <p className="text-base-content/70 mb-4">
                     {tournamentFormat === 'knockout' 
-                      ? 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
+                      ? 'Minden jelentkező játékos részt vesz az egyenes kiesésben.'
                       : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
                     }
                   </p>
@@ -222,7 +222,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
               </>
             )}
             
-            {knockoutMode === 'automatic' && (
+            {knockoutMode === 'automatic' && tournamentFormat !== 'knockout' && (
               <div className="form-control mb-6">
                 <label className="label">
                   <span className="label-text font-bold">Továbbjutók száma:</span>

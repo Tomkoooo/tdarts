@@ -8,10 +8,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const body = await request.json();
 
         // Validate required fields
-        if (body.playersCount === undefined || body.playersCount === null) {
-            throw new BadRequestError('Missing required field: playersCount');
-        }
-
         if (body.useSeededPlayers === undefined || body.useSeededPlayers === null) {
             throw new BadRequestError('Missing required field: useSeededPlayers');
         }
@@ -20,14 +16,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             throw new BadRequestError('Missing required field: seededPlayersCount');
         }
 
-        // Validate playersCount is a power of 2
-        if (!Number.isInteger(Math.log2(body.playersCount))) {
-            throw new BadRequestError('playersCount must be a power of 2 (2, 4, 8, 16, 32)');
+        // Get tournament to check format
+        const tournament = await TournamentService.getTournament(code);
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
         }
 
-        // Validate seeded players count
-        if (body.useSeededPlayers && body.seededPlayersCount > body.playersCount) {
-            throw new BadRequestError('seededPlayersCount cannot be greater than playersCount');
+        const format = tournament.tournamentSettings?.format || 'group_knockout';
+
+        // Validate playersCount only for group_knockout format
+        if (format === 'group_knockout') {
+            if (body.playersCount === undefined || body.playersCount === null) {
+                throw new BadRequestError('Missing required field: playersCount for group_knockout format');
+            }
+
+            // Validate playersCount is a power of 2
+            if (!Number.isInteger(Math.log2(body.playersCount))) {
+                throw new BadRequestError('playersCount must be a power of 2 (2, 4, 8, 16, 32)');
+            }
+
+            // Validate seeded players count
+            if (body.useSeededPlayers && body.seededPlayersCount > body.playersCount) {
+                throw new BadRequestError('seededPlayersCount cannot be greater than playersCount');
+            }
         }
 
         // Call the service method to generate knockout

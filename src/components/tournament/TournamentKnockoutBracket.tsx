@@ -250,6 +250,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     }
   };
 
+  console.log(knockoutData);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -303,7 +305,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
         <div className="flex gap-2">
           {(userClubRole === 'admin' || userClubRole === 'moderator') && 
-           currentKnockoutMethod === 'manual' && 
            knockoutData.length > 0 && (
             <button
               className="btn btn-primary btn-sm"
@@ -435,8 +436,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                             <div className="card bg-base-100 shadow-lg border-2 border-base-200 min-w-[280px] max-w-[320px] hover:shadow-xl transition-shadow relative z-10">
                               <div className="card-body p-4">
                                 <div className="flex justify-between items-center mb-3">
-                                  <span className={`badge badge-sm ${getStatusColor(match.matchReference.status || '')}`}>
-                                    {getStatusText(match.matchReference.status || '')}
+                                  <span className={`badge badge-sm ${getStatusColor(match.matchReference?.status || '')}`}>
+                                    {getStatusText(match.matchReference?.status || '')}
                                   </span>
                                   <span className="text-xs text-base-content/60">Tábla: {match.matchReference.boardReference}</span>
                                   {(userClubRole === 'admin' || userClubRole === 'moderator') && (

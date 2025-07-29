@@ -19,6 +19,17 @@ export interface TournamentPlayer {
         oneEightiesCount: number;
         highestCheckout: number;
     };
+    // Final standings (added when tournament is finished)
+    finalPosition?: number;
+    eliminatedIn?: string;
+    finalStats?: {
+        matchesWon: number;
+        matchesLost: number;
+        legsWon: number;
+        legsLost: number;
+        oneEightiesCount: number;
+        highestCheckout: number;
+    };
 }
 
 export interface TournamentGroup {
