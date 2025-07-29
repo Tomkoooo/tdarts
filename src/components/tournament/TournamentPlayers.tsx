@@ -86,16 +86,45 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   
   // Check if tournament is in pending status
   const isPending = tournament?.tournamentSettings?.status === 'pending';
+  
+  // Check if registration is open
+  const startDate = tournament?.tournamentSettings?.startDate;
+  const registrationDeadline = tournament?.tournamentSettings?.registrationDeadline;
+  const now = new Date();
+  
+  let registrationOpen = tournament?.tournamentSettings?.registrationOpen !== false;
+  
+  if (registrationDeadline) {
+    registrationOpen = registrationOpen && now < new Date(registrationDeadline);
+  } else if (startDate) {
+    registrationOpen = registrationOpen && now < new Date(startDate - 60 * 60 * 1000); // 1 hour before start
+  }
+  
+  // Check if groups are generated (tournament moved to group-stage or beyond)
+  const groupsGenerated = tournament?.tournamentSettings?.status !== 'pending';
+  
+  // Allow admin/moderator actions until groups are generated
+  const allowAdminActions = !groupsGenerated;
+  
+  // Allow player registration only if registration is open
+  const allowPlayerRegistration = registrationOpen && isPending;
 
   console.log(players);
 
   return (
     <div className="mb-4">
-      <h2 className="text-xl font-semibold mb-2">Játékosok</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xl font-semibold">Játékosok</h2>
+        {isPending && (
+          <span className={`badge badge-sm ${allowPlayerRegistration ? 'badge-success' : 'badge-error'}`}>
+            {allowPlayerRegistration ? 'Nevezés nyitva' : 'Nevezés zárva'}
+          </span>
+        )}
+      </div>
       {error && <div className="mb-2 text-error">{error}</div>}
       
-      {/* Show player management only if tournament is pending */}
-      {isPending && (userClubRole === 'admin' || userClubRole === 'moderator') && (
+      {/* Show player management only if admin actions are allowed */}
+      {allowAdminActions && (userClubRole === 'admin' || userClubRole === 'moderator') && (
         <PlayerSearch onPlayerSelected={handleAddPlayer} />
       )}
       
@@ -105,8 +134,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           <li key={player._id} className="flex items-center gap-4 p-2 bg-base-100 rounded shadow">
             <span className="flex-1">{player.playerReference?.name || player.name || player._id}</span>
             
-            {isPending ? (
-              // Show status and action buttons for pending tournaments
+            {allowAdminActions ? (
+              // Show status and action buttons for tournaments where admin actions are allowed
               <>
                 <span className="px-2 py-1 text-xs rounded bg-base-200">{player.status}</span>
                 {(userClubRole === 'admin' || userClubRole === 'moderator') && (
@@ -126,7 +155,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 )}
               </>
             ) : (
-              // Show player statistics for non-pending tournaments
+              // Show player statistics for tournaments where groups are generated
               <div className="flex gap-4 text-sm w-1/3 ">
                 <div className="flex items-center gap-1 w-1/2 ">
                   <span className="text-base-content/60">HC:</span>
@@ -147,8 +176,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         ))}
       </ul>
       
-      {/* Show signup button only if tournament is pending */}
-      {isPending && (
+      {/* Show signup button only if player registration is allowed */}
+      {allowPlayerRegistration && (
         <>
           {user && userPlayerStatus === 'none' && hasFreeSpots && (
             <button className="btn btn-primary mt-4" onClick={handleSelfSignUp}>Jelentkezés a tornára</button>
@@ -162,6 +191,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </div>
           )}
         </>
+      )}
+      
+      {/* Show registration status message */}
+      {!allowPlayerRegistration && isPending && (
+        <div className="mt-4 p-3 bg-warning/10 text-warning rounded-lg">
+          <p className="font-semibold">Nevezés zárva</p>
+          <p className="text-sm">
+            {registrationDeadline 
+              ? `A nevezési határidő (${new Date(registrationDeadline).toLocaleDateString('hu-HU')}) lejárt.`
+              : 'A nevezés már lezárult.'
+            }
+          </p>
+        </div>
       )}
     </div>
   );

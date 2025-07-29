@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
 import '../board.css'
@@ -54,11 +54,11 @@ const getTournamentPasswordKey = (tournamentId: string) => `tournament_password_
 const getSelectedBoardKey = (tournamentId: string) => `selected_board_${tournamentId}`;
 
 interface BoardPageProps {
-  params: { tournamentId: string };
+  params: Promise<{ tournamentId: string }>;
 }
 
-const BoardPage: React.FC<BoardPageProps> = ({ params }) => {
-  const { tournamentId } = params;
+const BoardPage: React.FC<BoardPageProps> = (props) => {
+  const { tournamentId } = use(props.params);
   
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);

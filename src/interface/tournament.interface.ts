@@ -57,6 +57,12 @@ export interface TournamentSettings {
     startingScore: number;
     tournamentPassword: string;
     knockoutMethod?: 'automatic' | 'manual';
+    // New fields
+    location?: string;
+    prize?: string;
+    type?: 'amateur' | 'open';
+    registrationOpen?: boolean;
+    registrationDeadline: Date
 }
 
 export interface PlayerDocument extends Document {

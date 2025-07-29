@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { PlayerModel } from '../models/player.model';
 
 export class PlayerService {
@@ -34,10 +35,21 @@ export class PlayerService {
     return player;
   }
 
-  static async findPlayerByUserId(userId: string): Promise<import('@/interface/player.interface').PlayerDocument | null> {
+  static async findPlayerByUserId(
+    userId: string
+  ): Promise<import('@/interface/player.interface').PlayerDocument | null> {
     if (!userId || typeof userId !== 'string') {
       return null;
     }
-    return await PlayerModel.findOne({ userRef: userId });
+
+    // Try to match both as string and as ObjectId
+    let player = await PlayerModel.findOne({ userRef: userId });
+    if (!player) {
+      // Try as ObjectId if not found as string
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        player = await PlayerModel.findOne({ userRef: new mongoose.Types.ObjectId(userId) });
+      }
+    }
+    return player || null;
   }
 } 

@@ -61,9 +61,9 @@ clubSchema.pre('save', async function (next) {
 
 clubSchema.methods.toJSON = function () {
   const club = this.toObject();
-  club.members = club.members.map((id: Types.ObjectId) => id.toString());
-  club.admin = club.admin.map((id: Types.ObjectId) => id.toString());
-  club.moderators = club.moderators.map((id: Types.ObjectId) => id.toString());
+  club.members = club.members?.map((_id: Types.ObjectId) => _id.toString()) || [];
+  club.admin = club.admin?.map((_id: Types.ObjectId) => _id.toString()) || [];
+  club.moderators = club.moderators?.map((_id: Types.ObjectId) => _id.toString()) || [];
   return club;
 };
 

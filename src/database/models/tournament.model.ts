@@ -68,6 +68,12 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             startingScore: { type: Number, required: true },
             tournamentPassword: { type: String, required: true },
             knockoutMethod: { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
+            // New fields
+            location: { type: String, default: null },
+            prize: { type: String, default: null },
+            type: { type: String, enum: ['amateur', 'open'], default: 'amateur' },
+            registrationOpen: { type: Boolean, default: true },
+            registrationDeadline: { type: Date, default: null },
         }
     },
     seededPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],

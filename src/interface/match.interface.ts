@@ -48,4 +48,5 @@ export interface Match {
 
 export interface MatchDocument extends Omit<Match, '_id'>, Document {
   _id: Types.ObjectId;
+  winnerId?: Types.ObjectId;
 } 

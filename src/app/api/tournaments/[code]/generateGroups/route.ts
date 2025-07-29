@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 
-export async function POST(request: NextRequest, { params }: { params: { code: string } }) {
-    try {
-        const { code } = params;
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  try {
+    const { code } = await params;
         const res= await TournamentService.generateGroups(code);
         if (res) {
             const tournament = await TournamentService.getTournament(code);

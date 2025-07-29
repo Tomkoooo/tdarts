@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { BadRequestError } from "@/middleware/errorHandle";
 
-export async function POST(request: NextRequest, { params }: { params: { matchId: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ matchId: string }> }
+) {
   try {
-    const { matchId } = params;
+    const { matchId } = await params;
     const body = await request.json();
     
     console.log('=== LEG FINISH API CALL ===');

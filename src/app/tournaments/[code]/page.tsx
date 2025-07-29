@@ -47,7 +47,11 @@ const TournamentPage = () => {
       if (user?._id) {
         setUserClubRole(userRoleRes.data.userClubRole || 'none');
         setUserPlayerStatus(userRoleRes.data.userPlayerStatus || 'none');
-        setUserPlayerId(playerIdRes.data ? playerIdRes.data : null);
+        // Find user's player ID from tournament data
+        const userPlayer = tournamentData.tournamentPlayers?.find((p: any) => 
+          p.playerReference?.userRef === user._id || p.playerReference?._id?.toString() === user._id
+        );
+        setUserPlayerId(userPlayer ? userPlayer.playerReference?._id || userPlayer.playerReference : null);
       } else {
         setUserClubRole('none');
         setUserPlayerStatus('none');

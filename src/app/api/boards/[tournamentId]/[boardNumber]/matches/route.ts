@@ -3,9 +3,12 @@ import { MatchService } from "@/database/services/match.service";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
 
-export async function GET(request: NextRequest, { params }: { params: { tournamentId: string; boardNumber: string } }) {
-    try {
-        const { tournamentId, boardNumber } = params;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }
+) {
+  try {
+    const { tournamentId, boardNumber } = await params;
         
         // Get tournament to find clubId
         const tournament = await TournamentService.getTournament(tournamentId);

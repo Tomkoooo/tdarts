@@ -4,8 +4,11 @@ import { ClubService } from '@/database/services/club.service';
 import { TournamentDocument } from '@/interface/tournament.interface';
 import { Document } from 'mongoose';
 
-export async function POST(request: NextRequest, { params }: { params: { clubId: string } }) {
-    const { clubId } = params;
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ clubId: string }> }
+) {
+  const { clubId } = await params;
     const payload = await request.json();
     const club = await ClubService.getClub(clubId);
     if (!club) {
@@ -30,6 +33,12 @@ export async function POST(request: NextRequest, { params }: { params: { clubId:
             boardCount: club.boards.length,
             entryFee: payload.entryFee,
             tournamentPassword: payload.tournamentPassword,
+            // New fields
+            location: payload.location || null,
+            prize: payload.prize || null,
+            type: payload.type || 'amateur',
+            registrationOpen: payload.registrationOpen !== undefined ? payload.registrationOpen : true,
+            registrationDeadline: payload.registrationDeadline ? new Date(payload.registrationDeadline) : null,
         },
         createdAt: now,
         updatedAt: now,
