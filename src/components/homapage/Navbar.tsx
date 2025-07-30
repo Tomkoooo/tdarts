@@ -95,12 +95,12 @@ const Navbar = () => {
                 </a>
               ))}
               {user ? (
-                <div className="flex justify-between items-center">
-                <Link href="/profile" className="flex items-center space-x-2 btn btn-primary glass-button push-button">
+                <div className="flex flex-col gap-3">
+                <Link href="/profile" className="flex items-center justify-center space-x-2 btn btn-primary glass-button push-button w-full">
                   <IconUser className="w-5 h-5" />
                   <span>{user.username}</span>
                 </Link>
-                <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline btn-primary push-button">
+                <Link href="/myclub" className="flex items-center justify-center space-x-2 btn btn-outline btn-primary push-button w-full">
                 <IconDart className="w-5 h-5" />
                 <span>Saját klub</span>
                             </Link>
