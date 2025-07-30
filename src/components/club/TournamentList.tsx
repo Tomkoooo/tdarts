@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { IconTrophy, IconUsers, IconCalendar, IconArrowRight, IconDotsVertical } from '@tabler/icons-react';
+import { IconTrophy, IconCalendar, IconArrowRight, IconDotsVertical } from '@tabler/icons-react';
 
 interface TournamentListProps {
   tournaments: Array<{

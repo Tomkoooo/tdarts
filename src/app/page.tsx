@@ -1,7 +1,6 @@
 
 import React from 'react';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
-import Navbar from '@/components/homapage/Navbar';
 import HeroSection from '@/components/homapage/HeroSection';
 import InfiniteCarousel from '@/components/homapage/InfiniteCarousel';
 import FeaturesSection from '@/components/homapage/FeaturesSection';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IconX, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { TournamentSettings } from '@/interface/tournament.interface';
 
@@ -12,7 +12,6 @@ interface CreateTournamentModalProps {
   onTournamentCreated: () => void;
 }
 
-type TournamentFormat = 'group' | 'knockout' | 'group_knockout';
 type Step = 'details' | 'settings';
 
 const defaultSettings: TournamentSettings = {
@@ -36,7 +35,6 @@ export default function CreateTournamentModal({
   onClose,
   clubId,
   boardCount,
-  userRole,
   onTournamentCreated
 }: CreateTournamentModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('details');
@@ -44,7 +42,6 @@ export default function CreateTournamentModal({
   const [error, setError] = useState<string>('');
   const router = useRouter();
 
-  console.log(isOpen);
 
   const handleSettingsChange = (field: keyof TournamentSettings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -52,10 +49,8 @@ export default function CreateTournamentModal({
   };
 
 
-
-
-
   const handleSubmit = async () => {
+    setError('')
     if (!settings.name) {
       setError('A torna neve kötelező');
       setCurrentStep('details');
@@ -105,6 +100,7 @@ export default function CreateTournamentModal({
       }
     } catch (err) {
       setError('Hiba történt a torna létrehozása során');
+      console.error('Create tournament error:', err);
     }
   };
 

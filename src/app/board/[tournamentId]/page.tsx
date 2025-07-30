@@ -161,6 +161,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       }
     } catch (err) {
       setError("Hiba történt a bejelentkezés során!");
+      console.error('Password submit error:', err);
     } finally {
       setLoading(false);
     }
@@ -173,6 +174,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       setBoards(response.data.boards);
     } catch (err) {
       setError("Nem sikerült betölteni a táblákat!");
+      console.error('Load boards error:', err);
     } finally {
       setLoading(false);
     }
@@ -187,6 +189,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       setMatches(response.data.matches);
     } catch (err) {
       setError("Nem sikerült betölteni a meccseket!");
+      console.error('Load matches error:', err);
     } finally {
       setLoading(false);
     }
@@ -252,6 +255,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       await loadMatches(); // Reload matches to see updated status
     } catch (err) {
       setError("Hiba történt a meccs befejezése során!");
+      console.error('Finish match error:', err);
     } finally {
       setAdminLoading(false);
     }
@@ -281,6 +285,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       }
     } catch (err) {
       setError("Nem sikerült elindítani a meccset!");
+      console.error('Start match error:', err);
     } finally {
       setSetupLoading(false);
     }

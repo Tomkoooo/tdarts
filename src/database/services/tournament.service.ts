@@ -28,6 +28,7 @@ export class TournamentService {
                 await TournamentModel.collection.dropIndex('code_1');
             } catch (error) {
                 // Index doesn't exist, which is fine
+                console.log(error)
             }
             
             this.indexesInitialized = true;
@@ -81,7 +82,7 @@ export class TournamentService {
 
     static async getTournament(tournamentId: string): Promise<TournamentDocument> {
         await connectMongo();
-        let tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
             .populate({
                 path: 'clubId',
                 populate: {
@@ -741,7 +742,7 @@ export class TournamentService {
         const rounds: any[] = [];
 
         // Handle odd number of players by giving a bye to the last player
-        let playersForFirstRound = [...advancingPlayers];
+        const playersForFirstRound = [...advancingPlayers];
         let playerWithBye = null;
         
         if (playersForFirstRound.length % 2 !== 0) {
@@ -760,7 +761,7 @@ export class TournamentService {
         });
 
         // Sort players within each group by their group standing
-        playersByGroup.forEach((players, groupId) => {
+        playersByGroup.forEach((players) => {
             players.sort((a: any, b: any) => {
                 if (a.groupStanding !== b.groupStanding) {
                     return (a.groupStanding || 0) - (b.groupStanding || 0);
@@ -887,7 +888,7 @@ export class TournamentService {
                 .map(match => match.winnerId);
 
             // For the first round, check if there was a player with a bye
-            let playersForNextRound = [...winners];
+            const playersForNextRound = [...winners];
             if (currentRound === 1) {
                 const format = tournament.tournamentSettings?.format || 'group_knockout';
                 if (format === 'knockout') {
@@ -1374,7 +1375,8 @@ export class TournamentService {
                 });
 
                 // Sort players in each group by groupStanding
-                for (const [groupId, players] of playersByGroup) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                for (const [gropId, players] of playersByGroup) {
                     const sortedPlayers = players.sort((a: any, b: any) => {
                         // First sort by groupStanding
                         if (a.groupStanding !== b.groupStanding) {
@@ -1661,7 +1663,6 @@ export class TournamentService {
                 const player = await PlayerModel.findById(playerId);
                 if (player) {
                     const placement = playerEliminations.get(playerId) || 999;
-                    const isWinner = placement === 1;
 
                     // Update tournament history
                     const tournamentHistory = {

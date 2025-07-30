@@ -1,5 +1,5 @@
 import { UserModel } from '@/database/models/user.model';
-import { IUserDocument } from '@/interface/user.interface';
+import { UserDocument as IUserDocument } from '@/interface/user.interface';
 import { BadRequestError } from '@/middleware/errorHandle';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
@@ -99,6 +99,7 @@ export class AuthService {
       return user;
     } catch (error) {
       throw new BadRequestError('Invalid token');
+      console.error('Verify token error:', error);
     }
   }
 

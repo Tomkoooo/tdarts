@@ -141,6 +141,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       window.location.reload();
     } catch (err) {
       setError('Hiba történt a mentés során!');
+      console.error('Save match error:', err);
     } finally {
       setLoading(false);
     }

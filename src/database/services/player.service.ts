@@ -1,6 +1,5 @@
-import mongoose from 'mongoose';
-import { PlayerModel } from '../models/player.model';
-import { UserService } from './user.service';
+
+import { PlayerModel } from '../models/player.model'; 
 import { UserModel } from '../models/user.model';
 
 export class PlayerService {

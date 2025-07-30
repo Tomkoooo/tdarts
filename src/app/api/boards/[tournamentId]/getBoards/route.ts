@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
-import { BadRequestError } from "@/middleware/errorHandle";
 
 export async function GET(
   request: NextRequest,

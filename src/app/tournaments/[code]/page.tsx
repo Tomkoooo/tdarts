@@ -31,7 +31,7 @@ const TournamentPage = () => {
         requests.push(axios.get(`/api/tournaments/${code}/getUserRole`, { headers: { 'x-user-id': user._id } }));
         requests.push(axios.get(`/api/tournaments/${code}/players`, { headers: { 'x-user-id': user._id } }));
       }
-      const [tournamentRes, userRoleRes, playerIdRes] = await Promise.all(requests);
+      const [tournamentRes, userRoleRes] = await Promise.all(requests);
       setTournament(tournamentRes.data);
       
       // Ensure tournamentPlayers are properly populated

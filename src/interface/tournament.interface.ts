@@ -1,5 +1,4 @@
-import mongoose, { Document, Types } from 'mongoose';
-import { Matches } from './matches.interface';
+import { Document, Types } from 'mongoose';
 
 // Plain types (API, DTO, stb.)
 export interface TournamentPlayer {

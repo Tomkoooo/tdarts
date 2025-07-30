@@ -1,12 +1,11 @@
 "use client";
-import React, { useState } from 'react';
+import React from 'react';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 import { IconArrowLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 
 const ResetPassword: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -23,7 +22,7 @@ const ResetPassword: React.FC = () => {
         </Link>
       </div>
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <ResetPasswordForm isLoading={isLoading} />
+        <ResetPasswordForm isLoading={false} />
       </div>
     </div>
   );

@@ -51,6 +51,7 @@ const Login: React.FC = () => {
       );
     } catch (error) {
       // toast.promise handles errors, so no additional logic is needed here
+      console.error('Login error:', error);
     }
   };
 

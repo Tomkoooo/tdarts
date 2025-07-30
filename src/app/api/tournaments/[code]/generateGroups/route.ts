@@ -14,6 +14,6 @@ export async function POST(
         }
         return NextResponse.json({ error: 'Failed to generate groups' }, { status: 501 });
     } catch (error) {
-        return NextResponse.json({ error: 'Failed to generate groups' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to generate groups' + error }, { status: 500 });
     }
 } 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { PlayerService } from "@/database/services/player.service";
 
-export async function GET(request: NextRequest, { params }: { params: { code: string } }) {
+export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id');
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { code: st
   return NextResponse.json(player._id);
 }
 
-export async function POST(request: NextRequest, { params }: { params: { code: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const { userRef, name } = await request.json();
   let player;

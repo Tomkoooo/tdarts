@@ -3,7 +3,7 @@ import { ProfileService } from '@/database/services/profile.service';
 import { AuthService } from '@/database/services/auth.service';
 import { cookies } from 'next/headers';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;

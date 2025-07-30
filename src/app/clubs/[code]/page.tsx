@@ -6,10 +6,8 @@ import toast from 'react-hot-toast';
 import { useUserContext } from '@/hooks/useUser';
 import { Club } from '@/interface/club.interface';
 import ClubLayout from '@/components/club/ClubLayout';
-import ClubInfo from '@/components/club/ClubInfo';
 import MemberList from '@/components/club/MemberList';
 import TournamentList from '@/components/club/TournamentList';
-import AddPlayerModal from '@/components/club/AddPlayerModal';
 import CreateTournamentModal from '@/components/club/CreateTournamentModal';
 import EditClubModal from '@/components/club/EditClubModal';
 import PlayerSearch from '@/components/club/PlayerSearch';
@@ -19,9 +17,10 @@ export default function ClubDetailPage() {
   const { user } = useUserContext();
   const [club, setClub] = useState<Club | null>(null);
   const [userRole, setUserRole] = useState<'admin' | 'moderator' | 'member' | 'none'>('none');
-  const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false);
   const [isCreateTournamentModalOpen, setIsCreateTournamentModalOpen] = useState(false);
   const [isEditClubModalOpen, setIsEditClubModalOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false);
   const router = useRouter();
   const params = useParams();
   const code = params.code as string;
@@ -174,7 +173,7 @@ export default function ClubDetailPage() {
 
   // Calculate summary stats
   const numPlayers = club.members.length;
-  const now = new Date();
+
   const tournaments = club.tournaments || [];
   const pastTournaments = tournaments.filter(t => t.status === 'finished').length;
   const ongoingTournaments = tournaments.filter(t => t.status === 'active').length;

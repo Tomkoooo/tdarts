@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { ClubDocument, Club } from '@/interface/club.interface';
+import { ClubDocument } from '@/interface/club.interface';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
@@ -54,7 +54,7 @@ export class ClubService {
     }
 
     // Player collectionből referált tagok (ha vannak)
-    let memberIds: Types.ObjectId[] = [];
+    const memberIds: Types.ObjectId[] = [];
     if (clubData.players && clubData.players.length > 0) {
       for (const player of clubData.players) {
         let playerDoc = await PlayerModel.findOne({ name: player.name });
@@ -109,9 +109,7 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    console.log(userId)
-
-    if (!club.admin.includes(new Types.ObjectId(userId))) {
+    if (!club.admin.includes(userId)) {
       throw new BadRequestError('Only admins can update club details');
     }
 

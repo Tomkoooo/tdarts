@@ -1,4 +1,4 @@
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
 import { MatchDocument } from '@/interface/match.interface';
 
 const throwSchema = new mongoose.Schema({

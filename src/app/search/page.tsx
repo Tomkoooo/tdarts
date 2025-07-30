@@ -435,7 +435,7 @@ const SearchPage: React.FC = () => {
                 {/* Results Summary */}
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold mb-2">
-                    Keresési eredmények: "{query}"
+                    Keresési eredmények: &quot;{query}&quot;
                   </h2>
                   <p className="text-base-content/70">
                     {results.totalResults} találat

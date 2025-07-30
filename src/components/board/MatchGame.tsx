@@ -32,13 +32,6 @@ interface Match {
   winnerId?: string; // Added for finished matches
 }
 
-interface Throw {
-  score: number;
-  darts: number;
-  isDouble?: boolean;
-  isCheckout?: boolean;
-}
-
 interface MatchGameProps {
   match: Match;
   onBack: () => void;

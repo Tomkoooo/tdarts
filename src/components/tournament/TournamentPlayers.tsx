@@ -34,6 +34,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       else setError('Nem sikerült hozzáadni a játékost.');
     } catch (err) {
       setError('Nem sikerült hozzáadni a játékost.');
+      console.error('Add player error:', err);
     }
   };
 
@@ -44,6 +45,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       else setError('Nem sikerült eltávolítani a játékost.');
     } catch (err) {
       setError('Nem sikerült eltávolítani a játékost.');
+      console.error('Remove player error:', err);
     }
   };
 
@@ -54,6 +56,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       else setError('Nem sikerült check-inelni a játékost.');
     } catch (err) {
       setError('Nem sikerült check-inelni a játékost.');
+      console.error('Check in player error:', err);
     }
   };
 
@@ -65,6 +68,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       else setError('Nem sikerült jelentkezni a tornára.');
     } catch (err) {
       setError('Nem sikerült jelentkezni a tornára.');
+      console.error('Self sign up error:', err);
     }
   };
 
@@ -76,7 +80,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       else setError('Nem sikerült visszavonni a jelentkezést.');
     } catch (err) {
       setError('Nem sikerült visszavonni a jelentkezést.');
-    }
+      console.error('Self withdraw error:', err);
+      }
   };
 
   // Calculate if there are free spots

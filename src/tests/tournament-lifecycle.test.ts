@@ -3,7 +3,7 @@ import axios from 'axios';
 // Configuration
 const BASE_URL = 'http://localhost:3000/api';
 const CLUB_ID = '687fabffb16ffd1e85174d7c';
-const USER_ID = '6870f51d9b58837d598e80d5';
+
 
 // Test configuration - Change this to test with different player counts
 const CONFIG = {
@@ -41,11 +41,6 @@ interface MatchData {
   player2: { playerId: { _id: string; name: string } };
   type: 'group' | 'knockout';
   boardReference: number;
-}
-
-interface GroupData {
-  board: number;
-  matches: string[];
 }
 
 // Helper functions
@@ -98,8 +93,6 @@ const logError = (message: string, error?: any) => {
 
 describe('Tournament Lifecycle Test', () => {
   let tournamentData: TournamentData | null = null;
-  let groupMatches: MatchData[] = [];
-  let knockoutMatches: MatchData[] = [];
 
   test(`Complete Tournament Lifecycle with ${CONFIG.playerCount} players`, async () => {
     // Increase timeout for this test

@@ -31,7 +31,7 @@ export default function RegisterPage() {
         }),
         {
           loading: 'Regisztráció folyamatban...',
-          success: (response) => {
+          success: () => {
             setRegisteredEmail(data.email); // Átváltás a verifikációs űrlapra
             return 'Sikeres regisztráció! Ellenőrizd az email címedet a verifikációs kódért.';
           },
@@ -46,6 +46,7 @@ export default function RegisterPage() {
       );
     } catch (error) {
       // A toast.promise kezeli a hibákat, így itt nincs szükség további logikára
+      console.error('Register error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -79,6 +80,7 @@ export default function RegisterPage() {
       );
     } catch (error) {
       // A toast.promise kezeli a hibákat, így itt nincs szükség további logikára
+      console.error('Verify email error:', error);
     } finally {
       setIsLoading(false);
     }

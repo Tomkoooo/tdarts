@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconTrash } from '@tabler/icons-react';
 import { Club } from '@/interface/club.interface'; // If not available, use <span className="badge ..."> directly
 
 interface MemberListProps {
@@ -14,7 +13,7 @@ interface MemberListProps {
   onClubUpdated: (club: Club) => void;
 }
 
-export default function MemberList({ members, userRole, userId, clubId, onAddMember, onClubUpdated, club }: MemberListProps) {
+export default function MemberList({ members, userRole, userId, clubId, onClubUpdated }: MemberListProps) {
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!userId) return;
     const toastId = toast.loading('Tag törlése...');
@@ -57,21 +56,6 @@ export default function MemberList({ members, userRole, userId, clubId, onAddMem
       toast.success(`${memberName} moderátori jogai visszavonva!`, { id: toastId });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Moderátor törlése sikertelen', { id: toastId });
-    }
-  };
-
-  const handleAddAdmin = async (memberId: string, memberName: string) => {
-    if (!userId) return;
-    const toastId = toast.loading('Admin hozzáadása...');
-    try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/addAdmin`, {
-        userId: memberId,
-        requesterId: userId,
-      });
-      onClubUpdated(response.data);
-      toast.success(`${memberName} adminná nevezve!`, { id: toastId });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Admin hozzáadása sikertelen', { id: toastId });
     }
   };
 

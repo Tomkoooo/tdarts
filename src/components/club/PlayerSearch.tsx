@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 import axios from 'axios';
-import { IconSearch, IconUserPlus, IconDotsVertical } from '@tabler/icons-react';
+import { IconSearch, IconUserPlus } from '@tabler/icons-react';
 
 interface PlayerSearchProps {
   onPlayerSelected: (player: any) => void;
@@ -16,7 +16,6 @@ export default function PlayerSearch({
   placeholder = "Játékos keresése...",
   className = "",
   showAddGuest = true,
-  userRole = 'member',
 }: PlayerSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<any[]>([]);
@@ -82,6 +81,7 @@ export default function PlayerSearch({
         playerId = res.data._id;
       } catch (err) {
         // fallback: treat as guest
+        console.error('Player search error:', err);
       }
     }
     // If guest or not in player collection, create player without userRef
@@ -89,7 +89,9 @@ export default function PlayerSearch({
       try {
         const res = await axios.post('/api/players', { name: player.name });
         playerId = res.data._id;
-      } catch (err) {}
+      } catch (err) {
+        console.error('Player search error:', err);
+      }
     }
     onPlayerSelected({ ...player, _id: playerId });
     setAddedIds((prev) => [...prev, playerId]); // Mark as added

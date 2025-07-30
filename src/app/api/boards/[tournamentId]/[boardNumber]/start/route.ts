@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { BadRequestError } from "@/middleware/errorHandle";
 
-export async function POST(request: NextRequest, { params }: { params: { tournamentId: string; boardNumber: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }) {
     try {
-        const { tournamentId, boardNumber } = await params;
+        const { tournamentId } = await params;
         const { matchId, legsToWin, startingPlayer } = await request.json();
         
         if (!matchId || !legsToWin || !startingPlayer) {

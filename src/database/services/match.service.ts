@@ -1,11 +1,9 @@
-import { Match } from "@/types/matchSchema";
+import { Match } from "@/interface/match.interface";
 import { MatchModel } from "../models/match.model";
-import { ClubService } from "./club.service";
 import { BadRequestError } from "@/middleware/errorHandle";
 import { TournamentService } from "./tournament.service";
 import { TournamentModel } from "../models/tournament.model";
 import { ClubModel } from "../models/club.model";
-import { PlayerModel } from "../models/player.model";
 
 export class MatchService {
     // Get all matches for a board that haven't finished yet
@@ -185,10 +183,6 @@ export class MatchService {
         // Determine winner based on legs won
         const winner = matchData.player1LegsWon > matchData.player2LegsWon ? 1 : 2;
 
-        // Check if match is already finished
-        const wasFinished = match.status === 'finished';
-        const previousWinner = match.winnerId;
-
         // Update match status and winner
         match.status = 'finished';
         match.winnerId = winner === 1 ? match.player1.playerId : match.player2.playerId;
@@ -259,6 +253,7 @@ export class MatchService {
         return match;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private static async updateTournamentPlayerStats(tournamentId: string, playerId: string, stats: {
         highestCheckout: number;
         oneEightiesCount: number;

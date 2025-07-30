@@ -1,7 +1,5 @@
 'use client';
 import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { IconHome, IconTrophy, IconUsers, IconSettings } from '@tabler/icons-react';
 
 interface ClubLayoutProps {
@@ -15,7 +13,7 @@ interface ClubLayoutProps {
   settings?: React.ReactNode;
 }
 
-export default function ClubLayout({ children, userRole, clubId, clubName, summary, players, tournaments, settings }: ClubLayoutProps) {
+export default function ClubLayout({ userRole, clubName, summary, players, tournaments, settings }: ClubLayoutProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'players' | 'tournaments' | 'settings'>('summary');
 
   const tabs = [

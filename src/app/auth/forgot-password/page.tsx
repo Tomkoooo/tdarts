@@ -1,12 +1,11 @@
 "use client";
-import React, { useState } from 'react';
+import React from 'react';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 import { IconArrowLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 
 const ForgotPassword: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -23,7 +22,7 @@ const ForgotPassword: React.FC = () => {
         </Link>
       </div>
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <ForgotPasswordForm isLoading={isLoading} />
+        <ForgotPasswordForm isLoading={false} />
       </div>
     </div>
   );

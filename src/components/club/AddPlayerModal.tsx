@@ -16,7 +16,6 @@ export default function AddPlayerModal({
   onClose,
   clubId,
   userId,
-  userRole,
   onPlayerAdded
 }: AddPlayerModalProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);

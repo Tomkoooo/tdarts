@@ -24,5 +24,6 @@ export interface UserDocument extends Omit<IUser, '_id'>, mongoose.Document{
   username: string;
   email: string;
   isVerified: boolean;
-  // ...other fields as needed
+  //methods
+  generateVerifyEmailCode(): Promise<string>;
 }
