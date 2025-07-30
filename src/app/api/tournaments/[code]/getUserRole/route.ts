@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { ClubService } from "@/database/services/club.service";
 
-export async function GET(request: NextRequest, { params }: { params: { code: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const userId = request.headers.get('x-user-id');
   const tournament: any = await TournamentService.getTournament(code)

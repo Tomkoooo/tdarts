@@ -383,11 +383,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               <span className="loading loading-spinner loading-lg"></span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1 overflow-y-auto">
+            <div className="flex flex-col md:flex-row jsutify-center md:justify-around p-3  gap-4 overflow-y-scroll">
               {boards.map((board) => (
                 <button
                   key={board.boardNumber}
-                  className={`card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 ${
+                  className={`card bg-base-100  shadow-xl hover:shadow-2xl transition-all duration-300 ${
                     board.status === 'playing' ? 'ring-2 ring-primary' : 
                     board.status === 'waiting' ? 'ring-2 ring-warning' : ''
                   }`}
@@ -397,12 +397,15 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     <h2 className="card-title text-xl font-bold justify-center mb-2">
                       {board.name ? `${board.boardNumber} - ${board.name}` : `Tábla ${board.boardNumber}`}
                     </h2>
-                    <div className={`badge badge-lg ${
-                      board.status === 'playing' ? 'badge-primary' : 
-                      board.status === 'waiting' ? 'badge-warning' : 'badge-ghost'
-                    }`}>
-                      {board.status === 'playing' ? 'Játékban' :
-                       board.status === 'waiting' ? 'Várakozik' : 'Szabad'}
+                    <div className="flex justify-between gap-3 items-center">
+                        <div className={`badge badge-lg ${
+                          board.status === 'playing' ? 'badge-primary' :
+                          board.status === 'waiting' ? 'badge-warning' : 'badge-ghost'
+                        }`}>
+                          {board.status === 'playing' ? 'Játékban' :
+                           board.status === 'waiting' ? 'Várakozik' : 'Szabad'}
+                        </div>
+                        <button className="btn btn-primary btn-sm">Kiválaszt</button>
                     </div>
                   </div>
                 </button>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 
-export async function POST(req: NextRequest, { params }: { params: { clubId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ clubId: string }> }) {
   try {
     const { userId, requesterId } = await req.json();
     if (!userId || !requesterId) {
@@ -11,7 +11,8 @@ export async function POST(req: NextRequest, { params }: { params: { clubId: str
 
     console.log(userId, requesterId)
 
-    const club = await ClubService.removeModerator(params.clubId, userId, requesterId);
+    const { clubId } = await params;
+    const club = await ClubService.removeModerator(clubId, userId, requesterId);
     return NextResponse.json(club, { status: 200 });
   } catch (error) {
     if (error instanceof BadRequestError) {

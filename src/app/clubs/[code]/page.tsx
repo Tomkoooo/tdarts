@@ -11,6 +11,7 @@ import TournamentList from '@/components/club/TournamentList';
 import CreateTournamentModal from '@/components/club/CreateTournamentModal';
 import EditClubModal from '@/components/club/EditClubModal';
 import PlayerSearch from '@/components/club/PlayerSearch';
+import QRCodeModal from '@/components/club/QRCodeModal';
 
 
 export default function ClubDetailPage() {
@@ -29,6 +30,10 @@ export default function ClubDetailPage() {
   const [boardEdit, setBoardEdit] = useState<{ boardNumber: number; name: string } | null>(null);
   const [boardAddOpen, setBoardAddOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
+  const [qrCodeModal, setQrCodeModal] = useState<{ isOpen: boolean; boardNumber: number; boardName?: string }>({
+    isOpen: false,
+    boardNumber: 0
+  });
 
   // Helper to fetch club data
   const fetchClub = async () => {
@@ -314,6 +319,19 @@ export default function ClubDetailPage() {
                   {board.name && <span className="text-xs md:text-sm text-base-content/60">{board.name}</span>}
                 </div>
                 <div className="flex gap-1">
+                  <button 
+                    className="btn btn-xs btn-primary" 
+                    onClick={() => setQrCodeModal({ 
+                      isOpen: true, 
+                      boardNumber: board.boardNumber, 
+                      boardName: board.name 
+                    })}
+                    title="QR Kód megjelenítése"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                  </button>
                   <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>Szerkesztés</button>
                   <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>Törlés</button>
                 </div>
@@ -363,6 +381,16 @@ export default function ClubDetailPage() {
           </div>
         )}
       </div>
+      
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={qrCodeModal.isOpen}
+        onClose={() => setQrCodeModal({ isOpen: false, boardNumber: 0 })}
+        clubId={club._id}
+        boardNumber={qrCodeModal.boardNumber}
+        boardName={qrCodeModal.boardName}
+      />
+      
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-center vspace">
         {userRole === 'admin' && (
           <button

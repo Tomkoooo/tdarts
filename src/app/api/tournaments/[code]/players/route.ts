@@ -27,14 +27,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ success });
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { code: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const { playerId, status } = await request.json();
   const success = await TournamentService.updateTournamentPlayerStatus(code, playerId, status);
   return NextResponse.json({ success });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { code: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const { playerId } = await request.json();
   const success = await TournamentService.removeTournamentPlayer(code, playerId);
