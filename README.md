@@ -1,1 +1,2 @@
-todo: klub tagok kezelése () meg hogyha hozzáadod akkor hiba van amíg nem frisstesz also a player search-t nem elhet bcsukni
+TODO: klub név szóközzel engedélyezve legyen.
+input max létszámra ne legyen minimum

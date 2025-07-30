@@ -455,7 +455,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     key={match._id}
                     className={`card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 ${
                       match.status === 'playing' ? 'ring-2 ring-primary' : 
-                      match.status === 'waiting' ? 'ring-2 ring-warning' : ''
+                      match.status === 'pending' ? 'ring-2 ring-warning' : ''
                     }`}
                     onClick={() => handleMatchSelect(match)}
                   >
@@ -463,16 +463,20 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       <h3 className="card-title text-lg font-bold justify-center mb-2">
                         {match.player1.playerId.name} vs {match.player2.playerId.name}
                       </h3>
+                      <h4 className="card-title text-lg font-bold justify-center mb-2">
+                        iró: {match.scorer.name}
+                      </h4>
                       <div className="text-sm opacity-75 mb-2">
                         {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} leg
                       </div>
                       <div className={`badge badge-lg ${
                         match.status === 'playing' ? 'badge-primary' : 
-                        match.status === 'waiting' ? 'badge-warning' : 'badge-ghost'
+                        match.status === 'pending' ? 'badge-warning' : 'badge-ghost'
                       }`}>
                         {match.status === 'playing' ? 'Játékban' :
-                         match.status === 'waiting' ? 'Várakozik' : 'Befejezett'}
+                         match.status === 'pending' ? 'Várakozik' : 'Befejezett'}
                       </div>
+                      <button className="btn btn-primary btn-sm">Kiválaszt</button>
                     </div>
                   </button>
                 ))}
