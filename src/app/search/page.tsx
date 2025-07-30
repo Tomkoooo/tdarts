@@ -198,11 +198,11 @@ const SearchPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-4">Keresés</h1>
-          <p className="text-base-content/70 text-lg">
+        <div className="text-center mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4">Keresés</h1>
+          <p className="text-base-content/70 text-base md:text-lg">
             Keress játékosokat, tornákat és klubbokat
           </p>
         </div>

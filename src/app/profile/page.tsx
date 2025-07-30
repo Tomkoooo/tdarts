@@ -173,14 +173,14 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-red-800/30 flex items-center justify-center p-4 pt-20">
-      <div className="w-full max-w-4xl glass bg-opacity-20 rounded-lg shadow-lg p-8">
+     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-red-800/30 flex items-center justify-center p-4 pt-8">
+      <div className="w-full max-w-4xl glass bg-opacity-20 rounded-lg shadow-lg p-6 md:p-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/20 rounded-full border border-primary/30 mb-4">
             <IconUser className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-primary mb-2">Profil kezelés</h1>
-          <p className="text-base-content/70">Kezeld a fiókod beállításait és preferenciáit</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-2">Profil kezelés</h1>
+          <p className="text-base-content/70 text-sm md:text-base">Kezeld a fiókod beállításait és preferenciáit</p>
         </div>
 
         {/* Jelenlegi információk szekció */}

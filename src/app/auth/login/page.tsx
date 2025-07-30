@@ -84,7 +84,7 @@ const Login: React.FC = () => {
       </div>
 
       {/* Login Form Container */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 pt-8">
         <div className="w-full max-w-md">
           <LoginForm
             onSubmit={handleLogin}

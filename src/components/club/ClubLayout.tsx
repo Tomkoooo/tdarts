@@ -66,8 +66,8 @@ export default function ClubLayout({ userRole, clubName, summary, players, tourn
       </div>
 
       {/* Mobile-optimized Main content */}
-      <div className="container mx-auto px-3 md:px-4 -mt-6 md:-mt-12">
-        <div className="bg-[hsl(var(--background))] rounded-2xl shadow-xl min-h-[calc(100vh-10rem)] p-3 md:p-8 card-section">
+      <div className="container mx-auto px-4 -mt-6 md:-mt-12 pb-8">
+        <div className="bg-[hsl(var(--background))] rounded-2xl shadow-xl min-h-[calc(100vh-12rem)] p-4 md:p-8 card-section">
           {activeTab === 'summary' && summary}
           {activeTab === 'players' && players}
           {activeTab === 'tournaments' && tournaments}

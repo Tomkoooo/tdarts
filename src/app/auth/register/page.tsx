@@ -87,9 +87,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 pt-8">
       {registeredEmail ? (
-        <div>
+        <div className="w-full max-w-md">
           <VerifyEmail
             email={registeredEmail}
             onSubmit={handleVerifyEmail}
@@ -102,10 +102,9 @@ export default function RegisterPage() {
           )}
         </div>
       ) : (
-        <div>
+        <div className="w-full max-w-md">
           <RegisterForm
             onSubmit={handleRegister}
-            onLogin={() => router.push('/auth/login')}
             isLoading={isLoading}
           />
           {error && (

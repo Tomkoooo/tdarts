@@ -53,13 +53,13 @@ const MyClubPage = () => {
   // If user is logged in and has no clubs, show registration form
   if (user && clubs.length === 0) {
     return (
-      <section className="py-32 px-6 relative">
+      <section className="py-16 md:py-32 px-4 md:px-6 relative">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-5xl font-bold text-gradient-red mb-6">
+          <div className="text-center mb-12 md:mb-20">
+            <h2 className="text-3xl md:text-5xl font-bold text-gradient-red mb-4 md:mb-6">
               Új Klub Regisztrálása
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
               Hozz létre egy új darts klubot, és kezdd el szervezni a közösségi eseményeket!
             </p>
           </div>

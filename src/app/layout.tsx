@@ -44,7 +44,7 @@ export default async function RootLayout({
       <head>
         <meta name="color-scheme" content="only dark" />
       </head>
-      <body className="flex flex-col">
+      <body className="flex flex-col pt-16 md:pt-20">
         <UserProvider initialUser={initialUser}>
           {/* Navigation */}
           <Navbar />

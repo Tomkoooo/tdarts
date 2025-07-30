@@ -213,13 +213,6 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     }
   };
 
-  const handleAdminMatchEdit = (match: Match) => {
-    setAdminMatch(match);
-    setPlayer1Legs(match.player1.legsWon || 0);
-    setPlayer2Legs(match.player2.legsWon || 0);
-    setShowAdminModal(true);
-  };
-
   const handleAdminMatchFinish = async () => {
     if (!adminMatch) return;
     
@@ -316,7 +309,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Password authentication screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
+      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4 overflow-y-auto">
         <div className="w-full max-w-md">
           <div className="bg-base-100 rounded-2xl p-8 shadow-2xl">
             <div className="text-center mb-8">
@@ -369,15 +362,15 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Board selection screen
   if (!selectedBoard) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-4">Válassz Táblát</h1>
+      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 p-4 overflow-y-auto">
+        <div className="max-w-6xl mx-auto h-full flex flex-col">
+          <div className="text-center mb-4 flex-shrink-0">
+            <h1 className="text-4xl font-bold text-primary mb-2">Válassz Táblát</h1>
             <p className="text-lg text-base-content/70">Válaszd ki a táblát, amin játszani szeretnél</p>
           </div>
           
           {error && (
-            <div className="alert alert-error mb-6 max-w-2xl mx-auto">
+            <div className="alert alert-error mb-4 max-w-2xl mx-auto flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -386,11 +379,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           )}
           
           {loading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex justify-center items-center flex-1">
               <span className="loading loading-spinner loading-lg"></span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1 overflow-y-auto">
               {boards.map((board) => (
                 <button
                   key={board.boardNumber}
@@ -400,8 +393,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   }`}
                   onClick={() => handleBoardSelect(board)}
                 >
-                  <div className="card-body text-center p-6">
-                    <h2 className="card-title text-2xl font-bold justify-center mb-2">
+                  <div className="card-body text-center p-4">
+                    <h2 className="card-title text-xl font-bold justify-center mb-2">
                       {board.name ? `${board.boardNumber} - ${board.name}` : `Tábla ${board.boardNumber}`}
                     </h2>
                     <div className={`badge badge-lg ${
@@ -424,22 +417,22 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Match selection screen
   if (!selectedMatch) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-            <button className="btn btn-accent btn-sm mb-4 sm:mb-0" onClick={handleBackToBoards}>
+      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 p-4 overflow-y-auto">
+        <div className="max-w-6xl mx-auto h-full flex flex-col">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 flex-shrink-0">
+            <button className="btn btn-accent btn-sm mb-2 sm:mb-0" onClick={handleBackToBoards}>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Vissza a táblákhoz
             </button>
-            <h1 className="text-3xl font-bold text-primary">
+            <h1 className="text-2xl font-bold text-primary">
               {selectedBoard.name ? `${selectedBoard.name}` : `Tábla ${selectedBoard.boardNumber}`}
             </h1>
           </div>
           
           {error && (
-            <div className="alert alert-error mb-6">
+            <div className="alert alert-error mb-4 flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -448,52 +441,51 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           )}
           
           {loading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex justify-center items-center flex-1">
               <span className="loading loading-spinner loading-lg"></span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matches.map((match) => (
-                <div key={match._id} className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300">
-                  <div className="card-body p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="card-title text-lg font-bold">
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {matches.map((match) => (
+                  <button
+                    key={match._id}
+                    className={`card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 ${
+                      match.status === 'playing' ? 'ring-2 ring-primary' : 
+                      match.status === 'waiting' ? 'ring-2 ring-warning' : ''
+                    }`}
+                    onClick={() => handleMatchSelect(match)}
+                  >
+                    <div className="card-body text-center p-4">
+                      <h3 className="card-title text-lg font-bold justify-center mb-2">
                         {match.player1.playerId.name} vs {match.player2.playerId.name}
                       </h3>
-                      <div className={`badge ${
-                        match.status === 'ongoing' ? 'badge-primary' : 
-                        match.status === 'pending' ? 'badge-warning' : 'badge-ghost'
+                      <div className="text-sm opacity-75 mb-2">
+                        {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} leg
+                      </div>
+                      <div className={`badge badge-lg ${
+                        match.status === 'playing' ? 'badge-primary' : 
+                        match.status === 'waiting' ? 'badge-warning' : 'badge-ghost'
                       }`}>
-                        {match.status === 'ongoing' ? 'Folyamatban' :
-                         match.status === 'pending' ? 'Várakozik' : 'Szabad'}
+                        {match.status === 'playing' ? 'Játékban' :
+                         match.status === 'waiting' ? 'Várakozik' : 'Befejezett'}
                       </div>
                     </div>
-                    
-                    <div className="text-sm text-base-content/70 mb-4">
-                      <p>Író: {match.scorer.name}</p>
-                      {match.legsToWin && <p>Nyert legek: {match.legsToWin}</p>}
-                    </div>
-                    
-                    <div className="card-actions justify-end">
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleMatchSelect(match)}
-                      >
-                        {match.status === 'pending' ? 'Beállítások' : 'Játék'}
-                      </button>
-                      
-                      {isAdminOrModerator && match.status === 'ongoing' && (
-                        <button
-                          className="btn btn-warning btn-sm"
-                          onClick={() => handleAdminMatchEdit(match)}
-                        >
-                          Admin
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  </button>
+                ))}
+              </div>
+              
+              {/* Start New Match Button */}
+              {isAdminOrModerator && (
+                <div className="mt-6 text-center">
+                  <button
+                    className="btn btn-primary btn-lg"
+                    onClick={() => setShowMatchSetup(true)}
+                  >
+                    Új meccs indítása
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -504,32 +496,32 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Match setup screen
   if (showMatchSetup && selectedMatch) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
+      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4 overflow-y-auto">
         <div className="w-full max-w-md">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-base-100 rounded-2xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
               <button className="btn btn-accent btn-sm" onClick={handleBackToMatches}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Vissza
               </button>
-              <h2 className="text-xl font-bold text-primary">
+              <h2 className="text-lg font-bold text-primary">
                 Tábla {selectedBoard?.boardNumber}
               </h2>
             </div>
             
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold mb-2">
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-bold mb-2">
                 {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
               </h3>
-              <p className="text-base-content/70">Író: {selectedMatch.scorer.name}</p>
+              <p className="text-base-content/70 text-sm">Író: {selectedMatch.scorer.name}</p>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold text-lg">Hány nyert legig?</span>
+                  <span className="label-text font-bold">Hány nyert legig?</span>
                 </label>
                 <select 
                   className="select select-bordered select-lg w-full"
@@ -546,7 +538,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold text-lg">Ki kezdi?</span>
+                  <span className="label-text font-bold">Ki kezdi?</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -564,20 +556,28 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 </div>
               </div>
               
-              <button
-                className="btn btn-success btn-lg w-full"
-                onClick={handleStartMatch}
-                disabled={setupLoading}
-              >
-                {setupLoading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Meccs indítása...
-                  </>
-                ) : (
-                  "Meccs indítása"
-                )}
-              </button>
+              <div className="flex gap-3 mt-6">
+                <button
+                  className="btn btn-error flex-1"
+                  onClick={handleBackToMatches}
+                >
+                  Mégse
+                </button>
+                <button
+                  className="btn btn-success flex-1"
+                  onClick={handleStartMatch}
+                  disabled={setupLoading}
+                >
+                  {setupLoading ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Indítás...
+                    </>
+                  ) : (
+                    "Meccs indítása"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

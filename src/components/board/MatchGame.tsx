@@ -413,10 +413,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
   const player2Average = player2Stats.totalThrows > 0 ? Math.round(player2Stats.totalScore / player2Stats.totalThrows) : 0;
 
   return (
-    <div className="flex flex-col h-screen bg-base-100">
+    <div className="flex flex-col h-screen bg-base-100 overflow-y-auto">
       {/* Header - Mobile only */}
-      <div className="md:hidden flex justify-between items-center p-2">
-        <button className="btn btn-sm btn-accent" onClick={onBack}>
+      <div className="md:hidden flex justify-between items-center p-2 flex-shrink-0">
+        <button className="btn btn-sm btn-accent matchgame-btn" onClick={onBack}>
           ← Vissza
         </button>
         <div className="text-sm font-bold text-center flex-1">
@@ -426,12 +426,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
       </div>
 
       {/* Main Layout - Side by side on tablet */}
-      <div className="flex flex-col md:flex-row h-full">
+      <div className="flex flex-col md:flex-row h-full overflow-y-auto">
         {/* Left Side - Score Input (Tablet) / Full width (Mobile) */}
-        <div className={`md:w-1/2 flex flex-col p-2 ${!scoreInputOnLeft ? 'md:order-2' : ''}`}>
+        <div className={`md:w-1/2 flex flex-col p-2 overflow-y-auto ${!scoreInputOnLeft ? 'md:order-2' : ''}`}>
           {/* Header - Tablet only */}
-          <div className="hidden md:flex justify-between items-center mb-4">
-            <button className="btn btn-sm btn-accent" onClick={onBack}>
+          <div className="hidden md:flex justify-between items-center mb-2 flex-shrink-0">
+            <button className="btn btn-sm btn-accent matchgame-btn" onClick={onBack}>
               ← Vissza
             </button>
             <div className="text-lg font-bold text-center flex-1">
@@ -441,75 +441,74 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Player Cards - Mobile only, side by side at top */}
-          <div className="md:hidden flex gap-2 mb-2 h-[10rem]">
+          <div className="md:hidden flex gap-2 mb-2 h-[12rem] flex-shrink-0">
             {/* Player 1 Card - Mobile */}
-            <div className={`flex-1 bg-base-200 rounded-lg p-3 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
-              <div className="text-center">
-                <div className="text-lg font-bold mb-1">
+            <div className={`flex-1 bg-base-200 rounded-lg p-4 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
+              <div className="text-center h-full flex flex-col justify-center">
+                <div className="text-2xl font-bold mb-2">
                   {match.player1.playerId.name}
                 </div>
-                <div className="text-5xl font-bold">
+                <div className="text-7xl font-bold mb-2">
                   {player1Score}
                 </div>
                 <div className="text-xs opacity-75">
-
-                  <p className="text-md">Átlag: {player1Average}</p>
-                  <p className="text-md font-bold">Legek: {player1LegsWon}</p>
+                  <p className="text-sm">Átlag: {player1Average}</p>
+                  <p className="text-sm font-bold">Legek: {player1LegsWon}</p>
                 </div>
               </div>
             </div>
 
             {/* Player 2 Card - Mobile */}
-            <div className={`flex-1 bg-base-200 rounded-lg p-3 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
-              <div className="text-center">
-                <div className="text-lg font-bold mb-1">
+            <div className={`flex-1 bg-base-200 rounded-lg p-4 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
+              <div className="text-center h-full flex flex-col justify-center">
+                <div className="text-2xl font-bold mb-2">
                   {match.player2.playerId.name}
                 </div>
-                <div className="text-5xl font-bold">
+                <div className="text-7xl font-bold mb-2">
                   {player2Score}
                 </div>
                 <div className="text-xs opacity-75">
-                <p className="text-md">Átlag: {player2Average}</p>
-                <p className="text-md font-bold">Legek: {player2LegsWon}</p>
+                  <p className="text-sm">Átlag: {player2Average}</p>
+                  <p className="text-sm font-bold">Legek: {player2LegsWon}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Current Player Indicator */}
-          <div className="bg-base-300 rounded-lg p-4 mb-4">
-            <div className="text-center flex h-6">
-              <div className="text-4xl font-bold">{throwInput || '0'}</div>
+          <div className="bg-base-300 rounded-lg p-4 mb-4 flex-shrink-0">
+            <div className="text-center flex items-center justify-center min-h-[4rem]">
+              <div className="text-6xl md:text-5xl font-bold leading-none">{throwInput || '0'}</div>
             </div>
           </div>
 
           {/* Number Input - More compact on tablet */}
-          <div className="md:max-w-md md:mx-auto bg-base-200 rounded-lg p-4 mb-4">
+          <div className="md:max-w-md md:mx-auto bg-base-200 rounded-lg p-4 mb-4 flex-shrink-0">
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  className="btn btn-lg h-16 text-2xl"
+                  className="btn btn-lg h-20 text-4xl md:text-3xl font-bold matchgame-btn"
                   onClick={() => handleNumberInput(num)}
                 >
                   {num}
                 </button>
               ))}
               <button
-                className="btn btn-warning h-16 text-2xl"
+                className="btn btn-warning h-20 text-5xl md:text-3xl matchgame-btn"
                 onClick={handleBackspace}
                 disabled={!throwInput}
               >
                 ⌫
               </button>
               <button
-                className="btn btn-outline h-16 text-2xl"
+                className="btn btn-outline h-20 text-5xl md:text-3xl font-bold matchgame-btn"
                 onClick={() => handleNumberInput(0)}
               >
                 0
               </button>
               <button
-                className="btn btn-error h-16 text-2xl"
+                className="btn btn-error h-20 text-6xl md:text-3xl matchgame-btn"
                 onClick={handleClear}
                 disabled={!throwInput}
               >
@@ -519,31 +518,31 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
             
             <div className="flex gap-3">
               <button
-                className="btn btn-warning flex-1 h-16 text-lg"
+                className="btn btn-warning flex-1 h-16 text-5xl md:text-3xl matchgame-btn"
                 onClick={handleUndo}
                 disabled={player1Throws.length === 0 && player2Throws.length === 0}
               >
-                Visszavonás
+                ↶
               </button>
               <button
-                className="btn btn-success flex-1 h-16 text-lg"
+                className="btn btn-success flex-1 h-16 text-5xl md:text-3xl matchgame-btn"
                 onClick={handleThrow}
                 disabled={!throwInput || parseInt(throwInput) < 0 || parseInt(throwInput) > 180}
               >
-                Dobás
+                ➤
               </button>
             </div>
           </div>
 
           {/* Scorer Info */}
-          <div className="text-center text-sm opacity-75 mb-4">
+          <div className="text-center text-xs opacity-75 mb-4 flex-shrink-0">
             Író: {match.scorer.name}
           </div>
 
           {/* Throw History Button - Moved to bottom */}
-          <div className="mt-auto">
+          <div className="mt-auto flex-shrink-0">
             <button
-              className="btn btn-outline w-full"
+              className="btn btn-outline w-full matchgame-btn"
               onClick={() => setShowThrowHistory(!showThrowHistory)}
             >
               {showThrowHistory ? 'Elrejtés' : 'Dobások megjelenítése'}
@@ -552,11 +551,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         </div>
 
         {/* Right Side - Player Cards (Tablet) / Hidden on Mobile */}
-        <div className={`hidden md:flex md:w-1/2 flex-col p-2 ${!scoreInputOnLeft ? 'md:order-1' : ''}`}>
+        <div className={`hidden md:flex md:w-1/2 flex-col p-2 overflow-y-auto ${!scoreInputOnLeft ? 'md:order-1' : ''}`}>
           {/* Swap Button - Tablet only */}
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-4 flex-shrink-0">
             <button
-              className="btn btn-sm btn-outline"
+              className="btn btn-sm btn-outline matchgame-btn"
               onClick={() => setScoreInputOnLeft(!scoreInputOnLeft)}
             >
               Oldalak cseréje
@@ -564,27 +563,27 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Player 1 Card */}
-          <div className={`flex-1 bg-base-200 rounded-lg p-6 mb-4 ${currentPlayer === 1 ? 'ring-4 ring-primary' : ''}`}>
+          <div className={`flex-1 bg-base-200 rounded-lg p-8 mb-4 ${currentPlayer === 1 ? 'ring-4 ring-primary' : ''}`}>
             <div className="text-center h-full flex flex-col justify-center">
               {/* Player Name with Leg Count */}
-              <div className="mb-4">
-                <div className="text-2xl md:text-3xl font-bold mb-2">
+              <div className="mb-6">
+                <div className="text-3xl md:text-4xl font-bold mb-4">
                   {match.player1.playerId.name}
                 </div>
-                <div className="text-lg md:text-xl font-bold text-primary">
+                <div className="text-xl md:text-2xl font-bold text-primary">
                   {player1LegsWon} nyert leg
                 </div>
               </div>
               
               {/* Score */}
-              <div className="mb-4">
-                <div className="text-6xl md:text-8xl font-bold text-center">
+              <div className="mb-6">
+                <div className="text-8xl md:text-9xl font-bold text-center">
                   {player1Score}
                 </div>
               </div>
               
               {/* Stats */}
-              <div className="text-sm md:text-base opacity-75">
+              <div className="text-base md:text-lg opacity-75">
                 <div>Átlag: {player1Average}</div>
                 <div>180: {player1Stats.oneEightiesCount}</div>
               </div>
@@ -592,11 +591,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Player 2 Card */}
-          <div className={`flex-1 bg-base-200 rounded-lg p-6 ${currentPlayer === 2 ? 'ring-4 ring-primary' : ''}`}>
+          <div className={`flex-1 bg-base-200 rounded-lg p-8 ${currentPlayer === 2 ? 'ring-4 ring-primary' : ''}`}>
             <div className="text-center h-full flex flex-col justify-center">
               {/* Player Name with Leg Count */}
-              <div className="mb-4">
-                <div className="text-2xl md:text-3xl font-bold mb-2">
+              <div className="mb-6">
+                <div className="text-3xl md:text-4xl font-bold mb-4">
                   {match.player2.playerId.name}
                 </div>
                 <div className="text-lg md:text-xl font-bold text-primary">
@@ -606,7 +605,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
               
               {/* Score */}
               <div className="mb-4">
-                <div className="text-6xl md:text-8xl font-bold text-center">
+                <div className="text-6xl md:text-7xl font-bold text-center">
                   {player2Score}
                 </div>
               </div>
@@ -645,7 +644,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
               </div>
             </div>
             <button 
-              className="btn btn-primary w-full mt-4"
+              className="btn btn-primary w-full mt-4 matchgame-btn"
               onClick={() => setShowThrowHistory(false)}
             >
               Bezárás
@@ -663,10 +662,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
               {pendingLegWinner === 1 ? match.player1.playerId.name : match.player2.playerId.name} nyerte ezt a leg-et!
             </p>
             <div className="flex gap-2">
-              <button className="btn btn-error flex-1" onClick={cancelLegEnd}>
+              <button className="btn btn-error flex-1 matchgame-btn" onClick={cancelLegEnd}>
                 Visszavonás
               </button>
-              <button className="btn btn-success flex-1" onClick={confirmLegEnd}>
+              <button className="btn btn-success flex-1 matchgame-btn" onClick={confirmLegEnd}>
                 Igen
               </button>
             </div>
@@ -683,10 +682,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
               {pendingMatchWinner === 1 ? match.player1.playerId.name : match.player2.playerId.name} nyerte a meccset!
             </p>
             <div className="flex gap-2">
-              <button className="btn btn-error flex-1" onClick={cancelMatchEnd}>
+              <button className="btn btn-error flex-1 matchgame-btn" onClick={cancelMatchEnd}>
                 Visszavonás
               </button>
-              <button className="btn btn-success flex-1" onClick={confirmMatchEnd}>
+              <button className="btn btn-success flex-1 matchgame-btn" onClick={confirmMatchEnd}>
                 Igen
               </button>
             </div>
