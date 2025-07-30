@@ -181,26 +181,26 @@ export default function ClubDetailPage() {
 
   // Summary section
   const summarySection = (
-    <div className="space-y-6">
-      <section className="bg-base-200 rounded-2xl shadow-xl p-6 flex flex-col gap-2">
-        <h2 className="text-3xl font-bold text-primary mb-1">{club.name}</h2>
-        <div className="text-lg text-base-content/80 mb-2">{club.description}</div>
-        <div className="flex flex-wrap gap-4 items-center text-base-content/60">
+    <div className="space-y-4 md:space-y-6">
+      <section className="bg-base-200 rounded-2xl shadow-xl p-4 md:p-6 flex flex-col gap-2">
+        <h2 className="text-2xl md:text-3xl font-bold text-primary mb-1">{club.name}</h2>
+        <div className="text-base md:text-lg text-base-content/80 mb-2">{club.description}</div>
+        <div className="flex flex-wrap gap-2 md:gap-4 items-center text-sm md:text-base text-base-content/60">
           <span>Helyszín: <span className="font-medium text-base-content">{club.location}</span></span>
         </div>
       </section>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-base-200 rounded-xl p-6 flex flex-col items-center">
-          <span className="text-4xl font-bold text-primary">{numPlayers}</span>
-          <span className="text-base-content/70 mt-2">Játékos</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+        <div className="bg-base-200 rounded-xl p-4 md:p-6 flex flex-col items-center">
+          <span className="text-3xl md:text-4xl font-bold text-primary">{numPlayers}</span>
+          <span className="text-sm md:text-base text-base-content/70 mt-1 md:mt-2">Játékos</span>
         </div>
-        <div className="bg-base-200 rounded-xl p-6 flex flex-col items-center">
-          <span className="text-4xl font-bold text-accent">{pastTournaments}</span>
-          <span className="text-base-content/70 mt-2">Befejezett verseny</span>
+        <div className="bg-base-200 rounded-xl p-4 md:p-6 flex flex-col items-center">
+          <span className="text-3xl md:text-4xl font-bold text-accent">{pastTournaments}</span>
+          <span className="text-sm md:text-base text-base-content/70 mt-1 md:mt-2">Befejezett verseny</span>
         </div>
-        <div className="bg-base-200 rounded-xl p-6 flex flex-col items-center">
-          <span className="text-4xl font-bold text-success">{ongoingTournaments + upcomingTournaments}</span>
-          <span className="text-base-content/70 mt-2">Aktív vagy közelgő verseny</span>
+        <div className="bg-base-200 rounded-xl p-4 md:p-6 flex flex-col items-center sm:col-span-2 md:col-span-1">
+          <span className="text-3xl md:text-4xl font-bold text-success">{ongoingTournaments + upcomingTournaments}</span>
+          <span className="text-sm md:text-base text-base-content/70 mt-1 md:mt-2">Aktív vagy közelgő verseny</span>
         </div>
       </div>
     </div>
@@ -208,19 +208,19 @@ export default function ClubDetailPage() {
 
   // Players section
   const playersSection = (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-semibold text-primary mb-4">Játékosok</h2>
+    <div className="space-y-3 md:space-y-4">
+      <h2 className="text-xl md:text-2xl font-semibold text-primary mb-3 md:mb-4">Játékosok</h2>
       {club.members.length === 0 ? (
-        <div className="text-base-content/60">Nincsenek tagok ebben a klubban.</div>
+        <div className="text-base-content/60 text-sm md:text-base">Nincsenek tagok ebben a klubban.</div>
       ) : (
         <ul className="space-y-2">
           {club.members.map((member: any) => (
-            <li key={member._id} className="text-lg">
-              {member.name}{' '}
+            <li key={member._id} className="text-base md:text-lg bg-base-200 rounded-lg p-3 flex items-center justify-between">
+              <span>{member.name}</span>
               {member.userRef ? (
-                <span className="text-base-content/50">(regisztrált)</span>
+                <span className="text-xs md:text-sm text-base-content/50 bg-primary/10 px-2 py-1 rounded-full">regisztrált</span>
               ) : member.username === 'vendég' ? (
-                <span className="text-base-content/50">(vendég)</span>
+                <span className="text-xs md:text-sm text-base-content/50 bg-accent/10 px-2 py-1 rounded-full">vendég</span>
               ) : null}
             </li>
           ))}
@@ -249,18 +249,20 @@ export default function ClubDetailPage() {
 
   // Settings section (admin only)
   const settingsSection = userRole === 'admin' || userRole === 'moderator' ? (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="card-section">
         <div className="section-header">
-          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          Klub adatok szerkesztése
+          <svg className="w-5 h-5 md:w-6 md:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          <span className="text-lg md:text-xl">Klub adatok szerkesztése</span>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsEditClubModalOpen(true)}>
-          Klub szerkesztése
-        </button>
-        <button className="btn btn-primary ml-2" onClick={() => setIsCreateTournamentModalOpen(true)}>
-          Új verseny indítása
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button className="btn btn-primary btn-sm md:btn-md flex-1" onClick={() => setIsEditClubModalOpen(true)}>
+            Klub szerkesztése
+          </button>
+          <button className="btn btn-primary btn-sm md:btn-md flex-1" onClick={() => setIsCreateTournamentModalOpen(true)}>
+            Új verseny indítása
+          </button>
+        </div>
       </div>
       <EditClubModal
         userId={user?._id}
@@ -279,8 +281,8 @@ export default function ClubDetailPage() {
       />
       <div className="card-section">
         <div className="section-header">
-          <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 3.13a4 4 0 01.88 7.75M8 3.13a4 4 0 00-.88 7.75" /></svg>
-          Tagok kezelése
+          <svg className="w-5 h-5 md:w-6 md:h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 3.13a4 4 0 01.88 7.75M8 3.13a4 4 0 00-.88 7.75" /></svg>
+          <span className="text-lg md:text-xl">Tagok kezelése</span>
         </div>
         <PlayerSearch
           onPlayerSelected={handlePlayerSelected}
@@ -299,30 +301,34 @@ export default function ClubDetailPage() {
       </div>
       <div className="card-section">
         <div className="section-header">
-          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
-          Táblák kezelése
+          <svg className="w-5 h-5 md:w-6 md:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
+          <span className="text-lg md:text-xl">Táblák kezelése</span>
         </div>
-        <div className="mb-2 text-base-content/70">Összesen {club.boards?.length || 0} tábla</div>
+        <div className="mb-3 text-sm md:text-base text-base-content/70">Összesen {club.boards?.length || 0} tábla</div>
         <ul className="space-y-2 mb-4">
           {club.boards && club.boards.length > 0 ? (
             club.boards.map((board: any) => (
-              <li key={board.boardNumber} className="flex items-center gap-2">
-                <span className="font-semibold">#{board.boardNumber}</span>
-                {board.name && <span className="text-base-content/60">{board.name}</span>}
-                <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>Szerkesztés</button>
-                <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>Törlés</button>
+              <li key={board.boardNumber} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 bg-base-200 rounded-lg">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="font-semibold text-sm md:text-base">#{board.boardNumber}</span>
+                  {board.name && <span className="text-xs md:text-sm text-base-content/60">{board.name}</span>}
+                </div>
+                <div className="flex gap-1">
+                  <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>Szerkesztés</button>
+                  <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>Törlés</button>
+                </div>
               </li>
             ))
           ) : (
-            <li className="text-base-content/60">Nincsenek táblák.</li>
+            <li className="text-sm md:text-base text-base-content/60 p-3 bg-base-200 rounded-lg">Nincsenek táblák.</li>
           )}
         </ul>
-        <button className="btn btn-sm btn-primary" onClick={() => setBoardAddOpen(true)}>Új tábla hozzáadása</button>
+        <button className="btn btn-sm md:btn-md btn-primary w-full sm:w-auto" onClick={() => setBoardAddOpen(true)}>Új tábla hozzáadása</button>
         {/* Add Board Modal */}
         {boardAddOpen && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-base-200 rounded-xl p-6 shadow-xl w-full max-w-xs">
-              <h3 className="text-lg font-bold mb-2">Új tábla hozzáadása</h3>
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-base-200 rounded-xl p-4 md:p-6 shadow-xl w-full max-w-sm">
+              <h3 className="text-lg font-bold mb-3">Új tábla hozzáadása</h3>
               <input
                 type="text"
                 className="input input-bordered w-full mb-4"
@@ -331,17 +337,17 @@ export default function ClubDetailPage() {
                 onChange={e => setNewBoardName(e.target.value)}
               />
               <div className="flex gap-2 justify-end">
-                <button className="btn btn-ghost" onClick={() => setBoardAddOpen(false)}>Mégse</button>
-                <button className="btn btn-primary" onClick={handleAddBoard}>Hozzáadás</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setBoardAddOpen(false)}>Mégse</button>
+                <button className="btn btn-primary btn-sm" onClick={handleAddBoard}>Hozzáadás</button>
               </div>
             </div>
           </div>
         )}
         {/* Edit Board Modal */}
         {boardEdit && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-base-200 rounded-xl p-6 shadow-xl w-full max-w-xs">
-              <h3 className="text-lg font-bold mb-2">Tábla szerkesztése</h3>
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-base-200 rounded-xl p-4 md:p-6 shadow-xl w-full max-w-sm">
+              <h3 className="text-lg font-bold mb-3">Tábla szerkesztése</h3>
               <input
                 type="text"
                 className="input input-bordered w-full mb-4"
@@ -350,31 +356,31 @@ export default function ClubDetailPage() {
                 onChange={e => setBoardEdit({ ...boardEdit, name: e.target.value })}
               />
               <div className="flex gap-2 justify-end">
-                <button className="btn btn-ghost" onClick={() => setBoardEdit(null)}>Mégse</button>
-                <button className="btn btn-primary" onClick={handleEditBoard}>Mentés</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setBoardEdit(null)}>Mégse</button>
+                <button className="btn btn-primary btn-sm" onClick={handleEditBoard}>Mentés</button>
               </div>
             </div>
           </div>
         )}
       </div>
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-center vspace">
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center vspace">
         {userRole === 'admin' && (
-                  <button
-                  className="btn btn-primary btn-outline flex items-center gap-2"
-                  onClick={handleDeactivateClub}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Klub Deaktiválása
-                </button>
+          <button
+            className="btn btn-primary btn-outline btn-sm md:btn-md flex items-center gap-2 w-full sm:w-auto"
+            onClick={handleDeactivateClub}
+          >
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Klub Deaktiválása
+          </button>
         )}
 
         <button
-          className="btn btn-primary btn-outline flex items-center gap-2"
+          className="btn btn-primary btn-outline btn-sm md:btn-md flex items-center gap-2 w-full sm:w-auto"
           onClick={handleLeaveClub}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
           Kilépés a klubból
