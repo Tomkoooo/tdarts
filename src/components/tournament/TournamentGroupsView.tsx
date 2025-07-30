@@ -448,7 +448,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   </label>
                   <input
                     type="number"
-                    min="0"
                     max="10"
                     className="input input-bordered w-full"
                     value={player1Legs}
@@ -462,10 +461,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   </label>
                   <input
                     type="number"
-                    min="0"
                     max="50"
                     className="input input-bordered w-full"
-                    value={player1Stats.oneEightiesCount}
+                    value={player1Stats.oneEightiesCount || 0 }
                     onChange={(e) => setPlayer1Stats(prev => ({
                       ...prev,
                       oneEightiesCount: parseInt(e.target.value) || 0
@@ -479,10 +477,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   </label>
                   <input
                     type="number"
-                    min="0"
                     max="170"
                     className="input input-bordered w-full"
-                    value={player1Stats.highestCheckout}
+                    value={player1Stats.highestCheckout || 0}
                     onChange={(e) => setPlayer1Stats(prev => ({
                       ...prev,
                       highestCheckout: parseInt(e.target.value) || 0
@@ -501,7 +498,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   </label>
                   <input
                     type="number"
-                    min="0"
                     max="10"
                     className="input input-bordered w-full"
                     value={player2Legs}
@@ -515,10 +511,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   </label>
                   <input
                     type="number"
-                    min="0"
                     max="50"
                     className="input input-bordered w-full"
-                    value={player2Stats.oneEightiesCount}
+                    value={player2Stats.oneEightiesCount || 0}
                     onChange={(e) => setPlayer2Stats(prev => ({
                       ...prev,
                       oneEightiesCount: parseInt(e.target.value) || 0
@@ -532,10 +527,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   </label>
                   <input
                     type="number"
-                    min="0"
                     max="170"
                     className="input input-bordered w-full"
-                    value={player2Stats.highestCheckout}
+                    value={player2Stats.highestCheckout || 0}
                     onChange={(e) => setPlayer2Stats(prev => ({
                       ...prev,
                       highestCheckout: parseInt(e.target.value) || 0

@@ -250,23 +250,26 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
   const confirmLegEnd = async () => {
     if (!pendingLegWinner) return;
     
-    // Update legs won
-    if (pendingLegWinner === 1) {
-      setPlayer1LegsWon(player1LegsWon + 1);
-    } else {
-      setPlayer2LegsWon(player2LegsWon + 1);
-    }
-
-    // Check if match is won - use the updated leg counts
+    // Calculate new leg counts
     const newPlayer1Legs = pendingLegWinner === 1 ? player1LegsWon + 1 : player1LegsWon;
     const newPlayer2Legs = pendingLegWinner === 2 ? player2LegsWon + 1 : player2LegsWon;
+    
+    // Update legs won
+    if (pendingLegWinner === 1) {
+      setPlayer1LegsWon(newPlayer1Legs);
+    } else {
+      setPlayer2LegsWon(newPlayer2Legs);
+    }
     
     // Use the configured legsToWin from match settings
     const requiredLegsToWin = match.legsToWin || 3;
     
     if (newPlayer1Legs >= requiredLegsToWin || newPlayer2Legs >= requiredLegsToWin) {
-      // Match is finished
+      // Match is finished - pass the correct leg counts
       setPendingMatchWinner(pendingLegWinner);
+      // Store the final leg counts for the match end
+      setPlayer1LegsWon(newPlayer1Legs);
+      setPlayer2LegsWon(newPlayer2Legs);
       setShowMatchConfirmation(true);
       setShowLegConfirmation(false);
       return;
@@ -318,8 +321,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          player1LegsWon: pendingMatchWinner === 1 ? player1LegsWon + 1 : player1LegsWon,
-          player2LegsWon: pendingMatchWinner === 2 ? player2LegsWon + 1 : player2LegsWon,
+          player1LegsWon: player1LegsWon,
+          player2LegsWon: player2LegsWon,
           player1Stats,
           player2Stats
         })
