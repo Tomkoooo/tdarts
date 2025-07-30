@@ -479,39 +479,39 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Current Player Indicator */}
-          <div className="bg-base-300 rounded-lg p-4 mb-4 flex-shrink-0">
-            <div className="text-center flex items-center justify-center min-h-[4rem]">
-              <div className="text-6xl md:text-5xl font-bold leading-none">{throwInput || '0'}</div>
+          <div className="bg-base-300 rounded-lg p-4 mb-4 flex-shrink-0 h-16">
+            <div className="text-center flex items-center my-auto justify-center">
+              <div className="text-5xl font-bold leading-none">{throwInput || '0'}</div>
             </div>
           </div>
 
           {/* Number Input - More compact on tablet */}
           <div className="md:max-w-md md:mx-auto bg-base-200 rounded-lg p-4 mb-4 flex-shrink-0">
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  className="btn btn-lg h-20 text-4xl md:text-3xl font-bold matchgame-btn"
+                  className="btn btn-lg h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl font-bold matchgame-btn"
                   onClick={() => handleNumberInput(num)}
                 >
                   {num}
                 </button>
               ))}
               <button
-                className="btn btn-warning h-20 text-5xl md:text-3xl matchgame-btn"
+                className="btn btn-warning h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
                 onClick={handleBackspace}
                 disabled={!throwInput}
               >
                 ⌫
               </button>
               <button
-                className="btn btn-outline h-20 text-5xl md:text-3xl font-bold matchgame-btn"
+                className="btn btn-lg h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl font-bold matchgame-btn"
                 onClick={() => handleNumberInput(0)}
               >
                 0
               </button>
               <button
-                className="btn btn-error h-20 text-6xl md:text-3xl matchgame-btn"
+                className="btn btn-error h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
                 onClick={handleClear}
                 disabled={!throwInput}
               >
@@ -519,18 +519,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
               </button>
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-2 md:gap-3">
               <button
-                className="btn btn-warning flex-1 h-16 text-5xl md:text-3xl matchgame-btn"
+                className="btn btn-warning flex-1 h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
                 onClick={handleUndo}
                 disabled={player1Throws.length === 0 && player2Throws.length === 0}
               >
                 ↶
               </button>
               <button
-                className="btn btn-success flex-1 h-16 text-5xl md:text-3xl matchgame-btn"
+                className="btn btn-success flex-1 h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
                 onClick={handleThrow}
-                disabled={!throwInput || parseInt(throwInput) < 0 || parseInt(throwInput) > 180}
+                disabled={!throwInput || parseInt(throwInput) < 0 || parseInt(throwInput) > 180 || isNaN(parseInt(throwInput))}
               >
                 ➤
               </button>

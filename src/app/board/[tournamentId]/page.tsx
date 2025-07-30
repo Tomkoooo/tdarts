@@ -2,6 +2,7 @@
 import React, { useState, useEffect, use } from "react";
 import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
+import Link from "next/link";
 import '../board.css'
 
 // --- Types ---
@@ -315,6 +316,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-primary mb-2">Torna Jelszó</h1>
               <p className="text-base-content/70">Add meg a torna jelszavát a folytatáshoz</p>
+              <Link href={`/tournament/${tournamentId}`} className="btn btn-primary btn-sm">Vissza a főmenübe</Link>
             </div>
             
             {error && (
@@ -367,6 +369,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           <div className="text-center mb-4 flex-shrink-0">
             <h1 className="text-4xl font-bold text-primary mb-2">Válassz Táblát</h1>
             <p className="text-lg text-base-content/70">Válaszd ki a táblát, amin játszani szeretnél</p>
+            <Link href={`/tournament/${tournamentId}`} className="btn btn-primary btn-sm">Vissza a főmenübe</Link>
           </div>
           
           {error && (
