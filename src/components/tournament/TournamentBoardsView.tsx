@@ -7,6 +7,8 @@ interface TournamentBoardsViewProps {
 const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament }) => {
   const boards = tournament?.clubId?.boards || [];
 
+  console.log(boards);
+
   return (
     <div className="mt-6">
       <h2 className="text-xl font-bold">Táblák</h2>
@@ -60,7 +62,7 @@ const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament 
                       <p className="text-md">
                         Eredményíró:{" "}
                         <span className="font-bold">
-                          {board.currentMatch.scorer?.name || "Nincs"}
+                          {board.currentMatch.scorer.name || "Nincs"}
                         </span>
                       </p>
                     </div>

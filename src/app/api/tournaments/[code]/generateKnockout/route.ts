@@ -7,15 +7,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const { code } = await params;
         const body = await request.json();
 
-        // Validate required fields
-        if (body.useSeededPlayers === undefined || body.useSeededPlayers === null) {
-            throw new BadRequestError('Missing required field: useSeededPlayers');
-        }
-
-        if (body.seededPlayersCount === undefined || body.seededPlayersCount === null) {
-            throw new BadRequestError('Missing required field: seededPlayersCount');
-        }
-
         // Get tournament to check format
         const tournament = await TournamentService.getTournament(code);
         if (!tournament) {
@@ -35,17 +26,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 throw new BadRequestError('playersCount must be a power of 2 (2, 4, 8, 16, 32)');
             }
 
-            // Validate seeded players count
-            if (body.useSeededPlayers && body.seededPlayersCount > body.playersCount) {
-                throw new BadRequestError('seededPlayersCount cannot be greater than playersCount');
-            }
         }
 
         // Call the service method to generate knockout
         const result = await TournamentService.generateKnockout(code, {
             playersCount: body.playersCount,
-            useSeededPlayers: body.useSeededPlayers,
-            seededPlayersCount: body.seededPlayersCount
+            useSeededPlayers: false,
+            seededPlayersCount: 0
         });
 
         if (!result) {

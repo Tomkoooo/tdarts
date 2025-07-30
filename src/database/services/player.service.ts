@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import { PlayerModel } from '../models/player.model';
+import { UserService } from './user.service';
+import { UserModel } from '../models/user.model';
 
 export class PlayerService {
   static async searchPlayers(query: string) {
@@ -45,10 +47,11 @@ export class PlayerService {
     // Try to match both as string and as ObjectId
     let player = await PlayerModel.findOne({ userRef: userId });
     if (!player) {
-      // Try as ObjectId if not found as string
-      if (mongoose.Types.ObjectId.isValid(userId)) {
-        player = await PlayerModel.findOne({ userRef: new mongoose.Types.ObjectId(userId) });
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return null;
       }
+      player = await PlayerModel.create({ userRef: userId, name: user.name });
     }
     return player || null;
   }

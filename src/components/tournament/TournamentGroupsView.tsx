@@ -365,18 +365,18 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                         </span>
                                       </td>
                                       <td className="text-center">
-                                        {match.stats && match.stats.player1 && match.stats.player2 ? (
+                                        {match.player1.average && match.player2.average ? (
                                           <span>
-                                            {match.stats.player1.average.toFixed(1)} - {match.stats.player2.average.toFixed(1)}
+                                            {match.player1.average?.toFixed(1)} - {match.player2.average?.toFixed(1)}
                                           </span>
                                         ) : (
                                           '-'
                                         )}
                                       </td>
                                       <td className="text-center">
-                                        {(match.status === 'finished' || match.status === 'ongoing') && match.stats ? (
+                                        {(match.status === 'finished' || match.status === 'ongoing') ? (
                                           <span className="badge badge-neutral">
-                                            {match.stats.player1.legsWon} - {match.stats.player2.legsWon}
+                                            {match.player1.legsWon} - {match.player2.legsWon}
                                           </span>
                                         ) : (
                                           '-'

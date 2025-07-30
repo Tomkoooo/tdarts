@@ -9,6 +9,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         type: String, 
         required: true, 
         unique: true,
+        index: true,
         default: () => {
             // Generate a random 4-character alphanumeric string (letters and numbers)
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -20,63 +21,51 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         }
     },
     clubId: { type: mongoose.Schema.Types.ObjectId, ref: 'Club', required: true },
-    tournamentPlayers: {
-        type: [{
-            playerReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
-            status: { type: String, enum: ['applied', 'confirmed', 'checked-in', 'eliminated', 'winner'], required: true, default: 'applied' },
-            groupId: { type: mongoose.Schema.Types.ObjectId, default: null },
-            groupOrdinalNumber: { type: Number, default: null },
-            groupStanding: { type: Number,  default: null },
-            tournamentStanding: { type: Number,  default: null },
-            stats: {
-                matchesWon: { type: Number, required: true, default: 0 },
-                matchesLost: { type: Number, required: true, default: 0 },
-                legsWon: { type: Number, required: true, default: 0 },
-                legsLost: { type: Number, required: true, default: 0 },
-                avg: { type: Number, required: true, default: 0 },
-                oneEightiesCount: { type: Number, required: true, default: 0 },
-                highestCheckout: { type: Number, required: true, default: 0 },
-            }
-        }]
-    },
-    groups: [{
-        type: {
-            board: { type: Number, required: true },
-            matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true }],
+    tournamentPlayers: [{
+        playerReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
+        status: { type: String, enum: ['applied', 'confirmed', 'checked-in', 'eliminated', 'winner'], required: true, default: 'applied' },
+        groupId: { type: mongoose.Schema.Types.ObjectId, default: null },
+        groupOrdinalNumber: { type: Number, default: null },
+        groupStanding: { type: Number,  default: null },
+        tournamentStanding: { type: Number,  default: null },
+        stats: {
+            matchesWon: { type: Number, required: true, default: 0 },
+            matchesLost: { type: Number, required: true, default: 0 },
+            legsWon: { type: Number, required: true, default: 0 },
+            legsLost: { type: Number, required: true, default: 0 },
+            avg: { type: Number, required: true, default: 0 },
+            oneEightiesCount: { type: Number, required: true, default: 0 },
+            highestCheckout: { type: Number, required: true, default: 0 },
         }
+    }],
+    groups: [{
+        board: { type: Number, required: true },
+        matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true }],
     }],
     knockout: [{
-        type: {
-            round: { type: Number, required: true },
-            matches: [{
-                type: {
-                    player1: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
-                    player2: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
-                    matchReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' }
-                }
-            }]
-        }
+        round: { type: Number, required: true },
+        matches: [{
+            player1: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+            player2: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+            matchReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' }
+        }]
     }],
     tournamentSettings: {
-        type: {
-            status: { type: String, enum: ['pending', 'active', 'finished', 'group-stage', 'knockout'], required: true },
-            name: { type: String, required: true },
-            description: { type: String, default: null },
-            startDate: { type: Date, required: true, default: Date.now },
-            maxPlayers: { type: Number, required: true },
-            format: { type: String, enum: ['group', 'knockout', 'group_knockout'], required: true },
-            startingScore: { type: Number, required: true },
-            tournamentPassword: { type: String, required: true },
-            knockoutMethod: { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
-            // New fields
-            location: { type: String, default: null },
-            prize: { type: String, default: null },
-            type: { type: String, enum: ['amateur', 'open'], default: 'amateur' },
-            registrationOpen: { type: Boolean, default: true },
-            registrationDeadline: { type: Date, default: null },
-        }
+        status: { type: String, enum: ['pending', 'active', 'finished', 'group-stage', 'knockout'], required: true, default: 'pending' },
+        name: { type: String, required: true },
+        description: { type: String, default: null },
+        startDate: { type: Date, required: true, default: Date.now },
+        maxPlayers: { type: Number, required: true },
+        format: { type: String, enum: ['group', 'knockout', 'group_knockout'], required: true },
+        startingScore: { type: Number, required: true, default: 501 },
+        tournamentPassword: { type: String, required: true },
+        knockoutMethod: { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
+        boardCount: { type: Number, default: 2 },
+        entryFee: { type: Number, default: 0 },
+        location: { type: String, default: null },
+        type: { type: String, enum: ['amateur', 'open'], default: 'amateur' },
+        registrationDeadline: { type: Date, default: null },
     },
-    seededPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },

@@ -15,6 +15,14 @@ export async function POST(
         return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }
 
+    if (club.boards.length === 0) {
+        return NextResponse.json({ error: 'Club has no boards' }, { status: 400 });
+    }
+
+    if (!payload) {
+        return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    }
+
     // Tournament alapértelmezett értékek
     const now = new Date();
     const tournament = {
@@ -30,14 +38,11 @@ export async function POST(
             maxPlayers: payload.maxPlayers,
             format: payload.format,
             startingScore: payload.startingScore,
-            boardCount: club.boards.length,
+            boardCount: club.boards.length || 0,
             entryFee: payload.entryFee,
             tournamentPassword: payload.tournamentPassword,
-            // New fields
             location: payload.location || null,
-            prize: payload.prize || null,
             type: payload.type || 'amateur',
-            registrationOpen: payload.registrationOpen !== undefined ? payload.registrationOpen : true,
             registrationDeadline: payload.registrationDeadline ? new Date(payload.registrationDeadline) : null,
         },
         createdAt: now,

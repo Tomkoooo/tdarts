@@ -92,7 +92,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const registrationDeadline = tournament?.tournamentSettings?.registrationDeadline;
   const now = new Date();
   
-  let registrationOpen = tournament?.tournamentSettings?.registrationOpen !== false;
+  let registrationOpen = true;
   
   if (registrationDeadline) {
     registrationOpen = registrationOpen && now < new Date(registrationDeadline);
@@ -106,7 +106,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   // Allow admin/moderator actions until groups are generated
   const allowAdminActions = !groupsGenerated;
   
-  // Allow player registration only if registration is open
+  // Allow player registration only if registration is open and tournament is pending
   const allowPlayerRegistration = registrationOpen && isPending;
 
   console.log(players);

@@ -11,9 +11,71 @@ import { ClubService } from './club.service';
 import { ClubModel } from '../models/club.model';
 
 export class TournamentService {
+    // Initialize indexes when the service is first used
+    private static indexesInitialized = false;
+    
+    private static async ensureIndexes() {
+        if (this.indexesInitialized) return;
+        
+        try {
+            await connectMongo();
+            
+            // Ensure tournamentId index exists
+            await TournamentModel.collection.createIndex({ tournamentId: 1 }, { unique: true });
+            
+            // Drop any problematic indexes
+            try {
+                await TournamentModel.collection.dropIndex('code_1');
+            } catch (error) {
+                // Index doesn't exist, which is fine
+            }
+            
+            this.indexesInitialized = true;
+            console.log('✅ Tournament indexes initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize tournament indexes:', error);
+        }
+    }
+    
     static async createTournament(tournament: Partial<Omit<TournamentDocument, keyof Document>>): Promise<TournamentDocument> {
+        await this.ensureIndexes();
         await connectMongo();
-        const newTournament = new TournamentModel(tournament);
+        
+        // Generate a unique tournamentId if not provided
+        if (!tournament.tournamentId) {
+            let tournamentId: string;
+            let isUnique = false;
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            while (!isUnique && attempts < maxAttempts) {
+                // Generate a random 4-character alphanumeric string
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                tournamentId = '';
+                for (let i = 0; i < 4; i++) {
+                    tournamentId += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                
+                // Check if this ID already exists
+                const existingTournament = await TournamentModel.findOne({ tournamentId });
+                if (!existingTournament) {
+                    isUnique = true;
+                }
+                attempts++;
+            }
+            
+            if (!isUnique) {
+                throw new Error('Failed to generate unique tournament ID after multiple attempts');
+            }
+            
+            tournament.tournamentId = tournamentId!;
+        }
+        
+        // Ensure no code field is present (to avoid duplicate key errors)
+        const tournamentData = { ...tournament };
+        delete (tournamentData as any).code;
+        
+        const newTournament = new TournamentModel(tournamentData);
         return await newTournament.save();
     }
 
@@ -30,7 +92,8 @@ export class TournamentService {
                             model: 'Match',
                             populate: [
                                 { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' }
+                                { path: 'player2.playerId', model: 'Player' },
+                                { path: 'scorer', model: 'Player' }
                             ]
                         },
                         {
@@ -38,7 +101,8 @@ export class TournamentService {
                             model: 'Match',
                             populate: [
                                 { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' }
+                                { path: 'player2.playerId', model: 'Player' },
+                                { path: 'scorer', model: 'Player' }
                             ]
                         }
                     ]
@@ -95,17 +159,52 @@ export class TournamentService {
     //method to add, remove and update tournament players status, the rquest takes the player._id form the player collection
     static async addTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
         try {
+            await this.ensureIndexes();
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
-            if (!tournament) {
-                throw new BadRequestError('Tournament not found');
-            }
+            
+            // Check if player exists
             const player = await PlayerModel.findOne({ _id: playerId });
             if (!player) {
                 throw new BadRequestError('Player not found');
             }
-            tournament.tournamentPlayers = [...tournament.tournamentPlayers, { playerReference: player._id, status: 'applied' }];
-            await tournament.save();
+            
+            // Check if player is already in tournament
+            const existingPlayer = await TournamentModel.findOne({
+                tournamentId: tournamentId,
+                'tournamentPlayers.playerReference': player._id
+            });
+            
+            if (existingPlayer) {
+                console.log(`Player ${playerId} is already in tournament ${tournamentId}`);
+                return true; // Player already exists, consider it success
+            }
+            
+            // Use atomic operation to add player
+            const result = await TournamentModel.updateOne(
+                { tournamentId: tournamentId },
+                { 
+                    $push: { 
+                        tournamentPlayers: { 
+                            playerReference: player._id, 
+                            status: 'applied',
+                            stats: {
+                                matchesWon: 0,
+                                matchesLost: 0,
+                                legsWon: 0,
+                                legsLost: 0,
+                                avg: 0,
+                                oneEightiesCount: 0,
+                                highestCheckout: 0,
+                            }
+                        } 
+                    } 
+                }
+            );
+            
+            if (result.matchedCount === 0) {
+                throw new BadRequestError('Tournament not found');
+            }
+            
             return true;
         } catch (err) {
             console.error('addTournamentPlayer error:', err);
@@ -116,12 +215,23 @@ export class TournamentService {
     static async removeTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
         try {
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
-            if (!tournament) {
+            
+            // Use atomic operation to remove player
+            const result = await TournamentModel.updateOne(
+                { tournamentId: tournamentId },
+                { 
+                    $pull: { 
+                        tournamentPlayers: { 
+                            playerReference: playerId 
+                        } 
+                    } 
+                }
+            );
+            
+            if (result.matchedCount === 0) {
                 throw new BadRequestError('Tournament not found');
             }
-            tournament.tournamentPlayers = tournament.tournamentPlayers.filter((player: any) => player.playerReference.toString() !== playerId);
-            await tournament.save();
+            
             return true;
         } catch (err) {
             console.error('removeTournamentPlayer error:', err);
@@ -132,13 +242,24 @@ export class TournamentService {
     static async updateTournamentPlayerStatus(tournamentId: string, playerId: string, status: string): Promise<boolean> {
         try {
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
-            if (!tournament) {
-                throw new BadRequestError('Tournament not found');
+            
+            // Use atomic operation to update player status
+            const result = await TournamentModel.updateOne(
+                { 
+                    tournamentId: tournamentId,
+                    'tournamentPlayers.playerReference': playerId
+                },
+                { 
+                    $set: { 
+                        'tournamentPlayers.$.status': status 
+                    } 
+                }
+            );
+            
+            if (result.matchedCount === 0) {
+                throw new BadRequestError('Tournament or player not found');
             }
-
-            tournament.tournamentPlayers = tournament.tournamentPlayers.map((player: TournamentPlayer) => player.playerReference.toString() === playerId ? { ...player, status: status } : player);
-            await tournament.save();
+            
             return true;
         } catch (err) {
             console.error('updateTournamentPlayerStatus error:', err);
@@ -208,10 +329,20 @@ export class TournamentService {
                     .sort((a: any, b: any) => a.groupOrdinalNumber - b.groupOrdinalNumber);
 
                 const playerCount = groupPlayers.length;
-                if (playerCount < 3 || playerCount > 5) continue;
+                console.log(`Group ${group.board}: ${playerCount} players`);
+                
+                if (playerCount < 3 || playerCount > 6) {
+                    console.log(`Skipping group ${group.board}: playerCount ${playerCount} is not supported (need 3-5)`);
+                    continue;
+                }
 
                 const rrMatches = roundRobin(playerCount);
-                if (!rrMatches) continue;
+                if (!rrMatches) {
+                    console.log(`No round robin matches generated for group ${group.board} with ${playerCount} players`);
+                    continue;
+                }
+                
+                console.log(`Generated ${rrMatches.length} matches for group ${group.board}`);
 
                 for (const rrMatch of rrMatches) {
                     const player1 = groupPlayers[rrMatch.player1 - 1];
@@ -618,20 +749,66 @@ export class TournamentService {
             playerWithBye = playersForFirstRound.pop();
         }
 
-        // First round: advancing players play each other
+        // Group players by their groupId for cross-group pairing
+        const playersByGroup = new Map();
+        playersForFirstRound.forEach(player => {
+            const groupId = player.groupId;
+            if (!playersByGroup.has(groupId)) {
+                playersByGroup.set(groupId, []);
+            }
+            playersByGroup.get(groupId).push(player);
+        });
+
+        // Sort players within each group by their group standing
+        playersByGroup.forEach((players, groupId) => {
+            players.sort((a: any, b: any) => {
+                if (a.groupStanding !== b.groupStanding) {
+                    return (a.groupStanding || 0) - (b.groupStanding || 0);
+                }
+                const aStats = a.stats || {};
+                const bStats = b.stats || {};
+                const aPoints = (aStats.matchesWon || 0) * 2;
+                const bPoints = (bStats.matchesWon || 0) * 2;
+                if (aPoints !== bPoints) return bPoints - aPoints;
+                
+                const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                return bLegDiff - aLegDiff;
+            });
+        });
+
+        // Create cross-group pairings
         const firstRoundMatches = [];
-        for (let i = 0; i < playersForFirstRound.length; i += 2) {
-            if (i + 1 < playersForFirstRound.length) {
-                firstRoundMatches.push({
-                    player1: playersForFirstRound[i].playerReference,
-                    player2: playersForFirstRound[i + 1].playerReference,
-                });
+        const groupIds = Array.from(playersByGroup.keys());
+        
+        // Pair groups: 1st group vs 2nd group, 3rd vs 4th, etc.
+        for (let i = 0; i < groupIds.length; i += 2) {
+            const group1Id = groupIds[i];
+            const group2Id = groupIds[i + 1];
+            
+            if (group2Id) {
+                const group1Players = playersByGroup.get(group1Id);
+                const group2Players = playersByGroup.get(group2Id);
+                
+                // Pair players: 1st from group1 vs last from group2, 2nd from group1 vs 2nd-last from group2, etc.
+                const maxPlayers = Math.max(group1Players.length, group2Players.length);
+                
+                for (let j = 0; j < maxPlayers; j++) {
+                    const player1 = group1Players[j];
+                    const player2 = group2Players[group2Players.length - 1 - j];
+                    
+                    if (player1 && player2) {
+                        firstRoundMatches.push({
+                            player1: player1.playerReference,
+                            player2: player2.playerReference,
+                        });
+                    }
+                }
             }
         }
 
         // If there's a player with a bye, add them to the second round
         if (playerWithBye) {
-            // Create a second round with just the bye player
             rounds.push({ 
                 round: 1, 
                 matches: firstRoundMatches 

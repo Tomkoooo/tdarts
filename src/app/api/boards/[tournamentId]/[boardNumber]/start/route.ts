@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: { tournam
             throw new BadRequestError('Missing required parameters: matchId, legsToWin, startingPlayer');
         }
         
-        const result = await MatchService.startMatch(matchId, legsToWin, startingPlayer);
+        const result = await MatchService.startMatch(tournamentId, matchId, legsToWin, startingPlayer);
         
         return NextResponse.json({ success: true, match: result });
     } catch (error) {

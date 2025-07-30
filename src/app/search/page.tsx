@@ -504,23 +504,49 @@ const SearchPage: React.FC = () => {
                                 {tournament.location && (
                                   <p>Helyszín: {tournament.location}</p>
                                 )}
-                                {tournament.prize && (
-                                  <p>Névezési díj: {tournament.prize}</p>
-                                )}
+                                
+                                <p>Névezési díj: {tournament.entryFee}</p>
+                                <p>Táblák: {tournament.boardCount}</p>
                                 {tournament.type && (
                                   <p>Típus: {tournament.type === 'amateur' ? 'Amatőr' : 'Open'}</p>
                                 )}
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className={`badge badge-sm ${tournament.registrationOpen ? 'badge-success' : 'badge-error'}`}>
-                                    {tournament.registrationOpen ? 'Nyitva' : 'Zárva'}
-                                  </span>
-                                  {tournament.startDate && (
-                                    <p className="text-xs">Dátum: {new Date(tournament.startDate).toLocaleDateString('hu-HU')}</p>
-                                  )}
-                                  {tournament.registrationDeadline && (
-                                    <p className="text-xs">Határidő: {new Date(tournament.registrationDeadline).toLocaleDateString('hu-HU')}</p>
-                                  )}
-                                </div>
+                                {(() => {
+                                  const now = new Date();
+                                  const registrationDeadline = tournament.registrationDeadline ? new Date(tournament.registrationDeadline) : null;
+                                  const isRegistrationClosed =
+                                    (registrationDeadline !== null && registrationDeadline < now) ||
+                                    tournament.status !== 'pending';
+
+                                  console.log(isRegistrationClosed, registrationDeadline, now, tournament.status);
+
+                                  let badgeText = '';
+                                  let badgeClass = '';
+
+                                  if (isRegistrationClosed) {
+                                    badgeText = 'Zárva';
+                                    badgeClass = 'badge-error';
+                                  } else if (registrationDeadline && registrationDeadline > now) {
+                                    badgeText = 'Határidő';
+                                    badgeClass = 'badge-warning';
+                                  } else {
+                                    badgeText = 'Nyitva';
+                                    badgeClass = 'badge-success';
+                                  }
+
+                                  return (
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className={`badge badge-sm ${badgeClass}`}>
+                                        {badgeText}
+                                      </span>
+                                      {tournament.startDate && (
+                                        <p className="text-xs">Dátum: {new Date(tournament.startDate).toLocaleDateString('hu-HU')}</p>
+                                      )}
+                                      {tournament.registrationDeadline && (
+                                        <p className="text-xs">Határidő: {new Date(tournament.registrationDeadline).toLocaleDateString('hu-HU')}</p>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -600,9 +626,19 @@ const SearchPage: React.FC = () => {
                                 <p>🏆 {tournament.tournamentSettings.type === 'amateur' ? 'Amatőr' : 'Open'}</p>
                               )}
                               <div className="flex items-center gap-2 mt-1">
-                                <span className={`badge badge-xs ${tournament.tournamentSettings?.registrationOpen !== false ? 'badge-success' : 'badge-error'}`}>
-                                  {tournament.tournamentSettings?.registrationOpen !== false ? 'Nyitva' : 'Zárva'}
-                                </span>
+                                {(() => {
+                                  const now = new Date();
+                                  const registrationDeadline = tournament.tournamentSettings?.registrationDeadline ? new Date(tournament.tournamentSettings.registrationDeadline) : null;
+                                  const isRegistrationClosed = 
+                                    (registrationDeadline !== null && registrationDeadline < now) ||
+                                    tournament.tournamentSettings?.status !== 'pending';
+                                  
+                                  return (
+                                    <span className={`badge badge-xs ${isRegistrationClosed ? 'badge-error' : 'badge-success'}`}>
+                                      {isRegistrationClosed ? 'Zárva' : 'Nyitva'}
+                                    </span>
+                                  );
+                                })()}
                                 <span className="text-xs">
                                   {tournament.tournamentPlayers?.length || 0}/{tournament.tournamentSettings?.maxPlayers} játékos
                                 </span>

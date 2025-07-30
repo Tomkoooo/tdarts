@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { IconX, IconChevronRight, IconDotsVertical } from '@tabler/icons-react';
-import PlayerSearch from './PlayerSearch';
+import { IconX, IconChevronRight } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
+import { TournamentSettings } from '@/interface/tournament.interface';
 
 interface CreateTournamentModalProps {
   isOpen: boolean;
@@ -15,38 +15,20 @@ interface CreateTournamentModalProps {
 type TournamentFormat = 'group' | 'knockout' | 'group_knockout';
 type Step = 'details' | 'settings';
 
-interface TournamentSettings {
-  name: string;
-  description?: string;
-  startDate: string;
-  entryFee: number;
-  maxPlayers: number;
-  format: TournamentFormat;
-  startingScore: number;
-  tournamentPassword: string;
-  // New fields
-  location?: string;
-  prize?: string;
-  type: 'amateur' | 'open';
-  registrationOpen: boolean;
-  registrationDeadline?: string;
-}
-
 const defaultSettings: TournamentSettings = {
+  status: 'pending',
+  boardCount: 1,
+  location: '',
   name: '',
   description: '',
-  startDate: '',
+  startDate: new Date(),
   entryFee: 0,
   maxPlayers: 16,
   format: 'group',
   startingScore: 501,
   tournamentPassword: '',
-  // New fields
-  location: '',
-  prize: '',
   type: 'amateur',
-  registrationOpen: true,
-  registrationDeadline: '',
+  registrationDeadline: new Date(),
 };
 
 export default function CreateTournamentModal({
@@ -59,7 +41,6 @@ export default function CreateTournamentModal({
 }: CreateTournamentModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [settings, setSettings] = useState<TournamentSettings>(defaultSettings);
-  const [maxPlayers, setMaxPlayers] = useState<number>(16);
   const [error, setError] = useState<string>('');
   const router = useRouter();
 
@@ -105,12 +86,10 @@ export default function CreateTournamentModal({
         format: settings.format,
         startingScore: settings.startingScore,
         tournamentPassword: settings.tournamentPassword,
-        // New fields
+        boardCount: boardCount,
         location: settings.location,
-        prize: settings.prize,
         type: settings.type,
-        registrationOpen: settings.registrationOpen,
-        registrationDeadline: settings.registrationDeadline,
+        registrationDeadline: settings.registrationDeadline
       };
       const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
         method: 'POST',
@@ -194,7 +173,7 @@ export default function CreateTournamentModal({
                 <label className="block text-sm font-medium mb-1">Kezdés időpontja</label>
                 <input
                   type="datetime-local"
-                  value={settings.startDate || ''}
+                  value={settings.startDate.toString()}
                   onChange={e => handleSettingsChange('startDate', e.target.value)}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                 />
@@ -220,16 +199,6 @@ export default function CreateTournamentModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Névezési díj leírása</label>
-                <input
-                  type="text"
-                  value={settings.prize}
-                  onChange={(e) => handleSettingsChange('prize', e.target.value)}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                  placeholder="Pl.: 2000 Ft/fő"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium mb-1">Típus</label>
                 <select
                   value={settings.type}
@@ -244,23 +213,12 @@ export default function CreateTournamentModal({
                 <label className="block text-sm font-medium mb-1">Nevezési határidő</label>
                 <input
                   type="datetime-local"
-                  value={settings.registrationDeadline || ''}
+                  value={settings.registrationDeadline.toString()}
                   onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value)}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="registrationOpen"
-                  checked={settings.registrationOpen}
-                  onChange={(e) => handleSettingsChange('registrationOpen', e.target.checked)}
-                  className="checkbox checkbox-primary"
-                />
-                <label htmlFor="registrationOpen" className="text-sm font-medium">
-                  Nevezés nyitva
-                </label>
-              </div>
+
             </div>
           )}
           {currentStep === 'settings' && (

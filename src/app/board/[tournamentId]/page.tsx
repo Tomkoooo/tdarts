@@ -271,8 +271,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       
       if (response.data.success) {
         setShowMatchSetup(false);
-        // Reload matches to get updated status
-        await loadMatches();
+        // Update selectedMatch with fresh data from the API response
+        if (response.data.match) {
+          setSelectedMatch(response.data.match);
+        } else {
+          // Fallback: reload matches to get updated status
+          await loadMatches();
+        }
       }
     } catch (err) {
       setError("Nem sikerült elindítani a meccset!");

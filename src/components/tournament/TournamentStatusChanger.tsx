@@ -34,13 +34,15 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
     setError('');
     try {
       const response = await axios.post(`/api/tournaments/${code}/generateGroups`);
-      if (response.data && response.data.success) {
+      if (response.data && response.status === 200) {
         onRefetch();
       } else {
         setError(response.data?.error || 'Nem sikerült csoportokat generálni.');
+        console.log(response.data?.error);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Nem sikerült csoportokat generálni.');
+      console.log(err);
     } finally {
       setLoading(false);
     }

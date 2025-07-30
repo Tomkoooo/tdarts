@@ -108,7 +108,7 @@ export class SearchService {
                 const now = new Date();
                 
                 // Determine if registration is open based on deadline or start date
-                let registrationOpen = tournament.tournamentSettings?.registrationOpen !== false;
+                let registrationOpen = true;
                 
                 if (registrationDeadline) {
                     registrationOpen = registrationOpen && now < new Date(registrationDeadline);

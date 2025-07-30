@@ -27,7 +27,8 @@ export class MatchService {
 
         return matches.map(match => ({
             ...match.toObject(),
-                startingScore: startingScore,
+            startingScore: startingScore,
+            startingPlayer: match.startingPlayer || 1, // Ensure startingPlayer is included
         }));
     }
 
@@ -48,10 +49,12 @@ export class MatchService {
         return {
             ...match.toObject(),
             startingScore: startingScore,
+            startingPlayer: match.startingPlayer || 1, // Ensure startingPlayer is included
+            winnerId: match.winnerId || null, // Ensure winnerId is included
         };
     }
 
-    static async startMatch(matchId: string, legsToWin: number, startingPlayer: 1 | 2) {
+    static async startMatch(tournamentId: string, matchId: string, legsToWin: number, startingPlayer: 1 | 2) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found');
         
@@ -95,7 +98,24 @@ export class MatchService {
             await club.save();
         }
         
-        return match;
+        // Populate the match data before returning
+        const populatedMatch = await MatchModel.findById(matchId)
+            .populate('player1.playerId')
+            .populate('player2.playerId')
+            .populate('scorer');
+            
+        if (!populatedMatch) throw new BadRequestError('Match not found after update');
+        
+        // Get tournament for startingScore
+        const tournament = await TournamentService.getTournament(tournamentId);
+        const startingScore = tournament?.tournamentSettings.startingScore;
+        
+        return {
+            ...populatedMatch.toObject(),
+            startingScore: startingScore,
+            startingPlayer: populatedMatch.startingPlayer || 1,
+            winnerId: populatedMatch.winnerId || null,
+        };
     }
 
     static async finishLeg(matchId: string, legData: {

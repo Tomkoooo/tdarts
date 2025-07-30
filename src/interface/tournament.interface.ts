@@ -57,11 +57,10 @@ export interface TournamentSettings {
     startingScore: number;
     tournamentPassword: string;
     knockoutMethod?: 'automatic' | 'manual';
-    // New fields
-    location?: string;
-    prize?: string;
-    type?: 'amateur' | 'open';
-    registrationOpen?: boolean;
+    boardCount: number;
+    entryFee: number;
+    location: string;
+    type: 'amateur' | 'open';
     registrationDeadline: Date
 }
 
@@ -84,7 +83,6 @@ export interface Tournament {
     groups: TournamentGroup[];
     knockout: KnockoutRound[];
     tournamentSettings: TournamentSettings;
-    seededPlayers?: string[] | PlayerDocument[];
     createdAt?: Date;
     updatedAt?: Date;
     isActive?: boolean;
