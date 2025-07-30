@@ -173,7 +173,7 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-red-800/30 flex items-center justify-center p-4">
+     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-red-800/30 flex items-center justify-center p-4 pt-20">
       <div className="w-full max-w-4xl glass bg-opacity-20 rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/20 rounded-full border border-primary/30 mb-4">
