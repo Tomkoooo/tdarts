@@ -245,9 +245,13 @@ export default function CreateTournamentModal({
                   <label className="block text-sm font-medium mb-1">Maximális létszám</label>
                   <input
                     type="number"
-                    min={4}
                     value={settings.maxPlayers}
-                    onChange={e => handleSettingsChange('maxPlayers', Number(e.target.value))}
+                    onChange={e => {if (Number(e.target.value) < 4) {
+                      setError('A maximális létszám legalább 4 fő kell legyen');
+                      } else {
+                        handleSettingsChange('maxPlayers', Number(e.target.value))
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                     placeholder="Maximális játékosok száma"
                   />

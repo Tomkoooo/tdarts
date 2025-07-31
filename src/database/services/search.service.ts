@@ -50,8 +50,8 @@ export class SearchService {
                 _id: player._id,
                 name: player.name,
                 type: 'player',
-                isRegistered: !!player.userRef,
-                statistics: player.statistics || {},
+                userRef: player.userRef,
+                stats: player.stats || {},
                 tournamentHistory: player.tournamentHistory || []
             }));
         }
@@ -220,21 +220,31 @@ export class SearchService {
             .limit(limit);
     }
 
-    static async getTopPlayers(limit: number = 5): Promise<any[]> {
+    static async getTopPlayers(limit: number = 10, skip: number = 0): Promise<{ players: any[], total: number }> {
         await connectMongo();
         
-        return await PlayerModel.find({ 
+        // Get total count
+        const total = await PlayerModel.countDocuments({ 
             $or: [
-                { 'statistics.tournamentsPlayed': { $gt: 0 } },
-                { 'tournamentHistory.0': { $exists: true } }
+                { $expr: { $gt: [ { $size: { $ifNull: ['$tournamentHistory', []] } }, 0 ] } }
+            ]
+        });
+        
+        // Get players with pagination
+        const players = await PlayerModel.find({ 
+            $or: [
+                { $expr: { $gt: [ { $size: { $ifNull: ['$tournamentHistory', []] } }, 0 ] } }
             ]
         })
         .sort({ 
-            'statistics.bestPosition': 1, 
-            'statistics.averagePosition': 1,
-            'statistics.tournamentsPlayed': -1 
+            'stats.bestPosition': 1, 
+            'stats.averagePosition': 1,
+            'stats.tournamentsPlayed': -1 
         })
+        .skip(skip)
         .limit(limit);
+        
+        return { players, total };
     }
 
     static async getPopularClubs(limit: number = 5): Promise<any[]> {

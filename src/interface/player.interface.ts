@@ -42,35 +42,45 @@ export interface PlayerDocument {
      * Statisztikák (csak aggregálható mezők, tornák ref listája)
      */
     stats: {
-        tournamentsPlayed: (string | mongoose.Types.ObjectId)[]; // Tournament ref-ek
+        tournamentsPlayed: number;
         matchesPlayed: number;
         legsWon: number;
         legsLost: number;
         avg: number;
         oneEightiesCount: number;
         highestCheckout: number;
+        averagePosition: number;
+        bestPosition: number;
+        totalMatchesWon: number;
+        totalMatchesLost: number;
+        totalLegsWon: number;
+        totalLegsLost: number;
+        total180s: number;
     };
     /**
      * Tournament history with detailed results
      */
     tournamentHistory?: TournamentHistory[];
-    /**
-     * Overall player statistics
-     */
-    statistics?: PlayerStatistics;
 }
 
 export interface Player {
     _id: string;
     name: string;
     stats: {
-        tournamentsPlayed: (string | mongoose.Types.ObjectId)[]; // Tournament ref-ek
+        tournamentsPlayed: number;
         matchesPlayed: number;
         legsWon: number;
         legsLost: number;
         avg: number;
         oneEightiesCount: number;
         highestCheckout: number;
+        averagePosition: number;
+        bestPosition: number;
+        totalMatchesWon: number;
+        totalMatchesLost: number;
+        totalLegsWon: number;
+        totalLegsLost: number;
+        total180s: number;
     };
     tournamentHistory?: TournamentHistory[];
     statistics?: PlayerStatistics;

@@ -49,6 +49,15 @@ const SearchPage: React.FC = () => {
   const [recentTournaments, setRecentTournaments] = useState<any[]>([]);
   const [topPlayers, setTopPlayers] = useState<any[]>([]);
   const [popularClubs, setPopularClubs] = useState<any[]>([]);
+  
+  // Player modal state
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
+  
+  // Top players pagination
+  const [topPlayersPage, setTopPlayersPage] = useState(1);
+  const [topPlayersTotal, setTopPlayersTotal] = useState(0);
+  const playersPerPage = 10;
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -103,12 +112,15 @@ const SearchPage: React.FC = () => {
       try {
         const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
           axios.get('/api/search/recent-tournaments'),
-          axios.get('/api/search/top-players'),
+          axios.get(`/api/search/top-players?page=${topPlayersPage}&limit=${playersPerPage}`),
           axios.get('/api/search/popular-clubs')
         ]);
 
         if (tournamentsRes.data.success) setRecentTournaments(tournamentsRes.data.tournaments);
-        if (playersRes.data.success) setTopPlayers(playersRes.data.players);
+        if (playersRes.data.success) {
+          setTopPlayers(playersRes.data.players);
+          setTopPlayersTotal(playersRes.data.total || 0);
+        }
         if (clubsRes.data.success) setPopularClubs(clubsRes.data.clubs);
       } catch (error) {
         console.error('Failed to load initial data:', error);
@@ -116,7 +128,7 @@ const SearchPage: React.FC = () => {
     };
 
     loadInitialData();
-  }, []);
+  }, [topPlayersPage]);
 
   // Handle search
   useEffect(() => {
@@ -165,6 +177,16 @@ const SearchPage: React.FC = () => {
     });
   };
 
+  const openPlayerModal = (player: any) => {
+    setSelectedPlayer(player);
+    setShowPlayerModal(true);
+  };
+
+  const closePlayerModal = () => {
+    setShowPlayerModal(false);
+    setSelectedPlayer(null);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'badge-warning';
@@ -193,6 +215,16 @@ const SearchPage: React.FC = () => {
       case 'knockout': return 'Egyenes kiesés';
       case 'group_knockout': return 'Csoport + Kiesés';
       default: return format;
+    }
+  };
+
+  const getEliminationText = (eliminatedIn: string) => {
+    switch (eliminatedIn) {
+      case 'winner': return 'Győztes';
+      case 'final': return 'Döntő';
+      case 'semi-final': return 'Elődöntő';
+      case 'group-stage': return 'Csoportkör';
+      default: return eliminatedIn;
     }
   };
 
@@ -453,19 +485,20 @@ const SearchPage: React.FC = () => {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {results.players.map((player) => (
-                        <div key={player._id} className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+                        <div key={player._id} className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => openPlayerModal(player)}>
                           <div className="card-body">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="card-title text-lg">{player.name}</h4>
-                              {player.isRegistered && (
+                              {player.userRef && (
                                 <span className="badge badge-primary badge-sm">Regisztrált</span>
                               )}
                             </div>
                             <div className="text-sm text-base-content/70 space-y-1">
-                              <p>Tornák: {player.statistics?.tournamentsPlayed || 0}</p>
-                              <p>Legjobb helyezés: {player.statistics?.bestPosition || 'N/A'}</p>
-                              <p>180-ak: {player.statistics?.total180s || 0}</p>
-                              <p>Legmagasabb checkout: {player.statistics?.highestCheckout || 'N/A'}</p>
+                              <p>Tornák: {player.stats?.tournamentsPlayed || 0}</p>
+                              <p>Legjobb helyezés: {player.stats?.bestPosition || 'N/A'}</p>
+                              <p>180-ak: {player.stats?.total180s || 0}</p>
+                              <p>Legmagasabb checkout: {player.stats?.highestCheckout || 'N/A'}</p>
+                              <p>Átlag: {player.stats?.avg ? player.stats.avg.toFixed(1) : 'N/A'}</p>
                             </div>
                           </div>
                         </div>
@@ -664,21 +697,48 @@ const SearchPage: React.FC = () => {
                 <div className="card-body">
                   <h3 className="card-title mb-4">Top Játékosok</h3>
                   {topPlayers.length > 0 ? (
-                    <div className="space-y-3">
-                      {topPlayers.map((player, index) => (
-                        <div key={player._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg font-bold text-primary">#{index + 1}</span>
-                            <div>
-                              <h4 className="font-semibold">{player.name}</h4>
-                              <p className="text-sm text-base-content/70">
-                                {player.statistics?.bestPosition || 'N/A'}. helyezés átlag
-                              </p>
+                    <>
+                      <div className="space-y-3">
+                        {topPlayers.map((player, index) => (
+                          <div key={player._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors cursor-pointer" onClick={() => openPlayerModal(player)}>
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-bold text-primary">#{((topPlayersPage - 1) * playersPerPage) + index + 1}</span>
+                              <div>
+                                <h4 className="font-semibold">{player.name}</h4>
+                                <p className="text-sm text-base-content/70">
+                                  {player.stats?.averagePosition || 'N/A'}. átlag helyezés
+                                </p>
+                              </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                      
+                      {/* Pagination */}
+                      {topPlayersTotal > playersPerPage && (
+                        <div className="flex justify-center mt-4">
+                          <div className="join">
+                            <button
+                              className="join-item btn btn-sm"
+                              disabled={topPlayersPage === 1}
+                              onClick={() => setTopPlayersPage(prev => Math.max(1, prev - 1))}
+                            >
+                              «
+                            </button>
+                            <button className="join-item btn btn-sm">
+                              {topPlayersPage}
+                            </button>
+                            <button
+                              className="join-item btn btn-sm"
+                              disabled={topPlayersPage * playersPerPage >= topPlayersTotal}
+                              onClick={() => setTopPlayersPage(prev => prev + 1)}
+                            >
+                              »
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <p className="text-base-content/70">Nincsenek játékosok</p>
                   )}
@@ -711,6 +771,108 @@ const SearchPage: React.FC = () => {
                     <p className="text-base-content/70">Nincsenek klubbok</p>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Player Stats Modal */}
+        {showPlayerModal && selectedPlayer && (
+          <div className="modal modal-open">
+            <div className="modal-box max-w-4xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-lg">{selectedPlayer.name} - Statisztikák</h3>
+                <button className="btn btn-sm btn-circle btn-ghost" onClick={closePlayerModal}>✕</button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Overall Statistics */}
+                <div>
+                  <h4 className="font-bold text-md mb-3">Összesített Statisztikák</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Tornák:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.tournamentsPlayed || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Legjobb helyezés:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.bestPosition || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Átlagos helyezés:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.averagePosition ? selectedPlayer.stats.averagePosition.toFixed(1) : 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Meccsek:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.matchesPlayed || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Győzelmek:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.totalMatchesWon || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Vereségek:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.totalMatchesLost || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Legek:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.legsWon || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>180-ak:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.total180s || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Legmagasabb checkout:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.highestCheckout || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Átlag:</span>
+                      <span className="font-semibold">{selectedPlayer.stats?.avg ? selectedPlayer.stats.avg.toFixed(1) : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tournament History */}
+                <div>
+                  <h4 className="font-bold text-md mb-3">Torna Történet</h4>
+                  {selectedPlayer.tournamentHistory && selectedPlayer.tournamentHistory.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {selectedPlayer.tournamentHistory.map((history: any, index: number) => (
+                        <div key={index} className="p-3 bg-base-200 rounded-lg">
+                          <div className="font-semibold text-sm">{history.tournamentName}</div>
+                          <div className="text-xs text-base-content/70 space-y-1">
+                            <div className="flex justify-between">
+                              <span>Helyezés:</span>
+                              <span>{history.position}. {getEliminationText(history.eliminatedIn)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Győzelmek:</span>
+                              <span>{history.stats.matchesWon}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Vereségek:</span>
+                              <span>{history.stats.matchesLost}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>180-ak:</span>
+                              <span>{history.stats.oneEightiesCount}</span>
+                            </div>
+                            <div className="text-xs">
+                              {new Date(history.date).toLocaleDateString('hu-HU')}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-base-content/70">Nincs torna történet</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="modal-action">
+                <button className="btn" onClick={closePlayerModal}>Bezárás</button>
               </div>
             </div>
           </div>

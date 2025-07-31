@@ -479,6 +479,77 @@ describe('Tournament Lifecycle Test', () => {
       console.log(`🔗 Tournament URL: http://localhost:3000/tournaments/${tournamentData.tournamentId}`);
     }
   });
+
+  // Test for tournament standing logic
+  test('Verify tournament standing logic after finishing tournament', async () => {
+    if (!tournamentData) {
+      console.log('⏭️  Skipping tournament standing test - no tournament data available');
+      return;
+    }
+
+    try {
+      // Get the finished tournament
+      const tournamentResponse = await axios.get(
+        `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      );
+      expect(tournamentResponse.status).toBe(200);
+
+      const tournament = tournamentResponse.data;
+      
+      // Verify tournament is finished
+      expect(tournament.tournamentSettings.status).toBe('finished');
+      
+      // Verify all players have tournamentStanding
+      const checkedInPlayers = tournament.tournamentPlayers.filter((p: any) => p.status === 'checked-in');
+      expect(checkedInPlayers.length).toBeGreaterThan(0);
+      
+      checkedInPlayers.forEach((player: any) => {
+        expect(player.tournamentStanding).toBeDefined();
+        expect(typeof player.tournamentStanding).toBe('number');
+        expect(player.tournamentStanding).toBeGreaterThan(0);
+        expect(player.tournamentStanding).toBeLessThanOrEqual(checkedInPlayers.length);
+        
+        // Verify finalPosition matches tournamentStanding
+        expect(player.finalPosition).toBe(player.tournamentStanding);
+        
+        // Verify eliminatedIn is set
+        expect(player.eliminatedIn).toBeDefined();
+        expect(typeof player.eliminatedIn).toBe('string');
+        
+        // Verify finalStats is set
+        expect(player.finalStats).toBeDefined();
+        expect(typeof player.finalStats).toBe('object');
+      });
+
+      // Verify positions are unique (no duplicates)
+      const positions = checkedInPlayers.map((p: any) => p.tournamentStanding);
+      const uniquePositions = new Set(positions);
+      expect(uniquePositions.size).toBe(positions.length);
+
+      // Verify we have exactly one winner (position 1)
+      const winners = checkedInPlayers.filter((p: any) => p.tournamentStanding === 1);
+      expect(winners.length).toBe(1);
+
+      // Verify we have exactly one runner-up (position 2) if knockout exists
+      if (tournament.knockout && tournament.knockout.length > 0) {
+        const runnersUp = checkedInPlayers.filter((p: any) => p.tournamentStanding === 2);
+        expect(runnersUp.length).toBe(1);
+      }
+
+      // Log the standings for verification
+      console.log('\n🏆 Tournament Standings:');
+      const sortedPlayers = checkedInPlayers.sort((a: any, b: any) => a.tournamentStanding - b.tournamentStanding);
+      sortedPlayers.forEach((player: any) => {
+        const playerName = player.playerReference?.name || player.playerReference?.toString() || 'Unknown';
+        console.log(`${player.tournamentStanding}. ${playerName} - ${player.eliminatedIn}`);
+      });
+
+      logSuccess('Tournament standing logic verified successfully');
+    } catch (error) {
+      logError('Failed to verify tournament standing logic', error);
+      throw error;
+    }
+  }, 30000); // 30 second timeout
 });
 
 // Utility test for checking server connectivity

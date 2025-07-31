@@ -5,13 +5,20 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
     userRef: { type: mongoose.Types.ObjectId, ref: "Users", required: false },
     name: { type: String, required: true },
     stats: {
-        tournamentsPlayed: [{ type: mongoose.Types.ObjectId, ref: "Tournament" }],
+        tournamentsPlayed: { type: Number, default: 0 },
         matchesPlayed: { type: Number, default: 0 },
         legsWon: { type: Number, default: 0 },
         legsLost: { type: Number, default: 0 },
         oneEightiesCount: { type: Number, default: 0 },
         highestCheckout: { type: Number, default: 0 },
         avg: { type: Number, default: 0 },
+        averagePosition: { type: Number, default: 0 },
+        bestPosition: { type: Number, default: 0 },
+        totalMatchesWon: { type: Number, default: 0 },
+        totalMatchesLost: { type: Number, default: 0 },
+        totalLegsWon: { type: Number, default: 0 },
+        totalLegsLost: { type: Number, default: 0 },
+        total180s: { type: Number, default: 0 },
     },
     tournamentHistory: [{
         tournamentId: { type: String, required: true },
@@ -25,20 +32,10 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
             legsLost: { type: Number, default: 0 },
             oneEightiesCount: { type: Number, default: 0 },
             highestCheckout: { type: Number, default: 0 },
+            averagePosition: { type: Number, default: 0 },
         },
         date: { type: Date, default: Date.now },
-    }],
-    statistics: {
-        tournamentsPlayed: { type: Number, default: 0 },
-        bestPosition: { type: Number, default: 0 },
-        totalMatchesWon: { type: Number, default: 0 },
-        totalMatchesLost: { type: Number, default: 0 },
-        totalLegsWon: { type: Number, default: 0 },
-        totalLegsLost: { type: Number, default: 0 },
-        total180s: { type: Number, default: 0 },
-        highestCheckout: { type: Number, default: 0 },
-        averagePosition: { type: Number, default: 0 },
-    },
+    }]
 }, {collection: 'players'});
 
 export const PlayerModel = mongoose.models.Player || mongoose.model<PlayerDocument>("Player", PlayerSchema);

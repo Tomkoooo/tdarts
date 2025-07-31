@@ -9,23 +9,24 @@ export interface TournamentPlayer {
     groupOrdinalNumber?: number;
     groupStanding?: number;
     tournamentStanding?: number;
+    finalPosition?: number;
+    eliminatedIn?: string;
+    finalStats?: {
+        average: number;
+        checkoutRate: number;
+        legsWon: number;
+        legsPlayed: number;
+        matchesWon: number;
+        matchesPlayed: number;
+        highestCheckout: number;
+        oneEighties: number;
+    };
     stats: {
         matchesWon: number;
         matchesLost: number;
         legsWon: number;
         legsLost: number;
         avg: number;
-        oneEightiesCount: number;
-        highestCheckout: number;
-    };
-    // Final standings (added when tournament is finished)
-    finalPosition?: number;
-    eliminatedIn?: string;
-    finalStats?: {
-        matchesWon: number;
-        matchesLost: number;
-        legsWon: number;
-        legsLost: number;
         oneEightiesCount: number;
         highestCheckout: number;
     };

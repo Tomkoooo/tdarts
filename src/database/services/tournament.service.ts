@@ -782,10 +782,11 @@ export class TournamentService {
         const firstRoundMatches = [];
         const groupIds = Array.from(playersByGroup.keys());
         
-        // Pair groups: 1st group vs 2nd group, 3rd vs 4th, etc.
-        for (let i = 0; i < groupIds.length; i += 2) {
+        // Pair groups: 1st group vs 3rd group, 2nd vs 4th, etc.
+        const halfGroups = Math.ceil(groupIds.length / 2);
+        for (let i = 0; i < halfGroups; i++) {
             const group1Id = groupIds[i];
-            const group2Id = groupIds[i + 1];
+            const group2Id = groupIds[i + halfGroups];
             
             if (group2Id) {
                 const group1Players = playersByGroup.get(group1Id);
@@ -1345,149 +1346,110 @@ export class TournamentService {
                 throw new Error('No checked-in players found');
             }
 
-            // Compute final standings
-            const standings: { playerId: string; rank: number }[] = [];
-            const playerEliminations: Map<string, number> = new Map();
-
-            // Step 1: Identify group stage eliminations
             const totalPlayers = checkedInPlayers.length;
-            const nearestPowerOf2 = Math.pow(2, Math.floor(Math.log2(totalPlayers)));
-            const playersToEliminate = totalPlayers - nearestPowerOf2;
-            const groupCount = tournament.groups?.length || 0;
-            const playersPerGroup = groupCount > 0 ? Math.ceil(totalPlayers / groupCount) : 0;
-            const eliminationsPerGroup = groupCount > 0 ? Math.ceil(playersToEliminate / groupCount) : 0;
+            const playerStandings = new Map<string, number>();
 
-            const playersAdvanced = new Set<string>();
-
-            // Process group standings if groups exist
-            if (groupCount > 0) {
-                // Get players by group and sort them by groupStanding
-                const playersByGroup = new Map<string, any[]>();
-                
+            // Step 1: Handle group-only tournaments
+            if (format === 'group') {
+                // For group-only tournaments, use group standings
                 checkedInPlayers.forEach((player: any) => {
-                    if (player.groupId) {
-                        const groupId = player.groupId.toString();
-                        if (!playersByGroup.has(groupId)) {
-                            playersByGroup.set(groupId, []);
-                        }
-                        playersByGroup.get(groupId)!.push(player);
+                    const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
+                    if (playerId) {
+                        playerStandings.set(playerId, player.groupStanding || totalPlayers);
                     }
                 });
-
-                // Sort players in each group by groupStanding
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                for (const [gropId, players] of playersByGroup) {
-                    const sortedPlayers = players.sort((a: any, b: any) => {
-                        // First sort by groupStanding
-                        if (a.groupStanding !== b.groupStanding) {
-                            return (a.groupStanding || 999) - (b.groupStanding || 999);
-                        }
-                        // Then by groupOrdinalNumber
-                        return (a.groupOrdinalNumber || 999) - (b.groupOrdinalNumber || 999);
-                    });
-                    
-                    const advanceCount = Math.max(0, playersPerGroup - eliminationsPerGroup);
-                    sortedPlayers.slice(0, advanceCount).forEach((player: any) => {
-                        const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                        if (playerId) playersAdvanced.add(playerId);
-                    });
-                }
-
-                // Ensure exactly nearestPowerOf2 players advance
-                if (playersAdvanced.size > nearestPowerOf2) {
-                    // Sort all players by groupStanding and groupOrdinalNumber
-                    const allPlayers = checkedInPlayers.sort((a: any, b: any) => {
-                        if (a.groupStanding !== b.groupStanding) {
-                            return (a.groupStanding || 999) - (b.groupStanding || 999);
-                        }
-                        return (a.groupOrdinalNumber || 999) - (b.groupOrdinalNumber || 999);
-                    });
-                    
-                    playersAdvanced.clear();
-                    allPlayers.slice(0, nearestPowerOf2).forEach((player: any) => {
-                        const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                        if (playerId) playersAdvanced.add(playerId);
-                    });
-                } else if (playersAdvanced.size < nearestPowerOf2) {
-                    throw new Error('Not enough players advanced from groups');
-                }
-
-                // Assign ranks to eliminated players
-                const groupEliminated = checkedInPlayers
-                    .map((p: any) => p.playerReference?._id?.toString() || p.playerReference?.toString())
-                    .filter((p: any) => p && !playersAdvanced.has(p));
-                groupEliminated.forEach((playerId: string, index: number) => {
-                    playerEliminations.set(playerId, nearestPowerOf2 + 1 + index);
-                });
-            }
-
-            // Step 2: Process knockout rounds
-            if (tournament.knockout && Array.isArray(tournament.knockout)) {
-                for (let roundIndex = 0; roundIndex < tournament.knockout.length; roundIndex++) {
-                    const round = tournament.knockout[roundIndex];
-                    const matches = round.matches || [];
-                    const isFinalRound = roundIndex === tournament.knockout.length - 1;
-
-                    for (const match of matches) {
-                        const matchRef = match.matchReference;
-                        if (!matchRef) {
-                            throw new Error(`Incomplete match in round ${roundIndex + 1}`);
-                        }
-
-                        // Handle both populated and non-populated matchReference
-                        const matchRefObj = typeof matchRef === 'object' ? matchRef : null;
-                        if (!matchRefObj || !(matchRefObj as any).winnerId) {
-                            throw new Error(`Incomplete match in round ${roundIndex + 1}`);
-                        }
-
-                        if (!match.player1 || !match.player2) {
-                            throw new Error(`Invalid players in match in round ${roundIndex + 1}`);
-                        }
-
-                        const winnerId = (matchRefObj as any).winnerId.toString();
-                        const player1Id = typeof match.player1 === 'object' ? (match.player1 as any)._id?.toString() : match.player1?.toString();
-                        const player2Id = typeof match.player2 === 'object' ? (match.player2 as any)._id?.toString() : match.player2?.toString();
-                        const loserId = winnerId === player1Id ? player2Id : player1Id;
-
-                        if (loserId && !playerEliminations.has(loserId)) {
-                            if (isFinalRound) {
-                                playerEliminations.set(loserId, 2);
-                            } else {
-                                const playersInRound = nearestPowerOf2 / Math.pow(2, roundIndex);
-                                const rankStart = playersInRound / 2 + 1;
-                                const rankEnd = playersInRound;
-                                playerEliminations.set(
-                                    loserId,
-                                    rankStart + (playerEliminations.size % (rankEnd - rankStart + 1))
-                                );
+            } else {
+                // Step 2: Handle tournaments with knockout (group_knockout or knockout)
+                const playersInKnockout = new Set<string>();
+                
+                // Collect all players who appear in any knockout round
+                if (tournament.knockout && Array.isArray(tournament.knockout)) {
+                    for (const round of tournament.knockout) {
+                        if (round.matches && Array.isArray(round.matches)) {
+                            for (const match of round.matches) {
+                                if (match.player1) {
+                                    const player1Id = typeof match.player1 === 'object' ? 
+                                        (match.player1 as any)._id?.toString() : match.player1?.toString();
+                                    if (player1Id) playersInKnockout.add(player1Id);
+                                }
+                                if (match.player2) {
+                                    const player2Id = typeof match.player2 === 'object' ? 
+                                        (match.player2 as any)._id?.toString() : match.player2?.toString();
+                                    if (player2Id) playersInKnockout.add(player2Id);
+                                }
                             }
                         }
                     }
+                }
 
-                    if (isFinalRound) {
-                        const finalMatch = matches[0];
-                        if (finalMatch.matchReference && typeof finalMatch.matchReference === 'object' && (finalMatch.matchReference as any).winnerId) {
-                            const winnerId = (finalMatch.matchReference as any).winnerId.toString();
-                            playerEliminations.set(winnerId, 1);
-                        } else {
-                            throw new Error('Final match is incomplete');
+                // Step 3: Assign positions to players eliminated in group stage
+                checkedInPlayers.forEach((player: any) => {
+                    const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
+                    if (playerId && !playersInKnockout.has(playerId)) {
+                        // Player was eliminated in group stage - gets position N (total players)
+                        playerStandings.set(playerId, totalPlayers);
+                    }
+                });
+
+                // Step 4: Handle knockout eliminations
+                if (tournament.knockout && Array.isArray(tournament.knockout)) {
+                    for (let roundIndex = 0; roundIndex < tournament.knockout.length; roundIndex++) {
+                        const round = tournament.knockout[roundIndex];
+                        const matches = round.matches || [];
+                        const isFinalRound = roundIndex === tournament.knockout.length - 1;
+
+                        // Calculate how many players are in this round
+                        const playersInThisRound = matches.length * 2;
+                        const positionForThisRound = playersInThisRound;
+
+                        for (const match of matches) {
+                            const matchRef = match.matchReference;
+                            if (!matchRef) {
+                                throw new Error(`Incomplete match in round ${roundIndex + 1}`);
+                            }
+
+                            // Handle both populated and non-populated matchReference
+                            const matchRefObj = typeof matchRef === 'object' ? matchRef : null;
+                            if (!matchRefObj || !(matchRefObj as any).winnerId) {
+                                throw new Error(`Incomplete match in round ${roundIndex + 1}`);
+                            }
+
+                            if (!match.player1 || !match.player2) {
+                                throw new Error(`Invalid players in match in round ${roundIndex + 1}`);
+                            }
+
+                            const winnerId = (matchRefObj as any).winnerId.toString();
+                            const player1Id = typeof match.player1 === 'object' ? 
+                                (match.player1 as any)._id?.toString() : match.player1?.toString();
+                            const player2Id = typeof match.player2 === 'object' ? 
+                                (match.player2 as any)._id?.toString() : match.player2?.toString();
+                            const loserId = winnerId === player1Id ? player2Id : player1Id;
+
+                            if (loserId && !playerStandings.has(loserId)) {
+                                if (isFinalRound) {
+                                    // Final round: winner gets 1st, loser gets 2nd
+                                    playerStandings.set(winnerId, 1);
+                                    playerStandings.set(loserId, 2);
+                                } else {
+                                    // Other rounds: losers get position equal to players in this round
+                                    playerStandings.set(loserId, positionForThisRound);
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Verify all players have ranks
+            // Step 5: Ensure all players have a standing
             checkedInPlayers.forEach((player: any) => {
                 const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                if (playerId && !playerEliminations.has(playerId)) {
-                    playerEliminations.set(playerId, nearestPowerOf2);
-                }
-                if (playerId) {
-                    standings.push({ playerId, rank: playerEliminations.get(playerId)! });
+                if (playerId && !playerStandings.has(playerId)) {
+                    // Fallback: assign last position
+                    playerStandings.set(playerId, totalPlayers);
                 }
             });
 
-            // Step 3: Compute stats for each player
+            // Step 6: Get stats from tournament players
             const playerStats = new Map<string, {
                 average: number;
                 checkoutRate: number;
@@ -1499,10 +1461,22 @@ export class TournamentService {
                 oneEighties: number;
             }>();
 
-            // Initialize stats
+            // Get stats directly from tournament players
             checkedInPlayers.forEach((player: any) => {
                 const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                if (playerId) {
+                if (playerId && player.stats) {
+                    playerStats.set(playerId, {
+                        average: player.stats.avg || 0,
+                        checkoutRate: 0, // Not stored in tournament stats
+                        legsWon: player.stats.legsWon || 0,
+                        legsPlayed: (player.stats.legsWon || 0) + (player.stats.legsLost || 0),
+                        matchesWon: player.stats.matchesWon || 0,
+                        matchesPlayed: (player.stats.matchesWon || 0) + (player.stats.matchesLost || 0),
+                        highestCheckout: player.stats.highestCheckout || 0,
+                        oneEighties: player.stats.oneEightiesCount || 0,
+                    });
+                } else if (playerId) {
+                    // Fallback if no stats available
                     playerStats.set(playerId, {
                         average: 0,
                         checkoutRate: 0,
@@ -1516,153 +1490,34 @@ export class TournamentService {
                 }
             });
 
-            // Aggregate stats from matches
-            const allMatches: any[] = [];
-
-            // Add group matches
-            if (tournament.groups) {
-                for (const group of tournament.groups) {
-                    if (group.matches && Array.isArray(group.matches)) {
-                        allMatches.push(...group.matches);
-                    }
-                }
-            }
-
-            // Add knockout matches
-            if (tournament.knockout) {
-                for (const round of tournament.knockout) {
-                    if (round.matches && Array.isArray(round.matches)) {
-                        for (const match of round.matches) {
-                            if (match.matchReference) {
-                                allMatches.push(match.matchReference);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Process all matches for stats
-            for (const match of allMatches) {
-                if (!match.player1 || !match.player2) continue;
-
-                const player1Id = match.player1?._id?.toString() || match.player1?.toString();
-                const player2Id = match.player2?._id?.toString() || match.player2?.toString();
-
-                if (!player1Id || !player2Id) continue;
-
-                const p1Stats = playerStats.get(player1Id);
-                const p2Stats = playerStats.get(player2Id);
-
-                if (!p1Stats || !p2Stats) continue;
-
-                // Update match stats
-                p1Stats.matchesPlayed += 1;
-                p2Stats.matchesPlayed += 1;
-
-                if (match.winnerId) {
-                    const winnerId = match.winnerId.toString();
-                    if (winnerId === player1Id) p1Stats.matchesWon += 1;
-                    else if (winnerId === player2Id) p2Stats.matchesWon += 1;
-                }
-
-                // Initialize stats from match.stats as fallback
-                if (match.stats) {
-                    p1Stats.average = match.stats.player1?.average || 0;
-                    p2Stats.average = match.stats.player2?.average || 0;
-                    p1Stats.highestCheckout = match.stats.player1?.highestCheckout || 0;
-                    p2Stats.highestCheckout = match.stats.player2?.highestCheckout || 0;
-                    p1Stats.oneEighties = match.stats.player1?.oneEightiesCount || 0;
-                    p2Stats.oneEighties = match.stats.player2?.oneEightiesCount || 0;
-                }
-
-                // Aggregate stats from legs
-                if (match.legs && Array.isArray(match.legs)) {
-                    for (const leg of match.legs) {
-                        p1Stats.legsPlayed += 1;
-                        p2Stats.legsPlayed += 1;
-
-                        if (leg.winnerId) {
-                            const legWinnerId = leg.winnerId.toString();
-                            if (legWinnerId === player1Id) p1Stats.legsWon += 1;
-                            else if (legWinnerId === player2Id) p2Stats.legsWon += 1;
-                        }
-
-                        // Update highest checkout from leg
-                        if (leg.highestCheckout) {
-                            const checkoutPlayerId = leg.highestCheckout.playerId?.toString();
-                            if (checkoutPlayerId === player1Id) {
-                                p1Stats.highestCheckout = Math.max(
-                                    p1Stats.highestCheckout,
-                                    leg.highestCheckout.score || 0
-                                );
-                            } else if (checkoutPlayerId === player2Id) {
-                                p2Stats.highestCheckout = Math.max(
-                                    p2Stats.highestCheckout,
-                                    leg.highestCheckout.score || 0
-                                );
-                            }
-                        }
-
-                        // Update one-eighties from leg
-                        if (leg.oneEighties) {
-                            p1Stats.oneEighties = Math.max(
-                                p1Stats.oneEighties,
-                                leg.oneEighties.player1?.length || 0
-                            );
-                            p2Stats.oneEighties = Math.max(
-                                p2Stats.oneEighties,
-                                leg.oneEighties.player2?.length || 0
-                            );
-                        }
-
-                        // Compute average from throws
-                        if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
-                            const p1TotalScore = leg.player1Throws.reduce((sum: number, t: any) => sum + (t.score || 0), 0);
-                            const p1Darts = leg.player1Throws.reduce((sum: number, t: any) => sum + (t.darts || 0), 0);
-                            if (p1Darts > 0) {
-                                const legAverage = p1TotalScore / (p1Darts / 3);
-                                p1Stats.average = p1Stats.legsPlayed > 1
-                                    ? (p1Stats.average * (p1Stats.legsPlayed - 1) + legAverage) / p1Stats.legsPlayed
-                                    : legAverage;
-                            }
-                        }
-
-                        if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
-                            const p2TotalScore = leg.player2Throws.reduce((sum: number, t: any) => sum + (t.score || 0), 0);
-                            const p2Darts = leg.player2Throws.reduce((sum: number, t: any) => sum + (t.darts || 0), 0);
-                            if (p2Darts > 0) {
-                                const legAverage = p2TotalScore / (p2Darts / 3);
-                                p2Stats.average = p2Stats.legsPlayed > 1
-                                    ? (p2Stats.average * (p2Stats.legsPlayed - 1) + legAverage) / p2Stats.legsPlayed
-                                    : legAverage;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Step 4: Update tournament players with final standings
+            // Step 7: Update tournament players with final standings
             tournament.tournamentPlayers = tournament.tournamentPlayers.map((player: any) => {
                 const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                const standing = standings.find(s => s.playerId === playerId);
+                const standing = playerStandings.get(playerId);
                 
                 if (standing) {
                     const stats = playerStats.get(playerId);
                     return {
                         ...player,
-                        finalPosition: standing.rank,
-                        eliminatedIn: this.getEliminationText(standing.rank, format),
+                        tournamentStanding: standing,
+                        finalPosition: standing,
+                        eliminatedIn: this.getEliminationText(standing, format),
                         finalStats: stats || {}
                     };
                 }
                 return player;
             });
 
-            // Step 5: Update Player collection statistics
+            // Step 8: Update Player collection statistics
             for (const [playerId, stats] of playerStats) {
                 const player = await PlayerModel.findById(playerId);
                 if (player) {
-                    const placement = playerEliminations.get(playerId) || 999;
+                    // Get the tournament standing from the tournament players array
+                    const tournamentPlayer = tournament.tournamentPlayers.find((tp: any) => {
+                        const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
+                        return tpPlayerId === playerId;
+                    });
+                    const placement = tournamentPlayer?.tournamentStanding || totalPlayers;
 
                     // Update tournament history
                     const tournamentHistory = {
@@ -1687,49 +1542,93 @@ export class TournamentService {
                     player.tournamentHistory.push(tournamentHistory);
 
                     // Update overall statistics
-                    if (!player.statistics) {
-                        player.statistics = {
+                    if (!player.stats) {
+                        player.stats = {
                             tournamentsPlayed: 0,
+                            matchesPlayed: 0,
+                            legsWon: 0,
+                            legsLost: 0,
+                            oneEightiesCount: 0,
+                            highestCheckout: 0,
+                            avg: 0,
+                            averagePosition: 0,
                             bestPosition: 999,
                             totalMatchesWon: 0,
                             totalMatchesLost: 0,
                             totalLegsWon: 0,
                             totalLegsLost: 0,
-                            total180s: 0,
-                            highestCheckout: 0,
-                            averagePosition: 0
+                            total180s: 0
                         };
                     }
 
+                    // Handle legacy data: ensure tournamentsPlayed is a number
+                    if (Array.isArray(player.stats.tournamentsPlayed)) {
+                        player.stats.tournamentsPlayed = player.stats.tournamentsPlayed.length;
+                    } else if (typeof player.stats.tournamentsPlayed !== 'number') {
+                        player.stats.tournamentsPlayed = 0;
+                    }
+
                     // Update tournament count
-                    player.statistics.tournamentsPlayed += 1;
+                    player.stats.tournamentsPlayed += 1;
+
+                    // Ensure all stats fields are numbers
+                    if (typeof player.stats.bestPosition !== 'number') player.stats.bestPosition = 999;
+                    if (typeof player.stats.totalMatchesWon !== 'number') player.stats.totalMatchesWon = 0;
+                    if (typeof player.stats.totalMatchesLost !== 'number') player.stats.totalMatchesLost = 0;
+                    if (typeof player.stats.totalLegsWon !== 'number') player.stats.totalLegsWon = 0;
+                    if (typeof player.stats.totalLegsLost !== 'number') player.stats.totalLegsLost = 0;
+                    if (typeof player.stats.total180s !== 'number') player.stats.total180s = 0;
+                    if (typeof player.stats.highestCheckout !== 'number') player.stats.highestCheckout = 0;
+                    if (typeof player.stats.averagePosition !== 'number') player.stats.averagePosition = 0;
+                    if (typeof player.stats.matchesPlayed !== 'number') player.stats.matchesPlayed = 0;
+                    if (typeof player.stats.legsWon !== 'number') player.stats.legsWon = 0;
+                    if (typeof player.stats.legsLost !== 'number') player.stats.legsLost = 0;
+                    if (typeof player.stats.oneEightiesCount !== 'number') player.stats.oneEightiesCount = 0;
+                    if (typeof player.stats.avg !== 'number') player.stats.avg = 0;
 
                     // Update best position
-                    if (placement < player.statistics.bestPosition) {
-                        player.statistics.bestPosition = placement;
+                    if (placement < player.stats.bestPosition) {
+                        player.stats.bestPosition = placement;
                     }
 
                     // Update match statistics
-                    player.statistics.totalMatchesWon += stats.matchesWon;
-                    player.statistics.totalMatchesLost += (stats.matchesPlayed - stats.matchesWon);
-                    player.statistics.totalLegsWon += stats.legsWon;
-                    player.statistics.totalLegsLost += (stats.legsPlayed - stats.legsWon);
-                    player.statistics.total180s += stats.oneEighties;
+                    player.stats.totalMatchesWon += stats.matchesWon;
+                    player.stats.totalMatchesLost += (stats.matchesPlayed - stats.matchesWon);
+                    player.stats.totalLegsWon += stats.legsWon;
+                    player.stats.totalLegsLost += (stats.legsPlayed - stats.legsWon);
+                    player.stats.total180s += stats.oneEighties;
 
                     // Update highest checkout
-                    if (stats.highestCheckout > player.statistics.highestCheckout) {
-                        player.statistics.highestCheckout = stats.highestCheckout;
+                    if (stats.highestCheckout > player.stats.highestCheckout) {
+                        player.stats.highestCheckout = stats.highestCheckout;
+                    }
+
+                    // Update one-eighties count
+                    player.stats.oneEightiesCount += stats.oneEighties;
+
+                    // Update matches and legs played
+                    player.stats.matchesPlayed += stats.matchesPlayed;
+                    player.stats.legsWon += stats.legsWon;
+                    player.stats.legsLost += (stats.legsPlayed - stats.legsWon);
+
+                    // Update average (weighted average)
+                    if (player.stats.matchesPlayed > 0) {
+                        const currentTotal = player.stats.avg * (player.stats.matchesPlayed - stats.matchesPlayed);
+                        const newTotal = currentTotal + (stats.average * stats.matchesPlayed);
+                        player.stats.avg = newTotal / player.stats.matchesPlayed;
+                    } else {
+                        player.stats.avg = stats.average;
                     }
 
                     // Calculate average position
                     const totalPosition = player.tournamentHistory.reduce((sum: number, hist: any) => sum + hist.position, 0);
-                    player.statistics.averagePosition = totalPosition / player.tournamentHistory.length;
+                    player.stats.averagePosition = totalPosition / player.tournamentHistory.length;
 
                     await player.save();
                 }
             }
 
-            // Step 6: Update tournament status to finished
+            // Step 9: Update tournament status to finished
             console.log('=== DATABASE UPDATE DEBUG ===');
             console.log('Updating tournament with ID:', tournament._id);
             console.log('Current tournament status:', tournament.tournamentSettings?.status);
@@ -1767,143 +1666,6 @@ export class TournamentService {
         return `${Math.ceil(Math.log2(position))}. kör`;
     }
 
-    private static calculateKnockoutStandings(tournament: any): any[] {
-        const standings: any[] = [];
-        const knockout = tournament.knockout || [];
-        const totalRounds = knockout.length;
-
-        // Find the winner (last round, first match winner)
-        if (totalRounds > 0) {
-            const finalRound = knockout[totalRounds - 1];
-            if (finalRound.matches && finalRound.matches.length > 0) {
-                const finalMatch = finalRound.matches[0];
-                if (finalMatch.matchReference && finalMatch.matchReference.winnerId) {
-                    standings.push({
-                        playerId: finalMatch.matchReference.winnerId,
-                        position: 1,
-                        eliminatedIn: 'final',
-                        stats: this.getPlayerStatsFromMatch(finalMatch.matchReference, finalMatch.matchReference.winnerId)
-                    });
-                }
-            }
-        }
-
-        // Find runner-up (last round, first match loser)
-        if (totalRounds > 0) {
-            const finalRound = knockout[totalRounds - 1];
-            if (finalRound.matches && finalRound.matches.length > 0) {
-                const finalMatch = finalRound.matches[0];
-                if (finalMatch.matchReference) {
-                    const winnerId = finalMatch.matchReference.winnerId;
-                    const loserId = winnerId === finalMatch.player1?.toString() ? 
-                        finalMatch.player2?.toString() : finalMatch.player1?.toString();
-                    
-                    if (loserId) {
-                        standings.push({
-                            playerId: loserId,
-                            position: 2,
-                            eliminatedIn: 'final',
-                            stats: this.getPlayerStatsFromMatch(finalMatch.matchReference, loserId)
-                        });
-                    }
-                }
-            }
-        }
-
-        // Find players eliminated in semi-finals (second to last round)
-        if (totalRounds > 1) {
-            const semiFinalRound = knockout[totalRounds - 2];
-            if (semiFinalRound.matches) {
-                semiFinalRound.matches.forEach((match: any) => {
-                    if (match.matchReference) {
-                        const winnerId = match.matchReference.winnerId;
-                        const loserId = winnerId === match.player1?.toString() ? 
-                            match.player2?.toString() : match.player1?.toString();
-                        
-                        if (loserId && !standings.find(s => s.playerId?.toString() === loserId)) {
-                            standings.push({
-                                playerId: loserId,
-                                position: standings.length + 1,
-                                eliminatedIn: 'semi-final',
-                                stats: this.getPlayerStatsFromMatch(match.matchReference, loserId)
-                            });
-                        }
-                    }
-                });
-            }
-        }
-
-        // Find players eliminated in earlier rounds
-        for (let roundIndex = 0; roundIndex < totalRounds - 2; roundIndex++) {
-            const round = knockout[roundIndex];
-            if (round.matches) {
-                round.matches.forEach((match: any) => {
-                    if (match.matchReference) {
-                        const winnerId = match.matchReference.winnerId;
-                        const loserId = winnerId === match.player1?.toString() ? 
-                            match.player2?.toString() : match.player1?.toString();
-                        
-                        if (loserId && !standings.find(s => s.playerId?.toString() === loserId)) {
-                            standings.push({
-                                playerId: loserId,
-                                position: standings.length + 1,
-                                eliminatedIn: `${round.round}. kör`,
-                                stats: this.getPlayerStatsFromMatch(match.matchReference, loserId)
-                            });
-                        }
-                    }
-                });
-            }
-        }
-
-        // Add players who didn't participate in knockout (if any)
-        const knockoutPlayerIds = standings.map(s => s.playerId?.toString());
-        const allCheckedInPlayers = tournament.tournamentPlayers.filter((p: any) => p.status === 'checked-in');
-        
-        allCheckedInPlayers.forEach((player: any) => {
-            const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-            if (!knockoutPlayerIds.includes(playerId)) {
-                standings.push({
-                    playerId: player.playerReference?._id || player.playerReference,
-                    position: standings.length + 1,
-                    eliminatedIn: 'group-stage',
-                    stats: player.stats || {}
-                });
-            }
-        });
-
-        return standings;
-    }
-
-    private static getPlayerStatsFromMatch(matchReference: any, playerId: string): any {
-        if (!matchReference) return {};
-
-        const playerIdStr = playerId?.toString();
-        const player1Id = matchReference.player1?.playerId?.toString();
-        const player2Id = matchReference.player2?.playerId?.toString();
-
-        if (playerIdStr === player1Id) {
-            return {
-                matchesWon: matchReference.winnerId?.toString() === playerIdStr ? 1 : 0,
-                matchesLost: matchReference.winnerId?.toString() === playerIdStr ? 0 : 1,
-                legsWon: matchReference.player1?.legsWon || 0,
-                legsLost: matchReference.player1?.legsLost || 0,
-                oneEightiesCount: matchReference.player1?.oneEightiesCount || 0,
-                highestCheckout: matchReference.player1?.highestCheckout || 0
-            };
-        } else if (playerIdStr === player2Id) {
-            return {
-                matchesWon: matchReference.winnerId?.toString() === playerIdStr ? 1 : 0,
-                matchesLost: matchReference.winnerId?.toString() === playerIdStr ? 0 : 1,
-                legsWon: matchReference.player2?.legsWon || 0,
-                legsLost: matchReference.player2?.legsLost || 0,
-                oneEightiesCount: matchReference.player2?.oneEightiesCount || 0,
-                highestCheckout: matchReference.player2?.highestCheckout || 0
-            };
-        }
-
-        return {};
-    }
 
     static async getLatestTournamentByClubId(clubId: string): Promise<any> {
         const tournament = await TournamentModel.findOne({ clubId: clubId }).sort({ createdAt: -1 });

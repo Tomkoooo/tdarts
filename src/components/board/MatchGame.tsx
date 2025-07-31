@@ -1,3 +1,4 @@
+import { IconHistory, IconX } from '@tabler/icons-react';
 import React, { useState, useEffect } from 'react';
 
 interface Player {
@@ -425,7 +426,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         <div className="text-sm font-bold text-center flex-1">
           {match.player1.playerId.name} vs {match.player2.playerId.name} | {match.legsToWin}
         </div>
-        <div className="w-16"></div>
+          <div className=" flex-shrink-0">
+              <button
+                className="btn btn-outline w-full matchgame-btn btn-sm"
+                onClick={() => setShowThrowHistory(!showThrowHistory)}
+              >
+                {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
+              </button>
+            </div>
       </div>
 
       {/* Main Layout - Side by side on tablet */}
@@ -440,7 +448,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
             <div className="text-lg font-bold text-center flex-1">
               {match.player1.playerId.name} vs {match.player2.playerId.name}
             </div>
-            <div className="w-16"></div>
+            <div className=" flex-shrink-0">
+            <button
+              className="btn btn-outline w-full matchgame-btn btn-sm"
+              onClick={() => setShowThrowHistory(!showThrowHistory)}
+            >
+              {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
+            </button>
+          </div>
           </div>
 
           {/* Player Cards - Mobile only, side by side at top */}
@@ -457,6 +472,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
                 <div className="text-xs opacity-75">
                   <p className="text-sm">Átlag: {player1Average}</p>
                   <p className="text-sm font-bold">Legek: {player1LegsWon}</p>
+                  <p className="text-sm font-bold">Nyílak: {player1Throws.length*3}</p>
                 </div>
               </div>
             </div>
@@ -473,6 +489,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
                 <div className="text-xs opacity-75">
                   <p className="text-sm">Átlag: {player2Average}</p>
                   <p className="text-sm font-bold">Legek: {player2LegsWon}</p>
+                  <p className="text-sm font-bold">Nyílak: {player2Throws.length*3}</p>
                 </div>
               </div>
             </div>
@@ -540,16 +557,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           {/* Scorer Info */}
           <div className="text-center text-xs opacity-75 mb-4 flex-shrink-0">
             Író: {match.scorer.name}
-          </div>
-
-          {/* Throw History Button - Moved to bottom */}
-          <div className="mt-auto flex-shrink-0">
-            <button
-              className="btn btn-outline w-full matchgame-btn"
-              onClick={() => setShowThrowHistory(!showThrowHistory)}
-            >
-              {showThrowHistory ? 'Elrejtés' : 'Dobások megjelenítése'}
-            </button>
           </div>
         </div>
 

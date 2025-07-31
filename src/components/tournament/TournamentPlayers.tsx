@@ -161,14 +161,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               </>
             ) : (
               // Show player statistics for tournaments where groups are generated
-              <div className="flex gap-4 text-sm w-1/3 ">
-                <div className="flex items-center gap-1 w-1/2 ">
+              <div className="flex gap-2 text-sm w-1/2 ">
+                <div className="flex items-center gap-1 w-1/3">
+                {player.tournamentStanding && <span className="text-base-content/60 text-sm">Top: {player.tournamentStanding}</span>}
+                </div>
+                <div className="flex items-center gap-1 w-1/3 ">
                   <span className="text-base-content/60">HC:</span>
                   <span className="font-semibold text-primary">
                     {player.stats?.highestCheckout || 0}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 w-1/2">
+                <div className="flex items-center gap-1 w-1/3">
 
                   <span className="font-semibold text-primary">
                     {player.stats.oneEightiesCount}

@@ -33,7 +33,7 @@ export async function connectMongo() {
     console.log('Connecting to:', process.env.MONGODB_URI);
     cached.promise = mongoose
       .connect(process.env.MONGODB_URI, {
-        dbName: 'tdarts_v2',
+        dbName: process.env.MONGODB_DB_NAME || 'tdarts_v2_test',
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,

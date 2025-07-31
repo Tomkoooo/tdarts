@@ -111,6 +111,13 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
 
   const availablePlayerCounts = getAvailablePlayerCounts();
 
+  console.log('Tournament Status:', tournamentStatus);
+  console.log('Tournament Format:', tournamentFormat);
+  console.log('Should show knockout button:', 
+    (tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
+    (tournamentStatus === 'pending' && tournamentFormat === 'knockout')
+  );
+
   return (
     <div className="mb-4">
       {/* Group Generation Button - only show when tournament is pending and format allows groups */}
@@ -125,8 +132,8 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
       )}
 
       {/* Knockout Generation Button - show when tournament is in group-stage and format allows knockout, OR when format is knockout and status is pending */}
-      {(tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
-       (tournamentStatus === 'pending' && tournamentFormat === 'knockout') && (
+      {((tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
+        (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
         <button 
           className="btn btn-primary" 
           onClick={() => setShowKnockoutModal(true)} 

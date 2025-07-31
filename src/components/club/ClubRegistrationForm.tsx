@@ -11,7 +11,7 @@ import { Club } from '@/interface/club.interface';
 import PlayerSearch from './PlayerSearch';
 
 const clubSchema = z.object({
-  name: z.string().min(3, 'A klub neve minimum 3 karakter legyen').regex(/^[^\s]+$/, 'A klub neve nem tartalmazhat szóközt'),
+  name: z.string().min(3, 'A klub neve minimum 3 karakter legyen'),
   description: z.string().min(10, 'A leírás minimum 10 karakter legyen'),
   location: z.string().min(3, 'A helyszín minimum 3 karakter legyen'),
   contact: z.object({

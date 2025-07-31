@@ -146,7 +146,7 @@ const TournamentPage = () => {
                   </svg>
                   Torna Információk
                 </h2>
-                <TournamentInfo tournament={tournament} />
+                <TournamentInfo tournament={tournament} onRefetch={handleRefetch} />
               </div>
             </div>
 
@@ -179,7 +179,7 @@ const TournamentPage = () => {
             )}
 
             {/* Knockout Bracket Card */}
-            {tournament.tournamentSettings?.status === 'knockout' && (
+            {(tournament.tournamentSettings?.status === 'knockout' || tournament.tournamentSettings?.status === 'finished' || (tournament.tournamentSettings?.status === 'group-stage' && (tournament.tournamentSettings.format === 'knockout' || tournament.tournamentSettings.format === 'group_knockout'))) && (
               <div className="card bg-base-100 shadow-xl">
                 <div className="card-body">
                   <h2 className="card-title text-2xl font-bold text-primary mb-4">

@@ -4,13 +4,18 @@ import { SearchService } from '@/database/services/search.service';
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 5;
+        const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
+        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
+        const skip = (page - 1) * limit;
 
-        const players = await SearchService.getTopPlayers(limit);
+        const result = await SearchService.getTopPlayers(limit, skip);
 
         return NextResponse.json({
             success: true,
-            players
+            players: result.players,
+            total: result.total,
+            page,
+            limit
         });
     } catch (error: any) {
         console.error('Top players error:', error);

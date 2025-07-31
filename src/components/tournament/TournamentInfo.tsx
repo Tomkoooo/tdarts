@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { IconRefresh } from '@tabler/icons-react';
 
 interface TournamentInfoProps {
   tournament: any;
+  onRefetch: () => void;
 }
 
-const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament }) => {
+const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const router = useRouter();
 
@@ -42,7 +44,7 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament }) => {
         <div><span className="font-semibold">Helyszín:</span> {tournament.clubId?.location}</div>
       </div>
       
-      <div className="mt-6">
+      <div className="mt-6 flex gap-4">
         <button
           onClick={handleOpenBoards}
           className="btn btn-primary btn-lg flex items-center gap-2"
@@ -51,6 +53,13 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Táblák megnyitása
+        </button>
+        <button
+          onClick={() => onRefetch()}
+          className="btn btn-primary btn-lg flex items-center gap-2"
+        >
+          <IconRefresh className="w-5 h-5" />
+          Frissítés
         </button>
       </div>
     </>

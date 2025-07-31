@@ -21,9 +21,9 @@ const Navbar = () => {
   }, []);
 
   const navItems = [
-    { name: "Versenyek", icon: IconTournament, href: "#tournaments" },
-    { name: "Klubbok", icon: IconUsers, href: "#clubs" },
-    { name: "Keresés", icon: IconSearch, href: "#search" },
+    { name: "Versenyek", icon: IconTournament, href: "/search" },
+    { name: "Klubbok", icon: IconUsers, href: "/search" },
+    { name: "Keresés", icon: IconSearch, href: "/search" },
   ];
 
   return (
@@ -43,14 +43,14 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.name}
                 href={item.href}
                 className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-200 font-medium"
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.name}</span>
-              </a>
+              </Link>
             ))}
             {user ? (
               <div className="flex gap-2 items-center">
@@ -82,9 +82,14 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute top-full left-0 right-0 glass-card mt-2 mx-4 rounded-2xl p-6 shadow-2xl">
+            {/* Overlay to close menu when clicking outside */}
+            <div 
+              className="fixed inset-0 -z-10" 
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
-                <a
+                <Link
                   key={item.name}
                   href={item.href}
                   className="flex items-center space-x-3 text-gray-300 hover:text-red-400 transition-colors duration-200 p-3 rounded-lg hover:bg-white/5"
@@ -92,7 +97,7 @@ const Navbar = () => {
                 >
                   <item.icon className="w-5 h-5" />
                   <span className="font-medium">{item.name}</span>
-                </a>
+                </Link>
               ))}
               {user ? (
                 <div className="flex flex-col gap-3">
