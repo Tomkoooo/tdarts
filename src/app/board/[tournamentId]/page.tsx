@@ -543,6 +543,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   <option value={3}>3 leg</option>
                   <option value={4}>4 leg</option>
                   <option value={5}>5 leg</option>
+                  <option value={6}>6 leg</option>
+                  <option value={7}>7 leg</option>
+                  <option value={8}>8 leg</option>
                 </select>
               </div>
               
