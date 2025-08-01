@@ -1,5 +1,6 @@
 import { IconHistory, IconX } from '@tabler/icons-react';
 import React, { useState, useEffect } from 'react';
+import { socket } from '@/lib/socket';
 
 interface Player {
   playerId: {
@@ -78,6 +79,24 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
     // If even number of legs played, the original starting player starts
     return totalLegsPlayed % 2 === 1 ? (originalStartingPlayer === 1 ? 2 : 1) : originalStartingPlayer;
   };
+
+  // Socket.IO connection and match state management
+  useEffect(() => {
+    // Join match room for real-time updates
+    socket.emit('join-match', match._id);
+    
+    // Set player IDs in socket for match state
+    socket.emit('set-match-players', {
+      matchId: match._id,
+      player1Id: match.player1.playerId._id,
+      player2Id: match.player2.playerId._id
+    });
+    
+    return () => {
+      // Leave match room when component unmounts
+      socket.emit('leave-match', match._id);
+    };
+  }, [match._id, match.player1.playerId._id, match.player2.playerId._id]);
 
   // Load saved game state from localStorage only once on mount
   useEffect(() => {
@@ -229,6 +248,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           oneEightiesCount: throwValue === 180 ? prev.oneEightiesCount + 1 : prev.oneEightiesCount,
           highestCheckout: newScore === 0 ? Math.max(prev.highestCheckout, throwValue) : prev.highestCheckout
         }));
+
+        // Send throw event to socket
+        socket.emit('throw', {
+          matchId: match._id,
+          playerId: match.player1.playerId._id,
+          score: throwValue,
+          darts: 3, // Assuming 3 darts per throw
+          isDouble: newScore === 0, // Checkout is always a double
+          isCheckout: newScore === 0,
+          remainingScore: newScore,
+          legNumber: player1LegsWon + player2LegsWon + 1
+        });
       } else {
         const newScore = Math.max(0, player2Score - throwValue);
         setPlayer2Score(newScore);
@@ -242,6 +273,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           oneEightiesCount: throwValue === 180 ? prev.oneEightiesCount + 1 : prev.oneEightiesCount,
           highestCheckout: newScore === 0 ? Math.max(prev.highestCheckout, throwValue) : prev.highestCheckout
         }));
+
+        // Send throw event to socket
+        socket.emit('throw', {
+          matchId: match._id,
+          playerId: match.player2.playerId._id,
+          score: throwValue,
+          darts: 3, // Assuming 3 darts per throw
+          isDouble: newScore === 0, // Checkout is always a double
+          isCheckout: newScore === 0,
+          remainingScore: newScore,
+          legNumber: player1LegsWon + player2LegsWon + 1
+        });
       }
       setThrowInput('');
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
@@ -292,6 +335,24 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
     } catch (error) {
       console.error('Error saving leg:', error);
     }
+
+    // Send leg completion to socket
+    const completedLeg = {
+      legNumber: player1LegsWon + player2LegsWon + 1,
+      winnerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+      player1Throws,
+      player2Throws,
+      player1Stats,
+      player2Stats,
+      completedAt: Date.now()
+    };
+
+    socket.emit('leg-complete', {
+      matchId: match._id,
+      legNumber: completedLeg.legNumber,
+      winnerId: completedLeg.winnerId,
+      completedLeg
+    });
 
     // Reset for next leg
     setPlayer1Score(match.startingScore);

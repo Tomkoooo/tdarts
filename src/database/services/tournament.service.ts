@@ -1953,4 +1953,29 @@ export class TournamentService {
         }
         return tournament;
     }
+
+    static async getLiveMatches(tournamentCode: string): Promise<any[]> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+            
+            if (!tournament) {
+                throw new Error('Tournament not found');
+            }
+            
+            // Get all ongoing matches
+            const liveMatches = await MatchModel.find({
+                tournamentRef: tournament._id,
+                status: 'ongoing'
+            })
+            .populate('player1.playerId')
+            .populate('player2.playerId')
+            .sort({ updatedAt: -1 });
+            
+            return liveMatches;
+        } catch (error) {
+            console.error('getLiveMatches error:', error);
+            throw error;
+        }
+    }
 }

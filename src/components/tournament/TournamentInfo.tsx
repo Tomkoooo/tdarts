@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { IconRefresh } from '@tabler/icons-react';
+import { IconScreenShare, IconRefresh } from '@tabler/icons-react';
 
 interface TournamentInfoProps {
   tournament: any;
@@ -47,7 +48,7 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }
       <div className="mt-6 flex gap-4">
         <button
           onClick={handleOpenBoards}
-          className="btn btn-primary btn-lg flex items-center gap-2"
+          className="btn btn-primary btn-md flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -56,11 +57,17 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }
         </button>
         <button
           onClick={() => onRefetch()}
-          className="btn btn-primary btn-lg flex items-center gap-2"
+          className="btn btn-primary btn-md flex items-center gap-2"
         >
           <IconRefresh className="w-5 h-5" />
           Frissítés
         </button>
+        {tournament.status !== 'finished' && tournament.status !== 'pending' && (
+          <Link href={`/tournaments/${tournament.tournamentId}/live`} className="btn btn-primary btn-md flex items-center gap-2">
+            <IconScreenShare className="w-5 h-5" />
+            Élő követés
+          </Link>
+        )}
       </div>
     </>
   );
