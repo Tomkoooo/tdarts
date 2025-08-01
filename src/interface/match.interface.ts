@@ -34,9 +34,9 @@ export interface Match {
   tournamentRef: Types.ObjectId;
   type: 'group' | 'knockout';
   round: number;
-  player1: MatchPlayer;
-  player2: MatchPlayer;
-  scorer: Types.ObjectId;
+  player1?: MatchPlayer;
+  player2?: MatchPlayer;
+  scorer?: Types.ObjectId;
   status: 'pending' | 'ongoing' | 'finished';
   winnerId?: Types.ObjectId;
   legsToWin?: number;

@@ -34,9 +34,9 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   tournamentRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Tournament', required: true },
   type: { type: String, enum: ['group', 'knockout'], required: true },
   round: { type: Number, required: true },
-  player1: { type: matchPlayerSchema, required: true },
-  player2: { type: matchPlayerSchema, required: true },
-  scorer: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
+  player1: { type: matchPlayerSchema, required: false },
+  player2: { type: matchPlayerSchema, required: false },
+  scorer: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: false },
   legsToWin: { type: Number},
   startingPlayer: { type: Number},
   status: { type: String, enum: ['pending', 'ongoing', 'finished'], default: 'pending' },
@@ -46,11 +46,19 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
 
 // Automatikus winnerId számítás mentés előtt
 matchSchema.pre('save', function (next) {
-  if (this.player1.legsWon > this.player2.legsWon) {
-    this.winnerId = this.player1.playerId;
-  } else if (this.player2.legsWon > this.player1.legsWon) {
-    this.winnerId = this.player2.playerId;
+  // Only calculate winner if both players exist and have legs data
+  if (this.player1 && this.player2 && 
+      typeof this.player1.legsWon === 'number' && 
+      typeof this.player2.legsWon === 'number') {
+    if (this.player1.legsWon > this.player2.legsWon) {
+      this.winnerId = this.player1.playerId;
+    } else if (this.player2.legsWon > this.player1.legsWon) {
+      this.winnerId = this.player2.playerId;
+    } else {
+      this.winnerId = undefined;
+    }
   } else {
+    // If either player is missing, no winner can be determined
     this.winnerId = undefined;
   }
   next();

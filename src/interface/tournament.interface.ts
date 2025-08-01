@@ -41,8 +41,8 @@ export interface TournamentGroup {
 export interface KnockoutRound {
     round: number;
     matches: {
-        player1: string | PlayerDocument;
-        player2: string | PlayerDocument;
+        player1?: string | PlayerDocument;
+        player2?: string | PlayerDocument;
         matchReference?: string | MatchDocument;
     }[];
 }
