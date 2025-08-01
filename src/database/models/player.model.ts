@@ -13,7 +13,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         highestCheckout: { type: Number, default: 0 },
         avg: { type: Number, default: 0 },
         averagePosition: { type: Number, default: 0 },
-        bestPosition: { type: Number, default: 0 },
+        bestPosition: { type: Number, default: 999 },
         totalMatchesWon: { type: Number, default: 0 },
         totalMatchesLost: { type: Number, default: 0 },
         totalLegsWon: { type: Number, default: 0 },

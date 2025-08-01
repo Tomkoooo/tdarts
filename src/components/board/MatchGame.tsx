@@ -1,4 +1,4 @@
-import { IconHistory, IconX } from '@tabler/icons-react';
+import { IconHistory, IconX, IconArrowLeft} from '@tabler/icons-react';
 import React, { useState, useEffect } from 'react';
 import { socket } from '@/lib/socket';
 
@@ -478,18 +478,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
   const player2Average = player2Stats.totalThrows > 0 ? Math.round(player2Stats.totalScore / player2Stats.totalThrows) : 0;
 
   return (
-    <div className="flex flex-col h-screen bg-base-100 overflow-y-auto">
+    <div className="flex flex-col h-[100dvh] bg-base-100 overflow-y-auto">
       {/* Header - Mobile only */}
       <div className="md:hidden flex justify-between items-center p-2 flex-shrink-0">
-        <button className="btn btn-sm btn-accent matchgame-btn" onClick={onBack}>
-          ← Vissza
+        <button className="btn btn-xs btn-accent matchgame-btn" onClick={onBack}>
+          <IconArrowLeft className="w-4 h-4" />
         </button>
         <div className="text-sm font-bold text-center flex-1">
           {match.player1.playerId.name} vs {match.player2.playerId.name} | {match.legsToWin}
         </div>
           <div className=" flex-shrink-0">
               <button
-                className="btn btn-outline w-full matchgame-btn btn-sm"
+                className="btn btn-outline w-full matchgame-btn btn-xs"
                 onClick={() => setShowThrowHistory(!showThrowHistory)}
               >
                 {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
@@ -504,7 +504,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           {/* Header - Tablet only */}
           <div className="hidden md:flex justify-between items-center mb-2 flex-shrink-0">
             <button className="btn btn-sm btn-accent matchgame-btn" onClick={onBack}>
-              ← Vissza
+              <IconArrowLeft className="w-4 h-4" />
             </button>
             <div className="text-lg font-bold text-center flex-1">
               {match.player1.playerId.name} vs {match.player2.playerId.name}
@@ -524,7 +524,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
             {/* Player 1 Card - Mobile */}
             <div className={`flex-1 bg-base-200 rounded-lg p-4 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
               <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-2xl font-bold mb-2">
+                <div className="text-1xl font-bold mb-2">
                   {match.player1.playerId.name}
                 </div>
                 <div className="text-7xl font-bold mb-2">
@@ -541,7 +541,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
             {/* Player 2 Card - Mobile */}
             <div className={`flex-1 bg-base-200 rounded-lg p-4 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
               <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-2xl font-bold mb-2">
+                <div className="text-1xl font-bold mb-2">
                   {match.player2.playerId.name}
                 </div>
                 <div className="text-7xl font-bold mb-2">
@@ -557,15 +557,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Current Player Indicator */}
-          <div className="bg-base-300 rounded-lg p-4 mb-4 flex-shrink-0 h-16">
+          <div className="bg-base-300 rounded-lg p-4 mb-2 flex-shrink-0 h-[3rem]">
             <div className="text-center flex items-center my-auto justify-center">
-              <div className="text-5xl font-bold leading-none">{throwInput || '0'}</div>
+              <div className="text-4xl font-bold leading-none">{throwInput}</div>
             </div>
           </div>
 
           {/* Number Input - More compact on tablet */}
-          <div className="md:max-w-md md:mx-auto bg-base-200 rounded-lg p-4 mb-4 flex-shrink-0">
-            <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
+          <div className="md:max-w-md md:mx-auto bg-base-200 rounded-lg p-4 mb-2 flex-shrink-0">
+            <div className="grid grid-cols-3 gap-2 md:gap-3 mb-2">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
@@ -616,7 +616,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Scorer Info */}
-          <div className="text-center text-xs opacity-75 mb-4 flex-shrink-0">
+          <div className="text-center text-xs opacity-75 flex-shrink-0">
             Író: {match.scorer.name}
           </div>
         </div>
@@ -624,7 +624,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         {/* Right Side - Player Cards (Tablet) / Hidden on Mobile */}
         <div className={`hidden md:flex md:w-1/2 flex-col p-2 overflow-y-auto ${!scoreInputOnLeft ? 'md:order-1' : ''}`}>
           {/* Swap Button - Tablet only */}
-          <div className="flex justify-center mb-4 flex-shrink-0">
+          <div className="flex justify-center mb-2 flex-shrink-0">
             <button
               className="btn btn-sm btn-outline matchgame-btn"
               onClick={() => setScoreInputOnLeft(!scoreInputOnLeft)}
@@ -634,11 +634,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Player 1 Card */}
-          <div className={`flex-1 bg-base-200 rounded-lg p-8 mb-4 ${currentPlayer === 1 ? 'ring-4 ring-primary' : ''}`}>
+          <div className={`flex-1 bg-base-200 rounded-lg p-8 mb-2 ${currentPlayer === 1 ? 'ring-4 ring-primary' : ''}`}>
             <div className="text-center h-full flex flex-col justify-center">
               {/* Player Name with Leg Count */}
               <div className="mb-6">
-                <div className="text-3xl md:text-4xl font-bold mb-4">
+                <div className="text-3xl md:text-4xl font-bold mb-2">
                   {match.player1.playerId.name}
                 </div>
                 <div className="text-xl md:text-2xl font-bold text-primary">
@@ -666,7 +666,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
             <div className="text-center h-full flex flex-col justify-center">
               {/* Player Name with Leg Count */}
               <div className="mb-6">
-                <div className="text-3xl md:text-4xl font-bold mb-4">
+                <div className="text-3xl md:text-4xl font-bold mb-2">
                   {match.player2.playerId.name}
                 </div>
                 <div className="text-lg md:text-xl font-bold text-primary">
@@ -675,7 +675,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
               </div>
               
               {/* Score */}
-              <div className="mb-4">
+              <div className="mb-2">
                 <div className="text-6xl md:text-7xl font-bold text-center">
                   {player2Score}
                 </div>
@@ -695,7 +695,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
       {showThrowHistory && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 rounded-lg p-4 max-w-sm w-full max-h-96 overflow-y-auto">
-            <div className="text-lg font-bold mb-4">Dobások</div>
+            <div className="text-lg font-bold mb-2">Dobások</div>
             <div className="flex justify-between text-sm">
               <div className="flex-1 text-center">
                 <div className="font-bold mb-2">{match.player1.playerId.name}</div>
@@ -729,7 +729,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 p-4 rounded-lg max-w-sm w-full">
             <h3 className="text-lg font-bold mb-3">Leg vége?</h3>
-            <p className="mb-4 text-sm">
+            <p className="mb-2 text-sm">
               {pendingLegWinner === 1 ? match.player1.playerId.name : match.player2.playerId.name} nyerte ezt a leg-et!
             </p>
             <div className="flex gap-2">
@@ -749,7 +749,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 p-4 rounded-lg max-w-sm w-full">
             <h3 className="text-lg font-bold mb-3">Meccs vége?</h3>
-            <p className="mb-4 text-sm">
+            <p className="mb-2 text-sm">
               {pendingMatchWinner === 1 ? match.player1.playerId.name : match.player2.playerId.name} nyerte a meccset!
             </p>
             <div className="flex gap-2">

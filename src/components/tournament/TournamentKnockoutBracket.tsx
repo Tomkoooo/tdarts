@@ -481,7 +481,16 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
             <button
               className="btn btn-primary btn-sm"
               onClick={() => setShowGenerateNextRound(true)}
-              disabled={generatingNextRound}
+              disabled={
+                generatingNextRound ||
+                knockoutData.some(
+                  (round) =>
+                    round.matches &&
+                    round.matches.some(
+                      (match) => match.matchReference?.status !== 'finished'
+                    )
+                )
+              }
             >
               {generatingNextRound ? (
                 <>
