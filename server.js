@@ -2,9 +2,9 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 
-const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
+const dev = process.env.NODE_ENV !== "production"; // Force production mode
+const hostname = "0.0.0.0"; // Allow external connections
+const port = process.env.PORT || 3000;
 // when using middleware `hostname` and `port` must be provided below
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
@@ -25,7 +25,7 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      origin: process.env.NEXT_PUBLIC_APP_URL || "*",
       methods: ["GET", "POST"]
     }
   });
@@ -177,5 +177,6 @@ app.prepare().then(() => {
     .listen(port, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
       console.log(`> Socket.IO server running on port ${port}`);
+      console.log(`> Production mode: ${!dev}`);
     });
 }); 
