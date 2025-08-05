@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { IconSearch, IconBolt, IconTrophy, IconUsers, IconChartBar, IconSettings } from '@tabler/icons-react';
+import Link from 'next/link';
+import { IconSearch, IconBolt, IconTrophy, IconUsers, IconChartBar, IconSettings, IconQrcodeOff, IconShield, IconDeviceTablet } from '@tabler/icons-react';
 
 const FeaturesSection = () => {
   const features = [
@@ -24,21 +25,39 @@ const FeaturesSection = () => {
     },
     {
       icon: IconChartBar,
-      title: 'Valós Idejű Eredmények',
-      description: 'Kövesd élőben a meccseket és eredményeket minden versenyen.',
+      title: 'Statisztikai Követés',
+      description: 'Részletes statisztikák minden játékoshoz, átlagok, 180-ak, legmagasabb kiszállók.',
       gradient: 'from-red-500 to-red-700'
     },
     {
       icon: IconBolt,
-      title: 'Azonnali Frissítések',
-      description: 'Pillanatnyi értesítések minden fontos eseményről és eredményről.',
+      title: 'Valós Idejű Követés',
+      description: 'Kövesd élőben a meccseket és eredményeket minden versenyen.',
       gradient: 'from-orange-500 to-red-500'
     },
     {
       icon: IconSettings,
-      title: 'Teljes Customizálás',
+      title: 'Teljes Testreszabás',
       description: 'Minden versenyforma támogatva: 501, 301, Cricket és egyedi szabályok.',
       gradient: 'from-red-600 to-red-800'
+    },
+    {
+      icon: IconQrcodeOff,
+      title: 'QR Kódos Csatlakozás',
+      description: 'Játékosok QR kóddal és torna jelszóval csatlakozhatnak, regisztráció nélkül.',
+      gradient: 'from-green-500 to-blue-500'
+    },
+    {
+      icon: IconDeviceTablet,
+      title: 'Tablet Támogatás',
+      description: 'Támogatja a táblákhoz fixen kihelyezett tableteket az író programmal.',
+      gradient: 'from-blue-500 to-purple-500'
+    },
+    {
+      icon: IconShield,
+      title: 'Jelszó Védett',
+      description: 'Minden torna saját jelszóval védett, biztonságos hozzáférés.',
+      gradient: 'from-purple-500 to-pink-500'
     }
   ];
 
@@ -84,9 +103,11 @@ const FeaturesSection = () => {
 
         {/* Bottom CTA */}
         <div className="text-center mt-20">
-          <button className="glass-button push-button text-lg px-12 py-5">
-            Minden Funkció Megtekintése
-          </button>
+          <Link href="/how-it-works">
+            <button className="glass-button push-button text-lg px-12 py-5">
+              Hogyan Működik a Rendszer?
+            </button>
+          </Link>
         </div>
       </div>
     </section>

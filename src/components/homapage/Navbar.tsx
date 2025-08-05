@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconHelp } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -24,6 +24,7 @@ const Navbar = () => {
     { name: "Versenyek", icon: IconTournament, href: "/search" },
     { name: "Klubbok", icon: IconUsers, href: "/search" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
+    { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
   ];
 
   return (
@@ -35,10 +36,10 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <Image src="/tbase_fav.svg" width={40} height={40} alt="tDarts Logo" />
             <span className="text-xl md:text-2xl font-bold text-gradient-red">tDarts</span>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
@@ -64,9 +65,14 @@ const Navbar = () => {
                             </Link>
               </div>
             ) : (
-              <Link href="/auth/login" className="block glass-button push-button">
-                Bejelentkezés
-              </Link>
+              <div className="flex gap-2 items-center">
+                <Link href="/auth/login" className="block glass-button push-button">
+                  Bejelentkezés
+                </Link>
+                <Link href="/auth/register" className="block btn-outline  push-button button">
+                  Regisztráció
+                </Link>
+              </div>
             )}
           </div>
 
@@ -111,6 +117,7 @@ const Navbar = () => {
                             </Link>
               </div>
               ) : (
+                <div>
                 <Link
                   href="/auth/login"
                   className="block glass-button push-button w-full mt-4"
@@ -118,6 +125,10 @@ const Navbar = () => {
                 >
                   Bejelentkezés
                 </Link>
+                <Link href="/auth/login" onClick={()=>setIsMobileMenuOpen(false)} className="block btn btn-outline">
+                  Regisztráció
+                </Link>
+                </div>
               )}
             </div>
           </div>

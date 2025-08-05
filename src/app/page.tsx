@@ -4,7 +4,7 @@ import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 import HeroSection from '@/components/homapage/HeroSection';
 import InfiniteCarousel from '@/components/homapage/InfiniteCarousel';
 import FeaturesSection from '@/components/homapage/FeaturesSection';
-
+import PricingSection from '@/components/homapage/PricingSection';
 
 const HomePage = () => {
   return (
@@ -22,6 +22,9 @@ const HomePage = () => {
         
         {/* Features Section */}
         <FeaturesSection />
+        
+        {/* Pricing Section */}
+        <PricingSection />
         
         {/* Footer Spacer */}
         <div className="h-20" />

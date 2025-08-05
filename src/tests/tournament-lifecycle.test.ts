@@ -4,30 +4,26 @@ import axios from 'axios';
 const BASE_URL = 'http://localhost:3000/api';
 const CLUB_ID = '687fabffb16ffd1e85174d7c';
 
-
-// Test configuration - Change this to test with different player counts
+// Test configuration - 2 parallel tournaments with 16 players each
 const CONFIG = {
-  playerCount: 24, // Change this to test with different numbers of players
-  maxPlayers: 24, // Ensure maxPlayers is at least playerCount
-  boardCount: 2,
+  playerCount: 16, // 16 players per tournament
+  maxPlayers: 16, // Ensure maxPlayers is at least playerCount
   legsToWin: 2,
   delayBetweenRequests: 200, // ms
   delayBetweenSteps: 1000, // ms
+  parallelTournaments: 2, // Number of parallel tournaments to simulate
 };
 
 // Generate test players based on configuration
-const generateTestPlayers = (count: number) => {
+const generateTestPlayers = (count: number, tournamentIndex: number) => {
   const players = [];
   for (let i = 0; i < count; i++) {
     players.push({
-      name: `Test Player ${i + 1}`,
-    
+      name: `Tournament ${tournamentIndex + 1} - Player ${i + 1}`,
     });
   }
   return players;
 };
-
-const TEST_PLAYERS = generateTestPlayers(CONFIG.playerCount);
 
 interface TournamentData {
   tournamentId: string;
@@ -79,42 +75,79 @@ const calculateKnockoutPlayersCount = (totalPlayers: number): number => {
   return playersCount;
 };
 
-const logStep = (step: string, message: string) => {
+const logStep = async (step: string, message: string) => {
   console.log(`\n${step} ${message}`);
+  await sleep(100); // Small delay to ensure console output is processed
 };
 
-const logSuccess = (message: string) => {
+const logSuccess = async (message: string) => {
   console.log(`✅ ${message}`);
+  await sleep(100);
 };
 
-const logError = (message: string, error?: any) => {
+const logError = async (message: string, error?: any) => {
   console.error(`❌ ${message}`, error?.response?.data || error?.message || error);
+  await sleep(100);
 };
 
-describe('Tournament Lifecycle Test', () => {
-  let tournamentData: TournamentData | null = null;
+describe('Parallel Tournament Lifecycle Test', () => {
+  const tournamentDataArray: TournamentData[] = [];
 
-  test(`Complete Tournament Lifecycle with ${CONFIG.playerCount} players`, async () => {
+  test(`Complete Parallel Tournament Lifecycle with ${CONFIG.parallelTournaments} tournaments of ${CONFIG.playerCount} players each`, async () => {
     // Increase timeout for this test
-    jest.setTimeout(300000); // 5 minutes
+    jest.setTimeout(600000); // 10 minutes
     
-    logStep('🚀', `Starting tournament lifecycle test with ${CONFIG.playerCount} players...`);
+    await logStep('🚀', `Starting parallel tournament lifecycle test with ${CONFIG.parallelTournaments} tournaments of ${CONFIG.playerCount} players each...`);
 
-    // Step 1: Create Tournament
-    logStep('📝', 'Step 1: Creating tournament...');
+    // Step 1: Get Available Boards
+    await logStep('📋', 'Step 1: Getting available boards...');
     
-    const createTournamentWithRetry = async (attempts = 3) => {
+    let availableBoards: any[] = [];
+    try {
+      const boardsResponse = await axios.get(`${BASE_URL}/clubs/${CLUB_ID}/boards`);
+      expect(boardsResponse.status).toBe(200);
+      availableBoards = boardsResponse.data.boards || [];
+      
+      await logSuccess(`Found ${availableBoards.length} available boards`);
+      console.log('Available boards:', availableBoards.map((b: any) => b.boardNumber));
+      
+      if (availableBoards.length < CONFIG.parallelTournaments) {
+        throw new Error(`Not enough available boards. Need ${CONFIG.parallelTournaments}, have ${availableBoards.length}`);
+      }
+    } catch (error) {
+      await logError('Failed to get available boards', error);
+      throw error;
+    }
+
+    // Step 2: Create Multiple Tournaments
+    await logStep('📝', `Step 2: Creating ${CONFIG.parallelTournaments} tournaments...`);
+    
+    const createTournamentWithRetry = async (tournamentIndex: number, attempts = 3) => {
       for (let i = 0; i < attempts; i++) {
         try {
+          // Select boards for this tournament (divide available boards between tournaments)
+          const boardsPerTournament = Math.floor(availableBoards.length / CONFIG.parallelTournaments);
+          const startIndex = tournamentIndex * boardsPerTournament;
+          const endIndex = tournamentIndex === CONFIG.parallelTournaments - 1 
+            ? availableBoards.length 
+            : startIndex + boardsPerTournament;
+          
+          const selectedBoards = availableBoards
+            .slice(startIndex, endIndex)
+            .map((board: any) => board.boardNumber);
+          
+          await logStep('🎯', `Tournament ${tournamentIndex + 1} will use boards: ${selectedBoards.join(', ')}`);
+          
           const tournamentPayload = {
-            name: `Test Tournament ${Date.now()}-${i + 1}`,
-            description: `Automated test tournament with ${CONFIG.playerCount} players`,
+            name: `Parallel Test Tournament ${tournamentIndex + 1} - ${Date.now()}-${i + 1}`,
+            description: `Automated parallel test tournament ${tournamentIndex + 1} with ${CONFIG.playerCount} players`,
             startDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
             maxPlayers: CONFIG.maxPlayers,
             format: 'group_knockout',
             startingScore: 501,
             tournamentPassword: 'test123',
-            boardCount: CONFIG.boardCount,
+            boardCount: selectedBoards.length,
+            selectedBoards: selectedBoards, // Use the selected boards from available boards
             entryFee: 1000,
             location: 'Test Location',
             type: 'amateur',
@@ -127,38 +160,48 @@ describe('Tournament Lifecycle Test', () => {
           );
 
           expect(createResponse.status).toBe(200);
-          tournamentData = createResponse.data;
+          const tournamentData = createResponse.data;
           expect(tournamentData).toHaveProperty('tournamentId');
           expect(tournamentData).toHaveProperty('_id');
 
-          logSuccess(`Tournament created: ${tournamentData?.tournamentId}`);
-          return;
+          await logSuccess(`Tournament ${tournamentIndex + 1} created: ${tournamentData?.tournamentId}`);
+          return tournamentData;
         } catch (error: any) {
           if (error.response?.status === 500 && error.response?.data?.error?.includes('duplicate key')) {
-            logError(`Attempt ${i + 1} failed due to duplicate key, retrying...`, error);
+            await logError(`Attempt ${i + 1} failed due to duplicate key, retrying...`, error);
             await sleep(1000); // Wait before retry
             continue;
           }
           throw error;
         }
       }
-      throw new Error(`Failed to create tournament after ${attempts} attempts`);
+      throw new Error(`Failed to create tournament ${tournamentIndex + 1} after ${attempts} attempts`);
     };
 
     try {
-      await createTournamentWithRetry();
+      // Create tournaments sequentially to avoid conflicts
+      for (let i = 0; i < CONFIG.parallelTournaments; i++) {
+        const tournamentData = await createTournamentWithRetry(i);
+        tournamentDataArray.push(tournamentData);
+        await sleep(1000); // Wait between tournament creations
+      }
     } catch (error) {
-      logError('Failed to create tournament', error);
+      await logError('Failed to create tournaments', error);
       throw error;
     }
 
-    // Step 2: Add Players
-    logStep('👥', `Step 2: Adding ${CONFIG.playerCount} players...`);
-    try {
-      const playerPromises = TEST_PLAYERS.map(async (player, index) => {
-        await sleep(index * 100); // Small delay between requests
+    // Step 3: Add Players to All Tournaments
+    await logStep('👥', `Step 3: Adding ${CONFIG.playerCount} players to each tournament...`);
+    
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
+      const testPlayers = generateTestPlayers(CONFIG.playerCount, tournamentIndex);
+      
+      try {
+        const playerPromises = testPlayers.map(async (player, index) => {
+          await sleep(index * 50); // Smaller delay between requests
         const response = await axios.post(
-          `${BASE_URL}/tournaments/${tournamentData!.tournamentId}/players`,
+            `${BASE_URL}/tournaments/${tournamentData.tournamentId}/players`,
           player
         );
         expect(response.status).toBe(200);
@@ -166,33 +209,37 @@ describe('Tournament Lifecycle Test', () => {
       });
 
       await Promise.all(playerPromises);
-      logSuccess(`Added ${TEST_PLAYERS.length} players`);
+        await logSuccess(`Added ${testPlayers.length} players to Tournament ${tournamentIndex + 1}`);
     } catch (error) {
-      logError('Failed to add players', error);
+        await logError(`Failed to add players to Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-    // Step 2.5: Check-in all players
-    logStep('✅', 'Step 2.5: Checking-in all players...');
+    // Step 3.5: Check-in all players in all tournaments
+    await logStep('✅', 'Step 3.5: Checking-in all players in all tournaments...');
     await sleep(CONFIG.delayBetweenSteps);
+
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       // Get tournament to see all players
       const tournamentResponse = await axios.get(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}`
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
       );
       expect(tournamentResponse.status).toBe(200);
 
       const tournament = tournamentResponse.data;
       const players = tournament.tournamentPlayers || [];
 
-      logSuccess(`Found ${players.length} players to check-in`);
+        await logSuccess(`Found ${players.length} players to check-in for Tournament ${tournamentIndex + 1}`);
 
       // Check-in each player
       const checkInPromises = players.map(async (player: any, index: number) => {
-        await sleep(index * 100); // Small delay between requests
+          await sleep(index * 50); // Smaller delay between requests
         const response = await axios.put(
-          `${BASE_URL}/tournaments/${tournamentData!.tournamentId}/players`,
+            `${BASE_URL}/tournaments/${tournamentData.tournamentId}/players`,
           {
             playerId: player.playerReference._id || player.playerReference,
             status: 'checked-in'
@@ -203,34 +250,42 @@ describe('Tournament Lifecycle Test', () => {
       });
 
       await Promise.all(checkInPromises);
-      logSuccess(`Checked-in ${players.length} players`);
+        await logSuccess(`Checked-in ${players.length} players for Tournament ${tournamentIndex + 1}`);
     } catch (error) {
-      logError('Failed to check-in players', error);
+        await logError(`Failed to check-in players for Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-    // Step 3: Generate Groups
-    logStep('🏆', 'Step 3: Generating groups...');
+    // Step 4: Generate Groups for All Tournaments
+    await logStep('🏆', 'Step 4: Generating groups for all tournaments...');
     await sleep(CONFIG.delayBetweenSteps);
+
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       const groupsResponse = await axios.post(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}/generateGroups`
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}/generateGroups`
       );
       expect(groupsResponse.status).toBe(200);
-      logSuccess('Groups generated');
+        await logSuccess(`Groups generated for Tournament ${tournamentIndex + 1}`);
     } catch (error) {
-      logError('Failed to generate groups', error);
+        await logError(`Failed to generate groups for Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-    // Step 4: Get tournament data to find group matches
-    logStep('🎯', 'Step 4: Playing group matches...');
+    // Step 5: Play Group Matches for All Tournaments
+    await logStep('🎯', 'Step 5: Playing group matches for all tournaments...');
     await sleep(CONFIG.delayBetweenSteps);
+
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       const tournamentResponse = await axios.get(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}`
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
       );
       expect(tournamentResponse.status).toBe(200);
 
@@ -242,39 +297,39 @@ describe('Tournament Lifecycle Test', () => {
       const allGroupMatches: MatchData[] = [];
       for (const group of tournament.groups) {
         try {
-          console.log(`Fetching matches for board ${group.board}`);
+            console.log(`Fetching matches for board ${group.board} in Tournament ${tournamentIndex + 1}`);
           
           const matchesResponse = await axios.get(
-            `${BASE_URL}/boards/${tournamentData!.tournamentId}/${group.board}/matches`
+              `${BASE_URL}/boards/${tournamentData.tournamentId}/${group.board}/matches`
           );
           
           if (matchesResponse.status === 200 && matchesResponse.data.matches) {
             const boardMatches = matchesResponse.data.matches;
-            console.log(`Found ${boardMatches.length} matches for board ${group.board}`);
+              console.log(`Found ${boardMatches.length} matches for board ${group.board} in Tournament ${tournamentIndex + 1}`);
             allGroupMatches.push(...boardMatches);
           }
         } catch (error) {
-          logError(`Failed to get matches for board ${group.board}`, error);
-        }
+            await logError(`Failed to get matches for board ${group.board} in Tournament ${tournamentIndex + 1}`, error);
+          }
       }
 
-      logSuccess(`Found ${allGroupMatches.length} group matches`);
+        await logSuccess(`Found ${allGroupMatches.length} group matches for Tournament ${tournamentIndex + 1}`);
 
       if (allGroupMatches.length === 0) {
-        logError('No group matches found. This might indicate an issue with group generation.');
+          await logError(`No group matches found for Tournament ${tournamentIndex + 1}. This might indicate an issue with group generation.`);
         console.log('Tournament groups:', JSON.stringify(tournament.groups, null, 2));
-        throw new Error('No group matches found');
+          throw new Error(`No group matches found for Tournament ${tournamentIndex + 1}`);
       }
 
-      // Step 5: Play all group matches
+        // Play all group matches
       for (const match of allGroupMatches) {
         const matchId = match._id?.toString() || match._id;
-        logStep('🎮', `Playing match: ${match.player1?.playerId?.name || 'Unknown'} vs ${match.player2?.playerId?.name || 'Unknown'}`);
+          await logStep('🎮', `Playing match in Tournament ${tournamentIndex + 1}: ${match.player1?.playerId?.name || 'Unknown'} vs ${match.player2?.playerId?.name || 'Unknown'}`);
         
         try {
           // Start the match
           const startResponse = await axios.post(
-            `${BASE_URL}/boards/${tournamentData!.tournamentId}/${match.boardReference}/start`,
+              `${BASE_URL}/boards/${tournamentData.tournamentId}/${match.boardReference}/start`,
             {
               matchId: matchId,
               legsToWin: CONFIG.legsToWin,
@@ -302,24 +357,28 @@ describe('Tournament Lifecycle Test', () => {
 
           await sleep(CONFIG.delayBetweenRequests);
         } catch (error) {
-          logError(`Failed to play match ${matchId}`, error);
+            await logError(`Failed to play match ${matchId} in Tournament ${tournamentIndex + 1}`, error);
+          }
         }
-      }
 
-      logSuccess('All group matches completed');
-    } catch (error) {
-      logError('Failed to process group matches', error);
-      throw error;
+        await logSuccess(`All group matches completed for Tournament ${tournamentIndex + 1}`);
+      } catch (error) {
+        await logError(`Failed to process group matches for Tournament ${tournamentIndex + 1}`, error);
+        throw error;
+      }
     }
 
-    // Step 6: Generate Knockout
-    logStep('🥊', 'Step 6: Generating knockout stage...');
+    // Step 6: Generate Knockout for All Tournaments
+    await logStep('🥊', 'Step 6: Generating knockout stage for all tournaments...');
     await sleep(CONFIG.delayBetweenSteps);
+
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       // Get current tournament data to calculate playersCount
       const currentTournamentResponse = await axios.get(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}`
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
       );
       expect(currentTournamentResponse.status).toBe(200);
       const currentTournament = currentTournamentResponse.data;
@@ -328,29 +387,40 @@ describe('Tournament Lifecycle Test', () => {
       const totalPlayers = currentTournament.tournamentPlayers.filter((p: any) => p.status === 'checked-in').length;
       const playersCount = calculateKnockoutPlayersCount(totalPlayers);
       
-      logSuccess(`Calculated playersCount: ${playersCount} (from ${totalPlayers} total players)`);
+        await logSuccess(`Calculated playersCount: ${playersCount} (from ${totalPlayers} total players) for Tournament ${tournamentIndex + 1}`);
       
       const knockoutResponse = await axios.post(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}/generateKnockout`,
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}/generateKnockout`,
         {
           playersCount: playersCount,
           knockoutMethod: 'automatic'
         }
       );
       expect(knockoutResponse.status).toBe(200);
-      logSuccess('Knockout stage generated');
+        await logSuccess(`Knockout stage generated for Tournament ${tournamentIndex + 1}`);
     } catch (error) {
-      logError('Failed to generate knockout', error);
+        await logError(`Failed to generate knockout for Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-    // Step 7: Get knockout matches
-    logStep('🎯', 'Step 7: Playing knockout matches...');
+    // Step 7: Play Knockout Matches for All Tournaments (including next rounds)
+    await logStep('🎯', 'Step 7: Playing knockout matches for all tournaments...');
     await sleep(CONFIG.delayBetweenSteps);
 
-    try {
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
+      
+      try {
+        // Play all knockout rounds until final
+        let currentRound = 1;
+        let hasMoreRounds = true;
+        
+        while (hasMoreRounds) {
+          await logStep('🎯', `Playing knockout round ${currentRound} for Tournament ${tournamentIndex + 1}...`);
+          
       const updatedTournamentResponse = await axios.get(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}`
+            `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
       );
       expect(updatedTournamentResponse.status).toBe(200);
 
@@ -358,43 +428,57 @@ describe('Tournament Lifecycle Test', () => {
       expect(updatedTournament.knockout).toBeDefined();
       expect(updatedTournament.knockout.length).toBeGreaterThan(0);
 
-      // Get all knockout matches from all boards
+          // Find current round
+          const currentRoundData = updatedTournament.knockout.find((r: any) => r.round === currentRound);
+          if (!currentRoundData || !currentRoundData.matches || currentRoundData.matches.length === 0) {
+            await logSuccess(`No more matches in round ${currentRound} for Tournament ${tournamentIndex + 1}`);
+            break;
+          }
+
+          // Get all knockout matches from all boards for current round
       const allKnockoutMatches: MatchData[] = [];
       
       // Get tournament data to find which boards have knockout matches
-      const tournamentResponse = await axios.get(`${BASE_URL}/tournaments/${tournamentData!.tournamentId}`);
+          const tournamentResponse = await axios.get(`${BASE_URL}/tournaments/${tournamentData.tournamentId}`);
       if (tournamentResponse.status === 200 && tournamentResponse.data.groups) {
         // Use the same boards that were used for groups
         for (const group of tournamentResponse.data.groups) {
           try {
-            console.log(`Fetching knockout matches for board ${group.board}`);
+                console.log(`Fetching knockout matches for board ${group.board} in Tournament ${tournamentIndex + 1}, round ${currentRound}`);
             
             const matchesResponse = await axios.get(
-              `${BASE_URL}/boards/${tournamentData!.tournamentId}/${group.board}/matches`
+                  `${BASE_URL}/boards/${tournamentData.tournamentId}/${group.board}/matches`
             );
             
             if (matchesResponse.status === 200 && matchesResponse.data.matches) {
-              const boardMatches = matchesResponse.data.matches.filter((match: any) => match.type === 'knockout');
-              console.log(`Found ${boardMatches.length} knockout matches for board ${group.board}`);
+                  const boardMatches = matchesResponse.data.matches.filter((match: any) => 
+                    match.type === 'knockout' && match.round === currentRound
+                  );
+                  console.log(`Found ${boardMatches.length} knockout matches for board ${group.board} in Tournament ${tournamentIndex + 1}, round ${currentRound}`);
               allKnockoutMatches.push(...boardMatches);
             }
           } catch (error) {
-            logError(`Failed to get knockout matches for board ${group.board}`, error);
+                await logError(`Failed to get knockout matches for board ${group.board} in Tournament ${tournamentIndex + 1}`, error);
+              }
+            }
           }
-        }
-      }
 
-      logSuccess(`Found ${allKnockoutMatches.length} knockout matches`);
+          await logSuccess(`Found ${allKnockoutMatches.length} knockout matches for round ${currentRound} in Tournament ${tournamentIndex + 1}`);
 
-      // Step 8: Play all knockout matches
+          if (allKnockoutMatches.length === 0) {
+            await logSuccess(`No matches found for round ${currentRound} in Tournament ${tournamentIndex + 1}`);
+            break;
+          }
+
+          // Play all knockout matches in current round
       for (const match of allKnockoutMatches) {
         const matchId = match._id?.toString() || match._id;
-        logStep('🎮', `Playing knockout match: ${match.player1?.playerId?.name || 'Unknown'} vs ${match.player2?.playerId?.name || 'Unknown'}`);
+            await logStep('🎮', `Playing knockout match in Tournament ${tournamentIndex + 1}, round ${currentRound}: ${match.player1?.playerId?.name || 'Unknown'} vs ${match.player2?.playerId?.name || 'Unknown'}`);
         
         try {
           // Start the match
           const startResponse = await axios.post(
-            `${BASE_URL}/boards/${tournamentData!.tournamentId}/${match.boardReference}/start`,
+                `${BASE_URL}/boards/${tournamentData.tournamentId}/${match.boardReference}/start`,
             {
               matchId: matchId,
               legsToWin: CONFIG.legsToWin,
@@ -422,70 +506,111 @@ describe('Tournament Lifecycle Test', () => {
 
           await sleep(CONFIG.delayBetweenRequests);
         } catch (error) {
-          logError(`Failed to play knockout match ${matchId}`, error);
-        }
-      }
+              await logError(`Failed to play knockout match ${matchId} in Tournament ${tournamentIndex + 1}`, error);
+            }
+          }
 
-      logSuccess('All knockout matches completed');
+          await logSuccess(`All knockout matches completed for round ${currentRound} in Tournament ${tournamentIndex + 1}`);
+
+          // Check if this was the final round (only 1 match)
+          if (allKnockoutMatches.length === 1) {
+            await logSuccess(`Final round completed for Tournament ${tournamentIndex + 1}`);
+            hasMoreRounds = false;
+          } else {
+            // Generate next round
+            await logStep('🔄', `Generating next round for Tournament ${tournamentIndex + 1}...`);
+            try {
+              const nextRoundResponse = await axios.post(
+                `${BASE_URL}/tournaments/${tournamentData.tournamentId}/generateNextRound`,
+                { currentRound }
+              );
+              expect(nextRoundResponse.status).toBe(200);
+              await logSuccess(`Next round generated for Tournament ${tournamentIndex + 1}`);
+              currentRound++;
+            } catch (error) {
+              await logError(`Failed to generate next round for Tournament ${tournamentIndex + 1}`, error);
+              hasMoreRounds = false;
+            }
+          }
+        }
+
+        await logSuccess(`All knockout matches completed for Tournament ${tournamentIndex + 1}`);
     } catch (error) {
-      logError('Failed to process knockout matches', error);
+        await logError(`Failed to process knockout matches for Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-    // Step 9: Finish Tournament
-    logStep('🏁', 'Step 9: Finishing tournament...');
+    // Step 8: Finish All Tournaments
+    await logStep('🏁', 'Step 8: Finishing all tournaments...');
     await sleep(CONFIG.delayBetweenSteps);
+
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       const finishResponse = await axios.post(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}/finish`
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}/finish`
       );
       expect(finishResponse.status).toBe(200);
-      logSuccess('Tournament finished');
+        await logSuccess(`Tournament ${tournamentIndex + 1} finished`);
     } catch (error) {
-      logError('Failed to finish tournament', error);
+        await logError(`Failed to finish Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-    // Step 10: Verify final tournament state
-    logStep('📊', 'Step 10: Verifying final tournament state...');
+    // Step 9: Verify Final Tournament States
+    await logStep('📊', 'Step 9: Verifying final tournament states...');
+    
+    for (let tournamentIndex = 0; tournamentIndex < CONFIG.parallelTournaments; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
+      
     try {
       const finalTournamentResponse = await axios.get(
-        `${BASE_URL}/tournaments/${tournamentData!.tournamentId}`
+          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
       );
       expect(finalTournamentResponse.status).toBe(200);
 
       const finalTournament = finalTournamentResponse.data;
       expect(finalTournament.tournamentSettings.status).toBe('finished');
-      expect(finalTournament.tournamentPlayers.length).toBe(TEST_PLAYERS.length);
+        expect(finalTournament.tournamentPlayers.length).toBe(CONFIG.playerCount);
 
-      logSuccess('Tournament lifecycle test completed successfully!');
-      console.log(`\n📈 Final tournament status: ${finalTournament.tournamentSettings.status}`);
+        await logSuccess(`Tournament ${tournamentIndex + 1} lifecycle test completed successfully!`);
+        console.log(`\n📈 Final tournament ${tournamentIndex + 1} status: ${finalTournament.tournamentSettings.status}`);
       console.log(`👥 Total players: ${finalTournament.tournamentPlayers.length}`);
-      console.log(`🏆 Tournament ID: ${tournamentData!.tournamentId}`);
+        console.log(`🏆 Tournament ID: ${tournamentData.tournamentId}`);
       console.log(`🎯 Group matches played: ${finalTournament.groups?.reduce((acc: number, group: any) => acc + group.matches.length, 0) || 0}`);
       console.log(`🥊 Knockout matches played: ${finalTournament.knockout?.reduce((acc: number, round: any) => acc + round.matches.length, 0) || 0}`);
     } catch (error) {
-      logError('Failed to verify final tournament state', error);
+        await logError(`Failed to verify final tournament state for Tournament ${tournamentIndex + 1}`, error);
       throw error;
+      }
     }
 
-  }, 300000); // 5 minute timeout
+    await logSuccess('All parallel tournament lifecycle tests completed successfully!');
+  }, 600000); // 10 minute timeout
 
   // Cleanup test
-  test('Cleanup - Log test tournament ID for manual cleanup', async () => {
-    if (tournamentData) {
-      console.log(`\n🧹 Test tournament ID for manual cleanup: ${tournamentData.tournamentId}`);
-      console.log(`🔗 Tournament URL: http://localhost:3000/tournaments/${tournamentData.tournamentId}`);
+  test('Cleanup - Log test tournament IDs for manual cleanup', async () => {
+    if (tournamentDataArray.length > 0) {
+      console.log(`\n🧹 Test tournament IDs for manual cleanup:`);
+      tournamentDataArray.forEach((tournamentData, index) => {
+        console.log(`Tournament ${index + 1}: ${tournamentData.tournamentId}`);
+        console.log(`🔗 Tournament ${index + 1} URL: http://localhost:3000/tournaments/${tournamentData.tournamentId}`);
+      });
     }
   });
 
   // Test for tournament standing logic
-  test('Verify tournament standing logic after finishing tournament', async () => {
-    if (!tournamentData) {
+  test('Verify tournament standing logic after finishing tournaments', async () => {
+    if (tournamentDataArray.length === 0) {
       console.log('⏭️  Skipping tournament standing test - no tournament data available');
       return;
     }
+
+    for (let tournamentIndex = 0; tournamentIndex < tournamentDataArray.length; tournamentIndex++) {
+      const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       // Get the finished tournament
@@ -537,19 +662,20 @@ describe('Tournament Lifecycle Test', () => {
       }
 
       // Log the standings for verification
-      console.log('\n🏆 Tournament Standings:');
+        console.log(`\n🏆 Tournament ${tournamentIndex + 1} Standings:`);
       const sortedPlayers = checkedInPlayers.sort((a: any, b: any) => a.tournamentStanding - b.tournamentStanding);
       sortedPlayers.forEach((player: any) => {
         const playerName = player.playerReference?.name || player.playerReference?.toString() || 'Unknown';
         console.log(`${player.tournamentStanding}. ${playerName} - ${player.eliminatedIn}`);
       });
 
-      logSuccess('Tournament standing logic verified successfully');
+        await logSuccess(`Tournament ${tournamentIndex + 1} standing logic verified successfully`);
     } catch (error) {
-      logError('Failed to verify tournament standing logic', error);
+        await logError(`Failed to verify tournament ${tournamentIndex + 1} standing logic`, error);
       throw error;
+      }
     }
-  }, 30000); // 30 second timeout
+  }, 60000); // 1 minute timeout
 });
 
 // Utility test for checking server connectivity
@@ -558,9 +684,9 @@ describe('Server Connectivity', () => {
     try {
       const response = await axios.get(`${BASE_URL.replace('/api', '')}`);
       expect(response.status).toBe(200);
-      logSuccess('Server is accessible');
+      await logSuccess('Server is accessible');
     } catch (error) {
-      logError('Server is not accessible. Make sure the dev server is running on localhost:3000', error);
+      await logError('Server is not accessible. Make sure the dev server is running on localhost:3000', error);
       throw error;
     }
   });
@@ -568,20 +694,20 @@ describe('Server Connectivity', () => {
 
 // Configuration test
 describe('Test Configuration', () => {
-  test('Configuration is valid', () => {
+  test('Configuration is valid', async () => {
     expect(CONFIG.playerCount).toBeGreaterThan(0);
     expect(CONFIG.maxPlayers).toBeGreaterThanOrEqual(CONFIG.playerCount);
-    expect(CONFIG.boardCount).toBeGreaterThan(0);
     expect(CONFIG.legsToWin).toBeGreaterThan(0);
     expect(CONFIG.delayBetweenRequests).toBeGreaterThan(0);
     expect(CONFIG.delayBetweenSteps).toBeGreaterThan(0);
+    expect(CONFIG.parallelTournaments).toBeGreaterThan(0);
     
     console.log(`\n📋 Test Configuration:`);
-    console.log(`👥 Player Count: ${CONFIG.playerCount}`);
-    console.log(`🎯 Max Players: ${CONFIG.maxPlayers}`);
-    console.log(`🏓 Boards: ${CONFIG.boardCount}`);
+    console.log(`👥 Player Count per Tournament: ${CONFIG.playerCount}`);
+    console.log(`🎯 Max Players per Tournament: ${CONFIG.maxPlayers}`);
     console.log(`🎮 Legs to Win: ${CONFIG.legsToWin}`);
     console.log(`⏱️  Request Delay: ${CONFIG.delayBetweenRequests}ms`);
     console.log(`⏱️  Step Delay: ${CONFIG.delayBetweenSteps}ms`);
+    console.log(`🔄 Parallel Tournaments: ${CONFIG.parallelTournaments}`);
   });
 }); 

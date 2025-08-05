@@ -11,9 +11,7 @@ import {
   IconEye, 
   IconEyeOff, 
   IconLogout, 
-  IconChartBar, 
   IconUsers, 
-  IconUserPlus,
   IconCircleCheck,
   IconCircleX,
   IconEdit
@@ -163,7 +161,7 @@ const ProfilePage: React.FC = () => {
 
   if (!user) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-red-800/30 flex items-center justify-center p-4">
+        <div className="min-h-screen  flex items-center justify-center p-4">
         <div className="text-center">
           <span className="loading loading-spinner w-8 h-8 text-primary"></span>
           <p className="mt-4 text-lg text-base-content">Felhasználói adatok betöltése...</p>
@@ -173,7 +171,7 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-red-800/30 flex items-center justify-center p-4 pt-8">
+     <div className="min-h-screen  flex items-center justify-center p-4 pt-8">
       <div className="w-full max-w-4xl glass bg-opacity-20 rounded-lg shadow-lg p-6 md:p-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/20 rounded-full border border-primary/30 mb-4">
@@ -319,19 +317,19 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <button type="submit" className="w-full btn btn-success" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <span className="loading loading-spinner w-4 h-4"></span>
                   Frissítés...
                 </span>
               ) : (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 ">
                   <IconUser className="w-4 h-4" />
                   Profil frissítése
                 </span>
               )}
-            </Button>
+            </button>
           </form>
         </section>
 
@@ -384,28 +382,19 @@ const ProfilePage: React.FC = () => {
         <section className="mb-12">
           <h2 className="text-2xl font-semibold text-base-content mb-4">Műveletek</h2>
           <div className="space-y-4">
-            <Button
+            <button
               onClick={handleLogout}
-              variant="outline"
-              className="w-full border-error/20 text-error hover:bg-error/10"
+              className="w-full btn btn-error"
               disabled={isLoading}
             >
               <IconLogout className="w-4 h-4" />
               Kijelentkezés
-            </Button>
+            </button>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="w-full opacity-50 cursor-not-allowed">
-                <IconChartBar className="w-4 h-4" />
-                Statisztikák
-              </Button>
               <Link href="/myclub" className="w-full btn btn-primary">
                 <IconUsers className="w-4 h-4" />
                 Klub regisztráció
               </Link>
-              <Button variant="outline" className="w-full opacity-50 cursor-not-allowed">
-                <IconUserPlus className="w-4 h-4" />
-                Játékos regisztráció
-              </Button>
             </div>
           </div>
         </section>

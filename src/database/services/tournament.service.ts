@@ -51,7 +51,7 @@ export class TournamentService {
             
             while (!isUnique && attempts < maxAttempts) {
                 // Generate a random 4-character alphanumeric string
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 tournamentId = '';
                 for (let i = 0; i < 4; i++) {
                     tournamentId += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -271,16 +271,27 @@ export class TournamentService {
     static async generateGroups(tournamentId: string): Promise<boolean> {
         try {
             await connectMongo();
-            const club = await TournamentModel.findOne({ tournamentId: tournamentId }).populate('clubId').select('boards');
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
-            if (!club.clubId.boards) {
+            
+            // Get club with boards
+            const club = await ClubModel.findById(tournament.clubId);
+            if (!club || !club.boards) {
                 throw new BadRequestError('Club boards not found');
             }
 
-            const groupCount = club.clubId.boards.length;
+            // Filter boards that belong to this tournament
+            const tournamentBoards = club.boards.filter((board: any) => 
+                board.tournamentId === tournamentId
+            );
+            
+            if (tournamentBoards.length === 0) {
+                throw new BadRequestError('No boards assigned to this tournament');
+            }
+
+            const groupCount = tournamentBoards.length;
             const players = tournament.tournamentPlayers.filter(
                 (p: TournamentPlayer) => p.status === 'checked-in'
             );
@@ -291,13 +302,18 @@ export class TournamentService {
             if (players.length < groupCount * 3) {
                 throw new BadRequestError('Not enough players to generate groups');
             }
+            // Check if roundRobin can handle the player count per group
+            const playersPerGroup = Math.ceil(players.length / tournamentBoards.length);
+            if(playersPerGroup < 3 || playersPerGroup > 6){
+                throw new BadRequestError(`Invalid players per group: ${playersPerGroup}. Must be between 3-6.`);
+            }
 
             // Prepare groups array with matches as ObjectId[] (not empty array)
             const groups: {
                 _id: mongoose.Types.ObjectId;
                 board: number;
                 matches: mongoose.Types.ObjectId[];
-            }[] = club.clubId.boards.map((board: any) => ({
+            }[] = tournamentBoards.map((board: any) => ({
                 _id: new mongoose.Types.ObjectId(),
                 board: board.boardNumber,
                 matches: []
@@ -377,22 +393,24 @@ export class TournamentService {
                     group.matches.push(matchDoc._id);
                 }
 
-                //update the club board status to waiting and add the nextMatch as the first match in group
-                // Properly update the club's board in the database to reflect the new status and nextMatch
+                // Update the club board status to waiting and add the nextMatch as the first match in group
                 const boardNumberToUpdate = group.board;
-                const nextMatchId = group.matches[0]?._id;
+                const nextMatchId = group.matches[0];
 
-                if (club && club.clubId && Array.isArray(club.clubId.boards)) {
-                    const boardIndex = club.clubId.boards.findIndex((board: any) => board.boardNumber === boardNumberToUpdate);
-                    if (boardIndex !== -1) {
-                        club.clubId.boards[boardIndex].status = 'waiting';
-                        club.clubId.boards[boardIndex].nextMatch = nextMatchId;
-                        // Mark the boards array as modified for Mongoose
-                        if (typeof club.clubId.markModified === 'function') {
-                            club.clubId.markModified('boards');
+                if (nextMatchId) {
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': boardNumberToUpdate
+                        },
+                        { 
+                            $set: { 
+                                'boards.$.status': 'waiting',
+                                'boards.$.nextMatch': nextMatchId,
+                                'boards.$.currentMatch': null
+                            } 
                         }
-                        await club.clubId.save();
-                    }
+                    );
                 }
                
             }
@@ -648,22 +666,32 @@ export class TournamentService {
             }
 
             const shuffledPlayers = [...advancingPlayers].sort(() => Math.random() - 0.5);
-            const knockoutRounds = this.generateKnockoutRounds(shuffledPlayers);
+            const knockoutRounds = this.generateKnockoutRounds(shuffledPlayers, format);
+
+            console.log('=== KNOCKOUT GENERATION DEBUG ===');
+            console.log('Tournament format:', format);
+            console.log('Advancing players count:', advancingPlayers.length);
+            console.log('Shuffled players count:', shuffledPlayers.length);
+            console.log('Knockout rounds:', knockoutRounds.length);
+            console.log('First round matches count:', knockoutRounds[0]?.matches?.length || 0);
+            console.log('First round matches:', knockoutRounds[0]?.matches || []);
 
             // Create matches for the first round
             const firstRoundMatches = knockoutRounds[0].matches;
             const createdMatches: any[] = [];
 
-            // Get available boards
+            // Get available boards for this tournament
             const club = await ClubModel.findById(tournament.clubId);
             if (!club || !club.boards) {
                 throw new Error('Club boards not found');
             }
 
-            // Filter active boards
-            const availableBoards = club.boards.filter((board: any) => board.isActive);
+            // Filter boards that belong to this tournament and are active
+            const availableBoards = club.boards.filter((board: any) => 
+                board.isActive && board.tournamentId === tournament.tournamentId
+            );
             if (availableBoards.length === 0) {
-                throw new Error('No active boards available');
+                throw new Error('No active boards available for this tournament');
             }
 
             // Assign matches to boards in round-robin fashion
@@ -709,12 +737,19 @@ export class TournamentService {
                     }
 
                     // Update board status
-                    const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
-                    if (boardToUpdate) {
-                        boardToUpdate.status = 'waiting';
-                        boardToUpdate.nextMatch = match._id;
-                        boardToUpdate.currentMatch = null;
-                    }
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': assignedBoard.boardNumber
+                        },
+                        { 
+                            $set: { 
+                                'boards.$.status': 'waiting',
+                                'boards.$.nextMatch': match._id,
+                                'boards.$.currentMatch': null
+                            } 
+                        }
+                    );
                 }
             }
 
@@ -728,9 +763,6 @@ export class TournamentService {
 
             await tournament.save();
 
-            // Save club with updated board statuses
-            await club.save();
-
             return true;
         } catch (error) {
             console.error('Generate knockout error:', error);
@@ -738,7 +770,7 @@ export class TournamentService {
         }
     }
 
-    private static generateKnockoutRounds(advancingPlayers: any[]): any[] {
+    private static generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout'): any[] {
         const rounds: any[] = [];
 
         // Handle odd number of players by giving a bye to the last player
@@ -750,61 +782,111 @@ export class TournamentService {
             playerWithBye = playersForFirstRound.pop();
         }
 
-        // Group players by their groupId for cross-group pairing
-        const playersByGroup = new Map();
-        playersForFirstRound.forEach(player => {
-            const groupId = player.groupId;
-            if (!playersByGroup.has(groupId)) {
-                playersByGroup.set(groupId, []);
-            }
-            playersByGroup.get(groupId).push(player);
-        });
-
-        // Sort players within each group by their group standing
-        playersByGroup.forEach((players) => {
-            players.sort((a: any, b: any) => {
-                if (a.groupStanding !== b.groupStanding) {
-                    return (a.groupStanding || 0) - (b.groupStanding || 0);
-                }
-                const aStats = a.stats || {};
-                const bStats = b.stats || {};
-                const aPoints = (aStats.matchesWon || 0) * 2;
-                const bPoints = (bStats.matchesWon || 0) * 2;
-                if (aPoints !== bPoints) return bPoints - aPoints;
-                
-                const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
-                const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
-                return bLegDiff - aLegDiff;
-            });
-        });
-
-        // Create cross-group pairings
         const firstRoundMatches = [];
-        const groupIds = Array.from(playersByGroup.keys());
-        
-        // Pair groups: 1st group vs 3rd group, 2nd vs 4th, etc.
-        const halfGroups = Math.ceil(groupIds.length / 2);
-        for (let i = 0; i < halfGroups; i++) {
-            const group1Id = groupIds[i];
-            const group2Id = groupIds[i + halfGroups];
-            
-            if (group2Id) {
-                const group1Players = playersByGroup.get(group1Id);
-                const group2Players = playersByGroup.get(group2Id);
-                
-                // Pair players: 1st from group1 vs last from group2, 2nd from group1 vs 2nd-last from group2, etc.
-                const maxPlayers = Math.max(group1Players.length, group2Players.length);
-                
-                for (let j = 0; j < maxPlayers; j++) {
-                    const player1 = group1Players[j];
-                    const player2 = group2Players[group2Players.length - 1 - j];
+
+        if (format === 'group_knockout') {
+            // For group_knockout format, create proper cross-group pairings with 2-group offset
+            const playersByGroup = new Map();
+            playersForFirstRound.forEach(player => {
+                const groupId = player.groupId;
+                if (!playersByGroup.has(groupId)) {
+                    playersByGroup.set(groupId, []);
+                }
+                playersByGroup.get(groupId).push(player);
+            });
+
+            // Sort players within each group by their group standing (1st, 2nd, 3rd, etc.)
+            playersByGroup.forEach((players) => {
+                players.sort((a: any, b: any) => {
+                    if (a.groupStanding !== b.groupStanding) {
+                        return (a.groupStanding || 0) - (b.groupStanding || 0);
+                    }
+                    const aStats = a.stats || {};
+                    const bStats = b.stats || {};
+                    const aPoints = (aStats.matchesWon || 0) * 2;
+                    const bPoints = (bStats.matchesWon || 0) * 2;
+                    if (aPoints !== bPoints) return bPoints - aPoints;
                     
-                    if (player1 && player2) {
+                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                    return bLegDiff - aLegDiff;
+                });
+            });
+
+            // Create cross-group pairings with 2-group offset
+            const groupIds = Array.from(playersByGroup.keys()).sort();
+            
+            if (groupIds.length > 1) {
+                // Pair groups with 2-group offset: A vs C, B vs D, etc.
+                for (let i = 0; i < groupIds.length; i++) {
+                    const group1Id = groupIds[i];
+                    const group2Id = groupIds[(i + 2) % groupIds.length]; // 2-group offset
+                    
+                    if (group1Id !== group2Id) {
+                        const group1Players = playersByGroup.get(group1Id);
+                        const group2Players = playersByGroup.get(group2Id);
+                        
+                        // Pair players: 1st from group1 vs last from group2, 2nd from group1 vs 2nd-last from group2, etc.
+                        const maxPlayers = Math.max(group1Players.length, group2Players.length);
+                        
+                        for (let j = 0; j < maxPlayers; j++) {
+                            const player1 = group1Players[j];
+                            const player2 = group2Players[group2Players.length - 1 - j];
+                            
+                            if (player1 && player2) {
+                                firstRoundMatches.push({
+                                    player1: player1.playerReference,
+                                    player2: player2.playerReference,
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // If we have odd number of groups, handle the remaining group
+                if (groupIds.length % 2 !== 0) {
+                    const remainingGroupId = groupIds[groupIds.length - 1];
+                    const remainingPlayers = playersByGroup.get(remainingGroupId);
+                    
+                    // Pair remaining players within their own group
+                    for (let i = 0; i < remainingPlayers.length; i += 2) {
+                        if (i + 1 < remainingPlayers.length) {
+                            const player1 = remainingPlayers[i];
+                            const player2 = remainingPlayers[i + 1];
+                            
+                            firstRoundMatches.push({
+                                player1: player1.playerReference,
+                                player2: player2.playerReference,
+                            });
+                        }
+                    }
+                }
+            } else {
+                // Only one group, create simple pairings
+                const groupPlayers = playersByGroup.get(groupIds[0]) || [];
+                for (let i = 0; i < groupPlayers.length; i += 2) {
+                    if (i + 1 < groupPlayers.length) {
+                        const player1 = groupPlayers[i];
+                        const player2 = groupPlayers[i + 1];
+                        
                         firstRoundMatches.push({
                             player1: player1.playerReference,
                             player2: player2.playerReference,
                         });
                     }
+                }
+            }
+        } else {
+            // For knockout format, create simple random pairings
+            for (let i = 0; i < playersForFirstRound.length; i += 2) {
+                if (i + 1 < playersForFirstRound.length) {
+                    const player1 = playersForFirstRound[i];
+                    const player2 = playersForFirstRound[i + 1];
+                    
+                    firstRoundMatches.push({
+                        player1: player1.playerReference,
+                        player2: player2.playerReference,
+                    });
                 }
             }
         }
@@ -917,10 +999,12 @@ export class TournamentService {
             const nextRound = currentRound + 1;
             const nextRoundMatches: any[] = [];
             const club = await ClubModel.findById(tournament.clubId);
-            const availableBoards = club?.boards?.filter((board: any) => board.isActive) || [];
+            const availableBoards = club?.boards?.filter((board: any) => 
+                board.isActive && board.tournamentId === tournament.tournamentId
+            ) || [];
 
             if (availableBoards.length === 0) {
-                throw new BadRequestError('No active boards available');
+                throw new BadRequestError('No active boards available for this tournament');
             }
 
             // Check if there's already a second round with a bye player
@@ -967,12 +1051,19 @@ export class TournamentService {
                         byeMatch.matchReference = byePlayerMatch._id;
 
                         // Update board status for bye player match
-                        const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
-                        if (boardToUpdate) {
-                            boardToUpdate.status = 'waiting';
-                            boardToUpdate.nextMatch = byePlayerMatch._id;
-                            boardToUpdate.currentMatch = null;
-                        }
+                        await ClubModel.updateOne(
+                            { 
+                                _id: tournament.clubId,
+                                'boards.boardNumber': assignedBoard.boardNumber
+                            },
+                            { 
+                                $set: { 
+                                    'boards.$.status': 'waiting',
+                                    'boards.$.nextMatch': byePlayerMatch._id,
+                                    'boards.$.currentMatch': null
+                                } 
+                            }
+                        );
 
                         // Create matches for remaining winners
                         for (let i = 0; i < remainingWinners.length; i += 2) {
@@ -1011,19 +1102,25 @@ export class TournamentService {
                                 });
 
                                 // Update board status
-                                const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
-                                if (boardToUpdate) {
-                                    boardToUpdate.status = 'waiting';
-                                    boardToUpdate.nextMatch = match._id;
-                                    boardToUpdate.currentMatch = null;
-                                }
+                                await ClubModel.updateOne(
+                                    { 
+                                        _id: tournament.clubId,
+                                        'boards.boardNumber': assignedBoard.boardNumber
+                                    },
+                                    { 
+                                        $set: { 
+                                            'boards.$.status': 'waiting',
+                                            'boards.$.nextMatch': match._id,
+                                            'boards.$.currentMatch': null
+                                        } 
+                                    }
+                                );
                             }
                         }
 
                         // Update tournament knockout structure
                         existingNextRound.matches = [byeMatch, ...nextRoundMatches];
                         await tournament.save();
-                        await club.save();
                         return true;
                     }
                 }
@@ -1066,12 +1163,19 @@ export class TournamentService {
                     });
 
                     // Update board status
-                    const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
-                    if (boardToUpdate) {
-                        boardToUpdate.status = 'waiting';
-                        boardToUpdate.nextMatch = match._id;
-                        boardToUpdate.currentMatch = null;
-                    }
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': assignedBoard.boardNumber
+                        },
+                        { 
+                            $set: { 
+                                'boards.$.status': 'waiting',
+                                'boards.$.nextMatch': match._id,
+                                'boards.$.currentMatch': null
+                            } 
+                        }
+                    );
                 }
             }
 
@@ -1086,7 +1190,6 @@ export class TournamentService {
             }
 
             await tournament.save();
-            await club.save();
 
             return true;
         } catch (err) {
@@ -1113,12 +1216,6 @@ export class TournamentService {
                 throw new BadRequestError('Club not found');
             }
 
-            // Find the board that had this match
-            const board = club.boards.find((b: any) => b.boardNumber === match.boardReference);
-            if (!board) {
-                throw new BadRequestError('Board not found');
-            }
-
             // Update board status based on match status
             if (match.status === 'finished') {
                 // Check if there are more matches in the current round
@@ -1137,9 +1234,19 @@ export class TournamentService {
 
                     if (unfinishedMatches.length > 0) {
                         // Set board to idle until next match is assigned
-                        board.status = 'idle';
-                        board.currentMatch = null;
-                        board.nextMatch = null;
+                        await ClubModel.updateOne(
+                            { 
+                                _id: tournament.clubId,
+                                'boards.boardNumber': match.boardReference
+                            },
+                            { 
+                                $set: { 
+                                    'boards.$.status': 'idle',
+                                    'boards.$.currentMatch': null,
+                                    'boards.$.nextMatch': null
+                                } 
+                            }
+                        );
                     } else {
                         // All matches in this round are finished, check if we need to generate next round
                         const matchIds = currentRound.matches
@@ -1162,25 +1269,53 @@ export class TournamentService {
                                 await this.generateNextKnockoutRound(tournament.tournamentId, currentRound.round);
                             } else {
                                 // Tournament finished
-                                board.status = 'idle';
-                                board.currentMatch = null;
-                                board.nextMatch = null;
+                                await ClubModel.updateOne(
+                                    { 
+                                        _id: tournament.clubId,
+                                        'boards.boardNumber': match.boardReference
+                                    },
+                                    { 
+                                        $set: { 
+                                            'boards.$.status': 'idle',
+                                            'boards.$.currentMatch': null,
+                                            'boards.$.nextMatch': null
+                                        } 
+                                    }
+                                );
                             }
                         }
                     }
                 } else {
                     // Match not found in knockout structure, set board to idle
-                    board.status = 'idle';
-                    board.currentMatch = null;
-                    board.nextMatch = null;
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': match.boardReference
+                        },
+                        { 
+                            $set: { 
+                                'boards.$.status': 'idle',
+                                'boards.$.currentMatch': null,
+                                'boards.$.nextMatch': null
+                            } 
+                        }
+                    );
                 }
             } else if (match.status === 'ongoing') {
-                board.status = 'playing';
-                board.currentMatch = match._id;
-                board.nextMatch = null;
+                await ClubModel.updateOne(
+                    { 
+                        _id: tournament.clubId,
+                        'boards.boardNumber': match.boardReference
+                    },
+                    { 
+                        $set: { 
+                            'boards.$.status': 'playing',
+                            'boards.$.currentMatch': match._id,
+                            'boards.$.nextMatch': null
+                        } 
+                    }
+                );
             }
-
-            await club.save();
             return true;
         } catch (err) {
             console.error('updateBoardStatusAfterMatch error:', err);
@@ -1227,6 +1362,107 @@ export class TournamentService {
             return true;
         } catch (error) {
             console.error('Generate manual knockout error:', error);
+            throw error;
+        }
+    }
+
+    static async generateAutomaticPairingsForManualKnockout(tournamentCode: string, options: {
+        playersCount?: number;
+        useSeededPlayers: boolean;
+        seededPlayersCount: number;
+    }): Promise<boolean> {
+        try {
+            const tournament = await this.getTournament(tournamentCode);
+            if (!tournament) {
+                throw new Error('Tournament not found');
+            }
+
+            // Ensure tournament is in manual knockout mode
+            if (tournament.tournamentSettings.knockoutMethod !== 'manual') {
+                throw new Error('Tournament must be in manual knockout mode');
+            }
+
+            const format = tournament.tournamentSettings?.format || 'group_knockout';
+
+            // Get checked-in players
+            const checkedInPlayers = tournament.tournamentPlayers.filter(
+                (player: any) => player.status === 'checked-in'
+            );
+
+            if (checkedInPlayers.length < 2) {
+                throw new Error(`Not enough checked-in players. Need at least 2, have ${checkedInPlayers.length}`);
+            }
+
+            // For knockout-only tournaments, use all checked-in players
+            // For group_knockout tournaments, use players from groups
+            let groupPlayers: any[] = [];
+            
+            if (format === 'knockout') {
+                // Use all checked-in players for knockout-only tournaments
+                groupPlayers = checkedInPlayers;
+            } else {
+                // Use players from groups for group_knockout tournaments
+                groupPlayers = checkedInPlayers.filter((player: any) => player.groupId);
+                
+                if (groupPlayers.length < (options.playersCount || 0)) {
+                    throw new Error(`Not enough players from groups. Need ${options.playersCount}, have ${groupPlayers.length}`);
+                }
+            }
+
+            // Sort players by group standing (for group_knockout) or randomly (for knockout)
+            const allPlayers = [...groupPlayers];
+            if (format === 'group_knockout') {
+                allPlayers.sort((a: any, b: any) => {
+                    if (a.groupStanding !== b.groupStanding) {
+                        return (a.groupStanding || 0) - (b.groupStanding || 0);
+                    }
+                    const aStats = a.stats || {};
+                    const bStats = b.stats || {};
+                    const aPoints = (aStats.matchesWon || 0) * 2;
+                    const bPoints = (bStats.matchesWon || 0) * 2;
+                    if (aPoints !== bPoints) return bPoints - aPoints;
+                    
+                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                    return bLegDiff - aLegDiff;
+                });
+            } else {
+                // Random shuffle for knockout-only tournaments
+                allPlayers.sort(() => Math.random() - 0.5);
+            }
+
+            let advancingPlayers: any[] = [];
+            
+            if (format === 'knockout') {
+                // For knockout format, use all players
+                advancingPlayers = allPlayers;
+            } else {
+                // For group_knockout format, use specified count
+                advancingPlayers = allPlayers.slice(0, options.playersCount);
+                
+                if (advancingPlayers.length !== (options.playersCount || 0)) {
+                    throw new Error(`Expected ${options.playersCount} players but got ${advancingPlayers.length}`);
+                }
+            }
+
+            const shuffledPlayers = [...advancingPlayers].sort(() => Math.random() - 0.5);
+            const knockoutRounds = this.generateKnockoutRounds(shuffledPlayers, format);
+
+            console.log('=== MANUAL KNOCKOUT AUTOMATIC PAIRINGS DEBUG ===');
+            console.log('Tournament format:', format);
+            console.log('Advancing players count:', advancingPlayers.length);
+            console.log('Shuffled players count:', shuffledPlayers.length);
+            console.log('Knockout rounds:', knockoutRounds.length);
+            console.log('First round matches count:', knockoutRounds[0]?.matches?.length || 0);
+            console.log('First round matches:', knockoutRounds[0]?.matches || []);
+
+            // Update tournament with generated rounds (but don't create matches yet)
+            tournament.knockout = knockoutRounds;
+            await tournament.save();
+
+            return true;
+        } catch (error) {
+            console.error('Generate automatic pairings for manual knockout error:', error);
             throw error;
         }
     }
@@ -1309,15 +1545,17 @@ export class TournamentService {
                 throw new BadRequestError(`Round ${matchData.round} not found`);
             }
 
-            // Get available boards
+            // Get available boards for this tournament
             const club = await ClubModel.findById(tournament.clubId);
             if (!club || !club.boards) {
                 throw new BadRequestError('Club boards not found');
             }
 
-            const availableBoards = club.boards.filter((board: any) => board.isActive);
+            const availableBoards = club.boards.filter((board: any) => 
+                board.isActive && board.tournamentId === tournament.tournamentId
+            );
             if (availableBoards.length === 0) {
-                throw new BadRequestError('No active boards available');
+                throw new BadRequestError('No active boards available for this tournament');
             }
 
             // Assign board in round-robin fashion
@@ -1355,15 +1593,21 @@ export class TournamentService {
             });
 
             // Update board status
-            const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
-            if (boardToUpdate) {
-                boardToUpdate.status = 'waiting';
-                boardToUpdate.nextMatch = match._id;
-                boardToUpdate.currentMatch = null;
-            }
+            await ClubModel.updateOne(
+                { 
+                    _id: tournament.clubId,
+                    'boards.boardNumber': assignedBoard.boardNumber
+                },
+                { 
+                    $set: { 
+                        'boards.$.status': 'waiting',
+                        'boards.$.nextMatch': match._id,
+                        'boards.$.currentMatch': null
+                    } 
+                }
+            );
 
             await tournament.save();
-            await club.save();
 
             return match;
         } catch (err) {
@@ -1540,15 +1784,17 @@ export class TournamentService {
                 throw new BadRequestError(`Round ${matchData.round} not found`);
             }
 
-            // Get available boards
+            // Get available boards for this tournament
             const club = await ClubModel.findById(tournament.clubId);
             if (!club || !club.boards) {
                 throw new BadRequestError('Club boards not found');
             }
 
-            const availableBoards = club.boards.filter((board: any) => board.isActive);
+            const availableBoards = club.boards.filter((board: any) => 
+                board.isActive && board.tournamentId === tournament.tournamentId
+            );
             if (availableBoards.length === 0) {
-                throw new BadRequestError('No active boards available');
+                throw new BadRequestError('No active boards available for this tournament');
             }
 
             // Assign board in round-robin fashion
@@ -1586,15 +1832,21 @@ export class TournamentService {
             });
 
             // Update board status
-            const boardToUpdate = club.boards.find((b: any) => b.boardNumber === assignedBoard.boardNumber);
-            if (boardToUpdate) {
-                boardToUpdate.status = 'waiting';
-                boardToUpdate.nextMatch = match._id;
-                boardToUpdate.currentMatch = null;
-            }
+            await ClubModel.updateOne(
+                { 
+                    _id: tournament.clubId,
+                    'boards.boardNumber': assignedBoard.boardNumber
+                },
+                { 
+                    $set: { 
+                        'boards.$.status': 'waiting',
+                        'boards.$.nextMatch': match._id,
+                        'boards.$.currentMatch': null
+                    } 
+                }
+            );
 
             await tournament.save();
-            await club.save();
 
             return match;
         } catch (err) {
@@ -1866,7 +2118,7 @@ export class TournamentService {
                     if (typeof player.stats.avg !== 'number') player.stats.avg = 0;
 
                     // Update best position
-                    if (placement < player.stats.bestPosition) {
+                    if (placement < player.stats.bestPosition || player.stats.bestPosition === 0 || player.stats.bestPosition === 999) {
                         player.stats.bestPosition = placement;
                     }
 
@@ -1929,6 +2181,29 @@ export class TournamentService {
             console.log('Update result:', updateResult);
             console.log('Modified count:', updateResult.modifiedCount);
             console.log('Matched count:', updateResult.matchedCount);
+
+            // Step 10: Free up boards assigned to this tournament
+            // Get all boards assigned to this tournament and unset their tournamentId
+            const club = await ClubModel.findById(tournament.clubId);
+            if (club && club.boards) {
+                const tournamentBoards = club.boards.filter((board: any) => 
+                    board.tournamentId === tournament.tournamentId
+                );
+                
+                for (const board of tournamentBoards) {
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': board.boardNumber
+                        },
+                        { 
+                            $unset: { 
+                                'boards.$.tournamentId': 1 
+                            } 
+                        }
+                    );
+                }
+            }
 
             return true;
         } catch (error) {

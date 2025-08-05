@@ -106,6 +106,21 @@ background-repeat: no-repeat;
     padding: 2rem;
   }
 
+  .button {
+    position: relative !important;
+    padding: 1rem 2rem !important;
+    border-radius: 0.75rem !important;
+    font-weight: 600 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    display: flex !important;
+    gap: 0.5rem !important;
+  }
+
+  .btn-outline {
+    border: 1px solid var(--primary) !important;
+  }
+
   .glass-button {
     position: relative;
     padding: 1rem 2rem;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { TournamentSettings } from '@/interface/tournament.interface';
@@ -12,7 +12,7 @@ interface CreateTournamentModalProps {
   onTournamentCreated: () => void;
 }
 
-type Step = 'details' | 'settings';
+type Step = 'details' | 'boards' | 'settings';
 
 const defaultSettings: TournamentSettings = {
   status: 'pending',
@@ -34,20 +34,55 @@ export default function CreateTournamentModal({
   isOpen,
   onClose,
   clubId,
-  boardCount,
   onTournamentCreated
 }: CreateTournamentModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [settings, setSettings] = useState<TournamentSettings>(defaultSettings);
+  const [selectedBoards, setSelectedBoards] = useState<number[]>([]);
+  const [availableBoards, setAvailableBoards] = useState<any[]>([]);
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Fetch available boards when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchAvailableBoards();
+    }
+  }, [isOpen, clubId]);
+
+  const fetchAvailableBoards = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/clubs/${clubId}/boards`);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter boards that are not assigned to any active tournament
+        const available = data.boards.filter((board: any) => !board.tournamentId);
+        setAvailableBoards(available);
+      }
+    } catch (err) {
+      console.error('Error fetching boards:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSettingsChange = (field: keyof TournamentSettings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
     setError('');
   };
 
+  const handleBoardSelection = (boardNumber: number) => {
+    setSelectedBoards(prev => {
+      if (prev.includes(boardNumber)) {
+        return prev.filter(b => b !== boardNumber);
+      } else {
+        return [...prev, boardNumber];
+      }
+    });
+    setError('');
+  };
 
   const handleSubmit = async () => {
     setError('')
@@ -59,6 +94,11 @@ export default function CreateTournamentModal({
     if (!settings.startDate) {
       setError('A kezdés időpontja kötelező');
       setCurrentStep('details');
+      return;
+    }
+    if (selectedBoards.length === 0) {
+      setError('Legalább egy táblát ki kell választani');
+      setCurrentStep('boards');
       return;
     }
     if (!settings.tournamentPassword) {
@@ -81,7 +121,8 @@ export default function CreateTournamentModal({
         format: settings.format,
         startingScore: settings.startingScore,
         tournamentPassword: settings.tournamentPassword,
-        boardCount: boardCount,
+        boardCount: selectedBoards.length,
+        selectedBoards: selectedBoards,
         location: settings.location,
         type: settings.type,
         registrationDeadline: settings.registrationDeadline
@@ -106,6 +147,7 @@ export default function CreateTournamentModal({
 
   const steps = [
     { id: 'details', label: 'Alapadatok' },
+    { id: 'boards', label: 'Táblák kiválasztása' },
     { id: 'settings', label: 'Beállítások' },
   ];
 
@@ -215,6 +257,46 @@ export default function CreateTournamentModal({
                 />
               </div>
 
+            </div>
+          )}
+          {currentStep === 'boards' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Válaszd ki a használni kívánt táblákat</label>
+                <p className="text-sm text-base-content/60 mb-4">
+                  Kiválasztott táblák: {selectedBoards.length} db
+                </p>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <span className="loading loading-spinner loading-md"></span>
+                  </div>
+                ) : availableBoards.length === 0 ? (
+                  <div className="text-center py-8 text-base-content/60">
+                    Nincsenek szabad táblák
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {availableBoards.map((board: any) => (
+                      <button
+                        key={board.boardNumber}
+                        onClick={() => handleBoardSelection(board.boardNumber)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedBoards.includes(board.boardNumber)
+                            ? 'border-primary bg-primary/10'
+                            : 'border-base-300 bg-base-100 hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="font-bold text-lg">Tábla {board.boardNumber}</div>
+                          {board.name && (
+                            <div className="text-sm text-base-content/60">{board.name}</div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {currentStep === 'settings' && (

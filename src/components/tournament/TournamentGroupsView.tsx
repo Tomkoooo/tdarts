@@ -194,7 +194,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 {!isExpanded && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {groupPlayers.map((player: any, index: number) => (
-                      <div key={player._id} className="bg-base-100 rounded-md p-2 hover:bg-base-300 transition-colors min-w-[200px]">
+                      <div key={player._id} className="bg-base-100 rounded-md p-2 hover:bg-base-300 transition-colors ">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1">
                             <span className="badge badge-primary badge-xs font-bold">
@@ -204,7 +204,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               {player.playerReference?.name || 'Ismeretlen'}
                             </span>
                           </div>
-                          <div className="text-xs text-base-content/70">
+                          <div className="text-xs text-base-content/70 ml-2">
                             {(player.stats?.matchesWon || 0) * 2}p
                           </div>
                         </div>
@@ -245,7 +245,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               return (
                                 <tr key={player._id} className="hover:bg-base-200">
                                   <td className="text-center font-bold">
-                                    {player.groupOrdinalNumber}.
+                                    {player.groupOrdinalNumber +1}.
                                   </td>
                                   <td className="text-center font-bold">
                                     {player.groupStanding || index + 1}.

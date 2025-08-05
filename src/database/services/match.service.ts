@@ -30,6 +30,29 @@ export class MatchService {
         }));
     }
 
+    // Get all matches for a board (including finished ones)
+    static async getAllBoardMatches(tournamentId: string, clubId: string, boardNumber: number): Promise<Match[]> {
+        const tournament = await TournamentService.getTournament(tournamentId);
+        const startingScore = tournament?.tournamentSettings.startingScore;
+
+        if (!tournament) throw new BadRequestError('Tournament not found');
+        
+        const matches = await MatchModel.find({
+            boardReference: boardNumber,
+            tournamentRef: tournament._id
+        })
+        .populate('player1.playerId')
+        .populate('player2.playerId')
+        .populate('scorer')
+        .sort({ createdAt: 1 });
+
+        return matches.map(match => ({
+            ...match.toObject(),
+            startingScore: startingScore,
+            startingPlayer: match.startingPlayer || 1, // Ensure startingPlayer is included
+        }));
+    }
+
     // Get a specific match by ID
     static async getMatch(tournamentId: string, clubId: string, boardNumber: number, matchId: string): Promise<Match> {
         const tournament = await TournamentService.getTournament(tournamentId);

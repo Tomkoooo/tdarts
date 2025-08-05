@@ -21,6 +21,7 @@ export interface Club {
     name?: string;
     currentMatch?: string;
     nextMatch?: string;
+    tournamentId?: string
     status: 'idle' | 'waiting' | 'playing';
     isActive: boolean;
   }>;

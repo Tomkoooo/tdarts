@@ -17,6 +17,7 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     boards: [{
       boardNumber: { type: Number, required: true },
       name: { type: String },
+      tournamentId: {type: String, default: ""},
       currentMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
       nextMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
       status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
@@ -30,11 +31,6 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
 );
 
 clubSchema.pre('save', async function (next) {
-  const nameRegex = /^[^\s]+$/;
-  if (!nameRegex.test(this.name)) {
-    return next(new Error('Club name cannot contain spaces'));
-  }
-
   if (this.contact?.email) {
     const emailRegex = /^[^\s@]+@[^ s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.contact.email)) {
