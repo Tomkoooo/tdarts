@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import LegsViewModal from './LegsViewModal';
 
 interface TournamentKnockoutBracketProps {
   tournamentCode: string;
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
-  onRefetch: () => void;
   tournamentPlayers?: any[];
   knockoutMethod?: 'automatic' | 'manual';
 }
@@ -44,7 +44,6 @@ interface KnockoutRound {
 const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({ 
   tournamentCode, 
   userClubRole, 
-  onRefetch,
   tournamentPlayers = [],
   knockoutMethod
 }) => {
@@ -79,6 +78,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   const [editingMatch, setEditingMatch] = useState<KnockoutMatch | null>(null);
   const [editingPlayerPosition, setEditingPlayerPosition] = useState<'player1' | 'player2'>('player1');
   const [updatingMatchPlayer, setUpdatingMatchPlayer] = useState(false);
+  const [showLegsModal, setShowLegsModal] = useState(false);
+  const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<KnockoutMatch | null>(null);
 
   useEffect(() => {
     fetchKnockoutData();
@@ -161,7 +162,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         currentRound
       });
       if (response.data && response.data.success) {
-        onRefetch();
+        await fetchKnockoutData();
         setShowGenerateNextRound(false);
       } else {
         setError(response.data?.error || 'Nem sikerült generálni a következő kört.');
@@ -201,7 +202,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       const matchId = typeof selectedMatch.matchReference === 'object' ? selectedMatch.matchReference._id : selectedMatch.matchReference;
       const response = await axios.post(`/api/matches/${matchId}/finish`, editForm);
       if (response.data && response.data.success) {
-        onRefetch();
+        await fetchKnockoutData();
         setShowMatchEditModal(false);
         setSelectedMatch(null);
       } else {
@@ -234,7 +235,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       });
       
       if (response.data && response.data.success) {
-        onRefetch();
+        await fetchKnockoutData();
         setShowAddMatchModal(false);
         setSelectedPlayer1('');
         setSelectedPlayer2('');
@@ -258,7 +259,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       });
       
       if (response.data && response.data.success) {
-        onRefetch();
+        await fetchKnockoutData();
         setShowGenerateEmptyRoundsModal(false);
       } else {
         setError(response.data?.error || 'Nem sikerült generálni az üres köröket.');
@@ -286,7 +287,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       });
       
       if (response.data && response.data.success) {
-        onRefetch();
+        await fetchKnockoutData();
         setShowRandomPairingModal(false);
         setSelectedPlayersForPairing([]);
       } else {
@@ -314,7 +315,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       });
       
       if (response.data && response.data.success) {
-        onRefetch();
+        await fetchKnockoutData();
         setShowMatchPlayerEditModal(false);
         setEditingMatch(null);
       } else {
@@ -325,6 +326,11 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     } finally {
       setUpdatingMatchPlayer(false);
     }
+  };
+
+  const handleViewLegs = (match: KnockoutMatch) => {
+    setSelectedMatchForLegs(match);
+    setShowLegsModal(true);
   };
 
   const handlePlayerSelectionForPairing = (playerId: string) => {
@@ -646,16 +652,30 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                     {getStatusText(match.matchReference?.status || '')}
                                   </span>
                                   <span className="text-xs text-base-content/60">Tábla: {match.matchReference.boardReference}</span>
-                                  {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                                    <button
-                                      className="btn btn-xs btn-ghost"
-                                      onClick={() => handleMatchEdit(match)}
-                                    >
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                      </svg>
-                                    </button>
-                                  )}
+                                  <div className="flex gap-1">
+                                    {(match.matchReference?.status === 'ongoing' || match.matchReference?.status === 'finished') && (
+                                      <button
+                                        className="btn btn-xs btn-ghost"
+                                        onClick={() => handleViewLegs(match)}
+                                        title="Legek megtekintése"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                                      <button
+                                        className="btn btn-xs btn-ghost"
+                                        onClick={() => handleMatchEdit(match)}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                                 
                                 <div className="space-y-2">
@@ -1179,6 +1199,30 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
           </div>
         </div>
       )}
+
+      {/* Legs View Modal */}
+      <LegsViewModal
+        isOpen={showLegsModal}
+        onClose={() => {
+          setShowLegsModal(false);
+          setSelectedMatchForLegs(null);
+        }}
+        match={selectedMatchForLegs ? {
+          _id: selectedMatchForLegs.matchReference._id,
+          player1: {
+            playerId: {
+              _id: selectedMatchForLegs.player1?._id || '',
+              name: selectedMatchForLegs.player1?.name || 'TBD'
+            }
+          },
+          player2: {
+            playerId: {
+              _id: selectedMatchForLegs.player2?._id || '',
+              name: selectedMatchForLegs.player2?.name || 'TBD'
+            }
+          }
+        } : null}
+      />
     </div>
   );
 };

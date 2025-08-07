@@ -574,7 +574,8 @@ export class TournamentService {
         if (!club) {
             throw new BadRequestError('Club not found');
         }
-        return club.boards;
+        const boards = club.boards.filter((board: any) => board.tournamentId === tournamentId);
+        return boards;
     }
 
     static async generateKnockout(tournamentCode: string, options: {
@@ -786,32 +787,32 @@ export class TournamentService {
 
         if (format === 'group_knockout') {
             // For group_knockout format, create proper cross-group pairings with 2-group offset
-            const playersByGroup = new Map();
-            playersForFirstRound.forEach(player => {
-                const groupId = player.groupId;
-                if (!playersByGroup.has(groupId)) {
-                    playersByGroup.set(groupId, []);
-                }
-                playersByGroup.get(groupId).push(player);
-            });
+        const playersByGroup = new Map();
+        playersForFirstRound.forEach(player => {
+            const groupId = player.groupId;
+            if (!playersByGroup.has(groupId)) {
+                playersByGroup.set(groupId, []);
+            }
+            playersByGroup.get(groupId).push(player);
+        });
 
             // Sort players within each group by their group standing (1st, 2nd, 3rd, etc.)
-            playersByGroup.forEach((players) => {
-                players.sort((a: any, b: any) => {
-                    if (a.groupStanding !== b.groupStanding) {
-                        return (a.groupStanding || 0) - (b.groupStanding || 0);
-                    }
-                    const aStats = a.stats || {};
-                    const bStats = b.stats || {};
-                    const aPoints = (aStats.matchesWon || 0) * 2;
-                    const bPoints = (bStats.matchesWon || 0) * 2;
-                    if (aPoints !== bPoints) return bPoints - aPoints;
-                    
-                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
-                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
-                    return bLegDiff - aLegDiff;
-                });
+        playersByGroup.forEach((players) => {
+            players.sort((a: any, b: any) => {
+                if (a.groupStanding !== b.groupStanding) {
+                    return (a.groupStanding || 0) - (b.groupStanding || 0);
+                }
+                const aStats = a.stats || {};
+                const bStats = b.stats || {};
+                const aPoints = (aStats.matchesWon || 0) * 2;
+                const bPoints = (bStats.matchesWon || 0) * 2;
+                if (aPoints !== bPoints) return bPoints - aPoints;
+                
+                const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                return bLegDiff - aLegDiff;
             });
+        });
 
             // Create cross-group pairings with 2-group offset
             const groupIds = Array.from(playersByGroup.keys()).sort();
@@ -819,26 +820,26 @@ export class TournamentService {
             if (groupIds.length > 1) {
                 // Pair groups with 2-group offset: A vs C, B vs D, etc.
                 for (let i = 0; i < groupIds.length; i++) {
-                    const group1Id = groupIds[i];
+            const group1Id = groupIds[i];
                     const group2Id = groupIds[(i + 2) % groupIds.length]; // 2-group offset
-                    
+            
                     if (group1Id !== group2Id) {
-                        const group1Players = playersByGroup.get(group1Id);
-                        const group2Players = playersByGroup.get(group2Id);
-                        
-                        // Pair players: 1st from group1 vs last from group2, 2nd from group1 vs 2nd-last from group2, etc.
-                        const maxPlayers = Math.max(group1Players.length, group2Players.length);
-                        
-                        for (let j = 0; j < maxPlayers; j++) {
-                            const player1 = group1Players[j];
-                            const player2 = group2Players[group2Players.length - 1 - j];
-                            
-                            if (player1 && player2) {
-                                firstRoundMatches.push({
-                                    player1: player1.playerReference,
-                                    player2: player2.playerReference,
-                                });
-                            }
+                const group1Players = playersByGroup.get(group1Id);
+                const group2Players = playersByGroup.get(group2Id);
+                
+                // Pair players: 1st from group1 vs last from group2, 2nd from group1 vs 2nd-last from group2, etc.
+                const maxPlayers = Math.max(group1Players.length, group2Players.length);
+                
+                for (let j = 0; j < maxPlayers; j++) {
+                    const player1 = group1Players[j];
+                    const player2 = group2Players[group2Players.length - 1 - j];
+                    
+                    if (player1 && player2) {
+                        firstRoundMatches.push({
+                            player1: player1.playerReference,
+                            player2: player2.playerReference,
+                        });
+                    }
                         }
                     }
                 }

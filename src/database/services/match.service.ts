@@ -63,7 +63,8 @@ export class MatchService {
         const match = await MatchModel.findOne({ _id: matchId, tournamentRef: tournament._id })
             .populate('player1.playerId')
             .populate('player2.playerId')
-            .populate('scorer');
+            .populate('scorer')
+            .populate('legs.winnerId').select('name');
             
         if (!match) throw new BadRequestError('Match not found');
         
@@ -72,6 +73,7 @@ export class MatchService {
             startingScore: startingScore,
             startingPlayer: match.startingPlayer || 1, // Ensure startingPlayer is included
             winnerId: match.winnerId || null, // Ensure winnerId is included
+            legs: match.legs || [], // Ensure legs are included
         };
     }
 
@@ -179,6 +181,47 @@ export class MatchService {
         match.player2.average = legData.player2Stats.totalThrows > 0 ? 
             Math.round(legData.player2Stats.totalScore / legData.player2Stats.totalThrows) : 0;
 
+        // Save leg data to the match's legs array
+        const legNumber = (match.player1.legsWon || 0) + (match.player2.legsWon || 0);
+        const winnerId = legData.winner === 1 ? match.player1.playerId : match.player2.playerId;
+        
+        // Find the highest checkout in this leg
+        const legCheckoutScore = Math.max(legData.player1Stats.highestCheckout, legData.player2Stats.highestCheckout);
+        
+        // Count double attempts (throws that are multiples of 2)
+        const player1DoubleAttempts = legData.player1Throws.filter(throwScore => throwScore % 2 === 0 && throwScore > 0).length;
+        const player2DoubleAttempts = legData.player2Throws.filter(throwScore => throwScore % 2 === 0 && throwScore > 0).length;
+        const totalDoubleAttempts = player1DoubleAttempts + player2DoubleAttempts;
+
+        // Create leg object
+        const leg = {
+            player1Score: legData.player1Stats.totalScore,
+            player2Score: legData.player2Stats.totalScore,
+            player1Throws: legData.player1Throws.map((score, index) => ({
+                score: score,
+                darts: 3, // Each throw is 3 darts
+                isDouble: false, // Not needed
+                isCheckout: index === legData.player1Throws.length - 1 && legData.winner === 1 // Last throw of winner
+            })),
+            player2Throws: legData.player2Throws.map((score, index) => ({
+                score: score,
+                darts: 3, // Each throw is 3 darts
+                isDouble: false, // Not needed
+                isCheckout: index === legData.player2Throws.length - 1 && legData.winner === 2 // Last throw of winner
+            })),
+            winnerId: winnerId,
+            checkoutScore: legCheckoutScore > 0 ? legCheckoutScore : undefined,
+            checkoutDarts: legCheckoutScore > 0 ? 3 : undefined, // Simplified - could be calculated more precisely
+            doubleAttempts: totalDoubleAttempts,
+            createdAt: new Date()
+        };
+
+        // Add leg to match
+        if (!match.legs) {
+            match.legs = [];
+        }
+        match.legs.push(leg);
+
         await match.save();
 
         return match;
@@ -222,6 +265,38 @@ export class MatchService {
         match.player2.oneEightiesCount = (match.player2.oneEightiesCount || 0) + matchData.player2Stats.oneEightiesCount;
         match.player2.average = matchData.player2Stats.totalThrows > 0 ? 
             Math.round(matchData.player2Stats.totalScore / matchData.player2Stats.totalThrows) : 0;
+
+        // Save the final leg data if it hasn't been saved yet
+        // This ensures the last leg is also stored in the legs array
+        const totalLegs = matchData.player1LegsWon + matchData.player2LegsWon;
+        const existingLegs = match.legs ? match.legs.length : 0;
+        
+        if (existingLegs < totalLegs) {
+            // The final leg hasn't been saved yet, so save it now
+            const winnerId = winner === 1 ? match.player1.playerId : match.player2.playerId;
+            
+            // Find the highest checkout in this leg
+            const legCheckoutScore = Math.max(matchData.player1Stats.highestCheckout, matchData.player2Stats.highestCheckout);
+            
+            // Create final leg object (simplified since we don't have throw data here)
+            const finalLeg = {
+                player1Score: matchData.player1Stats.totalScore,
+                player2Score: matchData.player2Stats.totalScore,
+                player1Throws: [], // Would need to be passed from frontend
+                player2Throws: [], // Would need to be passed from frontend
+                winnerId: winnerId,
+                checkoutScore: legCheckoutScore > 0 ? legCheckoutScore : undefined,
+                checkoutDarts: legCheckoutScore > 0 ? 3 : undefined,
+                doubleAttempts: 0, // Would need to be calculated from throws
+                createdAt: new Date()
+            };
+
+            // Add final leg to match
+            if (!match.legs) {
+                match.legs = [];
+            }
+            match.legs.push(finalLeg);
+        }
 
         await match.save();
 

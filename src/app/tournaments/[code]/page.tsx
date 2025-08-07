@@ -191,7 +191,6 @@ const TournamentPage = () => {
                   <TournamentKnockoutBracket 
                     tournamentCode={tournament.tournamentId} 
                     userClubRole={userClubRole} 
-                    onRefetch={handleRefetch}
                     tournamentPlayers={players}
                     knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
                   />

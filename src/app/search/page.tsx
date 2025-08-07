@@ -127,7 +127,7 @@ const SearchPage: React.FC = () => {
     }, 200),
     []
   );
-  
+
   // Load initial data for the landing page view
   useEffect(() => {
     const loadInitialData = async () => {
@@ -159,7 +159,7 @@ const SearchPage: React.FC = () => {
         setIsLoadingInitial(false);
       }
     };
-    
+
     loadInitialData();
   }, [playersPage]);
 
@@ -183,11 +183,32 @@ const SearchPage: React.FC = () => {
     router.replace(newUrl, { scroll: false });
   }, [query, activeTab, router]);
 
+  // Handle clicks outside search container
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.search-container')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleSearch = (searchQuery: string) => {
     setQuery(searchQuery);
     setShowSuggestions(false);
   };
-  
+
+  const handleInputClick = () => {
+    if (query.trim() && suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
   const clearFilters = () => {
     setFilters({ type: 'all' });
   };
@@ -199,20 +220,20 @@ const SearchPage: React.FC = () => {
   const closePlayerModal = () => {
     setSelectedPlayer(null);
   };
-  
+
   // Render functions for different sections
   const renderSearchResults = () => (
-    <div className="max-w-6xl mx-auto">
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      ) : (
-        <>
-          <div className="mb-6">
+          <div className="max-w-6xl mx-auto">
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <span className="loading loading-spinner loading-lg"></span>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2">Eredmények: &quot;{query}&quot;</h2>
             <p className="text-base-content/70">{results.totalResults} találat</p>
-          </div>
+                </div>
 
           {results.totalResults === 0 ? (
             <div className="text-center py-12">
@@ -225,7 +246,7 @@ const SearchPage: React.FC = () => {
               {(activeTab === 'all' || activeTab === 'tournaments') && results.tournaments && results.tournaments.length > 0 && (
                 <section className="mb-8">
                   <h3 className="text-xl font-bold mb-4">Tornák</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {results.tournaments.map(t => <TournamentCard key={t._id} tournament={t} />)}
                   </div>
                 </section>
@@ -233,7 +254,7 @@ const SearchPage: React.FC = () => {
               {(activeTab === 'all' || activeTab === 'players') && results.players && results.players.length > 0 && (
                 <section className="mb-8">
                   <h3 className="text-xl font-bold mb-4">Játékosok</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {results.players.map((player) => (
                       <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} />
                     ))}
@@ -243,38 +264,38 @@ const SearchPage: React.FC = () => {
               {(activeTab === 'all' || activeTab === 'clubs') && results.clubs && results.clubs.length > 0 && (
                 <section className="mb-8">
                   <h3 className="text-xl font-bold mb-4">Klubok</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {results.clubs.map((club) => (
-                      <Link key={club._id} href={`/clubs/${club._id}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {results.clubs.map((club) => (
+                        <Link key={club._id} href={`/clubs/${club._id}`}>
                         <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-                          <div className="card-body">
+                            <div className="card-body">
                             <h4 className="card-title">{club.name}</h4>
-                            <div className="text-sm text-base-content/70 space-y-1">
-                              <p>Helyszín: {club.location}</p>
-                              <p>Tagok: {club.memberCount}</p>
-                              <p>Táblák: {club.boardCount}</p>
+                              <div className="text-sm text-base-content/70 space-y-1">
+                                <p>Helyszín: {club.location}</p>
+                                <p>Tagok: {club.memberCount}</p>
+                                <p>Táblák: {club.boardCount}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                        </Link>
+                      ))}
+                    </div>
                 </section>
               )}
             </>
-          )}
-        </>
-      )}
-    </div>
+                )}
+              </>
+            )}
+          </div>
   );
-  
+
   const renderInitialView = () => (
-    <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
       {isLoadingInitial ? (
         <div className="flex justify-center items-center py-12">
           <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      ) : (
+                    </div>
+                  ) : (
         <>
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Közelgő Tornák</h2>
@@ -283,7 +304,7 @@ const SearchPage: React.FC = () => {
                 .slice((tournamentsPage - 1) * itemsPerPage, tournamentsPage * itemsPerPage)
                 .map(t => <TournamentCard key={t._id} tournament={t} />)
               }
-            </div>
+                </div>
             <Pagination
               currentPage={tournamentsPage}
               totalPages={Math.ceil(recentTournaments.length / itemsPerPage)}
@@ -293,8 +314,8 @@ const SearchPage: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-8">
             <section>
               <h2 className="text-2xl font-bold mb-4">Top Játékosok</h2>
-              <div className="space-y-3">
-                {topPlayers.map((player, index) => (
+                      <div className="space-y-3">
+                        {topPlayers.map((player, index) => (
                   <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} rank={((playersPage - 1) * itemsPerPage) + index + 1} />
                 ))}
               </div>
@@ -306,23 +327,23 @@ const SearchPage: React.FC = () => {
             </section>
             <section>
               <h2 className="text-2xl font-bold mb-4">Népszerű Klubbok</h2>
-              <div className="space-y-3">
+                    <div className="space-y-3">
                 {popularClubs
                   .slice((clubsPage - 1) * itemsPerPage, clubsPage * itemsPerPage)
                   .map((club, index) => (
-                    <Link key={club._id} href={`/clubs/${club._id}`}>
+                        <Link key={club._id} href={`/clubs/${club._id}`}>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-base-100 shadow hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg font-bold text-primary">#{index + 1}</span>
-                          <div>
-                            <h4 className="font-semibold">{club.name}</h4>
-                            <p className="text-sm text-base-content/70">
-                              {club.memberCount} tag
-                            </p>
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-bold text-primary">#{index + 1}</span>
+                              <div>
+                                <h4 className="font-semibold">{club.name}</h4>
+                                <p className="text-sm text-base-content/70">
+                                  {club.memberCount} tag
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </Link>
+                        </Link>
                   ))
                 }
               </div>
@@ -335,7 +356,7 @@ const SearchPage: React.FC = () => {
           </div>
         </>
       )}
-    </div>
+                    </div>
   );
 
   return (
@@ -343,7 +364,7 @@ const SearchPage: React.FC = () => {
       <div className="container mx-auto px-4 py-6 md:py-8">
         {/* Search Header */}
         <div className="max-w-4xl mx-auto mb-8">
-          <div className="relative">
+          <div className="relative search-container">
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <div className="relative">
@@ -357,6 +378,7 @@ const SearchPage: React.FC = () => {
                       setShowSuggestions(true);
                     }}
                     onFocus={() => setShowSuggestions(true)}
+                    onClick={handleInputClick}
                   />
                   <IconSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/50" />
                   {query && (
@@ -391,7 +413,7 @@ const SearchPage: React.FC = () => {
             </div>
           )}
         </div>
-        
+
         {/* Filters */}
         {showFilters && (
           <div className="max-w-4xl mx-auto mb-8">

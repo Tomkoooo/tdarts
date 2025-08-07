@@ -71,6 +71,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [tournamentData, setTournamentData] = useState<any>(null); // Add tournament data state
   
   // Match setup state
   const [showMatchSetup, setShowMatchSetup] = useState<boolean>(false);
@@ -156,6 +157,15 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       if (response.data.isValid) {
         setIsAuthenticated(true);
         localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
+        
+        // Load tournament data to get clubId
+        try {
+          const tournamentResponse = await axios.get(`/api/tournaments/${tournamentId}`);
+          setTournamentData(tournamentResponse.data);
+        } catch (err) {
+          console.error('Failed to load tournament data:', err);
+        }
+        
         await loadBoards();
       } else {
         setError("Hibás jelszó!");
@@ -688,6 +698,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       <MatchGame 
         match={selectedMatch} 
         onBack={handleBackToMatches}
+        clubId={tournamentData?.clubId?._id || tournamentData?.clubId}
       />
     );
   }

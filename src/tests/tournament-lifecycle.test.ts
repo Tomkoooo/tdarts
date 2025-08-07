@@ -310,7 +310,7 @@ describe('Parallel Tournament Lifecycle Test', () => {
           }
         } catch (error) {
             await logError(`Failed to get matches for board ${group.board} in Tournament ${tournamentIndex + 1}`, error);
-          }
+        }
       }
 
         await logSuccess(`Found ${allGroupMatches.length} group matches for Tournament ${tournamentIndex + 1}`);

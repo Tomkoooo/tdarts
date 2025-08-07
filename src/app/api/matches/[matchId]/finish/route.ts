@@ -8,6 +8,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const { matchId } = await params;
         const body = await request.json();
 
+        console.log('=== MATCH FINISH API CALL ===');
+        console.log('Match ID:', matchId);
+        console.log('Received data:', JSON.stringify(body, null, 2));
+        console.log('============================');
+
         // Validate required fields
         if (body.player1LegsWon === undefined || body.player1LegsWon === null ||
             body.player2LegsWon === undefined || body.player2LegsWon === null ||
@@ -18,6 +23,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Validate no tie
         if (body.player1LegsWon === body.player2LegsWon) {
             throw new BadRequestError('Match cannot end in a tie');
+        }
+
+        // If final leg data is provided, save it first
+        if (body.finalLegData) {
+            console.log('Saving final leg data before finishing match...');
+            const winner = body.player1LegsWon > body.player2LegsWon ? 1 : 2;
+            await MatchService.finishLeg(matchId, {
+                winner: winner,
+                player1Throws: body.finalLegData.player1Throws || [],
+                player2Throws: body.finalLegData.player2Throws || [],
+                player1Stats: body.player1Stats,
+                player2Stats: body.player2Stats
+            });
         }
 
         // Call the service method to finish the match

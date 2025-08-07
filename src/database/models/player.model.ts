@@ -2,7 +2,7 @@ import { PlayerDocument } from "@/interface/player.interface";
 import mongoose from "mongoose";
 
 const PlayerSchema = new mongoose.Schema<PlayerDocument>({
-    userRef: { type: mongoose.Types.ObjectId, ref: "Users", required: false },
+    userRef: { type: mongoose.Types.ObjectId, ref: "User", required: false },
     name: { type: String, required: true },
     stats: {
         tournamentsPlayed: { type: Number, default: 0 },

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     player = await PlayerService.createPlayer({ name: name });
   }
   const success = await TournamentService.addTournamentPlayer(code, player._id);
-  return NextResponse.json({ success });
+  return NextResponse.json({ success, playerId: player._id});
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {

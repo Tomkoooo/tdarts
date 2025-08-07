@@ -23,6 +23,16 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
       status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
       isActive: { type: Boolean, default: true },
     }],
+    subscriptionModel: { 
+      type: String, 
+      enum: ['free', 'basic', 'pro'], 
+      default: 'free' 
+    },
+    featureFlags: {
+      liveMatchFollowing: { type: Boolean, default: false },
+      advancedStatistics: { type: Boolean, default: false },
+      premiumTournaments: { type: Boolean, default: false },
+    },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },

@@ -1,6 +1,6 @@
 import { IconHistory, IconX, IconArrowLeft} from '@tabler/icons-react';
 import React, { useState, useEffect } from 'react';
-import { socket } from '@/lib/socket';
+import { useSocket } from '@/hooks/useSocket';
 
 interface Player {
   playerId: {
@@ -37,9 +37,10 @@ interface Match {
 interface MatchGameProps {
   match: Match;
   onBack: () => void;
+  clubId?: string; // Add clubId for feature flag checking
 }
 
-const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
+const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   const [player1Score, setPlayer1Score] = useState<number>(match.startingScore);
   const [player2Score, setPlayer2Score] = useState<number>(match.startingScore);
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(match.startingPlayer || 1);
@@ -73,6 +74,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
   const [pendingLegWinner, setPendingLegWinner] = useState<1 | 2 | null>(null);
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
 
+  // Socket hook with feature flag support
+  const { socket, isConnected, emit } = useSocket({ 
+    matchId: match._id, 
+    clubId 
+  });
+
   // Calculate the correct starting player for the next leg
   const calculateNextLegStartingPlayer = (totalLegsPlayed: number, originalStartingPlayer: number): number => {
     // If odd number of legs played, the opposite player starts
@@ -82,21 +89,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
 
   // Socket.IO connection and match state management
   useEffect(() => {
-    // Join match room for real-time updates
-    socket.emit('join-match', match._id);
+    if (!isConnected) return;
     
     // Set player IDs in socket for match state
-    socket.emit('set-match-players', {
+    emit('set-match-players', {
       matchId: match._id,
       player1Id: match.player1.playerId._id,
       player2Id: match.player2.playerId._id
     });
-    
-    return () => {
-      // Leave match room when component unmounts
-      socket.emit('leave-match', match._id);
-    };
-  }, [match._id, match.player1.playerId._id, match.player2.playerId._id]);
+  }, [isConnected, match._id, match.player1.playerId._id, match.player2.playerId._id, emit]);
 
   // Load saved game state from localStorage only once on mount
   useEffect(() => {
@@ -250,7 +251,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         }));
 
         // Send throw event to socket
-        socket.emit('throw', {
+        emit('throw', {
           matchId: match._id,
           playerId: match.player1.playerId._id,
           score: throwValue,
@@ -275,7 +276,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         }));
 
         // Send throw event to socket
-        socket.emit('throw', {
+        emit('throw', {
           matchId: match._id,
           playerId: match.player2.playerId._id,
           score: throwValue,
@@ -347,7 +348,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
       completedAt: Date.now()
     };
 
-    socket.emit('leg-complete', {
+    emit('leg-complete', {
       matchId: match._id,
       legNumber: completedLeg.legNumber,
       winnerId: completedLeg.winnerId,
@@ -386,7 +387,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           player1LegsWon: player1LegsWon,
           player2LegsWon: player2LegsWon,
           player1Stats,
-          player2Stats
+          player2Stats,
+          finalLegData: {
+            player1Throws,
+            player2Throws
+          }
         })
       });
     } catch (error) {
