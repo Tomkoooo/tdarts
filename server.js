@@ -1,26 +1,76 @@
 import { createServer } from "node:http";
-import next from "next";
 import { Server } from "socket.io";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
 
-const dev = process.env.NODE_ENV !== "production"; // Force production mode
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0"; // Allow external connections
 const port = process.env.PORT || 3000;
-// when using middleware `hostname` and `port` must be provided below
-const app = next({ dev, hostname, port });
-const handler = app.getRequestHandler();
 
 // Match states storage
 const matchStates = new Map();
 
-app.prepare().then(() => {
+async function startServer() {
+  let handler;
+  
+  if (dev) {
+    // Development mode: use Next.js dev server
+    const next = await import('next');
+    const app = next.default({ dev, hostname, port });
+    await app.prepare();
+    handler = app.getRequestHandler();
+  } else {
+    // Production mode: serve built Next.js app
+    const express = await import('express');
+    const app = express.default();
+    
+    // Serve static files from .next/static
+    app.use('/_next/static', express.static(join(__dirname, '.next/static')));
+    
+    // Serve other static files
+    app.use(express.static(join(__dirname, 'public')));
+    
+    // Handle all other routes by serving the built app
+    app.get('*', (req, res) => {
+      try {
+        // Try to serve the built HTML file
+        const indexPath = join(__dirname, '.next/server/pages', req.path === '/' ? 'index.html' : `${req.path}.html`);
+        const html = readFileSync(indexPath, 'utf8');
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
+      } catch (error) {
+        // Fallback to index.html for SPA routes
+        try {
+          const indexHtml = readFileSync(join(__dirname, '.next/server/pages/index.html'), 'utf8');
+          res.setHeader('Content-Type', 'text/html');
+          res.send(indexHtml);
+        } catch (fallbackError) {
+          res.status(404).send('Page not found');
+        }
+      }
+    });
+    
+    handler = app;
+  }
+
   const httpServer = createServer((req, res) => {
     // Let Socket.IO handle its own requests
     if (req.url?.startsWith('/socket.io/')) {
       return;
     }
     
-    // Let Next.js handle all other requests
-    return handler(req, res);
+    // Handle requests based on mode
+    if (dev) {
+      return handler(req, res);
+    } else {
+      return handler(req, res, () => {
+        res.status(404).send('Not found');
+      });
+    }
   });
 
   const io = new Server(httpServer, {
@@ -52,12 +102,50 @@ app.prepare().then(() => {
       }
     });
 
+    // Initialize match configuration (startingScore, legsToWin, starting player)
+    socket.on('init-match', (data) => {
+      const { matchId, startingScore = 501, legsToWin = 3, startingPlayer = 1 } = data || {};
+      const existing = matchStates.get(matchId);
+      const initial = existing || {
+        currentLeg: 1,
+        player1LegsWon: 0,
+        player2LegsWon: 0,
+        completedLegs: [],
+        startingScore,
+        legsToWin,
+        initialStartingPlayer: startingPlayer,
+        currentLegData: {
+          player1Score: startingScore,
+          player2Score: startingScore,
+          player1Throws: [],
+          player2Throws: [],
+          player1Remaining: startingScore,
+          player2Remaining: startingScore,
+          currentPlayer: startingPlayer
+        }
+      };
+      initial.startingScore = startingScore;
+      initial.legsToWin = legsToWin;
+      initial.initialStartingPlayer = startingPlayer;
+      if (!existing) {
+        initial.currentLegData.currentPlayer = startingPlayer;
+      }
+      matchStates.set(matchId, initial);
+      socket.to(`match-${matchId}`).emit('match-state', initial);
+      console.log(`⚙️ Initialized match ${matchId}: startScore=${startingScore}, legsToWin=${legsToWin}, startingPlayer=${startingPlayer}`);
+    });
+
     // Set match players
     socket.on('set-match-players', (data) => {
       const { matchId, player1Id, player2Id } = data;
       const matchState = matchStates.get(matchId) || {
         currentLeg: 1,
+        player1LegsWon: 0,
+        player2LegsWon: 0,
         completedLegs: [],
+        startingScore: 501,
+        legsToWin: 3,
+        initialStartingPlayer: 1,
         currentLegData: {
           player1Score: 501,
           player2Score: 501,
@@ -65,16 +153,18 @@ app.prepare().then(() => {
           player2Throws: [],
           player1Remaining: 501,
           player2Remaining: 501,
-          player1Id,
-          player2Id
+          currentPlayer: 1
         }
       };
-      
-      // Update player IDs
       matchState.currentLegData.player1Id = player1Id;
       matchState.currentLegData.player2Id = player2Id;
       
+      // Store player names if provided
+      if (data.player1Name) matchState.player1Name = data.player1Name;
+      if (data.player2Name) matchState.player2Name = data.player2Name;
+      
       matchStates.set(matchId, matchState);
+      socket.to(`match-${matchId}`).emit('match-state', matchState);
       console.log(`👥 Set players for match ${matchId}: ${player1Id} vs ${player2Id}`);
     });
 
@@ -87,20 +177,66 @@ app.prepare().then(() => {
     // Handle throw events
     socket.on('throw', (data) => {
       console.log(`🎯 Throw event for match ${data.matchId}:`, data);
-      
-      // Update match state
-      updateMatchState(data.matchId, data);
-      
+      const state = updateMatchStateOnThrow(data.matchId, data);
       // Broadcast to match room
       socket.to(`match-${data.matchId}`).emit('throw-update', data);
+      socket.to(`match-${data.matchId}`).emit('match-state', state);
+      // Broadcast to tournament room for live matches list
+      socket.to(`tournament-${data.tournamentCode || 'unknown'}`).emit('match-update', {
+        matchId: data.matchId,
+        state: state
+      });
+    });
+
+    // Handle undo last throw
+    socket.on('undo-throw', (data) => {
+      const { matchId, playerId } = data;
+      console.log(`↶ Undo throw for match ${matchId} by ${playerId}`);
+      const state = undoLastThrow(matchId, playerId);
+      if (state) {
+        socket.to(`match-${matchId}`).emit('match-state', state);
+        // Broadcast to tournament room for live matches list
+        socket.to(`tournament-${data.tournamentCode || 'unknown'}`).emit('match-update', {
+          matchId: matchId,
+          state: state
+        });
+      }
     });
     
     // Handle leg completion
     socket.on('leg-complete', (data) => {
       console.log(`🏆 Leg complete for match ${data.matchId}:`, data);
-      
-      updateMatchState(data.matchId, data);
+      const state = completeLeg(data.matchId, data);
+      // Broadcast to match room
       socket.to(`match-${data.matchId}`).emit('leg-complete', data);
+      socket.to(`match-${data.matchId}`).emit('match-state', state);
+      // Send signal to fetch database data
+      socket.to(`match-${data.matchId}`).emit('fetch-match-data', { matchId: data.matchId });
+      // Broadcast to tournament room for live matches list
+      socket.to(`tournament-${data.tournamentCode || 'unknown'}`).emit('match-update', {
+        matchId: data.matchId,
+        state: state
+      });
+    });
+
+    // Handle match completion: cleanup memory
+    socket.on('match-complete', (data) => {
+      const { matchId, tournamentCode } = data || {};
+      console.log(`🏁 Match complete for ${matchId}`);
+      matchStates.delete(matchId);
+      socket.to(`match-${matchId}`).emit('match-complete', { matchId });
+      // Broadcast to tournament room for live matches list
+      socket.to(`tournament-${tournamentCode || 'unknown'}`).emit('match-finished', { matchId });
+    });
+
+    // Handle match start: notify tournament room
+    socket.on('match-started', (data) => {
+      const { matchId, tournamentCode, matchData } = data || {};
+      console.log(`🚀 Match started: ${matchId} in tournament ${tournamentCode}`);
+      socket.to(`tournament-${tournamentCode || 'unknown'}`).emit('match-started', { 
+        matchId, 
+        matchData 
+      });
     });
     
     socket.on('disconnect', () => {
@@ -108,62 +244,114 @@ app.prepare().then(() => {
     });
   });
 
-  function updateMatchState(matchId, data) {
-    const currentState = matchStates.get(matchId) || {
-      currentLeg: 1,
-      completedLegs: [],
-      currentLegData: {
-        player1Score: 501,
-        player2Score: 501,
-        player1Throws: [],
-        player2Throws: [],
-        player1Remaining: 501,
-        player2Remaining: 501
-      }
+  function ensureState(matchId) {
+    let st = matchStates.get(matchId);
+    if (!st) {
+      st = {
+        startingScore: 501,
+        legsToWin: 3,
+        initialStartingPlayer: 1,
+        currentLeg: 1,
+        player1LegsWon: 0,
+        player2LegsWon: 0,
+        completedLegs: [],
+        currentLegData: {
+          player1Score: 501,
+          player2Score: 501,
+          player1Throws: [],
+          player2Throws: [],
+          player1Remaining: 501,
+          player2Remaining: 501,
+          currentPlayer: 1
+        }
+      };
+      matchStates.set(matchId, st);
+    }
+    return st;
+  }
+
+  function updateMatchStateOnThrow(matchId, data) {
+    const currentState = ensureState(matchId);
+    const throwData = {
+      score: data.score,
+      darts: data.darts,
+      isDouble: data.isDouble,
+      isCheckout: data.isCheckout,
+      remainingScore: data.remainingScore,
+      timestamp: Date.now(),
+      playerId: data.playerId
     };
-    
-    if (data.legNumber !== undefined) {
-      // Leg completion
-      const completedLeg = {
-        legNumber: data.legNumber,
-        winnerId: data.winnerId,
-        player1Throws: data.completedLeg?.player1Throws || [],
-        player2Throws: data.completedLeg?.player2Throws || [],
-        completedAt: Date.now()
-      };
-      
-      currentState.completedLegs.push(completedLeg);
-      currentState.currentLeg = data.legNumber + 1;
-      currentState.currentLegData = {
-        player1Score: 501,
-        player2Score: 501,
-        player1Throws: [],
-        player2Throws: [],
-        player1Remaining: 501,
-        player2Remaining: 501
-      };
+    if (data.playerId === currentState.currentLegData.player1Id) {
+      currentState.currentLegData.player1Throws.push(throwData);
+      currentState.currentLegData.player1Remaining = data.remainingScore;
+      currentState.currentLegData.currentPlayer = 2;
     } else {
-      // Throw update
-      const throwData = {
-        score: data.score,
-        darts: data.darts,
-        isDouble: data.isDouble,
-        isCheckout: data.isCheckout,
-        remainingScore: data.remainingScore,
-        timestamp: Date.now()
-      };
-      
-      if (data.playerId === currentState.currentLegData.player1Id) {
-        currentState.currentLegData.player1Throws.push(throwData);
-        currentState.currentLegData.player1Remaining = data.remainingScore;
-      } else {
-        currentState.currentLegData.player2Throws.push(throwData);
-        currentState.currentLegData.player2Remaining = data.remainingScore;
-      }
+      currentState.currentLegData.player2Throws.push(throwData);
+      currentState.currentLegData.player2Remaining = data.remainingScore;
+      currentState.currentLegData.currentPlayer = 1;
+    }
+    matchStates.set(matchId, currentState);
+    return currentState;
+  }
+
+  function undoLastThrow(matchId, playerId) {
+    const currentState = ensureState(matchId);
+    const isP1 = playerId === currentState.currentLegData.player1Id;
+    const arr = isP1 ? currentState.currentLegData.player1Throws : currentState.currentLegData.player2Throws;
+    if (arr.length === 0) return currentState;
+    const last = arr.pop();
+    if (isP1) {
+      currentState.currentLegData.player1Remaining = Math.min(currentState.startingScore || 501, currentState.currentLegData.player1Remaining + (last?.score || 0));
+      currentState.currentLegData.currentPlayer = 1; // revert turn to player1
+    } else {
+      currentState.currentLegData.player2Remaining = Math.min(currentState.startingScore || 501, currentState.currentLegData.player2Remaining + (last?.score || 0));
+      currentState.currentLegData.currentPlayer = 2; // revert turn to player2
+    }
+    matchStates.set(matchId, currentState);
+    return currentState;
+  }
+
+  function completeLeg(matchId, data) {
+    const currentState = ensureState(matchId);
+    
+    // Update leg counts
+    if (data.winnerId === currentState.currentLegData.player1Id) {
+      currentState.player1LegsWon = (currentState.player1LegsWon || 0) + 1;
+    } else {
+      currentState.player2LegsWon = (currentState.player2LegsWon || 0) + 1;
     }
     
+    const completedLeg = {
+      legNumber: data.legNumber,
+      winnerId: data.winnerId,
+      player1Throws: data.completedLeg?.player1Throws || [],
+      player2Throws: data.completedLeg?.player2Throws || [],
+      player1Stats: data.completedLeg?.player1Stats || {},
+      player2Stats: data.completedLeg?.player2Stats || {},
+      completedAt: Date.now()
+    };
+    currentState.completedLegs.push(completedLeg);
+    currentState.currentLeg = (data.legNumber || currentState.currentLeg) + 1;
+    
+    // Calculate next starting player (alternating)
+    const nextStartingPlayer = ((currentState.currentLeg - 1) % 2 === 0)
+      ? currentState.initialStartingPlayer
+      : (currentState.initialStartingPlayer === 1 ? 2 : 1);
+    
+    const startScore = currentState.startingScore || 501;
+    currentState.currentLegData = {
+      player1Score: startScore,
+      player2Score: startScore,
+      player1Throws: [],
+      player2Throws: [],
+      player1Remaining: startScore,
+      player2Remaining: startScore,
+      player1Id: currentState.currentLegData.player1Id,
+      player2Id: currentState.currentLegData.player2Id,
+      currentPlayer: nextStartingPlayer
+    };
     matchStates.set(matchId, currentState);
-    console.log(`💾 Updated match state for ${matchId}:`, currentState);
+    return currentState;
   }
 
   // Expose match states for API access
@@ -177,6 +365,11 @@ app.prepare().then(() => {
     .listen(port, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
       console.log(`> Socket.IO server running on port ${port}`);
-      console.log(`> Production mode: ${!dev}`);
+      console.log(`> Mode: ${dev ? 'Development' : 'Production'}`);
+      if (!dev) {
+        console.log(`> Serving built Next.js app from .next/`);
+      }
     });
-}); 
+}
+
+startServer().catch(console.error); 

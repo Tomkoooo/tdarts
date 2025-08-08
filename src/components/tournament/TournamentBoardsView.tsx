@@ -5,9 +5,12 @@ interface TournamentBoardsViewProps {
 }
 
 const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament }) => {
-  const boards = tournament?.clubId?.boards || [];
+  // Filter boards that belong to this tournament
+  const allBoards = tournament?.clubId?.boards || [];
+  const boards = allBoards.filter((board: any) => 
+    board.tournamentId === tournament?.tournamentId
+  );
 
-  console.log(boards);
 
   return (
     <div className="mt-6">

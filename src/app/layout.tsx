@@ -7,10 +7,17 @@ import Navbar from "@/components/homapage/Navbar";
 
 export const metadata: Metadata = {
   title: "tDarts",
-  description: "Your ultimate darts tournament management system",
+  description: "A legjobb darts tournament levezető rendszer",
   icons: {
-    icon: "/tbase_fav.svg",
-    apple: "/tbase_fav.svg",
+    icon: "/tdarts_fav.svg",
+    apple: "/tdarts_fav.svg",
+  },
+  openGraph: {
+    images: [
+      {
+        url: "/tdarts_logo.svg",
+      },
+    ],
   },
 };
 

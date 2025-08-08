@@ -106,3 +106,50 @@ export interface TournamentDocument extends Document, Omit<Tournament, '_id' | '
     groups: TournamentGroupDocument[];
     clubId: Types.ObjectId;
 }
+
+// Manual groups (API DTOs)
+export interface ManualGroupsBoard {
+    boardNumber: number;
+    isUsed: boolean;
+}
+
+export interface ManualGroupsAvailablePlayer {
+    _id: string; // Player document id
+    name: string;
+}
+
+export interface ManualGroupsContextResponse {
+    boards: ManualGroupsBoard[];
+    availablePlayers: ManualGroupsAvailablePlayer[];
+}
+
+export interface CreateManualGroupRequest {
+    boardNumber: number;
+    // Player document ids (must correspond to tournamentPlayers.playerReference)
+    playerIds: string[];
+}
+
+export interface CreateManualGroupResponse {
+    groupId: string;
+    matchIds: string[];
+}
+
+// Bulk manual groups (API DTOs)
+export interface ManualGroupCreateItem {
+    boardNumber: number;
+    playerIds: string[]; // Player document ids
+}
+
+export interface CreateManualGroupsRequest {
+    groups: ManualGroupCreateItem[];
+}
+
+export interface CreatedGroupInfo {
+    boardNumber: number;
+    groupId: string;
+    matchIds: string[];
+}
+
+export interface CreateManualGroupsResponse {
+    groups: CreatedGroupInfo[];
+}

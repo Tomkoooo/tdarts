@@ -38,7 +38,6 @@ const TournamentPage = () => {
       const tournamentData = tournamentRes.data;
       if (tournamentData.tournamentPlayers && Array.isArray(tournamentData.tournamentPlayers)) {
         setPlayers(tournamentData.tournamentPlayers);
-        console.log('Tournament players:', tournamentData.tournamentPlayers);
       } else {
         setPlayers([]);
         console.log('No tournament players found');
@@ -191,7 +190,6 @@ const TournamentPage = () => {
                   <TournamentKnockoutBracket 
                     tournamentCode={tournament.tournamentId} 
                     userClubRole={userClubRole} 
-                    onRefetch={handleRefetch}
                     tournamentPlayers={players}
                     knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
                   />
@@ -217,7 +215,6 @@ const TournamentPage = () => {
                   userClubRole={userClubRole}
                   userPlayerStatus={userPlayerStatus}
                   userPlayerId={userPlayerId}
-                  onRefetch={handleRefetch}
                 />
               </div>
             </div>

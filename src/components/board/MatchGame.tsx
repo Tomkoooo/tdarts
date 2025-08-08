@@ -1,6 +1,6 @@
 import { IconHistory, IconX, IconArrowLeft} from '@tabler/icons-react';
 import React, { useState, useEffect } from 'react';
-import { socket } from '@/lib/socket';
+import { useSocket } from '@/hooks/useSocket';
 
 interface Player {
   playerId: {
@@ -37,9 +37,10 @@ interface Match {
 interface MatchGameProps {
   match: Match;
   onBack: () => void;
+  clubId?: string; // Add clubId for feature flag checking
 }
 
-const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
+const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   const [player1Score, setPlayer1Score] = useState<number>(match.startingScore);
   const [player2Score, setPlayer2Score] = useState<number>(match.startingScore);
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(match.startingPlayer || 1);
@@ -73,6 +74,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
   const [pendingLegWinner, setPendingLegWinner] = useState<1 | 2 | null>(null);
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
 
+  // Socket hook with feature flag support
+  const { socket, isConnected } = useSocket({ 
+    matchId: match._id, 
+    clubId 
+  });
+
   // Calculate the correct starting player for the next leg
   const calculateNextLegStartingPlayer = (totalLegsPlayed: number, originalStartingPlayer: number): number => {
     // If odd number of legs played, the opposite player starts
@@ -82,21 +89,36 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
 
   // Socket.IO connection and match state management
   useEffect(() => {
-    // Join match room for real-time updates
-    socket.emit('join-match', match._id);
-    
+    if (!isConnected) return;
+    // Initialize match config on server
+    socket.emit('init-match', {
+      matchId: match._id,
+      startingScore: match.startingScore,
+      legsToWin: match.legsToWin || 3,
+      startingPlayer: match.startingPlayer || 1
+    });
     // Set player IDs in socket for match state
     socket.emit('set-match-players', {
       matchId: match._id,
       player1Id: match.player1.playerId._id,
-      player2Id: match.player2.playerId._id
+      player2Id: match.player2.playerId._id,
+      player1Name: match.player1.playerId.name,
+      player2Name: match.player2.playerId.name
     });
     
-    return () => {
-      // Leave match room when component unmounts
-      socket.emit('leave-match', match._id);
-    };
-  }, [match._id, match.player1.playerId._id, match.player2.playerId._id]);
+    // Notify tournament room that match has started
+    const tournamentCode = window.location.pathname.split('/')[2]; // Extract tournament code from URL
+    socket.emit('match-started', {
+      matchId: match._id,
+      tournamentCode: tournamentCode,
+      matchData: {
+        player1: match.player1,
+        player2: match.player2,
+        startingScore: match.startingScore,
+        legsToWin: match.legsToWin || 3
+      }
+    });
+  }, [isConnected, match._id, match.player1.playerId._id, match.player2.playerId._id, match.startingScore, match.legsToWin, match.startingPlayer]);
 
   // Load saved game state from localStorage only once on mount
   useEffect(() => {
@@ -230,6 +252,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         oneEightiesCount: lastThrow === 180 ? prev.oneEightiesCount - 1 : prev.oneEightiesCount
       }));
     }
+    
+    // Notify server to undo last throw for live viewer sync
+    if (isConnected) {
+      socket.emit('undo-throw', {
+        matchId: match._id,
+        playerId: playerWhoJustThrew === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+        tournamentCode: window.location.pathname.split('/')[2]
+      });
+    }
   };
 
   const handleThrow = () => {
@@ -250,16 +281,19 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         }));
 
         // Send throw event to socket
-        socket.emit('throw', {
-          matchId: match._id,
-          playerId: match.player1.playerId._id,
-          score: throwValue,
-          darts: 3, // Assuming 3 darts per throw
-          isDouble: newScore === 0, // Checkout is always a double
-          isCheckout: newScore === 0,
-          remainingScore: newScore,
-          legNumber: player1LegsWon + player2LegsWon + 1
-        });
+        if (isConnected) {
+          socket.emit('throw', {
+            matchId: match._id,
+            playerId: match.player1.playerId._id,
+            score: throwValue,
+            darts: 3, // Assuming 3 darts per throw
+            isDouble: newScore === 0, // Checkout is always a double
+            isCheckout: newScore === 0,
+            remainingScore: newScore,
+            legNumber: player1LegsWon + player2LegsWon + 1,
+            tournamentCode: window.location.pathname.split('/')[2]
+          });
+        }
       } else {
         const newScore = Math.max(0, player2Score - throwValue);
         setPlayer2Score(newScore);
@@ -275,16 +309,19 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         }));
 
         // Send throw event to socket
-        socket.emit('throw', {
-          matchId: match._id,
-          playerId: match.player2.playerId._id,
-          score: throwValue,
-          darts: 3, // Assuming 3 darts per throw
-          isDouble: newScore === 0, // Checkout is always a double
-          isCheckout: newScore === 0,
-          remainingScore: newScore,
-          legNumber: player1LegsWon + player2LegsWon + 1
-        });
+        if (isConnected) {
+          socket.emit('throw', {
+            matchId: match._id,
+            playerId: match.player2.playerId._id,
+            score: throwValue,
+            darts: 3, // Assuming 3 darts per throw
+            isDouble: newScore === 0, // Checkout is always a double
+            isCheckout: newScore === 0,
+            remainingScore: newScore,
+            legNumber: player1LegsWon + player2LegsWon + 1,
+            tournamentCode: window.location.pathname.split('/')[2]
+          });
+        }
       }
       setThrowInput('');
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
@@ -347,12 +384,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
       completedAt: Date.now()
     };
 
-    socket.emit('leg-complete', {
-      matchId: match._id,
-      legNumber: completedLeg.legNumber,
-      winnerId: completedLeg.winnerId,
-      completedLeg
-    });
+    if (isConnected) {
+      socket.emit('leg-complete', {
+        matchId: match._id,
+        legNumber: completedLeg.legNumber,
+        winnerId: completedLeg.winnerId,
+        completedLeg,
+        tournamentCode: window.location.pathname.split('/')[2]
+      });
+    }
 
     // Reset for next leg
     setPlayer1Score(match.startingScore);
@@ -386,11 +426,23 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           player1LegsWon: player1LegsWon,
           player2LegsWon: player2LegsWon,
           player1Stats,
-          player2Stats
+          player2Stats,
+          finalLegData: {
+            player1Throws,
+            player2Throws
+          }
         })
       });
     } catch (error) {
       console.error('Error finishing match:', error);
+    }
+
+    // Inform server to cleanup live state for this match
+    if (isConnected) {
+      socket.emit('match-complete', { 
+        matchId: match._id,
+        tournamentCode: window.location.pathname.split('/')[2]
+      });
     }
 
     // Clear localStorage and go back
@@ -564,7 +616,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
           </div>
 
           {/* Number Input - More compact on tablet */}
-          <div className="md:max-w-md md:mx-auto bg-base-200 rounded-lg p-4 mb-2 flex-shrink-0">
+          <div className="md:w-full md:mx-auto bg-base-200 rounded-lg p-4 mb-2 flex-shrink-0">
             <div className="grid grid-cols-3 gap-2 md:gap-3 mb-2">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
@@ -691,10 +743,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack }) => {
         </div>
       </div>
 
-      {/* Throw History - Mobile only, appears when toggled */}
+      {/* Throw History - Mobile and Tablet */}
       {showThrowHistory && (
-        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 rounded-lg p-4 max-w-sm w-full max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-200 rounded-lg p-4 max-w-md w-full max-h-96 overflow-y-auto">
             <div className="text-lg font-bold mb-2">Dobások</div>
             <div className="flex justify-between text-sm">
               <div className="flex-1 text-center">

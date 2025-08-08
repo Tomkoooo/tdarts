@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import PlayerSearch from '@/components/club/PlayerSearch';
+import { toast } from 'react-hot-toast';
 
 interface TournamentPlayersProps {
   tournament: any;
@@ -9,7 +10,6 @@ interface TournamentPlayersProps {
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
   userPlayerStatus: 'applied' | 'checked-in' | 'none';
   userPlayerId: string | null;
-  onRefetch: () => void;
 }
 
 const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
@@ -19,10 +19,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   userClubRole,
   userPlayerStatus,
   userPlayerId,
-  onRefetch,
 }) => {
   const [error, setError] = useState('');
+  const [localPlayers, setLocalPlayers] = useState(players);
+  const [localUserPlayerStatus, setLocalUserPlayerStatus] = useState(userPlayerStatus);
+  const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId);
   const code = tournament?.tournamentId;
+
+  // Update local state when props change
+  React.useEffect(() => {
+    setLocalPlayers(players);
+    setLocalUserPlayerStatus(userPlayerStatus);
+    setLocalUserPlayerId(userPlayerId);
+  }, [players, userPlayerStatus, userPlayerId]);
 
   const handleAddPlayer = async (player: any) => {
     try {
@@ -30,10 +39,26 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       if (player.userRef) payload.userRef = player.userRef;
       if (player.name) payload.name = player.name;
       const response = await axios.post(`/api/tournaments/${code}/players`, payload);
-      if (response.data.success) onRefetch();
-      else setError('Nem sikerült hozzáadni a játékost.');
+      if (response.data.success) {
+        // Update local state immediately
+        const newPlayer = {
+          _id: response.data.playerId,
+          playerReference: {
+            _id: response.data.playerId,
+            name: player.name || player.userRef,
+            userRef: player.userRef
+          },
+          status: 'applied'
+        };
+        setLocalPlayers(prev => [...prev, newPlayer]);
+        toast.success(`${player.name || 'Játékos'} sikeresen hozzáadva!`);
+      } else {
+        setError('Nem sikerült hozzáadni a játékost.');
+        toast.error('Nem sikerült hozzáadni a játékost.');
+      }
     } catch (err) {
       setError('Nem sikerült hozzáadni a játékost.');
+      toast.error('Nem sikerült hozzáadni a játékost.');
       console.error('Add player error:', err);
     }
   };
@@ -41,10 +66,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleRemovePlayer = async (playerId: string) => {
     try {
       const response = await axios.delete(`/api/tournaments/${code}/players`, { data: { playerId } });
-      if (response.data.success) onRefetch();
-      else setError('Nem sikerült eltávolítani a játékost.');
+      if (response.data.success) {
+        // Update local state immediately
+        setLocalPlayers(prev => prev.filter(p => p.playerReference._id !== playerId));
+        toast.success('Játékos sikeresen eltávolítva!');
+      } else {
+        setError('Nem sikerült eltávolítani a játékost.');
+        toast.error('Nem sikerült eltávolítani a játékost.');
+      }
     } catch (err) {
       setError('Nem sikerült eltávolítani a játékost.');
+      toast.error('Nem sikerült eltávolítani a játékost.');
       console.error('Remove player error:', err);
     }
   };
@@ -52,10 +84,21 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleCheckInPlayer = async (playerId: string) => {
     try {
       const response = await axios.put(`/api/tournaments/${code}/players`, { playerId, status: 'checked-in' });
-      if (response.data.success) onRefetch();
-      else setError('Nem sikerült check-inelni a játékost.');
+      if (response.data.success) {
+        // Update local state immediately
+        setLocalPlayers(prev => prev.map(p => 
+          p.playerReference._id === playerId 
+            ? { ...p, status: 'checked-in' }
+            : p
+        ));
+        toast.success('Játékos sikeresen check-inelve!');
+      } else {
+        setError('Nem sikerült check-inelni a játékost.');
+        toast.error('Nem sikerült check-inelni a játékost.');
+      }
     } catch (err) {
       setError('Nem sikerült check-inelni a játékost.');
+      toast.error('Nem sikerült check-inelni a játékost.');
       console.error('Check in player error:', err);
     }
   };
@@ -64,29 +107,56 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     if (!user?._id) return;
     try {
       const response = await axios.post(`/api/tournaments/${code}/players`, { userRef: user._id, name: user.name });
-      if (response.data.success) onRefetch();
-      else setError('Nem sikerült jelentkezni a tornára.');
+      if (response.data.success) {
+        // Update local state immediately
+        const newPlayer = {
+          _id: response.data.playerId,
+          playerReference: {
+            _id: response.data.playerId,
+            name: user.name,
+            userRef: user._id
+          },
+          status: 'applied'
+        };
+        setLocalPlayers(prev => [...prev, newPlayer]);
+        setLocalUserPlayerStatus('applied');
+        setLocalUserPlayerId(response.data.playerId);
+        toast.success('Sikeresen jelentkeztél a tornára!');
+      } else {
+        setError('Nem sikerült jelentkezni a tornára.');
+        toast.error('Nem sikerült jelentkezni a tornára.');
+      }
     } catch (err) {
       setError('Nem sikerült jelentkezni a tornára.');
+      toast.error('Nem sikerült jelentkezni a tornára.');
       console.error('Self sign up error:', err);
     }
   };
 
   const handleSelfWithdraw = async () => {
-    if (!userPlayerId) return;
+    if (!localUserPlayerId) return;
     try {
-      const response = await axios.delete(`/api/tournaments/${code}/players`, { data: { playerId: userPlayerId } });
-      if (response.data.success) onRefetch();
-      else setError('Nem sikerült visszavonni a jelentkezést.');
+      const response = await axios.delete(`/api/tournaments/${code}/players`, { data: { playerId: localUserPlayerId } });
+      if (response.data.success) {
+        // Update local state immediately
+        setLocalPlayers(prev => prev.filter(p => p.playerReference._id !== localUserPlayerId));
+        setLocalUserPlayerStatus('none');
+        setLocalUserPlayerId(null);
+        toast.success('Jelentkezés sikeresen visszavonva!');
+      } else {
+        setError('Nem sikerült visszavonni a jelentkezést.');
+        toast.error('Nem sikerült visszavonni a jelentkezést.');
+      }
     } catch (err) {
       setError('Nem sikerült visszavonni a jelentkezést.');
+      toast.error('Nem sikerült visszavonni a jelentkezést.');
       console.error('Self withdraw error:', err);
-      }
+    }
   };
 
   // Calculate if there are free spots
   const maxPlayers = tournament?.tournamentSettings?.maxPlayers || 0;
-  const currentPlayers = players.length;
+  const currentPlayers = localPlayers.length;
   const hasFreeSpots = currentPlayers < maxPlayers;
   
   // Check if tournament is in pending status
@@ -114,7 +184,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   // Allow player registration only if registration is open and tournament is pending
   const allowPlayerRegistration = registrationOpen && isPending;
 
-  console.log(players);
 
   return (
     <div className="mb-4">
@@ -134,8 +203,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       )}
       
       <ul className="mt-4 space-y-2">
-        {players.length === 0 && <li className="text-base-content/60">Nincs játékos.</li>}
-        {players.map((player) => (
+        {localPlayers.length === 0 && <li className="text-base-content/60">Nincs játékos.</li>}
+        {localPlayers.map((player) => (
           <li key={player._id} className="flex items-center gap-4 p-2 bg-base-100 rounded shadow">
             <span className="flex-1">{player.playerReference?.name || player.name || player._id}</span>
             
@@ -155,7 +224,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     </button>
                   </>
                 )}
-                {user && userPlayerId === player.playerReference._id && userPlayerStatus !== 'none' && (
+                {user && localUserPlayerId === player.playerReference._id && localUserPlayerStatus !== 'none' && (
                   <button className="btn btn-xs btn-warning ml-2" onClick={handleSelfWithdraw}>Jelentkezés visszavonása</button>
                 )}
               </>
@@ -187,10 +256,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {/* Show signup button only if player registration is allowed */}
       {allowPlayerRegistration && (
         <>
-          {user && userPlayerStatus === 'none' && hasFreeSpots && (
+          {user && localUserPlayerStatus === 'none' && hasFreeSpots && (
             <button className="btn btn-primary mt-4" onClick={handleSelfSignUp}>Jelentkezés a tornára</button>
           )}
-          {user && userPlayerStatus === 'none' && !hasFreeSpots && (
+          {user && localUserPlayerStatus === 'none' && !hasFreeSpots && (
             <div className="mt-4 text-warning">A torna megtelt, nincs több szabad hely.</div>
           )}
           {!user && (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import LegsViewModal from './LegsViewModal';
 
 interface Player {
   playerId: {
@@ -62,6 +63,8 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set());
   const [matchFilter, setMatchFilter] = useState<'all' | 'pending' | 'ongoing' | 'finished'>('all');
+  const [showLegsModal, setShowLegsModal] = useState(false);
+  const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<Match | null>(null);
 
   const isAdminOrModerator = userClubRole === 'admin' || userClubRole === 'moderator';
 
@@ -85,7 +88,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setExpandedMatches(newExpanded);
   };
 
-  console.log(tournament);
 
   const handleEditMatch = (match: Match) => {
     setSelectedMatch(match);
@@ -105,6 +107,11 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     });
     setShowAdminModal(true);
     setError('');
+  };
+
+  const handleViewLegs = (match: Match) => {
+    setSelectedMatchForLegs(match);
+    setShowLegsModal(true);
   };
 
   const handleSaveMatch = async () => {
@@ -194,7 +201,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 {!isExpanded && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {groupPlayers.map((player: any, index: number) => (
-                      <div key={player._id} className="bg-base-100 rounded-md p-2 hover:bg-base-300 transition-colors min-w-[200px]">
+                      <div key={player._id} className="bg-base-100 rounded-md p-2 hover:bg-base-300 transition-colors ">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1">
                             <span className="badge badge-primary badge-xs font-bold">
@@ -204,7 +211,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               {player.playerReference?.name || 'Ismeretlen'}
                             </span>
                           </div>
-                          <div className="text-xs text-base-content/70">
+                          <div className="text-xs text-base-content/70 ml-2">
                             {(player.stats?.matchesWon || 0) * 2}p
                           </div>
                         </div>
@@ -245,7 +252,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               return (
                                 <tr key={player._id} className="hover:bg-base-200">
                                   <td className="text-center font-bold">
-                                    {player.groupOrdinalNumber}.
+                                    {player.groupOrdinalNumber +1}.
                                   </td>
                                   <td className="text-center font-bold">
                                     {player.groupStanding || index + 1}.
@@ -385,15 +392,30 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                       </td>
                                       {isAdminOrModerator && (
                                         <td className="text-center">
-                                          <button
-                                            className="btn btn-warning btn-sm"
-                                            onClick={() => handleEditMatch(match)}
-                                          >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                            Szerkesztés
-                                          </button>
+                                          <div className="flex gap-1">
+                                            {(match.status === 'ongoing' || match.status === 'finished') && (
+                                              <button
+                                                className="btn btn-info btn-sm"
+                                                onClick={() => handleViewLegs(match)}
+                                                title="Legek megtekintése"
+                                              >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                Legek
+                                              </button>
+                                            )}
+                                            <button
+                                              className="btn btn-warning btn-sm"
+                                              onClick={() => handleEditMatch(match)}
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                              </svg>
+                                              Szerkesztés
+                                            </button>
+                                          </div>
                                         </td>
                                       )}
                                     </tr>
@@ -568,6 +590,16 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           </div>
         </div>
       )}
+
+      {/* Legs View Modal */}
+      <LegsViewModal
+        isOpen={showLegsModal}
+        onClose={() => {
+          setShowLegsModal(false);
+          setSelectedMatchForLegs(null);
+        }}
+        match={selectedMatchForLegs}
+      />
     </div>
   );
 };

@@ -84,7 +84,7 @@ export class AuthService {
   }
 
   static async generateAuthToken(user: IUserDocument): Promise<string> {
-    return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: '1d' });
+    return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: '180d' });
   }
 
   static async verifyToken(token: string): Promise<IUserDocument> {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { socket } from '@/lib/socket';
+import { useSocket } from '@/hooks/useSocket';
 
 interface LiveMatchesListProps {
   tournamentCode: string;
@@ -16,84 +16,138 @@ interface LiveMatch {
   player1Remaining: number;
   player2Remaining: number;
   status: string;
+  player1LegsWon?: number;
+  player2LegsWon?: number;
 }
 
 const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMatchSelect }) => {
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Use the useSocket hook for proper socket management
+  const { socket, isConnected } = useSocket({ tournamentId: tournamentCode });
+
   useEffect(() => {
-    // Join tournament room
-    socket.emit('join-tournament', tournamentCode);
+    // Join tournament room - use socket directly to avoid dependency issues
+    if (socket.connected) {
+      socket.emit('join-tournament', tournamentCode);
+    }
     
     // Fetch active matches from API
     fetchLiveMatches();
     
     // Socket event handlers
-    function onConnect() {
-      setIsConnected(true);
-      console.log('Connected to Socket.IO server');
-    }
-
-    function onDisconnect() {
-      setIsConnected(false);
-      console.log('Disconnected from Socket.IO server');
-    }
-
-    function onMatchStarted(matchId: string) {
-      setLiveMatches(prev => [...prev, { 
-        _id: matchId, 
-        status: 'ongoing',
-        currentLeg: 1,
-        player1Remaining: 501,
-        player2Remaining: 501,
-        player1: { name: 'Loading...' },
-        player2: { name: 'Loading...' }
-      }]);
+    function onMatchStarted(data: { matchId: string; matchData: any }) {
+      console.log('Match started event:', data);
+      // When a new match starts, fetch fresh data from database
+      fetchLiveMatches();
     }
 
     function onMatchFinished(matchId: string) {
+      console.log('Match finished event:', matchId);
       setLiveMatches(prev => prev.filter(match => match._id !== matchId));
+    }
+
+    function onMatchUpdate(data: { matchId: string; state: any }) {
+      console.log('Match update event:', data);
+      // Update only the real-time data (scores, current leg) from socket
+      setLiveMatches(prev => prev.map(match => {
+        if (match._id === data.matchId) {
+          const updatedMatch = {
+            ...match,
+            currentLeg: data.state.currentLeg,
+            player1Remaining: data.state.currentLegData?.player1Remaining || match.player1Remaining,
+            player2Remaining: data.state.currentLegData?.player2Remaining || match.player2Remaining,
+            player1LegsWon: data.state.player1LegsWon || match.player1LegsWon || 0,
+            player2LegsWon: data.state.player2LegsWon || match.player2LegsWon || 0
+          };
+          console.log('Updated match with real-time data:', updatedMatch);
+          return updatedMatch;
+        }
+        return match;
+      }));
+    }
+
+    function onLegComplete(data: any) {
+      console.log('Leg complete event:', data);
+      // When a leg is completed, refresh data from database to get updated leg counts
+      fetchLiveMatches();
     }
 
     // Set up event listeners
     if (socket.connected) {
-      onConnect();
+      // onConnect(); // This was removed from useSocket, so we don't need this here.
     }
 
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
     socket.on('match-started', onMatchStarted);
     socket.on('match-finished', onMatchFinished);
+    socket.on('match-update', onMatchUpdate);
+    socket.on('leg-complete', onLegComplete);
 
     return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
       socket.off('match-started', onMatchStarted);
       socket.off('match-finished', onMatchFinished);
+      socket.off('match-update', onMatchUpdate);
+      socket.off('leg-complete', onLegComplete);
     };
-  }, [tournamentCode]);
+  }, [tournamentCode, socket.connected]); // Removed emit dependency
 
   const fetchLiveMatches = async () => {
     try {
       setIsLoading(true);
+      
+      // Always fetch from database first for complete and accurate data
       const response = await fetch(`/api/tournaments/${tournamentCode}/live-matches`);
       const data = await response.json();
+      console.log('Database API response:', data);
+      
       if (data.success) {
-        // Ensure player data is properly structured
-        const processedMatches = data.matches.map((match: any) => ({
-          ...match,
-          player1: match.player1?.playerId || match.player1 || { name: 'Loading...' },
-          player2: match.player2?.playerId || match.player2 || { name: 'Loading...' },
-          currentLeg: match.currentLeg || 1,
-          player1Remaining: match.player1Remaining || 501,
-          player2Remaining: match.player2Remaining || 501
-        }));
+        // Ensure player data is properly structured with real names
+        const processedMatches = data.matches.map((match: any) => {
+          console.log('Processing database match:', match);
+          console.log('Player1 data:', match.player1);
+          console.log('Player2 data:', match.player2);
+          
+          return {
+            _id: match._id,
+            status: match.status || 'ongoing',
+            currentLeg: match.currentLeg || 1,
+            player1Remaining: match.player1Remaining || 501,
+            player2Remaining: match.player2Remaining || 501,
+            player1: {
+              _id: match.player1?.playerId?._id || match.player1?._id,
+              name: match.player1?.playerId?.name || match.player1?.name || 'Loading...'
+            },
+            player2: {
+              _id: match.player2?.playerId?._id || match.player2?._id,
+              name: match.player2?.playerId?.name || match.player2?.name || 'Loading...'
+            },
+            player1LegsWon: match.player1?.legsWon || 0,
+            player2LegsWon: match.player2?.legsWon || 0
+          };
+        });
         setLiveMatches(processedMatches);
-        console.log('Live matches loaded:', processedMatches);
+        console.log('Live matches from database:', processedMatches);
       }
+      
+      // Optionally get additional real-time data from socket (but don't replace database data)
+      try {
+        const socketResponse = await fetch('/api/socket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-live-matches' })
+        });
+        const socketData = await socketResponse.json();
+        
+        if (socketData.success && socketData.matches.length > 0) {
+          console.log('Socket data available for real-time updates:', socketData.matches);
+          // We could use this for real-time score updates, but keep database as primary source
+        }
+      } catch (socketError) {
+        console.log('Socket data not available, using database only:', socketError);
+      }
+      
     } catch (error) {
       console.error('Failed to fetch live matches:', error);
     } finally {
@@ -152,11 +206,16 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                 <span className="badge badge-info badge-sm">LIVE</span>
               </div>
               
-              <div className="flex justify-between items-center text-sm text-base-content/70">
+              <div className="flex justify-between items-center text-xs text-base-content/70">
                 <span>Leg {match.currentLeg}</span>
-                <span className="font-mono">
-                  {match.player1Remaining} - {match.player2Remaining}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs">
+                    {match.player1LegsWon || 0} - {match.player2LegsWon || 0}
+                  </span>
+                  <span className="font-mono text-xs">
+                    {match.player1Remaining} - {match.player2Remaining}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
+import { connectMongo } from '@/lib/mongoose';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    await connectMongo();
     const { code } = await params;
         const res= await TournamentService.generateGroups(code);
         if (res) {

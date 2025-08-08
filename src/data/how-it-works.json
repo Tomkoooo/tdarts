@@ -1,0 +1,260 @@
+{
+  "title": "Hogyan Működik a tDarts?",
+  "subtitle": "Részletes útmutató a tDarts platform használatához - minden lépésről lépésről",
+  "steps": [
+    {
+      "id": 0,
+      "title": "Fiók létrehozása és hitelesítés",
+      "icon": "IconUserPlus",
+      "description": "Regisztráció és bejelentkezés",
+      "content": {
+        "sections": [
+          {
+            "type": "text",
+            "content": "A tDarts platform használata egyszerű és intuitív. Az alábbiakban lépésről lépésre bemutatjuk, hogyan regisztrálhatsz, jelentkezhetsz be, kezelheted a klubodat, és hogyan indíthatsz vagy vehetsz részt versenyeken."
+          },
+          {
+            "type": "subsection",
+            "title": "Regisztráció",
+            "content": [
+              "A felső menüsorban kattints a &ldquo;Regisztráció&rdquo; gombra.",
+              "Add meg a felhasználóneved, teljes neved, e-mail címedet és jelszavadat.",
+              "A regisztráció után kapsz egy e-mailt egy hitelesítő kóddal, amit a következő lépésben kell megadnod.",
+              "A hitelesítést követően bejelentkezhetsz az oldalra."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Szervezetként nem szükséges központi e-mail címet használni, mivel több moderátor is hozzárendelhető a klubhoz, mindenki saját fiókkal férhet hozzá."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Bejelentkezés",
+            "content": [
+              "A felső menüsorban válaszd a &ldquo;Bejelentkezés&rdquo; fület, majd add meg e-mail címedet és jelszavadat.",
+              "A bejelentkezés 180 napig érvényes az adott böngészőben."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Kijelentkezés",
+            "content": [
+              "Bejelentkezés után a felső menüsorban megjelenik a felhasználóneved. Kattints rá, navigálj a &ldquo;Profil&rdquo; oldalra, majd görgess le a &ldquo;Kijelentkezés&rdquo; gombhoz."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Adatmódosítás",
+            "content": [
+              "A &ldquo;Profil&rdquo; oldalon minden adatodat módosíthatod. Ha az e-mail címedet változtatod, új hitelesítő kódot kell megadnod."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Elfelejtett jelszó",
+            "content": [
+              "A &ldquo;Bejelentkezés&rdquo; oldalon kattints az &ldquo;Elfelejtett jelszó&rdquo; gombra.",
+              "Add meg e-mail címedet, majd a kapott hitelesítő kód segítségével állíthatsz be új jelszót."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "title": "Klubkezelés",
+      "icon": "IconBuilding",
+      "description": "Klub létrehozása és kezelése",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Klub regisztráció",
+            "content": [
+              "Ha nem vagy más klub tagja vagy moderátora, a felső menüsorban a &ldquo;Saját klub&rdquo; gombra kattintva létrehozhatsz egy új klubot.",
+              "Add meg a klub adatait, például a nevét és helyszínét."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Táblák kezelése",
+            "content": [
+              "Verseny indításához táblákat kell regisztrálnod, amit a klub létrehozásakor vagy később, a &ldquo;Saját klub&rdquo; → &ldquo;Beállítások&rdquo; → &ldquo;Táblák kezelése&rdquo; menüpontban tehetsz meg.",
+              "A táblák automatikusan sorszámot kapnak, de ezek dinamikusan változhatnak (pl. törlés esetén). Ezért javasoljuk a táblák egyedi elnevezését, így a játékosok könnyen azonosíthatják őket.",
+              "Minden tábla mellett található egy nyomtatható QR-kód, amely a táblához tartozó legfrissebb tornára navigál, segítve a játékosokat a fizikai és a platformon lévő tábla azonosításában."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Tagok kezelése",
+            "content": [
+              "A &ldquo;Beállítások&rdquo; menüpontban adhatsz hozzá regisztrált felhasználókat a klubhoz.",
+              "A tagok moderátori jogokat kaphatnak, így hozzáférnek a klub beállításaihoz, valamint versenyeket indíthatnak és kezelhetnek."
+            ],
+            "note": {
+              "type": "warning",
+              "content": "Egy felhasználó csak egy klubhoz csatlakozhat."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Versenyek kezelése",
+      "icon": "IconTrophy",
+      "description": "Verseny indítása és lebonyolítása",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Verseny indítása",
+            "content": [
+              "A &ldquo;Saját klub&rdquo; → &ldquo;Beállítások&rdquo; menüpontban a &ldquo;Verseny indítása&rdquo; gombbal hozhatsz létre új versenyt.",
+              "Add meg a következő adatokat:"
+            ],
+            "list": [
+              "Verseny neve",
+              "Leírás",
+              "Kezdés időpontja",
+              "Nevezési díj",
+              "Helyszín",
+              "Típus (amatőr vagy nyílt)",
+              "Nevezési határidő"
+            ],
+            "subsections": [
+              {
+                "title": "Táblák kiválasztása",
+                "content": ["Válaszd ki a használni kívánt táblákat."]
+              },
+              {
+                "title": "Lebonyolítási mód",
+                "content": [
+                  "Határozd meg a lebonyolítási módot:",
+                  "• Csak csoportkör",
+                  "• Csak egyenes kiesés",
+                  "• Csoportkör és egyenes kiesés kombinációja"
+                ]
+              },
+              {
+                "title": "Végső beállítások",
+                "content": [
+                  "Add meg a kezdő pontszámot, a maximális létszámot és a torna jelszavát, amit a játékosok az írói felület eléréséhez használnak.",
+                  "Kattints a &ldquo;Torna létrehozása&rdquo; gombra, és a rendszer átirányít az új torna oldalára."
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Nevezés a versenyre",
+            "content": [
+              "Regisztrált és bejelentkezett felhasználók a torna oldalán jelentkezhetnek, ha a nevezés nyitott és nem telt be.",
+              "A moderátorok manuálisan is hozzáadhatnak játékosokat a &ldquo;Torna játékosok&rdquo; fül alatt:",
+              "Írd be a játékos nevét a keresőbe. Ha regisztrált vagy korábban vendégként szerepelt, a rendszer felkínálja. Új vendégjátékos esetén válaszd a &ldquo;Felvétel vendégként&rdquo; opciót."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Versenyzők kezelése",
+            "content": [
+              "A moderátorok eltávolíthatnak játékosokat, illetve a &ldquo;check-in&rdquo; gombbal jelezhetik, ha a játékos megjelent és befizette a nevezési díjat. Csak a bejelentkeztetett játékosokat sorsolja a rendszer."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Torna indítása",
+            "content": ["Az &ldquo;Admin műveletek&rdquo; szekcióban indíthatod el a tornát."],
+            "subsections": [
+              {
+                "title": "Csoportkör",
+                "content": [
+                  "Automatikus generálás: A rendszer véletlenszerűen osztja be a játékosokat csoportokba (3-6 fős csoportokat támogat), és minden csoporthoz hozzárendel egy táblát.",
+                  "Manuális generálás: Te választhatod ki, hogy mely játékosok melyik csoportban és táblán játszanak.",
+                  "A &ldquo;Generálás&rdquo; gomb megnyomásával indul a játék."
+                ]
+              },
+              {
+                "title": "Egyenes kiesés",
+                "content": [
+                  "Csoportkörös torna esetén ez a lehetőség a csoportkör végeztével jelenik meg.",
+                  "Automatikus mód: A rendszer a megadott számú továbbjutót véletlenszerűen párosítja, figyelembe véve a csoportbeli helyezéseket.",
+                  "Manuális mód: Teljesen testreszabható ágrajz készíthető, kiemelésekkel és egyedi párosításokkal.",
+                  "Hozz létre egy üres kört, majd a &ldquo;Véletlenszerű kör párosítás&rdquo; opcióval válaszd ki a párosítandó játékosokat, vagy manuálisan add meg a párosításokat.",
+                  "Kiemeléshez adj meg csak egy játékost, a másik hely &ldquo;TBD&rdquo; (később meghatározandó) marad, amit utólag módosíthatsz.",
+                  "A &ldquo;Következő kör generálása&rdquo; gomb az előző kör nyerteseit párosítja automatikusan.",
+                  "A torna végén a &ldquo;Torna befejezése&rdquo; gombra kattintva a rendszer összesíti a helyezéseket."
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "title": "Eredményrögzítés",
+      "icon": "IconTarget",
+      "description": "Játékosok számára - Eredményrögzítés",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Telefonon keresztül",
+            "content": [
+              "Olvasd be a tábla melletti QR-kódot, vagy a torna oldalán kattints a &ldquo;Táblák megnyitása&rdquo; gombra.",
+              "Add meg a torna jelszavát (csak az első belépésnél szükséges)."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Kihelyezett tableten",
+            "content": [
+              "Az első meccs előtt add meg a torna azonosítóját és jelszavát (csak egyszer szükséges)."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Eredményrögzítés",
+            "content": [
+              "Válaszd ki a táblát és a rögzítendő meccset.",
+              "Állítsd be a nyert legek számát és a kezdő játékost (a bal oldali játékos kezd, ő dob először bullra).",
+              "A felület egyszerű és intuitív, hasonló a Target DartCounter alkalmazáshoz.",
+              "Minden leg végén erősítsd meg a győztest, mivel a mentés nem visszavonható. A meccs végén is szükséges egy végső megerősítés."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Záró megjegyzés",
+      "icon": "IconFlagCheck",
+      "description": "Végső információk és támogatás",
+      "content": {
+        "sections": [
+          {
+            "type": "text",
+            "content": "A tDarts platform célja, hogy a versenyek lebonyolítása és az eredmények rögzítése gyors, egyszerű és átlátható legyen. Ha kérdésed van, a platform támogatási csatornáin elérheted a fejlesztőket."
+          }
+        ]
+      }
+    }
+  ],
+  "cta": {
+    "title": "Készen állsz a kezdésre?",
+    "description": "Most már mindent tudsz a tDarts platform használatáról. Regisztrálj és kezdj el versenyeket szervezni!",
+    "buttons": [
+      {
+        "text": "Regisztráció",
+        "href": "/auth/register",
+        "variant": "primary"
+      },
+      {
+        "text": "Versenyek Keresése",
+        "href": "/search",
+        "variant": "secondary"
+      }
+    ]
+  }
+}

@@ -9,7 +9,11 @@ const LiveStreamingPage = () => {
   const { code } = useParams();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
-  console.log(selectedMatchId);
+
+  if (!selectedMatchId) {
+    console.log("No match selected");
+  }
+
   const handleMatchSelect = (matchId: string, match: any) => {
     setSelectedMatchId(matchId);
     setSelectedMatch(match);
@@ -17,7 +21,12 @@ const LiveStreamingPage = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Élő Közvetítés</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Élő Közvetítés</h1>
+        <p className="text-base-content/70">
+          Kövesd a meccseket real-time dobásonkénti frissítésekkel
+        </p>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Live Matches List */}
@@ -38,11 +47,15 @@ const LiveStreamingPage = () => {
               player2={selectedMatch.player2}
             />
           ) : (
-            <div className="bg-base-100 p-6 rounded-lg">
+            <div className="bg-base-100 p-6 rounded-lg border border-base-300">
               <h3 className="text-xl font-bold mb-4">Élő Meccs Követő</h3>
-              <p className="text-base-content/70">
+              <p className="text-base-content/70 mb-4">
                 Válassz ki egy meccset a bal oldali listából a követés megkezdéséhez.
               </p>
+              <div className="flex items-center gap-2 text-sm text-success">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                <span>Socket kapcsolat aktív</span>
+              </div>
             </div>
           )}
         </div>

@@ -45,7 +45,7 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }
         <div><span className="font-semibold">Helyszín:</span> {tournament.clubId?.location}</div>
       </div>
       
-      <div className="mt-6 flex gap-4">
+      <div className="mt-6 flex gap-4 flex-wrap">
         <button
           onClick={handleOpenBoards}
           className="btn btn-primary btn-md flex items-center gap-2"

@@ -21,9 +21,16 @@ export interface Club {
     name?: string;
     currentMatch?: string;
     nextMatch?: string;
+    tournamentId?: string
     status: 'idle' | 'waiting' | 'playing';
     isActive: boolean;
   }>;
+  subscriptionModel?: 'free' | 'basic' | 'pro';
+  featureFlags?: {
+    liveMatchFollowing: boolean;
+    advancedStatistics: boolean;
+    premiumTournaments: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
