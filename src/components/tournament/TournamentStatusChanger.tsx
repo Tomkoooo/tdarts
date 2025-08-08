@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, {  useState } from 'react';
 import axios from 'axios';
 import {
   CreateManualGroupsRequest,
@@ -72,7 +72,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
       if (data?.success) {
         const availableBoards = (data.boards || []).filter((b: { isUsed: boolean }) => !b.isUsed);
         const defaultBoard = availableBoards.length > 0 ? availableBoards[0].boardNumber : null;
-        console.log("DATA API" ,data)
+
         setManualContext({ boards: data.boards || [], searchQuery: '', availablePlayers: data.availablePlayers || [] });
         setShowGroupsModal(false);
         setShowManualGroupsBuilder(true);

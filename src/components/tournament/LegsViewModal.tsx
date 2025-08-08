@@ -82,15 +82,6 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
     }
   };
 
-  const getPlayerName = (playerId: string) => {
-    if (match?.player1?.playerId?._id === playerId) {
-      return match.player1.playerId.name;
-    }
-    if (match?.player2?.playerId?._id === playerId) {
-      return match.player2.playerId.name;
-    }
-    return 'Ismeretlen';
-  };
 
   const formatThrow = (throwData: Throw, isWinner: boolean) => {
     const baseClasses = "px-2 py-1 rounded text-sm font-medium";

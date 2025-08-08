@@ -94,7 +94,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
   const [matchData, setMatchData] = useState<MatchData | null>(null);
 
   // Use the useSocket hook for proper socket management
-  const { socket, isConnected } = useSocket({ 
+  const { socket } = useSocket({ 
     tournamentId: tournamentCode, 
     matchId: matchId 
   });
@@ -219,12 +219,12 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       }));
     }
 
-    function onLegComplete(data: any) {
+    function onLegComplete() {
       // Fetch updated match data from database after leg completion
       fetchMatchData();
     }
 
-    function onFetchMatchData(data: any) {
+    function onFetchMatchData() {
       // Fetch match data when server signals
       fetchMatchData();
     }
@@ -303,7 +303,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     let player1Score = 501;
     let player2Score = 501;
     
-    throws.forEach((throwData, index) => {
+    throws.forEach((throwData) => {
       if (throwData.player === 1) {
         player1Score = throwData.remainingScore || (player1Score - throwData.score);
       } else {
@@ -319,16 +319,6 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     });
     
     return progression;
-  };
-
-  // Get current leg throws in chronological order
-  const getCurrentLegThrows = () => {
-    const startingPlayer = matchState.currentLegData.currentPlayer === 1 ? 2 : 1; // Current player is the one who just threw
-    return getLegThrowsInOrder(
-      matchState.currentLegData.player1Throws,
-      matchState.currentLegData.player2Throws,
-      startingPlayer
-    );
   };
 
   // Get current leg score progression

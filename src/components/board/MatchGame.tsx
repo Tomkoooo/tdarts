@@ -75,7 +75,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
 
   // Socket hook with feature flag support
-  const { socket, isConnected, emit } = useSocket({ 
+  const { socket, isConnected } = useSocket({ 
     matchId: match._id, 
     clubId 
   });

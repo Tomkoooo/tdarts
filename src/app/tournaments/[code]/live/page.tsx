@@ -10,6 +10,10 @@ const LiveStreamingPage = () => {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
+  if (!selectedMatchId) {
+    console.log("No match selected");
+  }
+
   const handleMatchSelect = (matchId: string, match: any) => {
     setSelectedMatchId(matchId);
     setSelectedMatch(match);

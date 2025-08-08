@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { TournamentService } from '@/database/services/tournament.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { connectMongo } from '@/lib/mongoose';
 import { TournamentModel } from '@/database/models/tournament.model';

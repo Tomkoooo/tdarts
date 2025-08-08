@@ -10,7 +10,6 @@ interface TournamentPlayersProps {
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
   userPlayerStatus: 'applied' | 'checked-in' | 'none';
   userPlayerId: string | null;
-  onRefetch: () => void;
 }
 
 const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
@@ -20,7 +19,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   userClubRole,
   userPlayerStatus,
   userPlayerId,
-  onRefetch,
 }) => {
   const [error, setError] = useState('');
   const [localPlayers, setLocalPlayers] = useState(players);

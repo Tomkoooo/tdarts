@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { TournamentService } from '@/database/services/tournament.service';
-import { ManualGroupsContextResponse } from '@/interface/tournament.interface';
 
 export async function GET(
   request: NextRequest,

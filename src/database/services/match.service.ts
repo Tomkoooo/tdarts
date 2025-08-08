@@ -182,7 +182,6 @@ export class MatchService {
             Math.round(legData.player2Stats.totalScore / legData.player2Stats.totalThrows) : 0;
 
         // Save leg data to the match's legs array
-        const legNumber = (match.player1.legsWon || 0) + (match.player2.legsWon || 0);
         const winnerId = legData.winner === 1 ? match.player1.playerId : match.player2.playerId;
         
         // Find the highest checkout in this leg

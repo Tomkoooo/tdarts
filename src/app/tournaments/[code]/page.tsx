@@ -215,7 +215,6 @@ const TournamentPage = () => {
                   userClubRole={userClubRole}
                   userPlayerStatus={userPlayerStatus}
                   userPlayerId={userPlayerId}
-                  onRefetch={handleRefetch}
                 />
               </div>
             </div>

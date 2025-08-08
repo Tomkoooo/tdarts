@@ -26,7 +26,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
   const [isLoading, setIsLoading] = useState(true);
 
   // Use the useSocket hook for proper socket management
-  const { socket, isConnected, emit } = useSocket({ tournamentId: tournamentCode });
+  const { socket, isConnected } = useSocket({ tournamentId: tournamentCode });
 
   useEffect(() => {
     // Join tournament room - use socket directly to avoid dependency issues

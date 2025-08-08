@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 
 interface ErrorProps {
@@ -48,12 +49,12 @@ export default function LiveError({ error, reset }: ErrorProps) {
             >
               Újra Próbálkozás
             </button>
-            <a 
+            <Link
               href="/tournaments"
               className="btn btn-outline flex-1"
             >
               Vissza a Tornákhoz
-            </a>
+            </Link>
           </div>
         </div>
 

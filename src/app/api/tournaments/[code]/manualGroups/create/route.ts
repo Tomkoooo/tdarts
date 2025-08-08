@@ -5,11 +5,11 @@ import { CreateManualGroupsRequest, CreateManualGroupsResponse } from '@/interfa
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     await connectMongo();
-    const { code } = params;
+    const { code } = await params;
     const body: CreateManualGroupsRequest = await request.json();
     const { groups } = body || { groups: [] };
     if (!Array.isArray(groups) || groups.length === 0) {
