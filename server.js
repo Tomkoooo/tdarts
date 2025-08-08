@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import { Server } from "socket.io";
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { readFileSync } from 'fs';
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import next from "next";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,95 +15,54 @@ const port = process.env.PORT || 3000;
 const matchStates = new Map();
 
 async function startServer() {
-  let handler;
-  
-  if (dev) {
-    // Development mode: use Next.js dev server
-    const next = await import('next');
-    const app = next.default({ dev, hostname, port });
-    await app.prepare();
-    handler = app.getRequestHandler();
-  } else {
-    // Production mode: serve built Next.js app
-    const express = await import('express');
-    const app = express.default();
-    
-    // Serve static files from .next/static
-    app.use('/_next/static', express.static(join(__dirname, '.next/static')));
-    
-    // Serve other static files
-    app.use(express.static(join(__dirname, 'public')));
-    
-    // Handle all other routes by serving the built app
-    app.get('*', (req, res) => {
-      try {
-        // Try to serve the built HTML file
-        const indexPath = join(__dirname, '.next/server/pages', req.path === '/' ? 'index.html' : `${req.path}.html`);
-        const html = readFileSync(indexPath, 'utf8');
-        res.setHeader('Content-Type', 'text/html');
-        res.send(html);
-      } catch (error) {
-        // Fallback to index.html for SPA routes
-        try {
-          const indexHtml = readFileSync(join(__dirname, '.next/server/pages/index.html'), 'utf8');
-          res.setHeader('Content-Type', 'text/html');
-          res.send(indexHtml);
-        } catch (fallbackError) {
-          res.status(404).send('Page not found');
-        }
-      }
-    });
-    
-    handler = app;
-  }
+  // Initialize Next.js app
+  const app = next({ dev, hostname, port });
+  const handler = app.getRequestHandler();
+  await app.prepare();
 
+  // Create HTTP server for Next.js and Socket.IO
   const httpServer = createServer((req, res) => {
     // Let Socket.IO handle its own requests
-    if (req.url?.startsWith('/socket.io/')) {
+    if (req.url?.startsWith("/socket.io/")) {
       return;
     }
-    
-    // Handle requests based on mode
-    if (dev) {
-      return handler(req, res);
-    } else {
-      return handler(req, res, () => {
-        res.status(404).send('Not found');
-      });
-    }
+    // Handle all other requests with Next.js
+    return handler(req, res);
   });
 
+  // Initialize Socket.IO
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.NEXT_PUBLIC_APP_URL || "*",
-      methods: ["GET", "POST"]
-    }
+      methods: ["GET", "POST"],
+    },
   });
 
+  // Socket.IO event handlers
   io.on("connection", (socket) => {
-    console.log('🔌 Client connected:', socket.id);
-    
+    console.log("🔌 Client connected:", socket.id);
+
     // Join tournament room
-    socket.on('join-tournament', (tournamentCode) => {
+    socket.on("join-tournament", (tournamentCode) => {
       socket.join(`tournament-${tournamentCode}`);
       console.log(`👥 Client ${socket.id} joined tournament: ${tournamentCode}`);
     });
-    
+
     // Join specific match room
-    socket.on('join-match', (matchId) => {
+    socket.on("join-match", (matchId) => {
       socket.join(`match-${matchId}`);
       console.log(`🎯 Client ${socket.id} joined match: ${matchId}`);
-      
+
       // Send current match state to new viewer
       const matchState = matchStates.get(matchId);
       if (matchState) {
-        socket.emit('match-state', matchState);
+        socket.emit("match-state", matchState);
         console.log(`📤 Sent match state to client ${socket.id} for match ${matchId}`);
       }
     });
 
-    // Initialize match configuration (startingScore, legsToWin, starting player)
-    socket.on('init-match', (data) => {
+    // Initialize match configuration
+    socket.on("init-match", (data) => {
       const { matchId, startingScore = 501, legsToWin = 3, startingPlayer = 1 } = data || {};
       const existing = matchStates.get(matchId);
       const initial = existing || {
@@ -121,8 +80,8 @@ async function startServer() {
           player2Throws: [],
           player1Remaining: startingScore,
           player2Remaining: startingScore,
-          currentPlayer: startingPlayer
-        }
+          currentPlayer: startingPlayer,
+        },
       };
       initial.startingScore = startingScore;
       initial.legsToWin = legsToWin;
@@ -131,12 +90,14 @@ async function startServer() {
         initial.currentLegData.currentPlayer = startingPlayer;
       }
       matchStates.set(matchId, initial);
-      socket.to(`match-${matchId}`).emit('match-state', initial);
-      console.log(`⚙️ Initialized match ${matchId}: startScore=${startingScore}, legsToWin=${legsToWin}, startingPlayer=${startingPlayer}`);
+      socket.to(`match-${matchId}`).emit("match-state", initial);
+      console.log(
+        `⚙️ Initialized match ${matchId}: startScore=${startingScore}, legsToWin=${legsToWin}, startingPlayer=${startingPlayer}`
+      );
     });
 
     // Set match players
-    socket.on('set-match-players', (data) => {
+    socket.on("set-match-players", (data) => {
       const { matchId, player1Id, player2Id } = data;
       const matchState = matchStates.get(matchId) || {
         currentLeg: 1,
@@ -153,94 +114,86 @@ async function startServer() {
           player2Throws: [],
           player1Remaining: 501,
           player2Remaining: 501,
-          currentPlayer: 1
-        }
+          currentPlayer: 1,
+        },
       };
       matchState.currentLegData.player1Id = player1Id;
       matchState.currentLegData.player2Id = player2Id;
-      
-      // Store player names if provided
+
       if (data.player1Name) matchState.player1Name = data.player1Name;
       if (data.player2Name) matchState.player2Name = data.player2Name;
-      
+
       matchStates.set(matchId, matchState);
-      socket.to(`match-${matchId}`).emit('match-state', matchState);
+      socket.to(`match-${matchId}`).emit("match-state", matchState);
       console.log(`👥 Set players for match ${matchId}: ${player1Id} vs ${player2Id}`);
     });
 
     // Leave match room
-    socket.on('leave-match', (matchId) => {
+    socket.on("leave-match", (matchId) => {
       socket.leave(`match-${matchId}`);
       console.log(`👋 Client ${socket.id} left match: ${matchId}`);
     });
-    
+
     // Handle throw events
-    socket.on('throw', (data) => {
+    socket.on("throw", (data) => {
       console.log(`🎯 Throw event for match ${data.matchId}:`, data);
       const state = updateMatchStateOnThrow(data.matchId, data);
-      // Broadcast to match room
-      socket.to(`match-${data.matchId}`).emit('throw-update', data);
-      socket.to(`match-${data.matchId}`).emit('match-state', state);
-      // Broadcast to tournament room for live matches list
-      socket.to(`tournament-${data.tournamentCode || 'unknown'}`).emit('match-update', {
+      socket.to(`match-${data.matchId}`).emit("throw-update", data);
+      socket.to(`match-${data.matchId}`).emit("match-state", state);
+      socket.to(`tournament-${data.tournamentCode || "unknown"}`).emit("match-update", {
         matchId: data.matchId,
-        state: state
+        state: state,
       });
     });
 
     // Handle undo last throw
-    socket.on('undo-throw', (data) => {
+    socket.on("undo-throw", (data) => {
       const { matchId, playerId } = data;
       console.log(`↶ Undo throw for match ${matchId} by ${playerId}`);
       const state = undoLastThrow(matchId, playerId);
       if (state) {
-        socket.to(`match-${matchId}`).emit('match-state', state);
-        // Broadcast to tournament room for live matches list
-        socket.to(`tournament-${data.tournamentCode || 'unknown'}`).emit('match-update', {
+        socket.to(`match-${matchId}`).emit("match-state", state);
+        socket.to(`tournament-${data.tournamentCode || "unknown"}`).emit("match-update", {
           matchId: matchId,
-          state: state
+          state: state,
         });
       }
     });
-    
+
     // Handle leg completion
-    socket.on('leg-complete', (data) => {
+    socket.on("leg-complete", (data) => {
       console.log(`🏆 Leg complete for match ${data.matchId}:`, data);
       const state = completeLeg(data.matchId, data);
-      // Broadcast to match room
-      socket.to(`match-${data.matchId}`).emit('leg-complete', data);
-      socket.to(`match-${data.matchId}`).emit('match-state', state);
-      // Send signal to fetch database data
-      socket.to(`match-${data.matchId}`).emit('fetch-match-data', { matchId: data.matchId });
-      // Broadcast to tournament room for live matches list
-      socket.to(`tournament-${data.tournamentCode || 'unknown'}`).emit('match-update', {
+      socket.to(`match-${data.matchId}`).emit("leg-complete", data);
+      socket.to(`match-${data.matchId}`).emit("match-state", state);
+      socket.to(`match-${data.matchId}`).emit("fetch-match-data", { matchId: data.matchId });
+      socket.to(`tournament-${data.tournamentCode || "unknown"}`).emit("match-update", {
         matchId: data.matchId,
-        state: state
+        state: state,
       });
     });
 
-    // Handle match completion: cleanup memory
-    socket.on('match-complete', (data) => {
+    // Handle match completion
+    socket.on("match-complete", (data) => {
       const { matchId, tournamentCode } = data || {};
       console.log(`🏁 Match complete for ${matchId}`);
       matchStates.delete(matchId);
-      socket.to(`match-${matchId}`).emit('match-complete', { matchId });
-      // Broadcast to tournament room for live matches list
-      socket.to(`tournament-${tournamentCode || 'unknown'}`).emit('match-finished', { matchId });
+      socket.to(`match-${matchId}`).emit("match-complete", { matchId });
+      socket.to(`tournament-${tournamentCode || "unknown"}`).emit("match-finished", { matchId });
     });
 
-    // Handle match start: notify tournament room
-    socket.on('match-started', (data) => {
+    // Handle match start
+    socket.on("match-started", (data) => {
       const { matchId, tournamentCode, matchData } = data || {};
       console.log(`🚀 Match started: ${matchId} in tournament ${tournamentCode}`);
-      socket.to(`tournament-${tournamentCode || 'unknown'}`).emit('match-started', { 
-        matchId, 
-        matchData 
+      socket.to(`tournament-${tournamentCode || "unknown"}`).emit("match-started", {
+        matchId,
+        matchData,
       });
     });
-    
-    socket.on('disconnect', () => {
-      console.log('🔌 Client disconnected:', socket.id);
+
+    socket.on("disconnect", () => {
+      console.log("🔌 Client disconnected:", socket.id);
     });
   });
 
@@ -262,8 +215,8 @@ async function startServer() {
           player2Throws: [],
           player1Remaining: 501,
           player2Remaining: 501,
-          currentPlayer: 1
-        }
+          currentPlayer: 1,
+        },
       };
       matchStates.set(matchId, st);
     }
@@ -279,7 +232,7 @@ async function startServer() {
       isCheckout: data.isCheckout,
       remainingScore: data.remainingScore,
       timestamp: Date.now(),
-      playerId: data.playerId
+      playerId: data.playerId,
     };
     if (data.playerId === currentState.currentLegData.player1Id) {
       currentState.currentLegData.player1Throws.push(throwData);
@@ -301,11 +254,17 @@ async function startServer() {
     if (arr.length === 0) return currentState;
     const last = arr.pop();
     if (isP1) {
-      currentState.currentLegData.player1Remaining = Math.min(currentState.startingScore || 501, currentState.currentLegData.player1Remaining + (last?.score || 0));
-      currentState.currentLegData.currentPlayer = 1; // revert turn to player1
+      currentState.currentLegData.player1Remaining = Math.min(
+        currentState.startingScore || 501,
+        currentState.currentLegData.player1Remaining + (last?.score || 0)
+      );
+      currentState.currentLegData.currentPlayer = 1;
     } else {
-      currentState.currentLegData.player2Remaining = Math.min(currentState.startingScore || 501, currentState.currentLegData.player2Remaining + (last?.score || 0));
-      currentState.currentLegData.currentPlayer = 2; // revert turn to player2
+      currentState.currentLegData.player2Remaining = Math.min(
+        currentState.startingScore || 501,
+        currentState.currentLegData.player2Remaining + (last?.score || 0)
+      );
+      currentState.currentLegData.currentPlayer = 2;
     }
     matchStates.set(matchId, currentState);
     return currentState;
@@ -313,14 +272,13 @@ async function startServer() {
 
   function completeLeg(matchId, data) {
     const currentState = ensureState(matchId);
-    
-    // Update leg counts
+
     if (data.winnerId === currentState.currentLegData.player1Id) {
       currentState.player1LegsWon = (currentState.player1LegsWon || 0) + 1;
     } else {
       currentState.player2LegsWon = (currentState.player2LegsWon || 0) + 1;
     }
-    
+
     const completedLeg = {
       legNumber: data.legNumber,
       winnerId: data.winnerId,
@@ -328,16 +286,18 @@ async function startServer() {
       player2Throws: data.completedLeg?.player2Throws || [],
       player1Stats: data.completedLeg?.player1Stats || {},
       player2Stats: data.completedLeg?.player2Stats || {},
-      completedAt: Date.now()
+      completedAt: Date.now(),
     };
     currentState.completedLegs.push(completedLeg);
     currentState.currentLeg = (data.legNumber || currentState.currentLeg) + 1;
-    
-    // Calculate next starting player (alternating)
-    const nextStartingPlayer = ((currentState.currentLeg - 1) % 2 === 0)
-      ? currentState.initialStartingPlayer
-      : (currentState.initialStartingPlayer === 1 ? 2 : 1);
-    
+
+    const nextStartingPlayer =
+      (currentState.currentLeg - 1) % 2 === 0
+        ? currentState.initialStartingPlayer
+        : currentState.initialStartingPlayer === 1
+        ? 2
+        : 1;
+
     const startScore = currentState.startingScore || 501;
     currentState.currentLegData = {
       player1Score: startScore,
@@ -348,7 +308,7 @@ async function startServer() {
       player2Remaining: startScore,
       player1Id: currentState.currentLegData.player1Id,
       player2Id: currentState.currentLegData.player2Id,
-      currentPlayer: nextStartingPlayer
+      currentPlayer: nextStartingPlayer,
     };
     matchStates.set(matchId, currentState);
     return currentState;
@@ -365,11 +325,8 @@ async function startServer() {
     .listen(port, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
       console.log(`> Socket.IO server running on port ${port}`);
-      console.log(`> Mode: ${dev ? 'Development' : 'Production'}`);
-      if (!dev) {
-        console.log(`> Serving built Next.js app from .next/`);
-      }
+      console.log(`> Mode: ${dev ? "Development" : "Production"}`);
     });
 }
 
-startServer().catch(console.error); 
+startServer().catch(console.error);
