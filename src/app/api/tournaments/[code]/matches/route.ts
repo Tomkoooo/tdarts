@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MatchModel } from '@/database/models/match.model';
 import { TournamentService } from '@/database/services/tournament.service';
 import { BadRequestError } from '@/middleware/errorHandle';
+import { connectMongo } from '@/lib/mongoose';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    await connectMongo();
     const { code } = await params;
     const { searchParams } = new URL(request.url);
     

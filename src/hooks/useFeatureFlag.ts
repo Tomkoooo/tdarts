@@ -104,6 +104,12 @@ async function checkFeatureFlagClient(featureName: string, clubId?: string): Pro
 
 // Client-side socket feature ellenőrzés
 async function checkSocketFeatureClient(clubId?: string): Promise<boolean> {
+  // Development módban mindig engedélyezett
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Development mode: socket feature enabled');
+    return true;
+  }
+
   // Ha NEXT_PUBLIC_ENABLE_ALL true, akkor mindenképp engedélyezett
   if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') {
     return true;

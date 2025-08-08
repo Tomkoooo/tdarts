@@ -88,7 +88,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setExpandedMatches(newExpanded);
   };
 
-  console.log(tournament);
 
   const handleEditMatch = (match: Match) => {
     setSelectedMatch(match);

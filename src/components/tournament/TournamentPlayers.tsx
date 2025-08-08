@@ -186,7 +186,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   // Allow player registration only if registration is open and tournament is pending
   const allowPlayerRegistration = registrationOpen && isPending;
 
-  console.log(localPlayers);
 
   return (
     <div className="mb-4">

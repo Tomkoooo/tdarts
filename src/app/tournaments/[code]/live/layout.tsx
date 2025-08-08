@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { TournamentService } from '@/database/services/tournament.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { connectMongo } from '@/lib/mongoose';
+import { TournamentModel } from '@/database/models/tournament.model';
 
 interface LiveLayoutProps {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
     await connectMongo();
 
     // Get tournament data to find clubId
-    const tournament = await TournamentService.getTournament(code);
+    const tournament = await TournamentModel.findOne({ tournamentId: code });
     if (!tournament) {
       redirect('/tournaments');
     }

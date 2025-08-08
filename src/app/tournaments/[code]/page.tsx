@@ -38,7 +38,6 @@ const TournamentPage = () => {
       const tournamentData = tournamentRes.data;
       if (tournamentData.tournamentPlayers && Array.isArray(tournamentData.tournamentPlayers)) {
         setPlayers(tournamentData.tournamentPlayers);
-        console.log('Tournament players:', tournamentData.tournamentPlayers);
       } else {
         setPlayers([]);
         console.log('No tournament players found');

@@ -4,6 +4,7 @@ import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
 import Link from "next/link";
 import '../board.css'
+import { useUserContext } from "@/hooks/useUser";
 
 // --- Types ---
 interface Player {
@@ -60,7 +61,7 @@ interface BoardPageProps {
 
 const BoardPage: React.FC<BoardPageProps> = (props) => {
   const { tournamentId } = use(props.params);
-  
+  const { user } = useUserContext();
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
@@ -208,7 +209,12 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   const loadUserRole = async () => {
     try {
-      const response = await axios.get(`/api/clubs/${tournamentId}/user/role`);
+      
+      const response = await axios.get(`/api/tournaments/${tournamentId}/getUserRole`, {
+        headers: {
+          'x-user-id': user?._id || ''
+        }
+      });
       setUserRole(response.data);
     } catch (err) {
       console.error('Failed to load user role:', err);

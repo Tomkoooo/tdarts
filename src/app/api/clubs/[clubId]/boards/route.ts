@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
 
 export async function GET(
@@ -6,6 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ clubId: string }> }
 ) {
   try {
+    await connectMongo();
     const { clubId } = await params;
     
     const club = await ClubModel.findById(clubId);

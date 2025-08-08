@@ -11,8 +11,6 @@ const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament 
     board.tournamentId === tournament?.tournamentId
   );
 
-  console.log('All boards:', allBoards);
-  console.log('Tournament boards:', boards);
 
   return (
     <div className="mt-6">

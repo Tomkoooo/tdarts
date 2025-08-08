@@ -37,7 +37,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <Image src="/tbase_fav.svg" width={40} height={40} alt="tDarts Logo" />
+            <Image src="/tdarts_fav.svg" width={40} height={40} alt="tDarts Logo" />
             <span className="text-xl md:text-2xl font-bold text-gradient-red">tDarts</span>
           </Link>
 

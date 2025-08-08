@@ -31,11 +31,25 @@ export async function POST(req: NextRequest) {
     }
     
     if (action === 'get-live-matches') {
-      // This would return all active matches
-      // For now, return empty array
+      // Get live matches from server memory
+      const matchStates = (global as any).matchStates;
+      const liveMatches = Array.from(matchStates.entries() as Iterable<[string, any]>).map(([matchId, state]) => ({
+        _id: matchId,
+        currentLeg: state.currentLeg,
+        player1Remaining: state.currentLegData.player1Remaining,
+        player2Remaining: state.currentLegData.player2Remaining,
+        player1Id: state.currentLegData.player1Id,
+        player2Id: state.currentLegData.player2Id,
+        player1Name: state.player1Name || 'Player 1',
+        player2Name: state.player2Name || 'Player 2',
+        player1LegsWon: state.player1LegsWon || 0,
+        player2LegsWon: state.player2LegsWon || 0,
+        status: 'ongoing'
+      }));
+      
       return NextResponse.json({ 
         success: true, 
-        matches: [] 
+        matches: liveMatches 
       });
     }
     

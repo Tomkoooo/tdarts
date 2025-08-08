@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import axios from 'axios';
+import {
+  CreateManualGroupsRequest,
+  ManualGroupsContextResponse,
+  ManualGroupsAvailablePlayer,
+  Tournament,
+} from '@/interface/tournament.interface';
 
 interface TournamentGroupsGeneratorProps {
-  tournament: any;
+  tournament: Tournament;
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
   onRefetch: () => void;
 }
@@ -13,6 +19,13 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   const [showKnockoutModal, setShowKnockoutModal] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState(8);
   const [knockoutMode, setKnockoutMode] = useState<'automatic' | 'manual'>('automatic');
+  const [groupsMode, setGroupsMode] = useState<'automatic' | 'manual'>('automatic');
+  const [showGroupsModal, setShowGroupsModal] = useState(false);
+  const [showManualGroupsBuilder, setShowManualGroupsBuilder] = useState(false);
+  const [manualContext, setManualContext] = useState<(ManualGroupsContextResponse & { searchQuery: string }) | null>(null);
+  const [manualBoard, setManualBoard] = useState<number | null>(null);
+  const [manualSelectedPlayers, setManualSelectedPlayers] = useState<string[]>([]);
+  const [boardAssignments, setBoardAssignments] = useState<Record<number, string[]>>({});
   const code = tournament?.tournamentId;
   const tournamentStatus = tournament?.tournamentSettings?.status;
   const tournamentFormat = tournament?.tournamentSettings?.format || 'group_knockout';
@@ -30,19 +43,79 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   };
 
   const handleGenerateGroups = async () => {
+    setShowGroupsModal(true);
+  };
+
+  const startAutomaticGroups = async () => {
     setLoading(true);
     setError('');
     try {
       const response = await axios.post(`/api/tournaments/${code}/generateGroups`);
       if (response.data && response.status === 200) {
         onRefetch();
+        setShowGroupsModal(false);
       } else {
         setError(response.data?.error || 'Nem sikerült csoportokat generálni.');
-        console.log(response.data?.error);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Nem sikerült csoportokat generálni.');
-      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openManualGroupsBuilder = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await axios.get(`/api/tournaments/${code}/manualGroups/context`);
+      if (data?.success) {
+        const availableBoards = (data.boards || []).filter((b: { isUsed: boolean }) => !b.isUsed);
+        const defaultBoard = availableBoards.length > 0 ? availableBoards[0].boardNumber : null;
+        console.log("DATA API" ,data)
+        setManualContext({ boards: data.boards || [], searchQuery: '', availablePlayers: data.availablePlayers || [] });
+        setShowGroupsModal(false);
+        setShowManualGroupsBuilder(true);
+        setManualBoard(defaultBoard);
+      } else {
+        setError(data?.error || 'Nem sikerült betölteni a manuális csoport kontextust.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Nem sikerült betölteni a manuális csoport kontextust.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Single-group creation disabled per product requirement; only all-groups creation is allowed
+
+  const createAllManualGroups = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const entries = Object.entries(boardAssignments)
+        .map(([bn, ids]) => ({ boardNumber: parseInt(bn, 10), playerIds: ids }))
+        .filter(({ playerIds }) => playerIds.length >= 3 && playerIds.length <= 6);
+
+      if (entries.length === 0) {
+        setError('Nincs érvényes csoport kijelölés. (3-6 játékos szükséges táblánként)');
+        return;
+      }
+
+      const payload: CreateManualGroupsRequest = { groups: entries };
+      const { data } = await axios.post(`/api/tournaments/${code}/manualGroups/create`, payload);
+      if (!data?.success) {
+        setError(data?.error || 'Nem sikerült létrehozni az összes csoportot.');
+        return;
+      }
+
+      setShowManualGroupsBuilder(false);
+      setManualBoard(null);
+      setManualSelectedPlayers([]);
+      setBoardAssignments({});
+      onRefetch();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Nem sikerült létrehozni az összes csoportot.');
     } finally {
       setLoading(false);
     }
@@ -110,13 +183,6 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   if (userClubRole !== 'admin' && userClubRole !== 'moderator') return null;
 
   const availablePlayerCounts = getAvailablePlayerCounts();
-
-  console.log('Tournament Status:', tournamentStatus);
-  console.log('Tournament Format:', tournamentFormat);
-  console.log('Should show knockout button:', 
-    (tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
-    (tournamentStatus === 'pending' && tournamentFormat === 'knockout')
-  );
 
   return (
     <div className="mb-4">
@@ -301,6 +367,203 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 ) : (
                   "Generálás"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Groups Mode Modal */}
+      {showGroupsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-center mb-6">Csoportok generálása</h3>
+            <div className="form-control mb-6">
+              <label className="label">
+                <span className="label-text font-bold">Generálás módja:</span>
+              </label>
+              <div className="flex gap-4">
+                <label className="label cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="groupsMode" 
+                    className="radio radio-primary" 
+                    checked={groupsMode === 'automatic'}
+                    onChange={() => setGroupsMode('automatic')}
+                  />
+                  <span className="label-text ml-2">Automatikus</span>
+                </label>
+                <label className="label cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="groupsMode" 
+                    className="radio radio-primary" 
+                    checked={groupsMode === 'manual'}
+                    onChange={() => setGroupsMode('manual')}
+                  />
+                  <span className="label-text ml-2">Manuális</span>
+                </label>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button className="btn btn-error flex-1" onClick={() => setShowGroupsModal(false)}>Mégse</button>
+              {groupsMode === 'automatic' ? (
+                <button className="btn btn-success flex-1" onClick={startAutomaticGroups} disabled={loading}>
+                  {loading ? 'Generálás...' : 'Automatikus generálás'}
+                </button>
+              ) : (
+                <button className="btn btn-info flex-1" onClick={openManualGroupsBuilder} disabled={loading}>
+                  {loading ? 'Betöltés...' : 'Manuális csoport létrehozás'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Groups Builder Modal */}
+      {showManualGroupsBuilder && manualContext && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-center mb-6">Manuális csoport felvétele</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-bold mb-2">Táblák</h4>
+                <div className="space-y-2">
+                  {manualContext.boards.map((b) => (
+                    <button
+                      key={b.boardNumber}
+                      className={`btn btn-sm w-full ${manualBoard === b.boardNumber ? 'btn-primary' : 'btn-ghost'} ${b.isUsed ? 'btn-disabled' : ''}`}
+                      disabled={b.isUsed}
+                      onClick={() => {
+                        setManualBoard(b.boardNumber);
+                        setManualSelectedPlayers(boardAssignments[b.boardNumber] || []);
+                      }}
+                    >
+                      Tábla {b.boardNumber} {b.isUsed ? '(már használt)' : ''}
+                      <span className="ml-2 opacity-70">({(boardAssignments[b.boardNumber]?.length || 0)} játékos)</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold mb-2">Játékosok (3-6)</h4>
+                <input
+                  type="text"
+                  placeholder="Keresés név szerint..."
+                  className="input input-bordered input-sm w-full mb-2"
+                  value={manualContext.searchQuery || ''}
+                  onChange={(e) => {
+                    const q = e.target.value;
+                    setManualContext(prev => prev ? { ...prev, searchQuery: q } : prev);
+                  }}
+                />
+                 {(() => {
+                  const normalize = (s: string) =>
+                    (s || '')
+                      .toLowerCase()
+                      .normalize('NFD')
+                      .replace(/\p{Diacritic}/gu, '')
+                      .trim();
+                  const query = normalize(manualContext.searchQuery || '');
+                  const isNumeric = /^\d+$/.test(query);
+                                   // Get all players assigned to other boards
+                 const assignedToOtherBoards = Object.entries(boardAssignments)
+                   .filter(([boardNum]) => parseInt(boardNum) !== manualBoard)
+                   .flatMap(([, playerIds]) => playerIds);
+                 
+                 const filtered = (manualContext.availablePlayers || []).filter((p: ManualGroupsAvailablePlayer) => {
+                   // Skip players already assigned to other boards
+                   if (assignedToOtherBoards.includes(p._id)) return false;
+                   
+                   const name = normalize(p.name || '');
+                   if (!query) return true;
+                   if (isNumeric) {
+                     // numeric query: match as a standalone token only
+                     const tokens = name.split(/[^a-z0-9]+/);
+                     return tokens.some((t) => t === query);
+                   }
+                   return name.includes(query);
+                 });
+                   return (
+                   <div className="h-72 overflow-y-auto space-y-2 border border-base-300 rounded-lg p-2">
+                      {filtered.map((p) => {
+                        const selected = manualSelectedPlayers.includes(p._id);
+                        return (
+                          <label key={p._id} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-sm"
+                              checked={selected}
+                                                          onChange={(e) => {
+                              if (e.target.checked) {
+                                if (manualSelectedPlayers.length < 6) {
+                                  const newSelected = [...manualSelectedPlayers, p._id];
+                                  setManualSelectedPlayers(newSelected);
+                                  setBoardAssignments(prev => ({
+                                    ...prev,
+                                    [manualBoard!]: newSelected
+                                  }));
+                                }
+                              } else {
+                                const newSelected = manualSelectedPlayers.filter(id => id !== p._id);
+                                setManualSelectedPlayers(newSelected);
+                                setBoardAssignments(prev => ({
+                                  ...prev,
+                                    [manualBoard!]: newSelected
+                                }));
+                              }
+                            }}
+                            />
+                            <span>{p.name || p._id}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            {/* Assignments summary */}
+            <div className="mt-4">
+              <h4 className="font-bold mb-2">Kijelölt csoportok</h4>
+              <div className="space-y-2">
+                {Object.entries(boardAssignments).filter(([, ids]) => ids.length > 0).map(([boardNum, ids]) => (
+                  <div key={boardNum} className="text-sm">
+                    <span className="font-semibold mr-2">Tábla {boardNum}:</span>
+                    <span>
+                      {ids.map((id, idx) => {
+                        const p = manualContext.availablePlayers.find(ap => ap._id === id);
+                        return (
+                          <span key={id}>
+                            {p?.name || id}{idx < ids.length - 1 ? ', ' : ''}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  </div>
+                ))}
+                {Object.values(boardAssignments).every(ids => ids.length === 0) && (
+                  <div className="text-sm opacity-70">Nincs kijelölt játékos egyik táblán sem.</div>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button className="btn btn-error flex-1" onClick={() => setShowManualGroupsBuilder(false)}>Mégse</button>
+              <button
+                className="btn btn-success flex-1"
+                onClick={createAllManualGroups}
+                disabled={
+                  loading ||
+                  (manualContext?.boards || [])
+                    .filter(b => !b.isUsed)
+                    .some(b => {
+                      const c = (boardAssignments[b.boardNumber]?.length || 0);
+                      return c < 3 || c > 6;
+                    })
+                }
+              >
+                {loading ? 'Létrehozás...' : 'Összes csoport létrehozása'}
               </button>
             </div>
           </div>

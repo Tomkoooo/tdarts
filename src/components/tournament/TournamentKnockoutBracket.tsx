@@ -109,7 +109,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       const response = await axios.get(`/api/tournaments/${tournamentCode}/knockoutMethod`);
       if (response.data && response.data.success) {
         setCurrentKnockoutMethod(response.data.knockoutMethod);
-        console.log('Fetched knockout method:', response.data.knockoutMethod);
       }
     } catch (err) {
       console.error('Failed to fetch knockout method:', err);
@@ -122,7 +121,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       const response = await axios.get(`/api/tournaments/${tournamentCode}`);
       if (response.data && response.data.tournamentPlayers) {
         setAvailablePlayers(response.data.tournamentPlayers);
-        console.log('Fetched tournament players:', response.data.tournamentPlayers);
       }
     } catch (err) {
       console.error('Failed to fetch tournament players:', err);
@@ -392,9 +390,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     }
   };
 
-  console.log('Knockout data:', knockoutData);
-  console.log('Available players:', availablePlayers);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -524,8 +519,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               return round.matches && round.matches.length > 0;
             })
             .map((round, roundIndex) => {
-              console.log('Rendering round:', round.round, 'with matches:', round.matches.length);
-              console.log('userClubRole:', userClubRole, 'currentKnockoutMethod:', currentKnockoutMethod);
+       
               
               const roundMatches = round.matches || [];
               const nextRound = knockoutData[roundIndex + 1];
@@ -575,7 +569,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                         <button
                           className="btn btn-circle btn-xs btn-outline btn-primary"
                           onClick={() => {
-                            console.log('Add match button clicked for round:', round.round);
                             setSelectedRound(round.round);
                             setShowAddMatchModal(true);
                           }}
@@ -599,13 +592,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   >
                     {roundMatches.length > 0 ? (
                       roundMatches.map((match, matchIndex) => {
-                        // Debug logging for match data
-                        console.log(`Match ${matchIndex} in round ${round.round}:`, {
-                          player1: match.player1,
-                          player2: match.player2,
-                          matchReference: match.matchReference
-                        });
-                        
                         // Calculate which match in the next round this feeds into
                         let nextMatchIndex = -1;
                         if (nextRoundMatches.length > 0) {
