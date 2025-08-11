@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useUserContext } from '@/hooks/useUser';
@@ -24,6 +24,7 @@ export default function ClubDetailPage() {
   const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false);
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const code = params.code as string;
 
   // Board management state
@@ -34,6 +35,21 @@ export default function ClubDetailPage() {
     isOpen: false,
     boardNumber: 0
   });
+
+  // Get default page from URL parameter
+  const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'settings' => {
+    const page = searchParams.get('page');
+    switch (page) {
+      case 'players':
+        return 'players';
+      case 'tournaments':
+        return 'tournaments';
+      case 'settings':
+        return 'settings';
+      default:
+        return 'summary';
+    }
+  };
 
   // Helper to fetch club data
   const fetchClub = async () => {
@@ -426,6 +442,7 @@ export default function ClubDetailPage() {
       players={playersSection}
       tournaments={tournamentsSection}
       settings={settingsSection}
+      defaultPage={getDefaultPage()}
     >
       <p>test</p>
     </ClubLayout>

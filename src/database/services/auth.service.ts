@@ -50,13 +50,15 @@ export class AuthService {
     return {token, user}
   }
 
-  static async verifyEmail(email: string, code: string): Promise<void> {
+  static async verifyEmail(email: string, code: string): Promise<{user: IUserDocument, token: string}> {
     await connectMongo();
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found');
     }
     await user.verifyEmail(code);
+    const token = await this.generateAuthToken(user);
+    return { user, token };
   }
 
   static async sendVerificationEmail(user: IUserDocument): Promise<string> {

@@ -1,17 +1,27 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 import { IconArrowLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUserContext } from '@/hooks/useUser';
 
 const Login: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setUser } = useUserContext();
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
+
+  // Get redirect parameter from URL
+  useEffect(() => {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      setRedirectPath(redirect);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (data: { email: string; password: string }) => {
     console.log('Login data:', data);
@@ -37,7 +47,12 @@ const Login: React.FC = () => {
         {
           loading: 'Bejelentkezés folyamatban...',
           success: () => {
-            router.push('/'); // Navigate to the home page
+            // Navigate to redirect path or default to home
+            if (redirectPath) {
+              router.push(redirectPath);
+            } else {
+              router.push('/'); // Navigate to the home page
+            }
             return 'Sikeres bejelentkezés!';
           },
           error: (error) => {
@@ -62,7 +77,9 @@ const Login: React.FC = () => {
 
   const handleSignUp = () => {
     console.log('Sign up clicked');
-    router.push('/register'); // Navigálás a regisztrációs oldalra
+    // Navigate to register with redirect parameter if present
+    const registerUrl = redirectPath ? `/auth/register?redirect=${encodeURIComponent(redirectPath)}` : '/auth/register';
+    router.push(registerUrl);
   };
 
   return (
@@ -90,6 +107,7 @@ const Login: React.FC = () => {
             onSubmit={handleLogin}
             onForgotPassword={handleForgotPassword}
             onSignUp={handleSignUp}
+            redirectPath={redirectPath}
           />
         </div>
       </div>

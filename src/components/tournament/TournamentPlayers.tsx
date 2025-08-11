@@ -264,7 +264,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           )}
           {!user && (
             <div className="mt-4">
-              <a href="/auth/login" className="btn btn-accent">Jelentkezéshez lépj be</a>
+              <a href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`} className="btn btn-accent">Jelentkezéshez lépj be</a>
             </div>
           )}
         </>

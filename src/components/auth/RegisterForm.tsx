@@ -23,12 +23,14 @@ interface RegisterFormProps {
   onSubmit?: (data: RegisterFormData) => Promise<void> | void; // Regisztráció kezelésére
   onLogin?: () => void; // Bejelentkezés oldalra navigáláshoz
   isLoading?: boolean; // Betöltési állapot
+  redirectPath?: string | null;
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({
   onSubmit,
   onLogin,
   isLoading = false,
+  redirectPath,
 }) => {
   const [showPassword, setShowPassword] = useState(false); // Jelszó láthatóság vezérlése
 
@@ -206,7 +208,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Már van fiókod?{' '}
             <Link
-                href="/auth/login"
+                href={`/auth/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
               className="text-[hsl(var(--primary))] hover:text-[hsl(var(--primary-dark))] transition-colors font-medium"
             >
               Jelentkezz be itt

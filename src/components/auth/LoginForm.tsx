@@ -25,6 +25,7 @@ interface LoginFormProps {
   onForgotPassword?: () => void;
   onSignUp?: () => void;
   isLoading?: boolean;
+  redirectPath?: string | null;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -32,6 +33,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onForgotPassword,
   onSignUp,
   isLoading = false,
+  redirectPath,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -168,7 +170,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Még nincs fiókod?{' '}
             <Link
-              href="/auth/register"
+              href={`/auth/register${redirectPath ? `?redirect=${redirectPath}` : ''}`}
               className="text-[hsl(var(--primary))] hover:underline hover:text-[hsl(var(--primary-dark))] transition-colors font-medium"
             >
               Regisztrálj itt

@@ -11,10 +11,11 @@ interface ClubLayoutProps {
   players: React.ReactNode;
   tournaments: React.ReactNode;
   settings?: React.ReactNode;
+  defaultPage?: 'summary' | 'players' | 'tournaments' | 'settings';
 }
 
-export default function ClubLayout({ userRole, clubName, summary, players, tournaments, settings }: ClubLayoutProps) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'players' | 'tournaments' | 'settings'>('summary');
+export default function ClubLayout({ userRole, clubName, summary, players, tournaments, settings, defaultPage = 'summary' }: ClubLayoutProps) {
+  const [activeTab, setActiveTab] = useState<'summary' | 'players' | 'tournaments' | 'settings'>(defaultPage);
 
   const tabs = [
     { key: 'summary', label: 'Áttekintés', icon: <IconHome size={18} /> },
