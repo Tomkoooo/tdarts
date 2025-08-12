@@ -1,5 +1,5 @@
 import { TournamentModel } from '@/database/models/tournament.model';
-import { TournamentDocument } from '@/interface/tournament.interface';
+import { TournamentDocument, TournamentSettings } from '@/interface/tournament.interface';
 import { connectMongo } from '@/lib/mongoose';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { PlayerModel } from '../models/player.model';
@@ -2434,6 +2434,83 @@ export class TournamentService {
         } catch (error) {
             console.error('getLiveMatches error:', error);
             throw error;
+        }
+    }
+
+    static async updateTournamentSettings(tournamentId: string, userId: string, settings: Partial<TournamentSettings>): Promise<TournamentDocument> {
+        try {
+            await connectMongo();
+            
+            // Get tournament with club information
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
+                .populate('clubId');
+            
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Check if user has permission to edit this tournament
+            const club = tournament.clubId as any;
+            if (!club) {
+                throw new BadRequestError('Club not found');
+            }
+
+            // Check if user is admin or moderator of the club
+            const isAdmin = club.admin?.some((adminId: any) => adminId.toString() === userId);
+            const isModerator = club.moderators?.some((moderatorId: any) => moderatorId.toString() === userId);
+            
+            if (!isAdmin && !isModerator) {
+                throw new BadRequestError('Only club admins or moderators can edit tournament settings');
+            }
+
+            // Validate settings based on tournament status
+            const currentStatus = tournament.tournamentSettings.status;
+            
+            // Don't allow editing certain fields if tournament has started
+            if (currentStatus !== 'pending') {
+                const restrictedFields = ['format', 'maxPlayers', 'startingScore', 'boardCount'];
+                const attemptedRestrictedChanges = restrictedFields.filter(field => {
+                    const newValue = settings[field as keyof TournamentSettings];
+                    const currentValue = tournament.tournamentSettings[field as keyof TournamentSettings];
+                    return newValue !== undefined && newValue !== currentValue;
+                });
+                
+                if (attemptedRestrictedChanges.length > 0) {
+                    throw new BadRequestError(`Cannot modify ${attemptedRestrictedChanges.join(', ')} after tournament has started`);
+                }
+            }
+
+            // Update tournament settings
+            const updatedSettings = { ...tournament.tournamentSettings, ...settings };
+            
+            // Validate required fields
+            if (updatedSettings.name && updatedSettings.name.trim().length === 0) {
+                throw new BadRequestError('Tournament name cannot be empty');
+            }
+
+            if (updatedSettings.maxPlayers && updatedSettings.maxPlayers < 2) {
+                throw new BadRequestError('Maximum players must be at least 2');
+            }
+
+            if (updatedSettings.startingScore && updatedSettings.startingScore < 1) {
+                throw new BadRequestError('Starting score must be at least 1');
+            }
+
+            if (updatedSettings.entryFee && updatedSettings.entryFee < 0) {
+                throw new BadRequestError('Entry fee cannot be negative');
+            }
+
+            // Update the tournament
+            tournament.tournamentSettings = updatedSettings;
+            tournament.updatedAt = new Date();
+            
+            await tournament.save();
+            
+            // Return updated tournament
+            return await this.getTournament(tournamentId);
+        } catch (err) {
+            console.error('updateTournamentSettings error:', err);
+            throw err;
         }
     }
 }

@@ -52,6 +52,7 @@ export interface TournamentSettings {
     name: string;
     description?: string;
     startDate: Date;
+    endDate?: Date; // Optional end date for tournaments
     maxPlayers: number;
     format: 'group' | 'knockout' | 'group_knockout';
     startingScore: number;
@@ -61,7 +62,8 @@ export interface TournamentSettings {
     entryFee: number;
     location: string;
     type: 'amateur' | 'open';
-    registrationDeadline: Date
+    registrationDeadline: Date;
+    coverImage?: string; // Optional cover image for SEO
 }
 
 export interface PlayerDocument extends Document {

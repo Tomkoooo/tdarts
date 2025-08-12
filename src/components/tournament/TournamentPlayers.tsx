@@ -36,8 +36,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleAddPlayer = async (player: any) => {
     try {
       const payload: any = {};
-      if (player.userRef) payload.userRef = player.userRef;
-      if (player.name) payload.name = player.name;
+      
+      // If player already has an _id, it's an existing player
+      if (player._id) {
+        payload.playerId = player._id;
+      } else {
+        // If no _id, we need to create a new player
+        if (player.userRef) {
+          payload.userRef = player.userRef;
+          payload.name = player.name;
+        } else {
+          payload.name = player.name;
+        }
+      }
+      
       const response = await axios.post(`/api/tournaments/${code}/players`, payload);
       if (response.data.success) {
         // Update local state immediately
@@ -45,7 +57,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           _id: response.data.playerId,
           playerReference: {
             _id: response.data.playerId,
-            name: player.name || player.userRef,
+            name: player.name,
             userRef: player.userRef
           },
           status: 'applied'
@@ -264,7 +276,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           )}
           {!user && (
             <div className="mt-4">
-              <a href="/auth/login" className="btn btn-accent">Jelentkezéshez lépj be</a>
+              <a href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`} className="btn btn-accent">Jelentkezéshez lépj be</a>
             </div>
           )}
         </>

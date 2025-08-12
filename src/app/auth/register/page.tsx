@@ -1,17 +1,29 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import RegisterForm from '@/components/auth/RegisterForm';
 import VerifyEmail from '@/components/auth/VerifyEmail';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useUserContext } from '@/hooks/useUser';
 
 // Regisztrációs oldal, amely a regisztrációt és az email verifikációt kezeli
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { setUser } = useUserContext();
+
+  // Get redirect parameter from URL
+  useEffect(() => {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      setRedirectPath(redirect);
+    }
+  }, [searchParams]);
 
   const handleRegister = async (data: {
     email: string;
@@ -62,12 +74,31 @@ export default function RegisterPage() {
           headers: {
             'Content-Type': 'application/json',
           },
+        }).then(async (verifyResponse) => {
+          // After successful email verification, automatically log in the user
+          if (verifyResponse.data.user) {
+            // Set user in context
+            setUser({
+              _id: verifyResponse.data.user._id,
+              username: verifyResponse.data.user.username,
+              name: verifyResponse.data.user.name,
+              email: verifyResponse.data.user.email,
+              isAdmin: verifyResponse.data.user.isAdmin,
+              isVerified: verifyResponse.data.user.isVerified,
+            });
+            
+            // Navigate to redirect path or default to home
+            if (redirectPath) {
+              router.push(redirectPath);
+            } else {
+              router.push('/');
+            }
+          }
         }),
         {
           loading: 'Verifikáció folyamatban...',
           success: () => {
-            router.push('/auth/login'); // Navigálás a bejelentkezési oldalra
-            return 'Email sikeresen verifikálva!';
+            return 'Email sikeresen verifikálva! Automatikus bejelentkezés...';
           },
           error: (error) => {
             console.error('Verification error:', error);
@@ -106,6 +137,7 @@ export default function RegisterPage() {
           <RegisterForm
             onSubmit={handleRegister}
             isLoading={isLoading}
+            redirectPath={redirectPath}
           />
           {error && (
             <p className="text-[hsl(var(--destructive))] text-sm mt-4 text-center">

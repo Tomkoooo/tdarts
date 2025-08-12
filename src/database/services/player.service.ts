@@ -36,6 +36,17 @@ export class PlayerService {
     return player;
   }
 
+  /**
+   * Keres vagy létrehoz egy játékost userRef alapján
+   */
+  static async findOrCreatePlayerByUserRef(userRef: string, name: string) {
+    let player = await PlayerModel.findOne({ userRef });
+    if (player) return player;
+    player = new PlayerModel({ userRef, name });
+    await player.save();
+    return player;
+  }
+
   static async findPlayerByUserId(
     userId: string
   ): Promise<import('@/interface/player.interface').PlayerDocument | null> {

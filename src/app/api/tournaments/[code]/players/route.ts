@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { PlayerService } from "@/database/services/player.service";
+import { PlayerModel } from "@/database/models/player.model";
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id');
@@ -16,13 +17,25 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const { userRef, name } = await request.json();
+  const { playerId, userRef, name } = await request.json();
+  
   let player;
-  if (userRef) {
-    player = await PlayerService.createPlayer({ userRef: userRef, name: name });
+  
+  // If playerId is provided, use existing player
+  if (playerId) {
+    player = await PlayerModel.findById(playerId);
+    if (!player) {
+      return NextResponse.json({ error: "Player not found" }, { status: 404 });
+    }
   } else {
-    player = await PlayerService.createPlayer({ name: name });
+    // Create new player
+    if (userRef) {
+      player = await PlayerService.findOrCreatePlayerByUserRef(userRef, name);
+    } else {
+      player = await PlayerService.findOrCreatePlayerByName(name);
+    }
   }
+  
   const success = await TournamentService.addTournamentPlayer(code, player._id);
   return NextResponse.json({ success, playerId: player._id});
 }

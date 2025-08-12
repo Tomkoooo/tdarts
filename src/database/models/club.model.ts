@@ -6,6 +6,8 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     name: { type: String, required: true, unique: true },
     description: { type: String, required: true },
     location: { type: String, required: true },
+    address: { type: String, default: null },
+    logo: { type: String, default: null },
     contact: {
       email: { type: String, default: null },
       phone: { type: String, default: null },
