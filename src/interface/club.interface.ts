@@ -5,6 +5,8 @@ export interface Club {
   name: string;
   description: string;
   location: string;
+  address?: string; // Optional detailed address
+  logo?: string; // Optional club logo URL
   contact: {
     email?: string;
     phone?: string;

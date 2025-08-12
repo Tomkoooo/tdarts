@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { IconX, IconPrinter, IconCopy, IconQrcode } from '@tabler/icons-react';
+import { IconX, IconPrinter, IconCopy } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 interface ClubShareModalProps {

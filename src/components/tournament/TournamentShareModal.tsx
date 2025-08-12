@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { IconX, IconPrinter, IconCopy, IconQrcode } from '@tabler/icons-react';
+import { IconX, IconPrinter, IconCopy } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 interface TournamentShareModalProps {
@@ -13,6 +13,7 @@ interface TournamentShareModalProps {
 
 export default function TournamentShareModal({ isOpen, onClose, tournamentCode, tournamentName }: TournamentShareModalProps) {
   const [shareType, setShareType] = useState<'public' | 'auth'>('public');
+  const qrRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
@@ -33,7 +34,11 @@ export default function TournamentShareModal({ isOpen, onClose, tournamentCode, 
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
-    if (printWindow) {
+    if (printWindow && qrRef.current) {
+      // Get the QR code SVG from the current component
+      const qrCodeElement = qrRef.current.querySelector('svg');
+      const qrCodeSVG = qrCodeElement ? qrCodeElement.outerHTML : '';
+      
       const qrData = generateQRCodeData();
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -55,6 +60,10 @@ export default function TournamentShareModal({ isOpen, onClose, tournamentCode, 
               margin: 20px 0;
               display: flex;
               justify-content: center;
+            }
+            .qr-code svg {
+              width: 200px;
+              height: 200px;
             }
             .title {
               font-size: 24px;
@@ -89,12 +98,7 @@ export default function TournamentShareModal({ isOpen, onClose, tournamentCode, 
               ${shareType === 'auth' ? 'Bejelentkezési QR Kód' : 'Nyilvános QR Kód'}
             </div>
             <div class="qr-code">
-              <div style="width: 200px; height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                <div style="font-size: 12px; color: #666; text-align: center;">
-                  QR Kód<br/>
-                  (${qrData.length} karakter)
-                </div>
-              </div>
+              ${qrCodeSVG}
             </div>
             <div class="link">${qrData}</div>
           </div>
@@ -143,7 +147,7 @@ export default function TournamentShareModal({ isOpen, onClose, tournamentCode, 
           </div>
         </div>
 
-        <div className="flex justify-center mb-4">
+        <div ref={qrRef} className="flex justify-center mb-4">
           <div className="bg-white p-4 rounded-lg">
             <QRCodeSVG 
               value={generateQRCodeData()} 
