@@ -329,8 +329,7 @@ export class ClubService {
 
     // Lekérjük a klubhoz tartozó tornákat külön
     const tournaments = await TournamentModel.find({ clubId: club._id })
-      .select('_id tournamentId tournamentSettings.name code tournamentSettings.status tournamentSettings.startDate tournamentSettings.description')
-      .lean();
+      .select('_id tournamentId tournamentSettings code')
 
     // Válasz: minden szereplőhöz role mező
     // For members, always include name, userRef, and username ("vendég" if not registered)
@@ -375,11 +374,8 @@ export class ClubService {
       members: membersWithUsernames,
       tournaments: tournaments.map((t: any) => ({
         _id: t._id.toString(),
-        name: t.tournamentSettings?.name || t.name,
+        tournamentSettings: t.tournamentSettings,
         tournamentId: t.tournamentId,
-        status: t.tournamentSettings?.status,
-        startDate: t.tournamentSettings?.startDate, // vagy startTime, ha úgy van
-        description: t.tournamentSettings?.description,
       })),
     };
     return result;

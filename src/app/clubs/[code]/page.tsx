@@ -12,6 +12,8 @@ import CreateTournamentModal from '@/components/club/CreateTournamentModal';
 import EditClubModal from '@/components/club/EditClubModal';
 import PlayerSearch from '@/components/club/PlayerSearch';
 import QRCodeModal from '@/components/club/QRCodeModal';
+import ClubShareModal from '@/components/club/ClubShareModal';
+import { IconQrcode } from '@tabler/icons-react';
 
 
 export default function ClubDetailPage() {
@@ -35,6 +37,7 @@ export default function ClubDetailPage() {
     isOpen: false,
     boardNumber: 0
   });
+  const [clubShareModal, setClubShareModal] = useState(false);
 
   // Get default page from URL parameter
   const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'settings' => {
@@ -111,8 +114,8 @@ export default function ClubDetailPage() {
 
   useEffect(() => {
     const fetchClubAndRole = async () => {
-      if (!code || !user?._id) {
-        router.push('/auth/login');
+      if (!code) {
+        router.push('/clubs');
         return;
       }
 
@@ -121,10 +124,15 @@ export default function ClubDetailPage() {
         const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`);
         setClub(clubResponse.data);
 
-        const roleResponse = await axios.get<{ role: 'admin' | 'moderator' | 'member' | 'none' }>(
-          `/api/clubs/user/role?clubId=${code}&userId=${user._id}`
-        );
-        setUserRole(roleResponse.data.role);
+        // Only fetch user role if user is logged in
+        if (user?._id) {
+          const roleResponse = await axios.get<{ role: 'admin' | 'moderator' | 'member' | 'none' }>(
+            `/api/clubs/user/role?clubId=${code}&userId=${user._id}`
+          );
+          setUserRole(roleResponse.data.role);
+        } else {
+          setUserRole('none');
+        }
 
         toast.success('Klub adatok betöltve!', { id: toastId });
       } catch (err: any) {
@@ -204,10 +212,62 @@ export default function ClubDetailPage() {
   const summarySection = (
     <div className="space-y-4 md:space-y-6">
       <section className="bg-base-200 rounded-2xl shadow-xl p-4 md:p-6 flex flex-col gap-2">
-        <h2 className="text-2xl md:text-3xl font-bold text-primary mb-1">{club.name}</h2>
-        <div className="text-base md:text-lg text-base-content/80 mb-2">{club.description}</div>
-        <div className="flex flex-wrap gap-2 md:gap-4 items-center text-sm md:text-base text-base-content/60">
-          <span>Helyszín: <span className="font-medium text-base-content">{club.location}</span></span>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <h2 className="text-2xl md:text-3xl font-bold text-primary mb-1">{club.name}</h2>
+            <div className="text-base md:text-lg text-base-content/80 mb-2">{club.description}</div>
+            <div className="flex flex-wrap gap-2 md:gap-4 items-center text-sm md:text-base text-base-content/60">
+              <span>Helyszín: <span className="font-medium text-base-content">{club.location}</span></span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            {user ? (
+              <>
+                <button
+                  onClick={() => setClubShareModal(true)}
+                  className="btn btn-sm btn-outline btn-primary flex items-center gap-2"
+                  title="QR kód megjelenítése"
+                >
+                  <IconQrcode className="w-4 h-4" />
+                  Megosztás
+                </button>
+                <button
+                  onClick={() => {
+                    const loginLink = `${window.location.origin}/auth/login?redirect=${encodeURIComponent(`/clubs/${code}?page=tournaments`)}`;
+                    navigator.clipboard.writeText(loginLink);
+                    toast.success('Bejelentkezési link másolva!');
+                  }}
+                  className="btn btn-sm btn-outline btn-secondary text-white flex items-center gap-2"
+                  title="Bejelentkezési link másolása"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Link másolása
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setClubShareModal(true)}
+                  className="btn btn-sm btn-outline btn-primary flex items-center gap-2"
+                  title="QR kód megjelenítése"
+                >
+                  <IconQrcode className="w-4 h-4" />
+                  Megosztás
+                </button>
+                <a
+                  href={`/auth/login?redirect=${encodeURIComponent(`/clubs/${code}?page=tournaments`)}`}
+                  className="btn btn-sm btn-primary flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Bejelentkezés
+                </a>
+              </>
+            )}
+          </div>
         </div>
       </section>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
@@ -434,17 +494,27 @@ export default function ClubDetailPage() {
   ) : null;
 
   return (
-    <ClubLayout
-      userRole={userRole}
-      clubId={club._id}
-      clubName={club.name}
-      summary={summarySection}
-      players={playersSection}
-      tournaments={tournamentsSection}
-      settings={settingsSection}
-      defaultPage={getDefaultPage()}
-    >
-      <p>test</p>
-    </ClubLayout>
+    <>
+      <ClubLayout
+        userRole={userRole}
+        clubId={club._id}
+        clubName={club.name}
+        summary={summarySection}
+        players={playersSection}
+        tournaments={tournamentsSection}
+        settings={settingsSection}
+        defaultPage={getDefaultPage()}
+      >
+        <p>test</p>
+      </ClubLayout>
+      
+      {/* Club Share Modal - outside ClubLayout so it's always accessible */}
+      <ClubShareModal
+        isOpen={clubShareModal}
+        onClose={() => setClubShareModal(false)}
+        clubCode={code}
+        clubName={club.name}
+      />
+    </>
   );
 }

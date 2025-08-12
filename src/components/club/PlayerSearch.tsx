@@ -49,8 +49,23 @@ export default function PlayerSearch({
       
       // Combine and deduplicate results
       const combined = [...users, ...players].reduce((acc: any[], curr) => {
-        if (!acc.find((item: any) => item._id === curr._id)) {
-          acc.push(curr);
+        // For users (with userRef), check if there's already a player with the same userRef
+        if (curr.userRef) {
+          const existingPlayer = acc.find((item: any) => 
+            (item.userRef && item.userRef.toString() === curr.userRef.toString()) ||
+            (item._id && item._id.toString() === curr.userRef.toString())
+          );
+          if (!existingPlayer) {
+            acc.push(curr);
+          }
+        } else {
+          // For players without userRef, check by _id
+          const existingPlayer = acc.find((item: any) => 
+            item._id && item._id.toString() === curr._id.toString()
+          );
+          if (!existingPlayer) {
+            acc.push(curr);
+          }
         }
         return acc;
       }, []);
@@ -73,29 +88,14 @@ export default function PlayerSearch({
   }, [searchTerm, debouncedSearch]);
 
   const handleSelect = async (player: any) => {
-    let playerId = player._id;
-    // If regisztrált user (from user collection) and no player entry, create player with userRef
-    if (!playerId && player.userRef) {
-      try {
-        const res = await axios.post('/api/players', { name: player.name, userRef: player.userRef });
-        playerId = res.data._id;
-      } catch (err) {
-        // fallback: treat as guest
-        console.error('Player search error:', err);
-      }
-    }
-    // If guest or not in player collection, create player without userRef
-    if (!playerId && !player.userRef) {
-      try {
-        const res = await axios.post('/api/players', { name: player.name });
-        playerId = res.data._id;
-      } catch (err) {
-        console.error('Player search error:', err);
-      }
-    }
-    onPlayerSelected({ ...player, _id: playerId });
-    setAddedIds((prev) => [...prev, playerId]); // Mark as added
-    setJustAddedId(playerId); // For feedback
+    // Don't create player here - let the parent component handle it
+    // Just pass the player data to the parent
+    onPlayerSelected(player);
+    
+    // Use a more reliable identifier for tracking added players
+    const playerIdentifier = player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name);
+    setAddedIds((prev) => [...prev, playerIdentifier]); // Mark as added
+    setJustAddedId(playerIdentifier); // For feedback
     setTimeout(() => setJustAddedId(null), 1200); // Remove feedback after 1.2s
   };
 
@@ -147,9 +147,12 @@ export default function PlayerSearch({
             </div>
           ) : results.length > 0 ? (
             <ul className="py-2 max-h-64 overflow-auto">
-              {results.filter((player) => !addedIds.includes(player._id)).map((player) => (
+              {results.filter((player) => {
+                const playerIdentifier = player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name);
+                return !addedIds.includes(playerIdentifier);
+              }).map((player) => (
                 <li
-                  key={player._id}
+                  key={player.userRef || player._id || player.name}
                   className="px-4 py-2 hover:bg-base-100 cursor-pointer flex items-center justify-between gap-2"
                 >
                   <span>
@@ -161,11 +164,11 @@ export default function PlayerSearch({
                     )}
                   </span>
                   <button
-                    className={`btn btn-xs btn-primary ${justAddedId === player._id ? 'btn-success pointer-events-none' : ''}`}
+                    className={`btn btn-xs btn-primary ${justAddedId === (player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name)) ? 'btn-success pointer-events-none' : ''}`}
                     onClick={() => handleSelect(player)}
-                    disabled={justAddedId === player._id}
+                    disabled={justAddedId === (player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name))}
                   >
-                    {justAddedId === player._id ? 'Hozzáadva' : 'Hozzáadás'}
+                    {justAddedId === (player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name)) ? 'Hozzáadva' : 'Hozzáadás'}
                   </button>
                 </li>
               ))}

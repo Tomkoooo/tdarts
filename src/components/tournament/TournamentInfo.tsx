@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { IconScreenShare, IconRefresh } from '@tabler/icons-react';
+import { IconScreenShare, IconRefresh, IconEdit } from '@tabler/icons-react';
+import EditTournamentModal from './EditTournamentModal';
 
 interface TournamentInfoProps {
   tournament: any;
   onRefetch: () => void;
+  userRole?: string;
+  userId?: string;
 }
 
-const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }) => {
+const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, userRole, userId }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const router = useRouter();
 
   const description = tournament.tournamentSettings?.description || '-';
@@ -20,12 +24,28 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }
     router.push(`/board/${tournament.tournamentId}`);
   };
 
+  const canEdit = userRole === 'admin' || userRole === 'moderator';
+
   return (
     <>
-      <h1 className="text-3xl font-bold mb-2">{tournament.tournamentSettings?.name}</h1>
+      <div className="flex justify-between items-start mb-4">
+        <h1 className="text-3xl font-bold">{tournament.tournamentSettings?.name}</h1>
+        {canEdit && (
+          <button
+            onClick={() => setEditModalOpen(true)}
+            className="btn btn-outline btn-sm flex items-center gap-2"
+            title="Torna szerkesztése"
+          >
+            <IconEdit className="w-4 h-4" />
+            Szerkesztés
+          </button>
+        )}
+      </div>
+      
       <div className="mb-4">
         <span className="font-semibold">Formátum:</span> {tournament.tournamentSettings?.format}<br />
         <span className="font-semibold">Kezdés:</span> {tournament.tournamentSettings?.startDate ? new Date(tournament.tournamentSettings.startDate).toLocaleString() : '-'}<br />
+        <span className="font-semibold">Helyszín:</span> {tournament.tournamentSettings?.location || tournament.clubId?.location}<br />
         <span className="font-semibold">Nevezési díj:</span> {tournament.tournamentSettings?.entryFee} Ft<br />
         <span className="font-semibold">Max. létszám:</span> {tournament.tournamentSettings?.maxPlayers}<br />
         <span className="font-semibold">Kezdő pontszám:</span> {tournament.tournamentSettings?.startingScore}<br />
@@ -40,9 +60,13 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }
         )}
       </div>
       <div className="mb-4">
-        <h2 className="text-xl font-semibold mb-1">Klub</h2>
-        <div><span className="font-semibold">Név:</span> {tournament.clubId?.name}</div>
-        <div><span className="font-semibold">Helyszín:</span> {tournament.clubId?.location}</div>
+        <h2 className="text-xl font-semibold mb-1">Rendezői adatok:</h2>
+        <span>{tournament.clubId?.name}</span> - <span>{tournament.clubId?.location}</span>
+        <div className="flex flex-col mt-1">
+          {tournament.clubId.contact.email && <a href={`mailto:${tournament.clubId.contact.email}`} className="text-primary hover:text-primary-focus ml-1 font-semibold"  >{tournament.clubId.contact.email}</a>}
+          {tournament.clubId.contact.phone && <a href={`tel:${tournament.clubId.contact.phone}`} className="text-primary hover:text-primary-focus ml-1 font-semibold">{tournament.clubId.contact.phone}</a>}
+          {tournament.clubId.contact.website && <a href={tournament.clubId.contact.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-focus ml-1 font-semibold">{tournament.clubId.contact.website}</a>}
+        </div>
       </div>
       
       <div className="mt-6 flex gap-4 flex-wrap">
@@ -69,6 +93,17 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch }
           </Link>
         )}
       </div>
+
+      {/* Edit Tournament Modal */}
+      {canEdit && userId && (
+        <EditTournamentModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          tournament={tournament}
+          userId={userId}
+          onTournamentUpdated={onRefetch}
+        />
+      )}
     </>
   );
 };

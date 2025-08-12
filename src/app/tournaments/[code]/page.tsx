@@ -9,6 +9,8 @@ import TournamentGroupsGenerator from '@/components/tournament/TournamentStatusC
 import TournamentGroupsView from '@/components/tournament/TournamentGroupsView';
 import TournamentBoardsView from '@/components/tournament/TournamentBoardsView';
 import TournamentKnockoutBracket from '@/components/tournament/TournamentKnockoutBracket';
+import TournamentShareModal from '@/components/tournament/TournamentShareModal';
+import { IconQrcode } from '@tabler/icons-react';
 
 const TournamentPage = () => {
     const { code } = useParams();
@@ -19,6 +21,7 @@ const TournamentPage = () => {
   const [userPlayerStatus, setUserPlayerStatus] = useState<'applied' | 'checked-in' | 'none'>('none');
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
+  const [tournamentShareModal, setTournamentShareModal] = useState(false);
     const { user } = useUserContext();
 
   // Bulk fetch for tournament and user role
@@ -129,7 +132,19 @@ const TournamentPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
-
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-primary">
+            {tournament.tournamentSettings?.name || 'Torna'}
+          </h1>
+          <button
+            onClick={() => setTournamentShareModal(true)}
+            className="btn btn-outline btn-primary flex items-center gap-2"
+            title="Torna megosztása"
+          >
+            <IconQrcode className="w-5 h-5" />
+            Megosztás
+          </button>
+        </div>
 
         {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
@@ -145,7 +160,12 @@ const TournamentPage = () => {
                   </svg>
                   Torna Információk
                 </h2>
-                <TournamentInfo tournament={tournament} onRefetch={handleRefetch} />
+                <TournamentInfo 
+                  tournament={tournament} 
+                  onRefetch={handleRefetch} 
+                  userRole={userClubRole}
+                  userId={user?._id}
+                />
               </div>
             </div>
 
@@ -272,6 +292,14 @@ const TournamentPage = () => {
           </div>
         )}
       </div>
+      
+      {/* Tournament Share Modal */}
+      <TournamentShareModal
+        isOpen={tournamentShareModal}
+        onClose={() => setTournamentShareModal(false)}
+        tournamentCode={tournament.tournamentId}
+        tournamentName={tournament.tournamentSettings?.name || 'Torna'}
+      />
     </div>
   );
 };
