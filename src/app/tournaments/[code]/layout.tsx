@@ -6,7 +6,7 @@ import { ClubDocument } from "@/interface/club.interface";
 
 interface LayoutProps {
   children: ReactNode;
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }
 
 // Helper to build absolute URL for images
