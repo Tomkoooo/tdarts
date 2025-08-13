@@ -21,7 +21,7 @@ interface TournamentSelectionPageProps {
   clubId: string;
 }
 
-const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tournaments, clubId }) => {
+const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tournaments }) => {
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -61,6 +61,7 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
         setError(data.error || 'Hibás jelszó.');
       }
     } catch (err) {
+      console.error(err);
       setError('Hiba történt a kapcsolódás során.');
     } finally {
       setLoading(false);

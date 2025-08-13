@@ -135,7 +135,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
     player2Average: calculateLegAverages(leg.player2Throws),
   }));
 
-  const { player1Cumulative, player2Cumulative, legLabels } = calculateCumulativeAveragesWithLegs();
+  const { player1Cumulative, player2Cumulative } = calculateCumulativeAveragesWithLegs();
 
   // Chart options
   const chartOptions: ChartOptions<'line'> = {
