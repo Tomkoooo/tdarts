@@ -58,8 +58,43 @@ matchSchema.pre('save', function (next) {
       this.winnerId = undefined;
     }
   } else {
-    // If either player is missing, no winner can be determined
-    this.winnerId = undefined;
+    // Handle bye matches (only one player exists)
+    if (!this.player1 && this.player2) {
+      // Only player2 exists - player2 wins
+      this.winnerId = this.player2.playerId;
+      this.status = 'finished';
+    } else if (this.player1 && !this.player2) {
+      // Only player1 exists - player1 wins
+      this.winnerId = this.player1.playerId;
+      this.status = 'finished';
+    } else if (this.player1 && this.player2 && 
+               (this.player1.playerId === null || this.player1.playerId === undefined || 
+                this.player2.playerId === null || this.player2.playerId === undefined)) {
+      // One of the players has null/undefined playerId (bye match)
+      if (this.player1.playerId && !this.player2.playerId) {
+        // Only player1 has valid playerId - player1 wins
+        this.winnerId = this.player1.playerId;
+        this.status = 'finished';
+      } else if (!this.player1.playerId && this.player2.playerId) {
+        // Only player2 has valid playerId - player2 wins
+        this.winnerId = this.player2.playerId;
+        this.status = 'finished';
+      } else {
+        // Both players have null/undefined playerId or both have valid playerId
+        this.winnerId = undefined;
+        this.status = 'pending';
+      }
+    } else if (this.player1 && this.player2 && 
+               this.player1.playerId && this.player2.playerId) {
+      // Both players exist and have valid playerIds - this is a regular match
+      // Don't set winner automatically, let it be determined by legs
+      this.winnerId = undefined;
+      this.status = 'pending';
+    } else {
+      // If either player is missing, no winner can be determined
+      this.winnerId = undefined;
+      this.status = 'pending';
+    }
   }
   next();
 });

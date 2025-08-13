@@ -16,7 +16,12 @@ export class MatchService {
         const matches = await MatchModel.find({
             boardReference: boardNumber,
             tournamentRef: tournament._id,
-            status: { $ne: 'finished' }
+            status: { $ne: 'finished' },
+            // Only include matches where both players exist (no bye matches)
+            $and: [
+                { 'player1.playerId': { $ne: null } },
+                { 'player2.playerId': { $ne: null } }
+            ]
         })
         .populate('player1.playerId')
         .populate('player2.playerId')
@@ -39,7 +44,12 @@ export class MatchService {
         
         const matches = await MatchModel.find({
             boardReference: boardNumber,
-            tournamentRef: tournament._id
+            tournamentRef: tournament._id,
+            // Only include matches where both players exist (no bye matches)
+            $and: [
+                { 'player1.playerId': { $ne: null } },
+                { 'player2.playerId': { $ne: null } }
+            ]
         })
         .populate('player1.playerId')
         .populate('player2.playerId')
@@ -245,6 +255,38 @@ export class MatchService {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found');
 
+        // Check if this is a bye match (one or both players are null)
+        const isByeMatch = !match.player1?.playerId || !match.player2?.playerId;
+        
+        if (isByeMatch) {
+            // Handle bye match - automatically set the existing player as winner
+            if (!match.player1?.playerId && !match.player2?.playerId) {
+                throw new BadRequestError('Cannot finish a match with no players');
+            }
+            
+            // Set the existing player as winner
+            if (match.player1?.playerId) {
+                match.winnerId = match.player1.playerId;
+                match.player1.legsWon = 1; // Bye player automatically wins
+                match.player2.legsWon = 0;
+            } else {
+                match.winnerId = match.player2.playerId;
+                match.player2.legsWon = 1; // Bye player automatically wins
+                match.player1.legsWon = 0;
+            }
+            
+            match.status = 'finished';
+            await match.save();
+            
+            // Update board status for bye matches
+            if (match.type === 'knockout') {
+                await TournamentService.updateBoardStatusAfterMatch(matchId);
+            }
+            
+            return match;
+        }
+
+        // Regular match - both players exist
         // Determine winner based on legs won
         const winner = matchData.player1LegsWon > matchData.player2LegsWon ? 1 : 2;
 

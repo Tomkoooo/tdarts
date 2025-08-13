@@ -73,6 +73,20 @@ async function checkFeatureFlagClient(featureName: string, clubId?: string): Pro
   
   // Ha nincs definiálva, akkor alapértelmezetten false
   if (envValue === undefined) {
+    // Speciális kezelés a detailedStatistics feature-hez - mindig ellenőrizze az adatbázist
+    if (featureName === 'detailedStatistics' && clubId) {
+      try {
+        const response = await fetch(`/api/feature-flags/check?feature=${featureName}&clubId=${clubId}`);
+        if (response.ok) {
+          const data = await response.json();
+          return data.enabled;
+        }
+        return false;
+      } catch (error) {
+        console.error('Error checking detailedStatistics feature via API:', error);
+        return false;
+      }
+    }
     return false;
   }
   

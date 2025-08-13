@@ -7,11 +7,15 @@ export async function GET(request: NextRequest) {
     const feature = searchParams.get('feature');
     const clubId = searchParams.get('clubId');
 
+    console.log('Feature flag check API:', { feature, clubId });
+
     if (!feature) {
       return NextResponse.json({ error: 'Feature name is required' }, { status: 400 });
     }
 
     const enabled = await FeatureFlagService.isFeatureEnabled(feature, clubId || undefined);
+    
+    console.log('Feature flag result:', { feature, clubId, enabled });
     
     return NextResponse.json({ enabled });
   } catch (error) {

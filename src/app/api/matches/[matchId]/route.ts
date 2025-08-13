@@ -33,6 +33,7 @@ export async function GET(
       status: match.status,
       winnerId: match.winnerId,
       legs: match.legs || [],
+      tournamentRef: match.tournamentRef,
       createdAt: match.createdAt,
       updatedAt: match.updatedAt
     };
