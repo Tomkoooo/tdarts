@@ -16,7 +16,14 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const router = useRouter();
 
-  const description = tournament.tournamentSettings?.description || '-';
+  // Description with clickable https links
+  const rawDescription: string = tournament.tournamentSettings?.description || '-';
+  const description = typeof rawDescription === 'string'
+    ? rawDescription.replace(
+        /(https:\/\/[^\s]+)/g,
+        (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary underline">${url}</a>`
+      )
+    : '-';
   const isDescriptionLong = description.length > 100;
   const displayDescription = isDescriptionExpanded ? description : description.substring(0, 100);
 
@@ -49,7 +56,10 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
         <span className="font-semibold">Nevezési díj:</span> {tournament.tournamentSettings?.entryFee} Ft<br />
         <span className="font-semibold">Max. létszám:</span> {tournament.tournamentSettings?.maxPlayers}<br />
         <span className="font-semibold">Kezdő pontszám:</span> {tournament.tournamentSettings?.startingScore}<br />
-        <span className="font-semibold">Leírás:</span> {displayDescription}
+        <span className="font-semibold">Leírás:</span>{" "}
+        <span
+          dangerouslySetInnerHTML={{ __html: displayDescription }}
+        />
         {isDescriptionLong && (
           <button
             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}

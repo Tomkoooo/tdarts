@@ -34,9 +34,14 @@ export class FeatureFlagService {
    */
   static async isClubFeatureEnabled(clubId: string, featureName: string): Promise<boolean> {
     try {
-      const club = await ClubModel.findById(clubId).select('featureFlags');
+      const club = await ClubModel.findById(clubId).select('featureFlags subscriptionModel');
       if (!club) {
         return false;
+      }
+
+      // Speciális kezelés a detailedStatistics feature-hez
+      if (featureName === 'detailedStatistics') {
+        return club.subscriptionModel === 'pro';
       }
 
       // Ha nincs featureFlags mező, akkor alapértelmezetten false
@@ -56,6 +61,16 @@ export class FeatureFlagService {
    * Először ENV-t ellenőrzi, majd ha szükséges, adatbázist is
    */
   static async isFeatureEnabled(featureName: string, clubId?: string): Promise<boolean> {
+    // Speciális kezelés a detailedStatistics feature-hez
+    if (featureName === 'detailedStatistics') {
+      // Ha nincs clubId, akkor false
+      if (!clubId) {
+        return false;
+      }
+      // Mindig ellenőrizze az adatbázist a detailedStatistics esetén
+      return await this.isClubFeatureEnabled(clubId, featureName);
+    }
+
     // ENV alapú ellenőrzés
     const envEnabled = this.isEnvFeatureEnabled(featureName);
     

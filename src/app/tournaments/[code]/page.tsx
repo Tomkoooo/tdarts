@@ -212,6 +212,7 @@ const TournamentPage = () => {
                     userClubRole={userClubRole} 
                     tournamentPlayers={players}
                     knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
+                    clubId={tournament.clubId?.toString()}
                   />
                 </div>
               </div>

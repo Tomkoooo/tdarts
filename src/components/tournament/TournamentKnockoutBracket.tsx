@@ -7,6 +7,7 @@ interface TournamentKnockoutBracketProps {
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
   tournamentPlayers?: any[];
   knockoutMethod?: 'automatic' | 'manual';
+  clubId?: string;
 }
 
 interface KnockoutMatch {
@@ -27,6 +28,7 @@ interface KnockoutMatch {
     _id: string;
     status: string;
     boardReference: number;
+    scorer?: { _id: string; name: string }; // Added scorer field
   };
   player1Name?: string;
   player2Name?: string;
@@ -45,7 +47,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   tournamentCode, 
   userClubRole, 
   tournamentPlayers = [],
-  knockoutMethod
+  knockoutMethod,
+  clubId
 }) => {
   const [knockoutData, setKnockoutData] = useState<KnockoutRound[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   const [selectedRound, setSelectedRound] = useState<number>(1);
   const [selectedPlayer1, setSelectedPlayer1] = useState<string>('');
   const [selectedPlayer2, setSelectedPlayer2] = useState<string>('');
+  const [selectedScorer, setSelectedScorer] = useState<string>('');
   const [addingMatch, setAddingMatch] = useState(false);
   const [editForm, setEditForm] = useState({
     player1LegsWon: 0,
@@ -173,6 +177,18 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   };
 
   const handleMatchEdit = (match: KnockoutMatch) => {
+    // Don't allow editing bye matches
+    if (!match.matchReference) {
+      setError('Bye meccseket nem lehet szerkeszteni - automatikusan befejeződnek.');
+      return;
+    }
+    
+    // Check if this is a bye match by looking at the match players
+    if (!match.player1 || !match.player2) {
+      setError('Bye meccseket nem lehet szerkeszteni - automatikusan befejeződnek.');
+      return;
+    }
+    
     setSelectedMatch(match);
     setEditForm({
       player1LegsWon: match.matchReference?.player1?.legsWon || 0,
@@ -194,7 +210,10 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   };
 
   const handleSaveMatch = async () => {
-    if (!selectedMatch || !selectedMatch.matchReference) return;
+    if (!selectedMatch || !selectedMatch.matchReference) {
+      setError('Nem lehet menteni a meccset.');
+      return;
+    }
 
     try {
       const matchId = typeof selectedMatch.matchReference === 'object' ? selectedMatch.matchReference._id : selectedMatch.matchReference;
@@ -229,7 +248,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       const response = await axios.post(`/api/tournaments/${tournamentCode}/addManualMatch`, {
         round: selectedRound,
         player1Id: selectedPlayer1 || undefined,
-        player2Id: selectedPlayer2 || undefined
+        player2Id: selectedPlayer2 || undefined,
+        scorerId: selectedScorer || undefined
       });
       
       if (response.data && response.data.success) {
@@ -237,6 +257,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         setShowAddMatchModal(false);
         setSelectedPlayer1('');
         setSelectedPlayer2('');
+        setSelectedScorer('');
       } else {
         setError(response.data?.error || 'Nem sikerült hozzáadni a meccset.');
       }
@@ -299,7 +320,10 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   };
 
   const handleUpdateMatchPlayer = async (playerId: string) => {
-    if (!editingMatch || !editingMatch.matchReference) return;
+    if (!editingMatch || !editingMatch.matchReference) {
+      setError('Nem lehet frissíteni a meccset.');
+      return;
+    }
 
     setUpdatingMatchPlayer(true);
     setError('');
@@ -327,6 +351,12 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   };
 
   const handleViewLegs = (match: KnockoutMatch) => {
+    // Don't allow viewing legs for bye matches
+    if (!match.matchReference) {
+      setError('Bye meccsekhez nincsenek legek.');
+      return;
+    }
+    
     setSelectedMatchForLegs(match);
     setShowLegsModal(true);
   };
@@ -348,6 +378,9 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
   const getAvailablePlayersForRound = (roundNumber: number) => {
     const playersInRound = new Set<string>();
+    const playersInPreviousRounds = new Set<string>();
+    const losersInPreviousRounds = new Set<string>();
+    const byePlayersInPreviousRounds = new Set<string>();
     
     // Get all players already in this round
     const roundData = knockoutData.find(r => r.round === roundNumber);
@@ -365,10 +398,74 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       });
     }
     
-    // Return players not in this round
+    // Get all players from previous rounds and identify losers and bye players
+    knockoutData.forEach(round => {
+      if (round.round < roundNumber) {
+        round.matches.forEach(match => {
+          // Add all players from previous rounds
+          if (match.player1) {
+            const player1Id = typeof match.player1 === 'object' && match.player1._id ? match.player1._id : match.player1;
+            if (player1Id) playersInPreviousRounds.add(player1Id.toString());
+          }
+          if (match.player2) {
+            const player2Id = typeof match.player2 === 'object' && match.player2._id ? match.player2._id : match.player2;
+            if (player2Id) playersInPreviousRounds.add(player2Id.toString());
+          }
+          
+          // Identify bye players (single player matches)
+          if (!match.player2 && match.player1) {
+            const player1Id = typeof match.player1 === 'object' && match.player1._id ? match.player1._id : match.player1;
+            if (player1Id) byePlayersInPreviousRounds.add(player1Id.toString());
+          }
+          
+          // Identify losers from finished matches (only for non-bye matches)
+          if (match.matchReference && match.player2 && match.matchReference.status === 'finished' && match.matchReference.winnerId) {
+            const winnerId = match.matchReference.winnerId.toString();
+            if (match.player1) {
+              const player1Id = typeof match.player1 === 'object' && match.player1._id ? match.player1._id : match.player1;
+              if (player1Id && player1Id.toString() !== winnerId) {
+                losersInPreviousRounds.add(player1Id.toString());
+              }
+            }
+            if (match.player2) {
+              const player2Id = typeof match.player2 === 'object' && match.player2._id ? match.player2._id : match.player2;
+              if (player2Id && player2Id.toString() !== winnerId) {
+                losersInPreviousRounds.add(player2Id.toString());
+              }
+            }
+          }
+        });
+      }
+    });
+    
+    // Return players not in this round, not losers, and optionally not in previous rounds
     return availablePlayers.filter((player: any) => {
       const playerId = player.playerReference?._id || player.playerReference || player._id;
-      return !playersInRound.has(playerId.toString());
+      const playerIdStr = playerId.toString();
+      
+      // Don't show players already in this round
+      if (playersInRound.has(playerIdStr)) {
+        return false;
+      }
+      
+      // Don't show losers from previous rounds
+      if (losersInPreviousRounds.has(playerIdStr)) {
+        return false;
+      }
+      
+      // Don't show bye players from previous rounds (they already advanced)
+      if (byePlayersInPreviousRounds.has(playerIdStr)) {
+        return false;
+      }
+      
+      // For manual mode: 
+      // - In the first round, don't show players from previous rounds (they shouldn't exist yet)
+      // - In later rounds, allow showing players from previous rounds (winners advancing)
+      if (roundNumber === 1 && playersInPreviousRounds.has(playerIdStr)) {
+        return false;
+      }
+      
+      return true;
     });
   };
 
@@ -475,6 +572,23 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   'Random párosítás'
                 )}
               </button>
+              {/* Generate Next Round for Manual Mode - Always enabled */}
+              {knockoutData.length > 0 && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowGenerateNextRound(true)}
+                  disabled={generatingNextRound}
+                >
+                  {generatingNextRound ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Következő kör...
+                    </>
+                  ) : (
+                    'Következő kör generálása'
+                  )}
+                </button>
+              )}
             </>
           )}
           {(userClubRole === 'admin' || userClubRole === 'moderator') && 
@@ -545,16 +659,16 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                           const allRounds = knockoutData.filter(r => currentKnockoutMethod === 'manual' ? true : (r.matches && r.matches.length > 0));
                           const totalRounds = allRounds.length;
                           const currentRoundIndex = allRounds.findIndex(r => r.round === round.round);
-                          
+                          const currentRoundMatches = round.matches || [];
                           if (currentRoundIndex === 0) {
-                            return 'Első kör';
-                          } else if (currentRoundIndex === totalRounds - 1) {
+                            return '1. kör';
+                          } else if (currentRoundIndex === totalRounds - 1 && currentRoundMatches.length === 1) {
                             // Utolsó kör - döntő
                             return 'Döntő';
-                          } else if (currentRoundIndex === totalRounds - 2) {
+                          } else if (currentRoundIndex === totalRounds - 2 && currentRoundMatches.length === 2) {
                             // Utolsó előtti kör - elődöntő
                             return 'Elődöntő';
-                          } else if (currentRoundIndex === totalRounds - 3) {
+                          } else if (currentRoundIndex === totalRounds - 3 && currentRoundMatches.length === 4) {
                             // Harmadik utolsó kör - negyeddöntő
                             return 'Negyeddöntő';
                           } else {
@@ -567,14 +681,14 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                       {/* Add Match Button for Manual Mode - Next to Round Name */}
                       {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
                         <button
-                          className="btn btn-circle btn-xs btn-outline btn-primary"
+                          className="btn btn-circle btn-sm btn-outline btn-primary"
                           onClick={() => {
                             setSelectedRound(round.round);
                             setShowAddMatchModal(true);
                           }}
                           title="Meccs hozzáadása"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
                         </button>
@@ -631,15 +745,19 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                             )}
                             
                             {/* Match Card */}
-                            <div className="card bg-base-100 shadow-lg border-2 border-base-200 min-w-[280px] max-w-[320px] hover:shadow-xl transition-shadow relative z-10">
+                            <div className={`card bg-base-100 shadow-lg border-2 min-w-[280px] max-w-[320px] hover:shadow-xl transition-shadow relative z-10 ${
+                              !match.player2 ? 'border-warning' : 'border-base-200'
+                            }`}>
                               <div className="card-body p-4">
                                 <div className="flex justify-between items-center mb-3">
-                                  <span className={`badge badge-sm ${getStatusColor(match.matchReference?.status || '')}`}>
-                                    {getStatusText(match.matchReference?.status || '')}
+                                  <span className={`badge badge-sm ${getStatusColor(match.matchReference?.status || 'pending')}`}>
+                                    {getStatusText(match.matchReference?.status || 'pending')}
                                   </span>
-                                  <span className="text-xs text-base-content/60">Tábla: {match.matchReference.boardReference}</span>
+                                  <span className="text-xs text-base-content/60">
+                                    {match.matchReference?.boardReference ? `Tábla: ${match.matchReference.boardReference}` : 'Bye meccs'}
+                                  </span>
                                   <div className="flex gap-1">
-                                    {(match.matchReference?.status === 'ongoing' || match.matchReference?.status === 'finished') && (
+                                    {(match.matchReference?.status === 'ongoing' || match.matchReference?.status === 'finished') && match.player1 && match.player2 && (
                                       <button
                                         className="btn btn-xs btn-ghost"
                                         onClick={() => handleViewLegs(match)}
@@ -651,10 +769,11 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                         </svg>
                                       </button>
                                     )}
-                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && match.matchReference && match.player1 && match.player2 && (
                                       <button
                                         className="btn btn-xs btn-ghost"
                                         onClick={() => handleMatchEdit(match)}
+                                        title="Meccs szerkesztése"
                                       >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -664,13 +783,26 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                   </div>
                                 </div>
                                 
+                                {/* Scorer information */}
+                                {match.matchReference?.scorer && (
+                                  <div className="text-xs text-base-content/60 mb-2">
+                                    <span className="font-medium">Scorer:</span> {match.matchReference.scorer.name || 'Ismeretlen'}
+                                  </div>
+                                )}
+                                
                                 <div className="space-y-2">
-                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${match.matchReference.winnerId === match.player1?._id ? 'bg-success/20 border border-success/30' : 'bg-base-200'}`}>
+                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${
+                                    !match.player2 ? 'bg-success/20 border border-success/30' : 
+                                    (match.matchReference?.winnerId === match.player1?._id && match.player1?.name && match.player1.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200')
+                                  }`}>
                                     <div className="flex items-center gap-2 flex-1">
                                       <span className="font-medium truncate">{match.player1?.name || 'TBD'}</span>
+                                      {!match.player2 && (
+                                        <span className="badge badge-sm badge-warning">Bye</span>
+                                      )}
                                       {(userClubRole === 'admin' || userClubRole === 'moderator') && (!match.player1 || !match.player1._id) && (
                                         <button
-                                          className="btn btn-xs btn-ghost"
+                                          className="btn btn-xs btn-success"
                                           onClick={() => {
                                             setEditingMatch(match);
                                             setEditingPlayerPosition('player1');
@@ -684,15 +816,21 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                         </button>
                                       )}
                                     </div>
-                                    <span className="text-lg font-bold ml-2">{match.matchReference.player1?.legsWon || 0}</span>
+                                    <span className="text-lg font-bold ml-2">
+                                      {!match.player2 ? 'Bye' : (match.matchReference?.player1?.legsWon || 0)}
+                                    </span>
                                   </div>
-                                  <div className="text-center text-xs text-base-content/60 font-medium">vs</div>
-                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${match.matchReference.winnerId === match.player2?._id ? 'bg-success/20 border border-success/30' : 'bg-base-200'}`}>
+                                  <div className="text-center text-xs text-base-content/60 font-medium">
+                                    {!match.player2 ? 'Bye' : 'vs'}
+                                  </div>
+                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${
+                                    match.matchReference?.winnerId === match.player2?._id && match.player2?.name && match.player2.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200'
+                                  }`}>
                                     <div className="flex items-center gap-2 flex-1">
                                       <span className="font-medium truncate">{match.player2?.name || 'TBD'}</span>
                                       {(userClubRole === 'admin' || userClubRole === 'moderator') && (!match.player2 || !match.player2._id) && (
                                         <button
-                                          className="btn btn-xs btn-ghost"
+                                          className="btn btn-xs btn-success"
                                           onClick={() => {
                                             setEditingMatch(match);
                                             setEditingPlayerPosition('player2');
@@ -706,7 +844,9 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                         </button>
                                       )}
                                     </div>
-                                    <span className="text-lg font-bold ml-2">{match.matchReference.player2?.legsWon || 0}</span>
+                                    <span className="text-lg font-bold ml-2">
+                                      {!match.player2 ? '' : (match.matchReference?.player2?.legsWon || 0)}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -753,9 +893,27 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Következő Kör Generálása</h3>
-            <p className="text-base-content/70 mb-6">
-              Biztosan generálni szeretnéd a következő kört? Ez automatikusan létrehozza az új meccseket a győztesekből.
+            <p className="text-base-content/70 mb-4">
+              {currentKnockoutMethod === 'manual' 
+                ? 'Biztosan generálni szeretnéd a következő kört? Ez automatikusan létrehozza az új meccseket a győztesekből és az egyedül maradt játékosokból (ahol nincs ellenfél, ott automatikusan továbbjut).'
+                : 'Biztosan generálni szeretnéd a következő kört? Ez automatikusan létrehozza az új meccseket a győztesekből.'
+              }
             </p>
+            {currentKnockoutMethod === 'manual' && (
+              <div className="alert alert-info mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <div className="font-bold">Manuális mód működése:</div>
+                  <div className="text-sm">
+                    • Befejezett meccsek győztesei továbbjutnak<br/>
+                    • Egyedül maradt játékosok (bye) automatikusan továbbjutnak<br/>
+                    • Páratlan számú játékos esetén az utolsó bye játékos lesz
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex gap-3">
               <button
                 className="btn btn-error flex-1"
@@ -983,6 +1141,30 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   })}
                 </select>
               </div>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">Scorer:</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={selectedScorer}
+                  onChange={(e) => setSelectedScorer(e.target.value)}
+                >
+                  <option value="">Válassz scorert (opcionális)</option>
+                  {getAvailablePlayersForRound(selectedRound).map((player: any) => {
+                    // Handle different data structures
+                    const playerId = player.playerReference?._id || player.playerReference || player._id;
+                    const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                    
+                    return (
+                      <option key={playerId} value={playerId}>
+                        {playerName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
             </div>
             
             <div className="flex gap-3 mt-6">
@@ -1193,7 +1375,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
           setShowLegsModal(false);
           setSelectedMatchForLegs(null);
         }}
-        match={selectedMatchForLegs ? {
+        match={selectedMatchForLegs && selectedMatchForLegs.matchReference ? {
           _id: selectedMatchForLegs.matchReference._id,
           player1: {
             playerId: {
@@ -1206,11 +1388,12 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               _id: selectedMatchForLegs.player2?._id || '',
               name: selectedMatchForLegs.player2?.name || 'TBD'
             }
-          }
+          },
+          clubId: clubId
         } : null}
       />
     </div>
   );
 };
 
-export default TournamentKnockoutBracket; 
+export default TournamentKnockoutBracket;
