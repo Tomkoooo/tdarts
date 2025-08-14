@@ -6,7 +6,8 @@ import {
   IconBuilding, 
   IconTrophy, 
   IconTarget, 
-  IconFlagCheck 
+  IconFlagCheck,
+  IconShare
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import howItWorksData from '@/data/how-it-works.json';
@@ -18,7 +19,8 @@ const iconMap: { [key: string]: any } = {
   IconBuilding,
   IconTrophy,
   IconTarget,
-  IconFlagCheck
+  IconFlagCheck,
+  IconShare
 };
 
 const HowItWorksPage = () => {

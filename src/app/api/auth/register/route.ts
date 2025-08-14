@@ -6,9 +6,12 @@ import { BadRequestError, handleError } from '@/middleware/errorHandle';
 export async function POST(request: Request) {
   await connectToDatabase();
   try {
-    const { email, password, name, username } = await request.json();
+    const { email, password, confirmPassword, name, username } = await request.json();
     if (!email || !password || !name) {
       throw new BadRequestError('Email, password, and name are required');
+    }
+    if (password !== confirmPassword) {
+      throw new BadRequestError('Passwords do not match');
     }
     const userObject = { email, password, name, username };
     await AuthService.register(userObject);

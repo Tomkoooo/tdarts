@@ -46,7 +46,7 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
 
     // Socket kapcsolat inicializálása csak akkor, ha a feature flag engedélyezett
     if (!socket.connected) {
-      console.log('Socket feature enabled, connecting...');
+      console.log('Socket feature enabled, connecting to external server...');
       socket.connect();
       isConnected.current = true;
     }

@@ -10,4 +10,4 @@ ENV MONGODB_URI=mongodb://admin:admin@sironicsrv:27017/
 COPY . .
 RUN npm run build
 HEALTHCHECK CMD curl -I --fail http://localhost:3000 || exit 1
-ENTRYPOINT node server.js
+ENTRYPOINT npm start

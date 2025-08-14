@@ -228,6 +228,56 @@
     },
     {
       "id": 4,
+      "title": "Megosztás",
+      "icon": "IconShare",
+      "description": "Klubok és versenyek megosztása QR kóddal és linkekkel",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Megosztási típusok",
+            "content": [
+              "Regisztrációs megosztás: A felhasználót először a regisztrációs/bejelentkezési oldalra viszi, majd bejelentkezés után átirányítja a megfelelő oldalra.",
+              "Nyilvános megosztás: Közvetlenül megnyitja a megosztandó linket, regisztráció nélkül is elérhető."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Klub megosztása",
+            "content": [
+              "A klub oldalon a megosztás gombra kattintva érhető el.",
+              "Nyomtatható QR kód és link formájában jelenik meg.",
+              "A link a klub összes versenyét jeleníti meg.",
+              "Regisztrációs link: Bejelentkezés után a klub versenyeihez vezet.",
+              "Nyilvános link: Közvetlenül megjeleníti a klub versenyeit."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Verseny megosztása",
+            "content": [
+              "A verseny oldalán a megosztás gombra kattintva érhető el.",
+              "Nyomtatható QR kód és link formájában jelenik meg.",
+              "A link az adott verseny nyitólapját mutatja.",
+              "Regisztrációs link: Bejelentkezés után a verseny oldalára vezet.",
+              "Nyilvános link: Közvetlenül megjeleníti a verseny adatait."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "QR kód használata",
+            "content": [
+              "A QR kódokat ki lehet nyomtatni és fel lehet tenni a táblák mellé.",
+              "Játékosok egyszerűen beolvashatják a kódot telefonjukkal.",
+              "Gyors hozzáférés a verseny információkhoz és eredményrögzítéshez.",
+              "Ideális megoldás nagyobb versenyekhez, ahol sok tábla van."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",
@@ -240,6 +290,7 @@
         ]
       }
     }
+
   ],
   "cta": {
     "title": "Készen állsz a kezdésre?",

@@ -38,19 +38,19 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     fetchLiveMatches();
     
     // Socket event handlers
-    function onMatchStarted(data: { matchId: string; matchData: any }) {
-      console.log('Match started event:', data);
+    function onMatchStarted() {
+
       // When a new match starts, fetch fresh data from database
       fetchLiveMatches();
     }
 
     function onMatchFinished(matchId: string) {
-      console.log('Match finished event:', matchId);
+
       setLiveMatches(prev => prev.filter(match => match._id !== matchId));
     }
 
     function onMatchUpdate(data: { matchId: string; state: any }) {
-      console.log('Match update event:', data);
+
       // Update only the real-time data (scores, current leg) from socket
       setLiveMatches(prev => prev.map(match => {
         if (match._id === data.matchId) {
@@ -62,15 +62,15 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
             player1LegsWon: data.state.player1LegsWon || match.player1LegsWon || 0,
             player2LegsWon: data.state.player2LegsWon || match.player2LegsWon || 0
           };
-          console.log('Updated match with real-time data:', updatedMatch);
+
           return updatedMatch;
         }
         return match;
       }));
     }
 
-    function onLegComplete(data: any) {
-      console.log('Leg complete event:', data);
+    function onLegComplete() {
+
       // When a leg is completed, refresh data from database to get updated leg counts
       fetchLiveMatches();
     }
@@ -100,14 +100,11 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
       // Always fetch from database first for complete and accurate data
       const response = await fetch(`/api/tournaments/${tournamentCode}/live-matches`);
       const data = await response.json();
-      console.log('Database API response:', data);
+
       
       if (data.success) {
         // Ensure player data is properly structured with real names
         const processedMatches = data.matches.map((match: any) => {
-          console.log('Processing database match:', match);
-          console.log('Player1 data:', match.player1);
-          console.log('Player2 data:', match.player2);
           
           return {
             _id: match._id,
@@ -128,12 +125,12 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
           };
         });
         setLiveMatches(processedMatches);
-        console.log('Live matches from database:', processedMatches);
       }
       
-      // Optionally get additional real-time data from socket (but don't replace database data)
+      // Optionally get additional real-time data from external socket server (but don't replace database data)
       try {
-        const socketResponse = await fetch('/api/socket', {
+        const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:8080';
+        const socketResponse = await fetch(`${socketServerUrl}/api/socket`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'get-live-matches' })

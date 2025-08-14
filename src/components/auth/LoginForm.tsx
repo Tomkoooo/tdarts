@@ -4,21 +4,57 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock, IconLanguage } from '@tabler/icons-react';
 import Link from 'next/link';
 
-const loginSchema = z.object({
-  email: z
-    .string()
-    .email('Érvényes email címet adj meg')
-    .min(1, 'Email cím kötelező'),
-  password: z
-    .string()
-    .min(6, 'A jelszónak legalább 6 karakter hosszúnak kell lennie')
-    .min(1, 'Jelszó kötelező'),
-});
+// Nyelvi szövegek
+const translations = {
+  hu: {
+    title: 'Bejelentkezés',
+    subtitle: 'Lépj be a tDarts fiókodba',
+    email: 'Email cím',
+    emailPlaceholder: 'email@example.com',
+    password: 'Jelszó',
+    passwordPlaceholder: '••••••••',
+    login: 'Bejelentkezés',
+    loggingIn: 'Bejelentkezés...',
+    forgotPassword: 'Elfelejtett jelszó?',
+    noAccount: 'Még nincs fiókod?',
+    registerHere: 'Regisztrálj itt',
+    emailRequired: 'Email cím kötelező',
+    validEmail: 'Érvényes email címet adj meg',
+    passwordRequired: 'Jelszó kötelező',
+    passwordMinLength: 'A jelszónak legalább 6 karakter hosszúnak kell lennie',
+    showPassword: 'Jelszó megjelenítése',
+    hidePassword: 'Jelszó elrejtése',
+    language: 'Nyelv'
+  },
+  en: {
+    title: 'Login',
+    subtitle: 'Sign in to your tDarts account',
+    email: 'Email address',
+    emailPlaceholder: 'email@example.com',
+    password: 'Password',
+    passwordPlaceholder: '••••••••',
+    login: 'Login',
+    loggingIn: 'Logging in...',
+    forgotPassword: 'Forgot password?',
+    noAccount: "Don't have an account?",
+    registerHere: 'Register here',
+    emailRequired: 'Email is required',
+    validEmail: 'Please enter a valid email address',
+    passwordRequired: 'Password is required',
+    passwordMinLength: 'Password must be at least 6 characters long',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    language: 'Language'
+  }
+};
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 interface LoginFormProps {
   onSubmit?: (data: LoginFormData) => Promise<void> | void;
@@ -36,6 +72,21 @@ const LoginForm: React.FC<LoginFormProps> = ({
   redirectPath,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [language, setLanguage] = useState<'hu' | 'en'>('hu');
+
+  const t = translations[language];
+
+  // Frissített validációs séma a nyelvnek megfelelően
+  const loginSchema = z.object({
+    email: z
+      .string()
+      .email(t.validEmail)
+      .min(1, t.emailRequired),
+    password: z
+      .string()
+      .min(6, t.passwordMinLength)
+      .min(1, t.passwordRequired),
+  });
 
   const {
     register,
@@ -61,6 +112,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <div className="glass-card p-8 w-full max-w-md mx-auto">
+      {/* Nyelv választó */}
+      <div className="flex justify-end mb-4">
+        <div className="dropdown dropdown-end">
+          <div tabIndex={0} role="button" className="btn btn-sm btn-ghost">
+            <IconLanguage className="w-4 h-4" />
+            {t.language}
+          </div>
+          <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
+            <li><button onClick={() => setLanguage('hu')}>Magyar</button></li>
+            <li><button onClick={() => setLanguage('en')}>English</button></li>
+          </ul>
+        </div>
+      </div>
+
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border border-[hsl(var(--primary) / 0.3)]">
@@ -68,10 +133,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
           </div>
         </div>
         <h1 className="text-2xl font-bold text-gradient-red mb-2">
-          Bejelentkezés
+          {t.title}
         </h1>
         <p className="text-[hsl(var(--muted-foreground))] text-sm">
-          Lépj be a tDarts fiókodba
+          {t.subtitle}
         </p>
       </div>
 
@@ -79,7 +144,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <div>
           <label className="label">
             <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Email cím
+              {t.email}
             </span>
           </label>
           <div className="relative">
@@ -87,7 +152,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             <input
               {...register('email')}
               type="email"
-              placeholder="email@example.com"
+              placeholder={t.emailPlaceholder}
               className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
@@ -102,7 +167,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <div>
           <label className="label">
             <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Jelszó
+              {t.password}
             </span>
           </label>
           <div className="relative">
@@ -110,7 +175,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             <input
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
+              placeholder={t.passwordPlaceholder}
               className="input input-bordered w-full pl-10 pr-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
@@ -119,6 +184,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
               disabled={isLoading}
+              title={showPassword ? t.hidePassword : t.showPassword}
             >
               {showPassword ? (
                 <IconEyeOff className="w-5 h-5" />
@@ -141,7 +207,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               href="/auth/forgot-password"
               className="text-sm text-[hsl(var(--primary))] hover:underline hover:text-[hsl(var(--primary-dark))] transition-colors"
             >
-              Elfelejtett jelszó?
+              {t.forgotPassword}
             </Link>
           )}
         </div>
@@ -154,12 +220,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
           {isLoading ? (
             <div className="flex items-center space-x-2">
               <span className="loading loading-spinner w-4 h-4"></span>
-              <span>Bejelentkezés...</span>
+              <span>{t.loggingIn}</span>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
               <IconLogin className="w-5 h-5" />
-              <span>Bejelentkezés</span>
+              <span>{t.login}</span>
             </div>
           )}
         </button>
@@ -168,12 +234,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
       {onSignUp && (
         <div className="mt-6 text-center">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Még nincs fiókod?{' '}
+            {t.noAccount}{' '}
             <Link
               href={`/auth/register${redirectPath ? `?redirect=${redirectPath}` : ''}`}
               className="text-[hsl(var(--primary))] hover:underline hover:text-[hsl(var(--primary-dark))] transition-colors font-medium"
             >
-              Regisztrálj itt
+              {t.registerHere}
             </Link>
           </p>
         </div>

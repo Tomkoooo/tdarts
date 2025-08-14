@@ -47,7 +47,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="hu">
+    <html lang="hu" data-theme="dark">
       <head>
         <meta name="color-scheme" content="only dark" />
       </head>

@@ -28,6 +28,7 @@ export default function RegisterPage() {
   const handleRegister = async (data: {
     email: string;
     password: string;
+    confirmPassword: string;
     name: string;
     username?: string;
   }) => {

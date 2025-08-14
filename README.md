@@ -2,13 +2,20 @@ TODO:
 
 -ágrajznál legyen egy gomb ami megjeleníti hogy ki melyik jkörben játszik valamint hogy ki kiemelt -- nem tudom
 -knockout meccs knockout bracket körön belüli meccs index
--külön socket server
+
+
+-knockout generálás nem jó csoportból -- elvileg kész
+
+
+-okchl színek rgb alakítása valamint mindn bongészőben minden színmódban megfelelően jelenjen meg az oldal
 
 https://www.magyardarts.hu/documents/2025/2025_MDL.pdf
 
 -stressz tesztelés a wdf-re - folyamatosan 
 -database polling tournament ui-n
--api token vagy a user cookie ellenőrzése ha bármilyen módosítás történik
+
+-api token vagy a user cookie ellenőrzése ha bármilyen módosítás történik -- elvileg megvan
+
 -egyszerű admin oldal megírásának kezdése
 -havi díjas rendszer klubboknak - permission alapon / felhasználói vagy klub email?
 -klub oldalon jobb tagok megjelenítés - egyértelműbb tag felvétel

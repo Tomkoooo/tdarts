@@ -987,82 +987,139 @@ export class TournamentService {
         const firstRoundMatches = [];
 
         if (format === 'group_knockout') {
-            // For group_knockout format, create proper cross-group pairings with 2-group offset
-        const playersByGroup = new Map();
-        playersForFirstRound.forEach(player => {
-            const groupId = player.groupId;
-            if (!playersByGroup.has(groupId)) {
-                playersByGroup.set(groupId, []);
-            }
-            playersByGroup.get(groupId).push(player);
-        });
+            // For group_knockout format, create proper cross-group pairings
+            const playersByGroup = new Map();
+            playersForFirstRound.forEach(player => {
+                const groupId = player.groupId;
+                if (!playersByGroup.has(groupId)) {
+                    playersByGroup.set(groupId, []);
+                }
+                playersByGroup.get(groupId).push(player);
+            });
 
             // Sort players within each group by their group standing (1st, 2nd, 3rd, etc.)
-        playersByGroup.forEach((players) => {
-            players.sort((a: any, b: any) => {
-                if (a.groupStanding !== b.groupStanding) {
-                    return (a.groupStanding || 0) - (b.groupStanding || 0);
-                }
-                const aStats = a.stats || {};
-                const bStats = b.stats || {};
-                const aPoints = (aStats.matchesWon || 0) * 2;
-                const bPoints = (bStats.matchesWon || 0) * 2;
-                if (aPoints !== bPoints) return bPoints - aPoints;
-                
-                const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
-                const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
-                return bLegDiff - aLegDiff;
-            });
-        });
-
-            // Create cross-group pairings with 2-group offset
-            const groupIds = Array.from(playersByGroup.keys()).sort();
-            
-            if (groupIds.length > 1) {
-                // Pair groups with 2-group offset: A vs C, B vs D, etc.
-                for (let i = 0; i < groupIds.length; i++) {
-            const group1Id = groupIds[i];
-                    const group2Id = groupIds[(i + 2) % groupIds.length]; // 2-group offset
-            
-                    if (group1Id !== group2Id) {
-                const group1Players = playersByGroup.get(group1Id);
-                const group2Players = playersByGroup.get(group2Id);
-                
-                // Pair players: 1st from group1 vs last from group2, 2nd from group1 vs 2nd-last from group2, etc.
-                const maxPlayers = Math.max(group1Players.length, group2Players.length);
-                
-                for (let j = 0; j < maxPlayers; j++) {
-                    const player1 = group1Players[j];
-                    const player2 = group2Players[group2Players.length - 1 - j];
-                    
-                    if (player1 && player2) {
-                        firstRoundMatches.push({
-                            player1: player1.playerReference,
-                            player2: player2.playerReference,
-                        });
+            playersByGroup.forEach((players) => {
+                players.sort((a: any, b: any) => {
+                    if (a.groupStanding !== b.groupStanding) {
+                        return (a.groupStanding || 0) - (b.groupStanding || 0);
                     }
+                    const aStats = a.stats || {};
+                    const bStats = b.stats || {};
+                    const aPoints = (aStats.matchesWon || 0) * 2;
+                    const bPoints = (bStats.matchesWon || 0) * 2;
+                    if (aPoints !== bPoints) return bPoints - aPoints;
+                    
+                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
+                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
+                    return bLegDiff - aLegDiff;
+                });
+            });
+
+            // Create cross-group pairings with optimal distribution
+            const groupIds = Array.from(playersByGroup.keys()).sort();
+            const groupCount = groupIds.length;
+            
+            if (groupCount > 1) {
+                // Calculate how many players advance from each group
+                const playersPerGroup = Math.floor(playersForFirstRound.length / groupCount);
+                const extraPlayers = playersForFirstRound.length % groupCount;
+                
+                // Create optimal pairings to avoid same-group matchups as long as possible
+                const pairings: Array<{player1: any, player2: any}> = [];
+                
+                // For each position (1st, 2nd, 3rd, etc.)
+                for (let position = 0; position < playersPerGroup; position++) {
+                    const positionPlayers: any[] = [];
+                    
+                    // Collect all players at this position from each group
+                    for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
+                        const groupId = groupIds[groupIndex];
+                        const groupPlayers = playersByGroup.get(groupId);
+                        if (groupPlayers && groupPlayers[position]) {
+                            positionPlayers.push({
+                                player: groupPlayers[position],
+                                groupIndex: groupIndex
+                            });
                         }
                     }
-                }
-                
-                // If we have odd number of groups, handle the remaining group
-                if (groupIds.length % 2 !== 0) {
-                    const remainingGroupId = groupIds[groupIds.length - 1];
-                    const remainingPlayers = playersByGroup.get(remainingGroupId);
                     
-                    // Pair remaining players within their own group
-                    for (let i = 0; i < remainingPlayers.length; i += 2) {
-                        if (i + 1 < remainingPlayers.length) {
-                            const player1 = remainingPlayers[i];
-                            const player2 = remainingPlayers[i + 1];
+                    // Create pairings for this position with maximum group separation
+                    for (let i = 0; i < positionPlayers.length; i += 2) {
+                        if (i + 1 < positionPlayers.length) {
+                            const player1 = positionPlayers[i];
+                            const player2 = positionPlayers[i + 1];
                             
-                            firstRoundMatches.push({
-                                player1: player1.playerReference,
-                                player2: player2.playerReference,
+                            // Ensure maximum group separation
+                            const groupSeparation = Math.abs(player1.groupIndex - player2.groupIndex);
+                            const optimalSeparation = Math.floor(groupCount / 2);
+                            
+                            // If separation is not optimal, try to find better pairing
+                            if (groupSeparation < optimalSeparation && positionPlayers.length > 2) {
+                                // Try to find a better pairing
+                                for (let j = i + 2; j < positionPlayers.length; j++) {
+                                    const alternativeSeparation = Math.abs(player1.groupIndex - positionPlayers[j].groupIndex);
+                                    if (alternativeSeparation > groupSeparation) {
+                                        // Swap for better separation
+                                        [positionPlayers[i + 1], positionPlayers[j]] = [positionPlayers[j], positionPlayers[i + 1]];
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            pairings.push({
+                                player1: player1.player.playerReference,
+                                player2: player2.player.playerReference
                             });
                         }
                     }
                 }
+                
+                // Handle extra players (if any group has more players than others)
+                if (extraPlayers > 0) {
+                    const extraPosition = playersPerGroup;
+                    const extraPositionPlayers: any[] = [];
+                    
+                    for (let groupIndex = 0; groupIndex < extraPlayers; groupIndex++) {
+                        const groupId = groupIds[groupIndex];
+                        const groupPlayers = playersByGroup.get(groupId);
+                        if (groupPlayers && groupPlayers[extraPosition]) {
+                            extraPositionPlayers.push({
+                                player: groupPlayers[extraPosition],
+                                groupIndex: groupIndex
+                            });
+                        }
+                    }
+                    
+                    // Create pairings for extra players
+                    for (let i = 0; i < extraPositionPlayers.length; i += 2) {
+                        if (i + 1 < extraPositionPlayers.length) {
+                            pairings.push({
+                                player1: extraPositionPlayers[i].player.playerReference,
+                                player2: extraPositionPlayers[i + 1].player.playerReference
+                            });
+                        }
+                    }
+                }
+                
+                // Optimize pairing order to avoid same-group winners meeting early
+                // Sort pairings to maximize group separation in the bracket
+                pairings.sort((a, b) => {
+                    // Find the group indices for each pairing
+                    const aPlayer1Group = playersByGroup.get(a.player1)?.findIndex((p: any) => p.playerReference.toString() === a.player1.toString()) || 0;
+                    const aPlayer2Group = playersByGroup.get(a.player2)?.findIndex((p: any) => p.playerReference.toString() === a.player2.toString()) || 0;
+                    const bPlayer1Group = playersByGroup.get(b.player1)?.findIndex((p: any) => p.playerReference.toString() === b.player1.toString()) || 0;
+                    const bPlayer2Group = playersByGroup.get(b.player2)?.findIndex((p: any) => p.playerReference.toString() === b.player2.toString()) || 0;
+                    
+                    // Calculate group separation for each pairing
+                    const aSeparation = Math.abs(aPlayer1Group - aPlayer2Group);
+                    const bSeparation = Math.abs(bPlayer1Group - bPlayer2Group);
+                    
+                    // Prefer pairings with higher separation first
+                    return bSeparation - aSeparation;
+                });
+                
+                firstRoundMatches.push(...pairings);
+                
             } else {
                 // Only one group, create simple pairings
                 const groupPlayers = playersByGroup.get(groupIds[0]) || [];
@@ -2639,6 +2696,91 @@ export class TournamentService {
             return true;
         } catch (error) {
             console.error('Finish tournament error:', error);
+            return false;
+        }
+    }
+
+    static async cancelKnockout(tournamentCode: string): Promise<boolean> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Check if tournament is in knockout stage
+            if (tournament.tournamentSettings?.status !== 'knockout') {
+                throw new BadRequestError('Tournament is not in knockout stage');
+            }
+
+            // Get all knockout match IDs
+            const knockoutMatchIds: mongoose.Types.ObjectId[] = [];
+            if (tournament.knockout && Array.isArray(tournament.knockout)) {
+                for (const round of tournament.knockout) {
+                    if (round.matches && Array.isArray(round.matches)) {
+                        for (const match of round.matches) {
+                            if (match.matchReference) {
+                                const matchId = typeof match.matchReference === 'object' ? 
+                                    (match.matchReference as any)._id : match.matchReference;
+                                if (matchId) {
+                                    knockoutMatchIds.push(matchId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Delete all knockout matches
+            if (knockoutMatchIds.length > 0) {
+                await MatchModel.deleteMany({ _id: { $in: knockoutMatchIds } });
+                console.log(`Deleted ${knockoutMatchIds.length} knockout matches`);
+            }
+
+            // Clear knockout structure
+            tournament.knockout = [];
+            tournament.tournamentSettings.knockoutMethod = undefined;
+
+            // Reset tournament status based on format
+            const format = tournament.tournamentSettings?.format || 'group_knockout';
+            if (format === 'knockout') {
+                // For knockout-only tournaments, go back to pending
+                tournament.tournamentSettings.status = 'pending';
+            } else {
+                // For group_knockout tournaments, go back to group-stage
+                tournament.tournamentSettings.status = 'group-stage';
+            }
+
+            // Reset all boards to idle status
+            const club = await ClubModel.findById(tournament.clubId);
+            if (club && club.boards) {
+                const tournamentBoards = club.boards.filter((board: any) => 
+                    board.tournamentId === tournament.tournamentId
+                );
+                
+                for (const board of tournamentBoards) {
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': board.boardNumber
+                        },
+                        { 
+                            $set: { 
+                                'boards.$.status': 'idle',
+                                'boards.$.currentMatch': null,
+                                'boards.$.nextMatch': null
+                            } 
+                        }
+                    );
+                }
+            }
+
+            await tournament.save();
+            console.log(`Knockout cancelled for tournament ${tournamentCode}`);
+
+            return true;
+        } catch (error) {
+            console.error('Cancel knockout error:', error);
             return false;
         }
     }
