@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TournamentSettings } from '@/interface/tournament.interface';
-import { IconEdit, IconX } from '@tabler/icons-react';
+import { IconEdit, IconX, IconTarget, IconExternalLink } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -20,6 +21,15 @@ export default function EditTournamentModal({
   const [settings, setSettings] = useState<TournamentSettings>(tournament.tournamentSettings);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [availableBoards, setAvailableBoards] = useState<Array<{ boardNumber: number; name: string; isActive: boolean; isAssigned: boolean }>>([]);
+  const [selectedBoards, setSelectedBoards] = useState<number[]>([]);
+  const [boardsLoading, setBoardsLoading] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<{
+    currentCount: number;
+    maxAllowed: number;
+    planName: string;
+  } | null>(null);
+  const router = useRouter();
 
   // Reset form when tournament changes
   useEffect(() => {
@@ -29,6 +39,29 @@ export default function EditTournamentModal({
     }
   }, [tournament]);
 
+  // Load board context when tournament changes
+  useEffect(() => {
+    if (tournament?.tournamentId && tournament?.tournamentSettings?.status === 'pending') {
+      loadBoardContext();
+    }
+  }, [tournament]);
+
+  const loadBoardContext = async () => {
+    try {
+      setBoardsLoading(true);
+      const response = await fetch(`/api/tournaments/${tournament.tournamentId}/boards`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableBoards(data.availableBoards);
+        setSelectedBoards(data.selectedBoards);
+      }
+    } catch (error) {
+      console.error('Error loading board context:', error);
+    } finally {
+      setBoardsLoading(false);
+    }
+  };
+
   const handleSettingsChange = (field: keyof TournamentSettings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
     setError('');
@@ -36,8 +69,16 @@ export default function EditTournamentModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate board selection
+    if (!isTournamentStarted && selectedBoards.length === 0) {
+      setError('Legalább egy táblát ki kell választani');
+      return;
+    }
+    
     setLoading(true);
     setError('');
+    setSubscriptionError(null);
 
     try {
       const response = await fetch(`/api/tournaments/${tournament.tournamentId}`, {
@@ -47,13 +88,24 @@ export default function EditTournamentModal({
         },
         body: JSON.stringify({
           userId,
-          settings
+          settings,
+          selectedBoards
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Hiba történt a torna frissítése során');
+        if (errorData.subscriptionError) {
+          setSubscriptionError({
+            currentCount: errorData.currentCount,
+            maxAllowed: errorData.maxAllowed,
+            planName: errorData.planName
+          });
+          setError(errorData.error);
+        } else {
+          throw new Error(errorData.error || 'Hiba történt a torna frissítése során');
+        }
+        return;
       }
 
       onTournamentUpdated();
@@ -65,13 +117,21 @@ export default function EditTournamentModal({
     }
   };
 
+  const handleBoardToggle = (boardNumber: number) => {
+    setSelectedBoards(prev => 
+      prev.includes(boardNumber) 
+        ? prev.filter(b => b !== boardNumber)
+        : [...prev, boardNumber]
+    );
+  };
+
   const isTournamentStarted = tournament?.tournamentSettings?.status !== 'pending';
 
   if (!isOpen) return null;
 
   return (
     <dialog open={isOpen} className="modal">
-      <div className="modal-box glass-card p-8 bg-[hsl(var(--background)/0.3)] border-[hsl(var(--border)/0.5)] shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl max-w-2xl">
+      <div className="modal-box glass-card p-4 sm:p-8 bg-[hsl(var(--background)/0.3)] border-[hsl(var(--border)/0.5)] shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
             Torna szerkesztése
@@ -86,7 +146,31 @@ export default function EditTournamentModal({
 
         {error && (
           <div className="alert alert-error mb-4">
-            <span>{error}</span>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="font-medium">{error}</p>
+                {subscriptionError && (
+                  <div className="mt-2 text-sm">
+                    <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span></p>
+                    <p>Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}</p>
+                  </div>
+                )}
+              </div>
+              {subscriptionError && (
+                <a 
+                  href="/#pricing" 
+                  className="btn btn-primary btn-sm ml-3 flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onClose();
+                    router.push('/#pricing');
+                  }}
+                >
+                  <IconExternalLink className="w-4 h-4" />
+                  Csomagok
+                </a>
+              )}
+            </div>
           </div>
         )}
 
@@ -132,7 +216,7 @@ export default function EditTournamentModal({
               <label className="block text-sm font-medium mb-1">Kezdés dátuma *</label>
               <input
                 type="datetime-local"
-                value={new Date(settings.startDate).toISOString().slice(0, 16)}
+                value={new Date(settings.startDate).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
                 onChange={(e) => handleSettingsChange('startDate', new Date(e.target.value))}
                 className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                 required
@@ -143,7 +227,7 @@ export default function EditTournamentModal({
               <label className="block text-sm font-medium mb-1">Nevezési határidő</label>
               <input
                 type="datetime-local"
-                value={settings.registrationDeadline ? new Date(settings.registrationDeadline).toISOString().slice(0, 16) : ''}
+                value={settings.registrationDeadline ? new Date(settings.registrationDeadline).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T') : ''}
                 onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value ? new Date(e.target.value) : undefined)}
                 className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
               />
@@ -270,20 +354,77 @@ export default function EditTournamentModal({
             )}
           </div>
 
+          {/* Board Selection - Only show if tournament hasn't started */}
+          {!isTournamentStarted && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Tábla kiválasztás</h3>
+              
+              {boardsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <span className="loading loading-spinner loading-md"></span>
+                  <span className="ml-2">Táblák betöltése...</span>
+                </div>
+              ) : availableBoards.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Válaszd ki, mely táblákat szeretnéd használni a tornán
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {availableBoards.map((board) => (
+                      <label
+                        key={board.boardNumber}
+                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedBoards.includes(board.boardNumber)
+                            ? 'border-primary bg-primary/10'
+                            : 'border-base-300 bg-base-100 hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedBoards.includes(board.boardNumber)}
+                          onChange={() => handleBoardToggle(board.boardNumber)}
+                          className="checkbox checkbox-primary mr-3"
+                        />
+                        <div className="flex items-center">
+                          <IconTarget className="w-4 h-4 mr-2 text-primary" />
+                          <div>
+                            <div className="font-medium">{board.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Tábla #{board.boardNumber}
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedBoards.length === 0 && (
+                    <p className="text-sm text-warning">
+                      Legalább egy táblát ki kell választani
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nincsenek elérhető táblák a klubban
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-base-300">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-base-300">
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-outline"
+              className="btn btn-outline order-2 sm:order-1"
               disabled={loading}
             >
               Mégse
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
-              disabled={loading}
+              className="btn btn-primary order-1 sm:order-2"
+              disabled={loading || (selectedBoards.length === 0 && !isTournamentStarted)}
             >
               {loading ? (
                 <>

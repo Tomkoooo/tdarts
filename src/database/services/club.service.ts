@@ -408,7 +408,8 @@ export class ClubService {
     const userObjectId = new Types.ObjectId(userId);
     const userRoleInClub = club.admin.includes(userObjectId) ? 'admin' :
                            club.moderators.includes(userObjectId) ? 'moderator' :
-                           club.members.includes(userObjectId) ? 'member' : 'none';
+                           club.members.includes(userObjectId) ? 'member' :
+                           await AuthorizationService.checkAdminOnly(userId, club._id.toString()) ? 'admin' : 'none';
     return { clubs, userRoleInClub };
   }
 
@@ -428,6 +429,10 @@ export class ClubService {
     } else if (club.members.includes(userObjectId)) {
       return 'member';
     } else {
+      const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
+      if (isAuthorized) {
+        return 'admin';
+      }
       return 'none';
     }
   }

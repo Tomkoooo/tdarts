@@ -25,6 +25,9 @@ NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS=true
 
 # Premium tournaments engedélyezése
 NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS=true
+
+# Subscription model ellenőrzés engedélyezése
+NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED=false
 ```
 
 ### Adatbázis alapú flag-ek
@@ -33,7 +36,7 @@ A Club modellben a következő mezők találhatók:
 
 ```typescript
 interface Club {
-  subscriptionModel: 'free' | 'basic' | 'pro';
+  subscriptionModel: 'free' | 'basic' | 'pro' | 'enterprise';
   featureFlags: {
     liveMatchFollowing: boolean;
     advancedStatistics: boolean;
@@ -76,6 +79,24 @@ A socket kapcsolat a következő logika szerint működik:
 2. **NEXT_PUBLIC_ENABLE_SOCKET = false**: Mindenképp tiltott
 3. **NEXT_PUBLIC_ENABLE_SOCKET = true + clubId nélkül**: Engedélyezett
 4. **NEXT_PUBLIC_ENABLE_SOCKET = true + clubId**: Csak akkor engedélyezett, ha `club.subscriptionModel === 'pro'`
+
+## Subscription Model Logika
+
+A subscription model ellenőrzés a következő logika szerint működik:
+
+1. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett (korlátlan)
+2. **NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Ellenőrzi a klub subscription modeljét
+
+### Subscription Csomagok
+
+- **free**: 1 verseny/hó
+- **basic**: 2 verseny/hó  
+- **pro**: 4 verseny/hó
+- **enterprise**: Korlátlan verseny/hó
+
+### Ellenőrzés Logika
+
+A rendszer a torna start date-je alapján határozza meg, hogy melyik hónaphoz tartozik a verseny, és ellenőrzi, hogy a klub nem lépte-e túl a havi limitet.
 
 ## API Endpoint-ok
 

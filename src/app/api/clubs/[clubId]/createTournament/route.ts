@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { ClubService } from '@/database/services/club.service';
+import { SubscriptionService } from '@/database/services/subscription.service';
 import { TournamentDocument } from '@/interface/tournament.interface';
 import { Document } from 'mongoose';
 import { ClubModel } from '@/database/models/club.model';
@@ -50,6 +51,21 @@ export async function POST(
         return NextResponse.json({ 
             error: `Selected boards are not available: ${invalidBoards.join(', ')}` 
         }, { status: 400 });
+    }
+
+    // Check subscription limits
+    const tournamentStartDate = payload.startDate ? new Date(payload.startDate) : new Date();
+    const subscriptionCheck = await SubscriptionService.canCreateTournament(clubId, tournamentStartDate);
+    
+    if (!subscriptionCheck.canCreate) {
+        console.log('Subscription limit exceeded:', subscriptionCheck.errorMessage);
+        return NextResponse.json({ 
+            error: subscriptionCheck.errorMessage,
+            subscriptionError: true,
+            currentCount: subscriptionCheck.currentCount,
+            maxAllowed: subscriptionCheck.maxAllowed,
+            planName: subscriptionCheck.planName
+        }, { status: 403 });
     }
 
     // Tournament alapértelmezett értékek

@@ -27,7 +27,7 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     }],
     subscriptionModel: { 
       type: String, 
-      enum: ['free', 'basic', 'pro'], 
+      enum: ['free', 'basic', 'pro', 'enterprise'], 
       default: 'free' 
     },
     featureFlags: {

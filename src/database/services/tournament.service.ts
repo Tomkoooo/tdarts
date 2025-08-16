@@ -10,6 +10,7 @@ import { MatchModel } from '../models/match.model';
 import { ClubService } from './club.service';
 import { ClubModel } from '../models/club.model';
 import { AuthorizationService } from './authorization.service';
+import { SubscriptionService } from './subscription.service';
 
 export class TournamentService {
     // Initialize indexes when the service is first used
@@ -1007,8 +1008,6 @@ export class TournamentService {
             group1.sort((a, b) => a.groupStanding! - b.groupStanding!);
             group2.sort((a, b) => a.groupStanding! - b.groupStanding!);
 
-
-
             const pairings: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[] = [];
             
             // Mirror párosítás: 1st vs last, 2nd vs second-to-last, etc.
@@ -1044,15 +1043,13 @@ export class TournamentService {
             // Több csoport esetén: távolabb lévő csoportok párosítása
             // A-C, B-D, E-G, F-H stb. (nem egymás melletti)
             for (let i = 0; i < groupIds.length; i++) {
-                console.log(`\n--- Processing group ${i}: ${groupIds[i]} ---`);
                 if (usedGroups.has(groupIds[i])) {
-                    console.log(`❌ Group ${groupIds[i]} already used, skipping`);
                     continue;
                 }
                 
                 // Keressük a párt: i+2 indexű csoport (ha van)
                 let pairIndex = i + 2;
-                console.log(`Initial pairIndex: ${pairIndex} (i+2)`);
+
                 
                 // Ha nincs i+2, akkor keressünk egy szabad csoportot
                 if (pairIndex >= groupIds.length) {
@@ -1060,7 +1057,6 @@ export class TournamentService {
                     for (let j = 0; j < groupIds.length; j++) {
                         if (j !== i && j !== i + 1 && j !== i - 1 && !usedGroups.has(groupIds[j])) {
                             pairIndex = j;
-                            console.log(`✅ Found alternative pairIndex: ${j} (${groupIds[j]})`);
                             break;
                         }
                     }
@@ -1087,28 +1083,45 @@ export class TournamentService {
         const allMatches: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[] = [];
         const usedPlayers = new Set<string>(); // Track used players across all group pairs
         
-        for (const groupPair of groupPairs) {
-
-            
+        // Generate all pairings first
+        const allPairings: {pairing: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}, groupPairIndex: number}[] = [];
+        
+        for (let groupPairIndex = 0; groupPairIndex < groupPairs.length; groupPairIndex++) {
+            const groupPair = groupPairs[groupPairIndex];
             const pairings = generatePairingsBetweenTwoGroups(groupPair[0], groupPair[1]);
             
-
-            // Add each pairing to the main matches array, avoiding duplicates and used players
             for (const pairing of pairings) {
-                const player1Key = pairing.player1.toString();
-                const player2Key = pairing.player2.toString();
-
-                
-                // Debug: show tournament stats
-                const player1Data = groupPair[0].find(p => p.playerReference.toString() === player1Key);
-                const player2Data = groupPair[1].find(p => p.playerReference.toString() === player2Key);
-
-                
-                // Ellenőrizzük, hogy egyik játékos sem szerepelt még másik párosításban
-                if (!usedPlayers.has(player1Key) && !usedPlayers.has(player2Key)) {
-                    allMatches.push(pairing);
-                    usedPlayers.add(player1Key);
-                    usedPlayers.add(player2Key);
+                allPairings.push({pairing, groupPairIndex});
+            }
+        }
+        
+        // Sort pairings to alternate between group pairs
+        // First, group by groupPairIndex
+        const pairingsByGroup: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[][] = [];
+        for (let i = 0; i < groupPairs.length; i++) {
+            pairingsByGroup.push([]);
+        }
+        
+        for (const {pairing, groupPairIndex} of allPairings) {
+            pairingsByGroup[groupPairIndex].push(pairing);
+        }
+        
+        // Interleave pairings from different groups
+        let maxPairings = Math.max(...pairingsByGroup.map(group => group.length));
+        
+        for (let pairingIndex = 0; pairingIndex < maxPairings; pairingIndex++) {
+            for (let groupIndex = 0; groupIndex < pairingsByGroup.length; groupIndex++) {
+                if (pairingIndex < pairingsByGroup[groupIndex].length) {
+                    const pairing = pairingsByGroup[groupIndex][pairingIndex];
+                    const player1Key = pairing.player1.toString();
+                    const player2Key = pairing.player2.toString();
+                    
+                    // Ellenőrizzük, hogy egyik játékos sem szerepelt még másik párosításban
+                    if (!usedPlayers.has(player1Key) && !usedPlayers.has(player2Key)) {
+                        allMatches.push(pairing);
+                        usedPlayers.add(player1Key);
+                        usedPlayers.add(player2Key);
+                    }
                 }
             }
         }
@@ -1742,7 +1755,7 @@ export class TournamentService {
             }
 
             // Check authorization
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
             if (!isAuthorized) {
                 throw new Error('Only club admins or moderators can generate manual knockout');
             }
@@ -1795,7 +1808,7 @@ export class TournamentService {
             }
 
             // Check authorization
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
             if (!isAuthorized) {
                 throw new Error('Only club admins or moderators can generate automatic pairings');
             }
@@ -1898,7 +1911,7 @@ export class TournamentService {
             }
 
             // Check authorization
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
             if (!isAuthorized) {
                 throw new Error('Only club admins or moderators can generate empty knockout rounds');
             }
@@ -2398,7 +2411,7 @@ export class TournamentService {
             }
 
             // Check authorization
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
             if (!isAuthorized) {
                 throw new Error('Only club admins or moderators can finish tournaments');
             }
@@ -2880,7 +2893,7 @@ export class TournamentService {
         }
     }
 
-    static async updateTournamentSettings(tournamentId: string, requesterId: string, settings: Partial<TournamentSettings>): Promise<TournamentDocument> {
+    static async updateTournamentSettings(tournamentId: string, requesterId: string, settings: Partial<TournamentSettings> & { selectedBoards?: number[] }): Promise<TournamentDocument> {
         try {
             await connectMongo();
             
@@ -2893,7 +2906,7 @@ export class TournamentService {
             }
 
             // Check authorization using the authorization service
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
             if (!isAuthorized) {
                 throw new BadRequestError('Only club admins or moderators can edit tournament settings');
             }
@@ -2915,9 +2928,67 @@ export class TournamentService {
                 }
             }
 
+            // Handle board selection if provided
+            if (settings.selectedBoards && currentStatus === 'pending') {
+                const club = await ClubModel.findById(tournament.clubId);
+                if (!club || !club.boards) {
+                    throw new BadRequestError('Club boards not found');
+                }
+
+                // Validate selected boards exist and are active
+                const availableBoards = club.boards.filter((board: any) => board.isActive);
+                const validBoardNumbers = availableBoards.map((board: any) => board.boardNumber);
+                
+                for (const boardNumber of settings.selectedBoards) {
+                    if (!validBoardNumbers.includes(boardNumber)) {
+                        throw new BadRequestError(`Board ${boardNumber} is not available or not active`);
+                    }
+                }
+
+                // Update board assignments
+                // First, unassign all boards from this tournament
+                await ClubModel.updateMany(
+                    { 
+                        _id: tournament.clubId,
+                        'boards.tournamentId': tournament.tournamentId
+                    },
+                    { 
+                        $set: { 'boards.$.tournamentId': '' } 
+                    }
+                );
+
+                // Then assign selected boards to this tournament
+                for (const boardNumber of settings.selectedBoards) {
+                    await ClubModel.updateOne(
+                        { 
+                            _id: tournament.clubId,
+                            'boards.boardNumber': boardNumber
+                        },
+                        { 
+                            $set: { 'boards.$.tournamentId': tournament.tournamentId } 
+                        }
+                    );
+                }
+
+                console.log(`Updated board assignments for tournament ${tournamentId}: ${settings.selectedBoards.join(', ')}`);
+            }
+
             // Update tournament settings
             const updatedSettings = { ...tournament.tournamentSettings, ...settings };
             
+            // Check subscription limits if start date is being changed
+            if (settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
+                const subscriptionCheck = await SubscriptionService.canUpdateTournament(
+                    tournament.clubId._id.toString(),
+                    new Date(settings.startDate),
+                    tournament.tournamentId
+                );
+                
+                if (!subscriptionCheck.canUpdate) {
+                    throw new BadRequestError(subscriptionCheck.errorMessage || 'Subscription limit exceeded');
+                }
+            }
+
             // Validate required fields
             if (updatedSettings.name && updatedSettings.name.trim().length === 0) {
                 throw new BadRequestError('Tournament name cannot be empty');
@@ -2963,6 +3034,51 @@ export class TournamentService {
         } catch (error) {
             console.error('getActiveTournamentsByClubId error:', error);
             return [];
+        }
+    }
+
+    static async getTournamentBoardContext(tournamentId: string): Promise<{
+        availableBoards: Array<{ boardNumber: number; name: string; isActive: boolean; isAssigned: boolean }>;
+        selectedBoards: number[];
+    }> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            const club = await ClubModel.findById(tournament.clubId);
+            if (!club || !club.boards) {
+                throw new BadRequestError('Club boards not found');
+            }
+
+            // Get available boards: active boards that are either unassigned or assigned to this tournament
+            const availableBoards = club.boards
+                .filter((board: any) => board.isActive && (
+                    !board.tournamentId || 
+                    board.tournamentId === '' || 
+                    board.tournamentId === tournament.tournamentId
+                ))
+                .map((board: any) => ({
+                    boardNumber: board.boardNumber,
+                    name: board.name || `Tábla ${board.boardNumber}`,
+                    isActive: board.isActive,
+                    isAssigned: board.tournamentId === tournament.tournamentId
+                }));
+
+            // Get currently selected boards for this tournament
+            const selectedBoards = club.boards
+                .filter((board: any) => board.isActive && board.tournamentId === tournament.tournamentId)
+                .map((board: any) => board.boardNumber);
+
+            return {
+                availableBoards,
+                selectedBoards
+            };
+        } catch (error) {
+            console.error('getTournamentBoardContext error:', error);
+            throw error;
         }
     }
 }
