@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { AuthService } from "@/database/services/auth.service";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
     try {
         const { code } = await params;
         const body = await request.json();
+        const token = request.cookies.get('token')?.value;
+        if (!token) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const user = await AuthService.verifyToken(token);
+        const requesterId = user._id.toString();
 
         // Validate required fields
         if (body.round === undefined || body.round === null) {
@@ -22,7 +29,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             }
             
             // Call the service method to add partial match
-            const result = await TournamentService.addPartialMatch(code, {
+            const result = await TournamentService.addPartialMatch(code, requesterId, {
                 round: body.round,
                 player1Id: body.player1Id,
                 player2Id: body.player2Id
@@ -48,11 +55,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             }
 
             // Call the service method to add manual match
-            const result = await TournamentService.addManualMatch(code, {
+            const result = await TournamentService.addManualMatch(code, requesterId, {
                 round: body.round,
                 player1Id: body.player1Id,
                 player2Id: body.player2Id,
-                scorerId: body.scorerId
+                scorerId: body.scorerId,
             });
 
             if (!result) {

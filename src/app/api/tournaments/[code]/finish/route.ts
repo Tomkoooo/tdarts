@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
+import { AuthService } from '@/database/services/auth.service';
 
 export async function POST(
   request: NextRequest,
@@ -15,7 +16,15 @@ export async function POST(
       );
     }
 
-    const result = await TournamentService.finishTournament(code);
+    // Get user from JWT token
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const user = await AuthService.verifyToken(token);
+    const requesterId = user._id.toString();
+
+    const result = await TournamentService.finishTournament(code, requesterId);
 
     if (result) {
       return NextResponse.json({ success: true });

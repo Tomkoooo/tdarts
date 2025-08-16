@@ -504,7 +504,7 @@ describe('Parallel Tournament Lifecycle Test', () => {
       const allKnockoutMatches: MatchData[] = [];
       
       // Get tournament data to find which boards have knockout matches
-          const tournamentResponse = await axios.get(`${BASE_URL}/tournaments/${tournamentData.tournamentId}`);
+          const tournamentResponse = await authenticatedAxios.get(`/tournaments/${tournamentData.tournamentId}`);
       if (tournamentResponse.status === 200 && tournamentResponse.data.groups) {
         // Use the same boards that were used for groups
         for (const group of tournamentResponse.data.groups) {
@@ -585,10 +585,10 @@ describe('Parallel Tournament Lifecycle Test', () => {
             // Generate next round
             await logStep('🔄', `Generating next round for Tournament ${tournamentIndex + 1}...`);
             try {
-                          const nextRoundResponse = await authenticatedAxios.post(
-              `/tournaments/${tournamentData.tournamentId}/generateNextRound`,
-              { currentRound }
-            );
+              const nextRoundResponse = await authenticatedAxios.post(
+                `/tournaments/${tournamentData.tournamentId}/generateNextRound`,
+                { currentRound }
+              );
               expect(nextRoundResponse.status).toBe(200);
               await logSuccess(`Next round generated for Tournament ${tournamentIndex + 1}`);
               currentRound++;
@@ -779,5 +779,3 @@ describe('Test Configuration', () => {
     console.log(`🔄 Parallel Tournaments: ${CONFIG.parallelTournaments}`);
   });
 });
-
- 

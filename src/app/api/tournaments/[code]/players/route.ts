@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { PlayerService } from "@/database/services/player.service";
 import { PlayerModel } from "@/database/models/player.model";
+import { AuthService } from "@/database/services/auth.service";
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id');
@@ -17,6 +18,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
+  
+  // Get user from JWT token
+  const token = request.cookies.get('token')?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const user = await AuthService.verifyToken(token);
+  const requesterId = user._id.toString();
+  
   const { playerId, userRef, name } = await request.json();
   
   let player;
@@ -42,6 +52,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
+  
+  // Get user from JWT token
+  const token = request.cookies.get('token')?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const user = await AuthService.verifyToken(token);
+  const requesterId = user._id.toString();
+  
   const { playerId, status } = await request.json();
   const success = await TournamentService.updateTournamentPlayerStatus(code, playerId, status);
   return NextResponse.json({ success });
@@ -49,6 +68,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
+  
+  // Get user from JWT token
+  const token = request.cookies.get('token')?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const user = await AuthService.verifyToken(token);
+  const requesterId = user._id.toString();
+  
   const { playerId } = await request.json();
   const success = await TournamentService.removeTournamentPlayer(code, playerId);
   return NextResponse.json({ success });

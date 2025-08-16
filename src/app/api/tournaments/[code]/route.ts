@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { AuthService } from "@/database/services/auth.service";
 
 export async function GET(
   request: NextRequest,
@@ -20,18 +21,23 @@ export async function PUT(
 ) {
   try {
     const { code } = await params;
-    const body = await request.json();
-    const { userId, settings } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    
+    // Get user from JWT token
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = await AuthService.verifyToken(token);
+    const requesterId = user._id.toString();
+    
+    const body = await request.json();
+    const { settings } = body;
 
     if (!settings || typeof settings !== 'object') {
       return NextResponse.json({ error: "settings object is required" }, { status: 400 });
     }
 
-    const updatedTournament = await TournamentService.updateTournamentSettings(code, userId, settings);
+    const updatedTournament = await TournamentService.updateTournamentSettings(code, requesterId, settings);
     return NextResponse.json(updatedTournament);
   } catch (error) {
     if (error instanceof BadRequestError) {

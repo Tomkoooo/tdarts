@@ -9,6 +9,7 @@ import { roundRobin } from '@/lib/utils';
 import { MatchModel } from '../models/match.model';
 import { ClubService } from './club.service';
 import { ClubModel } from '../models/club.model';
+import { AuthorizationService } from './authorization.service';
 
 export class TournamentService {
     // Initialize indexes when the service is first used
@@ -116,7 +117,7 @@ export class TournamentService {
         return { boards, availablePlayers };
     }
 
-    static async createManualGroup(tournamentCode: string, params: {
+    static async createManualGroup(tournamentCode: string, requesterId: string, params: {
         boardNumber: number;
         // Player document ids
         playerIds: string[];
@@ -129,6 +130,13 @@ export class TournamentService {
         if (!tournament) {
             throw new BadRequestError('Tournament not found');
         }
+
+        // Check authorization
+        const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+        if (!isAuthorized) {
+            throw new BadRequestError('Only club admins or moderators can create manual groups');
+        }
+
         const { boardNumber, playerIds } = params;
         if (!Array.isArray(playerIds) || playerIds.length === 0) {
             throw new BadRequestError('playerIds are required');
@@ -227,6 +235,7 @@ export class TournamentService {
 
     static async createManualGroups(
         tournamentCode: string,
+        requesterId: string,
         groups: Array<{ boardNumber: number; playerIds: string[] }>
     ): Promise<Array<{ boardNumber: number; groupId: string; matchIds: string[] }>> {
         await connectMongo();
@@ -234,6 +243,13 @@ export class TournamentService {
         if (!tournament) {
             throw new BadRequestError('Tournament not found');
         }
+
+        // Check authorization
+        const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+        if (!isAuthorized) {
+            throw new BadRequestError('Only club admins or moderators can create manual groups');
+        }
+
         if (!Array.isArray(groups) || groups.length === 0) {
             throw new BadRequestError('No groups provided');
         }
@@ -243,7 +259,7 @@ export class TournamentService {
         const boardFirstMatches = new Map<number, string>(); // Track first match for each board
         
         for (const g of groups) {
-            const res = await this.createManualGroup(tournamentCode, { boardNumber: g.boardNumber, playerIds: g.playerIds });
+            const res = await this.createManualGroup(tournamentCode, requesterId, { boardNumber: g.boardNumber, playerIds: g.playerIds });
             results.push({ boardNumber: g.boardNumber, ...res });
             
             // Track the first match for each board
@@ -451,12 +467,18 @@ export class TournamentService {
         }
     }
 
-    static async generateGroups(tournamentId: string): Promise<boolean> {
+    static async generateGroups(tournamentId: string, requesterId: string): Promise<boolean> {
         try {
             await connectMongo();
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can generate groups');
             }
             
             // Get club with boards
@@ -771,15 +793,19 @@ export class TournamentService {
         return boards;
     }
 
-    static async generateKnockout(tournamentCode: string, options: {
+    static async generateKnockout(tournamentCode: string, requesterId: string, options: {
         playersCount?: number;
-        useSeededPlayers: boolean;
-        seededPlayersCount: number;
     }): Promise<boolean> {
         try {
             const tournament = await this.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
+            if (!isAuthorized) {
+                throw new Error('Only club admins or moderators can generate knockout');
             }
 
             // Check if tournament format allows knockout generation from current status
@@ -800,7 +826,7 @@ export class TournamentService {
 
             // Get checked-in players
             const checkedInPlayers = tournament.tournamentPlayers.filter(
-                (player: any) => player.status === 'checked-in'
+                (player) => player.status === 'checked-in'
             );
 
             if (checkedInPlayers.length < 2) {
@@ -809,14 +835,14 @@ export class TournamentService {
 
             // For knockout-only tournaments, use all checked-in players
             // For group_knockout tournaments, use players from groups
-            let groupPlayers: any[] = [];
+            let groupPlayers: TournamentPlayerDocument[] = [];
             
             if (format === 'knockout') {
                 // Use all checked-in players for knockout-only tournaments
                 groupPlayers = checkedInPlayers;
             } else {
                 // Use players from groups for group_knockout tournaments
-                groupPlayers = checkedInPlayers.filter((player: any) => player.groupId);
+                groupPlayers = checkedInPlayers.filter((player) => player.groupId);
                 
                 if (groupPlayers.length < (options.playersCount || 0)) {
                     throw new Error(`Not enough players from groups. Need ${options.playersCount}, have ${groupPlayers.length}`);
@@ -826,26 +852,13 @@ export class TournamentService {
             // Sort players by group standing (for group_knockout) or randomly (for knockout)
             const allPlayers = [...groupPlayers];
             if (format === 'group_knockout') {
-                allPlayers.sort((a: any, b: any) => {
-                    if (a.groupStanding !== b.groupStanding) {
-                        return (a.groupStanding || 0) - (b.groupStanding || 0);
-                    }
-                    const aStats = a.stats || {};
-                    const bStats = b.stats || {};
-                    const aPoints = (aStats.matchesWon || 0) * 2;
-                    const bPoints = (bStats.matchesWon || 0) * 2;
-                    if (aPoints !== bPoints) return bPoints - aPoints;
-                    
-                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
-                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
-                    return bLegDiff - aLegDiff;
-                });
+                allPlayers.sort((a, b) => (a.groupStanding || 1) - (b.groupStanding || 1));
             } else {
                 // Random shuffle for knockout-only tournaments
                 allPlayers.sort(() => Math.random() - 0.5);
             }
 
-            let advancingPlayers: any[] = [];
+            let advancingPlayers: TournamentPlayerDocument[] = [];
             
             if (format === 'knockout') {
                 // For knockout format, use all players
@@ -859,19 +872,11 @@ export class TournamentService {
                 }
             }
 
-            const shuffledPlayers = [...advancingPlayers].sort(() => Math.random() - 0.5);
-            const knockoutRounds = this.generateKnockoutRounds(shuffledPlayers, format);
+            // Generate knockout rounds with proper cross-group pairings
+            const knockoutRounds = await this.generateKnockoutRounds(advancingPlayers, format);
 
-            console.log('=== KNOCKOUT GENERATION DEBUG ===');
-            console.log('Tournament format:', format);
-            console.log('Advancing players count:', advancingPlayers.length);
-            console.log('Shuffled players count:', shuffledPlayers.length);
-            console.log('Knockout rounds:', knockoutRounds.length);
-            console.log('First round matches count:', knockoutRounds[0]?.matches?.length || 0);
-            console.log('First round matches:', knockoutRounds[0]?.matches || []);
-
-            // Create matches for the first round
-            const firstRoundMatches = knockoutRounds[0].matches;
+            // Create matches for the first round - combine all matches from all rounds
+            const allFirstRoundMatches = knockoutRounds.flatMap(round => round.matches);
             const createdMatches: any[] = [];
             const boardFirstMatches = new Map<number, mongoose.Types.ObjectId>(); // Track first match for each board
 
@@ -890,8 +895,8 @@ export class TournamentService {
             }
 
             // Assign matches to boards in round-robin fashion
-            for (let i = 0; i < firstRoundMatches.length; i++) {
-                const matchData = firstRoundMatches[i];
+            for (let i = 0; i < allFirstRoundMatches.length; i++) {
+                const matchData = allFirstRoundMatches[i];
                 if (matchData.player1 && matchData.player2) {
                     const boardIndex: number = i % availableBoards.length;
                     const assignedBoard: any = availableBoards[boardIndex];
@@ -925,14 +930,15 @@ export class TournamentService {
                     }
 
                     // Update the knockout structure with match reference
-                    const firstRoundIndex = knockoutRounds.findIndex((r: any) => r.round === 1);
-                    if (firstRoundIndex !== -1) {
-                        const matchIndex = knockoutRounds[firstRoundIndex].matches.findIndex((m: any) => 
+                    // Find the round that contains this match
+                    for (const round of knockoutRounds) {
+                        const matchIndex = round.matches.findIndex((m: any) => 
                             m.player1?.toString() === matchData.player1?.toString() && 
                             m.player2?.toString() === matchData.player2?.toString()
                         );
                         if (matchIndex !== -1) {
-                            knockoutRounds[firstRoundIndex].matches[matchIndex].matchReference = match._id;
+                            round.matches[matchIndex].matchReference = match._id;
+                            break;
                         }
                     }
                 }
@@ -955,9 +961,6 @@ export class TournamentService {
                 );
             }
 
-            // If there's a second round with a bye player, don't create a match for it yet
-            // The match will be created when the first round is finished
-
             // Update tournament
             tournament.knockout = knockoutRounds;
             tournament.tournamentSettings.status = 'knockout';
@@ -972,185 +975,184 @@ export class TournamentService {
         }
     }
 
-    private static generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout'): any[] {
-        const rounds: any[] = [];
-
-        // Handle odd number of players by giving a bye to the last player
-        const playersForFirstRound = [...advancingPlayers];
-        let playerWithBye = null;
-        
-        if (playersForFirstRound.length % 2 !== 0) {
-            // Remove the last player and they get a bye (will join in the second round)
-            playerWithBye = playersForFirstRound.pop();
-        }
-
-        const firstRoundMatches = [];
-
+    private static async generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout'): Promise<any[]> {
+ 
         if (format === 'group_knockout') {
-            // For group_knockout format, create proper cross-group pairings
-            const playersByGroup = new Map();
-            playersForFirstRound.forEach(player => {
-                const groupId = player.groupId;
-                if (!playersByGroup.has(groupId)) {
-                    playersByGroup.set(groupId, []);
+            const groups = new Map<string, TournamentPlayerDocument[]>();
+            for (const player of advancingPlayers) {
+                const groupId = player.groupId?.toString();
+                if (!groupId) {
+                    console.warn(`Player ${player.playerReference} has no groupId`);
+                    continue;
                 }
-                playersByGroup.get(groupId).push(player);
-            });
-
-            // Sort players within each group by their group standing (1st, 2nd, 3rd, etc.)
-            playersByGroup.forEach((players) => {
-                players.sort((a: any, b: any) => {
-                    if (a.groupStanding !== b.groupStanding) {
-                        return (a.groupStanding || 0) - (b.groupStanding || 0);
-                    }
-                    const aStats = a.stats || {};
-                    const bStats = b.stats || {};
-                    const aPoints = (aStats.matchesWon || 0) * 2;
-                    const bPoints = (bStats.matchesWon || 0) * 2;
-                    if (aPoints !== bPoints) return bPoints - aPoints;
-                    
-                    const aLegDiff = (aStats.legsWon || 0) - (aStats.legsLost || 0);
-                    const bLegDiff = (bStats.legsWon || 0) - (bStats.legsLost || 0);
-                    return bLegDiff - aLegDiff;
-                });
-            });
-
-            // Create cross-group pairings with optimal distribution
-            const groupIds = Array.from(playersByGroup.keys()).sort();
-            const groupCount = groupIds.length;
-            
-            if (groupCount > 1) {
-                // Calculate how many players advance from each group
-                const playersPerGroup = Math.floor(playersForFirstRound.length / groupCount);
-                const extraPlayers = playersForFirstRound.length % groupCount;
-                
-                // Create optimal pairings to avoid same-group matchups as long as possible
-                const pairings: Array<{player1: any, player2: any}> = [];
-                
-                // For each position (1st, 2nd, 3rd, etc.)
-                for (let position = 0; position < playersPerGroup; position++) {
-                    const positionPlayers: any[] = [];
-                    
-                    // Collect all players at this position from each group
-                    for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
-                        const groupId = groupIds[groupIndex];
-                        const groupPlayers = playersByGroup.get(groupId);
-                        if (groupPlayers && groupPlayers[position]) {
-                            positionPlayers.push({
-                                player: groupPlayers[position],
-                                groupIndex: groupIndex
-                            });
-                        }
-                    }
-                    
-                    // Create pairings for this position with maximum group separation
-                    for (let i = 0; i < positionPlayers.length; i += 2) {
-                        if (i + 1 < positionPlayers.length) {
-                            const player1 = positionPlayers[i];
-                            const player2 = positionPlayers[i + 1];
-                            
-                            // Ensure maximum group separation
-                            const groupSeparation = Math.abs(player1.groupIndex - player2.groupIndex);
-                            const optimalSeparation = Math.floor(groupCount / 2);
-                            
-                            // If separation is not optimal, try to find better pairing
-                            if (groupSeparation < optimalSeparation && positionPlayers.length > 2) {
-                                // Try to find a better pairing
-                                for (let j = i + 2; j < positionPlayers.length; j++) {
-                                    const alternativeSeparation = Math.abs(player1.groupIndex - positionPlayers[j].groupIndex);
-                                    if (alternativeSeparation > groupSeparation) {
-                                        // Swap for better separation
-                                        [positionPlayers[i + 1], positionPlayers[j]] = [positionPlayers[j], positionPlayers[i + 1]];
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            pairings.push({
-                                player1: player1.player.playerReference,
-                                player2: player2.player.playerReference
-                            });
-                        }
-                    }
+                if (!groups.has(groupId)) {
+                    groups.set(groupId, []);
                 }
-                
-                // Handle extra players (if any group has more players than others)
-                if (extraPlayers > 0) {
-                    const extraPosition = playersPerGroup;
-                    const extraPositionPlayers: any[] = [];
-                    
-                    for (let groupIndex = 0; groupIndex < extraPlayers; groupIndex++) {
-                        const groupId = groupIds[groupIndex];
-                        const groupPlayers = playersByGroup.get(groupId);
-                        if (groupPlayers && groupPlayers[extraPosition]) {
-                            extraPositionPlayers.push({
-                                player: groupPlayers[extraPosition],
-                                groupIndex: groupIndex
-                            });
-                        }
-                    }
-                    
-                    // Create pairings for extra players
-                    for (let i = 0; i < extraPositionPlayers.length; i += 2) {
-                        if (i + 1 < extraPositionPlayers.length) {
-                            pairings.push({
-                                player1: extraPositionPlayers[i].player.playerReference,
-                                player2: extraPositionPlayers[i + 1].player.playerReference
-                            });
-                        }
-                    }
-                }
-                
-                // Optimize pairing order to avoid same-group winners meeting early
-                // Sort pairings to maximize group separation in the bracket
-                pairings.sort((a, b) => {
-                    // Find the group indices for each pairing
-                    const aPlayer1Group = playersByGroup.get(a.player1)?.findIndex((p: any) => p.playerReference.toString() === a.player1.toString()) || 0;
-                    const aPlayer2Group = playersByGroup.get(a.player2)?.findIndex((p: any) => p.playerReference.toString() === a.player2.toString()) || 0;
-                    const bPlayer1Group = playersByGroup.get(b.player1)?.findIndex((p: any) => p.playerReference.toString() === b.player1.toString()) || 0;
-                    const bPlayer2Group = playersByGroup.get(b.player2)?.findIndex((p: any) => p.playerReference.toString() === b.player2.toString()) || 0;
-                    
-                    // Calculate group separation for each pairing
-                    const aSeparation = Math.abs(aPlayer1Group - aPlayer2Group);
-                    const bSeparation = Math.abs(bPlayer1Group - bPlayer2Group);
-                    
-                    // Prefer pairings with higher separation first
-                    return bSeparation - aSeparation;
-                });
-                
-                firstRoundMatches.push(...pairings);
-                
-            } else {
-                // Only one group, create simple pairings
-                const groupPlayers = playersByGroup.get(groupIds[0]) || [];
-                for (let i = 0; i < groupPlayers.length; i += 2) {
-                    if (i + 1 < groupPlayers.length) {
-                        const player1 = groupPlayers[i];
-                        const player2 = groupPlayers[i + 1];
-                        
-                        firstRoundMatches.push({
-                            player1: player1.playerReference,
-                            player2: player2.playerReference,
-                        });
-                    }
-                }
+                groups.get(groupId)!.push(player);
             }
+            const groupIds = Array.from(groups.keys());
+            const groupCount = groupIds.length;
+            if (groupCount % 2 !== 0) {
+                throw new Error('Group count must be even');
+            }
+            return await this.generateStandardKnockoutRounds( groups, groupIds);
         } else {
-            // For knockout format, create simple random pairings
-            for (let i = 0; i < playersForFirstRound.length; i += 2) {
-                if (i + 1 < playersForFirstRound.length) {
-                    const player1 = playersForFirstRound[i];
-                    const player2 = playersForFirstRound[i + 1];
-                    
-                    firstRoundMatches.push({
+            // For knockout-only format, create simple random pairings
+            return this.generateSimpleKnockoutRounds(advancingPlayers);
+        }
+    }
+
+    private static async generateStandardKnockoutRounds( groups: Map<string, TournamentPlayerDocument[]>, groupIds: string[]) {
+        function generatePairingsBetweenTwoGroups(group1: TournamentPlayerDocument[], group2: TournamentPlayerDocument[]) {
+            group1.sort((a, b) => a.groupStanding! - b.groupStanding!);
+            group2.sort((a, b) => a.groupStanding! - b.groupStanding!);
+
+
+
+            const pairings: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[] = [];
+            
+            // Mirror párosítás: 1st vs last, 2nd vs second-to-last, etc.
+            const minPlayers = Math.min(group1.length, group2.length);
+            
+            for (let i = 0; i < minPlayers; i++) {
+                const player1 = group1[i];
+                const player2 = group2[group2.length - 1 - i]; // Mirror index - NE használj reverse()!
+                
+            
+                if (player1 && player2) {
+                    pairings.push({
                         player1: player1.playerReference,
                         player2: player2.playerReference,
                     });
                 }
             }
+            
+            return pairings;
         }
 
-        // If there's a player with a bye, add them to the second round
+        // Párosítsuk a csoportokat cross-group párosításra
+        // Használjunk Set-et a duplikációk elkerülésére
+        const groupPairs: [TournamentPlayerDocument[], TournamentPlayerDocument[]][] = [];
+        const usedGroups = new Set<string>();
+        
+        
+        
+        // Ha csak 2 csoport van, egyszerű párosítás
+        if (groupIds.length === 2) {
+            groupPairs.push([groups.get(groupIds[0])!, groups.get(groupIds[1])!]);
+        } else {
+            // Több csoport esetén: távolabb lévő csoportok párosítása
+            // A-C, B-D, E-G, F-H stb. (nem egymás melletti)
+            for (let i = 0; i < groupIds.length; i++) {
+                console.log(`\n--- Processing group ${i}: ${groupIds[i]} ---`);
+                if (usedGroups.has(groupIds[i])) {
+                    console.log(`❌ Group ${groupIds[i]} already used, skipping`);
+                    continue;
+                }
+                
+                // Keressük a párt: i+2 indexű csoport (ha van)
+                let pairIndex = i + 2;
+                console.log(`Initial pairIndex: ${pairIndex} (i+2)`);
+                
+                // Ha nincs i+2, akkor keressünk egy szabad csoportot
+                if (pairIndex >= groupIds.length) {
+                    // Keressünk egy szabad csoportot, ami nem i+1 (ne legyen szomszédos)
+                    for (let j = 0; j < groupIds.length; j++) {
+                        if (j !== i && j !== i + 1 && j !== i - 1 && !usedGroups.has(groupIds[j])) {
+                            pairIndex = j;
+                            console.log(`✅ Found alternative pairIndex: ${j} (${groupIds[j]})`);
+                            break;
+                        }
+                    }
+                    // Ha nem találtunk, akkor i+1-gyel párosítunk (utolsó eset)
+                    if (pairIndex >= groupIds.length) {
+                        pairIndex = i + 1;
+                        if (pairIndex >= groupIds.length || usedGroups.has(groupIds[pairIndex])) {
+                            continue; // Nincs párt találó csoport
+                        }
+                    }
+                }
+                
+                // Ha találtunk párt és még nem használták
+                if (pairIndex < groupIds.length && !usedGroups.has(groupIds[pairIndex])) {
+                    groupPairs.push([groups.get(groupIds[i])!, groups.get(groupIds[pairIndex])!]);
+                    usedGroups.add(groupIds[i]);
+                    usedGroups.add(groupIds[pairIndex]);
+                } else {
+                }
+            }
+        }
+
+        // Collect all pairings from all group pairs into a single round
+        const allMatches: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[] = [];
+        const usedPlayers = new Set<string>(); // Track used players across all group pairs
+        
+        for (const groupPair of groupPairs) {
+
+            
+            const pairings = generatePairingsBetweenTwoGroups(groupPair[0], groupPair[1]);
+            
+
+            // Add each pairing to the main matches array, avoiding duplicates and used players
+            for (const pairing of pairings) {
+                const player1Key = pairing.player1.toString();
+                const player2Key = pairing.player2.toString();
+
+                
+                // Debug: show tournament stats
+                const player1Data = groupPair[0].find(p => p.playerReference.toString() === player1Key);
+                const player2Data = groupPair[1].find(p => p.playerReference.toString() === player2Key);
+
+                
+                // Ellenőrizzük, hogy egyik játékos sem szerepelt még másik párosításban
+                if (!usedPlayers.has(player1Key) && !usedPlayers.has(player2Key)) {
+                    allMatches.push(pairing);
+                    usedPlayers.add(player1Key);
+                    usedPlayers.add(player2Key);
+                }
+            }
+        }
+
+        // Return single round with all matches
+        return [{
+            round: 1,
+            matches: allMatches
+        }];
+    }
+
+
+    private static generateSimpleKnockoutRounds(advancingPlayers: any[]): any[] {
+        const rounds: any[] = [];
+        const firstRoundMatches: any[] = [];
+
+        // Create simple random pairings
+        for (let i = 0; i < advancingPlayers.length; i += 2) {
+            if (i + 1 < advancingPlayers.length) {
+                firstRoundMatches.push({
+                    player1: advancingPlayers[i].playerReference,
+                    player2: advancingPlayers[i + 1].playerReference,
+                });
+            }
+        }
+
+        // Handle odd number of players with bye
+        let playerWithBye = null;
+        if (firstRoundMatches.length * 2 < advancingPlayers.length) {
+            const matchedPlayers = new Set();
+            firstRoundMatches.forEach(match => {
+                matchedPlayers.add(match.player1.toString());
+                matchedPlayers.add(match.player2.toString());
+            });
+
+            for (const player of advancingPlayers) {
+                if (!matchedPlayers.has(player.playerReference.toString())) {
+                    playerWithBye = player;
+                    break;
+                }
+            }
+        }
+
+        // Create rounds
         if (playerWithBye) {
             rounds.push({ 
                 round: 1, 
@@ -1160,11 +1162,10 @@ export class TournamentService {
                 round: 2, 
                 matches: [{
                     player1: playerWithBye.playerReference,
-                    player2: null, // Will be filled when first round is finished
+                    player2: null,
                 }]
             });
         } else {
-            // No bye player, just create first round
             rounds.push({ 
                 round: 1, 
                 matches: firstRoundMatches 
@@ -1174,7 +1175,9 @@ export class TournamentService {
         return rounds;
     }
 
-    static async generateNextKnockoutRound(tournamentId: string, currentRound: number): Promise<boolean> {
+
+
+    static async generateNextKnockoutRound(tournamentId: string, requesterId: string, currentRound: number): Promise<boolean> {
         try {
             await connectMongo();
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
@@ -1672,7 +1675,9 @@ export class TournamentService {
                                 .map(m => m.winnerId);
 
                             if (winners.length >= 2) {
-                                await this.generateNextKnockoutRound(tournament.tournamentId, currentRound.round);
+                                // Note: This is an automatic call, no requesterId needed
+                                // The authorization is handled at the API level
+                                await this.generateNextKnockoutRound(tournament.tournamentId, 'system', currentRound.round);
                             } else {
                                 // Tournament finished
                                 await ClubModel.updateOne(
@@ -1729,11 +1734,17 @@ export class TournamentService {
         }
     }
 
-    static async generateManualKnockout(tournamentCode: string): Promise<boolean> {
+    static async generateManualKnockout(tournamentCode: string, requesterId: string): Promise<boolean> {
         try {
             const tournament = await this.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new Error('Only club admins or moderators can generate manual knockout');
             }
 
             // Check if tournament format allows knockout generation from current status
@@ -1772,7 +1783,7 @@ export class TournamentService {
         }
     }
 
-    static async generateAutomaticPairingsForManualKnockout(tournamentCode: string, options: {
+    static async generateAutomaticPairingsForManualKnockout(tournamentCode: string, requesterId: string, options: {
         playersCount?: number;
         useSeededPlayers: boolean;
         seededPlayersCount: number;
@@ -1781,6 +1792,12 @@ export class TournamentService {
             const tournament = await this.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new Error('Only club admins or moderators can generate automatic pairings');
             }
 
             // Ensure tournament is in manual knockout mode
@@ -1852,7 +1869,7 @@ export class TournamentService {
             }
 
             const shuffledPlayers = [...advancingPlayers].sort(() => Math.random() - 0.5);
-            const knockoutRounds = this.generateKnockoutRounds(shuffledPlayers, format);
+            const knockoutRounds = await this.generateKnockoutRounds(shuffledPlayers, format);
 
             console.log('=== MANUAL KNOCKOUT AUTOMATIC PAIRINGS DEBUG ===');
             console.log('Tournament format:', format);
@@ -1873,11 +1890,17 @@ export class TournamentService {
         }
     }
 
-    static async generateEmptyKnockoutRounds(tournamentCode: string, roundsCount: number = 2): Promise<boolean> {
+    static async generateEmptyKnockoutRounds(tournamentCode: string, requesterId: string, roundsCount: number = 2): Promise<boolean> {
         try {
             const tournament = await this.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new Error('Only club admins or moderators can generate empty knockout rounds');
             }
 
             // Ensure tournament is in manual knockout mode
@@ -1909,7 +1932,7 @@ export class TournamentService {
         }
     }
 
-    static async addPartialMatch(tournamentId: string, matchData: {
+    static async addPartialMatch(tournamentId: string, requesterId: string, matchData: {
         round: number;
         player1Id?: string;
         player2Id?: string;
@@ -1920,6 +1943,12 @@ export class TournamentService {
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can add partial matches');
             }
 
             // At least one player must be specified
@@ -2038,12 +2067,18 @@ export class TournamentService {
         }
     }
 
-    static async generateRandomPairings(tournamentId: string, round: number, selectedPlayerIds: string[]): Promise<any[]> {
+    static async generateRandomPairings(tournamentId: string, requesterId: string, round: number, selectedPlayerIds: string[]): Promise<any[]> {
         try {
             await connectMongo();
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can generate random pairings');
             }
 
             // Validate all players exist in tournament
@@ -2092,7 +2127,7 @@ export class TournamentService {
             const createdMatches = [];
             for (const [player1Id, player2Id] of pairs) {
                 // For random pairings, use player1 as default scorer
-                const match = await this.addPartialMatch(tournamentId, {
+                const match = await this.addPartialMatch(tournamentId, requesterId, {
                     round,
                     player1Id,
                     player2Id,
@@ -2110,12 +2145,18 @@ export class TournamentService {
         }
     }
 
-    static async updateMatchPlayer(tournamentId: string, matchId: string, playerPosition: 'player1' | 'player2', playerId: string): Promise<boolean> {
+    static async updateMatchPlayer(tournamentId: string, requesterId: string, matchId: string, playerPosition: 'player1' | 'player2', playerId: string): Promise<boolean> {
         try {
             await connectMongo();
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can update match players');
             }
 
             // Validate player exists in tournament
@@ -2226,7 +2267,7 @@ export class TournamentService {
         }
     }
 
-    static async addManualMatch(tournamentId: string, matchData: {
+    static async addManualMatch(tournamentId: string, requesterId: string, matchData: {
         round: number;
         player1Id: string;
         player2Id: string;
@@ -2237,6 +2278,12 @@ export class TournamentService {
             const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can add manual matches');
             }
 
             // Validate players exist in tournament
@@ -2343,11 +2390,17 @@ export class TournamentService {
         }
     }
 
-    static async finishTournament(tournamentCode: string): Promise<boolean> {
+    static async finishTournament(tournamentCode: string, requesterId: string): Promise<boolean> {
         try {
             const tournament = await this.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new Error('Only club admins or moderators can finish tournaments');
             }
 
             console.log('=== FINISH TOURNAMENT DEBUG ===');
@@ -2827,7 +2880,7 @@ export class TournamentService {
         }
     }
 
-    static async updateTournamentSettings(tournamentId: string, userId: string, settings: Partial<TournamentSettings>): Promise<TournamentDocument> {
+    static async updateTournamentSettings(tournamentId: string, requesterId: string, settings: Partial<TournamentSettings>): Promise<TournamentDocument> {
         try {
             await connectMongo();
             
@@ -2839,17 +2892,9 @@ export class TournamentService {
                 throw new BadRequestError('Tournament not found');
             }
 
-            // Check if user has permission to edit this tournament
-            const club = tournament.clubId as any;
-            if (!club) {
-                throw new BadRequestError('Club not found');
-            }
-
-            // Check if user is admin or moderator of the club
-            const isAdmin = club.admin?.some((adminId: any) => adminId.toString() === userId);
-            const isModerator = club.moderators?.some((moderatorId: any) => moderatorId.toString() === userId);
-            
-            if (!isAdmin && !isModerator) {
+            // Check authorization using the authorization service
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
                 throw new BadRequestError('Only club admins or moderators can edit tournament settings');
             }
 

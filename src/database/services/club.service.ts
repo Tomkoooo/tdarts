@@ -7,6 +7,7 @@ import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { BoardModel } from '@/database/models/board.model';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { AuthorizationService } from './authorization.service';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
@@ -109,7 +110,8 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    if (!club.admin.includes(userId)) {
+    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
+    if (!isAuthorized) {
       throw new BadRequestError('Only admins can update club details');
     }
 
@@ -138,8 +140,7 @@ export class ClubService {
     if (!club) {
       throw new BadRequestError('Club not found');
     }
-    const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) ||
-      club.moderators.includes(new Types.ObjectId(requesterId));
+    const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
     if (!isAuthorized) {
       throw new BadRequestError('Only admins or moderators can add members');
     }
@@ -168,7 +169,8 @@ export class ClubService {
     if (!club) {
       throw new BadRequestError('Club not found');
     }
-    if (!club.admin.includes(new Types.ObjectId(requesterId))) {
+    const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
+    if (!isAuthorized) {
       throw new BadRequestError('Only admins can add moderators');
     }
     // the id from the requst refers to the player collection and in the plaer collection we refer to th. user if it registe
@@ -193,7 +195,8 @@ export class ClubService {
     if (!club) {
       throw new BadRequestError('Club not found');
     }
-    if (!club.admin.includes(new Types.ObjectId(requesterId))) {
+    const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
+    if (!isAuthorized) {
       throw new BadRequestError('Only admins can add admins');
     }
     // Only allow if userId is a registered user and has a player entry with userRef
@@ -219,11 +222,18 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
-                        club.moderators.includes(new Types.ObjectId(requesterId)) ||
-                        userId === requesterId;
-    if (!isAuthorized) {
-      throw new BadRequestError('Only admins, moderators, or the user themselves can remove members');
+    // Check if user is removing themselves
+    if (userId === requesterId) {
+      const isMember = await AuthorizationService.checkMemberOrHigher(requesterId, clubId);
+      if (!isMember) {
+        throw new BadRequestError('User is not a member of this club');
+      }
+    } else {
+      // Check if requester has admin or moderator permissions
+      const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
+      if (!isAuthorized) {
+        throw new BadRequestError('Only admins or moderators can remove members');
+      }
     }
 
     if (club.admin.includes(new Types.ObjectId(userId)) && club.admin.length === 1) {
@@ -248,7 +258,8 @@ export class ClubService {
 
     const playerUserRef = await PlayerModel.findOne({ _id: userId }).select('userRef');
 
-    if (!club.admin.includes(new Types.ObjectId(requesterId))) {
+    const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
+    if (!isAuthorized) {
       throw new BadRequestError('Only admins can remove moderators');
     }
 
@@ -265,8 +276,7 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
-                        club.moderators.includes(new Types.ObjectId(requesterId));
+    const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
     if (!isAuthorized) {
       throw new BadRequestError('Only admins or moderators can add tournament players');
     }
@@ -288,8 +298,7 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    const isAuthorized = club.admin.includes(new Types.ObjectId(requesterId)) || 
-                        club.moderators.includes(new Types.ObjectId(requesterId));
+    const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
     if (!isAuthorized) {
       throw new BadRequestError('Only admins or moderators can remove tournament players');
     }
@@ -307,7 +316,8 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    if (!club.admin.includes(new Types.ObjectId(requesterId))) {
+    const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
+    if (!isAuthorized) {
       throw new BadRequestError('Only admins can deactivate clubs');
     }
 
@@ -444,7 +454,8 @@ export class ClubService {
     await connectMongo();
     const club = await ClubModel.findById(clubId);
     if (!club) throw new BadRequestError('Club not found');
-    if (!club.admin.includes(new Types.ObjectId(userId))) throw new BadRequestError('Only admins can add boards');
+    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
+    if (!isAuthorized) throw new BadRequestError('Only admins can add boards');
     // Determine next board number
     const nextBoardNumber = (club.boards?.length || 0) + 1;
     club.boards.push({
@@ -470,7 +481,8 @@ export class ClubService {
     await connectMongo();
     const club = await ClubModel.findById(clubId);
     if (!club) throw new BadRequestError('Club not found');
-    if (!club.admin.includes(new Types.ObjectId(userId))) throw new BadRequestError('Only admins can update boards');
+    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
+    if (!isAuthorized) throw new BadRequestError('Only admins can update boards');
     // Update in Board collection
     await BoardModel.findOneAndUpdate({ clubId, boardNumber }, updates);
     // Update in club.boards array
@@ -487,7 +499,8 @@ export class ClubService {
     await connectMongo();
     const club = await ClubModel.findById(clubId);
     if (!club) throw new BadRequestError('Club not found');
-    if (!club.admin.includes(new Types.ObjectId(userId))) throw new BadRequestError('Only admins can remove boards');
+    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
+    if (!isAuthorized) throw new BadRequestError('Only admins can remove boards');
     // Remove from Board collection
     await BoardModel.findOneAndDelete({ clubId, boardNumber });
     // Remove from club.boards array

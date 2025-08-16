@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { AuthService } from "@/database/services/auth.service";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
     try {
         const { code } = await params;
+        
+        // Get user from JWT token
+        const token = request.cookies.get('token')?.value;
+        if (!token) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const user = await AuthService.verifyToken(token);
+        const requesterId = user._id.toString();
+        
         const body = await request.json();
 
         // Get tournament to check format
@@ -29,10 +39,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         // Call the service method to generate knockout
-        const result = await TournamentService.generateKnockout(code, {
-            playersCount: body.playersCount,
-            useSeededPlayers: false,
-            seededPlayersCount: 0
+        const result = await TournamentService.generateKnockout(code, requesterId, {
+            playersCount: body.playersCount
         });
 
         if (!result) {
