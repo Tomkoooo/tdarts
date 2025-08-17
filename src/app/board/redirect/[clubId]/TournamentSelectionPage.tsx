@@ -61,7 +61,10 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
         setError(data.error || 'Hibás jelszó.');
       }
     } catch (err) {
+
       console.log(err);
+    
+
       setError('Hiba történt a kapcsolódás során.');
     } finally {
       setLoading(false);
