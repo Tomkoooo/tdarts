@@ -805,6 +805,10 @@ html {
     border-radius: 0.75rem;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px oklch(51% 0.18 16 / 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .admin-btn-primary:hover {

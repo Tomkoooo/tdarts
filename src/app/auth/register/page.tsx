@@ -32,7 +32,6 @@ export default function RegisterPage() {
     name: string;
     username?: string;
   }) => {
-    console.log('Register data:', data);
     setIsLoading(true);
     setError(null);
     try {

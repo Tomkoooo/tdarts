@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconTarget, IconPlayerPlay, IconTrophy } from '@tabler/icons-react';
+import Link from 'next/link';
 
 const HeroSection = () => {
   return (
@@ -21,27 +22,27 @@ const HeroSection = () => {
         {/* Subtitle */}
         <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
           A következő generációs darts verseny platform. Versenykeresés, 
-          klub létrehozás, valós idejű eredmények és teljes customizálhatóság.
+          klub létrehozás, valós idejű eredmények és teljes testreszabhatóság.
         </p>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-          <button className="glass-button push-button group flex items-center gap-3">
+          <Link href="/search" className="glass-button push-button group flex items-center gap-3">
             <IconPlayerPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span>Kezdés Most</span>
-          </button>
+            Kezdés Most
+          </Link>
           
-          <button className="tournament-create-button push-button px-8 py-4 rounded-xl font-semibold text-white hover:text-red-400 transition-colors">
+          <Link href="/myclub" className="tournament-create-button push-button px-8 py-4 rounded-xl font-semibold text-white hover:text-red-400 transition-colors">
             <IconTrophy className="w-5 h-5 inline mr-2" />
             Verseny Létrehozása
-          </button>
+          </Link>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
           {[
-            { number: '500+', label: 'Aktív Klub' },
-            { number: '1000+', label: 'Verseny Havonta' },
+            { number: '5', label: 'Aktív Klub' },
+            { number: '10', label: 'Verseny Havonta' },
             { number: '24/7', label: 'Valós Idejű Követés' }
           ].map((stat, index) => (
             <div key={index} className="glass-card p-6 hover:scale-105 transition-transform duration-300">

@@ -41,7 +41,7 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white/10 backdrop-blur-md border-b border-white/20" : "bg-transparent"
+        isScrolled || isMobileMenuOpen ? "bg-gradient-to-r from-white/10 via-white/15 to-white/10 backdrop-blur-2xl border-b border-white/20 shadow-lg" : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6">
@@ -81,10 +81,10 @@ const Navbar = () => {
                         />
                     </div>
                   </div>
-                  <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg glass-card rounded-box w-52">
-                    <li><Link href="/profile" className="text-gray-300 hover:text-red-400">Profil</Link></li>
-                    <li><Link href="/" className="text-gray-300 hover:text-red-400">Főoldal</Link></li>
-                    <li><Link href="/auth/logout" className="text-gray-300 hover:text-red-400">Kijelentkezés</Link></li>
+                  <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-box w-52">
+                    <li><Link href="/profile" className="text-white hover:text-red-300">Profil</Link></li>
+                    <li><Link href="/" className="text-white hover:text-red-300">Főoldal</Link></li>
+                    <li><Link href="/auth/logout" className="text-white hover:text-red-300">Kijelentkezés</Link></li>
                   </ul>
                 </div>
               </div>
@@ -122,7 +122,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 glass-card mt-2 mx-4 rounded-2xl p-6 shadow-2xl">
+          <div className="md:hidden  top-full left-0 right-0  p-2  mt-2 mx-4 rounded-2xl">
             {/* Overlay to close menu when clicking outside */}
             <div 
               className="fixed inset-0 -z-10" 
@@ -133,7 +133,7 @@ const Navbar = () => {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex items-center space-x-3 text-gray-300 hover:text-red-400 transition-colors duration-200 p-3 rounded-lg hover:bg-white/5"
+                  className="flex items-center space-x-3 text-gray-300 hover:text-red-400 transition-colors duration-200 p-3 rounded-lg hover:bg-white/10 font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <item.icon className="w-5 h-5" />
@@ -174,7 +174,7 @@ const Navbar = () => {
                 >
                   Bejelentkezés
                 </Link>
-                <Link href="/auth/login" onClick={()=>setIsMobileMenuOpen(false)} className="block btn btn-outline">
+                <Link href="/auth/register" onClick={()=>setIsMobileMenuOpen(false)} className="block btn btn-outline push-button w-full mt-2">
                   Regisztráció
                 </Link>
                 </div>

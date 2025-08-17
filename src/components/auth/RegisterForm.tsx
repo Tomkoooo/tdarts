@@ -16,7 +16,7 @@ const registerSchema = z.object({
     .min(1, 'Jelszó kötelező'),
   confirmPassword: z.string().min(1, 'Jelszó megerősítés kötelező'),
   name: z.string().min(1, 'Név kötelező'),
-  username: z.string(),
+  username: z.string().regex(/^[^\s]+$/, 'A felhasználónév nem tartalmazhat szóközt'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "A jelszavak nem egyeznek",
   path: ["confirmPassword"],
