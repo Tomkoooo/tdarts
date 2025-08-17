@@ -11,6 +11,7 @@ const TEST_USER = {
 };
 
 // JWT token storage
+// eslint-disable-next-line
 let authToken: string | null = null;
 let authCookies: string | null = null;
 

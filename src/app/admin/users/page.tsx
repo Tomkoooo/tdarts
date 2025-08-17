@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconEye, IconShield } from '@tabler/icons-react';
+import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 interface AdminUser {

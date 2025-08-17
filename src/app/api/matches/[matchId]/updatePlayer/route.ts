@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { AuthService } from "@/database/services/auth.service";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ matchId: string }> }) {
     try {
         const { matchId } = await params;
         const body = await request.json();
+        const token = request.cookies.get('token')?.value;
+        if (!token) {
+            throw new BadRequestError('Unauthorized');
+        }
+        const user = await AuthService.verifyToken(token);
+        const requesterId = user._id.toString();
 
         // Validate required fields
         if (!body.tournamentId) {
@@ -23,6 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Call the service method to update match player
         const result = await TournamentService.updateMatchPlayer(
             body.tournamentId, 
+            requesterId,
             matchId, 
             body.playerPosition, 
             body.playerId

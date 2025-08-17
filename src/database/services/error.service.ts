@@ -153,7 +153,7 @@ export class ErrorService {
         .sort({ timestamp: -1 })
         .limit(filters.limit || 100)
         .skip(filters.skip || 0)
-        .lean();
+
 
       return logs;
     } catch (error) {
@@ -196,7 +196,7 @@ export class ErrorService {
         LogModel.find({ level: 'error', ...dateFilter })
           .sort({ timestamp: -1 })
           .limit(10)
-          .lean()
+        
       ]);
 
       return {

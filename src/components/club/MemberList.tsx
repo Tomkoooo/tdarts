@@ -73,6 +73,7 @@ export default function MemberList({ members, userRole, userId, clubId, onClubUp
         setShowStatsModal(true);
       }
     } catch (err) {
+      console.log(err);
       toast.error('Nem sikerült betölteni a statisztikákat');
     }
   };

@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const formattedErrors = dailyErrors.map(day => ({
       date: day._id,
       count: day.totalCount,
-      categories: day.categories.reduce((acc, cat) => {
+      categories: day.categories.reduce((acc: any, cat: any) => {
         acc[cat.category] = cat.count;
         return acc;
       }, {} as Record<string, number>)

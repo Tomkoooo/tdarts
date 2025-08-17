@@ -122,7 +122,6 @@ const SearchPage: React.FC = () => {
   const [listViewMode, setListViewMode] = useState<'all' | 'navigation'>('all');
 
   // State for pagination
-  const [tournamentsPage, setTournamentsPage] = useState(1);
   const [playersPage, setPlayersPage] = useState(1);
   const [clubsPage, setClubsPage] = useState(1);
   const itemsPerPage = 6;

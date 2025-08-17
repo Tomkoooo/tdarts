@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await connectMongo();
     

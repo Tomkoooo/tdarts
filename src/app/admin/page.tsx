@@ -109,6 +109,7 @@ export default function AdminDashboard() {
     monthlyValue?: number;
     monthlyLabel?: string;
   }) => (
+    console.log(color),
     <div className="admin-glass-card transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <div className="p-3 rounded-xl bg-primary/20 border border-primary/30">
@@ -151,6 +152,7 @@ export default function AdminDashboard() {
   }) => {
     const maxValue = data ? Math.max(...data.datasets[0].data, 1) : 1;
     const chartColor = 'rgb(59, 130, 246)'; // Mindig primary szín
+    console.log(color);
 
     return (
       <div className="admin-glass-card transition-all duration-300">
@@ -208,7 +210,7 @@ export default function AdminDashboard() {
           </div>
           <button 
             onClick={fetchDashboardData}
-            className="admin-btn-primary text-sm flex items-center gap-2"
+            className="admin-btn-primary text-sm"
             disabled={loading}
           >
             <IconRefresh className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />

@@ -2,12 +2,11 @@
 import { PlayerModel } from '../models/player.model'; 
 import { UserModel } from '../models/user.model';
 import { ClubModel } from '../models/club.model';
-import { BadRequestError } from '@/middleware/errorHandle';
 
 export class PlayerService {
   static async searchPlayers(query: string, clubId?: string) {
     if (!query || query.length < 2) return [];
-    
+    console.log(clubId);
     // Search for all players in the player collection (both registered and guest)
     const players = await PlayerModel.find({ 
       name: { $regex: query, $options: 'i' }

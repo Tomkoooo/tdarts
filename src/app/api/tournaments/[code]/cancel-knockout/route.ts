@@ -9,7 +9,7 @@ export const POST = withTournamentPermission(async (
 ) => {
   // Cancel knockout
   const { code } = await params;
-  const requesterId = user._id.toString();
+  console.log(user.isAdmin);
   const success = await TournamentService.cancelKnockout(code);
   
   if (success) {

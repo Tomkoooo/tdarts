@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { ClubModel } from '@/database/models/club.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { LogModel } from '@/database/models/log.model';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await connectMongo();
     
@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
 
     // Fetch all statistics in parallel
     const [

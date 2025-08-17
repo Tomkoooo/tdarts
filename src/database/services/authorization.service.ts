@@ -1,7 +1,6 @@
 import { ClubService } from "./club.service";
 import { UserModel } from "../models/user.model";
 import { connectMongo } from "@/lib/mongoose";
-import { BadRequestError } from "@/middleware/errorHandle";
 
 export class AuthorizationService {
   static async checkRole(userId: string, expectedRole: string, clubId: string): Promise<boolean> {

@@ -74,16 +74,6 @@ export default function AdminSettingsPage() {
     );
   }
 
-  const getMemoryColor = (percentage: number) => {
-    if (percentage < 50) return 'text-success';
-    if (percentage < 80) return 'text-warning';
-    return 'text-error';
-  };
-
-  const getDatabaseStatusColor = (status: string) => {
-    return status === 'connected' ? 'text-success' : 'text-error';
-  };
-
   return (
     <div className="space-y-8">
       {/* Header */}

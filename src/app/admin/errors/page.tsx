@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconAlertTriangle, IconRefresh, IconCalendar, IconFilter, IconClock, IconUser, IconBuilding, IconTrophy } from '@tabler/icons-react';
+import { IconAlertTriangle, IconRefresh, IconClock, IconUser, IconBuilding, IconTrophy } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 interface ErrorLog {
@@ -63,40 +63,8 @@ export default function AdminErrorsPage() {
   useEffect(() => {
     fetchErrorData();
   }, [dateRange]);
+ 
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      auth: 'text-error',
-      club: 'text-primary',
-      tournament: 'text-success',
-      player: 'text-secondary',
-      user: 'text-warning',
-      api: 'text-accent',
-      system: 'text-base-content/60',
-      database: 'text-warning'
-    };
-    return colors[category] || 'text-base-content/60';
-  };
-
-  const getLevelColor = (level: string) => {
-    const colors: Record<string, string> = {
-      error: 'text-error',
-      warn: 'text-warning',
-      info: 'text-info',
-      debug: 'text-base-content/60'
-    };
-    return colors[level] || 'text-base-content/60';
-  };
-
-  const getLevelBadgeColor = (level: string) => {
-    const colors: Record<string, string> = {
-      error: 'badge-error',
-      warn: 'badge-warning',
-      info: 'badge-info',
-      debug: 'badge-outline'
-    };
-    return colors[level] || 'badge-outline';
-  };
 
   const getCategoryIcon = (category: string) => {
     const icons: Record<string, any> = {
@@ -243,7 +211,7 @@ export default function AdminErrorsPage() {
         {dailyErrors.length > 0 ? (
           <div className="h-64">
             <div className="w-full h-full flex items-end justify-between gap-1">
-              {dailyErrors.map((day, index) => {
+              {dailyErrors.map((day) => {
                 const maxCount = Math.max(...dailyErrors.map(d => d.count), 1);
                 return (
                   <div key={day.date} className="flex-1 flex flex-col items-center">

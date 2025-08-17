@@ -1,7 +1,6 @@
 import { UserModel } from '../models/user.model';
 import { ClubModel } from '../models/club.model';
 import { PlayerModel } from '../models/player.model';
-import { BadRequestError } from '@/middleware/errorHandle';
 
 export class UserService {
   static async searchUsers(query: string, clubId?: string) {

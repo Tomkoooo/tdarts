@@ -1110,6 +1110,7 @@ export class TournamentService {
         }
         
         // Interleave pairings from different groups
+        // eslint-disable-next-line
         let maxPairings = Math.max(...pairingsByGroup.map(group => group.length));
         
         for (let pairingIndex = 0; pairingIndex < maxPairings; pairingIndex++) {

@@ -10,7 +10,7 @@ export async function GET(
     await connectMongo();
     const { playerId } = await params;
 
-    const player = await PlayerModel.findById(playerId).lean();
+    const player = await PlayerModel.findById(playerId);
 
     if (!player) {
       return NextResponse.json(

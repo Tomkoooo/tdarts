@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IconChevronRight, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { TournamentSettings } from '@/interface/tournament.interface';
+import Link from 'next/link';
 
 interface CreateTournamentModalProps {
   isOpen: boolean;
@@ -215,7 +216,7 @@ export default function CreateTournamentModal({
                   )}
                 </div>
                 {subscriptionError && (
-                  <a 
+                  <Link 
                     href="/#pricing" 
                     className="btn btn-primary btn-sm ml-3 flex items-center gap-2"
                     onClick={(e) => {
@@ -226,7 +227,7 @@ export default function CreateTournamentModal({
                   >
                     <IconExternalLink className="w-4 h-4" />
                     Csomagok
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>

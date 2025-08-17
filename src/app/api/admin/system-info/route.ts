@@ -21,8 +21,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get system information
-    const startTime = process.hrtime.bigint();
     
     // Get database stats
     const dbStats = await mongoose.connection.db?.stats();
