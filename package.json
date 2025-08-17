@@ -1,12 +1,11 @@
 {
   "name": "tDarts",
-  "version": "0.1.0",
+  "version": "beta2.2.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_PUBLIC_ENABLE_SOCKET=false next dev",
+    "dev": "NEXT_PUBLIC_ENABLE_SOCKET=true next dev",
     "build": "next build",
-    "socket": "NODE_ENV=development node server.js",
-    "start": "NODE_ENV=production node server.js",
+    "start": "NODE_ENV=production next start",
     "lint": "next lint",
     "test": "jest --runInBand"
   },
@@ -42,7 +41,6 @@
     "react-hook-form": "^7.56.3",
     "react-hot-toast": "^2.5.2",
     "react-qr-code": "^2.0.18",
-    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "use-debounce": "^10.0.4",
     "uuid": "^11.1.0",

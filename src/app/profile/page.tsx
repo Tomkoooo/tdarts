@@ -14,7 +14,8 @@ import {
   IconUsers, 
   IconCircleCheck,
   IconCircleX,
-  IconEdit
+  IconEdit,
+  IconShieldLock
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -30,6 +31,18 @@ const updateProfileSchema = z.object({
   name: z.string().min(1, "Név kötelező").optional(),
   username: z.string().min(1, "Felhasználónév kötelező").optional(),
   password: z.string().min(6, "A jelszónak legalább 6 karakter hosszúnak kell lennie").optional(),
+  confirmPassword: z.string().optional(),
+}).refine((data) => {
+  if (data.password && !data.confirmPassword) {
+    return false;
+  }
+  if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
+    return false;
+  }
+  return true;
+}, {
+  message: "A jelszavak nem egyeznek",
+  path: ["confirmPassword"],
 });
 
 const verifyEmailSchema = z.object({
@@ -44,6 +57,7 @@ const ProfilePage: React.FC = () => {
   const { user, setUser } = useUserContext();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
 
   const {
@@ -316,6 +330,32 @@ const ProfilePage: React.FC = () => {
                   <p className="text-error text-sm mt-1">{profileErrors.password.message}</p>
                 )}
               </div>
+              <div className="form-control">
+                <Label>
+                  <IconLock className="w-4 h-4" />
+                  Jelszó megerősítése
+                </Label>
+                <div className="relative">
+                  <Input
+                    {...registerProfile("confirmPassword")}
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pr-12"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm"
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {profileErrors.confirmPassword && (
+                  <p className="text-error text-sm mt-1">{profileErrors.confirmPassword.message}</p>
+                )}
+              </div>
             </div>
             <button type="submit" className="w-full btn btn-success" disabled={isLoading}>
               {isLoading ? (
@@ -393,8 +433,14 @@ const ProfilePage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link href="/myclub" className="w-full btn btn-primary">
                 <IconUsers className="w-4 h-4" />
-                Klub regisztráció
+                Saját klub
               </Link>
+              {user.isAdmin && (
+                <Link href="/admin" className="w-full btn btn-primary">
+                  <IconShieldLock className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
             </div>
           </div>
         </section>

@@ -4,6 +4,17 @@ import axios from 'axios';
 const BASE_URL = 'http://localhost:3000/api';
 const CLUB_ID = '687fabffb16ffd1e85174d7c';
 
+// Test user credentials for JWT authentication
+const TEST_USER = {
+  email: 'test@example.com',
+  password: 'testpassword123'
+};
+
+// JWT token storage
+// eslint-disable-next-line
+let authToken: string | null = null;
+let authCookies: string | null = null;
+
 // Test configuration - 2 parallel tournaments with 16 players each
 const CONFIG = {
   playerCount: 16, // 16 players per tournament
@@ -41,6 +52,52 @@ interface MatchData {
 
 // Helper functions
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Authentication helper
+const authenticateUser = async () => {
+  try {
+    const loginResponse = await axios.post(`${BASE_URL}/auth/login`, TEST_USER);
+    expect(loginResponse.status).toBe(200);
+    
+    // Extract token from cookies
+    const setCookieHeader = loginResponse.headers['set-cookie'];
+    if (setCookieHeader) {
+      authCookies = setCookieHeader.join('; ');
+      // Extract token value from cookie
+      const tokenMatch = authCookies.match(/token=([^;]+)/);
+      if (tokenMatch) {
+        authToken = tokenMatch[1];
+      }
+    }
+    
+    console.log('✅ User authenticated successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ Authentication failed:', error);
+    return false;
+  }
+};
+
+// Create authenticated axios instance
+const createAuthenticatedAxios = () => {
+  const instance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+      'Cookie': authCookies || '',
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  // Add request interceptor to include cookies
+  instance.interceptors.request.use((config) => {
+    if (authCookies) {
+      config.headers['Cookie'] = authCookies;
+    }
+    return config;
+  });
+  
+  return instance;
+};
 
 const generateRandomStats = () => ({
   highestCheckout: Math.floor(Math.random() * 170) + 1,
@@ -99,12 +156,21 @@ describe('Parallel Tournament Lifecycle Test', () => {
     
     await logStep('🚀', `Starting parallel tournament lifecycle test with ${CONFIG.parallelTournaments} tournaments of ${CONFIG.playerCount} players each...`);
 
+    // Step 0: Authenticate user
+    await logStep('🔐', 'Step 0: Authenticating user...');
+    const authSuccess = await authenticateUser();
+    if (!authSuccess) {
+      throw new Error('Authentication failed - cannot proceed with test');
+    }
+    
+    const authenticatedAxios = createAuthenticatedAxios();
+
     // Step 1: Get Available Boards
     await logStep('📋', 'Step 1: Getting available boards...');
     
     let availableBoards: any[] = [];
     try {
-      const boardsResponse = await axios.get(`${BASE_URL}/clubs/${CLUB_ID}/boards`);
+      const boardsResponse = await authenticatedAxios.get(`/clubs/${CLUB_ID}/boards`);
       expect(boardsResponse.status).toBe(200);
       availableBoards = boardsResponse.data.boards || [];
       
@@ -154,8 +220,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
             registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(), // 12 hours from now
           };
 
-          const createResponse = await axios.post(
-            `${BASE_URL}/clubs/${CLUB_ID}/createTournament`,
+          const createResponse = await authenticatedAxios.post(
+            `/clubs/${CLUB_ID}/createTournament`,
             tournamentPayload
           );
 
@@ -200,8 +266,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       try {
         const playerPromises = testPlayers.map(async (player, index) => {
           await sleep(index * 50); // Smaller delay between requests
-        const response = await axios.post(
-            `${BASE_URL}/tournaments/${tournamentData.tournamentId}/players`,
+        const response = await authenticatedAxios.post(
+            `/tournaments/${tournamentData.tournamentId}/players`,
           player
         );
         expect(response.status).toBe(200);
@@ -225,8 +291,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
 
     try {
       // Get tournament to see all players
-      const tournamentResponse = await axios.get(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      const tournamentResponse = await authenticatedAxios.get(
+          `/tournaments/${tournamentData.tournamentId}`
       );
       expect(tournamentResponse.status).toBe(200);
 
@@ -238,8 +304,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       // Check-in each player
       const checkInPromises = players.map(async (player: any, index: number) => {
           await sleep(index * 50); // Smaller delay between requests
-        const response = await axios.put(
-            `${BASE_URL}/tournaments/${tournamentData.tournamentId}/players`,
+        const response = await authenticatedAxios.put(
+            `/tournaments/${tournamentData.tournamentId}/players`,
           {
             playerId: player.playerReference._id || player.playerReference,
             status: 'checked-in'
@@ -265,8 +331,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
-      const groupsResponse = await axios.post(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}/generateGroups`
+      const groupsResponse = await authenticatedAxios.post(
+          `/tournaments/${tournamentData.tournamentId}/generateGroups`
       );
       expect(groupsResponse.status).toBe(200);
         await logSuccess(`Groups generated for Tournament ${tournamentIndex + 1}`);
@@ -284,8 +350,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
-      const tournamentResponse = await axios.get(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      const tournamentResponse = await authenticatedAxios.get(
+          `/tournaments/${tournamentData.tournamentId}`
       );
       expect(tournamentResponse.status).toBe(200);
 
@@ -299,8 +365,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
         try {
             console.log(`Fetching matches for board ${group.board} in Tournament ${tournamentIndex + 1}`);
           
-          const matchesResponse = await axios.get(
-              `${BASE_URL}/boards/${tournamentData.tournamentId}/${group.board}/matches`
+          const matchesResponse = await authenticatedAxios.get(
+              `/boards/${tournamentData.tournamentId}/${group.board}/matches`
           );
           
           if (matchesResponse.status === 200 && matchesResponse.data.matches) {
@@ -328,8 +394,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
         
         try {
           // Start the match
-          const startResponse = await axios.post(
-              `${BASE_URL}/boards/${tournamentData.tournamentId}/${match.boardReference}/start`,
+          const startResponse = await authenticatedAxios.post(
+              `/boards/${tournamentData.tournamentId}/${match.boardReference}/start`,
             {
               matchId: matchId,
               legsToWin: CONFIG.legsToWin,
@@ -344,8 +410,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
           const player2Stats = generateRandomStats();
 
           // Finish the match
-          const finishResponse = await axios.post(
-            `${BASE_URL}/matches/${matchId}/finish`,
+          const finishResponse = await authenticatedAxios.post(
+            `/matches/${matchId}/finish`,
             {
               player1LegsWon,
               player2LegsWon,
@@ -377,8 +443,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
 
     try {
       // Get current tournament data to calculate playersCount
-      const currentTournamentResponse = await axios.get(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      const currentTournamentResponse = await authenticatedAxios.get(
+          `/tournaments/${tournamentData.tournamentId}`
       );
       expect(currentTournamentResponse.status).toBe(200);
       const currentTournament = currentTournamentResponse.data;
@@ -389,8 +455,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       
         await logSuccess(`Calculated playersCount: ${playersCount} (from ${totalPlayers} total players) for Tournament ${tournamentIndex + 1}`);
       
-      const knockoutResponse = await axios.post(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}/generateKnockout`,
+      const knockoutResponse = await authenticatedAxios.post(
+          `/tournaments/${tournamentData.tournamentId}/generateKnockout`,
         {
           playersCount: playersCount,
           knockoutMethod: 'automatic'
@@ -419,8 +485,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
         while (hasMoreRounds) {
           await logStep('🎯', `Playing knockout round ${currentRound} for Tournament ${tournamentIndex + 1}...`);
           
-      const updatedTournamentResponse = await axios.get(
-            `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      const updatedTournamentResponse = await authenticatedAxios.get(
+            `/tournaments/${tournamentData.tournamentId}`
       );
       expect(updatedTournamentResponse.status).toBe(200);
 
@@ -446,8 +512,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
           try {
                 console.log(`Fetching knockout matches for board ${group.board} in Tournament ${tournamentIndex + 1}, round ${currentRound}`);
             
-            const matchesResponse = await axios.get(
-                  `${BASE_URL}/boards/${tournamentData.tournamentId}/${group.board}/matches`
+            const matchesResponse = await authenticatedAxios.get(
+                  `/boards/${tournamentData.tournamentId}/${group.board}/matches`
             );
             
             if (matchesResponse.status === 200 && matchesResponse.data.matches) {
@@ -477,8 +543,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
         
         try {
           // Start the match
-          const startResponse = await axios.post(
-                `${BASE_URL}/boards/${tournamentData.tournamentId}/${match.boardReference}/start`,
+          const startResponse = await authenticatedAxios.post(
+                `/boards/${tournamentData.tournamentId}/${match.boardReference}/start`,
             {
               matchId: matchId,
               legsToWin: CONFIG.legsToWin,
@@ -493,8 +559,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
           const player2Stats = generateRandomStats();
 
           // Finish the match
-          const finishResponse = await axios.post(
-            `${BASE_URL}/matches/${matchId}/finish`,
+          const finishResponse = await authenticatedAxios.post(
+            `/matches/${matchId}/finish`,
             {
               player1LegsWon,
               player2LegsWon,
@@ -520,10 +586,10 @@ describe('Parallel Tournament Lifecycle Test', () => {
             // Generate next round
             await logStep('🔄', `Generating next round for Tournament ${tournamentIndex + 1}...`);
             try {
-              const nextRoundResponse = await axios.post(
-                `${BASE_URL}/tournaments/${tournamentData.tournamentId}/generateNextRound`,
-                { currentRound }
-              );
+                          const nextRoundResponse = await authenticatedAxios.post(
+              `/tournaments/${tournamentData.tournamentId}/generateNextRound`,
+              { currentRound }
+            );
               expect(nextRoundResponse.status).toBe(200);
               await logSuccess(`Next round generated for Tournament ${tournamentIndex + 1}`);
               currentRound++;
@@ -549,8 +615,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
-      const finishResponse = await axios.post(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}/finish`
+      const finishResponse = await authenticatedAxios.post(
+          `/tournaments/${tournamentData.tournamentId}/finish`
       );
       expect(finishResponse.status).toBe(200);
         await logSuccess(`Tournament ${tournamentIndex + 1} finished`);
@@ -567,8 +633,8 @@ describe('Parallel Tournament Lifecycle Test', () => {
       const tournamentData = tournamentDataArray[tournamentIndex];
       
     try {
-      const finalTournamentResponse = await axios.get(
-          `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      const finalTournamentResponse = await authenticatedAxios.get(
+          `/tournaments/${tournamentData.tournamentId}`
       );
       expect(finalTournamentResponse.status).toBe(200);
 
@@ -609,13 +675,16 @@ describe('Parallel Tournament Lifecycle Test', () => {
       return;
     }
 
+    // Create authenticated axios instance for this test
+    const authenticatedAxios = createAuthenticatedAxios();
+
     for (let tournamentIndex = 0; tournamentIndex < tournamentDataArray.length; tournamentIndex++) {
       const tournamentData = tournamentDataArray[tournamentIndex];
 
     try {
       // Get the finished tournament
-      const tournamentResponse = await axios.get(
-        `${BASE_URL}/tournaments/${tournamentData.tournamentId}`
+      const tournamentResponse = await authenticatedAxios.get(
+        `/tournaments/${tournamentData.tournamentId}`
       );
       expect(tournamentResponse.status).toBe(200);
 
@@ -710,4 +779,6 @@ describe('Test Configuration', () => {
     console.log(`⏱️  Step Delay: ${CONFIG.delayBetweenSteps}ms`);
     console.log(`🔄 Parallel Tournaments: ${CONFIG.parallelTournaments}`);
   });
-}); 
+});
+
+ 

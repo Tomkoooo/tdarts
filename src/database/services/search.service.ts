@@ -62,6 +62,7 @@ export class SearchService {
                 $or: [
                     { 'tournamentSettings.name': searchRegex },
                     { 'tournamentSettings.description': searchRegex },
+                    { 'tournamentSettings.location': searchRegex },
                     { tournamentId: searchRegex }
                 ]
             };
@@ -116,22 +117,8 @@ export class SearchService {
                 }
 
                 return {
-                    _id: tournament._id,
-                    tournamentId: tournament.tournamentId,
-                    name: tournament.tournamentSettings?.name,
-                    description: tournament.tournamentSettings?.description,
-                    status: tournament.tournamentSettings?.status,
-                    format: tournament.tournamentSettings?.format,
-                    startDate: tournament.tournamentSettings?.startDate,
-                    maxPlayers: tournament.tournamentSettings?.maxPlayers,
-                    currentPlayers: tournament.tournamentPlayers?.length || 0,
-                    club: tournament.clubId,
-                    // New fields
-                    location: tournament.tournamentSettings?.location,
-                    prize: tournament.tournamentSettings?.prize,
-                    type: tournament.tournamentSettings?.type,
-                    registrationOpen,
-                    registrationDeadline: tournament.tournamentSettings?.registrationDeadline,
+                    registrationOpen: registrationOpen,
+                    tournament: tournament,
                 };
             });
         }

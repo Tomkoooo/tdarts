@@ -27,7 +27,7 @@ export interface Club {
     status: 'idle' | 'waiting' | 'playing';
     isActive: boolean;
   }>;
-  subscriptionModel?: 'free' | 'basic' | 'pro';
+  subscriptionModel?: 'free' | 'basic' | 'pro' | 'enterprise';
   featureFlags?: {
     liveMatchFollowing: boolean;
     advancedStatistics: boolean;

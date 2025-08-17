@@ -150,8 +150,9 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       socket.emit('join-match', matchId);
     }
     
-    // Get initial state from socket server
-    fetch(`/api/socket`, {
+    // Get initial state from external socket server
+    const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:8080';
+    fetch(`${socketServerUrl}/api/socket`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'get-match-state', matchId })
@@ -177,11 +178,11 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     
     // Socket event handlers
     function onConnect() {
-      console.log('Connected to Socket.IO server');
+      console.log('Connected to external Socket.IO server');
     }
 
     function onDisconnect() {
-      console.log('Disconnected from Socket.IO server');
+      console.log('Disconnected from external Socket.IO server');
     }
 
     function onMatchState(state: MatchState) {
@@ -193,7 +194,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
         player2LegsWon: prev.player2LegsWon || state.player2LegsWon || 0,
         completedLegs: prev.completedLegs.length > 0 ? prev.completedLegs : state.completedLegs || []
       }));
-      console.log('Received match state:', state);
+
     }
 
     function onThrowUpdate(data: any) {

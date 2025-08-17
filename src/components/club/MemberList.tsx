@@ -1,7 +1,9 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { IconTrash } from '@tabler/icons-react';
-import { Club } from '@/interface/club.interface'; // If not available, use <span className="badge ..."> directly
+import { IconTrash, IconUser, IconCrown, IconShield, IconChartBar } from '@tabler/icons-react';
+import { Club } from '@/interface/club.interface';
+import PlayerStatsModal from '@/components/player/PlayerStatsModal';
+import { useState } from 'react';
 
 interface MemberListProps {
   members: { _id: string; role: 'admin' | 'moderator' | 'member'; userRef?: string; name: string; username: string }[];
@@ -11,9 +13,12 @@ interface MemberListProps {
   club: Club;
   onAddMember: () => void;
   onClubUpdated: (club: Club) => void;
+  showActions?: boolean; // New prop to control whether to show action buttons
 }
 
-export default function MemberList({ members, userRole, userId, clubId, onClubUpdated }: MemberListProps) {
+export default function MemberList({ members, userRole, userId, clubId, onClubUpdated, showActions = true }: MemberListProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!userId) return;
     const toastId = toast.loading('Tag törlése...');
@@ -59,75 +64,181 @@ export default function MemberList({ members, userRole, userId, clubId, onClubUp
     }
   };
 
+  const handleViewStats = async (member: any) => {
+    try {
+      // Fetch player stats from the API
+      const response = await axios.get(`/api/players/${member._id}/stats`);
+      if (response.data.success) {
+        setSelectedPlayer(response.data.player);
+        setShowStatsModal(true);
+      }
+    } catch (err) {
+      console.log(err);
+      toast.error('Nem sikerült betölteni a statisztikákat');
+    }
+  };
+
   return (
-    <ul className="space-y-2">
+    <div className="space-y-4">
       {members.length === 0 ? (
-        <p className="text-[hsl(var(--muted-foreground))] text-sm md:text-base">Nincsenek tagok.</p>
+        <div className="text-center py-8">
+          <IconUser className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+          <p className="text-base-content/60 text-lg">Nincsenek tagok.</p>
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="grid gap-4">
           {members.map(member => {
-            // Determine role badge
-            let roleBadge = null;
-            let isAdmin = false;
-            let isModerator = false;
             const isGuest = member.username === 'vendég';
+            const isRegistered = member.username && member.username !== 'vendég';
+            
+            // Determine role and icon
+            let roleIcon = null;
+            let roleText = '';
+            let roleColor = '';
+            
             if (member.role === 'admin') {
-              isAdmin = true;
-              roleBadge = <span className="badge badge-error badge-sm md:badge-md ml-1 md:ml-2 text-xs">admin</span>;
+              roleIcon = <IconCrown className="w-4 h-4" />;
+              roleText = 'Adminisztrátor';
+              roleColor = 'text-error';
             } else if (member.role === 'moderator') {
-              isModerator = true;
-              roleBadge = <span className="badge badge-info badge-sm md:badge-md ml-1 md:ml-2 text-xs">moderátor</span>;
-            } else if (isGuest) {
-              roleBadge = <span className="badge badge-neutral badge-sm md:badge-md ml-1 md:ml-2 text-xs">vendég</span>;
-            } else if (member.username && member.username !== 'vendég') {
-              roleBadge = <span className="badge badge-ghost badge-sm md:badge-md ml-1 md:ml-2 text-xs">{member.username}</span>;
+              roleIcon = <IconShield className="w-4 h-4" />;
+              roleText = 'Moderátor';
+              roleColor = 'text-info';
             } else {
-              roleBadge = <span className="badge badge-ghost badge-sm md:badge-md ml-1 md:ml-2 text-xs">tag</span>;
+              roleIcon = <IconUser className="w-4 h-4" />;
+              roleText = 'Tag';
+              roleColor = 'text-base-content/70';
             }
+
             return (
-              <li
+              <div
                 key={member._id}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-3 bg-base-200 rounded-lg"
+                className="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-sm md:text-base font-medium">{member.name}</span>
-                  {roleBadge}
+                <div className="card-body p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {/* Avatar/Icon */}
+                      <div className="avatar placeholder">
+                        <div className="bg-primary/10 text-primary rounded-full w-12 h-12 flex items-center justify-center">
+                        <img
+                          src={`https://avatar.iran.liara.run/username?username=${member.name.split(' ')[0]}+${member.name.split(' ')[1]}`}
+                          alt="avatar"
+                          loading="lazy"
+                        />
+                        </div>
+                      </div>
+                      
+                      {/* Member Info */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-lg">{member.name}</h3>
+                          <div className={`flex items-center gap-1 ${roleColor}`}>
+                            {roleIcon}
+                            <span className="text-sm font-medium">{roleText}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-sm text-base-content/60">
+                          {isRegistered ? (
+                            <>
+                              <span className="badge badge-success badge-xs">Regisztrált</span>
+                              <span>@{member.username}</span>
+                            </>
+                          ) : (
+                            <span className="badge badge-neutral badge-xs">Vendég</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
+                      {/* Stats Button - Always visible */}
+                      <button
+                        className="btn btn-sm btn-ghost btn-circle"
+                        onClick={() => handleViewStats(member)}
+                        title="Statisztikák megtekintése"
+                      >
+                        <IconChartBar className="w-4 h-4" />
+                      </button>
+                      
+                      {/* Admin/Moderator Actions - Only when showActions is true */}
+                      {showActions && (
+                        <>
+                          {/* Admin Actions */}
+                          {userRole === 'admin' && member._id !== userId && member.role !== 'admin' && (
+                            <div className="dropdown dropdown-end">
+                              <button className="btn btn-sm btn-outline btn-primary">
+                                Műveletek
+                              </button>
+                              <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                                {!isGuest && member.role === 'member' && (
+                                  <li>
+                                    <button
+                                      onClick={() => handleAddModerator(member._id, member.name)}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <IconShield className="w-4 h-4" />
+                                      Moderátorrá tétel
+                                    </button>
+                                  </li>
+                                )}
+                                {!isGuest && member.role === 'moderator' && (
+                                  <li>
+                                    <button
+                                      onClick={() => handleRemoveModerator(member._id, member.name)}
+                                      className="flex items-center gap-2 text-warning"
+                                    >
+                                      <IconShield className="w-4 h-4" />
+                                      Moderátor jog elvétel
+                                    </button>
+                                  </li>
+                                )}
+                                <li>
+                                  <button
+                                    onClick={() => handleRemoveMember(member._id, member.name)}
+                                    className="flex items-center gap-2 text-error"
+                                  >
+                                    <IconTrash className="w-4 h-4" />
+                                    Törlés
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {/* Moderator Actions */}
+                          {(userRole === 'moderator') && member._id !== userId && member.role === 'member' && (
+                            <button
+                              className="btn btn-sm btn-outline btn-error"
+                              onClick={() => handleRemoveMember(member._id, member.name)}
+                            >
+                              <IconTrash className="w-4 h-4" />
+                              Törlés
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1 w-full sm:w-auto">
-                  {/* Moderátorrá tétel: only if not already moderator or admin, not guest, not self, and current user is admin */}
-                  {userRole === 'admin' && !isGuest && member._id !== userId && !isAdmin && !isModerator && (
-                    <button
-                      className="btn btn-xs btn-outline btn-info text-xs"
-                      onClick={() => handleAddModerator(member._id, member.name)}
-                    >
-                      Moderátorrá tétel
-                    </button>
-                  )}
-                  {/* Moderátor jog elvétel: only if member is moderator, not admin, not guest, not self, and current user is admin */}
-                  {userRole === 'admin' && !isGuest && member._id !== userId && isModerator && !isAdmin && (
-                    <button
-                      className="btn btn-xs btn-outline btn-warning text-xs"
-                      onClick={() => handleRemoveModerator(member._id, member.name)}
-                    >
-                      Moderátor jog elvétel
-                    </button>
-                  )}
-                  {/* Remove member (admin or moderator, not self, allow for guests) */}
-                  {(userRole === 'admin' || userRole === 'moderator') && member._id !== userId && (!isAdmin && !isModerator || isGuest) && (
-                    <button
-                      className="btn btn-xs btn-outline btn-error text-xs"
-                      onClick={() => handleRemoveMember(member._id, member.name)}
-                    >
-                      <IconTrash className="w-3 h-3 md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Törlés</span>
-                    </button>
-                  )}
-                </div>
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
-    </ul>
+      
+      {/* Stats Modal */}
+      {showStatsModal && selectedPlayer && (
+        <PlayerStatsModal
+          player={selectedPlayer}
+          onClose={() => {
+            setShowStatsModal(false);
+            setSelectedPlayer(null);
+          }}
+        />
+      )}
+    </div>
   );
 }

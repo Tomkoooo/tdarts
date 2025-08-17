@@ -6,6 +6,10 @@ const resetPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
   code: z.string().min(1, 'Reset code is required'),
   newPassword: z.string().min(6, 'Password must be at least 6 characters long'),
+  confirmPassword: z.string().min(1, 'Password confirmation is required'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 export async function POST(request: Request) {

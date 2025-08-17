@@ -11,6 +11,7 @@ export interface IUser {
     createdAt: Date;
     updatedAt: Date;
     lastLogin: Date | null;
+    isDeleted?: boolean;
     codes: {
         reset_password: string | null;
         verify_email: string | null;

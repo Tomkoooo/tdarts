@@ -3,18 +3,23 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { IconEye, IconEyeOff, IconUser, IconMail, IconLock, IconUserPlus } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconUser, IconMail, IconLock, IconUserPlus, IconLanguage } from '@tabler/icons-react';
 import Link from 'next/link';
 
 // Validációs séma az űrlaphoz, az API követelményeinek megfelelően
+//eslint-disable-next-line @typescript-eslint/no-unused-vars
 const registerSchema = z.object({
   email: z.string().email('Érvényes email címet adj meg').min(1, 'Email cím kötelező'),
   password: z
     .string()
     .min(6, 'A jelszónak legalább 6 karakter hosszúnak kell lennie')
     .min(1, 'Jelszó kötelező'),
+  confirmPassword: z.string().min(1, 'Jelszó megerősítés kötelező'),
   name: z.string().min(1, 'Név kötelező'),
   username: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "A jelszavak nem egyeznek",
+  path: ["confirmPassword"],
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -26,23 +31,103 @@ interface RegisterFormProps {
   redirectPath?: string | null;
 }
 
+// Nyelvi szövegek
+const translations = {
+  hu: {
+    title: 'Regisztráció',
+    subtitle: 'Hozz létre egy tDarts fiókot',
+    email: 'Email cím',
+    emailPlaceholder: 'email@example.com',
+    name: 'Név',
+    namePlaceholder: 'Teljes név',
+    username: 'Felhasználónév',
+    usernamePlaceholder: 'felhasználónév',
+    password: 'Jelszó',
+    passwordPlaceholder: '••••••••',
+    confirmPassword: 'Jelszó megerősítés',
+    confirmPasswordPlaceholder: '••••••••',
+    register: 'Regisztráció',
+    registering: 'Regisztráció...',
+    alreadyHaveAccount: 'Már van fiókod?',
+    loginHere: 'Jelentkezz be itt',
+    emailRequired: 'Email cím kötelező',
+    validEmail: 'Érvényes email címet adj meg',
+    nameRequired: 'Név kötelező',
+    passwordRequired: 'Jelszó kötelező',
+    passwordMinLength: 'A jelszónak legalább 6 karakter hosszúnak kell lennie',
+    confirmPasswordRequired: 'Jelszó megerősítés kötelező',
+    passwordsDontMatch: 'A jelszavak nem egyeznek',
+    showPassword: 'Jelszó megjelenítése',
+    hidePassword: 'Jelszó elrejtése',
+    language: 'Nyelv'
+  },
+  en: {
+    title: 'Registration',
+    subtitle: 'Create a tDarts account',
+    email: 'Email address',
+    emailPlaceholder: 'email@example.com',
+    name: 'Name',
+    namePlaceholder: 'Full name',
+    username: 'Username',
+    usernamePlaceholder: 'username',
+    password: 'Password',
+    passwordPlaceholder: '••••••••',
+    confirmPassword: 'Confirm password',
+    confirmPasswordPlaceholder: '••••••••',
+    register: 'Register',
+    registering: 'Registering...',
+    alreadyHaveAccount: 'Already have an account?',
+    loginHere: 'Sign in here',
+    emailRequired: 'Email is required',
+    validEmail: 'Please enter a valid email address',
+    nameRequired: 'Name is required',
+    passwordRequired: 'Password is required',
+    passwordMinLength: 'Password must be at least 6 characters long',
+    confirmPasswordRequired: 'Password confirmation is required',
+    passwordsDontMatch: 'Passwords do not match',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    language: 'Language'
+  }
+};
+
 const RegisterForm: React.FC<RegisterFormProps> = ({
   onSubmit,
   onLogin,
   isLoading = false,
   redirectPath,
 }) => {
-  const [showPassword, setShowPassword] = useState(false); // Jelszó láthatóság vezérlése
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [language, setLanguage] = useState<'hu' | 'en'>('hu');
+
+  const t = translations[language];
+
+  // Frissített validációs séma a nyelvnek megfelelően
+  const registerSchemaWithLanguage = z.object({
+    email: z.string().email(t.validEmail).min(1, t.emailRequired),
+    password: z
+      .string()
+      .min(6, t.passwordMinLength)
+      .min(1, t.passwordRequired),
+    confirmPassword: z.string().min(1, t.confirmPasswordRequired),
+    name: z.string().min(1, t.nameRequired),
+    username: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t.passwordsDontMatch,
+    path: ["confirmPassword"],
+  });
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(registerSchemaWithLanguage),
     defaultValues: {
       email: '',
       password: '',
+      confirmPassword: '',
       name: '',
       username: '',
     },
@@ -60,6 +145,20 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
   return (
     <div className="glass-card p-8 w-full max-w-md mx-auto">
+      {/* Nyelv választó */}
+      <div className="flex justify-end mb-4">
+        <div className="dropdown dropdown-end">
+          <div tabIndex={0} role="button" className="btn btn-sm btn-ghost">
+            <IconLanguage className="w-4 h-4" />
+            {t.language}
+          </div>
+          <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
+            <li><button onClick={() => setLanguage('hu')}>Magyar</button></li>
+            <li><button onClick={() => setLanguage('en')}>English</button></li>
+          </ul>
+        </div>
+      </div>
+
       {/* Fejléc ikonnal és címmel */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
@@ -67,9 +166,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <IconUserPlus className="w-8 h-8 text-[hsl(var(--primary))] text-glow" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-gradient-red mb-2">Regisztráció</h1>
+        <h1 className="text-2xl font-bold text-gradient-red mb-2">{t.title}</h1>
         <p className="text-[hsl(var(--muted-foreground))] text-sm">
-          Hozz létre egy tDarts fiókot
+          {t.subtitle}
         </p>
       </div>
 
@@ -78,7 +177,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         <div>
           <label className="label">
             <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Email cím
+              {t.email}
             </span>
           </label>
           <div className="relative">
@@ -86,7 +185,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <input
               {...register('email')}
               type="email"
-              placeholder="email@example.com"
+              placeholder={t.emailPlaceholder}
               className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
@@ -102,7 +201,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         <div>
           <label className="label">
             <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Név
+              {t.name}
             </span>
           </label>
           <div className="relative">
@@ -110,7 +209,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <input
               {...register('name')}
               type="text"
-              placeholder="Teljes név"
+              placeholder={t.namePlaceholder}
               className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
@@ -126,7 +225,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         <div>
           <label className="label">
             <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Felhasználónév
+              {t.username}
             </span>
           </label>
           <div className="relative">
@@ -134,7 +233,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <input
               {...register('username')}
               type="text"
-              placeholder="felhasználónév"
+              placeholder={t.usernamePlaceholder}
               className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
@@ -150,7 +249,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         <div className="mb-2 flex flex-col">
           <label className="label">
             <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Jelszó
+              {t.password}
             </span>
           </label>
           <div className="relative">
@@ -158,7 +257,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <input
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
+              placeholder={t.passwordPlaceholder}
               className="input input-bordered w-full pl-10 pr-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
@@ -167,6 +266,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
               disabled={isLoading}
+              title={showPassword ? t.hidePassword : t.showPassword}
             >
               {showPassword ? (
                 <IconEyeOff className="w-5 h-5" />
@@ -182,6 +282,43 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           )}
         </div>
 
+        {/* Jelszó megerősítés mező */}
+        <div className="mb-2 flex flex-col">
+          <label className="label">
+            <span className="label-text text-[hsl(var(--foreground))] font-medium">
+              {t.confirmPassword}
+            </span>
+          </label>
+          <div className="relative">
+            <IconLock className="absolute left-3 z-10 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+            <input
+              {...register('confirmPassword')}
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder={t.confirmPasswordPlaceholder}
+              className="input input-bordered w-full pl-10 pr-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+              disabled={isLoading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+              disabled={isLoading}
+              title={showConfirmPassword ? t.hidePassword : t.showPassword}
+            >
+              {showConfirmPassword ? (
+                <IconEyeOff className="w-5 h-5" />
+              ) : (
+                <IconEye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-error italic text-sm mt-1">
+              {errors.confirmPassword.message}
+            </p>
+          )}
+        </div>
+
         {/* Küldés gomb */}
         <button
           type="submit"
@@ -191,12 +328,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           {isLoading ? (
             <div className="flex items-center space-x-2">
               <span className="loading loading-spinner w-4 h-4"></span>
-              <span>Regisztráció...</span>
+              <span>{t.registering}</span>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
               <IconUserPlus className="w-5 h-5" />
-              <span>Regisztráció</span>
+              <span>{t.register}</span>
             </div>
           )}
         </button>
@@ -206,12 +343,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       {onLogin && (
         <div className="mt-6 text-center">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Már van fiókod?{' '}
+            {t.alreadyHaveAccount}{' '}
             <Link
                 href={`/auth/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
               className="text-[hsl(var(--primary))] hover:text-[hsl(var(--primary-dark))] transition-colors font-medium"
             >
-              Jelentkezz be itt
+              {t.loginHere}
             </Link>
           </p>
         </div>

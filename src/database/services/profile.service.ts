@@ -1,6 +1,6 @@
 import { UserModel } from '@/database/models/user.model';
 import { UserDocument as IUserDocument } from '@/interface/user.interface';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';
 
@@ -17,7 +17,9 @@ export class ProfileService {
     await connectMongo();
     const user = await UserModel.findById(userId);
     if (!user) {
-      throw new BadRequestError('User not found');
+      throw new BadRequestError('User not found', 'user', {
+        userId
+      });
     }
 
     // Ellenőrizzük, hogy az új email vagy felhasználónév már létezik-e
@@ -30,7 +32,11 @@ export class ProfileService {
         _id: { $ne: userId },
       });
       if (existingUser) {
-        throw new BadRequestError('Email or username already exists');
+        throw new ValidationError('Email or username already exists', 'user', {
+          userId,
+          email: updates.email,
+          username: updates.username
+        });
       }
     }
 
@@ -54,7 +60,9 @@ export class ProfileService {
     await connectMongo();
     const user = await UserModel.findById(userId);
     if (!user) {
-      throw new BadRequestError('User not found');
+      throw new BadRequestError('User not found', 'user', {
+        userId
+      });
     }
     await user.verifyEmail(code);
   }
@@ -63,7 +71,9 @@ export class ProfileService {
     await connectMongo();
     const user = await UserModel.findById(userId);
     if (!user) {
-      throw new BadRequestError('User not found');
+      throw new BadRequestError('User not found', 'user', {
+        userId
+      });
     }
     // Itt lehetne további műveleteket végezni, pl. token érvénytelenítése
   }

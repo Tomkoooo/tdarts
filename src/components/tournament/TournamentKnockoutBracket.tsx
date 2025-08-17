@@ -536,13 +536,13 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         }
       `}</style>
       
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
             <>
               <button
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm flex-1 min-w-[160px] sm:flex-none"
                 onClick={() => setShowGenerateEmptyRoundsModal(true)}
                 disabled={generatingEmptyRounds}
               >
@@ -556,7 +556,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                 )}
               </button>
               <button
-                className="btn btn-accent btn-sm"
+                className="btn btn-accent btn-sm flex-1 min-w-[160px] sm:flex-none"
                 onClick={() => {
                   setSelectedRound(1);
                   setShowRandomPairingModal(true);
@@ -575,7 +575,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               {/* Generate Next Round for Manual Mode - Always enabled */}
               {knockoutData.length > 0 && (
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm flex-1 min-w-[160px] sm:flex-none"
                   onClick={() => setShowGenerateNextRound(true)}
                   disabled={generatingNextRound}
                 >
@@ -594,7 +594,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
           {(userClubRole === 'admin' || userClubRole === 'moderator') && 
            knockoutData.length > 0 && currentKnockoutMethod === 'automatic' && (
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-primary btn-sm flex-1 min-w-[160px] sm:flex-none"
               onClick={() => setShowGenerateNextRound(true)}
               disabled={
                 generatingNextRound ||
@@ -790,8 +790,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                   </div>
                                 )}
                                 
-                                <div className="space-y-2">
-                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${
+                                <div className="space-y-1 sm:space-y-2">
+                                  <div className={`flex justify-between items-center p-1.5 sm:p-2 rounded text-sm ${
                                     !match.player2 ? 'bg-success/20 border border-success/30' : 
                                     (match.matchReference?.winnerId === match.player1?._id && match.player1?.name && match.player1.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200')
                                   }`}>
@@ -820,10 +820,10 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                       {!match.player2 ? 'Bye' : (match.matchReference?.player1?.legsWon || 0)}
                                     </span>
                                   </div>
-                                  <div className="text-center text-xs text-base-content/60 font-medium">
+                                  <div className="text-center text-xs text-base-content/60 font-medium py-0.5">
                                     {!match.player2 ? 'Bye' : 'vs'}
                                   </div>
-                                  <div className={`flex justify-between items-center p-2 rounded text-sm ${
+                                  <div className={`flex justify-between items-center p-1.5 sm:p-2 rounded text-sm ${
                                     match.matchReference?.winnerId === match.player2?._id && match.player2?.name && match.player2.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200'
                                   }`}>
                                     <div className="flex items-center gap-2 flex-1">

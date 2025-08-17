@@ -11,7 +11,11 @@ export class MatchService {
         const tournament = await TournamentService.getTournament(tournamentId);
         const startingScore = tournament?.tournamentSettings.startingScore;
 
-        if (!tournament) throw new BadRequestError('Tournament not found');
+        if (!tournament) throw new BadRequestError('Tournament not found', 'tournament', {
+          tournamentId,
+          clubId,
+          boardNumber
+        });
         
         const matches = await MatchModel.find({
             boardReference: boardNumber,
@@ -40,7 +44,11 @@ export class MatchService {
         const tournament = await TournamentService.getTournament(tournamentId);
         const startingScore = tournament?.tournamentSettings.startingScore;
 
-        if (!tournament) throw new BadRequestError('Tournament not found');
+        if (!tournament) throw new BadRequestError('Tournament not found', 'tournament', {
+          tournamentId,
+          clubId,
+          boardNumber
+        });
         
         const matches = await MatchModel.find({
             boardReference: boardNumber,
@@ -68,7 +76,11 @@ export class MatchService {
         const tournament = await TournamentService.getTournament(tournamentId);
         const startingScore = tournament?.tournamentSettings.startingScore;
 
-        if (!tournament) throw new BadRequestError('Tournament not found');
+        if (!tournament) throw new BadRequestError('Tournament not found', 'tournament', {
+          tournamentId,
+          clubId,
+          boardNumber
+        });
         
         const match = await MatchModel.findOne({ _id: matchId, tournamentRef: tournament._id })
             .populate('player1.playerId')
@@ -76,7 +88,12 @@ export class MatchService {
             .populate('scorer')
             .populate('legs.winnerId').select('name');
             
-        if (!match) throw new BadRequestError('Match not found');
+        if (!match) throw new BadRequestError('Match not found', 'tournament', {
+          tournamentId,
+          clubId,
+          boardNumber,
+          matchId
+        });
         
         return {
             ...match.toObject(),
@@ -89,7 +106,10 @@ export class MatchService {
 
     static async startMatch(tournamentId: string, matchId: string, legsToWin: number, startingPlayer: 1 | 2) {
         const match = await MatchModel.findById(matchId);
-        if (!match) throw new BadRequestError('Match not found');
+        if (!match) throw new BadRequestError('Match not found', 'tournament', {
+          tournamentId,
+          matchId
+        });
         
         // Meccs beállítások mentése
         match.legsToWin = legsToWin;

@@ -71,6 +71,8 @@ export default function AddPlayerModal({
             onPlayerSelected={handlePlayerSelected}
             placeholder="Keress játékost név vagy felhasználónév alapján..."
             className="w-full"
+            clubId={clubId}
+            isForTournament={false}
           />
           {selectedPlayer && (
             <div className="bg-base-100 rounded-lg p-3 flex items-center gap-3 shadow">

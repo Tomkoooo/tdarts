@@ -30,6 +30,12 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   const tournamentStatus = tournament?.tournamentSettings?.status;
   const tournamentFormat = tournament?.tournamentSettings?.format || 'group_knockout';
   const totalPlayers = tournament?.tournamentPlayers?.length || 0;
+  
+  // Calculate number of groups (boards with matches)
+  const groupCount = tournament?.tournamentSettings?.boardCount || -1;
+
+  // Check if automatic knockout is allowed (even number of groups required)
+  const isAutomaticKnockoutAllowed = groupCount === 0 || tournamentFormat === 'knockout' || (tournamentFormat === 'group_knockout' && groupCount % 2 === 0);
 
   // Generate available player counts (powers of 2, max totalPlayers)
   const getAvailablePlayerCounts = () => {
@@ -180,62 +186,92 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
     }
   };
 
+  const handleCancelKnockout = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/cancel-knockout`);
+      if (response.data && response.data.success) {
+        onRefetch();
+      } else {
+        setError(response.data?.error || 'Nem sikerült visszavonni az egyenes kiesést.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Nem sikerült visszavonni az egyenes kiesést.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (userClubRole !== 'admin' && userClubRole !== 'moderator') return null;
 
   const availablePlayerCounts = getAvailablePlayerCounts();
 
   return (
     <div className="mb-4">
-      {/* Group Generation Button - only show when tournament is pending and format allows groups */}
-      {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && (
-        <button 
-          className="btn btn-secondary" 
-          onClick={handleGenerateGroups} 
-          disabled={loading}
-        >
-          {loading ? 'Csoportok generálása...' : 'Csoportok generálása'}
-        </button>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {/* Group Generation Button - only show when tournament is pending and format allows groups */}
+        {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && (
+          <button 
+            className="btn btn-secondary flex-1 min-w-[200px] sm:flex-none" 
+            onClick={handleGenerateGroups} 
+            disabled={loading}
+          >
+            {loading ? 'Csoportok generálása...' : 'Csoportok generálása'}
+          </button>
+        )}
 
-      {/* Knockout Generation Button - show when tournament is in group-stage and format allows knockout, OR when format is knockout and status is pending */}
-      {((tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
-        (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
-        <button 
-          className="btn btn-primary" 
-          onClick={() => setShowKnockoutModal(true)} 
-          disabled={loading}
-        >
-          {loading ? 'Egyenes kiesés generálása...' : 'Egyenes kiesés generálása'}
-        </button>
-      )}
+        {/* Knockout Generation Button - show when tournament is in group-stage and format allows knockout, OR when format is knockout and status is pending */}
+        {((tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
+          (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
+          <button 
+            className="btn btn-primary flex-1 min-w-[200px] sm:flex-none" 
+            onClick={() => setShowKnockoutModal(true)} 
+            disabled={loading}
+          >
+            {loading ? 'Egyenes kiesés generálása...' : 'Egyenes kiesés generálása'}
+          </button>
+        )}
 
-      {/* Finish Tournament Button - show when tournament is in knockout stage or when format is group/knockout only */}
-      {(tournamentStatus === 'knockout' || 
-        (tournamentStatus === 'group-stage' && tournamentFormat === 'group') ||
-        (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
-        <button 
-          className="btn btn-success" 
-          onClick={handleFinishTournament} 
-          disabled={loading}
-        >
-          {loading ? 'Torna befejezése...' : 'Torna befejezése'}
-        </button>
-      )}
+        {/* Cancel Knockout Button - show when tournament is in knockout stage */}
+        {tournamentStatus === 'knockout' && (
+          <button 
+            className="btn btn-error flex-1 min-w-[200px] sm:flex-none" 
+            onClick={handleCancelKnockout} 
+            disabled={loading}
+          >
+            {loading ? 'Egyenes kiesés visszavonása...' : 'Egyenes kiesés visszavonása'}
+          </button>
+        )}
+
+        {/* Finish Tournament Button - show when tournament is in knockout stage or when format is group/knockout only */}
+        {(tournamentStatus === 'knockout' || 
+          (tournamentStatus === 'group-stage' && tournamentFormat === 'group') ||
+          (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
+          <button 
+            className="btn btn-success flex-1 min-w-[200px] sm:flex-none" 
+            onClick={handleFinishTournament} 
+            disabled={loading}
+          >
+            {loading ? 'Torna befejezése...' : 'Torna befejezése'}
+          </button>
+        )}
+      </div>
 
       {error && <div className="mt-2 text-error">{error}</div>}
 
       {/* Knockout Modal */}
       {showKnockoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-center mb-6">Egyenes Kiesés Generálása</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Egyenes Kiesés Generálása</h3>
             
             {/* Knockout Mode Selection */}
-            <div className="form-control mb-6">
+            <div className="form-control mb-4 sm:mb-6">
               <label className="label">
                 <span className="label-text font-bold">Generálás módja:</span>
               </label>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-2 sm:gap-4">
                 <label className="label cursor-pointer">
                   <input 
                     type="radio" 
@@ -269,35 +305,55 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
             {/* Automatic Mode Settings */}
             {knockoutMode === 'automatic' && (
               <>
-                <div className="alert alert-warning mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <div>
-                    <h3 className="font-bold">Kiemelt játékosok!</h3>
-                    <div className="text-xs">
-                      Az automatikus mód nem támogatja a kiemelt játékosokat. 
-                      <br />
-                      <strong>Javaslat:</strong> Válts manuális módra a pontos játékos párosításhoz.
+                {!isAutomaticKnockoutAllowed && (
+                  <div className="alert alert-error mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h3 className="font-bold">Páratlan számú csoport!</h3>
+                      <div className="text-xs">
+                        Jelenleg {groupCount} csoport van, ami páratlan szám. 
+                        <br />
+                        <strong>Megoldás:</strong> Válts manuális módra a knockout generálásához.
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 
-                <div className="text-center mb-6">
-                  <p className="text-base-content/70 mb-4">
-                    {tournamentFormat === 'knockout' 
-                      ? 'Minden jelentkező játékos részt vesz az egyenes kiesésben.'
-                      : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
-                    }
-                  </p>
-                  <p className="text-sm text-base-content/60">
-                    Összesen {totalPlayers} játékos van a tornán
-                  </p>
-                </div>
+                {isAutomaticKnockoutAllowed && (
+                  <div className="alert alert-warning mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div>
+                      <h3 className="font-bold">Kiemelt játékosok!</h3>
+                      <div className="text-xs">
+                        Az automatikus mód nem támogatja a kiemelt játékosokat. 
+                        <br />
+                        <strong>Javaslat:</strong> Válts manuális módra a pontos játékos párosításhoz.
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {isAutomaticKnockoutAllowed && (
+                  <div className="text-center mb-6">
+                    <p className="text-base-content/70 mb-4">
+                      {tournamentFormat === 'knockout' 
+                        ? 'Minden jelentkező játékos részt vesz az egyenes kiesésben.'
+                        : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
+                      }
+                    </p>
+                    <p className="text-sm text-base-content/60">
+                      Összesen {totalPlayers} játékos van a tornán{groupCount > 0 ? `, ${groupCount} csoportban` : ''}
+                    </p>
+                  </div>
+                )}
               </>
             )}
             
-            {knockoutMode === 'automatic' && tournamentFormat !== 'knockout' && (
+            {knockoutMode === 'automatic' && tournamentFormat !== 'knockout' && isAutomaticKnockoutAllowed && (
               <div className="form-control mb-6">
                 <label className="label">
                   <span className="label-text font-bold">Továbbjutók száma:</span>
@@ -315,7 +371,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 </select>
                 <label className="label">
                   <span className="label-text-alt text-base-content/60">
-                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32)
+                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32, 64, 128, 256)
                   </span>
                 </label>
               </div>
@@ -343,9 +399,9 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
               </div>
             )}
             
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
-                className="btn btn-error flex-1"
+                className="btn btn-error flex-1 min-w-[120px]"
                 onClick={() => {
                   setShowKnockoutModal(false);
                   setError('');
@@ -355,9 +411,9 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 Mégse
               </button>
               <button
-                className="btn btn-success flex-1"
+                className="btn btn-success flex-1 min-w-[120px]"
                 onClick={handleGenerateKnockout}
-                disabled={loading}
+                disabled={loading || (knockoutMode === 'automatic' && !isAutomaticKnockoutAllowed)}
               >
                 {loading ? (
                   <>
@@ -375,9 +431,9 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
 
       {/* Groups Mode Modal */}
       {showGroupsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-center mb-6">Csoportok generálása</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Csoportok generálása</h3>
             <div className="form-control mb-6">
               <label className="label">
                 <span className="label-text font-bold">Generálás módja:</span>
@@ -405,14 +461,14 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 </label>
               </div>
             </div>
-            <div className="flex gap-3">
-              <button className="btn btn-error flex-1" onClick={() => setShowGroupsModal(false)}>Mégse</button>
+            <div className="flex flex-wrap gap-3">
+              <button className="btn btn-error flex-1 min-w-[120px]" onClick={() => setShowGroupsModal(false)}>Mégse</button>
               {groupsMode === 'automatic' ? (
-                <button className="btn btn-success flex-1" onClick={startAutomaticGroups} disabled={loading}>
+                <button className="btn btn-success flex-1 min-w-[120px]" onClick={startAutomaticGroups} disabled={loading}>
                   {loading ? 'Generálás...' : 'Automatikus generálás'}
                 </button>
               ) : (
-                <button className="btn btn-info flex-1" onClick={openManualGroupsBuilder} disabled={loading}>
+                <button className="btn btn-info flex-1 min-w-[120px]" onClick={openManualGroupsBuilder} disabled={loading}>
                   {loading ? 'Betöltés...' : 'Manuális csoport létrehozás'}
                 </button>
               )}
@@ -423,10 +479,10 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
 
       {/* Manual Groups Builder Modal */}
       {showManualGroupsBuilder && manualContext && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-center mb-6">Manuális csoport felvétele</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Manuális csoport felvétele</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <h4 className="font-bold mb-2">Táblák</h4>
                 <div className="space-y-2">
@@ -486,7 +542,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                    return name.includes(query);
                  });
                    return (
-                   <div className="h-72 overflow-y-auto space-y-2 border border-base-300 rounded-lg p-2">
+                   <div className="h-48 sm:h-72 overflow-y-auto space-y-2 border border-base-300 rounded-lg p-2">
                       {filtered.map((p) => {
                         const selected = manualSelectedPlayers.includes(p._id);
                         return (
@@ -548,10 +604,10 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 )}
               </div>
             </div>
-            <div className="mt-6 flex gap-3">
-              <button className="btn btn-error flex-1" onClick={() => setShowManualGroupsBuilder(false)}>Mégse</button>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button className="btn btn-error flex-1 min-w-[120px]" onClick={() => setShowManualGroupsBuilder(false)}>Mégse</button>
               <button
-                className="btn btn-success flex-1"
+                className="btn btn-success flex-1 min-w-[120px]"
                 onClick={createAllManualGroups}
                 disabled={
                   loading ||

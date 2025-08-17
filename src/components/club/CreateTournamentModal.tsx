@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { IconChevronRight } from '@tabler/icons-react';
+import { IconChevronRight, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { TournamentSettings } from '@/interface/tournament.interface';
+import Link from 'next/link';
 
 interface CreateTournamentModalProps {
   isOpen: boolean;
@@ -41,6 +42,11 @@ export default function CreateTournamentModal({
   const [selectedBoards, setSelectedBoards] = useState<number[]>([]);
   const [availableBoards, setAvailableBoards] = useState<any[]>([]);
   const [error, setError] = useState<string>('');
+  const [subscriptionError, setSubscriptionError] = useState<{
+    currentCount: number;
+    maxAllowed: number;
+    planName: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -85,7 +91,9 @@ export default function CreateTournamentModal({
   };
 
   const handleSubmit = async () => {
-    setError('')
+    setError('');
+    setSubscriptionError(null);
+    
     if (!settings.name) {
       setError('A torna neve kötelező');
       setCurrentStep('details');
@@ -132,15 +140,30 @@ export default function CreateTournamentModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error('Hiba történt a torna létrehozása során');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.subscriptionError) {
+          setSubscriptionError({
+            currentCount: errorData.currentCount,
+            maxAllowed: errorData.maxAllowed,
+            planName: errorData.planName
+          });
+          setError(errorData.error);
+        } else {
+          throw new Error(errorData.error || 'Hiba történt a torna létrehozása során');
+        }
+        return;
+      }
+      
       const data = await response.json();
       onTournamentCreated();
       onClose();
       if (data.tournamentId || data.code) {
         router.push(`/tournaments/${data.tournamentId || data.code}`);
       }
-    } catch (err) {
-      setError('Hiba történt a torna létrehozása során');
+    } catch (err: any) {
+      setError(err.message || 'Hiba történt a torna létrehozása során');
       console.error('Create tournament error:', err);
     }
   };
@@ -182,7 +205,31 @@ export default function CreateTournamentModal({
         <div className="p-0">
           {error && (
             <div className="mb-4 p-3 bg-error/10 text-error rounded-lg">
-              {error}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="font-medium">{error}</p>
+                  {subscriptionError && (
+                    <div className="mt-2 text-sm">
+                      <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span></p>
+                      <p>Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}</p>
+                    </div>
+                  )}
+                </div>
+                {subscriptionError && (
+                  <Link 
+                    href="/#pricing" 
+                    className="btn btn-primary btn-sm ml-3 flex items-center gap-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onClose();
+                      router.push('/#pricing');
+                    }}
+                  >
+                    <IconExternalLink className="w-4 h-4" />
+                    Csomagok
+                  </Link>
+                )}
+              </div>
             </div>
           )}
           {currentStep === 'details' && (
@@ -211,8 +258,8 @@ export default function CreateTournamentModal({
                 <label className="block text-sm font-medium mb-1">Kezdés időpontja</label>
                 <input
                   type="datetime-local"
-                  value={settings.startDate.toString()}
-                  onChange={e => handleSettingsChange('startDate', e.target.value)}
+                  value={new Date(settings.startDate).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
+                  onChange={e => handleSettingsChange('startDate', new Date(e.target.value))}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                 />
               </div>
@@ -251,8 +298,8 @@ export default function CreateTournamentModal({
                 <label className="block text-sm font-medium mb-1">Nevezési határidő</label>
                 <input
                   type="datetime-local"
-                  value={settings.registrationDeadline.toString()}
-                  onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value)}
+                  value={new Date(settings.registrationDeadline).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
+                  onChange={(e) => handleSettingsChange('registrationDeadline', new Date(e.target.value))}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                 />
               </div>

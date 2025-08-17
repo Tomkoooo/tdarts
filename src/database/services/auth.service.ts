@@ -1,6 +1,6 @@
 import { UserModel } from '@/database/models/user.model';
 import { UserDocument as IUserDocument } from '@/interface/user.interface';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
 import { mailer } from '@/lib/mailer';
@@ -26,13 +26,19 @@ export class AuthService {
         $or: [{ email: user.email }, user.username ? { username: user.username } : {}],
       });
       if (existingUser) {
-        throw new BadRequestError('Email or username already exists');
+        throw new ValidationError('Email or username already exists', 'auth', {
+          email: user.email,
+          username: user.username
+        });
       }
       const newUser = await UserModel.create(user);
       return await this.sendVerificationEmail(newUser);
     } catch (error: any) {
       if (error.code === 11000) {
-        throw new BadRequestError('Email or username already exists');
+        throw new ValidationError('Email or username already exists', 'auth', {
+          email: user.email,
+          username: user.username
+        });
       }
       throw error;
     }
@@ -41,9 +47,10 @@ export class AuthService {
   static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean}}> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
-      console.log(user)
-      throw new BadRequestError('Invalid email or password');
+    if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
+      throw new BadRequestError('Invalid email or password', 'auth', {
+        email
+      });
     }
     await user.updateLastLogin();
     const token = await this.generateAuthToken(user);
@@ -54,7 +61,9 @@ export class AuthService {
     await connectMongo();
     const user = await UserModel.findOne({ email });
     if (!user) {
-      throw new BadRequestError('User not found');
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
     }
     await user.verifyEmail(code);
     const token = await this.generateAuthToken(user);
@@ -80,7 +89,9 @@ export class AuthService {
     };
     const emailSent = await mailer(mailOptions);
     if (!emailSent) {
-      throw new BadRequestError('Failed to send verification email');
+      throw new BadRequestError('Failed to send verification email', 'auth', {
+        email: user.email
+      });
     }
     return verificationCode;
   }
@@ -95,12 +106,14 @@ export class AuthService {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
       const user = await UserModel.findById(decoded.id);
       if (!user) {
-        throw new BadRequestError('User not found');
+        throw new BadRequestError('User not found', 'auth', {
+          userId: decoded.id
+        });
       }
       await user.updateLastLogin();
       return user;
     } catch (error) {
-      throw new BadRequestError('Invalid token');
+      throw new BadRequestError('Invalid token', 'auth');
       console.error('Verify token error:', error);
     }
   }
@@ -109,7 +122,9 @@ export class AuthService {
     await connectMongo();
     const user = await UserModel.findOne({ email });
     if (!user) {
-      throw new BadRequestError('User not found');
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
     }
     const resetCode = await user.generateResetPasswordCode();
 
@@ -130,7 +145,9 @@ export class AuthService {
     };
     const emailSent = await mailer(mailOptions);
     if (!emailSent) {
-      throw new BadRequestError('Failed to send reset password email');
+      throw new BadRequestError('Failed to send reset password email', 'auth', {
+        email
+      });
     }
   }
 
@@ -138,10 +155,14 @@ export class AuthService {
     await connectMongo();
     const user = await UserModel.findOne({ email });
     if (!user) {
-      throw new BadRequestError('User not found');
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
     }
     if (user.codes.reset_password !== code) {
-      throw new BadRequestError('Invalid reset code');
+      throw new BadRequestError('Invalid reset code', 'auth', {
+        email
+      });
     }
     await user.resetPassword(newPassword, code);
   }

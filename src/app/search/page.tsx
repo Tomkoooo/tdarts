@@ -8,7 +8,7 @@ import TournamentCard from '@/components/tournament/TournamentCard';
 import PlayerCard from '@/components/player/PlayerCard';
 import PlayerStatsModal from '@/components/player/PlayerStatsModal';
 import Pagination from '@/components/common/Pagination';
-import { IconSearch, IconFilter, IconX} from '@tabler/icons-react';
+import { IconSearch, IconFilter, IconX, IconList, IconCalendar, IconChevronLeft, IconChevronRight} from '@tabler/icons-react';
 
 // Interfaces
 interface SearchFilters {
@@ -30,7 +30,7 @@ interface SearchResult {
   totalResults: number;
 }
 
-// Helper function
+// Helper functions
 const isRegistrationClosed = (tournament: any) => {
   const now = new Date();
   const registrationDeadline = tournament.tournamentSettings?.registrationDeadline 
@@ -38,6 +38,57 @@ const isRegistrationClosed = (tournament: any) => {
     : null;
   return (registrationDeadline !== null && registrationDeadline < now) ||
          tournament.tournamentSettings?.status !== 'pending';
+};
+
+const isFutureTournament = (tournament: any) => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); // Reset to start of today
+  const startDate = new Date(tournament.tournamentSettings?.startDate);
+  startDate.setHours(0, 0, 0, 0);
+  
+  // Only show pending tournaments that haven't started yet
+  return tournament.tournamentSettings?.status === 'pending' && startDate >= now;
+};
+
+const formatDateHeader = (date: Date) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+
+  if (targetDate.getTime() === today.getTime()) {
+    return 'Ma';
+  } else if (targetDate.getTime() === tomorrow.getTime()) {
+    return 'Holnap';
+  } else {
+    return targetDate.toLocaleDateString('hu-HU', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+};
+
+const groupTournamentsByDate = (tournaments: any[]) => {
+  const groups: { [key: string]: any[] } = {};
+  
+  tournaments
+    .filter(isFutureTournament)
+    .sort((a, b) => new Date(a.tournamentSettings.startDate).getTime() - new Date(b.tournamentSettings.startDate).getTime())
+    .forEach(tournament => {
+      const date = new Date(tournament.tournamentSettings.startDate);
+      const dateKey = date.toDateString();
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(tournament);
+    });
+    
+  return groups;
 };
 
 const SearchPage: React.FC = () => {
@@ -66,9 +117,11 @@ const SearchPage: React.FC = () => {
     (searchParams.get('type') as any) || 'all'
   );
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [tournamentView, setTournamentView] = useState<'list' | 'calendar'>('list');
+  const [currentDateIndex, setCurrentDateIndex] = useState(0);
+  const [listViewMode, setListViewMode] = useState<'all' | 'navigation'>('all');
 
   // State for pagination
-  const [tournamentsPage, setTournamentsPage] = useState(1);
   const [playersPage, setPlayersPage] = useState(1);
   const [clubsPage, setClubsPage] = useState(1);
   const itemsPerPage = 6;
@@ -140,13 +193,15 @@ const SearchPage: React.FC = () => {
         ]);
 
         if (tournamentsRes.data.success) {
-          const sortedTournaments = tournamentsRes.data.tournaments.sort((a: any, b: any) => {
-            const aIsOpen = !isRegistrationClosed(a);
-            const bIsOpen = !isRegistrationClosed(b);
-            if (aIsOpen !== bIsOpen) return aIsOpen ? -1 : 1;
-            return new Date(a.tournamentSettings.startDate).getTime() - new Date(b.tournamentSettings.startDate).getTime();
-          });
-          setRecentTournaments(sortedTournaments);
+          const futureTournaments = tournamentsRes.data.tournaments
+            .filter(isFutureTournament)
+            .sort((a: any, b: any) => {
+              const aIsOpen = !isRegistrationClosed(a);
+              const bIsOpen = !isRegistrationClosed(b);
+              if (aIsOpen !== bIsOpen) return aIsOpen ? -1 : 1;
+              return new Date(a.tournamentSettings.startDate).getTime() - new Date(b.tournamentSettings.startDate).getTime();
+            });
+          setRecentTournaments(futureTournaments);
         }
         if (playersRes.data.success) {
           setTopPlayers(playersRes.data.players);
@@ -221,6 +276,213 @@ const SearchPage: React.FC = () => {
     setSelectedPlayer(null);
   };
 
+  // Calendar view component for tournaments - only shows days with tournaments
+  const renderTournamentCalendar = (tournaments: any[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tournamentsByDate = groupTournamentsByDate(tournaments);
+    const datesWithTournaments = Object.keys(tournamentsByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    if (datesWithTournaments.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📅</div>
+          <h3 className="text-xl font-bold mb-2">Nincsenek közelgő versenyek</h3>
+          <p className="text-base-content/70">Próbáld meg később, vagy keress más kategóriában.</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-6">
+        <div className="text-center mb-6">
+          <div className="text-sm text-base-content/60">
+            {datesWithTournaments.length} nap versenyekkel
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {datesWithTournaments.map(dateKey => {
+            const date = new Date(dateKey);
+            const dayTournaments = tournamentsByDate[dateKey];
+            const isToday = date.getTime() === today.getTime();
+            const isTomorrow = date.getTime() === today.getTime() + 24 * 60 * 60 * 1000;
+            
+            return (
+              <div key={dateKey} className={`border rounded-lg p-4 min-h-[140px] transition-all hover:shadow-md ${isToday ? 'border-primary bg-primary/5 shadow-lg' : isTomorrow ? 'border-secondary bg-secondary/5' : 'border-base-300 bg-base-100'}`}>
+                <div className={`font-semibold text-sm mb-3 ${isToday ? 'text-primary' : isTomorrow ? 'text-secondary' : 'text-base-content/70'}`}>
+                  {formatDateHeader(date)}
+                  {isToday && <span className="ml-2 badge badge-primary badge-xs">Ma</span>}
+                  {isTomorrow && <span className="ml-2 badge badge-secondary badge-xs">Holnap</span>}
+                </div>
+                
+                <div className="text-xs text-base-content/60 mb-2">
+                  {dayTournaments.length} verseny
+                </div>
+                
+                <div className="space-y-2">
+                  {dayTournaments.map(tournament => (
+                    <div key={tournament._id} className="text-xs">
+                      <Link href={`/tournaments/${tournament.tournamentId}`} className="block">
+                        <div className={`p-2 rounded border-l-4 transition-all hover:shadow-md cursor-pointer ${isToday ? 'border-l-primary bg-primary/10 hover:bg-primary/15' : isTomorrow ? 'border-l-secondary bg-secondary/10 hover:bg-secondary/15' : 'border-l-accent bg-accent/10 hover:bg-accent/15'}`}>
+                          <div className="font-medium text-xs text-base-content line-clamp-2 mb-1">
+                            {tournament.tournamentSettings.name}
+                          </div>
+                          <div className="text-xs text-base-content/60">
+                            🕐 {new Date(tournament.tournamentSettings.startDate).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <div className="text-xs text-base-content/60">
+                            👥 {tournament.tournamentPlayers?.length || 0}/{tournament.tournamentSettings.maxPlayers}
+                          </div>
+                          {tournament.tournamentSettings.location && (
+                            <div className="text-xs text-base-content/50 truncate">
+                              📍 {tournament.tournamentSettings.location}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Quick stats */}
+        <div className="text-center text-sm text-base-content/60 mt-6">
+          Összesen {tournaments.length} közelgő verseny {datesWithTournaments.length} napon
+        </div>
+      </div>
+    );
+  };
+
+  // List view component for tournaments grouped by date with navigation
+  const renderTournamentList = (tournaments: any[], showNavigation: boolean = false) => {
+    const groupedTournaments = groupTournamentsByDate(tournaments);
+    const sortedDates = Object.keys(groupedTournaments).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    if (sortedDates.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📅</div>
+          <h3 className="text-xl font-bold mb-2">Nincsenek közelgő versenyek</h3>
+          <p className="text-base-content/70">Próbáld meg később, vagy keress más kategóriában.</p>
+        </div>
+      );
+    }
+
+    // Navigation mode - show only current date
+    if (showNavigation) {
+      // Ensure current index is valid
+      const validIndex = Math.min(currentDateIndex, sortedDates.length - 1);
+      const currentDateKey = sortedDates[validIndex] || sortedDates[0];
+      const date = new Date(currentDateKey);
+      const dayTournaments = groupedTournaments[currentDateKey];
+      
+      return (
+        <div className="space-y-6">
+          {/* Navigation Header */}
+          <div className="flex items-center justify-between">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setCurrentDateIndex(Math.max(0, validIndex - 1))}
+              disabled={validIndex === 0}
+            >
+              <IconChevronLeft className="w-4 h-4" />
+              Előző nap
+            </button>
+            
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">{formatDateHeader(date)}</div>
+              <div className="text-sm text-base-content/60">
+                {validIndex + 1} / {sortedDates.length} nap
+              </div>
+            </div>
+            
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setCurrentDateIndex(Math.min(sortedDates.length - 1, validIndex + 1))}
+              disabled={validIndex >= sortedDates.length - 1}
+            >
+              Következő nap
+              <IconChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Current Day Tournaments */}
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <h3 className="text-xl font-bold text-primary">{formatDateHeader(date)}</h3>
+              <div className="flex-1 h-px bg-base-300"></div>
+              <span className="text-sm text-base-content/60">
+                {dayTournaments.length} verseny
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dayTournaments.map(tournament => (
+                <TournamentCard key={tournament._id} tournament={tournament} />
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Jump to Other Days */}
+          <div className="mt-8">
+            <h4 className="text-sm font-medium text-base-content/70 mb-3">Gyors ugrás:</h4>
+            <div className="flex flex-wrap gap-2">
+              {sortedDates.map((dateKey, index) => {
+                const date = new Date(dateKey);
+                const isActive = index === currentDateIndex;
+                const tournamentsCount = groupedTournaments[dateKey].length;
+                
+                return (
+                  <button
+                    key={dateKey}
+                    className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setCurrentDateIndex(index)}
+                    title={formatDateHeader(date)}
+                  >
+                    <span className="text-xs">
+                      {index === 0 ? 'Ma' : index === 1 ? 'Holnap' : `${date.getDate()}/${date.getMonth() + 1}`} ({tournamentsCount})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Standard mode - show all dates
+    return (
+      <div className="space-y-8">
+        {sortedDates.map(dateKey => {
+          const date = new Date(dateKey);
+          const dayTournaments = groupedTournaments[dateKey];
+          
+          return (
+            <div key={dateKey}>
+              <div className="flex items-center gap-4 mb-4">
+                <h3 className="text-xl font-bold text-primary">{formatDateHeader(date)}</h3>
+                <div className="flex-1 h-px bg-base-300"></div>
+                <span className="text-sm text-base-content/60">
+                  {dayTournaments.length} verseny
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {dayTournaments.map(tournament => (
+                  <TournamentCard key={tournament._id} tournament={tournament} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   // Render functions for different sections
   const renderSearchResults = () => (
           <div className="max-w-6xl mx-auto">
@@ -245,10 +507,60 @@ const SearchPage: React.FC = () => {
             <>
               {(activeTab === 'all' || activeTab === 'tournaments') && results.tournaments && results.tournaments.length > 0 && (
                 <section className="mb-8">
-                  <h3 className="text-xl font-bold mb-4">Tornák</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {results.tournaments.map(t => <TournamentCard key={t._id} tournament={t} />)}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold">Tornák</h3>
+                    {activeTab === 'tournaments' && (
+                      <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-1">
+                          <button
+                            className={`btn btn-sm ${tournamentView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setTournamentView('list')}
+                          >
+                            <IconList className="w-4 h-4" />
+                            Lista
+                          </button>
+                          <button
+                            className={`btn btn-sm ${tournamentView === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setTournamentView('calendar')}
+                          >
+                            <IconCalendar className="w-4 h-4" />
+                            Naptár
+                          </button>
+                        </div>
+                        {tournamentView === 'list' && (
+                          <div className="flex gap-1 border-l pl-2 items-center">
+                            <button
+                              className={`btn btn-xs ${listViewMode === 'all' ? 'btn-outline' : 'btn-ghost'}`}
+                              onClick={() => {
+                                setListViewMode('all');
+                                setCurrentDateIndex(0);
+                              }}
+                            >
+                              Összes
+                            </button>
+                            <button
+                              className={`btn btn-xs ${listViewMode === 'navigation' ? 'btn-outline' : 'btn-ghost'}`}
+                              onClick={() => {
+                                setListViewMode('navigation');
+                                setCurrentDateIndex(0);
+                              }}
+                            >
+                              Navigálás
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
+                  {activeTab === 'tournaments' && tournamentView === 'calendar' ? (
+                    renderTournamentCalendar(results.tournaments.map(t => t.tournament))
+                  ) : activeTab === 'tournaments' && tournamentView === 'list' ? (
+                    renderTournamentList(results.tournaments.map(t => t.tournament), listViewMode === 'navigation')
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {results.tournaments.slice(0, 6).map(t => <TournamentCard key={t._id} tournament={t.tournament} />)}
+                    </div>
+                  )}
                 </section>
               )}
               {(activeTab === 'all' || activeTab === 'players') && results.players && results.players.length > 0 && (
@@ -298,18 +610,55 @@ const SearchPage: React.FC = () => {
                   ) : (
         <>
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-4">Közelgő Tornák</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentTournaments
-                .slice((tournamentsPage - 1) * itemsPerPage, tournamentsPage * itemsPerPage)
-                .map(t => <TournamentCard key={t._id} tournament={t} />)
-              }
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Közelgő Tornák</h2>
+              <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-1">
+                  <button
+                    className={`btn btn-sm ${tournamentView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setTournamentView('list')}
+                  >
+                    <IconList className="w-4 h-4" />
+                    Lista
+                  </button>
+                  <button
+                    className={`btn btn-sm ${tournamentView === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setTournamentView('calendar')}
+                  >
+                    <IconCalendar className="w-4 h-4" />
+                    Naptár
+                  </button>
                 </div>
-            <Pagination
-              currentPage={tournamentsPage}
-              totalPages={Math.ceil(recentTournaments.length / itemsPerPage)}
-              onPageChange={setTournamentsPage}
-            />
+                {tournamentView === 'list' && (
+                  <div className="flex gap-1 border-l pl-2 items-center">
+                    <button
+                      className={`btn btn-xs ${listViewMode === 'all' ? 'btn-outline' : 'btn-ghost'}`}
+                      onClick={() => {
+                        setListViewMode('all');
+                        setCurrentDateIndex(0);
+                      }}
+                    >
+                      Összes
+                    </button>
+                    <button
+                      className={`btn btn-xs ${listViewMode === 'navigation' ? 'btn-outline' : 'btn-ghost'}`}
+                      onClick={() => {
+                        setListViewMode('navigation');
+                        setCurrentDateIndex(0);
+                      }}
+                    >
+                      Navigálás
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {tournamentView === 'calendar' ? (
+              renderTournamentCalendar(recentTournaments)
+            ) : (
+              renderTournamentList(recentTournaments, listViewMode === 'navigation')
+            )}
           </section>
           <div className="grid md:grid-cols-2 gap-8">
             <section>

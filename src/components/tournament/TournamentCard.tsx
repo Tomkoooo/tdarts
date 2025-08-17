@@ -65,6 +65,8 @@ export default function TournamentCard({
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0;
   const isFull = playerCount >= maxPlayers;
 
+  console.log(tournament);
+
   return (
     <div className="relative group bg-base-100 rounded-xl p-4 md:p-6 shadow hover:shadow-lg transition-all border border-base-300 hover:border-primary/30 flex flex-col">
       {/* Header */}

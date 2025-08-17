@@ -9,6 +9,18 @@ const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
   username: z.string().min(1, 'Username is required').optional(),
   password: z.string().min(6, 'Password must be at least 6 characters long').optional(),
+  confirmPassword: z.string().optional(),
+}).refine((data) => {
+  if (data.password && !data.confirmPassword) {
+    return false;
+  }
+  if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 export async function POST(request: Request) {
@@ -21,7 +33,11 @@ export async function POST(request: Request) {
 
     const user = await AuthService.verifyToken(token);
     const body = await request.json();
-    const updates = updateProfileSchema.parse(body);
+    const validatedData = updateProfileSchema.parse(body);
+    
+    // Remove confirmPassword from updates object
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword, ...updates } = validatedData;
 
     const updatedUser = await ProfileService.updateProfile(user._id.toString(), updates);
     return NextResponse.json(

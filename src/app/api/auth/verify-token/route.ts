@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     const user = await AuthService.verifyToken(token);
 
-    if (user) {
+    if (user && !user.isDeleted) {
       return NextResponse.json({ user });
     } else {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });

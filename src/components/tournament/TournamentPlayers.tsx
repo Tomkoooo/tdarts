@@ -37,11 +37,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     try {
       const payload: any = {};
       
-      // If player already has an _id, it's an existing player
-      if (player._id) {
+      // If player already has an _id and it's a guest player (no userRef), use it
+      if (player._id && !player.userRef && !player.username) {
         payload.playerId = player._id;
       } else {
-        // If no _id, we need to create a new player
+        // If no _id or has userRef/username, we need to create a new player
         if (player.userRef) {
           payload.userRef = player.userRef;
           payload.name = player.name;
@@ -211,7 +211,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       
       {/* Show player management only if admin actions are allowed */}
       {allowAdminActions && (userClubRole === 'admin' || userClubRole === 'moderator') && (
-        <PlayerSearch onPlayerSelected={handleAddPlayer} />
+        <PlayerSearch 
+          onPlayerSelected={handleAddPlayer} 
+          clubId={tournament?.clubId?._id || tournament?.clubId}
+          isForTournament={true}
+          excludePlayerIds={localPlayers.map(p => p.playerReference?._id?.toString() || p._id?.toString()).filter(Boolean)}
+        />
       )}
       
       <ul className="mt-4 space-y-2">

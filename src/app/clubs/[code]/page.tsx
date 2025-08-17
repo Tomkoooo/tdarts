@@ -289,24 +289,18 @@ export default function ClubDetailPage() {
 
   // Players section
   const playersSection = (
-    <div className="space-y-3 md:space-y-4">
-      <h2 className="text-xl md:text-2xl font-semibold text-primary mb-3 md:mb-4">Játékosok</h2>
-      {club.members.length === 0 ? (
-        <div className="text-base-content/60 text-sm md:text-base">Nincsenek tagok ebben a klubban.</div>
-      ) : (
-        <ul className="space-y-2">
-          {club.members.map((member: any) => (
-            <li key={member._id} className="text-base md:text-lg bg-base-200 rounded-lg p-3 flex items-center justify-between">
-              <span>{member.name}</span>
-              {member.userRef ? (
-                <span className="text-xs md:text-sm text-base-content/50 bg-primary/10 px-2 py-1 rounded-full">regisztrált</span>
-              ) : member.username === 'vendég' ? (
-                <span className="text-xs md:text-sm text-base-content/50 bg-accent/10 px-2 py-1 rounded-full">vendég</span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="space-y-4">
+      <h2 className="text-xl md:text-2xl font-semibold text-primary mb-4">Játékosok</h2>
+      <MemberList
+        club={club}
+        members={club.members as { _id: string; userRef?: string, role: 'admin' | 'moderator' | 'member'; name: string; username: string }[]}
+        userRole={userRole}
+        userId={user?._id}
+        clubId={club._id}
+        onAddMember={() => {}}
+        onClubUpdated={fetchClub}
+        showActions={false}
+      />
     </div>
   );
 
@@ -378,6 +372,7 @@ export default function ClubDetailPage() {
           clubId={club._id}
           onAddMember={() => setIsAddPlayerModalOpen(true)}
           onClubUpdated={fetchClub}
+          showActions={true}
         />
       </div>
       <div className="card-section">
