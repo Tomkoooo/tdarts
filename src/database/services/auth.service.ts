@@ -47,8 +47,7 @@ export class AuthService {
   static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean}}> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
-      console.log(user)
+    if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
       throw new BadRequestError('Invalid email or password', 'auth', {
         email
       });

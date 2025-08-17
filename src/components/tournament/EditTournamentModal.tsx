@@ -46,6 +46,13 @@ export default function EditTournamentModal({
     }
   }, [tournament]);
 
+  // Update boardCount when selectedBoards changes
+  useEffect(() => {
+    if (selectedBoards.length > 0) {
+      handleSettingsChange('boardCount', selectedBoards.length);
+    }
+  }, [selectedBoards]);
+
   const loadBoardContext = async () => {
     try {
       setBoardsLoading(true);
@@ -118,11 +125,14 @@ export default function EditTournamentModal({
   };
 
   const handleBoardToggle = (boardNumber: number) => {
-    setSelectedBoards(prev => 
-      prev.includes(boardNumber) 
-        ? prev.filter(b => b !== boardNumber)
-        : [...prev, boardNumber]
-    );
+    const newSelectedBoards = selectedBoards.includes(boardNumber) 
+      ? selectedBoards.filter(b => b !== boardNumber)
+      : [...selectedBoards, boardNumber];
+    
+    setSelectedBoards(newSelectedBoards);
+    
+    // Automatically update board count when boards are selected/deselected
+    handleSettingsChange('boardCount', newSelectedBoards.length);
   };
 
   const isTournamentStarted = tournament?.tournamentSettings?.status !== 'pending';
@@ -303,17 +313,12 @@ export default function EditTournamentModal({
 
               <div>
                 <label className="block text-sm font-medium mb-1">Táblák száma</label>
-                <input
-                  type="number"
-                  value={settings.boardCount}
-                  onChange={(e) => handleSettingsChange('boardCount', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                  min="1"
-                  disabled={isTournamentStarted}
-                />
-                {isTournamentStarted && (
-                  <p className="text-xs text-warning mt-1">Nem módosítható a verseny indítása után</p>
-                )}
+                <div className="w-full px-3 py-2 bg-base-200 rounded-lg border border-base-300 text-base-content/70">
+                  {selectedBoards.length} tábla kiválasztva
+                </div>
+                <p className="text-xs text-base-content/60 mt-1">
+                  Automatikusan frissül a kiválasztott táblák alapján
+                </p>
               </div>
 
               <div>

@@ -106,6 +106,14 @@ background-repeat: no-repeat;
     padding: 2rem;
   }
 
+  .admin-glass-card {
+    backdrop-filter: blur(24px);
+    background: linear-gradient(135deg, oklch(100% 0 0 / 0.1), oklch(100% 0 0 / 0.05));
+    border: 1px solid oklch(100% 0 0 / 0.2);
+    border-radius: 1rem;
+    padding: 2rem;
+  }
+
   .button {
     position: relative !important;
     padding: 1rem 2rem !important;
@@ -787,7 +795,194 @@ html {
   margin-bottom: 2rem;
 }
 
-/* Improved Button Styles */
+  /* Admin Button Styles */
+  .admin-btn-primary {
+    background: linear-gradient(135deg, oklch(51% 0.18 16), oklch(41% 0.18 16));
+    border: none;
+    color: oklch(100% 0 0);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px oklch(51% 0.18 16 / 0.3);
+  }
+
+  .admin-btn-primary:hover {
+    background: linear-gradient(135deg, oklch(61% 0.18 16), oklch(51% 0.18 16));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px oklch(51% 0.18 16 / 0.4);
+    color: oklch(100% 0 0);
+  }
+
+  .admin-btn-secondary {
+    background: linear-gradient(135deg, oklch(64% 0.2 132), oklch(54% 0.2 132));
+    border: none;
+    color: oklch(100% 0 0);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px oklch(64% 0.2 132 / 0.3);
+  }
+
+  .admin-btn-secondary:hover {
+    background: linear-gradient(135deg, oklch(74% 0.2 132), oklch(64% 0.2 132));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px oklch(64% 0.2 132 / 0.4);
+    color: oklch(100% 0 0);
+  }
+
+  .admin-btn-danger {
+    background: linear-gradient(135deg, oklch(60% 0.184 16), oklch(50% 0.184 16));
+    border: none;
+    color: oklch(100% 0 0);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px oklch(60% 0.184 16 / 0.3);
+  }
+
+  .admin-btn-danger:hover {
+    background: linear-gradient(135deg, oklch(70% 0.184 16), oklch(60% 0.184 16));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px oklch(60% 0.184 16 / 0.4);
+    color: oklch(100% 0 0);
+  }
+
+  .admin-btn-warning {
+    background: linear-gradient(135deg, oklch(68% 0.162 76), oklch(58% 0.162 76));
+    border: none;
+    color: oklch(15% 0.025 12);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px oklch(68% 0.162 76 / 0.3);
+  }
+
+  .admin-btn-warning:hover {
+    background: linear-gradient(135deg, oklch(78% 0.162 76), oklch(68% 0.162 76));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px oklch(68% 0.162 76 / 0.4);
+    color: oklch(15% 0.025 12);
+  }
+
+  .admin-btn-info {
+    background: linear-gradient(135deg, oklch(70% 0.16 233), oklch(60% 0.16 233));
+    border: none;
+    color: oklch(100% 0 0);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px oklch(70% 0.16 233 / 0.3);
+  }
+
+  .admin-btn-info:hover {
+    background: linear-gradient(135deg, oklch(80% 0.16 233), oklch(70% 0.16 233));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px oklch(70% 0.16 233 / 0.4);
+    color: oklch(100% 0 0);
+  }
+
+  /* Admin Badge Styles */
+  .admin-badge-primary {
+    background: linear-gradient(135deg, oklch(51% 0.18 16), oklch(41% 0.18 16));
+    color: oklch(100% 0 0);
+    border: none;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-badge-secondary {
+    background: linear-gradient(135deg, oklch(64% 0.2 132), oklch(54% 0.2 132));
+    color: oklch(100% 0 0);
+    border: none;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-badge-danger {
+    background: linear-gradient(135deg, oklch(60% 0.184 16), oklch(50% 0.184 16));
+    color: oklch(100% 0 0);
+    border: none;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-badge-warning {
+    background: linear-gradient(135deg, oklch(68% 0.162 76), oklch(58% 0.162 76));
+    color: oklch(15% 0.025 12);
+    border: none;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-badge-info {
+    background: linear-gradient(135deg, oklch(70% 0.16 233), oklch(60% 0.16 233));
+    color: oklch(100% 0 0);
+    border: none;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-badge-outline {
+    background: transparent;
+    color: oklch(95% 0.005 0);
+    border: 1px solid oklch(51% 0.18 16 / 0.5);
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Admin Input Styles */
+  .admin-input {
+    background: oklch(12% 0.025 12 / 0.8);
+    border: 1px solid oklch(51% 0.18 16 / 0.3);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: oklch(95% 0.005 0);
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .admin-input:focus {
+    outline: none;
+    border-color: oklch(51% 0.18 16);
+    box-shadow: 0 0 0 3px oklch(51% 0.18 16 / 0.2);
+    background: oklch(15% 0.025 12 / 0.9);
+  }
+
+  .admin-select {
+    background: oklch(12% 0.025 12 / 0.8);
+    border: 1px solid oklch(51% 0.18 16 / 0.3);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: oklch(95% 0.005 0);
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .admin-select:focus {
+    outline: none;
+    border-color: oklch(51% 0.18 16);
+    box-shadow: 0 0 0 3px oklch(51% 0.18 16 / 0.2);
+    background: oklch(15% 0.025 12 / 0.9);
+  }
+
+  /* Improved Button Styles */
 .btn-primary, .btn {
   border-radius: 0.75rem;
   font-weight: 600;

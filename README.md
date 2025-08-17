@@ -1,6 +1,5 @@
 TODO:
 -stressz tesztelés a wdf-re - folyamatosan 
--egyszerű admin oldal megírásának kezdése
 -havi díjas rendszer klubboknak - permission alapon / felhasználói vagy klub email?
 -klub oldalon jobb tagok megjelenítés - egyértelműbb tag felvétel
 -keresésnél naptár nézet

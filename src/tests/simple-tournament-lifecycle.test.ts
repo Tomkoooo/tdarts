@@ -16,8 +16,8 @@ let authCookies: string | null = null;
 
 // Simple Tournament Configuration - EASILY CONFIGURABLE
 const SIMPLE_CONFIG = {
-  playerCount: 12, // 8 players - MODIFY THIS
-  boardCount: 2, // 2 boards - MODIFY THIS
+  playerCount: 24, // 8 players - MODIFY THIS
+  boardCount: 4, // 2 boards - MODIFY THIS
   legsToWin: 2,
   delayBetweenRequests: 100,
   delayBetweenSteps: 500,

@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     lastLogin: { type: Date, default: null },
+    isDeleted: { type: Boolean, default: false },
     codes: {
       reset_password: { type: String, default: null },
       verify_email: { type: String, default: null },

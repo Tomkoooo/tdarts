@@ -14,7 +14,8 @@ import {
   IconUsers, 
   IconCircleCheck,
   IconCircleX,
-  IconEdit
+  IconEdit,
+  IconShieldLock
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -432,8 +433,14 @@ const ProfilePage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link href="/myclub" className="w-full btn btn-primary">
                 <IconUsers className="w-4 h-4" />
-                Klub regisztráció
+                Saját klub
               </Link>
+              {user.isAdmin && (
+                <Link href="/admin" className="w-full btn btn-primary">
+                  <IconShieldLock className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
             </div>
           </div>
         </section>

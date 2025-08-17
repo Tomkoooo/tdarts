@@ -879,7 +879,7 @@ export class TournamentService {
             }
 
             // Generate knockout rounds with proper cross-group pairings
-            const knockoutRounds = await this.generateKnockoutRounds(advancingPlayers, format);
+            const knockoutRounds = await this.generateKnockoutRounds(advancingPlayers, format, tournament);
 
             // Create matches for the first round - combine all matches from all rounds
             const allFirstRoundMatches = knockoutRounds.flatMap(round => round.matches);
@@ -981,7 +981,7 @@ export class TournamentService {
         }
     }
 
-    private static async generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout'): Promise<any[]> {
+    private static async generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout', tournament?: any): Promise<any[]> {
  
         if (format === 'group_knockout') {
             const groups = new Map<string, TournamentPlayerDocument[]>();
@@ -1001,14 +1001,14 @@ export class TournamentService {
             if (groupCount % 2 !== 0) {
                 throw new Error('Group count must be even');
             }
-            return await this.generateStandardKnockoutRounds( groups, groupIds);
+            return await this.generateStandardKnockoutRounds( groups, groupIds, tournament);
         } else {
             // For knockout-only format, create simple random pairings
             return this.generateSimpleKnockoutRounds(advancingPlayers);
         }
     }
 
-    private static async generateStandardKnockoutRounds( groups: Map<string, TournamentPlayerDocument[]>, groupIds: string[]) {
+    private static async generateStandardKnockoutRounds( groups: Map<string, TournamentPlayerDocument[]>, groupIds: string[], tournament?: any) {
         function generatePairingsBetweenTwoGroups(group1: TournamentPlayerDocument[], group2: TournamentPlayerDocument[]) {
             group1.sort((a, b) => a.groupStanding! - b.groupStanding!);
             group2.sort((a, b) => a.groupStanding! - b.groupStanding!);
@@ -1041,45 +1041,43 @@ export class TournamentService {
         
         
         
-        // Ha csak 2 csoport van, egyszerű párosítás
-        if (groupIds.length === 2) {
-            groupPairs.push([groups.get(groupIds[0])!, groups.get(groupIds[1])!]);
-        } else {
-            // Több csoport esetén: távolabb lévő csoportok párosítása
-            // A-C, B-D, E-G, F-H stb. (nem egymás melletti)
-            for (let i = 0; i < groupIds.length; i++) {
-                if (usedGroups.has(groupIds[i])) {
-                    continue;
-                }
-                
-                // Keressük a párt: i+2 indexű csoport (ha van)
-                let pairIndex = i + 2;
+        // Rendezzük a groupIds-t a tournament.groups array sorrendje alapján
+        let orderedGroupIds = groupIds;
+        if (tournament && tournament.groups && Array.isArray(tournament.groups)) {
+            // Rendezzük a groupIds-t a tournament.groups array sorrendje alapján
+            orderedGroupIds = tournament.groups
+                .map((group: any) => group._id.toString())
+                .filter((id: string) => groupIds.includes(id));
+            
+            console.log('=== GROUP PAIRING DEBUG ===');
+            console.log('Original groupIds:', groupIds);
+            console.log('Tournament groups order:', tournament.groups.map((g: any, i: number) => `${i}: ${g._id}`));
+            console.log('Ordered groupIds:', orderedGroupIds);
+        }
 
+        // Különböző párosítási stratégiák a csoportok száma alapján
+        if (orderedGroupIds.length === 2) {
+            // 2 csoport: A-B
+            groupPairs.push([groups.get(orderedGroupIds[0])!, groups.get(orderedGroupIds[1])!]);
+            console.log('2 csoport párosítás:', orderedGroupIds[0], 'vs', orderedGroupIds[1]);
+        } else {
+            // 3+ csoport: A-C, B-D, E-G, F-H stb. (cross-group párosítás)
+            const groupCount = orderedGroupIds.length;
+            console.log(`${groupCount} csoport párosítás:`);
+            
+            for (let i = 0; i < Math.floor(groupCount / 2); i++) {
+                const group1Index = i;
+                const group2Index = i + Math.floor(groupCount / 2);
                 
-                // Ha nincs i+2, akkor keressünk egy szabad csoportot
-                if (pairIndex >= groupIds.length) {
-                    // Keressünk egy szabad csoportot, ami nem i+1 (ne legyen szomszédos)
-                    for (let j = 0; j < groupIds.length; j++) {
-                        if (j !== i && j !== i + 1 && j !== i - 1 && !usedGroups.has(groupIds[j])) {
-                            pairIndex = j;
-                            break;
-                        }
-                    }
-                    // Ha nem találtunk, akkor i+1-gyel párosítunk (utolsó eset)
-                    if (pairIndex >= groupIds.length) {
-                        pairIndex = i + 1;
-                        if (pairIndex >= groupIds.length || usedGroups.has(groupIds[pairIndex])) {
-                            continue; // Nincs párt találó csoport
-                        }
-                    }
-                }
-                
-                // Ha találtunk párt és még nem használták
-                if (pairIndex < groupIds.length && !usedGroups.has(groupIds[pairIndex])) {
-                    groupPairs.push([groups.get(groupIds[i])!, groups.get(groupIds[pairIndex])!]);
-                    usedGroups.add(groupIds[i]);
-                    usedGroups.add(groupIds[pairIndex]);
-                } else {
+                if (group2Index < groupCount) {
+                    const group1Id = orderedGroupIds[group1Index];
+                    const group2Id = orderedGroupIds[group2Index];
+                    
+                    groupPairs.push([groups.get(group1Id)!, groups.get(group2Id)!]);
+                    usedGroups.add(group1Id);
+                    usedGroups.add(group2Id);
+                    
+                    console.log(`Párosítás ${i + 1}: ${group1Index} (${group1Id}) vs ${group2Index} (${group2Id})`);
                 }
             }
         }
@@ -2921,7 +2919,7 @@ export class TournamentService {
             
             // Don't allow editing certain fields if tournament has started
             if (currentStatus !== 'pending') {
-                const restrictedFields = ['format', 'maxPlayers', 'startingScore', 'boardCount'];
+                const restrictedFields = ['format', 'maxPlayers', 'startingScore'];
                 const attemptedRestrictedChanges = restrictedFields.filter(field => {
                     const newValue = settings[field as keyof TournamentSettings];
                     const currentValue = tournament.tournamentSettings[field as keyof TournamentSettings];
@@ -2976,6 +2974,9 @@ export class TournamentService {
                 }
 
                 console.log(`Updated board assignments for tournament ${tournamentId}: ${settings.selectedBoards.join(', ')}`);
+                
+                // Automatically update boardCount to match selectedBoards length
+                settings.boardCount = settings.selectedBoards.length;
             }
 
             // Update tournament settings

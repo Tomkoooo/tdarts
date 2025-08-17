@@ -30,6 +30,12 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   const tournamentStatus = tournament?.tournamentSettings?.status;
   const tournamentFormat = tournament?.tournamentSettings?.format || 'group_knockout';
   const totalPlayers = tournament?.tournamentPlayers?.length || 0;
+  
+  // Calculate number of groups (boards with matches)
+  const groupCount = tournament?.tournamentSettings?.boardCount || -1;
+
+  // Check if automatic knockout is allowed (even number of groups required)
+  const isAutomaticKnockoutAllowed = groupCount === 0 || tournamentFormat === 'knockout' || (tournamentFormat === 'group_knockout' && groupCount % 2 === 0);
 
   // Generate available player counts (powers of 2, max totalPlayers)
   const getAvailablePlayerCounts = () => {
@@ -299,35 +305,55 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
             {/* Automatic Mode Settings */}
             {knockoutMode === 'automatic' && (
               <>
-                <div className="alert alert-warning mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <div>
-                    <h3 className="font-bold">Kiemelt játékosok!</h3>
-                    <div className="text-xs">
-                      Az automatikus mód nem támogatja a kiemelt játékosokat. 
-                      <br />
-                      <strong>Javaslat:</strong> Válts manuális módra a pontos játékos párosításhoz.
+                {!isAutomaticKnockoutAllowed && (
+                  <div className="alert alert-error mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h3 className="font-bold">Páratlan számú csoport!</h3>
+                      <div className="text-xs">
+                        Jelenleg {groupCount} csoport van, ami páratlan szám. 
+                        <br />
+                        <strong>Megoldás:</strong> Válts manuális módra a knockout generálásához.
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 
-                <div className="text-center mb-6">
-                  <p className="text-base-content/70 mb-4">
-                    {tournamentFormat === 'knockout' 
-                      ? 'Minden jelentkező játékos részt vesz az egyenes kiesésben.'
-                      : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
-                    }
-                  </p>
-                  <p className="text-sm text-base-content/60">
-                    Összesen {totalPlayers} játékos van a tornán
-                  </p>
-                </div>
+                {isAutomaticKnockoutAllowed && (
+                  <div className="alert alert-warning mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div>
+                      <h3 className="font-bold">Kiemelt játékosok!</h3>
+                      <div className="text-xs">
+                        Az automatikus mód nem támogatja a kiemelt játékosokat. 
+                        <br />
+                        <strong>Javaslat:</strong> Válts manuális módra a pontos játékos párosításhoz.
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {isAutomaticKnockoutAllowed && (
+                  <div className="text-center mb-6">
+                    <p className="text-base-content/70 mb-4">
+                      {tournamentFormat === 'knockout' 
+                        ? 'Minden jelentkező játékos részt vesz az egyenes kiesésben.'
+                        : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
+                      }
+                    </p>
+                    <p className="text-sm text-base-content/60">
+                      Összesen {totalPlayers} játékos van a tornán{groupCount > 0 ? `, ${groupCount} csoportban` : ''}
+                    </p>
+                  </div>
+                )}
               </>
             )}
             
-            {knockoutMode === 'automatic' && tournamentFormat !== 'knockout' && (
+            {knockoutMode === 'automatic' && tournamentFormat !== 'knockout' && isAutomaticKnockoutAllowed && (
               <div className="form-control mb-6">
                 <label className="label">
                   <span className="label-text font-bold">Továbbjutók száma:</span>
@@ -345,7 +371,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
                 </select>
                 <label className="label">
                   <span className="label-text-alt text-base-content/60">
-                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32)
+                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32, 64, 128, 256)
                   </span>
                 </label>
               </div>
@@ -387,7 +413,7 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
               <button
                 className="btn btn-success flex-1 min-w-[120px]"
                 onClick={handleGenerateKnockout}
-                disabled={loading}
+                disabled={loading || (knockoutMode === 'automatic' && !isAutomaticKnockoutAllowed)}
               >
                 {loading ? (
                   <>
