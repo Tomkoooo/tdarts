@@ -2,6 +2,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '../models/player.model';
 import { TournamentModel } from '../models/tournament.model';
 import { ClubModel } from '../models/club.model';
+import { BadRequestError } from '@/middleware/errorHandle';
 
 export interface SearchFilters {
     type?: 'players' | 'tournaments' | 'clubs' | 'all';

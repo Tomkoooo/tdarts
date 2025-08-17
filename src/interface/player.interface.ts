@@ -39,6 +39,10 @@ export interface PlayerDocument {
      */
     name: string;
     /**
+     * Indicates if this is a registered user
+     */
+    isRegistered?: boolean;
+    /**
      * Statisztikák (csak aggregálható mezők, tornák ref listája)
      */
     stats: {

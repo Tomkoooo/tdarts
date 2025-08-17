@@ -68,7 +68,7 @@ export class TournamentService {
             }
             
             if (!isUnique) {
-                throw new Error('Failed to generate unique tournament ID after multiple attempts');
+                throw new BadRequestError('Failed to generate unique tournament ID after multiple attempts', 'tournament');
             }
             
             tournament.tournamentId = tournamentId!;
@@ -90,11 +90,16 @@ export class TournamentService {
         const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode })
             .populate('tournamentPlayers.playerReference');
         if (!tournament) {
-            throw new BadRequestError('Tournament not found');
+            throw new BadRequestError('Tournament not found', 'tournament', {
+              tournamentCode
+            });
         }
         const club = await ClubModel.findById(tournament.clubId);
         if (!club || !club.boards) {
-            throw new BadRequestError('Club boards not found');
+            throw new BadRequestError('Club boards not found', 'tournament', {
+              tournamentCode,
+              clubId: tournament.clubId
+            });
         }
         const tournamentBoards = (club.boards as any[]).filter((board: any) =>
             board.isActive && board.tournamentId === tournament.tournamentId

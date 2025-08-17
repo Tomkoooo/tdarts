@@ -1,6 +1,7 @@
 import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { BadRequestError } from '@/middleware/errorHandle';
 
 export interface SubscriptionPlan {
   name: string;
@@ -41,7 +42,9 @@ export class SubscriptionService {
       const club = await ClubModel.findById(clubId);
       
       if (!club) {
-        throw new Error('Club not found');
+        throw new BadRequestError('Club not found', 'club', {
+          clubId
+        });
       }
 
       // Get subscription plan from database

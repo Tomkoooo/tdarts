@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { ClubDocument } from '@/interface/club.interface';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
 import { UserModel } from '@/database/models/user.model';
@@ -138,12 +138,20 @@ export class ClubService {
     await connectMongo();
     const club = await ClubModel.findById(clubId);
     if (!club) {
-      throw new BadRequestError('Club not found');
+      throw new BadRequestError('Club not found', 'club', {
+        clubId,
+        endpoint: 'addMember'
+      });
     }
     const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins or moderators can add members');
+      throw new AuthorizationError('Only admins or moderators can add members', 'club', {
+        userId: requesterId,
+        clubId,
+        endpoint: 'addMember'
+      });
     }
+    
     // Check if userId is a player or a user
     let player = await PlayerModel.findById(userId);
     if (!player) {
@@ -151,15 +159,52 @@ export class ClubService {
       const user = await UserModel.findById(userId);
       if (user) {
         // Create player with userRef
-        player = await PlayerModel.create({ name: user.name, userRef: user._id });
+        player = await PlayerModel.create({ 
+          name: user.name, 
+          userRef: user._id,
+          isRegistered: true 
+        });
       } else {
-        throw new BadRequestError('Player or user not found');
+        throw new BadRequestError('Player or user not found', 'club', {
+          userId,
+          clubId,
+          endpoint: 'addMember'
+        });
       }
     }
+    
+    // Check if player is already a member of this specific club
+    if (club.members.includes(player._id)) {
+      throw new BadRequestError('Player is already a member of this club', 'club', {
+        userId: player._id.toString(),
+        clubId,
+        endpoint: 'addMember'
+      });
+    }
+    
+    // Check if player is admin/moderator in any other club (they can only be admin/moderator in one club)
+    const existingAdminClub = await ClubModel.findOne({ 
+      $or: [
+        { admin: player._id },
+        { moderators: player._id }
+      ]
+    });
+    
+    if (existingAdminClub && existingAdminClub._id.toString() !== clubId) {
+      throw new BadRequestError(`Player is already admin/moderator in club: ${existingAdminClub.name}. They can only be admin/moderator in one club.`, 'club', {
+        userId: player._id.toString(),
+        clubId,
+        existingClubId: existingAdminClub._id.toString(),
+        endpoint: 'addMember'
+      });
+    }
+    
+    // Add player to club
     if (!club.members.includes(player._id)) {
       club.members.push(player._id);
       await club.save();
     }
+    
     return club;
   }
 
@@ -173,18 +218,35 @@ export class ClubService {
     if (!isAuthorized) {
       throw new BadRequestError('Only admins can add moderators');
     }
-    // the id from the requst refers to the player collection and in the plaer collection we refer to th. user if it registe
+    
+    // the id from the request refers to the player collection and in the player collection we refer to the user if it's registered
     const player = await PlayerModel.findById(userId);
     if (!player || !player.userRef) throw new BadRequestError('Player not found');
     const user = await UserModel.findById(player.userRef);
     if (!user) throw new BadRequestError('User not found');
-    if (!player) throw new BadRequestError('User must be a member (player with userRef) to become a moderator');
+    
+    // Check if user is already admin/moderator in any other club
+    const existingAdminClub = await ClubModel.findOne({ 
+      $or: [
+        { admin: user._id },
+        { moderators: user._id }
+      ]
+    });
+    
+    if (existingAdminClub && existingAdminClub._id.toString() !== clubId) {
+      throw new BadRequestError(`User is already admin/moderator in club: ${existingAdminClub.name}. They can only be admin/moderator in one club.`);
+    }
+    
+    // Add player to members if not already there
     if (!club.members.includes(player._id)) {
       club.members.push(player._id);
     }
+    
+    // Add user to moderators if not already there
     if (!club.moderators.includes(user._id)) {
       club.moderators.push(user._id);
     }
+    
     await club.save();
     return club;
   }
@@ -199,17 +261,35 @@ export class ClubService {
     if (!isAuthorized) {
       throw new BadRequestError('Only admins can add admins');
     }
+    
     // Only allow if userId is a registered user and has a player entry with userRef
     const user = await UserModel.findById(userId);
     if (!user) throw new BadRequestError('User not found');
     const player = await PlayerModel.findOne({ userRef: user._id });
     if (!player) throw new BadRequestError('User must be a member (player with userRef) to become an admin');
+    
+    // Check if user is already admin/moderator in any other club
+    const existingAdminClub = await ClubModel.findOne({ 
+      $or: [
+        { admin: user._id },
+        { moderators: user._id }
+      ]
+    });
+    
+    if (existingAdminClub && existingAdminClub._id.toString() !== clubId) {
+      throw new BadRequestError(`User is already admin/moderator in club: ${existingAdminClub.name}. They can only be admin/moderator in one club.`);
+    }
+    
+    // Add player to members if not already there
     if (!club.members.includes(player._id)) {
       club.members.push(player._id);
     }
+    
+    // Add user to admin if not already there
     if (!club.admin.includes(user._id)) {
       club.admin.push(user._id);
     }
+    
     await club.save();
     return club;
   }
