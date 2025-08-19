@@ -1,11 +1,11 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconLock, IconKey, IconEye, IconEyeOff, IconMail, IconLanguage } from '@tabler/icons-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
@@ -87,6 +87,7 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ isLoading = false
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [language, setLanguage] = useState<'hu' | 'en'>('hu');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const t = translations[language];
 
@@ -105,6 +106,7 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ isLoading = false
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -114,6 +116,14 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ isLoading = false
       confirmPassword: '',
     },
   });
+
+  // Email cím beállítása URL paraméterből
+  useEffect(() => {
+    const emailFromUrl = searchParams.get('email');
+    if (emailFromUrl) {
+      setValue('email', emailFromUrl);
+    }
+  }, [searchParams, setValue]);
 
   const onFormSubmit = async (data: ResetPasswordFormData) => {
     try {

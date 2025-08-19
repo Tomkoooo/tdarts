@@ -22,6 +22,26 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      const navbar = target.closest('nav');
+      
+      if (isMobileMenuOpen && !navbar) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
+
   const isAdminPage = pathname?.startsWith('/admin');
 
   const navItems = isAdminPage ? [
@@ -41,7 +61,7 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled || isMobileMenuOpen ? "bg-gradient-to-r from-white/10 via-white/15 to-white/10 backdrop-blur-2xl border-b border-white/20 shadow-lg" : "bg-transparent"
+        isScrolled || isMobileMenuOpen ? "bg-gradient-to-r from-white/10 via-white/15 to-white/10 backdrop-blur-2xl border-white/20 shadow-lg" : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6">
@@ -114,9 +134,14 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg bg-gray-800/50 text-gray-300 hover:text-white transition-colors"
+            className="md:hidden p-2 rounded-lg bg-gray-800/50 text-gray-300 hover:text-white transition-colors relative"
           >
             {isMobileMenuOpen ? <IconX className="w-6 h-6" /> : <IconMenu2 className="w-6 h-6" />}
+            {!user && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">!</span>
+              </div>
+            )}
           </button>
         </div>
 
@@ -142,7 +167,11 @@ const Navbar = () => {
               ))}
               {isAdminPage ? (
                 <div className="flex flex-col gap-3">
-                  <Link href="/" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full">
+                  <Link 
+                    href="/" 
+                    className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     <span>Kilépés</span>
                   </Link>
                   <div className="flex items-center justify-center space-x-2 p-3 rounded-lg bg-white/10">
@@ -156,25 +185,37 @@ const Navbar = () => {
                 </div>
               ) : user ? (
                 <div className="flex flex-col gap-3">
-                <Link href="/profile" className="flex items-center justify-center space-x-2 btn btn-primary glass-button push-button w-full">
+                <Link 
+                  href="/profile" 
+                  className="flex items-center justify-center space-x-2 btn btn-primary glass-button push-button w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                   <IconUser className="w-5 h-5" />
                   <span>{user.username}</span>
                 </Link>
-                <Link href="/myclub" className="flex items-center justify-center space-x-2 btn btn-outline btn-primary push-button w-full">
+                <Link 
+                  href="/myclub" 
+                  className="flex items-center justify-center space-x-2 btn btn-outline btn-primary push-button w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                 <IconDart className="w-5 h-5" />
                 <span>Saját klub</span>
-                            </Link>
+                </Link>
               </div>
               ) : (
                 <div>
                 <Link
                   href="/auth/login"
-                  className="block glass-button push-button w-full mt-4"
+                  className="block glass-button justify-center flex push-button w-full mt-4"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Bejelentkezés
                 </Link>
-                <Link href="/auth/register" onClick={()=>setIsMobileMenuOpen(false)} className="block btn btn-outline push-button w-full mt-2">
+                <Link 
+                  href="/auth/register" 
+                  onClick={() => setIsMobileMenuOpen(false)} 
+                  className="block btn btn-outline push-button w-full mt-2"
+                >
                   Regisztráció
                 </Link>
                 </div>

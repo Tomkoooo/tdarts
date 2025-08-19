@@ -31,11 +31,25 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   const tournamentFormat = tournament?.tournamentSettings?.format || 'group_knockout';
   const totalPlayers = tournament?.tournamentPlayers?.length || 0;
   
+  // Calculate checked-in players (available for groups)
+  const checkedInPlayers = tournament?.tournamentPlayers?.filter(p => p.status === 'checked-in') || [];
+  const availablePlayersCount = checkedInPlayers.length;
+  
   // Calculate number of groups (boards with matches)
-  const groupCount = tournament?.tournamentSettings?.boardCount || -1;
+  const groupCount = tournament?.tournamentSettings?.boardCount || 0;
 
   // Check if automatic knockout is allowed (even number of groups required)
   const isAutomaticKnockoutAllowed = groupCount === 0 || tournamentFormat === 'knockout' || (tournamentFormat === 'group_knockout' && groupCount % 2 === 0);
+
+  // Group generation validation
+  const minPlayersPerGroup = 3;
+  const maxPlayersPerGroup = 6;
+  const minTotalPlayersForGroups = groupCount * minPlayersPerGroup;
+  const maxTotalPlayersForGroups = groupCount * maxPlayersPerGroup;
+  
+  const isGroupGenerationAllowed = groupCount > 0 && 
+    availablePlayersCount >= minTotalPlayersForGroups && 
+    availablePlayersCount <= maxTotalPlayersForGroups;
 
   // Generate available player counts (powers of 2, max totalPlayers)
   const getAvailablePlayerCounts = () => {
@@ -213,9 +227,9 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
         {/* Group Generation Button - only show when tournament is pending and format allows groups */}
         {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && (
           <button 
-            className="btn btn-secondary flex-1 min-w-[200px] sm:flex-none" 
+            className={`btn flex-1 min-w-[200px] sm:flex-none ${isGroupGenerationAllowed ? 'btn-secondary' : 'btn-disabled'}`}
             onClick={handleGenerateGroups} 
-            disabled={loading}
+            disabled={loading || !isGroupGenerationAllowed}
           >
             {loading ? 'Csoportok generálása...' : 'Csoportok generálása'}
           </button>
@@ -259,6 +273,23 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
       </div>
 
       {error && <div className="mt-2 text-error">{error}</div>}
+      
+      {/* Group generation validation warning */}
+      {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && !isGroupGenerationAllowed && groupCount > 0 && (
+        <div className="mt-2 alert alert-warning">
+          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <div>
+            <h3 className="font-bold">Nem megfelelő játékos szám!</h3>
+            <div className="text-xs">
+              Min csoportonként {minPlayersPerGroup}, max {maxPlayersPerGroup} ember szükséges, így {minTotalPlayersForGroups} - {maxTotalPlayersForGroups} játékos szükséges {groupCount} számú csoporthoz.
+              <br />
+              <strong>Jelenleg:</strong> {availablePlayersCount} bejelentkezett játékos ({totalPlayers} összesen)
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Knockout Modal */}
       {showKnockoutModal && (
@@ -434,6 +465,24 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
           <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Csoportok generálása</h3>
+            
+            {/* Group generation validation warning in modal */}
+            {!isGroupGenerationAllowed && groupCount > 0 && (
+              <div className="alert alert-warning mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div>
+                  <h3 className="font-bold">Nem megfelelő játékos szám!</h3>
+                  <div className="text-xs">
+                    Min csoportonként {minPlayersPerGroup}, max {maxPlayersPerGroup} ember szükséges, így {minTotalPlayersForGroups} - {maxTotalPlayersForGroups} játékos szükséges {groupCount} számú csoporthoz.
+                    <br />
+                    <strong>Jelenleg:</strong> {availablePlayersCount} bejelentkezett játékos ({totalPlayers} összesen)
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="form-control mb-6">
               <label className="label">
                 <span className="label-text font-bold">Generálás módja:</span>
@@ -464,11 +513,19 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
             <div className="flex flex-wrap gap-3">
               <button className="btn btn-error flex-1 min-w-[120px]" onClick={() => setShowGroupsModal(false)}>Mégse</button>
               {groupsMode === 'automatic' ? (
-                <button className="btn btn-success flex-1 min-w-[120px]" onClick={startAutomaticGroups} disabled={loading}>
+                <button 
+                  className="btn btn-success flex-1 min-w-[120px]" 
+                  onClick={startAutomaticGroups} 
+                  disabled={loading || !isGroupGenerationAllowed}
+                >
                   {loading ? 'Generálás...' : 'Automatikus generálás'}
                 </button>
               ) : (
-                <button className="btn btn-info flex-1 min-w-[120px]" onClick={openManualGroupsBuilder} disabled={loading}>
+                <button 
+                  className="btn btn-info flex-1 min-w-[120px]" 
+                  onClick={openManualGroupsBuilder} 
+                  disabled={loading || !isGroupGenerationAllowed}
+                >
                   {loading ? 'Betöltés...' : 'Manuális csoport létrehozás'}
                 </button>
               )}

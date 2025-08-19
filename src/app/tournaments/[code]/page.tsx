@@ -15,7 +15,7 @@ import { IconQrcode } from '@tabler/icons-react';
 const TournamentPage = () => {
     const { code } = useParams();
     const [tournament, setTournament] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userClubRole, setUserClubRole] = useState<'admin' | 'moderator' | 'member' | 'none'>('none');
   const [userPlayerStatus, setUserPlayerStatus] = useState<'applied' | 'checked-in' | 'none'>('none');
@@ -232,7 +232,6 @@ const TournamentPage = () => {
                 <TournamentPlayers
                   tournament={tournament}
                   players={players}
-                  user={user}
                   userClubRole={userClubRole}
                   userPlayerStatus={userPlayerStatus}
                   userPlayerId={userPlayerId}
