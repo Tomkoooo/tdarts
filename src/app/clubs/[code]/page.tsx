@@ -212,7 +212,7 @@ export default function ClubDetailPage() {
   const summarySection = (
     <div className="space-y-4 md:space-y-6">
       <section className="bg-base-200 rounded-2xl shadow-xl p-4 md:p-6 flex flex-col gap-2">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div className="flex-1">
             <h2 className="text-2xl md:text-3xl font-bold text-primary mb-1">{club.name}</h2>
             <div className="text-base md:text-lg text-base-content/80 mb-2">{club.description}</div>
@@ -220,16 +220,16 @@ export default function ClubDetailPage() {
               <span>Helyszín: <span className="font-medium text-base-content">{club.location}</span></span>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {user ? (
               <>
                 <button
                   onClick={() => setClubShareModal(true)}
-                  className="btn btn-sm btn-outline btn-primary flex items-center gap-2"
+                  className="btn btn-xs sm:btn-sm btn-outline btn-primary flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
                   title="QR kód megjelenítése"
                 >
-                  <IconQrcode className="w-4 h-4" />
-                  Megosztás
+                  <IconQrcode className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">Megosztás</span>
                 </button>
                 <button
                   onClick={() => {
@@ -237,33 +237,33 @@ export default function ClubDetailPage() {
                     navigator.clipboard.writeText(loginLink);
                     toast.success('Bejelentkezési link másolva!');
                   }}
-                  className="btn btn-sm btn-outline btn-secondary text-white flex items-center gap-2"
+                  className="btn btn-xs sm:btn-sm btn-outline btn-secondary text-white flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
                   title="Bejelentkezési link másolása"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Link másolása
+                  <span className="text-xs sm:text-sm">Link másolása</span>
                 </button>
               </>
             ) : (
               <>
                 <button
                   onClick={() => setClubShareModal(true)}
-                  className="btn btn-sm btn-outline btn-primary flex items-center gap-2"
+                  className="btn btn-xs sm:btn-sm btn-outline btn-primary flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
                   title="QR kód megjelenítése"
                 >
-                  <IconQrcode className="w-4 h-4" />
-                  Megosztás
+                  <IconQrcode className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">Megosztás</span>
                 </button>
                 <a
                   href={`/auth/login?redirect=${encodeURIComponent(`/clubs/${code}?page=tournaments`)}`}
-                  className="btn btn-sm btn-primary flex items-center gap-2"
+                  className="btn btn-xs sm:btn-sm btn-primary flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                   </svg>
-                  Bejelentkezés
+                  <span className="text-xs sm:text-sm">Bejelentkezés</span>
                 </a>
               </>
             )}
@@ -389,7 +389,7 @@ export default function ClubDetailPage() {
                   <span className="font-semibold text-sm md:text-base">#{board.boardNumber}</span>
                   {board.name && <span className="text-xs md:text-sm text-base-content/60">{board.name}</span>}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex flex-wrap gap-1">
                   <button 
                     className="btn btn-xs btn-primary" 
                     onClick={() => setQrCodeModal({ 
@@ -403,8 +403,14 @@ export default function ClubDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
                   </button>
-                  <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>Szerkesztés</button>
-                  <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>Törlés</button>
+                  <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>
+                    <span className="hidden sm:inline">Szerkesztés</span>
+                    <span className="sm:hidden">Szerk</span>
+                  </button>
+                  <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>
+                    <span className="hidden sm:inline">Törlés</span>
+                    <span className="sm:hidden">Töröl</span>
+                  </button>
                 </div>
               </li>
             ))
@@ -412,7 +418,10 @@ export default function ClubDetailPage() {
             <li className="text-sm md:text-base text-base-content/60 p-3 bg-base-200 rounded-lg">Nincsenek táblák.</li>
           )}
         </ul>
-        <button className="btn btn-sm md:btn-md btn-primary w-full sm:w-auto" onClick={() => setBoardAddOpen(true)}>Új tábla hozzáadása</button>
+        <button className="btn btn-sm md:btn-md btn-primary w-full sm:w-auto" onClick={() => setBoardAddOpen(true)}>
+          <span className="hidden sm:inline">Új tábla hozzáadása</span>
+          <span className="sm:hidden">Új tábla</span>
+        </button>
         {/* Add Board Modal */}
         {boardAddOpen && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">

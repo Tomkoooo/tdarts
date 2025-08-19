@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import PlayerSearch from '@/components/club/PlayerSearch';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
+import { useUserContext } from '@/hooks/useUser';
 
 interface TournamentPlayersProps {
   tournament: any;
   players: any[];
-  user: any;
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
   userPlayerStatus: 'applied' | 'checked-in' | 'none';
   userPlayerId: string | null;
@@ -15,13 +16,13 @@ interface TournamentPlayersProps {
 const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   tournament,
   players,
-  user,
   userClubRole,
   userPlayerStatus,
   userPlayerId,
 }) => {
   const [error, setError] = useState('');
   const [localPlayers, setLocalPlayers] = useState(players);
+  const {user} = useUserContext()
   const [localUserPlayerStatus, setLocalUserPlayerStatus] = useState(userPlayerStatus);
   const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId);
   const code = tournament?.tournamentId;
@@ -273,15 +274,15 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {/* Show signup button only if player registration is allowed */}
       {allowPlayerRegistration && (
         <>
-          {user && localUserPlayerStatus === 'none' && hasFreeSpots && (
+          {user &&  hasFreeSpots && (
             <button className="btn btn-primary mt-4" onClick={handleSelfSignUp}>Jelentkezés a tornára</button>
           )}
-          {user && localUserPlayerStatus === 'none' && !hasFreeSpots && (
+          {user &&  !hasFreeSpots && (
             <div className="mt-4 text-warning">A torna megtelt, nincs több szabad hely.</div>
           )}
           {!user && (
             <div className="mt-4">
-              <a href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`} className="btn btn-accent">Jelentkezéshez lépj be</a>
+              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`} className="btn btn-accent">Jelentkezéshez lépj be</Link>
             </div>
           )}
         </>

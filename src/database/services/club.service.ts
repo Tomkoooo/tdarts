@@ -496,25 +496,51 @@ export class ClubService {
   static async getUserRoleInClub(userId: string, clubId: string): Promise<string> {
     await connectMongo();
 
-    const club = await ClubModel.findById(clubId);
-    if (!club) {
+    const userObjectId = new Types.ObjectId(userId);
+      
+    // Aggregation pipeline to efficiently determine user role
+    const result = await ClubModel.aggregate([
+      { $match: { _id: new Types.ObjectId(clubId) } },
+      {
+        $project: {
+          userRole: {
+            $cond: {
+              if: { $in: [userObjectId, '$admin'] },
+              then: 'admin',
+              else: {
+                $cond: {
+                  if: { $in: [userObjectId, '$moderators'] },
+                  then: 'moderator',
+                  else: {
+                    $cond: {
+                      if: { $in: [userObjectId, '$members'] },
+                      then: 'member',
+                      else: 'none'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]);
+
+    if (result.length === 0) {
       throw new BadRequestError('Club not found');
     }
 
-    const userObjectId = new Types.ObjectId(userId);
-    if (club.admin.includes(userObjectId)) {
-      return 'admin';
-    } else if (club.moderators.includes(userObjectId)) {
-      return 'moderator';
-    } else if (club.members.includes(userObjectId)) {
-      return 'member';
-    } else {
+    let userRole = result[0].userRole;
+
+    // If user role is 'none', check if they are a system admin
+    if (userRole === 'none') {
       const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
       if (isAuthorized) {
-        return 'admin';
+        userRole = 'admin';
       }
-      return 'none';
     }
+
+    return userRole;
   }
 
   static async searchUsers(query: string): Promise<{ _id: string; name: string; username: string }[]> {

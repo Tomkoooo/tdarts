@@ -84,7 +84,8 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ isLoading = fal
         {
           loading: t.loadingMessage,
           success: () => {
-            router.push('/auth/reset-password');
+            // Email cím átadása URL paraméterként
+            router.push(`/auth/reset-password?email=${encodeURIComponent(data.email)}`);
             return t.successMessage;
           },
           error: (error) => error.response?.data.error || t.errorMessage,

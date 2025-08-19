@@ -59,7 +59,8 @@ const translations = {
     passwordsDontMatch: 'A jelszavak nem egyeznek',
     showPassword: 'Jelszó megjelenítése',
     hidePassword: 'Jelszó elrejtése',
-    language: 'Nyelv'
+    language: 'Nyelv',
+    usernameNoSpaces: 'A felhasználónév nem tartalmazhat szóközt'
   },
   en: {
     title: 'Registration',
@@ -87,7 +88,8 @@ const translations = {
     passwordsDontMatch: 'Passwords do not match',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
-    language: 'Language'
+    language: 'Language',
+    usernameNoSpaces: 'Username cannot contain spaces'
   }
 };
 
@@ -112,7 +114,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       .min(1, t.passwordRequired),
     confirmPassword: z.string().min(1, t.confirmPasswordRequired),
     name: z.string().min(1, t.nameRequired),
-    username: z.string(),
+    username: z.string().regex(/^[^\s]+$/, t.usernameNoSpaces),
   }).refine((data) => data.password === data.confirmPassword, {
     message: t.passwordsDontMatch,
     path: ["confirmPassword"],

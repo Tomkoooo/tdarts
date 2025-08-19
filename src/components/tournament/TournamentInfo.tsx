@@ -71,7 +71,12 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
       </div>
       <div className="mb-4">
         <h2 className="text-xl font-semibold mb-1">Rendezői adatok:</h2>
-        <span>{tournament.clubId?.name}</span> - <span>{tournament.clubId?.location}</span>
+        <Link 
+          href={`/clubs/${tournament.clubId?._id}`} 
+          className="text-primary hover:text-primary/80 hover:underline font-semibold transition-colors"
+        >
+          {tournament.clubId?.name}
+        </Link> - <span>{tournament.clubId?.location}</span>
         <div className="flex flex-col mt-1">
           {tournament.clubId.contact.email && <a href={`mailto:${tournament.clubId.contact.email}`} className="text-primary hover:text-primary-focus ml-1 font-semibold"  >{tournament.clubId.contact.email}</a>}
           {tournament.clubId.contact.phone && <a href={`tel:${tournament.clubId.contact.phone}`} className="text-primary hover:text-primary-focus ml-1 font-semibold">{tournament.clubId.contact.phone}</a>}
