@@ -120,7 +120,7 @@ const Navbar = () => {
                 <span>Saját klub</span>
                             </Link>
                             {user.isAdmin && (
-                  <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                  <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button"
                   onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Admin

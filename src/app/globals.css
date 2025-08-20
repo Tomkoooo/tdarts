@@ -102,14 +102,103 @@ html, body{
   color-scheme: dark;
 }
 
-/* Ensure text is visible */
-body, html {
-  color: #ffffff;
-  background-color: #42010b;
+/* Override DaisyUI theme colors for production */
+:root {
+  --color-base-100: oklch(15% 0.02 12) !important;
+  --color-base-200: oklch(18% 0.055 18) !important;
+  --color-base-300: oklch(18% 0.03 12) !important;
+  --color-base-content: oklch(95% 0.005 0) !important;
+  --color-primary: oklch(51% 0.18 16) !important;
+  --color-primary-content: oklch(100% 0 0) !important;
+  --color-secondary: oklch(18% 0.03 12) !important;
+  --color-secondary-content: oklch(95% 0.005 0) !important;
+  --color-accent: oklch(51% 0.18 16) !important;
+  --color-accent-content: oklch(100% 0 0) !important;
+  --color-neutral: oklch(15% 0.025 12) !important;
+  --color-neutral-content: oklch(95% 0.005 0) !important;
+  --color-info: oklch(70% 0.16 233) !important;
+  --color-info-content: oklch(100% 0 0) !important;
+  --color-success: oklch(64% 0.2 132) !important;
+  --color-success-content: oklch(100% 0 0) !important;
+  --color-warning: oklch(68% 0.162 76) !important;
+  --color-warning-content: oklch(100% 0 0) !important;
+  --color-error: oklch(60% 0.184 16) !important;
+  --color-error-content: oklch(100% 0 0) !important;
+}
+
+/* Production-specific dark mode enforcement */
+@media (prefers-color-scheme: light) {
+  html {
+    color-scheme: dark !important;
+    background-color: #42010b !important;
+    color: #ffffff !important;
+  }
+  
+  body {
+    color: #ffffff !important;
+    /* Don't override gradient backgrounds */
+  }
+}
+
+/* Force dark mode regardless of system preference */
+html[data-theme="tDarts"] {
+  color-scheme: dark !important;
+}
+
+html[data-theme="tDarts"] body {
+  color: #ffffff !important;
+  /* Don't override gradient backgrounds */
+}
+
+/* Production build specific overrides */
+html[data-theme="tDarts"] {
+  --color-base-100: oklch(15% 0.02 12) !important;
+  --color-base-200: oklch(18% 0.055 18) !important;
+  --color-base-300: oklch(18% 0.03 12) !important;
+  --color-base-content: oklch(95% 0.005 0) !important;
+  --color-primary: oklch(51% 0.18 16) !important;
+  --color-primary-content: oklch(100% 0 0) !important;
+  --color-secondary: oklch(18% 0.03 12) !important;
+  --color-secondary-content: oklch(95% 0.005 0) !important;
+  --color-accent: oklch(51% 0.18 16) !important;
+  --color-accent-content: oklch(100% 0 0) !important;
+  --color-neutral: oklch(15% 0.025 12) !important;
+  --color-neutral-content: oklch(95% 0.005 0) !important;
+  --color-info: oklch(70% 0.16 233) !important;
+  --color-info-content: oklch(100% 0 0) !important;
+  --color-success: oklch(64% 0.2 132) !important;
+  --color-success-content: oklch(100% 0 0) !important;
+  --color-warning: oklch(68% 0.162 76) !important;
+  --color-warning-content: oklch(100% 0 0) !important;
+  --color-error: oklch(60% 0.184 16) !important;
+  --color-error-content: oklch(100% 0 0) !important;
 }
 
 /* tDarts Tournament Theme - Reusable CSS System */
 @layer base {
+  /* Force dark mode colors in Tailwind */
+  .dark {
+    --color-base-100: oklch(15% 0.02 12) !important;
+    --color-base-200: oklch(18% 0.055 18) !important;
+    --color-base-300: oklch(18% 0.03 12) !important;
+    --color-base-content: oklch(95% 0.005 0) !important;
+    --color-primary: oklch(51% 0.18 16) !important;
+    --color-primary-content: oklch(100% 0 0) !important;
+    --color-secondary: oklch(18% 0.03 12) !important;
+    --color-secondary-content: oklch(95% 0.005 0) !important;
+    --color-accent: oklch(51% 0.18 16) !important;
+    --color-accent-content: oklch(100% 0 0) !important;
+    --color-neutral: oklch(15% 0.025 12) !important;
+    --color-neutral-content: oklch(95% 0.005 0) !important;
+    --color-info: oklch(70% 0.16 233) !important;
+    --color-info-content: oklch(100% 0 0) !important;
+    --color-success: oklch(64% 0.2 132) !important;
+    --color-success-content: oklch(100% 0 0) !important;
+    --color-warning: oklch(68% 0.162 76) !important;
+    --color-warning-content: oklch(100% 0 0) !important;
+    --color-error: oklch(60% 0.184 16) !important;
+    --color-error-content: oklch(100% 0 0) !important;
+  }
   :root {
     /* Dark Red Theme Colors - Updated for v4 */
     --background: oklch(8% 0.02 12);
