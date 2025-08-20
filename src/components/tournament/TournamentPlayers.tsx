@@ -199,7 +199,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
 
 
   return (
-    <div className="mb-4">
+    <div className="mb-4" id="registration">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-semibold">Játékosok</h2>
         {isPending && (

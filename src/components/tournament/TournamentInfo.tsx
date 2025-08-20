@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { IconScreenShare, IconRefresh, IconEdit } from '@tabler/icons-react';
+import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus } from '@tabler/icons-react';
 import EditTournamentModal from './EditTournamentModal';
 
 interface TournamentInfoProps {
@@ -101,6 +101,10 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
           <IconRefresh className="w-5 h-5" />
           Frissítés
         </button>
+        <Link href={`/tournaments/${tournament.tournamentId}#registration`} className="lg:hidden btn btn-primary btn-md flex items-center gap-2">
+          <IconUserPlus className="w-5 h-5" />
+          Nevezés
+        </Link>
         {tournament.status !== 'finished' && tournament.status !== 'pending' && (
           <Link href={`/tournaments/${tournament.tournamentId}/live`} className="btn btn-primary btn-md flex items-center gap-2">
             <IconScreenShare className="w-5 h-5" />

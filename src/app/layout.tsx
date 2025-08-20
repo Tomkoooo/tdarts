@@ -47,9 +47,10 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="hu" data-theme="dark">
+    <html lang="hu" data-theme="tDarts" className="dark">
       <head>
         <meta name="color-scheme" content="only dark" />
+        <meta name="theme-color" content="#42010b" />
       </head>
       <body className="flex flex-col pt-16 md:pt-20">
         <UserProvider initialUser={initialUser}>

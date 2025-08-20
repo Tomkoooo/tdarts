@@ -206,7 +206,7 @@ const Navbar = () => {
                 <div>
                 <Link
                   href="/auth/login"
-                  className="block glass-button justify-center flex push-button w-full mt-4"
+                  className="glass-button justify-center flex push-button w-full mt-4"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Bejelentkezés
