@@ -135,7 +135,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
               }}
               className="text-base-content/60 hover:text-base-content transition-colors"
             >
-              <IconX className="w-4 h-4" />
+              <IconX color='white'/>
             </button>
           </div>
 

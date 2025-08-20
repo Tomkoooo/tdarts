@@ -105,34 +105,6 @@ export default async function RootLayout({
         <meta name="color-scheme" content="only dark" />
         <meta name="theme-color" content="#42010b" />
         <meta name="supported-color-schemes" content="dark" />
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            html { 
-              color-scheme: dark !important; 
-              background-color: #42010b !important;
-              color: #ffffff !important;
-            }
-            body { 
-              background-color: #42010b !important;
-              color: #ffffff !important;
-            }
-            * { 
-              color-scheme: dark !important; 
-            }
-          `
-        }} />
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            // Force dark mode for Safari
-            if (typeof window !== 'undefined') {
-              document.documentElement.style.colorScheme = 'dark';
-              document.documentElement.style.backgroundColor = '#42010b';
-              document.documentElement.style.color = '#ffffff';
-              document.body.style.backgroundColor = '#42010b';
-              document.body.style.color = '#ffffff';
-            }
-          `
-        }} />
       </head>
       <body className="flex flex-col pt-16 md:pt-20">
         <UserProvider initialUser={initialUser}>
