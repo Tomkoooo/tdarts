@@ -108,6 +108,13 @@ const SearchPage: React.FC = () => {
     location: searchParams.get('location') || undefined,
     tournamentType: searchParams.get('tournamentType') as 'amateur' | 'open' || undefined,
   });
+
+  // Update filters when URL params change
+  useEffect(() => {
+    const newType = (searchParams.get('type') as any) || 'all';
+    setFilters(prev => ({ ...prev, type: newType }));
+    setActiveTab(newType);
+  }, [searchParams]);
   const [results, setResults] = useState<SearchResult>({ totalResults: 0 });
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -116,6 +123,7 @@ const SearchPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'tournaments' | 'players' | 'clubs'>(
     (searchParams.get('type') as any) || 'all'
   );
+  console.log(activeTab);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [tournamentView, setTournamentView] = useState<'list' | 'calendar'>('list');
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
@@ -221,22 +229,98 @@ const SearchPage: React.FC = () => {
   // Handle search logic
   useEffect(() => {
     if (query.trim()) {
-      debouncedSearch(query, { ...filters, type: activeTab });
+      debouncedSearch(query, filters);
     } else {
       setResults({ totalResults: 0 });
     }
     debouncedSuggestions(query);
-  }, [query, filters, activeTab, debouncedSearch, debouncedSuggestions]);
+  }, [query, filters, debouncedSearch, debouncedSuggestions]);
+
+  // Load filtered data when no query but filters are set
+  useEffect(() => {
+    if (!query.trim() && filters.type !== 'all') {
+      loadFilteredData();
+    }
+  }, [filters, query, playersPage]);
+
+  const loadFilteredData = async () => {
+    setLoading(true);
+    try {
+      const results: SearchResult = { totalResults: 0 };
+      
+      if (filters.type === 'tournaments') {
+        // Load tournaments with date grouping and view options
+        const tournamentsRes = await axios.get('/api/search/recent-tournaments?limit=50');
+        if (tournamentsRes.data.success) {
+          // Transform the data to match the search API structure
+          results.tournaments = tournamentsRes.data.tournaments.map((tournament: any) => {
+            const startDate = tournament.tournamentSettings?.startDate;
+            const registrationDeadline = tournament.tournamentSettings?.registrationDeadline;
+            const now = new Date();
+            
+            // Determine if registration is open based on deadline or start date
+            let registrationOpen = true;
+            
+            if (registrationDeadline) {
+              registrationOpen = registrationOpen && now < new Date(registrationDeadline);
+            } else if (startDate) {
+              registrationOpen = registrationOpen && now < new Date(startDate.getTime() - 60 * 60 * 1000); // 1 hour before start
+            }
+
+            return {
+              registrationOpen: registrationOpen,
+              tournament: tournament,
+            };
+          });
+        }
+      }
+      
+      if (filters.type === 'players') {
+        // Load players with pagination (top players ranking)
+        const playersRes = await axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`);
+        if (playersRes.data.success) {
+          results.players = playersRes.data.players;
+          setTopPlayersTotal(playersRes.data.total);
+        }
+      }
+      
+      if (filters.type === 'clubs') {
+        // Load clubs by popularity
+        const clubsRes = await axios.get('/api/search/popular-clubs?limit=50');
+        if (clubsRes.data.success) {
+          results.clubs = clubsRes.data.clubs;
+        }
+      }
+      
+      results.totalResults = (results.tournaments?.length || 0) + 
+                            (results.players?.length || 0) + 
+                            (results.clubs?.length || 0);
+      
+      setResults(results);
+    } catch (error) {
+      console.error('Failed to load filtered data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   // Update URL
   useEffect(() => {
     const params = new URLSearchParams();
     if (query) params.set('q', query);
-    if (activeTab !== 'all') params.set('type', activeTab);
-    // Add other filters if needed
+    if (filters.type !== 'all') params.set('type', filters.type);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.format) params.set('format', filters.format);
+    if (filters.location) params.set('location', filters.location);
+    if (filters.minPlayers !== undefined) params.set('minPlayers', filters.minPlayers.toString());
+    if (filters.maxPlayers !== undefined) params.set('maxPlayers', filters.maxPlayers.toString());
+    if (filters.tournamentType) params.set('tournamentType', filters.tournamentType);
+    
     const newUrl = params.toString() ? `/search?${params.toString()}` : '/search';
     router.replace(newUrl, { scroll: false });
-  }, [query, activeTab, router]);
+  }, [query, filters, router]);
 
   // Handle clicks outside search container
   useEffect(() => {
@@ -265,8 +349,33 @@ const SearchPage: React.FC = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ type: 'all' });
+    setFilters({
+      type: 'all',
+      status: undefined,
+      format: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      minPlayers: undefined,
+      maxPlayers: undefined,
+      location: undefined,
+      tournamentType: undefined
+    });
   };
+
+  // Count active filters
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.type !== 'all') count++;
+    if (filters.status) count++;
+    if (filters.format) count++;
+    if (filters.location) count++;
+    if (filters.minPlayers !== undefined) count++;
+    if (filters.maxPlayers !== undefined) count++;
+    if (filters.tournamentType) count++;
+    return count;
+  };
+
+  const activeFiltersCount = getActiveFiltersCount();
 
   const openPlayerModal = (player: any) => {
     setSelectedPlayer(player);
@@ -485,31 +594,136 @@ const SearchPage: React.FC = () => {
 
   // Render functions for different sections
   const renderSearchResults = () => (
-          <div className="max-w-6xl mx-auto">
-            {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <span className="loading loading-spinner loading-lg"></span>
-              </div>
-            ) : (
-              <>
-                <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Eredmények: &quot;{query}&quot;</h2>
+    <div className="max-w-6xl mx-auto">
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">
+              {query ? `Eredmények: "${query}"` : `Szűrt eredmények: ${filters.type === 'tournaments' ? 'Tornák' : filters.type === 'players' ? 'Játékosok' : filters.type === 'clubs' ? 'Klubok' : 'Minden'}`}
+            </h2>
             <p className="text-base-content/70">{results.totalResults} találat</p>
-                </div>
+          </div>
 
           {results.totalResults === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🔍</div>
               <h3 className="text-xl font-bold mb-2">Nincs találat</h3>
-              <p className="text-base-content/70">Próbáld meg másik keresési kifejezéssel.</p>
+              <p className="text-base-content/70">
+                {query ? 'Próbáld meg másik keresési kifejezéssel.' : 'Próbáld meg másik szűrőket használni.'}
+              </p>
             </div>
-          ) : (
+          ) : !query.trim() && filters.type !== 'all' ? (
+            // Show filtered results without query
             <>
-              {(activeTab === 'all' || activeTab === 'tournaments') && results.tournaments && results.tournaments.length > 0 && (
+              {/* Only show tournaments if type is 'tournaments' */}
+              {filters.type === 'tournaments' && results.tournaments && results.tournaments.length > 0 && (
                 <section className="mb-8">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold">Tornák</h3>
-                    {activeTab === 'tournaments' && (
+                    <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-1">
+                        <button
+                          className={`btn btn-sm ${tournamentView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+                          onClick={() => setTournamentView('list')}
+                        >
+                          <IconList className="w-4 h-4" />
+                          Lista
+                        </button>
+                        <button
+                          className={`btn btn-sm ${tournamentView === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
+                          onClick={() => setTournamentView('calendar')}
+                        >
+                          <IconCalendar className="w-4 h-4" />
+                          Naptár
+                        </button>
+                      </div>
+                      {tournamentView === 'list' && (
+                        <div className="flex gap-1 border-l pl-2 items-center">
+                          <button
+                            className={`btn btn-xs ${listViewMode === 'all' ? 'btn-outline' : 'btn-ghost'}`}
+                            onClick={() => {
+                              setListViewMode('all');
+                              setCurrentDateIndex(0);
+                            }}
+                          >
+                            Összes
+                          </button>
+                          <button
+                            className={`btn btn-xs ${listViewMode === 'navigation' ? 'btn-outline' : 'btn-ghost'}`}
+                            onClick={() => {
+                              setListViewMode('navigation');
+                              setCurrentDateIndex(0);
+                            }}
+                          >
+                            Navigálás
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {tournamentView === 'calendar' ? (
+                    renderTournamentCalendar(results.tournaments.map(t => t.tournament))
+                  ) : (
+                    renderTournamentList(results.tournaments.map(t => t.tournament), listViewMode === 'navigation')
+                  )}
+                </section>
+              )}
+              
+              {/* Only show players if type is 'players' */}
+              {filters.type === 'players' && results.players && results.players.length > 0 && (
+                <section className="mb-8">
+                  <h3 className="text-xl font-bold mb-4">Játékosok</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {results.players.map((player) => (
+                      <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} />
+                    ))}
+                  </div>
+                  {/* Pagination for players */}
+                  <div className="mt-6 flex justify-center">
+                    <Pagination
+                      currentPage={playersPage}
+                      totalPages={Math.ceil(topPlayersTotal / itemsPerPage)}
+                      onPageChange={setPlayersPage}
+                    />
+                  </div>
+                </section>
+              )}
+              
+              {/* Only show clubs if type is 'clubs' */}
+              {filters.type === 'clubs' && results.clubs && results.clubs.length > 0 && (
+                <section className="mb-8">
+                  <h3 className="text-xl font-bold mb-4">Klubok</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {results.clubs.map((club) => (
+                      <Link key={club._id} href={`/clubs/${club._id}`}>
+                        <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+                          <div className="card-body">
+                            <h4 className="card-title">{club.name}</h4>
+                            <div className="text-sm text-base-content/70 space-y-1">
+                              <p>Helyszín: {club.location}</p>
+                              <p>Tagok: {club.memberCount}</p>
+                              <p>Táblák: {club.boards.length}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Only show tournaments if type is 'all' or 'tournaments' */}
+              {(filters.type === 'all' || filters.type === 'tournaments') && results.tournaments && results.tournaments.length > 0 && (
+                <section className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold">Tornák</h3>
+                    {filters.type === 'tournaments' && (
                       <div className="flex gap-2 flex-wrap">
                         <div className="flex gap-1">
                           <button
@@ -552,53 +766,57 @@ const SearchPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  {activeTab === 'tournaments' && tournamentView === 'calendar' ? (
+                  {filters.type === 'tournaments' && tournamentView === 'calendar' ? (
                     renderTournamentCalendar(results.tournaments.map(t => t.tournament))
-                  ) : activeTab === 'tournaments' && tournamentView === 'list' ? (
+                  ) : filters.type === 'tournaments' && tournamentView === 'list' ? (
                     renderTournamentList(results.tournaments.map(t => t.tournament), listViewMode === 'navigation')
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {results.tournaments.slice(0, 6).map(t => <TournamentCard key={t._id} tournament={t.tournament} />)}
+                      {results.tournaments.slice(0, 6).map((t, index) => <TournamentCard key={index} tournament={t.tournament} />)}
                     </div>
                   )}
                 </section>
               )}
-              {(activeTab === 'all' || activeTab === 'players') && results.players && results.players.length > 0 && (
+              
+              {/* Only show players if type is 'all' or 'players' */}
+              {(filters.type === 'all' || filters.type === 'players') && results.players && results.players.length > 0 && (
                 <section className="mb-8">
                   <h3 className="text-xl font-bold mb-4">Játékosok</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {results.players.map((player) => (
                       <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} />
                     ))}
                   </div>
                 </section>
               )}
-              {(activeTab === 'all' || activeTab === 'clubs') && results.clubs && results.clubs.length > 0 && (
+              
+              {/* Only show clubs if type is 'all' or 'clubs' */}
+              {(filters.type === 'all' || filters.type === 'clubs') && results.clubs && results.clubs.length > 0 && (
                 <section className="mb-8">
                   <h3 className="text-xl font-bold mb-4">Klubok</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {results.clubs.map((club) => (
-                        <Link key={club._id} href={`/clubs/${club._id}`}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {results.clubs.map((club) => (
+                      <Link key={club._id} href={`/clubs/${club._id}`}>
                         <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-                            <div className="card-body">
+                          <div className="card-body">
                             <h4 className="card-title">{club.name}</h4>
-                              <div className="text-sm text-base-content/70 space-y-1">
-                                <p>Helyszín: {club.location}</p>
-                                <p>Tagok: {club.memberCount}</p>
-                                <p>Táblák: {club.boardCount}</p>
-                              </div>
+                            <div className="text-sm text-base-content/70 space-y-1">
+                            <p>Helyszín: {club.location}</p>
+                              <p>Tagok: {club.memberCount}</p>
+                              <p>Táblák: {club.boards.length}</p>
                             </div>
                           </div>
-                        </Link>
-                      ))}
-                    </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </section>
               )}
             </>
-                )}
-              </>
-            )}
-          </div>
+          )}
+        </>
+      )}
+    </div>
   );
 
   const renderInitialView = () => (
@@ -681,14 +899,14 @@ const SearchPage: React.FC = () => {
                   .slice((clubsPage - 1) * itemsPerPage, clubsPage * itemsPerPage)
                   .map((club, index) => (
                         <Link key={club._id} href={`/clubs/${club._id}`}>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-base-100 shadow hover:shadow-lg transition-shadow">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-base-100 shadow hover:shadow-lg cursor-pointer transition-shadow">
                             <div className="flex items-center gap-3">
                               <span className="text-lg font-bold text-primary">#{index + 1}</span>
                               <div>
                                 <h4 className="font-semibold">{club.name}</h4>
-                                <p className="text-sm text-base-content/70">
-                                  {club.memberCount} tag
-                                </p>
+                                <p>Helyszín: {club.location}</p>
+                              <p>Tagok: {club.memberCount}</p>
+                              <p>Táblák: {club.boards.length}</p>
                               </div>
                             </div>
                           </div>
@@ -741,10 +959,15 @@ const SearchPage: React.FC = () => {
                 </div>
               </div>
               <button
-                className={`btn btn-lg ${showFilters ? 'btn-primary' : 'btn-ghost'}`}
+                className={`btn btn-lg ${showFilters ? 'btn-primary' : 'btn-ghost'} relative`}
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <IconFilter size={20} />
+                {activeFiltersCount > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-primary text-primary-content rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                    {activeFiltersCount}
+                  </div>
+                )}
               </button>
             </div>
             {showSuggestions && suggestions.length > 0 && (
@@ -755,10 +978,10 @@ const SearchPage: React.FC = () => {
           </div>
           {query && (
             <div className="tabs tabs-boxed justify-center mt-4">
-              <button className={`tab ${activeTab === 'all' ? 'tab-active' : ''}`} onClick={() => setActiveTab('all')}>Minden</button>
-              <button className={`tab ${activeTab === 'tournaments' ? 'tab-active' : ''}`} onClick={() => setActiveTab('tournaments')}>Tornák</button>
-              <button className={`tab ${activeTab === 'players' ? 'tab-active' : ''}`} onClick={() => setActiveTab('players')}>Játékosok</button>
-              <button className={`tab ${activeTab === 'clubs' ? 'tab-active' : ''}`} onClick={() => setActiveTab('clubs')}>Klubok</button>
+              <button className={`tab ${filters.type === 'all' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'all' }))}>Minden</button>
+              <button className={`tab ${filters.type === 'tournaments' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'tournaments' }))}>Tornák</button>
+              <button className={`tab ${filters.type === 'players' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'players' }))}>Játékosok</button>
+              <button className={`tab ${filters.type === 'clubs' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'clubs' }))}>Klubok</button>
             </div>
           )}
         </div>
@@ -777,13 +1000,61 @@ const SearchPage: React.FC = () => {
                     Szűrők törlése
                   </button>
                 </div>
-                {/* Add filter inputs here */}
+                
+                {/* Content Type Filter */}
+                <div className="form-control mb-4">
+                  <label className="label">
+                    <span className="label-text font-semibold">Tartalom típusa:</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="label cursor-pointer">
+                      <input
+                        type="radio"
+                        name="contentType"
+                        className="radio radio-primary"
+                        checked={filters.type === 'all'}
+                        onChange={() => setFilters(prev => ({ ...prev, type: 'all' }))}
+                      />
+                      <span className="label-text ml-2">Minden</span>
+                    </label>
+                    <label className="label cursor-pointer">
+                      <input
+                        type="radio"
+                        name="contentType"
+                        className="radio radio-primary"
+                        checked={filters.type === 'tournaments'}
+                        onChange={() => setFilters(prev => ({ ...prev, type: 'tournaments' }))}
+                      />
+                      <span className="label-text ml-2">Versenyek</span>
+                    </label>
+                    <label className="label cursor-pointer">
+                      <input
+                        type="radio"
+                        name="contentType"
+                        className="radio radio-primary"
+                        checked={filters.type === 'players'}
+                        onChange={() => setFilters(prev => ({ ...prev, type: 'players' }))}
+                      />
+                      <span className="label-text ml-2">Játékosok</span>
+                    </label>
+                    <label className="label cursor-pointer">
+                      <input
+                        type="radio"
+                        name="contentType"
+                        className="radio radio-primary"
+                        checked={filters.type === 'clubs'}
+                        onChange={() => setFilters(prev => ({ ...prev, type: 'clubs' }))}
+                      />
+                      <span className="label-text ml-2">Klubok</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
         
-        {query ? renderSearchResults() : renderInitialView()}
+        {query || filters.type !== 'all' ? renderSearchResults() : renderInitialView()}
         
         <PlayerStatsModal player={selectedPlayer} onClose={closePlayerModal} />
       </div>
