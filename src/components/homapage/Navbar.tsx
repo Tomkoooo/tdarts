@@ -52,8 +52,9 @@ const Navbar = () => {
     { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
     { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
   ] : [
-    { name: "Versenyek", icon: IconTournament, href: "/search" },
-    { name: "Klubbok", icon: IconUsers, href: "/search" },
+    { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
+    { name: "Játékosok", icon: IconUser, href: "/search?type=players" },
+    { name: "Klubbok", icon: IconUsers, href: "/search?type=clubs" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
   ];
@@ -206,7 +207,7 @@ const Navbar = () => {
                 <div>
                 <Link
                   href="/auth/login"
-                  className="block glass-button justify-center flex push-button w-full mt-4"
+                  className="glass-button justify-center flex push-button w-full mt-4"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Bejelentkezés

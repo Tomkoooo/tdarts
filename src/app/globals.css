@@ -37,6 +37,46 @@
   --noise: 1;
 }
 
+@plugin "daisyui/theme" {
+  name: "tDarts/light";
+  default: false;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: oklch(15% 0.02 12);
+  --color-base-200: oklch(18% 0.055 18);
+  --color-base-300: oklch(18% 0.03 12);
+  --color-base-content: oklch(95% 0.005 0);
+  --color-primary: oklch(51% 0.18 16);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(18% 0.03 12);
+  --color-secondary-content: oklch(95% 0.005 0);
+  --color-accent: oklch(51% 0.18 16);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(15% 0.025 12);
+  --color-neutral-content: oklch(95% 0.005 0);
+  --color-info: oklch(70% 0.16 233);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(64% 0.2 132);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(68% 0.162 76);
+  --color-warning-content: oklch(100% 0 0);
+  --color-error: oklch(60% 0.184 16);
+  --color-error-content: oklch(100% 0 0);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 2;
+  --noise: 1;
+}
+
+/* Force dark mode for all browsers and user preferences */
+html {
+  color-scheme: dark !important;
+}
+
 html, body{
   background: #42010b;
   background: linear-gradient(131deg,rgba(66, 1, 11, 1) 0%, rgba(20, 0, 0, 1) 65%);

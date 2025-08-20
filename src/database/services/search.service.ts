@@ -30,16 +30,28 @@ export class SearchService {
             totalResults: 0
         };
 
-        const searchRegex = new RegExp(query, 'i');
+        // If no query is provided but filters are set, search without text filter
+        const searchRegex = query ? new RegExp(query, 'i') : null;
 
         // Search players
-        if (!filters.type || filters.type === 'players' || filters.type === 'all') {
-            const playerQuery: any = {
-                $or: [
+        if (filters.type === 'players' || filters.type === 'all') {
+            const playerQuery: any = {};
+            
+            if (searchRegex) {
+                playerQuery.$or = [
                     { name: searchRegex },
                     { 'userRef': { $exists: true } } // Include registered players
-                ]
-            };
+                ];
+            } else {
+                // If no search query and type is 'players', don't return any players
+                // This prevents showing all players when no search is performed
+                if (filters.type === 'players') {
+                    // Don't add any query, so no players will be returned
+                } else {
+                    // If type is 'all', get all players
+                    playerQuery['userRef'] = { $exists: true };
+                }
+            }
 
             const players = await PlayerModel.find(playerQuery)
                 .populate('userRef', 'name email')
@@ -57,15 +69,22 @@ export class SearchService {
         }
 
         // Search tournaments
-        if (!filters.type || filters.type === 'tournaments' || filters.type === 'all') {
-            const tournamentQuery: any = {
-                $or: [
+        if (filters.type === 'tournaments' || filters.type === 'all') {
+            const tournamentQuery: any = {};
+            
+            if (searchRegex) {
+                tournamentQuery.$or = [
                     { 'tournamentSettings.name': searchRegex },
                     { 'tournamentSettings.description': searchRegex },
                     { 'tournamentSettings.location': searchRegex },
                     { tournamentId: searchRegex }
-                ]
-            };
+                ];
+            } else {
+                // If no search query and type is 'tournaments', don't return any tournaments
+                if (filters.type === 'tournaments') {
+                    // Don't add any query, so no tournaments will be returned
+                }
+            }
 
             // Apply tournament filters
             if (filters.status) {
@@ -124,14 +143,21 @@ export class SearchService {
         }
 
         // Search clubs
-        if (!filters.type || filters.type === 'clubs' || filters.type === 'all') {
-            const clubQuery: any = {
-                $or: [
+        if (filters.type === 'clubs' || filters.type === 'all') {
+            const clubQuery: any = {};
+            
+            if (searchRegex) {
+                clubQuery.$or = [
                     { name: searchRegex },
                     { description: searchRegex },
                     { location: searchRegex }
-                ]
-            };
+                ];
+            } else {
+                // If no search query and type is 'clubs', don't return any clubs
+                if (filters.type === 'clubs') {
+                    // Don't add any query, so no clubs will be returned
+                }
+            }
 
             // Apply club filters
             if (filters.location) {

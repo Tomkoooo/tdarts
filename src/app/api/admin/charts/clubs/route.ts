@@ -13,17 +13,18 @@ export async function GET() {
     for (let i = 5; i >= 0; i--) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
-      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
       
       const monthName = date.toLocaleDateString('hu-HU', { month: 'short' });
       months.push(monthName);
       
       const count = await ClubModel.countDocuments({
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
-        isDeleted: { $ne: true }
+        isActive: { $ne: false }
       });
       
+      console.log(`Club chart - ${monthName}: ${count} clubs (${startOfMonth.toISOString()} to ${endOfMonth.toISOString()})`);
       data.push(count);
     }
 
