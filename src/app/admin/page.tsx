@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconUsers, IconBuilding, IconTrophy, IconAlertTriangle, IconTrendingUp, IconTrendingDown, IconRefresh } from '@tabler/icons-react';
+import { IconUsers, IconBuilding, IconTrophy, IconAlertTriangle, IconTrendingUp, IconTrendingDown, IconRefresh, IconSpeakerphone } from '@tabler/icons-react';
 
 interface DashboardStats {
   totalUsers: number;
@@ -279,6 +279,22 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
+      <div className="admin-glass-card">
+        <h3 className="text-lg font-semibold mb-4">Gyors Műveletek</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a href="/admin/announcements" className="admin-glass-card hover:scale-105 transition-transform cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/20 border border-primary/30">
+                <IconSpeakerphone className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Announcement Kezelő</h4>
+                <p className="text-sm text-base-content/60">Rendszerüzenetek</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ TODO:
 -havi díjas rendszer klubboknak - permission alapon / felhasználói vagy klub email?
 -klub oldalon jobb tagok megjelenítés - egyértelműbb tag felvétel
 -keresésnél naptár nézet
+-ligák elkészítése
 
 -socket server prodba
 
