@@ -75,14 +75,60 @@
 /* Force dark mode for all browsers and user preferences */
 html {
   color-scheme: dark !important;
+  background-color: #42010b !important;
+  color: #ffffff !important;
+}
+
+/* Safari specific dark mode fix */
+@media (prefers-color-scheme: light) {
+  html {
+    color-scheme: dark !important;
+    background-color: #42010b !important;
+    color: #ffffff !important;
+  }
+  
+  body {
+    background-color: #42010b !important;
+    color: #ffffff !important;
+  }
 }
 
 html, body{
-  background: #42010b;
-  background: linear-gradient(131deg,rgba(66, 1, 11, 1) 0%, rgba(20, 0, 0, 1) 65%);
-background-repeat: no-repeat;
+  background: #42010b !important;
+  background: linear-gradient(131deg,rgba(66, 1, 11, 1) 0%, rgba(20, 0, 0, 1) 65%) !important;
+  background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
+  color: #ffffff !important;
+}
+
+/* Safari and iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    background: #42010b !important;
+    background: linear-gradient(131deg,rgba(66, 1, 11, 1) 0%, rgba(20, 0, 0, 1) 65%) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  
+  * {
+    color-scheme: dark !important;
+  }
+}
+
+/* Additional Safari fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  html, body {
+    background: #42010b !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  
+  input, textarea, select {
+    background-color: #42010b !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
 }
 
 /* tDarts Tournament Theme - Reusable CSS System */

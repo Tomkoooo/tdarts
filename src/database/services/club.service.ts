@@ -619,4 +619,16 @@ export class ClubService {
     await club.save();
     return club;
   }
+
+  // --- SITEMAP SUPPORT ---
+  static async getAllClubs(): Promise<{ _id: string; updatedAt?: Date }[]> {
+    await connectMongo();
+    const clubs = await ClubModel.find({ isActive: { $ne: false } })
+      .select('_id updatedAt')
+      .lean();
+    return clubs.map((club: any) => ({
+      _id: club._id.toString(),
+      updatedAt: club.updatedAt
+    }));
+  }
 }

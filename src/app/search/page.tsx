@@ -894,7 +894,7 @@ const SearchPage: React.FC = () => {
             </section>
             <section>
               <h2 className="text-2xl font-bold mb-4">Népszerű Klubbok</h2>
-                    <div className="space-y-3">
+                    <div className="space-y-3 flex flex-col gap-2">
                 {popularClubs
                   .slice((clubsPage - 1) * itemsPerPage, clubsPage * itemsPerPage)
                   .map((club, index) => (

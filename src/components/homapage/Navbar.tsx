@@ -70,7 +70,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link href={isAdminPage ? "/admin" : "/"} className="flex items-center space-x-2">
             <Image src="/tdarts_fav.svg" width={40} height={40} alt="tDarts Logo" />
-            <span className="text-xl md:text-2xl font-bold text-gradient-red">
+            <span className="text-xl md:text-2xl font-bold text-primary">
               {isAdminPage ? "tDarts Admin" : "tDarts"}
             </span>
           </Link>
@@ -119,6 +119,13 @@ const Navbar = () => {
                 <IconDart className="w-5 h-5" />
                 <span>Saját klub</span>
                             </Link>
+                            {user.isAdmin && (
+                  <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="flex gap-2 items-center">
@@ -202,6 +209,13 @@ const Navbar = () => {
                 <IconDart className="w-5 h-5" />
                 <span>Saját klub</span>
                 </Link>
+                {user.isAdmin && (
+                  <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
               </div>
               ) : (
                 <div>

@@ -3088,4 +3088,16 @@ export class TournamentService {
             throw error;
         }
     }
+
+    // --- SITEMAP SUPPORT ---
+    static async getAllTournaments(): Promise<{ tournamentId: string; updatedAt?: Date }[]> {
+        await connectMongo();
+        const tournaments = await TournamentModel.find({ isActive: { $ne: false } })
+            .select('tournamentId updatedAt')
+            .lean();
+        return tournaments.map((tournament: any) => ({
+            tournamentId: tournament.tournamentId,
+            updatedAt: tournament.updatedAt
+        }));
+    }
 }
