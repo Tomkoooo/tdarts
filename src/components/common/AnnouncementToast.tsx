@@ -28,7 +28,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       case 'success':
         return {
           icon: IconCircleDashedCheck,
-          bgColor: 'bg-success/20',
+          bgColor: 'bg-success/40',
           borderColor: 'border-success/30',
           textColor: 'text-success',
           iconColor: 'text-success'
@@ -36,7 +36,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       case 'warning':
         return {
           icon: IconAlertTriangle,
-          bgColor: 'bg-warning/20',
+          bgColor: 'bg-warning/40',
           borderColor: 'border-warning/30',
           textColor: 'text-warning',
           iconColor: 'text-warning'
@@ -44,7 +44,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       case 'error':
         return {
           icon: IconAlertOctagon,
-          bgColor: 'bg-error/20',
+          bgColor: 'bg-error/40',
           borderColor: 'border-error/30',
           textColor: 'text-error',
           iconColor: 'text-error'
@@ -52,7 +52,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       default:
         return {
           icon: IconInfoCircle,
-          bgColor: 'bg-info/20',
+          bgColor: 'bg-info/40',
           borderColor: 'border-info/30',
           textColor: 'text-info',
           iconColor: 'text-info'
@@ -67,10 +67,16 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
+      // Hozzáadom a kilépő animációt
+      const toastElement = document.querySelector(`[data-toast-id="${announcement._id}"]`);
+      if (toastElement) {
+        toastElement.classList.remove('animate-slideInFromLeft');
+        toastElement.classList.add('animate-slideOutToLeft');
+      }
       // Animáció után töröljük a toast-ot
       setTimeout(() => {
         onClose(announcement._id);
-      }, 300);
+      }, 500);
     }, announcement.duration);
 
     const countdownTimer = setInterval(() => {
@@ -100,6 +106,17 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
     }
   };
 
+  const handleClose = () => {
+    setIsVisible(false);
+    // Hozzáadom a kilépő animációt
+    const toastElement = document.querySelector(`[data-toast-id="${announcement._id}"]`);
+    if (toastElement) {
+      toastElement.classList.remove('animate-slideInFromLeft');
+      toastElement.classList.add('animate-slideOutToLeft');
+    }
+    setTimeout(() => onClose(announcement._id), 500);
+  };
+
   if (!isVisible) {
     return null;
   }
@@ -107,9 +124,10 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
   return (
     <div className="max-w-md w-full">
       <div 
-        className={`${styles.bgColor} ${styles.borderColor} border rounded-lg shadow-lg backdrop-blur-sm transition-all duration-300 transform ${
+        data-toast-id={announcement._id}
+        className={`${styles.bgColor} ${styles.borderColor} border rounded-lg shadow-lg backdrop-blur-lg transition-all duration-500 transform ${
           isVisible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
-        }`}
+        } animate-slideInFromLeft`}
       >
         {/* Progress bar */}
         <div className="w-full h-1 bg-base-300/20 rounded-t-lg overflow-hidden">
@@ -129,10 +147,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
               </h3>
             </div>
             <button
-              onClick={() => {
-                setIsVisible(false);
-                setTimeout(() => onClose(announcement._id), 300);
-              }}
+              onClick={handleClose}
               className="text-base-content/60 hover:text-base-content transition-colors"
             >
               <IconX color='white'/>
@@ -149,7 +164,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
             <div className="flex justify-end">
               <button
                 onClick={handleButtonClick}
-                className={`btn btn-sm ${styles.textColor.replace('text-', 'btn-')} border-current`}
+                className={`btn btn-sm ${styles.textColor.replace('text-', 'btn-')} `}
               >
                 {announcement.buttonText}
               </button>

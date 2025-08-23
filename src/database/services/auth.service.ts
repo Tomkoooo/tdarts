@@ -3,7 +3,7 @@ import { UserDocument as IUserDocument } from '@/interface/user.interface';
 import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
-import { mailer } from '@/lib/mailer';
+import { sendEmail } from '@/lib/mailer';
 
 interface MailOptions {
   from?: string;
@@ -87,7 +87,7 @@ export class AuthService {
         </div>
       `,
     };
-    const emailSent = await mailer(mailOptions);
+    const emailSent = await sendEmail(mailOptions);
     if (!emailSent) {
       throw new BadRequestError('Failed to send verification email', 'auth', {
         email: user.email
@@ -143,7 +143,7 @@ export class AuthService {
         </div>
       `,
     };
-    const emailSent = await mailer(mailOptions);
+    const emailSent = await sendEmail(mailOptions);
     if (!emailSent) {
       throw new BadRequestError('Failed to send reset password email', 'auth', {
         email

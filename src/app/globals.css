@@ -978,6 +978,10 @@ html {
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     box-shadow: 0 4px 15px oklch(64% 0.2 132 / 0.3);
   }
 
@@ -994,6 +998,10 @@ html {
     color: oklch(100% 0 0);
     font-weight: 600;
     padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     border-radius: 0.75rem;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px oklch(60% 0.184 16 / 0.3);
@@ -1015,6 +1023,10 @@ html {
     border-radius: 0.75rem;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px oklch(68% 0.162 76 / 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .admin-btn-warning:hover {
@@ -1028,11 +1040,14 @@ html {
     background: linear-gradient(135deg, oklch(70% 0.16 233), oklch(60% 0.16 233));
     border: none;
     color: oklch(100% 0 0);
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px oklch(70% 0.16 233 / 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .admin-btn-info:hover {
@@ -1070,7 +1085,7 @@ html {
     font-weight: 600;
     padding: 0.25rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.5rem;
   }
 
   .admin-badge-warning {
@@ -1080,7 +1095,7 @@ html {
     font-weight: 600;
     padding: 0.25rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.5rem;
   }
 
   .admin-badge-info {
@@ -1090,7 +1105,7 @@ html {
     font-weight: 600;
     padding: 0.25rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.5rem;
   }
 
   .admin-badge-outline {
@@ -1136,6 +1151,37 @@ html {
     border-color: oklch(51% 0.18 16);
     box-shadow: 0 0 0 3px oklch(51% 0.18 16 / 0.2);
     background: oklch(15% 0.025 12 / 0.9);
+  }
+
+  /* Toast Animations */
+  @keyframes slideInFromLeft {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOutToLeft {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
+  .animate-slideInFromLeft {
+    animation: slideInFromLeft 0.5s ease-out forwards;
+  }
+
+  .animate-slideOutToLeft {
+    animation: slideOutToLeft 0.5s ease-in forwards;
   }
 
   /* Improved Button Styles */

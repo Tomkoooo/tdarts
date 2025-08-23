@@ -39,6 +39,11 @@ export class FeatureFlagService {
         return false;
       }
 
+      // Ha a fizetős modell ki van kapcsolva, akkor minden feature elérhető
+      if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
+        return true;
+      }
+
       // Speciális kezelés a detailedStatistics feature-hez
       if (featureName === 'detailedStatistics') {
         return club.subscriptionModel === 'pro';
@@ -61,16 +66,6 @@ export class FeatureFlagService {
    * Először ENV-t ellenőrzi, majd ha szükséges, adatbázist is
    */
   static async isFeatureEnabled(featureName: string, clubId?: string): Promise<boolean> {
-    // Speciális kezelés a detailedStatistics feature-hez
-    if (featureName === 'detailedStatistics') {
-      // Ha nincs clubId, akkor false
-      if (!clubId) {
-        return false;
-      }
-      // Mindig ellenőrizze az adatbázist a detailedStatistics esetén
-      return await this.isClubFeatureEnabled(clubId, featureName);
-    }
-
     // ENV alapú ellenőrzés
     const envEnabled = this.isEnvFeatureEnabled(featureName);
     
@@ -109,6 +104,11 @@ export class FeatureFlagService {
     // Ha nincs clubId, akkor csak ENV alapú ellenőrzés
     if (!clubId) {
       return envSocketEnabled;
+    }
+
+    // Ha a fizetős modell ki van kapcsolva, akkor mindenképp engedélyezett
+    if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
+      return true;
     }
 
     // Klub specifikus ellenőrzés - subscriptionModel === 'pro'

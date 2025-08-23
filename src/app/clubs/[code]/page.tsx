@@ -13,7 +13,7 @@ import EditClubModal from '@/components/club/EditClubModal';
 import PlayerSearch from '@/components/club/PlayerSearch';
 import QRCodeModal from '@/components/club/QRCodeModal';
 import ClubShareModal from '@/components/club/ClubShareModal';
-import { IconQrcode } from '@tabler/icons-react';
+import { IconDoorExit, IconQrcode, IconTrash } from '@tabler/icons-react';
 
 
 export default function ClubDetailPage() {
@@ -58,6 +58,7 @@ export default function ClubDetailPage() {
   const fetchClub = async () => {
     if (!code) return;
     const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`);
+    console.log(clubResponse.data);
     setClub(clubResponse.data);
   };
 
@@ -204,9 +205,16 @@ export default function ClubDetailPage() {
   const numPlayers = club.members.length;
 
   const tournaments = club.tournaments || [];
-  const pastTournaments = tournaments.filter(t => t.status === 'finished').length;
-  const ongoingTournaments = tournaments.filter(t => t.status === 'active').length;
-  const upcomingTournaments = tournaments.filter(t => t.status === 'pending').length;
+  const pastTournaments = tournaments.filter(t => t.tournamentSettings?.status === 'finished').length;
+  const ongoingTournaments = tournaments.filter(t => 
+    t.tournamentSettings?.status === 'group-stage' || t.tournamentSettings?.status === 'knockout'
+  ).length;
+  const upcomingTournaments = tournaments.filter(t => t.tournamentSettings?.status === 'pending').length;
+  
+  // Calculate total players across all tournaments
+  const totalTournamentPlayers = tournaments.reduce((total, tournament) => {
+    return total + (tournament.tournamentPlayers?.length || 0);
+  }, 0);
 
   // Summary section
   const summarySection = (
@@ -279,9 +287,13 @@ export default function ClubDetailPage() {
           <span className="text-3xl md:text-4xl font-bold text-accent">{pastTournaments}</span>
           <span className="text-sm md:text-base text-base-content/70 mt-1 md:mt-2">Befejezett verseny</span>
         </div>
-        <div className="bg-base-200 rounded-xl p-4 md:p-6 flex flex-col items-center sm:col-span-2 md:col-span-1">
+        <div className="bg-base-200 rounded-xl p-4 md:p-6 flex flex-col items-center">
           <span className="text-3xl md:text-4xl font-bold text-success">{ongoingTournaments + upcomingTournaments}</span>
           <span className="text-sm md:text-base text-base-content/70 mt-1 md:mt-2">Aktív vagy közelgő verseny</span>
+        </div>
+        <div className="bg-base-200 rounded-xl p-4 md:p-6 flex flex-col items-center">
+          <span className="text-3xl md:text-4xl font-bold text-warning">{totalTournamentPlayers}</span>
+          <span className="text-sm md:text-base text-base-content/70 mt-1 md:mt-2">Összes versenyző</span>
         </div>
       </div>
     </div>
@@ -310,13 +322,7 @@ export default function ClubDetailPage() {
       <div className="mb-4">
       </div>
       <TournamentList
-        tournaments={(club.tournaments || []).map((t: any) => ({
-          ...t,
-          userRole,
-          tournamentId: t.tournamentId,
-          status: t.status as 'finished' | 'active' | 'pending',
-          startDate: t.startDate,
-        }))}
+        tournaments={(club.tournaments || [])}
         userRole={userRole}
       />
     </div>
@@ -330,13 +336,15 @@ export default function ClubDetailPage() {
           <svg className="w-5 h-5 md:w-6 md:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           <span className="text-lg md:text-xl">Klub adatok szerkesztése</span>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button className="btn btn-primary btn-sm md:btn-md flex-1" onClick={() => setIsEditClubModalOpen(true)}>
-            Klub szerkesztése
-          </button>
-          <button className="btn btn-primary btn-sm md:btn-md flex-1" onClick={() => setIsCreateTournamentModalOpen(true)}>
-            Új verseny indítása
-          </button>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button className="btn btn-primary btn-xs flex-1" onClick={() => setIsEditClubModalOpen(true)}>
+              Klub szerkesztése
+            </button>
+            <button className="btn btn-primary btn-xs flex-1" onClick={() => setIsCreateTournamentModalOpen(true)}>
+              Új verseny indítása
+            </button>
+          </div>
         </div>
       </div>
       <EditClubModal
@@ -359,69 +367,71 @@ export default function ClubDetailPage() {
           <svg className="w-5 h-5 md:w-6 md:h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 3.13a4 4 0 01.88 7.75M8 3.13a4 4 0 00-.88 7.75" /></svg>
           <span className="text-lg md:text-xl">Tagok kezelése</span>
         </div>
-        <PlayerSearch
-          onPlayerSelected={handlePlayerSelected}
-          placeholder="Játékos keresése vagy hozzáadása..."
-          userRole={userRole}
-        />
-        <MemberList
-          club={club}
-          members={club.members as { _id: string; userRef?: string, role: 'admin' | 'moderator' | 'member'; name: string; username: string }[]}
-          userRole={userRole}
-          userId={user?._id}
-          clubId={club._id}
-          onAddMember={() => setIsAddPlayerModalOpen(true)}
-          onClubUpdated={fetchClub}
-          showActions={true}
-        />
+        <div className="space-y-4">
+          <PlayerSearch
+            onPlayerSelected={handlePlayerSelected}
+            placeholder="Játékos keresése vagy hozzáadása..."
+            userRole={userRole}
+          />
+          <MemberList
+            club={club}
+            members={club.members as { _id: string; userRef?: string, role: 'admin' | 'moderator' | 'member'; name: string; username: string }[]}
+            userRole={userRole}
+            userId={user?._id}
+            clubId={club._id}
+            onAddMember={() => setIsAddPlayerModalOpen(true)}
+            onClubUpdated={fetchClub}
+            showActions={true}
+          />
+        </div>
       </div>
       <div className="card-section">
         <div className="section-header">
           <svg className="w-5 h-5 md:w-6 md:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
           <span className="text-lg md:text-xl">Táblák kezelése</span>
         </div>
-        <div className="mb-3 text-sm md:text-base text-base-content/70">Összesen {club.boards?.length || 0} tábla</div>
-        <ul className="space-y-2 mb-4">
-          {club.boards && club.boards.length > 0 ? (
-            club.boards.map((board: any) => (
-              <li key={board.boardNumber} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 bg-base-200 rounded-lg">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="font-semibold text-sm md:text-base">#{board.boardNumber}</span>
-                  {board.name && <span className="text-xs md:text-sm text-base-content/60">{board.name}</span>}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <button 
-                    className="btn btn-xs btn-primary" 
-                    onClick={() => setQrCodeModal({ 
-                      isOpen: true, 
-                      boardNumber: board.boardNumber, 
-                      boardName: board.name 
-                    })}
-                    title="QR Kód megjelenítése"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                    </svg>
-                  </button>
-                  <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>
-                    <span className="hidden sm:inline">Szerkesztés</span>
-                    <span className="sm:hidden">Szerk</span>
-                  </button>
-                  <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>
-                    <span className="hidden sm:inline">Törlés</span>
-                    <span className="sm:hidden">Töröl</span>
-                  </button>
-                </div>
-              </li>
-            ))
-          ) : (
-            <li className="text-sm md:text-base text-base-content/60 p-3 bg-base-200 rounded-lg">Nincsenek táblák.</li>
-          )}
-        </ul>
-        <button className="btn btn-sm md:btn-md btn-primary w-full sm:w-auto" onClick={() => setBoardAddOpen(true)}>
-          <span className="hidden sm:inline">Új tábla hozzáadása</span>
-          <span className="sm:hidden">Új tábla</span>
-        </button>
+        <div className="space-y-4">
+          <div className="text-sm md:text-base text-base-content/70">Összesen {club.boards?.length || 0} tábla</div>
+          <ul className="space-y-2">
+            {club.boards && club.boards.length > 0 ? (
+              club.boards.map((board: any) => (
+                <li key={board.boardNumber} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 bg-base-200 rounded-lg">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="font-semibold text-sm md:text-base">#{board.boardNumber}</span>
+                    {board.name && <span className="text-xs md:text-sm text-base-content/60">{board.name}</span>}
+                  </div>
+                                    <div className="flex flex-wrap gap-1">
+                    <button 
+                      className="btn btn-xs btn-primary" 
+                      onClick={() => setQrCodeModal({ 
+                        isOpen: true, 
+                        boardNumber: board.boardNumber, 
+                        boardName: board.name 
+                      })}
+                      title="QR Kód megjelenítése"
+                    >
+                      <IconQrcode size={20}/>
+                    </button>
+                    <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>
+                      <span className="hidden sm:inline">Szerkesztés</span>
+                      <span className="sm:hidden">Szerk</span>
+                    </button>
+                    <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>
+                      <span className="hidden sm:inline">Törlés</span>
+                      <span className="sm:hidden">Töröl</span>
+                    </button>
+                  </div>
+                </li>
+              ))
+            ) : (
+              <li className="text-sm md:text-base text-base-content/60 p-3 bg-base-200 rounded-lg">Nincsenek táblák.</li>
+            )}
+          </ul>
+          <button className="btn btn-xs btn-primary w-full sm:w-auto" onClick={() => setBoardAddOpen(true)}>
+            <span className="hidden sm:inline">Új tábla hozzáadása</span>
+            <span className="sm:hidden">Új tábla</span>
+          </button>
+        </div>
         {/* Add Board Modal */}
         {boardAddOpen && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -434,9 +444,9 @@ export default function ClubDetailPage() {
                 value={newBoardName}
                 onChange={e => setNewBoardName(e.target.value)}
               />
-              <div className="flex gap-2 justify-end">
-                <button className="btn btn-ghost btn-sm" onClick={() => setBoardAddOpen(false)}>Mégse</button>
-                <button className="btn btn-primary btn-sm" onClick={handleAddBoard}>Hozzáadás</button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-end">
+                <button className="btn btn-ghost btn-xs w-full sm:w-auto" onClick={() => setBoardAddOpen(false)}>Mégse</button>
+                <button className="btn btn-primary btn-xs w-full sm:w-auto" onClick={handleAddBoard}>Hozzáadás</button>
               </div>
             </div>
           </div>
@@ -453,9 +463,9 @@ export default function ClubDetailPage() {
                 value={boardEdit.name}
                 onChange={e => setBoardEdit({ ...boardEdit, name: e.target.value })}
               />
-              <div className="flex gap-2 justify-end">
-                <button className="btn btn-ghost btn-sm" onClick={() => setBoardEdit(null)}>Mégse</button>
-                <button className="btn btn-primary btn-sm" onClick={handleEditBoard}>Mentés</button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-end">
+                <button className="btn btn-ghost btn-xs w-full sm:w-auto" onClick={() => setBoardEdit(null)}>Mégse</button>
+                <button className="btn btn-primary btn-xs w-full sm:w-auto" onClick={handleEditBoard}>Mentés</button>
               </div>
             </div>
           </div>
@@ -471,28 +481,26 @@ export default function ClubDetailPage() {
         boardName={qrCodeModal.boardName}
       />
       
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center vspace">
-        {userRole === 'admin' && (
-          <button
-            className="btn btn-primary btn-outline btn-sm md:btn-md flex items-center gap-2 w-full sm:w-auto"
-            onClick={handleDeactivateClub}
-          >
-            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Klub Deaktiválása
-          </button>
-        )}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+          {userRole === 'admin' && (
+            <button
+              className="btn btn-primary btn-outline btn-xs flex items-center gap-2 w-full sm:w-auto"
+              onClick={handleDeactivateClub}
+            >
+              <IconTrash size={20}/>
+              <span className="ml-1">Klub Deaktiválása</span>
+            </button>
+          )}
 
-        <button
-          className="btn btn-primary btn-outline btn-sm md:btn-md flex items-center gap-2 w-full sm:w-auto"
-          onClick={handleLeaveClub}
-        >
-          <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Kilépés a klubból
-        </button>
+          <button
+            className="btn btn-primary btn-outline btn-xs flex items-center gap-2 w-full sm:w-auto"
+            onClick={handleLeaveClub}
+          >
+            <IconDoorExit size={20}/>
+            <span className="ml-1">Kilépés a klubból</span>
+          </button>
+        </div>
       </div>
     </div>
   ) : null;

@@ -419,7 +419,7 @@ export class ClubService {
 
     // Lekérjük a klubhoz tartozó tornákat külön
     const tournaments = await TournamentModel.find({ clubId: club._id })
-      .select('_id tournamentId tournamentSettings code')
+      .select('_id tournamentId tournamentSettings code tournamentPlayers')
 
     // Válasz: minden szereplőhöz role mező
     // For members, always include name, userRef, and username ("vendég" if not registered)
@@ -466,6 +466,7 @@ export class ClubService {
         _id: t._id.toString(),
         tournamentSettings: t.tournamentSettings,
         tournamentId: t.tournamentId,
+        tournamentPlayers: t.tournamentPlayers || [],
       })),
     };
     return result;

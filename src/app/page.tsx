@@ -61,9 +61,16 @@ const HomePage = () => {
       <ParallaxBackground />
       
       {/* Announcements */}
-      <div className="fixed top-4 left-4 z-50 space-y-4">
+      <div className="fixed top-4 left-4 z-50 space-y-4 sm:top-4 sm:left-4 sm:bottom-auto bottom-4 left-4 top-auto">
         {activeAnnouncements.map((announcement, index) => (
-          <div key={announcement._id} style={{ zIndex: 50 - index }}>
+          <div 
+            key={announcement._id} 
+            style={{ 
+              zIndex: 50 - index,
+              animationDelay: `${index * 200}ms`
+            }}
+            className="animate-slideInFromLeft"
+          >
             <AnnouncementToast
               announcement={announcement}
               onClose={handleCloseAnnouncement}

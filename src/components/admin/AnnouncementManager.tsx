@@ -160,7 +160,7 @@ const AnnouncementManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="lg:flex-row flex-col justify-between items-start gap-3 lg:gap-0lg:items-center">
         <div>
           <h2 className="text-2xl font-bold text-base-content">Announcement Kezelő</h2>
           <p className="text-base-content/60">Rendszerüzenetek kezelése</p>
@@ -358,7 +358,7 @@ const AnnouncementManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 ml-4">
+                <div className="flex gap-2 ml-4 lg:flex-row flex-col">
                   <button
                     onClick={() => handleToggle(announcement._id)}
                     className="btn btn-sm btn-ghost"

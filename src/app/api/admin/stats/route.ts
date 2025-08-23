@@ -4,6 +4,7 @@ import { UserModel } from '@/database/models/user.model';
 import { ClubModel } from '@/database/models/club.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { LogModel } from '@/database/models/log.model';
+import { FeedbackModel } from '@/database/models/feedback.model';
 
 export async function GET() {
   try {
@@ -20,19 +21,23 @@ export async function GET() {
       totalClubs,
       totalTournaments,
       totalErrors,
+      totalFeedback,
       newUsersThisMonth,
       newClubsThisMonth,
       newTournamentsThisMonth,
       errorsThisMonth,
+      feedbackThisMonth,
       newUsersPreviousMonth,
       newClubsPreviousMonth,
       newTournamentsPreviousMonth,
-      errorsPreviousMonth
+      errorsPreviousMonth,
+      feedbackPreviousMonth
     ] = await Promise.all([
       UserModel.countDocuments(),
       ClubModel.countDocuments({ isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ isDeleted: { $ne: true } }),
       LogModel.countDocuments({ level: 'error' }),
+      FeedbackModel.countDocuments(),
       UserModel.countDocuments({ createdAt: { $gte: currentMonth } }),
       ClubModel.countDocuments({ 
         createdAt: { $gte: currentMonth },
@@ -46,6 +51,7 @@ export async function GET() {
         level: 'error',
         timestamp: { $gte: currentMonth }
       }),
+      FeedbackModel.countDocuments({ createdAt: { $gte: currentMonth } }),
       UserModel.countDocuments({ createdAt: { $gte: previousMonth, $lt: currentMonth } }),
       ClubModel.countDocuments({ 
         createdAt: { $gte: previousMonth, $lt: currentMonth },
@@ -58,7 +64,8 @@ export async function GET() {
       LogModel.countDocuments({ 
         level: 'error',
         timestamp: { $gte: previousMonth, $lt: currentMonth }
-      })
+      }),
+      FeedbackModel.countDocuments({ createdAt: { $gte: previousMonth, $lt: currentMonth } })
     ]);
 
     // Calculate growth percentages
@@ -72,14 +79,17 @@ export async function GET() {
       totalClubs,
       totalTournaments,
       totalErrors,
+      totalFeedback,
       newUsersThisMonth,
       newClubsThisMonth,
       newTournamentsThisMonth,
       errorsThisMonth,
+      feedbackThisMonth,
       userGrowth: calculateGrowth(newUsersThisMonth, newUsersPreviousMonth),
       clubGrowth: calculateGrowth(newClubsThisMonth, newClubsPreviousMonth),
       tournamentGrowth: calculateGrowth(newTournamentsThisMonth, newTournamentsPreviousMonth),
-      errorGrowth: calculateGrowth(errorsThisMonth, errorsPreviousMonth)
+      errorGrowth: calculateGrowth(errorsThisMonth, errorsPreviousMonth),
+      feedbackGrowth: calculateGrowth(feedbackThisMonth, feedbackPreviousMonth)
     };
 
     return NextResponse.json(stats);

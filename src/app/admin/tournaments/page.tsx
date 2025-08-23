@@ -4,10 +4,12 @@ import axios from 'axios';
 import { IconTrophy, IconUsers, IconCalendar, IconExternalLink, IconSearch, IconRefresh, IconFilter, IconBuilding } from '@tabler/icons-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import DailyChart from '@/components/admin/DailyChart';
 
 interface AdminTournament {
   _id: string;
   name: string;
+  tournamentId: string;
   description?: string;
   status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout';
   tournamentType: 'group' | 'knockout' | 'group_knockout';
@@ -170,6 +172,14 @@ export default function AdminTournamentsPage() {
         </div>
       </div>
 
+      {/* Daily Chart */}
+      <DailyChart
+        title="Versenyek napi létrehozása"
+        apiEndpoint="/api/admin/charts/tournaments/daily"
+        color="accent"
+        icon="🏆"
+      />
+
       {/* Filters */}
       <div className="admin-glass-card">
         <div className="flex flex-col gap-4">
@@ -268,7 +278,7 @@ export default function AdminTournamentsPage() {
                   </td>
                   <td>
                     <Link
-                      href={`/tournaments/${tournament._id}`}
+                      href={`/tournaments/${tournament.tournamentId}`}
                       className="admin-btn-primary text-xs px-3 py-1 gap-2 inline-flex items-center"
                       target="_blank"
                     >

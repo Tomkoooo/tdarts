@@ -1,21 +1,25 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconUsers, IconBuilding, IconTrophy, IconAlertTriangle, IconTrendingUp, IconTrendingDown, IconRefresh, IconSpeakerphone } from '@tabler/icons-react';
+import { IconUsers, IconBuilding, IconTrophy, IconAlertTriangle, IconTrendingUp, IconTrendingDown, IconRefresh, IconSpeakerphone, IconCheck, IconBug } from '@tabler/icons-react';
+import Link from 'next/link';
 
 interface DashboardStats {
   totalUsers: number;
   totalClubs: number;
   totalTournaments: number;
   totalErrors: number;
+  totalFeedback: number;
   newUsersThisMonth: number;
   newClubsThisMonth: number;
   newTournamentsThisMonth: number;
   errorsThisMonth: number;
+  feedbackThisMonth: number;
   userGrowth: number;
   clubGrowth: number;
   tournamentGrowth: number;
   errorGrowth: number;
+  feedbackGrowth: number;
 }
 
 interface ChartData {
@@ -34,22 +38,25 @@ export default function AdminDashboard() {
   const [userChartData, setUserChartData] = useState<ChartData | null>(null);
   const [clubChartData, setClubChartData] = useState<ChartData | null>(null);
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null);
+  const [feedbackChartData, setFeedbackChartData] = useState<ChartData | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsResponse, userChartResponse, clubChartResponse, tournamentChartResponse] = await Promise.all([
+      const [statsResponse, userChartResponse, clubChartResponse, tournamentChartResponse, feedbackChartResponse] = await Promise.all([
         axios.get('/api/admin/stats'),
         axios.get('/api/admin/charts/users'),
         axios.get('/api/admin/charts/clubs'),
-        axios.get('/api/admin/charts/tournaments')
+        axios.get('/api/admin/charts/tournaments'),
+        axios.get('/api/admin/charts/feedback')
       ]);
 
       setStats(statsResponse.data);
       setUserChartData(userChartResponse.data);
       setClubChartData(clubChartResponse.data);
       setTournamentChartData(tournamentChartResponse.data);
+      setFeedbackChartData(feedbackChartResponse.data);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -257,10 +264,19 @@ export default function AdminDashboard() {
           monthlyValue={stats.errorsThisMonth}
           monthlyLabel="Ebben a hónapban"
         />
+        <StatCard
+          title="Összes Visszajelzés"
+          value={stats.totalFeedback}
+          change={stats.feedbackGrowth}
+          icon={IconBug}
+          color="primary"
+          monthlyValue={stats.feedbackThisMonth}
+          monthlyLabel="Ebben a hónapban"
+        />
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         <ChartCard
           title="Felhasználó Regisztrációk"
           data={userChartData}
@@ -276,13 +292,18 @@ export default function AdminDashboard() {
           data={tournamentChartData}
           color="primary"
         />
+        <ChartCard
+          title="Visszajelzések"
+          data={feedbackChartData}
+          color="primary"
+        />
       </div>
 
       {/* Quick Actions */}
       <div className="admin-glass-card">
         <h3 className="text-lg font-semibold mb-4">Gyors Műveletek</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <a href="/admin/announcements" className="admin-glass-card hover:scale-105 transition-transform cursor-pointer">
+          <Link href="/admin/announcements" className="admin-glass-card hover:scale-105 transition-transform cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-primary/20 border border-primary/30">
                 <IconSpeakerphone className="w-5 h-5 text-primary" />
@@ -292,7 +313,29 @@ export default function AdminDashboard() {
                 <p className="text-sm text-base-content/60">Rendszerüzenetek</p>
               </div>
             </div>
-          </a>
+          </Link>
+          <Link href="/admin/todos" className="admin-glass-card hover:scale-105 transition-transform cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/20 border border-primary/30">
+                <IconCheck className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Todo Kezelő</h4>
+                <p className="text-sm text-base-content/60">Feladatok és eszrevételek</p>
+              </div>
+            </div>
+          </Link>
+          <Link href="/admin/feedback" className="admin-glass-card hover:scale-105 transition-transform cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/20 border border-primary/30">
+                <IconBug className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Hibabejelentések</h4>
+                <p className="text-sm text-base-content/60">Felhasználói visszajelzések</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

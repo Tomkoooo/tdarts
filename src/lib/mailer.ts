@@ -19,7 +19,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export async function mailer(MailOptions: MailOptions) {
+export async function sendEmail(MailOptions: MailOptions) {
     // send mail with defined transport object
     const info = await transporter.sendMail({
       from: MailOptions.from ? MailOptions.from : '"Bull Tackle Fishing Store" <info@bullfishingstore.com>', // sender address

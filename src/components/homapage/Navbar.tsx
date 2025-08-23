@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -51,12 +51,14 @@ const Navbar = () => {
     { name: "Versenyek", icon: IconTrophy, href: "/admin/tournaments" },
     { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
     { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
+    { name: "Visszajelzés", icon: IconMessageCircle, href: "/admin/feedback" },
+    { name: "Todos", icon: IconSettings, href: "/admin/todos" },
   ] : [
     { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
-    { name: "Játékosok", icon: IconUser, href: "/search?type=players" },
     { name: "Klubbok", icon: IconUsers, href: "/search?type=clubs" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
+
   ];
 
   return (
@@ -65,13 +67,13 @@ const Navbar = () => {
         isScrolled || isMobileMenuOpen ? "bg-gradient-to-r from-white/10 via-white/15 to-white/10 backdrop-blur-2xl border-white/20 shadow-lg" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-1">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href={isAdminPage ? "/admin" : "/"} className="flex items-center space-x-2">
             <Image src="/tdarts_fav.svg" width={40} height={40} alt="tDarts Logo" />
             <span className="text-xl md:text-2xl font-bold text-primary">
-              {isAdminPage ? "tDarts Admin" : "tDarts"}
+              {isAdminPage ? "" : "tDarts"}
             </span>
           </Link>
 
@@ -116,9 +118,13 @@ const Navbar = () => {
                   <span>{user.username}</span>
                 </Link>
                 <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline push-button">
-                <IconDart className="w-5 h-5" />
-                <span>Saját klub</span>
-                            </Link>
+                  <IconDart className="w-5 h-5" />
+                  <span>Saját klub</span>
+                </Link>
+                <Link href="/feedback" className="flex items-center space-x-2 btn btn-outline push-button">
+                  <IconBug className="w-5 h-5" />
+                  <span>Hibabejelentés</span>
+                </Link>
                             {user.isAdmin && (
                   <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -208,6 +214,10 @@ const Navbar = () => {
                 >
                 <IconDart className="w-5 h-5" />
                 <span>Saját klub</span>
+                </Link>
+                <Link href="/feedback" className="flex items-center space-x-2 btn btn-outline push-button">
+                  <IconBug className="w-5 h-5" />
+                  <span>Hibabejelentés</span>
                 </Link>
                 {user.isAdmin && (
                   <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { IconSettings, IconDatabase, IconServer, IconRefresh, IconClock, IconCpu, IconSection, IconFile, IconCheck, IconX } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+import DailyChart from '@/components/admin/DailyChart';
 
 interface SystemInfo {
   version: string;
@@ -130,6 +131,14 @@ export default function AdminSettingsPage() {
           <p className="text-2xl font-bold text-primary">{systemInfo.database.documents.toLocaleString()}</p>
         </div>
       </div>
+
+      {/* Daily Chart */}
+      <DailyChart
+        title="Rendszer használat (napi)"
+        apiEndpoint="/api/admin/stats"
+        color="info"
+        icon="⚙️"
+      />
 
       {/* Detailed Information */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
