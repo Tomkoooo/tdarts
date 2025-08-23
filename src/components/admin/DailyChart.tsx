@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { IconTrendingUp, IconTrendingDown, IconRefresh } from '@tabler/icons-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DailyChartProps {
   title: string;
@@ -10,13 +11,18 @@ interface DailyChartProps {
   icon?: React.ReactNode;
 }
 
-interface DailyData {
-  date: string;
-  count: number;
+interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor: string;
+  }[];
 }
 
 export default function DailyChart({ title, apiEndpoint, color = 'primary', icon }: DailyChartProps) {
-  const [data, setData] = useState<DailyData[]>([]);
+  const [data, setData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +31,51 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
       setLoading(true);
       setError(null);
       const response = await axios.get(apiEndpoint);
-      setData(response.data.data);
+      console.log('API response:', response.data);
+      
+      // Handle different API response formats
+      if (response.data && response.data.labels && response.data.datasets) {
+        // New ChartData format
+        setData(response.data);
+      } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        // API response with success wrapper: {success: true, data: Array}
+        const apiData = response.data.data;
+        const labels = apiData.map((item: any) => item.date || item.formattedDate || formatDate(item.date));
+        const data = apiData.map((item: any) => item.count || 0);
+        
+        const chartData = {
+          labels: labels,
+          datasets: [{
+            label: title,
+            data: data,
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: 'rgb(59, 130, 246)'
+          }]
+        };
+        
+        console.log('Converted API response to ChartData format:', chartData);
+        setData(chartData);
+      } else if (Array.isArray(response.data)) {
+        // Direct array format
+        const labels = response.data.map((item: any) => item.date || item.formattedDate || formatDate(item.date));
+        const data = response.data.map((item: any) => item.count || 0);
+        
+        const chartData = {
+          labels: labels,
+          datasets: [{
+            label: title,
+            data: data,
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: 'rgb(59, 130, 246)'
+          }]
+        };
+        
+        console.log('Converted array to ChartData format:', chartData);
+        setData(chartData);
+      } else {
+        console.error('Unknown data format:', response.data);
+        setError('Ismeretlen adatformátum');
+      }
     } catch (error) {
       console.error(`Error fetching ${title} data:`, error);
       setError('Hiba történt az adatok betöltésekor');
@@ -46,32 +96,28 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
     });
   };
 
-  // Csak minden 5. napot jelenítünk meg, hogy olvasható legyen
-  const shouldShowDate = (index: number) => {
-    return index % 5 === 0 || index === data.length - 1;
-  };
-
   // Debug: log the data
   useEffect(() => {
-    console.log('DailyChart data:', { title, data: data.slice(0, 5), totalCount });
+    console.log('DailyChart data:', { title, data: data?.datasets?.[0]?.data?.slice(0, 5), totalCount });
   }, [data, title]);
 
   const getTotalCount = () => {
-    return data.reduce((sum, item) => sum + item.count, 0);
+    if (!data?.datasets?.[0]?.data) return 0;
+    return data.datasets[0].data.reduce((sum, count) => sum + count, 0);
   };
 
   const getAverageCount = () => {
-    if (data.length === 0) return 0;
-    return Math.round(getTotalCount() / data.length * 10) / 10;
+    if (!data?.datasets?.[0]?.data || data.datasets[0].data.length === 0) return 0;
+    return Math.round(getTotalCount() / data.datasets[0].data.length * 10) / 10;
   };
 
   const getTrend = () => {
-    if (data.length < 2) return 0;
-    const firstHalf = data.slice(0, Math.floor(data.length / 2));
-    const secondHalf = data.slice(Math.floor(data.length / 2));
+    if (!data?.datasets?.[0]?.data || data.datasets[0].data.length < 2) return 0;
+    const firstHalf = data.datasets[0].data.slice(0, Math.floor(data.datasets[0].data.length / 2));
+    const secondHalf = data.datasets[0].data.slice(Math.floor(data.datasets[0].data.length / 2));
     
-    const firstHalfAvg = firstHalf.reduce((sum, item) => sum + item.count, 0) / firstHalf.length;
-    const secondHalfAvg = secondHalf.reduce((sum, item) => sum + item.count, 0) / secondHalf.length;
+    const firstHalfAvg = firstHalf.reduce((sum, count) => sum + count, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, count) => sum + count, 0) / secondHalf.length;
     
     if (firstHalfAvg === 0) return 0;
     return Math.round(((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100);
@@ -80,6 +126,43 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
   const trend = getTrend();
   const totalCount = getTotalCount();
   const averageCount = getAverageCount();
+
+  // Chart colors
+  const getChartColors = () => {
+    switch (color) {
+      case 'primary':
+        return { fill: 'rgba(59, 130, 246, 0.1)', stroke: 'rgb(59, 130, 246)', gradient: 'rgba(59, 130, 246, 0.3)' };
+      case 'secondary':
+        return { fill: 'rgba(139, 92, 246, 0.1)', stroke: 'rgb(139, 92, 246)', gradient: 'rgba(139, 92, 246, 0.3)' };
+      case 'accent':
+        return { fill: 'rgba(236, 72, 153, 0.1)', stroke: 'rgb(236, 72, 153)', gradient: 'rgba(236, 72, 153, 0.3)' };
+      case 'success':
+        return { fill: 'rgba(34, 197, 94, 0.1)', stroke: 'rgb(34, 197, 94)', gradient: 'rgba(34, 197, 94, 0.3)' };
+      case 'warning':
+        return { fill: 'rgba(245, 158, 11, 0.1)', stroke: 'rgb(245, 158, 11)', gradient: 'rgba(245, 158, 11, 0.3)' };
+      case 'error':
+        return { fill: 'rgba(239, 68, 68, 0.1)', stroke: 'rgb(239, 68, 68)', gradient: 'rgba(239, 68, 68, 0.3)' };
+      case 'info':
+        return { fill: 'rgba(6, 182, 212, 0.1)', stroke: 'rgb(6, 182, 212)', gradient: 'rgba(6, 182, 212, 0.3)' };
+      default:
+        return { fill: 'rgba(59, 130, 246, 0.1)', stroke: 'rgb(59, 130, 246)', gradient: 'rgba(59, 130, 246, 0.3)' };
+    }
+  };
+
+  const chartColors = getChartColors();
+
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-base-200 border border-base-300 rounded-lg p-3 shadow-lg">
+          <p className="text-sm font-medium text-base-content">{`Dátum: ${formatDate(label)}`}</p>
+          <p className="text-sm text-primary font-semibold">{`Mennyiség: ${payload[0].value}`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   if (loading) {
     return (
@@ -110,6 +193,13 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
       </div>
     );
   }
+
+      // Format data for recharts
+    const chartData = data?.labels?.map((label, index) => ({
+      date: label,
+      count: data.datasets[0].data[index] || 0,
+      formattedDate: label
+    })) || [];
 
   return (
     <div className="admin-glass-card">
@@ -153,54 +243,51 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="relative h-64">
-        <div className="flex items-end justify-between h-full gap-1">
-          {data.map((item, index) => {
-            const maxCount = Math.max(...data.map(d => d.count));
-            const height = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
-            const minHeight = 4; // Minimum oszlop magasság
+      {/* Modern Chart with recharts */}
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+            <defs>
+              <linearGradient id={`color-${color}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.stroke} stopOpacity={0.3}/>
+                <stop offset="95%" stopColor={chartColors.stroke} stopOpacity={0.05}/>
+              </linearGradient>
+            </defs>
             
-            return (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div className="text-xs text-base-content/60 mb-1 text-center">
-                  {item.count}
-                </div>
-                <div
-                  className={`w-full rounded-t transition-all duration-300 hover:opacity-80 ${
-                    color === 'primary' ? 'bg-primary' :
-                    color === 'secondary' ? 'bg-secondary' :
-                    color === 'accent' ? 'bg-accent' :
-                    color === 'success' ? 'bg-success' :
-                    color === 'warning' ? 'bg-warning' :
-                    color === 'error' ? 'bg-error' :
-                    color === 'info' ? 'bg-info' :
-                    'bg-primary'
-                  }`}
-                  style={{ 
-                    height: `${Math.max(height, minHeight)}%`,
-                    minHeight: '4px'
-                  }}
-                  title={`${formatDate(item.date)}: ${item.count}`}
-                />
-                <div className="text-xs text-base-content/40 mt-1 text-center">
-                  {shouldShowDate(index) ? formatDate(item.date) : ''}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Grid lines */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[0, 25, 50, 75, 100].map((line) => (
-            <div
-              key={line}
-              className="absolute w-full border-t border-base-300"
-              style={{ top: `${100 - line}%` }}
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="rgba(156, 163, 175, 0.2)" 
+              vertical={false}
             />
-          ))}
-        </div>
+            
+            <XAxis 
+              dataKey="formattedDate" 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
+              tickFormatter={(value, index) => index % 5 === 0 ? value : ''}
+            />
+            
+            <YAxis 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
+              tickFormatter={(value) => value}
+            />
+            
+            <Tooltip content={<CustomTooltip />} />
+            
+            <Area
+              type="monotone"
+              dataKey="count"
+              stroke={chartColors.stroke}
+              strokeWidth={2}
+              fill={`url(#color-${color})`}
+              dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: chartColors.stroke, strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Legend */}

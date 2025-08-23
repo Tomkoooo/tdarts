@@ -29,15 +29,10 @@ interface ErrorStats {
   recentErrors: ErrorLog[];
 }
 
-interface DailyErrors {
-  date: string;
-  count: number;
-  categories: Record<string, number>;
-}
+
 
 export default function AdminErrorsPage() {
   const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
-  const [dailyErrors, setDailyErrors] = useState<DailyErrors[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
@@ -46,13 +41,11 @@ export default function AdminErrorsPage() {
   const fetchErrorData = async () => {
     try {
       setLoading(true);
-      const [statsResponse, dailyResponse] = await Promise.all([
+      const [statsResponse] = await Promise.all([
         axios.get('/api/admin/errors/stats'),
-        axios.get(`/api/admin/errors/daily?days=${dateRange}`)
       ]);
 
       setErrorStats(statsResponse.data);
-      setDailyErrors(dailyResponse.data);
     } catch (error) {
       console.error('Error fetching error data:', error);
       toast.error('Hiba történt az adatok betöltése során');
@@ -212,46 +205,6 @@ export default function AdminErrorsPage() {
             </select>
           </div>
         </div>
-      </div>
-
-      {/* Daily Chart */}
-      <div className="admin-glass-card">
-        <h3 className="text-lg font-semibold text-base-content mb-4">Napi Hibák</h3>
-        {dailyErrors.length > 0 ? (
-          <div className="h-64">
-            <div className="w-full h-full flex items-end justify-between gap-1">
-              {dailyErrors.map((day) => {
-                const maxCount = Math.max(...dailyErrors.map(d => d.count), 1);
-                return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center">
-                    <div className="w-full flex flex-col items-center">
-                      <div 
-                        className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80"
-                        style={{ 
-                          height: `${(day.count / maxCount) * 200}px`,
-                          minHeight: '4px',
-                          backgroundColor: 'rgb(59, 130, 246)',
-                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-                        }}
-                      ></div>
-                      <span className="text-xs mt-2 text-base-content/60 font-medium">
-                        {new Date(day.date).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })}
-                      </span>
-                      <span className="text-xs text-base-content/40">{day.count}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-base-content/20 text-6xl mb-4">📊</div>
-              <p className="text-base-content/60">Nincs hiba adat a kiválasztott időszakra</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Category and Level Breakdown */}

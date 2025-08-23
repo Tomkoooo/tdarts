@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
+import { connectMongo } from '@/lib/mongoose';
+import { FeedbackModel } from '@/database/models/feedback.model';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +14,8 @@ export async function GET(request: NextRequest) {
     if (!user || !user.isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    await connectMongo();
 
     // Get feedback data for the last 12 months
     const startDate = new Date();
@@ -33,8 +37,14 @@ export async function GET(request: NextRequest) {
       const monthName = monthStart.toLocaleDateString('hu-HU', { month: 'short' });
       months.push(monthName);
 
-      // Mock data for now - replace with actual database query
-      const count = Math.floor(Math.random() * 20) + 1; // Random number between 1-20
+      // Query actual feedback data from database
+      const count = await FeedbackModel.countDocuments({
+        createdAt: {
+          $gte: monthStart,
+          $lte: monthEnd
+        }
+      });
+      
       data.push(count);
     }
 

@@ -74,7 +74,19 @@ export async function GET(request: NextRequest) {
       }, {} as Record<string, number>)
     }));
 
-    return NextResponse.json(formattedErrors);
+    // Return in ChartData format for DailyChart component
+    const labels = formattedErrors.map(day => new Date(day.date).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' }));
+    const data = formattedErrors.map(day => day.count);
+
+    return NextResponse.json({
+      labels: labels,
+      datasets: [{
+        label: 'Hibák',
+        data: data,
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        borderColor: 'rgb(239, 68, 68)'
+      }]
+    });
 
   } catch (error) {
     console.error('Error fetching daily errors:', error);

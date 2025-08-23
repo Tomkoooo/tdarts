@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { IconUsers, IconBuilding, IconTrophy, IconAlertTriangle, IconTrendingUp, IconTrendingDown, IconRefresh, IconSpeakerphone, IconCheck, IconBug } from '@tabler/icons-react';
 import Link from 'next/link';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardStats {
   totalUsers: number;
@@ -39,24 +40,46 @@ export default function AdminDashboard() {
   const [clubChartData, setClubChartData] = useState<ChartData | null>(null);
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null);
   const [feedbackChartData, setFeedbackChartData] = useState<ChartData | null>(null);
+  const [errorChartData, setErrorChartData] = useState<ChartData | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsResponse, userChartResponse, clubChartResponse, tournamentChartResponse, feedbackChartResponse] = await Promise.all([
+      const [statsResponse, userChartResponse, clubChartResponse, tournamentChartResponse, feedbackChartResponse, errorChartResponse] = await Promise.all([
         axios.get('/api/admin/stats'),
         axios.get('/api/admin/charts/users'),
         axios.get('/api/admin/charts/clubs'),
         axios.get('/api/admin/charts/tournaments'),
-        axios.get('/api/admin/charts/feedback')
+        axios.get('/api/admin/charts/feedback'),
+        axios.get('/api/admin/charts/errors')
       ]);
 
       setStats(statsResponse.data);
-      setUserChartData(userChartResponse.data);
-      setClubChartData(clubChartResponse.data);
-      setTournamentChartData(tournamentChartResponse.data);
-      setFeedbackChartData(feedbackChartResponse.data);
+      
+      // Handle API responses that might have success wrapper
+      const extractChartData = (response: any) => {
+        if (response.data && response.data.success && response.data.data) {
+          return response.data.data;
+        }
+        return response.data;
+      };
+      
+      setUserChartData(extractChartData(userChartResponse));
+      setClubChartData(extractChartData(clubChartResponse));
+      setTournamentChartData(extractChartData(tournamentChartResponse));
+      setFeedbackChartData(extractChartData(feedbackChartResponse));
+      setErrorChartData(extractChartData(errorChartResponse));
+      
+      // Debug info
+      console.log('Dashboard data fetched:', {
+        userChart: userChartResponse.data,
+        clubChart: clubChartResponse.data,
+        tournamentChart: tournamentChartResponse.data,
+        feedbackChart: feedbackChartResponse.data,
+        errorChart: errorChartResponse.data
+      });
+      
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -157,38 +180,111 @@ export default function AdminDashboard() {
     data: ChartData | null; 
     color?: string;
   }) => {
-    const maxValue = data ? Math.max(...data.datasets[0].data, 1) : 1;
-    const chartColor = 'rgb(59, 130, 246)'; // Mindig primary szín
-    console.log(color);
+    // Custom tooltip
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (active && payload && payload.length) {
+        return (
+          <div className="bg-base-200 border border-base-300 rounded-lg p-3 shadow-lg">
+            <p className="text-sm font-medium text-base-content">{`Hónap: ${label}`}</p>
+            <p className="text-sm text-primary font-semibold">{`Mennyiség: ${payload[0].value}`}</p>
+          </div>
+        );
+      }
+      return null;
+    };
+
+    // Format data for recharts with safety checks
+    const chartData = data && data.datasets && data.datasets[0] && data.datasets[0].data 
+      ? data.labels.map((label, index) => ({
+          month: label,
+          count: data.datasets[0].data[index] || 0
+        }))
+      : [];
+
+    // Get chart colors based on color prop
+    const getChartColors = () => {
+      switch (color) {
+        case 'error':
+          return { stroke: 'rgb(239, 68, 68)', gradient: 'rgba(239, 68, 68, 0.3)', fill: 'rgba(239, 68, 68, 0.05)' };
+        case 'warning':
+          return { stroke: 'rgb(245, 158, 11)', gradient: 'rgba(245, 158, 11, 0.3)', fill: 'rgba(245, 158, 11, 0.05)' };
+        case 'success':
+          return { stroke: 'rgb(34, 197, 94)', gradient: 'rgba(34, 197, 94, 0.3)', fill: 'rgba(34, 197, 94, 0.05)' };
+        case 'info':
+          return { stroke: 'rgb(6, 182, 212)', gradient: 'rgba(6, 182, 212, 0.3)', fill: 'rgba(6, 182, 212, 0.05)' };
+        default:
+          return { stroke: 'rgb(59, 130, 246)', gradient: 'rgba(59, 130, 246, 0.3)', fill: 'rgba(59, 130, 246, 0.05)' };
+      }
+    };
+
+    const chartColors = getChartColors();
+
+    // Debug info
+    console.log(`ChartCard ${title}:`, { 
+      hasData: !!data, 
+      hasDatasets: !!data?.datasets, 
+      hasFirstDataset: !!data?.datasets?.[0], 
+      hasDataArray: !!data?.datasets?.[0]?.data, 
+      dataLength: data?.datasets?.[0]?.data?.length,
+      labels: data?.labels,
+      data: data?.datasets?.[0]?.data
+    });
 
     return (
       <div className="admin-glass-card transition-all duration-300">
         <h3 className="text-lg font-semibold text-base-content mb-4">{title}</h3>
-        {data && data.datasets[0].data.length > 0 ? (
-          <div className="h-64">
-            <div className="w-full h-full flex items-end justify-between gap-1">
-              {data.datasets[0].data.map((value, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="w-full flex flex-col items-center">
-                    <div 
-                      className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80"
-                      style={{ 
-                        height: `${(value / maxValue) * 200}px`,
-                        minHeight: '4px',
-                        backgroundColor: chartColor,
-                        boxShadow: `0 4px 12px ${chartColor}40`
-                      }}
-                    ></div>
-                    <span className="text-xs mt-2 text-base-content/60 font-medium">
-                      {data.labels[index]}
-                    </span>
-                    <span className="text-xs text-base-content/40 mt-1">
-                      {value}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+        
+        {/* Debug info */}
+        <div className="mb-4 p-3 bg-base-200 rounded text-xs">
+          <p><strong>Debug:</strong> {data ? 'Adatok betöltve' : 'Nincs adat'}</p>
+          <p>Labels: {data?.labels?.length || 0}</p>
+          <p>Data: {data?.datasets?.[0]?.data?.length || 0}</p>
+          <p>Chart data: {chartData.length}</p>
+        </div>
+        
+        {data && data.datasets && data.datasets[0] && data.datasets[0].data && data.datasets[0].data.length > 0 ? (
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <defs>
+                  <linearGradient id={`color-${title}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColors.gradient} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={chartColors.fill} stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
+                
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="rgba(156, 163, 175, 0.2)" 
+                  vertical={false}
+                />
+                
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'rgba(156, 163, 175, 0.8)' }}
+                />
+                
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'rgba(156, 163, 175, 0.8)' }}
+                />
+                
+                <Tooltip content={<CustomTooltip />} />
+                
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke={chartColors.stroke}
+                  strokeWidth={2}
+                  fill={`url(#color-${title})`}
+                  dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 3 }}
+                  activeDot={{ r: 5, stroke: chartColors.stroke, strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center">
@@ -291,6 +387,11 @@ export default function AdminDashboard() {
           title="Verseny Indítások"
           data={tournamentChartData}
           color="primary"
+        />
+        <ChartCard
+          title="Hibák"
+          data={errorChartData}
+          color="error"
         />
         <ChartCard
           title="Visszajelzések"

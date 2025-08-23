@@ -6,11 +6,11 @@ export async function GET() {
   try {
     await connectMongo();
     
-    // Get data for the last 6 months
+    // Get data for the last 12 months
     const months = [];
     const data = [];
     
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 11; i >= 0; i--) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
       const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
