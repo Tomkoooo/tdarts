@@ -37,7 +37,28 @@ export interface Club {
   updatedAt: Date;
   isActive: boolean;
   // Tournaments (minimal info for list)
-  tournaments?: { _id: string; code: string; name: string; status: 'pending' | 'active' | 'finished'; startDate?: string }[];
+  tournaments?: { 
+    _id: string; 
+    tournamentId: string; 
+    tournamentSettings: {
+      name: string;
+      startDate: string;
+      location?: string;
+      type?: 'amateur' | 'open';
+      entryFee?: number;
+      maxPlayers?: number;
+      registrationDeadline?: string;
+      status: 'pending' | 'finished' | 'group-stage' | 'knockout';
+      description?: string;
+      knockoutMethod?: 'automatic' | 'manual';
+    };
+    tournamentPlayers?: Array<{
+      _id: string;
+      name: string;
+      status: 'registered' | 'checked-in' | 'eliminated' | 'winner';
+      checkInTime?: Date;
+    }>;
+  }[];
   leagues?: { _id: string; code: string; name: string; status: string; createdAt: Date }[];
 }
 

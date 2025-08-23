@@ -1,6 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { IconTrash, IconUser, IconCrown, IconShield, IconChartBar } from '@tabler/icons-react';
+import { IconTrash, IconUser, IconCrown, IconShield } from '@tabler/icons-react';
 import { Club } from '@/interface/club.interface';
 import PlayerStatsModal from '@/components/player/PlayerStatsModal';
 import { useState } from 'react';
@@ -64,19 +64,7 @@ export default function MemberList({ members, userRole, userId, clubId, onClubUp
     }
   };
 
-  const handleViewStats = async (member: any) => {
-    try {
-      // Fetch player stats from the API
-      const response = await axios.get(`/api/players/${member._id}/stats`);
-      if (response.data.success) {
-        setSelectedPlayer(response.data.player);
-        setShowStatsModal(true);
-      }
-    } catch (err) {
-      console.log(err);
-      toast.error('Nem sikerült betölteni a statisztikákat');
-    }
-  };
+
 
   return (
     <div className="space-y-4">
@@ -113,10 +101,10 @@ export default function MemberList({ members, userRole, userId, clubId, onClubUp
             return (
               <div
                 key={member._id}
-                className="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md transition-shadow"
+                className=" bg-base-100 shadow-sm  border border-base-300 hover:shadow-md transition-shadow"
               >
                 <div className="card-body p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
                     <div className="flex items-center gap-3">
                       {/* Avatar/Icon */}
                       <div className="avatar placeholder">
@@ -154,14 +142,6 @@ export default function MemberList({ members, userRole, userId, clubId, onClubUp
                     
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2">
-                      {/* Stats Button - Always visible */}
-                      <button
-                        className="btn btn-sm btn-ghost btn-circle"
-                        onClick={() => handleViewStats(member)}
-                        title="Statisztikák megtekintése"
-                      >
-                        <IconChartBar className="w-4 h-4" />
-                      </button>
                       
                       {/* Admin/Moderator Actions - Only when showActions is true */}
                       {showActions && (

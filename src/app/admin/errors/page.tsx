@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { IconAlertTriangle, IconRefresh, IconClock, IconUser, IconBuilding, IconTrophy } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+import DailyChart from '@/components/admin/DailyChart';
 
 interface ErrorLog {
   _id: string;
@@ -153,6 +154,14 @@ export default function AdminErrorsPage() {
           </div>
         ))}
       </div>
+
+      {/* Daily Chart */}
+      <DailyChart
+        title="Hibák napi előfordulása"
+        apiEndpoint="/api/admin/errors/daily"
+        color="error"
+        icon="🚨"
+      />
 
       {/* Filters */}
       <div className="admin-glass-card">

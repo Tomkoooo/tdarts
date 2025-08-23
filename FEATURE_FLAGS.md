@@ -71,14 +71,40 @@ const enabled = await FeatureFlagService.isFeatureEnabled('liveMatchFollowing', 
 const socketEnabled = await FeatureFlagService.isSocketEnabled(clubId);
 ```
 
-## Socket Feature Logika
+## Feature Flag Logika
+
+### Általános Logika
+
+A feature flag-ek a következő sorrendben ellenőrződnek:
+
+1. **ENV alapú ellenőrzés**: Ha `NEXT_PUBLIC_ENABLE_[FEATURE] = false`, akkor a feature mindenképp tiltott
+2. **Fizetős modell ellenőrzés**: Ha `NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false`, akkor minden feature elérhető
+3. **Klub specifikus ellenőrzés**: Ha a fizetős modell be van kapcsolva, akkor ellenőrzi a klub subscription modeljét
+
+### Detailed Statistics Feature
+
+A `detailedStatistics` feature a következő logika szerint működik:
+
+1. **NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS = false**: Mindenképp tiltott
+2. **NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett
+3. **NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Csak akkor engedélyezett, ha `club.subscriptionModel === 'pro'`
+
+### Live Match Following Feature
+
+A `liveMatchFollowing` feature a következő logika szerint működik:
+
+1. **NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = false**: Mindenképp tiltott
+2. **NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett
+3. **NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Csak akkor engedélyezett, ha a klub feature flag-je be van kapcsolva
+
+### Socket Feature
 
 A socket kapcsolat a következő logika szerint működik:
 
 1. **NEXT_PUBLIC_ENABLE_ALL = true**: Mindenképp engedélyezett
 2. **NEXT_PUBLIC_ENABLE_SOCKET = false**: Mindenképp tiltott
-3. **NEXT_PUBLIC_ENABLE_SOCKET = true + clubId nélkül**: Engedélyezett
-4. **NEXT_PUBLIC_ENABLE_SOCKET = true + clubId**: Csak akkor engedélyezett, ha `club.subscriptionModel === 'pro'`
+3. **NEXT_PUBLIC_ENABLE_SOCKET = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = false**: Mindenképp engedélyezett
+4. **NEXT_PUBLIC_ENABLE_SOCKET = true + NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED = true**: Csak akkor engedélyezett, ha `club.subscriptionModel === 'pro'`
 
 ## Subscription Model Logika
 

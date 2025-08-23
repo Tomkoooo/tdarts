@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+import DailyChart from '@/components/admin/DailyChart';
 
 interface AdminUser {
   _id: string;
@@ -149,6 +150,14 @@ export default function AdminUsersPage() {
           <p className="text-3xl font-bold text-primary">{stats.unverified}</p>
         </div>
       </div>
+
+      {/* Daily Chart */}
+      <DailyChart
+        title="Felhasználók napi regisztrációja"
+        apiEndpoint="/api/admin/charts/users/daily"
+        color="primary"
+        icon="👥"
+      />
 
       {/* Filters */}
       <div className="admin-glass-card">

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { IconBuilding, IconUsers, IconTrophy, IconExternalLink, IconSearch, IconRefresh, IconMapPin, IconCalendar } from '@tabler/icons-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import DailyChart from '@/components/admin/DailyChart';
 
 interface AdminClub {
   _id: string;
@@ -122,6 +123,14 @@ export default function AdminClubsPage() {
           <p className="text-3xl font-bold text-primary">{stats.totalTournaments}</p>
         </div>
       </div>
+
+      {/* Daily Chart */}
+      <DailyChart
+        title="Klubok napi létrehozása"
+        apiEndpoint="/api/admin/charts/clubs/daily"
+        color="secondary"
+        icon="🏢"
+      />
 
       {/* Search */}
       <div className="admin-glass-card">
