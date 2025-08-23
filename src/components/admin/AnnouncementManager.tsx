@@ -91,7 +91,7 @@ const AnnouncementManager: React.FC = () => {
       showButton: announcement.showButton,
       buttonText: announcement.buttonText || '',
       buttonAction: announcement.buttonAction || '',
-      duration: announcement.duration,
+      duration: announcement.duration, // Ez milliszekundumban van, a form másodpercben jeleníti meg
       expiresAt: new Date(announcement.expiresAt).toISOString().slice(0, 16)
     });
     setEditingId(announcement._id);
@@ -126,7 +126,7 @@ const AnnouncementManager: React.FC = () => {
       showButton: false,
       buttonText: '',
       buttonAction: '',
-      duration: 10000,
+      duration: 10000, // 10 másodperc
       expiresAt: ''
     });
   };
@@ -160,7 +160,7 @@ const AnnouncementManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="lg:flex-row flex-col justify-between items-start gap-3 lg:gap-0lg:items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-base-content">Announcement Kezelő</h2>
           <p className="text-base-content/60">Rendszerüzenetek kezelése</p>
@@ -171,7 +171,7 @@ const AnnouncementManager: React.FC = () => {
             setEditingId(null);
             resetForm();
           }}
-          className="admin-btn-primary"
+          className="admin-btn-primary w-full lg:w-auto"
         >
           <IconPlus className="w-4 h-4" />
           Új Announcement
@@ -181,32 +181,34 @@ const AnnouncementManager: React.FC = () => {
       {/* Form */}
       {showForm && (
         <div className="admin-glass-card">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-lg font-semibold mb-6">
             {editingId ? 'Announcement Szerkesztése' : 'Új Announcement'}
           </h3>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title and Type */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Cím *</span>
+                  <span className="label-text font-medium">Cím *</span>
                 </label>
                 <input
                   type="text"
-                  className="admin-input"
+                  className="admin-input w-full"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
                   maxLength={100}
+                  placeholder="Announcement címe..."
                 />
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Típus</span>
+                  <span className="label-text font-medium">Típus</span>
                 </label>
                 <select
-                  className="admin-select"
+                  className="admin-select w-full"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                 >
@@ -218,43 +220,47 @@ const AnnouncementManager: React.FC = () => {
               </div>
             </div>
 
+            {/* Description */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Leírás *</span>
+                <span className="label-text font-medium">Leírás *</span>
               </label>
               <textarea
-                className="admin-input"
-                rows={3}
+                className="admin-input w-full"
+                rows={4}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 required
                 maxLength={500}
+                placeholder="Announcement leírása..."
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Duration, Expiration and Button Toggle */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Időtartam (ms)</span>
+                  <span className="label-text font-medium">Időtartam (másodperc)</span>
                 </label>
                 <input
                   type="number"
-                  className="admin-input"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                  min={3000}
-                  max={60000}
-                  step={1000}
+                  className="admin-input w-full"
+                  value={Math.round(formData.duration / 1000)}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) * 1000 })}
+                  min={3}
+                  max={60}
+                  step={1}
+                  placeholder="10"
                 />
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Lejárat *</span>
+                  <span className="label-text font-medium">Lejárat *</span>
                 </label>
                 <input
                   type="datetime-local"
-                  className="admin-input"
+                  className="admin-input w-full"
                   value={formData.expiresAt}
                   onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
                   required
@@ -262,40 +268,42 @@ const AnnouncementManager: React.FC = () => {
               </div>
 
               <div className="form-control">
-                <label className="label cursor-pointer">
-                  <span className="label-text">Gomb megjelenítése</span>
+                <label className="label cursor-pointer justify-start gap-3">
                   <input
                     type="checkbox"
                     className="checkbox checkbox-primary"
                     checked={formData.showButton}
                     onChange={(e) => setFormData({ ...formData, showButton: e.target.checked })}
                   />
+                  <span className="label-text font-medium">Gomb megjelenítése</span>
                 </label>
               </div>
             </div>
 
+            {/* Button Configuration */}
             {formData.showButton && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Gomb szövege</span>
+                    <span className="label-text font-medium">Gomb szövege</span>
                   </label>
                   <input
                     type="text"
-                    className="admin-input"
+                    className="admin-input w-full"
                     value={formData.buttonText}
                     onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
                     maxLength={50}
+                    placeholder="Kattints ide..."
                   />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Gomb akció (URL)</span>
+                    <span className="label-text font-medium">Gomb akció (URL)</span>
                   </label>
                   <input
                     type="text"
-                    className="admin-input"
+                    className="admin-input w-full"
                     value={formData.buttonAction}
                     onChange={(e) => setFormData({ ...formData, buttonAction: e.target.value })}
                     placeholder="/search vagy https://..."
@@ -305,7 +313,8 @@ const AnnouncementManager: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
+            {/* Form Actions */}
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-base-300">
               <button
                 type="button"
                 onClick={() => {
@@ -313,11 +322,11 @@ const AnnouncementManager: React.FC = () => {
                   setEditingId(null);
                   resetForm();
                 }}
-                className="admin-btn-secondary"
+                className="admin-btn-secondary w-full sm:w-auto"
               >
                 Mégse
               </button>
-              <button type="submit" className="admin-btn-primary">
+              <button type="submit" className="admin-btn-primary w-full sm:w-auto">
                 {editingId ? 'Frissítés' : 'Létrehozás'}
               </button>
             </div>
@@ -358,10 +367,10 @@ const AnnouncementManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 ml-4 lg:flex-row flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 ml-4">
                   <button
                     onClick={() => handleToggle(announcement._id)}
-                    className="btn btn-sm btn-ghost"
+                    className="btn btn-sm btn-ghost w-full sm:w-auto"
                     title={announcement.isActive ? 'Deaktiválás' : 'Aktiválás'}
                   >
                     {announcement.isActive ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
@@ -369,7 +378,7 @@ const AnnouncementManager: React.FC = () => {
                   
                   <button
                     onClick={() => handleEdit(announcement)}
-                    className="btn btn-sm btn-ghost"
+                    className="btn btn-sm btn-ghost w-full sm:w-auto"
                     title="Szerkesztés"
                   >
                     <IconEdit className="w-4 h-4" />
@@ -377,7 +386,7 @@ const AnnouncementManager: React.FC = () => {
                   
                   <button
                     onClick={() => handleDelete(announcement._id)}
-                    className="btn btn-sm btn-ghost text-error hover:text-error"
+                    className="btn btn-sm btn-ghost text-error hover:text-error w-full sm:w-auto"
                     title="Törlés"
                   >
                     <IconTrash className="w-4 h-4" />

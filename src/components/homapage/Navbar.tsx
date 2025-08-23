@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -52,7 +52,8 @@ const Navbar = () => {
     { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
     { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
     { name: "Visszajelzés", icon: IconMessageCircle, href: "/admin/feedback" },
-    { name: "Todos", icon: IconSettings, href: "/admin/todos" },
+    { name: "Todos", icon: IconSettingsCheck, href: "/admin/todos" },
+    { name: "Jelzések", icon: IconBell, href: "/admin/announcements" },
   ] : [
     { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
     { name: "Klubbok", icon: IconUsers, href: "/search?type=clubs" },
@@ -91,19 +92,11 @@ const Navbar = () => {
             ))}
             {isAdminPage ? (
               <div className="flex gap-2 items-center">
-                <Link href="/" className="btn btn-outline btn-sm glass-button push-button">
-                  Kilépés
+                <Link href="/" className="btn btn-sm glass-button push-button">
+                <IconLogout/>
                 </Link>
                 <div className="dropdown dropdown-end">
-                  <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
-                    <div className="w-10 rounded-full bg-gradient-to-r from-red-400 to-red-600 flex items-center justify-center">
-                    <img
-                          src={`https://avatar.iran.liara.run/username?username=${user?.name.split(' ')[0]}+${user?.name.split(' ')[1]}`}
-                          alt="avatar"
-                          loading="lazy"
-                        />
-                    </div>
-                  </div>
+               
                   <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-box w-52">
                     <li><Link href="/profile" className="text-white hover:text-red-300">Profil</Link></li>
                     <li><Link href="/" className="text-white hover:text-red-300">Főoldal</Link></li>
@@ -186,7 +179,7 @@ const Navbar = () => {
                     className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <span>Kilépés</span>
+                    <IconLogout/>
                   </Link>
                   <div className="flex items-center justify-center space-x-2 p-3 rounded-lg bg-white/10">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-400 to-red-600 flex items-center justify-center">
