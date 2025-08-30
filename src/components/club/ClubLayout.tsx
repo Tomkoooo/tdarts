@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { IconHome, IconTrophy, IconUsers, IconSettings } from '@tabler/icons-react';
+import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from '@tabler/icons-react';
 
 interface ClubLayoutProps {
   children: React.ReactNode;
@@ -10,18 +10,25 @@ interface ClubLayoutProps {
   summary: React.ReactNode;
   players: React.ReactNode;
   tournaments: React.ReactNode;
+  leagues?: React.ReactNode;
   settings?: React.ReactNode;
-  defaultPage?: 'summary' | 'players' | 'tournaments' | 'settings';
+  defaultPage?: 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings';
 }
 
-export default function ClubLayout({ userRole, clubName, summary, players, tournaments, settings, defaultPage = 'summary' }: ClubLayoutProps) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'players' | 'tournaments' | 'settings'>(defaultPage);
+export default function ClubLayout({ userRole, clubName, summary, players, tournaments, leagues, settings, defaultPage = 'summary' }: ClubLayoutProps) {
+  const [activeTab, setActiveTab] = useState<'summary' | 'players' | 'tournaments' | 'leagues' | 'settings'>(defaultPage);
 
   const tabs = [
     { key: 'summary', label: 'Áttekintés', icon: <IconHome size={18} /> },
     { key: 'players', label: 'Játékosok', icon: <IconUsers size={18} /> },
     { key: 'tournaments', label: 'Versenyek', icon: <IconTrophy size={18} /> },
   ];
+  
+  // Liga menüpont hozzáadása, ha a feature flag engedélyezett
+  if (leagues) {
+    tabs.push({ key: 'leagues', label: 'Ligák', icon: <IconMedal size={18} /> });
+  }
+  
   if (userRole === 'admin' || userRole === 'moderator') {
     tabs.push({ key: 'settings', label: 'Beállítások', icon: <IconSettings size={18} /> });
   }
@@ -72,6 +79,7 @@ export default function ClubLayout({ userRole, clubName, summary, players, tourn
           {activeTab === 'summary' && summary}
           {activeTab === 'players' && players}
           {activeTab === 'tournaments' && tournaments}
+          {activeTab === 'leagues' && leagues}
           {activeTab === 'settings' && settings}
         </div>
       </div>
