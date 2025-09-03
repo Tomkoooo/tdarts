@@ -11,8 +11,6 @@ import { ClubService } from './club.service';
 import { ClubModel } from '../models/club.model';
 import { AuthorizationService } from './authorization.service';
 import { SubscriptionService } from './subscription.service';
-import { LeagueService } from './league.service';
-import { FeatureFlagService } from '@/lib/featureFlags';
 
 export class TournamentService {
     // Initialize indexes when the service is first used
@@ -2763,66 +2761,6 @@ export class TournamentService {
                         }
                     );
                 }
-            }
-
-            // Step 11: Add tournament results to leagues if enabled
-            try {
-                const isLeagueEnabled = await FeatureFlagService.isLeagueSystemEnabled(tournament.clubId.toString());
-                if (isLeagueEnabled) {
-                    // Get all leagues for this club
-                    const leagues = await LeagueService.getLeaguesByClub(tournament.clubId.toString());
-                    
-                    for (const league of leagues) {
-                        if (league.isActive) {
-                            // Prepare results for this league
-                            const results = tournament.tournamentPlayers.map((player: any) => {
-                                const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                                const standing = player.tournamentStanding || totalPlayers;
-                                
-                                // Determine stage based on format and standing
-                                let stage: 'group' | 'knockout' | 'final' = 'group';
-                                let knockoutRound: number | undefined;
-                                
-                                if (format === 'group_knockout' || format === 'knockout') {
-                                    if (standing === 1 || standing === 2) {
-                                        stage = 'final';
-                                    } else if (standing <= 4) {
-                                        stage = 'knockout';
-                                        knockoutRound = 4; // Quarter-final
-                                    } else if (standing <= 8) {
-                                        stage = 'knockout';
-                                        knockoutRound = 3; // Round 3
-                                    } else if (standing <= 16) {
-                                        stage = 'knockout';
-                                        knockoutRound = 2; // Round 2
-                                    } else if (standing <= 32) {
-                                        stage = 'knockout';
-                                        knockoutRound = 1; // Round 1
-                                    } else {
-                                        stage = 'group';
-                                    }
-                                }
-                                
-                                return {
-                                    playerId,
-                                    finish: standing,
-                                    stage,
-                                    knockoutRound
-                                };
-                            }).filter(result => result.playerId); // Filter out invalid results
-                            
-                            // Add results to league
-                            await LeagueService.addTournamentResult((league as any)._id.toString(), {
-                                tournamentId: tournament._id.toString(),
-                                results,
-                                notes: `Automatikusan hozzáadva a ${tournament.tournamentSettings?.name || 'verseny'} lezárásakor`
-                            });
-                        }
-                    }
-                }
-            } catch (leagueError) {
-                console.error('Error adding tournament results to leagues:', leagueError);
-                // Don't fail the tournament finish if league integration fails
             }
 
             return true;

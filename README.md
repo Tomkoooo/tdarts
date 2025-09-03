@@ -2,11 +2,8 @@ TODO:
 -stressz tesztelés a wdf-re - folyamatosan 
 -havi díjas rendszer klubboknak - permission alapon / felhasználói vagy klub email?
 -klub oldalon jobb tagok megjelenítés - egyértelműbb tag felvétel
-
-
--ligákhoz verseny hozzárendelés
--liga modal jobb layout
--liga tesztelés
+-keresésnél naptár nézet
+-ligák elkészítése
 
 -socket server prodba
 

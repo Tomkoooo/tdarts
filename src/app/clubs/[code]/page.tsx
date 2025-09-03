@@ -8,7 +8,6 @@ import { Club } from '@/interface/club.interface';
 import ClubLayout from '@/components/club/ClubLayout';
 import MemberList from '@/components/club/MemberList';
 import TournamentList from '@/components/club/TournamentList';
-import ClubLeagues from '@/components/club/ClubLeagues';
 import CreateTournamentModal from '@/components/club/CreateTournamentModal';
 import EditClubModal from '@/components/club/EditClubModal';
 import PlayerSearch from '@/components/club/PlayerSearch';
@@ -41,15 +40,13 @@ export default function ClubDetailPage() {
   const [clubShareModal, setClubShareModal] = useState(false);
 
   // Get default page from URL parameter
-  const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' => {
+  const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'settings' => {
     const page = searchParams.get('page');
     switch (page) {
       case 'players':
         return 'players';
       case 'tournaments':
         return 'tournaments';
-      case 'leagues':
-        return 'leagues';
       case 'settings':
         return 'settings';
       default:
@@ -517,7 +514,6 @@ export default function ClubDetailPage() {
         summary={summarySection}
         players={playersSection}
         tournaments={tournamentsSection}
-        leagues={<ClubLeagues clubId={club._id} clubName={club.name} />}
         settings={settingsSection}
         defaultPage={getDefaultPage()}
       >
