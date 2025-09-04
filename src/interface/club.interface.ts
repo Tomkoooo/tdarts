@@ -59,7 +59,7 @@ export interface Club {
       checkInTime?: Date;
     }>;
   }[];
-  leagues?: { _id: string; code: string; name: string; status: string; createdAt: Date }[];
+  leagues?: { _id: string; name: string; isActive: boolean; totalPlayers: number; totalTournaments: number; createdAt: Date }[];
 }
 
 export interface ClubDocument extends Document, Omit<Club, '_id' | 'members' | 'admin' | 'moderators' | 'tournaments' | 'leagues'> {

@@ -4,6 +4,7 @@ export interface FeatureFlags {
   liveMatchFollowing: boolean;
   advancedStatistics: boolean;
   premiumTournaments: boolean;
+  leagues: boolean;
   // További flag-ek ide jöhetnek
 }
 
@@ -47,6 +48,11 @@ export class FeatureFlagService {
       // Speciális kezelés a detailedStatistics feature-hez
       if (featureName === 'detailedStatistics') {
         return club.subscriptionModel === 'pro';
+      }
+
+      // Speciális kezelés a leagues feature-hez - csak prémium előfizetéseknek
+      if (featureName === 'leagues') {
+        return club.subscriptionModel !== 'free';
       }
 
       // Ha nincs featureFlags mező, akkor alapértelmezetten false

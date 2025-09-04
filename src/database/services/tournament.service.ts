@@ -2763,6 +2763,24 @@ export class TournamentService {
                 }
             }
 
+            // Step 11: Calculate league points if tournament is attached to a league
+            try {
+                const { LeagueService } = await import('./league.service');
+                const league = await LeagueService.findLeagueByTournament(tournament._id.toString());
+                if (league) {
+                    console.log('Tournament is attached to league, calculating points...');
+                    // Get updated tournament with final standings
+                    const updatedTournament = await TournamentModel.findById(tournament._id);
+                    if (updatedTournament) {
+                        await LeagueService.calculatePointsForTournament(updatedTournament, league);
+                        console.log('League points calculated successfully');
+                    }
+                }
+            } catch (error) {
+                console.error('Error calculating league points:', error);
+                // Don't fail tournament completion if league calculation fails
+            }
+
             return true;
         } catch (error) {
             console.error('Finish tournament error:', error);

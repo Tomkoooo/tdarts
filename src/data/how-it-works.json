@@ -1,6 +1,6 @@
 {
-  "title": "Hogyan Működik a tDarts?",
-  "subtitle": "Részletes útmutató a tDarts platform használatához - minden lépésről lépésről",
+  "title": "Hogyan Működik a tDarts? - Gyakran Ismételt Kérdések",
+  "subtitle": "Teljes útmutató a tDarts platform használatához. Regisztráció, klubkezelés, versenyek indítása, eredményrögzítés és liga kezelés lépésről lépésre.",
   "steps": [
     {
       "id": 0,
@@ -278,6 +278,75 @@
     },
     {
       "id": 5,
+      "title": "Liga kezelés",
+      "icon": "IconTrophy",
+      "description": "Verseny ligák létrehozása és kezelése",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Liga létrehozása",
+            "content": [
+              "A ligák funkció csak prémium előfizetéssel rendelkező klubok számára elérhető.",
+              "A &ldquo;Saját klub&rdquo; → &ldquo;Ligák&rdquo; menüpontban hozhatsz létre új ligát.",
+              "Add meg a liga nevét, leírását és a pontszámítási beállításokat:"
+            ],
+            "list": [
+              "Csoportkör kiesés pontjai (alapértelmezetten 5 pont)",
+              "Egyenes kiesés alappontjai (alapértelmezetten 10 pont)",
+              "Szorzó tényező (alapértelmezetten 1.5x)",
+              "Győztes bónusz pontjai (alapértelmezetten 20 pont)",
+              "Maximális egyenes kiesős körök száma (alapértelmezetten 3)"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Játékosok hozzáadása",
+            "content": [
+              "A liga létrehozása után hozzáadhatsz játékosokat a ranglistához.",
+              "A &ldquo;Ranglista&rdquo; fülön a keresőmező segítségével keress rá regisztrált játékosokra vagy vendég játékosokra.",
+              "A hozzáadott játékosok automatikusan megjelennek a ranglistán 0 ponttal."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Versenyek csatolása",
+            "content": [
+              "Verseny létrehozásakor kiválaszthatod, hogy melyik ligához tartozzon.",
+              "A verseny befejezése után a rendszer automatikusan kiszámítja és hozzáadja a pontokat a liga ranglistájához.",
+              "A pontszámítás a versenyben elért helyezés alapján történik:",
+              "• Csoportkör kiesés: Rögzített pontszám",
+              "• Egyenes kiesés: Geometriai sorozat alapján (alappont × szorzó^kör)",
+              "• Győztes: Legmagasabb pontszám + bónusz"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Ranglista kezelése",
+            "content": [
+              "A ranglistán láthatod minden játékos helyezését, pontszámát és statisztikáit.",
+              "Moderátorok manuálisan is módosíthatják a pontszámokat, ha szükséges.",
+              "A &ldquo;Versenyek&rdquo; fülön láthatod az összes csatolt versenyt és azok állapotát.",
+              "A &ldquo;Beállítások&rdquo; fülön módosíthatod a liga nevét, leírását és pontszámítási beállításait."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Pontszámítási példa",
+            "content": [
+              "Egy 16 fős verseny esetén:",
+              "• Csoportkör kiesés: 5 pont",
+              "• 1. kör kiesés: 10 pont",
+              "• 2. kör kiesés: 15 pont (10 × 1.5)",
+              "• 3. kör kiesés: 22.5 pont (15 × 1.5)",
+              "• Győztes: 22.5 + 20 = 42.5 pont"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",

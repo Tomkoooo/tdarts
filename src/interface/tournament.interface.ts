@@ -85,6 +85,7 @@ export interface Tournament {
     groups: TournamentGroup[];
     knockout: KnockoutRound[];
     tournamentSettings: TournamentSettings;
+    league?: string | Document; // Optional reference to League
     createdAt?: Date;
     updatedAt?: Date;
     isActive?: boolean;
@@ -102,11 +103,12 @@ export interface TournamentPlayerDocument extends Omit<TournamentPlayer, '_id' |
 export interface TournamentGroupDocument extends Omit<TournamentGroup, 'id'> {
     id: Types.ObjectId;
 }
-export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'groups' | 'clubId'> {
+export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'groups' | 'clubId' | 'league'> {
     _id: Types.ObjectId;
     tournamentPlayers: TournamentPlayerDocument[];
     groups: TournamentGroupDocument[];
     clubId: Types.ObjectId;
+    league?: Types.ObjectId; // Optional reference to League
 }
 
 // Manual groups (API DTOs)

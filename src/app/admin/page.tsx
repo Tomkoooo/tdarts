@@ -234,14 +234,6 @@ export default function AdminDashboard() {
       <div className="admin-glass-card transition-all duration-300">
         <h3 className="text-lg font-semibold text-base-content mb-4">{title}</h3>
         
-        {/* Debug info */}
-        <div className="mb-4 p-3 bg-base-200 rounded text-xs">
-          <p><strong>Debug:</strong> {data ? 'Adatok betöltve' : 'Nincs adat'}</p>
-          <p>Labels: {data?.labels?.length || 0}</p>
-          <p>Data: {data?.datasets?.[0]?.data?.length || 0}</p>
-          <p>Chart data: {chartData.length}</p>
-        </div>
-        
         {data && data.datasets && data.datasets[0] && data.datasets[0].data && data.datasets[0].data.length > 0 ? (
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
