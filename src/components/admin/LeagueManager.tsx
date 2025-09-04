@@ -394,7 +394,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                       </tr>
                     </thead>
                     <tbody>
-                      {editingLeague?.players.map((player, idx) => (
+                      {editingLeague?.players.map((player) => (
                         <tr key={player.playerId}>
                           <td>
                             {/* Itt lehetne részletesebb név, ha van user cache */}
