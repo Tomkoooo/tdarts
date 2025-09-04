@@ -14,10 +14,14 @@ export async function GET(request: NextRequest) {
     }
 
     const enabled = await FeatureFlagService.isFeatureEnabled(feature, clubId || undefined);
+    const subscriptionModelEnabled = process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false';
     
-    console.log('Feature flag result:', { feature, clubId, enabled });
+    console.log('Feature flag result:', { feature, clubId, enabled, subscriptionModelEnabled });
     
-    return NextResponse.json({ enabled });
+    return NextResponse.json({ 
+      enabled, 
+      subscriptionModelEnabled 
+    });
   } catch (error) {
     console.error('Error checking feature flag:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

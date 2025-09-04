@@ -21,6 +21,7 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [clubSubscription, setClubSubscription] = useState<string>('free');
   const [featureEnabled, setFeatureEnabled] = useState<boolean>(false);
+  const [subscriptionModelEnabled, setSubscriptionModelEnabled] = useState<boolean>(true);
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
   // Allow league creation if:
@@ -28,7 +29,7 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
   // 2. User has permissions AND
   // 3. Either subscription model is disabled OR club has premium subscription
   const canCreateLeagues = canManageLeagues && featureEnabled && (
-    process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false' || 
+    !subscriptionModelEnabled || 
     clubSubscription !== 'free'
   );
 
@@ -91,6 +92,8 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
       const response = await fetch(`/api/feature-flags/check?feature=leagues&clubId=${clubId}`);
       if (response.ok) {
         const data = await response.json();
+        // Also check if subscription model is enabled
+        setSubscriptionModelEnabled(data.subscriptionModelEnabled !== false);
         return data.enabled;
       }
       return false;
