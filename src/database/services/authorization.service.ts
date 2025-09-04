@@ -1,5 +1,7 @@
 import { UserModel } from "../models/user.model";
 import { connectMongo } from "@/lib/mongoose";
+import { AuthService } from "./auth.service";
+import { NextRequest } from "next/server";
 
 export class AuthorizationService {
   static async checkRole(userId: string, expectedRole: string, clubId: string): Promise<boolean> {
@@ -93,6 +95,31 @@ export class AuthorizationService {
 
     const roleInClub = result[0].userRole;
     return roleInClub === 'admin' || roleInClub === 'moderator';
+  }
+
+  /**
+   * Get user ID from NextRequest (from JWT token in cookies)
+   */
+  static async getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+    try {
+      const token = request.cookies.get('token')?.value;
+      if (!token) {
+        return null;
+      }
+
+      const user = await AuthService.verifyToken(token);
+      return user._id.toString();
+    } catch (error) {
+      console.error('Error getting user ID from request:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if user has moderation permissions (admin or moderator) for a club
+   */
+  static async hasClubModerationPermission(userId: string, clubId: string): Promise<boolean> {
+    return await this.checkAdminOrModerator(userId, clubId);
   }
 
   static async checkAdminOnly(userId: string, clubId: string): Promise<boolean> {

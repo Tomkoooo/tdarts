@@ -13,6 +13,7 @@ import EditClubModal from '@/components/club/EditClubModal';
 import PlayerSearch from '@/components/club/PlayerSearch';
 import QRCodeModal from '@/components/club/QRCodeModal';
 import ClubShareModal from '@/components/club/ClubShareModal';
+import LeagueManager from '@/components/club/LeagueManager';
 import { IconDoorExit, IconQrcode, IconTrash } from '@tabler/icons-react';
 
 
@@ -40,13 +41,15 @@ export default function ClubDetailPage() {
   const [clubShareModal, setClubShareModal] = useState(false);
 
   // Get default page from URL parameter
-  const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'settings' => {
+  const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' => {
     const page = searchParams.get('page');
     switch (page) {
       case 'players':
         return 'players';
       case 'tournaments':
         return 'tournaments';
+      case 'leagues':
+        return 'leagues';
       case 'settings':
         return 'settings';
       default:
@@ -328,6 +331,14 @@ export default function ClubDetailPage() {
     </div>
   );
 
+  // Leagues section
+  const leaguesSection = (
+    <LeagueManager
+      clubId={club._id}
+      userRole={userRole}
+    />
+  );
+
   // Settings section (admin only)
   const settingsSection = userRole === 'admin' || userRole === 'moderator' ? (
     <div className="space-y-4 md:space-y-6">
@@ -514,6 +525,7 @@ export default function ClubDetailPage() {
         summary={summarySection}
         players={playersSection}
         tournaments={tournamentsSection}
+        leagues={leaguesSection}
         settings={settingsSection}
         defaultPage={getDefaultPage()}
       >

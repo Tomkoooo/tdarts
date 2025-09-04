@@ -72,6 +72,7 @@ export async function POST(
     const now = new Date();
     const tournament = {
         clubId: club._id,
+        league: payload.leagueId || undefined, // Optional league assignment
         tournamentPlayers: [],
         groups: [],
         knockout: [],
@@ -132,6 +133,24 @@ export async function POST(
             tournamentId: b.tournamentId
         })));
         console.log('================================');
+    }
+
+    // Attach tournament to league if leagueId is provided
+    if (payload.leagueId && newTournament) {
+        try {
+            const { LeagueService } = await import('@/database/services/league.service');
+            const { AuthorizationService } = await import('@/database/services/authorization.service');
+            
+            // Get user ID from request (you'll need to implement this based on your auth)
+            const userId = await AuthorizationService.getUserIdFromRequest(request);
+            if (userId) {
+                await LeagueService.attachTournamentToLeague(payload.leagueId, newTournament._id.toString(), userId);
+                console.log('Tournament attached to league successfully');
+            }
+        } catch (error) {
+            console.error('Error attaching tournament to league:', error);
+            // Don't fail tournament creation if league attachment fails
+        }
     }
     
     return NextResponse.json(newTournament);

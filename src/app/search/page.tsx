@@ -706,7 +706,7 @@ const SearchPage: React.FC = () => {
                             <div className="text-sm text-base-content/70 space-y-1">
                               <p>Helyszín: {club.location}</p>
                               <p>Tagok: {club.memberCount}</p>
-                              <p>Táblák: {club.boards.length}</p>
+                              <p>Táblák: {club.boards?.length}</p>
                             </div>
                           </div>
                         </div>
@@ -803,7 +803,7 @@ const SearchPage: React.FC = () => {
                             <div className="text-sm text-base-content/70 space-y-1">
                             <p>Helyszín: {club.location}</p>
                               <p>Tagok: {club.memberCount}</p>
-                              <p>Táblák: {club.boards.length}</p>
+                              <p>Táblák: {club.boards?.length}</p>
                             </div>
                           </div>
                         </div>
@@ -906,7 +906,7 @@ const SearchPage: React.FC = () => {
                                 <h4 className="font-semibold">{club.name}</h4>
                                 <p>Helyszín: {club.location}</p>
                               <p>Tagok: {club.memberCount}</p>
-                              <p>Táblák: {club.boards.length}</p>
+                              <p>Táblák: {club.boards?.length}</p>
                               </div>
                             </div>
                           </div>

@@ -41,6 +41,8 @@ export default function CreateTournamentModal({
   const [settings, setSettings] = useState<TournamentSettings>(defaultSettings);
   const [selectedBoards, setSelectedBoards] = useState<number[]>([]);
   const [availableBoards, setAvailableBoards] = useState<any[]>([]);
+  const [availableLeagues, setAvailableLeagues] = useState<any[]>([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [subscriptionError, setSubscriptionError] = useState<{
     currentCount: number;
@@ -50,10 +52,11 @@ export default function CreateTournamentModal({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Fetch available boards when modal opens
+  // Fetch available boards and leagues when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchAvailableBoards();
+      fetchAvailableLeagues();
     }
   }, [isOpen, clubId]);
 
@@ -71,6 +74,18 @@ export default function CreateTournamentModal({
       console.error('Error fetching boards:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableLeagues = async () => {
+    try {
+      const response = await fetch(`/api/clubs/${clubId}/leagues`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableLeagues(data.leagues || []);
+      }
+    } catch (err) {
+      console.error('Error fetching leagues:', err);
     }
   };
 
@@ -133,7 +148,8 @@ export default function CreateTournamentModal({
         selectedBoards: selectedBoards,
         location: settings.location,
         type: settings.type,
-        registrationDeadline: settings.registrationDeadline
+        registrationDeadline: settings.registrationDeadline,
+        leagueId: selectedLeagueId || undefined
       };
       const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
         method: 'POST',
@@ -395,6 +411,26 @@ export default function CreateTournamentModal({
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                   placeholder="Jelszó a táblákhoz való csatlakozáshoz"
                 />
+              </div>
+              
+              {/* League Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Liga hozzárendelés (opcionális)</label>
+                <select
+                  value={selectedLeagueId}
+                  onChange={(e) => setSelectedLeagueId(e.target.value)}
+                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                >
+                  <option value="">Nincs liga hozzárendelés</option>
+                  {availableLeagues.filter(league => league.isActive).map((league) => (
+                    <option key={league._id} value={league._id}>
+                      {league.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="text-xs text-base-content/60 mt-1">
+                  Ha kiválasztasz egy ligát, a verseny eredményei automatikusan hozzáadódnak a liga ranglistához
+                </div>
               </div>
             </div>
           )}
