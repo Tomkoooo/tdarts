@@ -5,9 +5,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
-import { IconPlus, IconEdit, IconTrash, IconTrophy, IconUsers, IconChartBar, IconUserPlus } from '@tabler/icons-react';
-import AddPlayerModal from '../club/AddPlayerModal';
+import { IconPlus, IconEdit, IconTrash, IconTrophy, IconChartBar, IconUserPlus } from '@tabler/icons-react';
 import PlayerSearch from '../club/PlayerSearch';
+import Link from 'next/link';
 
 // Validációs sémák - Mértani sorozat verzió
 const createLeagueSchema = z.object({
@@ -237,13 +237,13 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
               A ligák rendszer használatához Pro előfizetés szükséges.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a 
+              <Link 
                 href="/#pricing" 
                 className="admin-btn-primary btn-lg"
               >
                 <IconTrophy className="w-5 h-5" />
                 Előfizetés
-              </a>
+              </Link>
               <button 
                 onClick={() => window.open('/#pricing', '_blank')}
                 className="admin-btn-secondary btn-lg"
@@ -394,7 +394,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                       </tr>
                     </thead>
                     <tbody>
-                      {editingLeague?.players.map((player, idx) => (
+                      {editingLeague?.players.map((player) => (
                         <tr key={player.playerId}>
                           <td>
                             {/* Itt lehetne részletesebb név, ha van user cache */}
