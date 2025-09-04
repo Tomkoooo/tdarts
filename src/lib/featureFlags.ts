@@ -72,6 +72,11 @@ export class FeatureFlagService {
    * Először ENV-t ellenőrzi, majd ha szükséges, adatbázist is
    */
   static async isFeatureEnabled(featureName: string, clubId?: string): Promise<boolean> {
+    // Ha a fizetős modell ki van kapcsolva, akkor minden feature elérhető
+    if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
+      return true;
+    }
+
     // ENV alapú ellenőrzés
     const envEnabled = this.isEnvFeatureEnabled(featureName);
     
