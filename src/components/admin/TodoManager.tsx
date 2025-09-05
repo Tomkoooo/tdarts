@@ -199,7 +199,7 @@ export default function TodoManager() {
       {/* Filters and Create Button */}
       <div className="admin-glass-card">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Státusz</span>
@@ -272,9 +272,9 @@ export default function TodoManager() {
           <div className="flex justify-end">
             <button
               onClick={() => setShowCreateForm(true)}
-              className="admin-btn-primary btn-xs"
+              className="admin-btn-primary btn-sm w-full sm:w-auto"
             >
-              <IconPlus />
+              <IconPlus className="w-4 h-4" />
               <span className="ml-1">Új Todo</span>
             </button>
           </div>
@@ -359,78 +359,84 @@ export default function TodoManager() {
 
             <div className="md:col-span-2 form-control">
               <label className="label">
-                <span className="label-text font-medium">Címkék (vesszővel elválasztva)</span>
+                <span className="label-text font-medium">Címkék</span>
               </label>
-              <input
-                type="text"
-                className="admin-input w-full"
-                value={newTodo.tags.join(', ')}
-                onChange={(e) => {
-                  const inputValue = e.target.value;
-                  // Ha a felhasználó vesszőt ír, automatikusan hozzáadjuk a címkét
-                  if (inputValue.endsWith(',')) {
-                    const newTag = inputValue.slice(0, -1).trim();
-                    if (newTag && !newTodo.tags.includes(newTag)) {
-                      setNewTodo(prev => ({ 
-                        ...prev, 
-                        tags: [...prev.tags, newTag]
-                      }));
-                    }
-                  } else {
-                    // Egyébként frissítjük a címkék listáját
-                    const tags = inputValue.split(',').map(tag => tag.trim()).filter(Boolean);
-                    setNewTodo(prev => ({ ...prev, tags }));
-                  }
-                }}
-                onKeyDown={(e) => {
-                  // Enter gombra is hozzáadhatjuk a címkét
-                  if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-                    e.preventDefault();
-                    const newTag = (e.target as HTMLInputElement).value.trim();
-                    if (newTag && !newTodo.tags.includes(newTag)) {
-                      setNewTodo(prev => ({ 
-                        ...prev, 
-                        tags: [...prev.tags, newTag]
-                      }));
-                      (e.target as HTMLInputElement).value = '';
-                    }
-                  }
-                }}
-                placeholder="címke1, címke2, címke3... (Enter vagy vessző a hozzáadáshoz)"
-              />
-              {/* Címkék megjelenítése */}
-              {newTodo.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {newTodo.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="admin-badge-outline text-sm cursor-pointer hover:bg-error/10 hover:text-error"
-                      onClick={() => setNewTodo(prev => ({
-                        ...prev,
-                        tags: prev.tags.filter((_, i) => i !== index)
-                      }))}
-                      title="Kattintson a törléshez"
-                    >
-                      {tag} ×
-                    </span>
-                  ))}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="admin-input flex-1"
+                    placeholder="Új címke..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        const input = e.target as HTMLInputElement;
+                        const newTag = input.value.trim();
+                        if (newTag && !newTodo.tags.includes(newTag)) {
+                          setNewTodo(prev => ({ 
+                            ...prev, 
+                            tags: [...prev.tags, newTag]
+                          }));
+                          input.value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="admin-btn-primary btn-xs"
+                    onClick={() => {
+                      const input = document.querySelector('input[placeholder="Új címke..."]') as HTMLInputElement;
+                      if (input) {
+                        const newTag = input.value.trim();
+                        if (newTag && !newTodo.tags.includes(newTag)) {
+                          setNewTodo(prev => ({ 
+                            ...prev, 
+                            tags: [...prev.tags, newTag]
+                          }));
+                          input.value = '';
+                        }
+                      }
+                    }}
+                  >
+                    <IconPlus className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+                {/* Címkék megjelenítése */}
+                {newTodo.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {newTodo.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="admin-badge-outline text-sm cursor-pointer hover:bg-error/10 hover:text-error flex items-center gap-1"
+                        onClick={() => setNewTodo(prev => ({
+                          ...prev,
+                          tags: prev.tags.filter((_, i) => i !== index)
+                        }))}
+                        title="Kattintson a törléshez"
+                      >
+                        {tag}
+                        <span className="text-xs">×</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 mt-4">
             <button
               onClick={handleCreateTodo}
-              className="admin-btn-primary btn-xs w-full sm:w-auto"
+              className="admin-btn-primary btn-sm w-full sm:w-auto"
               disabled={!newTodo.title.trim()}
             >
-              <IconPlus />
+              <IconPlus className="w-4 h-4" />
               <span className="ml-1">Létrehozás</span>
             </button>
             <button
               onClick={() => setShowCreateForm(false)}
-              className="admin-btn-ghost btn-xs w-full sm:w-auto"
+              className="admin-btn-ghost btn-sm w-full sm:w-auto"
             >
               Mégse
             </button>
@@ -449,54 +455,72 @@ export default function TodoManager() {
         ) : (
           <div className="space-y-4">
             {filteredTodos.map((todo) => (
-              <div key={todo._id} className="border border-base-300 rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold text-lg">{todo.title}</h4>
-                      <span className={`admin-badge ${getPriorityColor(todo.priority)}`}>
-                        {todo.priority}
-                      </span>
-                      <span className={`admin-badge ${getStatusColor(todo.status)}`}>
-                        {todo.status}
-                      </span>
-                      <span className="admin-badge-outline">
-                        {todo.category}
-                      </span>
-                    </div>
+              <div key={todo._id} className="border border-base-300 rounded-lg p-4 hover:shadow-md transition-shadow">
+                {/* Header - Title and Badges */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                  <h4 className="font-semibold text-lg flex-1">{todo.title}</h4>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className={`admin-badge text-xs ${getPriorityColor(todo.priority)}`}>
+                      {todo.priority}
+                    </span>
+                    <span className={`admin-badge text-xs ${getStatusColor(todo.status)}`}>
+                      {todo.status}
+                    </span>
+                    <span className="admin-badge-outline text-xs">
+                      {todo.category}
+                    </span>
+                  </div>
+                </div>
 
-                    {todo.description && (
-                      <p className="text-base-content/70 mb-2">{todo.description}</p>
+                {/* Description */}
+                {todo.description && (
+                  <p className="text-base-content/70 mb-3 text-sm leading-relaxed">{todo.description}</p>
+                )}
+
+                {/* Tags */}
+                {todo.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {todo.tags.map((tag, index) => (
+                      <span key={index} className="admin-badge-outline text-xs">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Meta Information */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 text-xs text-base-content/60">
+                    <span>Létrehozta: {todo.createdBy.name || todo.createdBy.username}</span>
+                    {todo.assignedTo && (
+                      <span className="hidden sm:inline">•</span>
                     )}
-
-                    <div className="flex flex-wrap gap-2 text-sm text-base-content/60">
-                      <span>Létrehozta: {todo.createdBy.name || todo.createdBy.username}</span>
-                      {todo.assignedTo && (
-                        <span>• Hozzárendelve: {todo.assignedTo.name || todo.assignedTo.username}</span>
-                      )}
-                      {todo.dueDate && (
-                        <span>• Határidő: {new Date(todo.dueDate).toLocaleDateString('hu-HU')}</span>
-                      )}
-                      {todo.tags.length > 0 && (
-                        <span>• Címkék: {todo.tags.join(', ')}</span>
-                      )}
-                    </div>
+                    {todo.assignedTo && (
+                      <span>Hozzárendelve: {todo.assignedTo.name || todo.assignedTo.username}</span>
+                    )}
+                    {todo.dueDate && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span>Határidő: {new Date(todo.dueDate).toLocaleDateString('hu-HU')}</span>
+                      </>
+                    )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2 ml-4">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setEditingTodo(todo)}
-                      className="admin-btn-info btn-xs w-full sm:w-auto"
+                      className="admin-btn-info btn-xs flex-1 sm:flex-none"
                     >
-                      <IconEdit />
-                      <span className="hidden sm:inline ml-1">Szerkesztés</span>
+                      <IconEdit className="w-4 h-4" />
+                      <span className="ml-1">Szerkesztés</span>
                     </button>
                     <button
                       onClick={() => handleDeleteTodo(todo._id)}
-                      className="admin-btn-danger btn-xs w-full sm:w-auto"
+                      className="admin-btn-danger btn-xs flex-1 sm:flex-none"
                     >
-                      <IconTrash />
-                      <span className="hidden sm:inline ml-1">Törlés</span>
+                      <IconTrash className="w-4 h-4" />
+                      <span className="ml-1">Törlés</span>
                     </button>
                   </div>
                 </div>
@@ -600,14 +624,14 @@ export default function TodoManager() {
                     });
                   }
                 }}
-                className="admin-btn-primary btn-xs w-full sm:w-auto"
+                className="admin-btn-primary btn-sm w-full sm:w-auto"
               >
-                <IconCheck />
+                <IconCheck className="w-4 h-4" />
                 <span className="ml-1">Mentés</span>
               </button>
               <button
                 onClick={() => setEditingTodo(null)}
-                className="admin-btn-ghost btn-xs w-full sm:w-auto"
+                className="admin-btn-ghost btn-sm w-full sm:w-auto"
               >
                 Mégse
               </button>

@@ -154,7 +154,8 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden  top-full left-0 right-0  p-2  mt-2 mx-4 rounded-2xl">
+                    <div className="md:hidden top-full left-0 right-0 p-2 mt-2 mx-4 rounded-2xl  max-h-[85vh] overflow-y-auto">
+
             {/* Overlay to close menu when clicking outside */}
             <div 
               className="fixed inset-0 -z-10" 
@@ -173,14 +174,7 @@ const Navbar = () => {
                 </Link>
               ))}
               {isAdminPage ? (
-                <div className="flex flex-col gap-3">
-                  <Link 
-                    href="/" 
-                    className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <IconLogout/>
-                  </Link>
+                <div className="flex flex-col gap-3 pt-2 border-t border-gray-700/50">
                   <div className="flex items-center justify-center space-x-2 p-3 rounded-lg bg-white/10">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-400 to-red-600 flex items-center justify-center">
                       <span className="text-sm font-semibold text-white">
@@ -189,6 +183,14 @@ const Navbar = () => {
                     </div>
                     <span className="font-medium text-gray-300">{user?.name}</span>
                   </div>
+                  <Link 
+                    href="/" 
+                    className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <IconLogout className="w-5 h-5"/>
+                    <span>Kilépés</span>
+                  </Link>
                 </div>
               ) : user ? (
                 <div className="flex flex-col gap-3">

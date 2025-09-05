@@ -152,34 +152,34 @@ export default function FeedbackManager() {
     <div className="space-y-6">
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="admin-glass-card text-center">
-            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-              <IconBug className="w-6 h-6 text-primary" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="admin-glass-card text-center p-4">
+            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 inline-block mb-2">
+              <IconBug className="w-5 h-5 text-primary" />
             </div>
-            <h3 className="text-sm font-medium text-base-content/60 mb-1">Összes</h3>
-            <p className="text-3xl font-bold text-primary">{stats.total}</p>
+            <h3 className="text-xs font-medium text-base-content/60 mb-1">Összes</h3>
+            <p className="text-2xl font-bold text-primary">{stats.total}</p>
           </div>
-          <div className="admin-glass-card text-center">
-            <div className="p-3 rounded-xl bg-warning/10 border border-warning/20 inline-block mb-3">
-              <IconCalendar className="w-6 h-6 text-warning" />
+          <div className="admin-glass-card text-center p-4">
+            <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 inline-block mb-2">
+              <IconCalendar className="w-5 h-5 text-warning" />
             </div>
-            <h3 className="text-sm font-medium text-base-content/60 mb-1">Függőben</h3>
-            <p className="text-3xl font-bold text-warning">{stats.pending}</p>
+            <h3 className="text-xs font-medium text-base-content/60 mb-1">Függőben</h3>
+            <p className="text-2xl font-bold text-warning">{stats.pending}</p>
           </div>
-          <div className="admin-glass-card text-center">
-            <div className="p-3 rounded-xl bg-info/10 border border-info/20 inline-block mb-3">
-              <IconSettingsCode className="w-6 h-6 text-info" />
+          <div className="admin-glass-card text-center p-4">
+            <div className="p-2 rounded-lg bg-info/10 border border-info/20 inline-block mb-2">
+              <IconSettingsCode className="w-5 h-5 text-info" />
             </div>
-            <h3 className="text-sm font-medium text-base-content/60 mb-1">Folyamatban</h3>
-            <p className="text-3xl font-bold text-info">{stats.inProgress}</p>
+            <h3 className="text-xs font-medium text-base-content/60 mb-1">Folyamatban</h3>
+            <p className="text-2xl font-bold text-info">{stats.inProgress}</p>
           </div>
-          <div className="admin-glass-card text-center">
-            <div className="p-3 rounded-xl bg-success/10 border border-success/20 inline-block mb-3">
-              <IconCheck className="w-6 h-6 text-success" />
+          <div className="admin-glass-card text-center p-4">
+            <div className="p-2 rounded-lg bg-success/10 border border-success/20 inline-block mb-2">
+              <IconCheck className="w-5 h-5 text-success" />
             </div>
-            <h3 className="text-sm font-medium text-base-content/60 mb-1">Megoldva</h3>
-            <p className="text-3xl font-bold text-success">{stats.resolved}</p>
+            <h3 className="text-xs font-medium text-base-content/60 mb-1">Megoldva</h3>
+            <p className="text-2xl font-bold text-success">{stats.resolved}</p>
           </div>
         </div>
       )}
@@ -187,7 +187,7 @@ export default function FeedbackManager() {
       {/* Filters */}
       <div className="admin-glass-card">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Státusz</span>
@@ -241,32 +241,30 @@ export default function FeedbackManager() {
             </div>
           </div>
           
-          <div className="flex flex-col gap-4 items-start">
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
             <div className="form-control flex-1">
               <label className="label">
                 <span className="label-text font-medium">Keresés</span>
               </label>
-              <div className="input-group flex gap-1 items-center">
+              <div className="relative">
                 <input
                   type="text"
                   placeholder="Keresés..."
-                  className="admin-input w-full"
+                  className="admin-input w-full pr-10"
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                 />
-                <button className="btn btn-square btn-primary">
-                  <IconSearch className="w-4 h-4" />
-                </button>
+                <IconSearch className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/50" />
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-end">
               <button
                 onClick={fetchFeedback}
-                className="admin-btn-info btn-xs"
+                className="admin-btn-info btn-sm w-full sm:w-auto"
               >
-                <IconRefresh />
-                <span className="hidden sm:inline">Frissítés</span>
+                <IconRefresh className="w-4 h-4" />
+                <span className="ml-1">Frissítés</span>
               </button>
             </div>
           </div>
@@ -285,77 +283,89 @@ export default function FeedbackManager() {
         ) : (
           <div className="space-y-4">
             {feedback.map((item) => (
-              <div key={item._id} className="border border-base-300 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getCategoryIcon(item.category)}
-                      <h4 className="font-semibold text-lg">{item.title}</h4>
-                      <span className={`admin-badge ${getPriorityColor(item.priority)}`}>
-                        {item.priority}
-                      </span>
-                      <span className={`admin-badge ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </div>
-                    
-                    <p className="text-base-content/70 mb-3">{item.description}</p>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-base-content/60">
-                      <div className="flex items-center gap-1">
-                        <IconMail className="w-4 h-4" />
-                        <span>{item.email}</span>
-                      </div>
-                      {item.page && (
-                        <div className="flex items-center gap-1">
-                          <IconCalendar className="w-4 h-4" />
-                          <span>{item.page}</span>
-                        </div>
-                      )}
-                      {item.device && (
-                        <span>📱 {item.device}</span>
-                      )}
-                      {item.browser && (
-                        <span>🌐 {item.browser}</span>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <IconCalendar className="w-4 h-4" />
-                        <span>{new Date(item.createdAt).toLocaleDateString('hu-HU')}</span>
-                      </div>
-                    </div>
-                    
-                    {item.adminNotes && (
-                      <div className="mt-3 p-3 bg-base-200 rounded-lg">
-                        <p className="text-sm font-medium text-base-content/80 mb-1">Admin megjegyzés:</p>
-                        <p className="text-sm text-base-content/70">{item.adminNotes}</p>
-                      </div>
-                    )}
-                    
-                    {item.resolution && (
-                      <div className="mt-3 p-3 bg-success/10 rounded-lg">
-                        <p className="text-sm font-medium text-success mb-1">Megoldás:</p>
-                        <p className="text-sm text-success/80">{item.resolution}</p>
-                      </div>
-                    )}
+              <div key={item._id} className="border border-base-300 rounded-lg p-4 hover:shadow-md transition-shadow">
+                {/* Header - Title and Badges */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    {getCategoryIcon(item.category)}
+                    <h4 className="font-semibold text-lg">{item.title}</h4>
                   </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-2 ml-4">
+                  <div className="flex flex-wrap gap-1">
+                    <span className={`admin-badge text-xs ${getPriorityColor(item.priority)}`}>
+                      {item.priority}
+                    </span>
+                    <span className={`admin-badge text-xs ${getStatusColor(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Description */}
+                <p className="text-base-content/70 mb-3 text-sm leading-relaxed">{item.description}</p>
+                
+                {/* Meta Information */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 text-xs text-base-content/60">
+                    <div className="flex items-center gap-1">
+                      <IconMail className="w-3 h-3" />
+                      <span className="truncate">{item.email}</span>
+                    </div>
+                    {item.page && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="truncate">{item.page}</span>
+                      </>
+                    )}
+                    {item.device && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span>📱 {item.device}</span>
+                      </>
+                    )}
+                    {item.browser && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span>🌐 {item.browser}</span>
+                      </>
+                    )}
+                    <span className="hidden sm:inline">•</span>
+                    <span>{new Date(item.createdAt).toLocaleDateString('hu-HU')}</span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => setEditingFeedback(item)}
-                      className="admin-btn-info btn-xs w-full sm:w-auto"
+                      className="admin-btn-info btn-xs flex-1 sm:flex-none"
                     >
-                      <IconEdit />
-                      <span className="hidden sm:inline ml-1">Szerkesztés</span>
+                      <IconEdit className="w-4 h-4" />
+                      <span className="ml-1">Szerkesztés</span>
                     </button>
                     <button
                       onClick={() => handleDeleteFeedback(item._id)}
-                      className="admin-btn-danger btn-xs w-full sm:w-auto"
+                      className="admin-btn-danger btn-xs flex-1 sm:flex-none"
                     >
-                      <IconTrash />
-                      <span className="hidden sm:inline ml-1">Törlés</span>
+                      <IconTrash className="w-4 h-4" />
+                      <span className="ml-1">Törlés</span>
                     </button>
                   </div>
                 </div>
+                
+                {/* Admin Notes */}
+                {item.adminNotes && (
+                  <div className="mt-3 p-3 bg-base-200 rounded-lg">
+                    <p className="text-sm font-medium text-base-content/80 mb-1">Admin megjegyzés:</p>
+                    <p className="text-sm text-base-content/70">{item.adminNotes}</p>
+                  </div>
+                )}
+                
+                {/* Resolution */}
+                {item.resolution && (
+                  <div className="mt-3 p-3 bg-success/10 rounded-lg">
+                    <p className="text-sm font-medium text-success mb-1">Megoldás:</p>
+                    <p className="text-sm text-success/80">{item.resolution}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -437,13 +447,13 @@ export default function FeedbackManager() {
             
             <div className="flex flex-col sm:flex-row gap-2 justify-end mt-6">
               <button
-                className="admin-btn-ghost btn-xs w-full sm:w-auto"
+                className="admin-btn-ghost btn-sm w-full sm:w-auto"
                 onClick={() => setEditingFeedback(null)}
               >
                 Mégse
               </button>
               <button
-                className="admin-btn-primary btn-xs w-full sm:w-auto"
+                className="admin-btn-primary btn-sm w-full sm:w-auto"
                 onClick={() => {
                   if (editingFeedback) {
                     handleUpdateFeedback(editingFeedback._id, {

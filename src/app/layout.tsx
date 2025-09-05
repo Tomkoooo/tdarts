@@ -105,6 +105,7 @@ export default async function RootLayout({
         <meta name="color-scheme" content="only dark" />
         <meta name="theme-color" content="#42010b" />
         <meta name="supported-color-schemes" content="dark" />
+        <meta name="google-site-verification" content="0fadL9zSu0Oc0kyt3hnRa_S1jEOTUVQp4PaHLJm7JF4" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
