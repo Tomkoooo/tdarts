@@ -5,13 +5,17 @@ export interface IUser {
     username: string;
     name: string
     email: string;
-    password: string;
+    password?: string; // OAuth esetén opcionális
     isVerified: boolean;
     isAdmin: boolean;
     createdAt: Date;
     updatedAt: Date;
     lastLogin: Date | null;
     isDeleted?: boolean;
+    // OAuth adatok
+    googleId?: string;
+    profilePicture?: string;
+    authProvider?: 'local' | 'google';
     codes: {
         reset_password: string | null;
         verify_email: string | null;

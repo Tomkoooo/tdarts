@@ -7,13 +7,17 @@ const userSchema = new mongoose.Schema<UserDocument>(
     username: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: false }, // OAuth esetén nem kötelező
     isVerified: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     lastLogin: { type: Date, default: null },
     isDeleted: { type: Boolean, default: false },
+    // OAuth adatok
+    googleId: { type: String, default: null },
+    profilePicture: { type: String, default: null },
+    authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
     codes: {
       reset_password: { type: String, default: null },
       verify_email: { type: String, default: null },
@@ -34,8 +38,8 @@ userSchema.pre('save', async function (next) {
   if (!emailRegex.test(this.email)) {
     return next(new Error('Invalid email format'));
   }
-  // Hash password if modified
-  if (this.isModified('password')) {
+  // Hash password if modified and password exists (not OAuth user)
+  if (this.isModified('password') && this.password) {
     this.password = await bcrypt.hash(this.password, 15);
   }
   this.updatedAt = new Date();
@@ -43,6 +47,9 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.matchPassword = async function (password: string): Promise<boolean> {
+  if (!this.password) {
+    return false; // OAuth felhasználóknál nincs jelszó
+  }
   return await bcrypt.compare(password, this.password);
 };
 

@@ -4,6 +4,10 @@ import { cookies } from "next/headers";
 import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
 import Navbar from "@/components/homapage/Navbar";
+import SessionProvider from "@/components/providers/SessionProvider";
+import AuthSync from "@/components/providers/AuthSync";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: {
@@ -83,6 +87,7 @@ export default async function RootLayout({
   const token = (await cookieStore).get("token")?.value;
   let initialUser = undefined;
 
+  // Először próbáljuk meg a JWT token-t
   if (token) {
     try {
       const user = await AuthService.verifyToken(token);
@@ -94,8 +99,48 @@ export default async function RootLayout({
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
       };
+      console.log("Layout - JWT user found:", initialUser._id);
     } catch (error) {
       console.error("JWT verification error:", error);
+    }
+  }
+
+  // Ha nincs JWT token vagy nem sikerült, próbáljuk meg a NextAuth session-t
+  if (!initialUser) {
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user) {
+        console.log("Layout - NextAuth session found:", session.user);
+        // Ha van NextAuth session, de nincs JWT token, akkor generáljunk egyet
+        if (!token) {
+          try {
+            const { connectMongo } = await import('@/lib/mongoose');
+            const { UserModel } = await import('@/database/models/user.model');
+            await connectMongo();
+            
+            const user = await UserModel.findOne({ 
+              email: session.user.email
+            });
+            
+            if (user) {
+              await AuthService.generateAuthToken(user);
+              initialUser = {
+                _id: user._id.toString(),
+                username: user.username,
+                name: user.name,
+                email: user.email,
+                isVerified: user.isVerified,
+                isAdmin: user.isAdmin,
+              };
+              console.log("Layout - Generated JWT for NextAuth user:", initialUser._id);
+            }
+          } catch (error) {
+            console.error("Error generating JWT for NextAuth user:", error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("NextAuth session error:", error);
     }
   }
 
@@ -146,11 +191,14 @@ export default async function RootLayout({
         />
       </head>
       <body className="flex flex-col pt-16 md:pt-20">
-        <UserProvider initialUser={initialUser}>
-          {/* Navigation */}
-          <Navbar />
-          {children}
-        </UserProvider>
+        <SessionProvider>
+          <UserProvider initialUser={initialUser}>
+            <AuthSync />
+            {/* Navigation */}
+            <Navbar />
+            {children}
+          </UserProvider>
+        </SessionProvider>
       </body>
     </html>
   );

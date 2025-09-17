@@ -4,6 +4,7 @@ import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, Icon
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
+import { useLogout } from "@/hooks/useLogout";
 import IconDart from "./icons/IconDart";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +12,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const {user} = useUserContext();
+  const {logout} = useLogout();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -100,7 +102,7 @@ const Navbar = () => {
                   <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-box w-52">
                     <li><Link href="/profile" className="text-white hover:text-red-300">Profil</Link></li>
                     <li><Link href="/" className="text-white hover:text-red-300">Főoldal</Link></li>
-                    <li><Link href="/auth/logout" className="text-white hover:text-red-300">Kijelentkezés</Link></li>
+                    <li><button onClick={logout} className="text-white hover:text-red-300 w-full text-left">Kijelentkezés</button></li>
                   </ul>
                 </div>
               </div>
@@ -183,14 +185,16 @@ const Navbar = () => {
                     </div>
                     <span className="font-medium text-gray-300">{user?.name}</span>
                   </div>
-                  <Link 
-                    href="/" 
+                  <button 
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
                     className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
-                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <IconLogout className="w-5 h-5"/>
                     <span>Kilépés</span>
-                  </Link>
+                  </button>
                 </div>
               ) : user ? (
                 <div className="flex flex-col gap-3">

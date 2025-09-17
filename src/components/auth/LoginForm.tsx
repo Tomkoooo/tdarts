@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock, IconLanguage } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock, IconLanguage, IconBrandGoogle } from '@tabler/icons-react';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 
 // Nyelvi szövegek
 const translations = {
@@ -27,7 +28,9 @@ const translations = {
     passwordMinLength: 'A jelszónak legalább 6 karakter hosszúnak kell lennie',
     showPassword: 'Jelszó megjelenítése',
     hidePassword: 'Jelszó elrejtése',
-    language: 'Nyelv'
+    language: 'Nyelv',
+    loginWithGoogle: 'Bejelentkezés Google-lel',
+    or: 'vagy'
   },
   en: {
     title: 'Login',
@@ -47,7 +50,9 @@ const translations = {
     passwordMinLength: 'Password must be at least 6 characters long',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
-    language: 'Language'
+    language: 'Language',
+    loginWithGoogle: 'Sign in with Google',
+    or: 'or'
   }
 };
 
@@ -107,6 +112,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
       }
     } catch (error) {
       console.error('Login error:', error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signIn('google', { 
+        callbackUrl: redirectPath || '/',
+        redirect: true 
+      });
+    } catch (error) {
+      console.error('Google login error:', error);
     }
   };
 
@@ -230,6 +246,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
           )}
         </button>
       </form>
+
+      {/* Google bejelentkezés */}
+      <div className="mt-6">
+      <div className="divider">
+              {t.or}
+          </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className="mt-4 w-full cursor-pointer flex justify-center items-center px-4 py-2 border border-[hsl(var(--border) / 0.5)] rounded-lg shadow-sm bg-[hsl(var(--background) / 0.5)] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background) / 0.8)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+          disabled={isLoading}
+        >
+          <IconBrandGoogle className="w-5 h-5 mr-2" />
+          {t.loginWithGoogle}
+        </button>
+      </div>
 
       {onSignUp && (
         <div className="mt-6 text-center">

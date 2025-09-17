@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { useUserContext } from "@/hooks/useUser";
+import { useLogout } from "@/hooks/useLogout";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Label from "@/components/ui/Label";
@@ -55,6 +56,7 @@ type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>;
 const ProfilePage: React.FC = () => {
   const router = useRouter();
   const { user, setUser } = useUserContext();
+  const { logout } = useLogout();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -152,22 +154,11 @@ const ProfilePage: React.FC = () => {
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await toast.promise(
-        axios.post("/api/profile/logout", {}, {
-          headers: { "Content-Type": "application/json" },
-        }),
-        {
-          loading: "Kijelentkezés folyamatban...",
-          success: () => {
-            setUser(undefined);
-            router.push("/auth/login");
-            return "Sikeresen kijelentkeztél!";
-          },
-          error: (error) => error.response?.data.error || "Hiba történt a kijelentkezés során",
-        }
-      );
+      await logout();
+      toast.success("Sikeresen kijelentkeztél");
     } catch (error) {
       console.error("Logout error:", error);
+      toast.error("Hiba történt a kijelentkezés során");
     } finally {
       setIsLoading(false);
     }

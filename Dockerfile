@@ -5,7 +5,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache curl
 COPY package.json ./
 COPY package-lock.json ./
-RUN npm install
+RUN npm install --f
 ENV MONGODB_URI=mongodb://admin:admin@sironicsrv:27017/
 COPY . .
 RUN npm run build

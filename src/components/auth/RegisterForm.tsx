@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { IconEye, IconEyeOff, IconUser, IconMail, IconLock, IconUserPlus, IconLanguage } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconUser, IconMail, IconLock, IconUserPlus, IconLanguage, IconBrandGoogle } from '@tabler/icons-react';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 
 // Validációs séma az űrlaphoz, az API követelményeinek megfelelően
 //eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -60,7 +61,9 @@ const translations = {
     showPassword: 'Jelszó megjelenítése',
     hidePassword: 'Jelszó elrejtése',
     language: 'Nyelv',
-    usernameNoSpaces: 'A felhasználónév nem tartalmazhat szóközt'
+    usernameNoSpaces: 'A felhasználónév nem tartalmazhat szóközt',
+    registerWithGoogle: 'Regisztráció Google-lel',
+    or: 'vagy'
   },
   en: {
     title: 'Registration',
@@ -89,7 +92,9 @@ const translations = {
     showPassword: 'Show password',
     hidePassword: 'Hide password',
     language: 'Language',
-    usernameNoSpaces: 'Username cannot contain spaces'
+    usernameNoSpaces: 'Username cannot contain spaces',
+    registerWithGoogle: 'Sign up with Google',
+    or: 'or'
   }
 };
 
@@ -142,6 +147,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       }
     } catch (error) {
       console.error('Registration error:', error);
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    try {
+      await signIn('google', { 
+        callbackUrl: redirectPath || '/',
+        redirect: true 
+      });
+    } catch (error) {
+      console.error('Google registration error:', error);
     }
   };
 
@@ -340,6 +356,24 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           )}
         </button>
       </form>
+
+      {/* Google regisztráció */}
+      <div className="mt-6">
+
+      <div className="divider">
+              {t.or}
+          </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleRegister}
+          className="mt-4 w-full flex justify-center cursor-pointer items-center px-4 py-2 border border-[hsl(var(--border) / 0.5)] rounded-lg shadow-sm bg-[hsl(var(--background) / 0.5)] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background) / 0.8)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+          disabled={isLoading}
+        >
+          <IconBrandGoogle className="w-5 h-5 mr-2" />
+          {t.registerWithGoogle}
+        </button>
+      </div>
 
       {/* Bejelentkezés link */}
       {onLogin && (
