@@ -66,6 +66,7 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account }) {
+      // Csak akkor frissítsük a token-t, ha új bejelentkezés történt
       if (user && account?.provider === 'google') {
         try {
           await connectMongo();
@@ -93,6 +94,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      // Csak akkor frissítsük a session-t, ha van token adat
       if (session.user && token.userId) {
         (session.user as any).id = token.userId as string;
         (session.user as any).isAdmin = token.isAdmin as boolean;

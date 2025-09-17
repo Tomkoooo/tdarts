@@ -102,41 +102,55 @@ export default async function RootLayout({
       console.log("Layout - JWT user found:", initialUser._id);
     } catch (error) {
       console.error("JWT verification error:", error);
+      // Ha a JWT token érvénytelen, töröljük a cookie-t
+      try {
+        const { cookies } = await import('next/headers');
+        const cookieStore = await cookies();
+        cookieStore.delete('token');
+        console.log("Layout - Invalid JWT token deleted");
+      } catch (deleteError) {
+        console.error("Error deleting invalid JWT token:", deleteError);
+      }
     }
   }
 
-  // Ha nincs JWT token vagy nem sikerült, próbáljuk meg a NextAuth session-t
+  // Csak akkor ellenőrizzük a NextAuth session-t, ha nincs érvényes JWT token
   if (!initialUser) {
     try {
       const session = await getServerSession(authOptions);
       if (session?.user) {
         console.log("Layout - NextAuth session found:", session.user);
         // Ha van NextAuth session, de nincs JWT token, akkor generáljunk egyet
-        if (!token) {
-          try {
-            const { connectMongo } = await import('@/lib/mongoose');
-            const { UserModel } = await import('@/database/models/user.model');
-            await connectMongo();
-            
-            const user = await UserModel.findOne({ 
-              email: session.user.email
-            });
-            
-            if (user) {
+        try {
+          const { connectMongo } = await import('@/lib/mongoose');
+          const { UserModel } = await import('@/database/models/user.model');
+          await connectMongo();
+          
+          const user = await UserModel.findOne({ 
+            email: session.user.email
+          });
+          
+          if (user) {
+            // Csak akkor generáljunk JWT token-t, ha nincs már érvényes
+            const existingToken = (await cookies()).get('token')?.value;
+            if (!existingToken) {
               await AuthService.generateAuthToken(user);
-              initialUser = {
-                _id: user._id.toString(),
-                username: user.username,
-                name: user.name,
-                email: user.email,
-                isVerified: user.isVerified,
-                isAdmin: user.isAdmin,
-              };
-              console.log("Layout - Generated JWT for NextAuth user:", initialUser._id);
+              console.log("Layout - Generated JWT for NextAuth user:", user._id);
+            } else {
+              console.log("Layout - JWT token already exists, skipping generation");
             }
-          } catch (error) {
-            console.error("Error generating JWT for NextAuth user:", error);
+            
+            initialUser = {
+              _id: user._id.toString(),
+              username: user.username,
+              name: user.name,
+              email: user.email,
+              isVerified: user.isVerified,
+              isAdmin: user.isAdmin,
+            };
           }
+        } catch (error) {
+          console.error("Error generating JWT for NextAuth user:", error);
         }
       }
     } catch (error) {

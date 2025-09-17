@@ -24,47 +24,38 @@ const Login: React.FC = () => {
   const handleLogin = async (data: { email: string; password: string }) => {
     console.log('Login data:', data);
     try {
-      await toast.promise(
-        axios.post('/api/auth/login', data, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }).then((response) => {
-          // Extract the user from the response and set it in the context
-          const user = response.data.user;
-          setUser({
-            _id: user._id,
-            username: user.username,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            isVerified: user.isVerified,
-          });
-        }),
-        //TODO: nem állítja be a felhasználót a contextben, mert a promise-t nem várja meg
-        {
-          loading: 'Bejelentkezés folyamatban...',
-          success: () => {
-            // Navigate to redirect path or default to home
-            if (redirectPath) {
-              router.push(redirectPath);
-            } else {
-              router.push('/search'); // Navigate to the home page
-            }
-            return 'Sikeres bejelentkezés!';
-          },
-          error: (error) => {
-            console.error('Login error:', error);
-            if (error.response && error.response.data.error) {
-              return error.response.data.error; // Error from the server response
-            }
-            return 'Hiba történt a bejelentkezés során'; // General error message
-          },
-        }
-      );
-    } catch (error) {
-      // toast.promise handles errors, so no additional logic is needed here
+      const response = await axios.post('/api/auth/login', data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Extract the user from the response and set it in the context
+      const user = response.data.user;
+      setUser({
+        _id: user._id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        isVerified: user.isVerified,
+      });
+
+      toast.success('Sikeres bejelentkezés!');
+      
+      // Navigate to redirect path or default to home
+      if (redirectPath) {
+        router.push(redirectPath);
+      } else {
+        router.push('/search'); // Navigate to the home page
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
+      if (error.response && error.response.data.error) {
+        toast.error(error.response.data.error); // Error from the server response
+      } else {
+        toast.error('Hiba történt a bejelentkezés során'); // General error message
+      }
     }
   };
 

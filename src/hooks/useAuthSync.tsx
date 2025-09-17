@@ -34,15 +34,12 @@ export const useAuthSync = () => {
       }
       
       // Ha nincs NextAuth session és van user a context-ben, akkor töröljük
+      // DE csak akkor, ha a user Google OAuth-val jelentkezett be
       if (!session && user && status === 'unauthenticated') {
-        console.log('AuthSync - No NextAuth session, clearing user from context');
-        setUser(undefined);
-      }
-      
-      // Ha van NextAuth session, de a user context-ben nincs, akkor szinkronizáljuk
-      if (session?.user && !user && status === 'authenticated') {
-        console.log('AuthSync - NextAuth session exists but no user in context, syncing...');
-        // Ez a fenti logika már kezeli ezt az esetet
+        // Ellenőrizzük, hogy a user Google OAuth-val jelentkezett be
+        // Ha igen, akkor töröljük, ha nem, akkor megtartjuk (manuális bejelentkezés)
+        console.log('AuthSync - No NextAuth session, but keeping user in context (manual login)');
+        // setUser(undefined); // Kommenteltük ki, hogy ne törölje a manuális bejelentkezést
       }
     };
 
