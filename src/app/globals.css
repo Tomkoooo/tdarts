@@ -1212,3 +1212,50 @@ html {
 .bg-pattern {
   background: repeating-linear-gradient(135deg, oklch(8% 0.02 12 / 0.1) 0 2px, transparent 2px 20px);
 }
+
+/* Auto-link detection for URLs */
+a[href^="http://"], 
+a[href^="https://"], 
+a[href^="www."] {
+  color: var(--primary);
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+a[href^="http://"]:hover, 
+a[href^="https://"]:hover, 
+a[href^="www."]:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+/* Auto-detect and style URLs in text content */
+p:has-text("http://"), 
+p:has-text("https://"), 
+p:has-text("www.") {
+  word-break: break-all;
+}
+
+/* Email content link styling */
+.email-content a {
+  color: #b62441!important;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.email-content a:hover {
+  color: #8a1b31 !important;
+  text-decoration: underline;
+}
+
+/* Auto-link detection for email content */
+.email-content p {
+  word-break: break-word;
+}
+
+.email-content p:contains("http://") a,
+.email-content p:contains("https://") a,
+.email-content p:contains("www.") a {
+  color: #b62441!important;
+  text-decoration: underline;
+}

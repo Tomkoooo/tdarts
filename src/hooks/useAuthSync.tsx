@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserContext } from './useUser';
 import axios from 'axios';
@@ -7,20 +7,33 @@ import axios from 'axios';
 export const useAuthSync = () => {
   const { data: session, status } = useSession();
   const { user, setUser } = useUserContext();
+  const syncedRef = useRef(false);
 
   useEffect(() => {
     const syncAuth = async () => {
-      // Ha van NextAuth session, de nincs user a context-ben
-      if (session?.user && !user && status === 'authenticated') {
+      console.log('AuthSync - Effect triggered:', {
+        hasSession: !!session?.user,
+        hasUser: !!user,
+        status,
+        sessionUser: session?.user ? { email: session.user.email, name: session.user.name } : null
+      });
+      
+      // Always try to sync if there's a NextAuth session but no JWT token in context
+      if (session?.user && status === 'authenticated' && !syncedRef.current) {
         console.log('AuthSync - NextAuth session found, syncing with context:', session.user);
+        syncedRef.current = true;
         
         try {
           // Hívjuk meg a Google OAuth callback API-t a JWT token generálásához
+          console.log('AuthSync - Calling /api/auth/google-callback POST');
           const response = await axios.post('/api/auth/google-callback');
           
           if (response.data.success) {
             setUser(response.data.user);
             console.log('AuthSync - User synced to context:', response.data.user._id);
+            console.log('AuthSync - JWT token should now be set in cookies');
+          } else {
+            console.log('AuthSync - Response not successful:', response.data);
           }
         } catch (error: any) {
           console.error('AuthSync - Error syncing user:', error);

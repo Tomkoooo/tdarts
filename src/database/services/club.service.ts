@@ -533,10 +533,14 @@ export class ClubService {
 
     let userRole = result[0].userRole;
 
-    // If user role is 'none', check if they are a system admin
+    // Check if user is a global admin (isAdmin: true) - only for global admins, not regular users
     if (userRole === 'none') {
-      const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
-      if (isAuthorized) {
+      const { UserModel } = await import('../models/user.model');
+      const user = await UserModel.findById(userId).select('isAdmin');
+      
+      // Only give admin access to users who are ACTUALLY global admins (isAdmin: true)
+      if (user?.isAdmin === true) {
+        console.log('Global admin detected, granting admin access to club:', clubId);
         userRole = 'admin';
       }
     }

@@ -20,8 +20,11 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
   const rawDescription: string = tournament.tournamentSettings?.description || '-';
   const description = typeof rawDescription === 'string'
     ? rawDescription.replace(
-        /(https:\/\/[^\s]+)/g,
-        (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary underline">${url}</a>`
+        /((?:https?:\/\/|www\.)[^\s]+)/g,
+        (url) => {
+          const href = url.startsWith('http') ? url : `http://${url}`;
+          return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary underline">${url}</a>`;
+        }
       )
     : '-';
   const isDescriptionLong = description.length > 100;

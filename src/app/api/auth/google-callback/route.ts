@@ -39,11 +39,13 @@ export async function GET(request: NextRequest) {
     // Cookie beállítása és átirányítás
     const response = NextResponse.redirect(new URL('/', request.url));
     
+    // Set the token as an HTTP-only cookie (matching the login route settings)
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 180 // 180 nap
+      maxAge: 60 * 60 * 24 * 180, // 180 days
+      sameSite: 'strict',
+      path: '/',
     });
 
     return response;
@@ -66,13 +68,19 @@ export async function POST() {
 
     await connectMongo();
     
-    // Keressük meg a felhasználót
-    // A session.user.id a MongoDB ObjectId-t tartalmazza, nem a Google ID-t
-    const user = await UserModel.findOne({ 
+    // Keressük meg a felhasználót - próbáljuk meg mindkét módon
+    let user = await UserModel.findOne({ 
       email: session.user.email
     });
 
+    // Ha nem találjuk email alapján, próbáljuk meg a Google ID alapján
+    if (!user && (session.user as any).id) {
+      user = await UserModel.findById((session.user as any).id);
+    }
+
     console.log('Google OAuth callback POST - Found user:', user ? user._id : 'No user found');
+    console.log('Google OAuth callback POST - User email:', user?.email);
+    console.log('Google OAuth callback POST - User isAdmin:', user?.isAdmin);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -82,6 +90,7 @@ export async function POST() {
     const token = await AuthService.generateAuthToken(user);
     
     console.log('Google OAuth callback POST - Generated token for user:', user._id);
+    console.log('Google OAuth callback POST - Token generated successfully');
     
     // Cookie beállítása
     const response = NextResponse.json({ 
@@ -98,13 +107,16 @@ export async function POST() {
       }
     });
     
+    // Set the token as an HTTP-only cookie (matching the login route settings)
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 180 // 180 nap
+      maxAge: 60 * 60 * 24 * 180, // 180 days
+      sameSite: 'strict',
+      path: '/',
     });
 
+    console.log('Google OAuth callback POST - JWT token set in cookie');
     return response;
   } catch (error: any) {
     console.error('Google OAuth callback POST error:', error);

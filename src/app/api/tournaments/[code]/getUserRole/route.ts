@@ -7,7 +7,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { code } = await params;
     const token = await request.cookies.get('token')?.value;
+    console.log('getUserRole - Token found:', token ? 'Yes' : 'No');
+    console.log('getUserRole - Token value:', token ? token.substring(0, 20) + '...' : 'undefined');
+    
     if (!token) {
+      console.log('getUserRole - No token found, returning unauthorized');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     

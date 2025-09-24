@@ -134,8 +134,7 @@ export default async function RootLayout({
             // Csak akkor generáljunk JWT token-t, ha nincs már érvényes
             const existingToken = (await cookies()).get('token')?.value;
             if (!existingToken) {
-              await AuthService.generateAuthToken(user);
-              console.log("Layout - Generated JWT for NextAuth user:", user._id);
+              console.log("Layout - NextAuth user found but no JWT token, will be handled by AuthSync component");
             } else {
               console.log("Layout - JWT token already exists, skipping generation");
             }

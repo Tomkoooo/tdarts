@@ -35,6 +35,7 @@ export default function AdminTournamentsPage() {
       setLoading(true);
       const response = await axios.get('/api/admin/tournaments');
       setTournaments(response.data.tournaments);
+      console.log(response.data.tournaments);
     } catch (error) {
       console.error('Error fetching tournaments:', error);
       toast.error('Hiba történt a versenyek betöltése során');

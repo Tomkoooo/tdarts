@@ -53,9 +53,10 @@ export class AuthorizationService {
   static async checkAdminOrModerator(userId: string, clubId: string): Promise<boolean> {
     await connectMongo();
     
-    // Check if user is super admin
+    // Check if user is global admin (isAdmin: true)
     const user = await UserModel.findById(userId).select('isAdmin');
-    if (user?.isAdmin) {
+    if (user?.isAdmin === true) {
+      console.log('checkAdminOrModerator - Global admin detected:', userId);
       return true;
     }
     
@@ -94,7 +95,9 @@ export class AuthorizationService {
     }
 
     const roleInClub = result[0].userRole;
-    return roleInClub === 'admin' || roleInClub === 'moderator';
+    const hasPermission = roleInClub === 'admin' || roleInClub === 'moderator';
+    console.log('checkAdminOrModerator - Club role:', roleInClub, 'hasPermission:', hasPermission, 'for user:', userId);
+    return hasPermission;
   }
 
   /**
@@ -125,13 +128,14 @@ export class AuthorizationService {
   static async checkAdminOnly(userId: string, clubId: string): Promise<boolean> {
     await connectMongo();
     
-    // Check if user is super admin
+    // Check if user is global admin (isAdmin: true)
     const user = await UserModel.findById(userId).select('isAdmin');
-    if (user?.isAdmin) {
+    if (user?.isAdmin === true) {
+      console.log('checkAdminOnly - Global admin detected:', userId);
       return true;
     }
     
-    // Check club-specific role directly without recursion
+    // Check club-specific admin role
     const userObjectId = new (await import('mongoose')).Types.ObjectId(userId);
     
     const result = await (await import('../models/club.model')).ClubModel.aggregate([
@@ -142,19 +146,7 @@ export class AuthorizationService {
             $cond: {
               if: { $in: [userObjectId, '$admin'] },
               then: 'admin',
-              else: {
-                $cond: {
-                  if: { $in: [userObjectId, '$moderators'] },
-                  then: 'moderator',
-                  else: {
-                    $cond: {
-                      if: { $in: [userObjectId, '$members'] },
-                      then: 'member',
-                      else: 'none'
-                    }
-                  }
-                }
-              }
+              else: 'none'
             }
           }
         }
@@ -165,7 +157,9 @@ export class AuthorizationService {
       return false;
     }
 
-    return result[0].userRole === 'admin';
+    const isClubAdmin = result[0].userRole === 'admin';
+    console.log('checkAdminOnly - Club admin status:', isClubAdmin, 'for user:', userId, 'in club:', clubId);
+    return isClubAdmin;
   }
 
   static async checkMemberOrHigher(userId: string, clubId: string): Promise<boolean> {

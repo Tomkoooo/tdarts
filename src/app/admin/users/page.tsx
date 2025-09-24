@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield } from '@tabler/icons-react';
+import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield, IconMail } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import DailyChart from '@/components/admin/DailyChart';
 
@@ -22,6 +22,10 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'admin' | 'user'>('all');
+  const [emailModal, setEmailModal] = useState<{
+    isOpen: boolean;
+    user: AdminUser | null;
+  }>({ isOpen: false, user: null });
 
   const fetchUsers = async () => {
     try {
@@ -68,6 +72,28 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error('Error deactivating user:', error);
       toast.error('Hiba történt a deaktiválás során');
+    }
+  };
+
+  const handleEmailClick = (user: AdminUser) => {
+    setEmailModal({ isOpen: true, user });
+  };
+
+  const sendEmail = async (subject: string, message: string) => {
+    if (!emailModal.user) return;
+    
+    try {
+      await axios.post('/api/admin/send-email', {
+        userId: emailModal.user._id,
+        subject,
+        message
+      });
+      
+      toast.success('Email sikeresen elküldve!');
+      setEmailModal({ isOpen: false, user: null });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error('Hiba történt az email küldése során');
     }
   };
 
@@ -214,7 +240,15 @@ export default function AdminUsersPage() {
               {filteredUsers.map(user => (
                 <tr key={user._id} className="hover:bg-base-200/30 transition-colors">
                   <td className="font-medium text-base-content">{user.name}</td>
-                  <td className="text-base-content/80">{user.email}</td>
+                  <td className="text-base-content/80">
+                    <button
+                      onClick={() => handleEmailClick(user)}
+                      className="text-primary hover:text-primary-focus underline decoration-dotted underline-offset-2 transition-colors cursor-pointer"
+                      title="Email küldése"
+                    >
+                      {user.email}
+                    </button>
+                  </td>
                   <td className="text-base-content/80 font-mono text-sm">{user.username}</td>
                   <td>
                     <div className="flex flex-wrap gap-2">
@@ -284,6 +318,108 @@ export default function AdminUsersPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Email Modal */}
+      {emailModal.isOpen && emailModal.user && (
+        <EmailModal
+          user={emailModal.user}
+          onClose={() => setEmailModal({ isOpen: false, user: null })}
+          onSend={sendEmail}
+        />
+      )}
+    </div>
+  );
+}
+
+// Email Modal Component
+interface EmailModalProps {
+  user: AdminUser;
+  onClose: () => void;
+  onSend: (subject: string, message: string) => void;
+}
+
+function EmailModal({ user, onClose, onSend }: EmailModalProps) {
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim() || !message.trim()) return;
+    
+    setLoading(true);
+    await onSend(subject, message);
+    setLoading(false);
+  };
+
+  return (
+    <div className="modal modal-open">
+      <div className="modal-box relative max-w-2xl">
+        <button
+          className="btn btn-sm btn-circle absolute right-2 top-2"
+          onClick={onClose}
+        >
+          ✕
+        </button>
+        <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
+          <IconMail className="w-6 h-6" />
+          Email küldése: {user.name}
+        </h3>
+        <p className="text-sm text-base-content/70 mb-6">
+          Email cím: <span className="font-mono">{user.email}</span>
+        </p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="label">
+              <span className="label-text">Tárgy</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Email tárgya"
+              className="input input-bordered w-full"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="label">
+              <span className="label-text">Üzenet</span>
+            </label>
+            <textarea
+              placeholder="Írd ide az üzenetet..."
+              className="textarea textarea-bordered w-full h-32"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+            ></textarea>
+          </div>
+          
+          <div className="modal-action">
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              disabled={loading || !subject.trim() || !message.trim()}
+            >
+              {loading ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : (
+                'Email küldése'
+              )}
+            </button>
+            <button 
+              type="button" 
+              className="btn btn-ghost" 
+              onClick={onClose}
+              disabled={loading}
+            >
+              Mégse
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

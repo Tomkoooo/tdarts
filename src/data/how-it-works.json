@@ -163,6 +163,23 @@
           },
           {
             "type": "subsection",
+            "title": "Játékosok értesítése",
+            "content": [
+              "A moderátorok és adminok értesítést küldhetnek a regisztrált játékosoknak a &ldquo;Értesítés&rdquo; gomb segítségével.",
+              "Az értesítés e-mail formájában érkezik meg a játékosokhoz, például:",
+              "• Nevezési díj befizetésére való emlékeztetés",
+              "• Torna információk frissítése",
+              "• Jelentkezési határidő közeledésének értesítése",
+              "• Eltávolítási figyelmeztetés, ha nem fizetik be a díjat",
+              "A játékosok e-mail címe nem látható a moderátorok számára, csak az értesítés küldése történik meg."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Az értesítés csak regisztrált felhasználóknak küldhető, akiknek van érvényes e-mail címe a rendszerben."
+            }
+          },
+          {
+            "type": "subsection",
             "title": "Torna indítása",
             "content": ["Az &ldquo;Admin műveletek&rdquo; szekcióban indíthatod el a tornát."],
             "subsections": [

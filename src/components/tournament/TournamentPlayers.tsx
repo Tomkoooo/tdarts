@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import PlayerSearch from '@/components/club/PlayerSearch';
+import PlayerNotificationModal from '@/components/tournament/PlayerNotificationModal';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { useUserContext } from '@/hooks/useUser';
+import { IconMail, IconCheck, IconX, IconTrash } from '@tabler/icons-react';
 
 interface TournamentPlayersProps {
   tournament: any;
@@ -25,6 +27,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const {user} = useUserContext()
   const [localUserPlayerStatus, setLocalUserPlayerStatus] = useState(userPlayerStatus);
   const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId);
+  const [notificationModal, setNotificationModal] = useState<{
+    isOpen: boolean;
+    player: any;
+  }>({ isOpen: false, player: null });
   const code = tournament?.tournamentId;
 
   // Update local state when props change
@@ -167,6 +173,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     }
   };
 
+  const handleNotifyPlayer = (player: any) => {
+    setNotificationModal({ isOpen: true, player });
+  };
+
   // Calculate if there are free spots
   const maxPlayers = tournament?.tournamentSettings?.maxPlayers || 0;
   const currentPlayers = localPlayers.length;
@@ -223,30 +233,63 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       <ul className="mt-4 space-y-2">
         {localPlayers.length === 0 && <li className="text-base-content/60">Nincs játékos.</li>}
         {localPlayers.map((player) => (
-          <li key={player._id} className="flex items-center gap-4 p-2 bg-base-100 rounded shadow">
-            <span className="flex-1">{player.playerReference?.name || player.name || player._id}</span>
-            
-            {allowAdminActions ? (
-              // Show status and action buttons for tournaments where admin actions are allowed
-              <>
-                <span className="px-2 py-1 text-xs rounded bg-base-200">{player.status}</span>
-                {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                  <>
-                    {player.status !== 'checked-in' && (
-                      <button className="btn btn-xs btn-success mr-2" onClick={() => handleCheckInPlayer(player.playerReference._id)}>
-                        Check-in
-                      </button>
+          <li key={player._id} className="p-3 bg-base-100 rounded shadow">
+            {/* Main row with player name, status, and admin buttons */}
+            <div className="flex items-center gap-3">
+              {/* Player name - takes up most of the space */}
+              <span className="flex-1 text-base font-medium">{player.playerReference?.name || player.name || player._id}</span>
+              
+              {allowAdminActions ? (
+                // Show status indicator and action buttons for tournaments where admin actions are allowed
+                <div className="flex items-center gap-2">
+                  {/* Status indicator */}
+                  <div className="flex items-center">
+                    {player.status === 'checked-in' ? (
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center" title="Check-in">
+                        <IconCheck className="w-4 h-4 text-white" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center" title="Nincs check-in">
+                        <IconX className="w-4 h-4 text-white" />
+                      </div>
                     )}
-                    <button className="btn btn-xs btn-error" onClick={() => handleRemovePlayer(player.playerReference._id)}>
-                      Eltávolítás
-                    </button>
-                  </>
-                )}
-                {user && localUserPlayerId === player.playerReference._id && localUserPlayerStatus !== 'none' && (
-                  <button className="btn btn-xs btn-warning ml-2" onClick={handleSelfWithdraw}>Jelentkezés visszavonása</button>
-                )}
-              </>
-            ) : (
+                  </div>
+
+                  {/* Action buttons */}
+                  {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                      {player.status !== 'checked-in' && (
+                        <button 
+                          className="btn btn-xs btn-success" 
+                          onClick={() => handleCheckInPlayer(player.playerReference._id)}
+                          title="Check-in"
+                        >
+                          <span className="hidden sm:inline">Check-in</span>
+                          <span className="sm:hidden">✓</span>
+                        </button>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <button
+                          className="btn btn-xs btn-info"
+                          onClick={() => handleNotifyPlayer(player)}
+                          title="Értesítés küldése"
+                        >
+                          <IconMail size={16} />
+                          <span className="hidden sm:inline ml-1">Értesítés</span>
+                        </button>
+                        <button
+                          className="btn btn-xs btn-error"
+                          onClick={() => handleRemovePlayer(player.playerReference._id)}
+                          title="Eltávolítás"
+                        >
+                          <IconTrash size={16} />
+                          <span className="hidden sm:inline">Eltávolítás</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
               // Show player statistics for tournaments where groups are generated
               <div className="flex gap-2 text-sm w-1/2 ">
                 <div className="flex items-center gap-1 w-1/3">
@@ -265,6 +308,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   </span>
                   <span className="text-base-content/60">x180</span>
                 </div>
+              </div>
+            )}
+            </div>
+
+            {/* Withdrawal button row - separate from main content */}
+            {user && localUserPlayerId === player.playerReference._id && localUserPlayerStatus !== 'none' && (
+              <div className="mt-2 pt-2 border-t border-base-300">
+                <button className="btn btn-xs btn-warning" onClick={handleSelfWithdraw}>
+                  <span className="hidden sm:inline">Jelentkezés visszavonása</span>
+                  <span className="sm:hidden">Visszavonás</span>
+                </button>
               </div>
             )}
           </li>
@@ -300,6 +354,14 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           </p>
         </div>
       )}
+
+      {/* Player Notification Modal */}
+      <PlayerNotificationModal
+        isOpen={notificationModal.isOpen}
+        onClose={() => setNotificationModal({ isOpen: false, player: null })}
+        player={notificationModal.player}
+        tournamentName={tournament?.tournamentSettings?.name || 'Torna'}
+      />
     </div>
   );
 };

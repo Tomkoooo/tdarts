@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
       },
       {
         $project: {
+          tournamentId: '$tournamentId',
           name: '$tournamentSettings.name',
           description: '$tournamentSettings.description',
           status: '$tournamentSettings.status',
