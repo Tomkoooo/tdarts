@@ -151,7 +151,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     }
     
     // Get initial state from external socket server
-    const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:8080';
+    const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
     fetch(`${socketServerUrl}/api/socket`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

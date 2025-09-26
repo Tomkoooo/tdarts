@@ -129,7 +129,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
       
       // Optionally get additional real-time data from external socket server (but don't replace database data)
       try {
-        const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:8080';
+        const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
         const socketResponse = await fetch(`${socketServerUrl}/api/socket`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

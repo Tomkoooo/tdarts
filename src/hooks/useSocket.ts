@@ -48,13 +48,21 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
     const connectWithAuth = async () => {
       if (!socket.connected) {
         console.log('Socket feature enabled, initializing authentication...');
-        const authSuccess = await initializeSocket();
-        if (authSuccess) {
-          console.log('Authentication successful, connecting to external server...');
-          socket.connect();
-          isConnected.current = true;
-        } else {
-          console.error('Authentication failed, cannot connect to socket server');
+        try {
+          const authSuccess = await initializeSocket();
+          if (authSuccess) {
+            console.log('Authentication successful, connecting to external server...');
+            socket.connect();
+            isConnected.current = true;
+          } else {
+            console.error('Authentication failed, cannot connect to socket server');
+          }
+        } catch (error: any) {
+          if (error.message.includes('not configured')) {
+            console.warn('Socket authentication not configured. Socket features disabled.');
+          } else {
+            console.error('Socket initialization failed:', error);
+          }
         }
       }
     };

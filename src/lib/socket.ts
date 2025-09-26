@@ -17,11 +17,17 @@ let apiKey: string | null = null;
 const getAuthToken = async (): Promise<{ token: string; apiKey: string }> => {
   try {
     const response = await axios.post('/api/socket/auth');
+    
+    if (response.status === 503) {
+      console.warn('Socket authentication not configured. Socket features will be disabled.');
+      throw new Error('Socket authentication not configured');
+    }
+    
     return {
       token: response.data.token,
       apiKey: response.data.apiKey
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to get socket auth token:', error);
     throw new Error('Authentication failed');
   }

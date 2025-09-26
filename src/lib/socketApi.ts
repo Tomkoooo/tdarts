@@ -34,6 +34,10 @@ export const socketApiCall = async (endpoint: string, data?: any) => {
     
     return response.data;
   } catch (error: any) {
+    if (error.response?.status === 503) {
+      console.warn('Socket authentication not configured. Socket API calls disabled.');
+      throw new Error('Socket authentication not configured');
+    }
     console.error('Socket API call failed:', error);
     throw new Error(error.response?.data?.error || 'Socket API call failed');
   }
