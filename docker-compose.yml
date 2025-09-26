@@ -1,7 +1,7 @@
 services:
   web:
-    image: ghcr.io/tomkoooo/bull_v2:main
-    container_name: bullv2
+    image: ghcr.io/tomkoooo/tdarts:main
+    container_name: tdarts
     restart: unless-stopped
     env_file:
       - .env.local
@@ -14,4 +14,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /root/snap/docker/2932/.docker/config.json:/config.json
-    command: --cleanup=true --interval 120 web
+    command: --cleanup=true --interval 120 tdarts

@@ -3,7 +3,7 @@
 import { io } from "socket.io-client";
 
 // Socket inicializálása a különálló socket serverhez
-const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:8080';
+const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://172.16.4.3:6969';
 
 export const socket = io(socketServerUrl, {
   autoConnect: false, // Manuális kapcsolat minden módban
