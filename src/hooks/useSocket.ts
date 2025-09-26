@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from 'react';
-import { socket } from '@/lib/socket';
+import { socket, initializeSocket } from '@/lib/socket';
 import { useSocketFeature } from './useFeatureFlag';
 
 interface UseSocketOptions {
@@ -45,11 +45,21 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
     }
 
     // Socket kapcsolat inicializálása csak akkor, ha a feature flag engedélyezett
-    if (!socket.connected) {
-      console.log('Socket feature enabled, connecting to external server...');
-      socket.connect();
-      isConnected.current = true;
-    }
+    const connectWithAuth = async () => {
+      if (!socket.connected) {
+        console.log('Socket feature enabled, initializing authentication...');
+        const authSuccess = await initializeSocket();
+        if (authSuccess) {
+          console.log('Authentication successful, connecting to external server...');
+          socket.connect();
+          isConnected.current = true;
+        } else {
+          console.error('Authentication failed, cannot connect to socket server');
+        }
+      }
+    };
+
+    connectWithAuth();
 
     // Room-okhoz csatlakozás csak egyszer
     if (socket.connected && !hasJoinedRooms.current) {

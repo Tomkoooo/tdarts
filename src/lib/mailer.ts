@@ -24,7 +24,7 @@ auth: {
 export async function sendEmail(MailOptions: MailOptions) {
     // send mail with defined transport object
     const info = await transporter.sendMail({
-      from: MailOptions.from ? MailOptions.from : `tDarts Értesítés <${process.env.EMAIL_USER!}>`, // sender address
+      from: MailOptions.from ? MailOptions.from : `tDarts - Értesítés <${process.env.EMAIL_USER!}>`, // sender address
       to: MailOptions.to, // list of receivers
       subject: MailOptions.subject, // Subject line
       text: MailOptions.text, // plain text body
