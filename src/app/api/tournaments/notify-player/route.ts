@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { playerId, subject, message, tournamentName } = await request.json();
+    const { playerId, subject, message, tournamentName, language = 'hu' } = await request.json();
 
     if (!playerId || !subject || !message || !tournamentName) {
       return NextResponse.json({ 
@@ -68,43 +68,61 @@ export async function POST(request: NextRequest) {
       });
     };
 
-    // Send email notification
+    // Generate email content based on language preference
+    const isHungarian = language === 'hu';
+    
     const emailContent = `
-      <div class="email-content" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <p style="color: #6b7280; font-size: 12px; margin-bottom: 20px; font-style: italic;">For English scroll down</p>
-        
-        <h2 style="color: #b62441;">Értesítés a(z) ${tournamentName} tornáról</h2>
-        <p>Kedves ${player.name}!</p>
-        
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #374151;">${subject}</h3>
-          <p style="white-space: pre-wrap; margin-bottom: 0;">${makeUrlsClickable(message)}</p>
+      <div class="email-content" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #b62441 0%, #8a1b31 100%); color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: bold;">
+            ${isHungarian ? 'tDarts - Verseny Értesítés' : 'tDarts - Tournament Notification'}
+          </h1>
         </div>
         
-        <p style="color: #6b7280; font-size: 14px;">
-          Ez az üzenet a(z) ${tournamentName} torna szervezőjétől érkezett.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-        
-        <h2 style="color: #b62441; font-size: 1.1em; margin-top: 0.5em;">Notification about the ${tournamentName} tournament</h2>
-        <p>Dear ${player.name},</p>
-        
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #374151;">${subject}</h3>
-          <p style="white-space: pre-wrap; margin-bottom: 0;">${makeUrlsClickable(message)}</p>
+        <!-- Content -->
+        <div style="padding: 30px;">
+          ${isHungarian ? `
+            <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Kedves ${player.name}!</h2>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              A ${tournamentName} verseny kapcsán szeretnénk értesíteni Önt a következőről:
+            </p>
+            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+              <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
+              <p style="color: #374151; margin: 0; white-space: pre-line;">${makeUrlsClickable(message)}</p>
+            </div>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              Ha bármilyen kérdése van, kérjük, lépjen kapcsolatba velünk.
+            </p>
+            <p style="color: #374151; line-height: 1.6;">
+              Üdvözlettel,<br>
+              A tDarts csapat
+            </p>
+          ` : `
+            <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Dear ${player.name}!</h2>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              Regarding the ${tournamentName} tournament, we would like to inform you about the following:
+            </p>
+            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+              <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
+              <p style="color: #374151; margin: 0; white-space: pre-line;">${makeUrlsClickable(message)}</p>
+            </div>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              If you have any questions, please contact us.
+            </p>
+            <p style="color: #374151; line-height: 1.6;">
+              Best regards,<br>
+              The tDarts team
+            </p>
+          `}
         </div>
         
-        <p style="color: #6b7280; font-size: 14px;">
-          This message was sent by the organizer of the ${tournamentName} tournament.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-        
-        <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          tDarts Platform - Versenykezelés<br>
-          <span style="color: #bdbdbd; font-size: 11px;">tDarts Platform - Tournament Management</span>
-        </p>
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 12px; margin: 0;">
+            © 2024 tDarts. Minden jog fenntartva.
+          </p>
+        </div>
       </div>
     `;
 

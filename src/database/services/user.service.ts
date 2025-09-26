@@ -3,6 +3,37 @@ import { ClubModel } from '../models/club.model';
 import { PlayerModel } from '../models/player.model';
 
 export class UserService {
+  static async updateUserAndPlayerName(userId: string, newName: string) {
+    try {
+      // Update the user document
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        userId,
+        { name: newName },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+
+      // Find and update the linked player document
+      const linkedPlayer = await PlayerModel.findOne({ userRef: userId });
+      if (linkedPlayer) {
+        await PlayerModel.findByIdAndUpdate(
+          linkedPlayer._id,
+          { name: newName },
+          { new: true }
+        );
+        console.log(`Updated player name for user ${userId} to: ${newName}`);
+      }
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user and player name:', error);
+      throw error;
+    }
+  }
+
   static async searchUsers(query: string, clubId?: string) {
     if (!query || query.length < 2) return [];
     const users = await UserModel.find({

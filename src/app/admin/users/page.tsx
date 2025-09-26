@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield, IconMail } from '@tabler/icons-react';
+import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield, IconMail, IconEye, IconEyeOff } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import DailyChart from '@/components/admin/DailyChart';
 
@@ -79,14 +79,15 @@ export default function AdminUsersPage() {
     setEmailModal({ isOpen: true, user });
   };
 
-  const sendEmail = async (subject: string, message: string) => {
+  const sendEmail = async (subject: string, message: string, language: 'hu' | 'en') => {
     if (!emailModal.user) return;
     
     try {
       await axios.post('/api/admin/send-email', {
         userId: emailModal.user._id,
         subject,
-        message
+        message,
+        language
       });
       
       toast.success('Email sikeresen elküldve!');
@@ -336,12 +337,14 @@ export default function AdminUsersPage() {
 interface EmailModalProps {
   user: AdminUser;
   onClose: () => void;
-  onSend: (subject: string, message: string) => void;
+  onSend: (subject: string, message: string, language: 'hu' | 'en') => void;
 }
 
 function EmailModal({ user, onClose, onSend }: EmailModalProps) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [language, setLanguage] = useState<'hu' | 'en'>('hu');
+  const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -349,13 +352,72 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
     if (!subject.trim() || !message.trim()) return;
     
     setLoading(true);
-    await onSend(subject, message);
+    await onSend(subject, message, language);
     setLoading(false);
+  };
+
+  const generateEmailPreview = () => {
+    const isHungarian = language === 'hu';
+    
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #b62441 0%, #8a1b31 100%); color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: bold;">
+            ${isHungarian ? 'tDarts - Admin Értesítés' : 'tDarts - Admin Notification'}
+          </h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 30px;">
+          ${isHungarian ? `
+            <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Kedves ${user.name}!</h2>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              A tDarts platform adminisztrátoraként szeretnénk értesíteni Önt a következőről:
+            </p>
+            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+              <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
+              <p style="color: #374151; margin: 0; white-space: pre-line;">${message}</p>
+            </div>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              Ha bármilyen kérdése van, kérjük, lépjen kapcsolatba velünk.
+            </p>
+            <p style="color: #374151; line-height: 1.6;">
+              Üdvözlettel,<br>
+              A tDarts admin csapat
+            </p>
+          ` : `
+            <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Dear ${user.name}!</h2>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              As a tDarts platform administrator, we would like to inform you about the following:
+            </p>
+            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+              <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
+              <p style="color: #374151; margin: 0; white-space: pre-line;">${message}</p>
+            </div>
+            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
+              If you have any questions, please contact us.
+            </p>
+            <p style="color: #374151; line-height: 1.6;">
+              Best regards,<br>
+              The tDarts admin team
+            </p>
+          `}
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 12px; margin: 0;">
+            © 2024 tDarts. Minden jog fenntartva.
+          </p>
+        </div>
+      </div>
+    `;
   };
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box relative max-w-2xl">
+      <div className="modal-box relative max-w-4xl max-h-[90vh] overflow-y-auto">
         <button
           className="btn btn-sm btn-circle absolute right-2 top-2"
           onClick={onClose}
@@ -370,56 +432,146 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
           Email cím: <span className="font-mono">{user.email}</span>
         </p>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="label">
-              <span className="label-text">Tárgy</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Email tárgya"
-              className="input input-bordered w-full"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              required
-            />
+        {!showPreview ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">
+                  <span className="label-text">Email nyelv</span>
+                </label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as 'hu' | 'en')}
+                  className="select select-bordered w-full"
+                >
+                  <option value="hu">Magyar (alapértelmezett)</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">
+                  <span className="label-text">Címzett</span>
+                </label>
+                <input
+                  type="text"
+                  value={user.name}
+                  className="input input-bordered w-full"
+                  disabled
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="label">
+                <span className="label-text">Tárgy</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Email tárgya"
+                className="input input-bordered w-full"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="label">
+                <span className="label-text">Üzenet</span>
+              </label>
+              <textarea
+                placeholder="Írd ide az üzenetet..."
+                className="textarea textarea-bordered w-full h-32"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+              ></textarea>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button 
+                type="button" 
+                className="btn btn-ghost flex-1" 
+                onClick={onClose}
+                disabled={loading}
+              >
+                Mégse
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-info flex-1"
+                onClick={() => setShowPreview(true)}
+                disabled={loading || !subject.trim() || !message.trim()}
+              >
+                <IconEye className="w-4 h-4" />
+                Előnézet
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary flex-1" 
+                disabled={loading || !subject.trim() || !message.trim()}
+              >
+                {loading ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : (
+                  'Email küldése'
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-semibold">Email előnézet</h4>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="btn btn-ghost btn-sm"
+              >
+                <IconEyeOff className="w-4 h-4" />
+                Szerkesztés
+              </button>
+            </div>
+            
+            <div className="border border-base-300 rounded-lg overflow-hidden">
+              <div className="bg-base-200 p-3 border-b border-base-300">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">Nyelv:</span>
+                  <span className="badge badge-primary">
+                    {language === 'hu' ? 'Magyar' : 'English'}
+                  </span>
+                  <span className="font-medium ml-4">Címzett:</span>
+                  <span>{user.name}</span>
+                </div>
+              </div>
+              <div className="p-4 bg-base-100 max-h-96 overflow-y-auto">
+                <div 
+                  dangerouslySetInnerHTML={{ __html: generateEmailPreview() }}
+                  className="email-preview"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="btn btn-ghost flex-1"
+              >
+                Szerkesztés
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="btn btn-primary flex-1"
+              >
+                {loading ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : (
+                  'Email küldése'
+                )}
+              </button>
+            </div>
           </div>
-          
-          <div>
-            <label className="label">
-              <span className="label-text">Üzenet</span>
-            </label>
-            <textarea
-              placeholder="Írd ide az üzenetet..."
-              className="textarea textarea-bordered w-full h-32"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              required
-            ></textarea>
-          </div>
-          
-          <div className="modal-action">
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              disabled={loading || !subject.trim() || !message.trim()}
-            >
-              {loading ? (
-                <span className="loading loading-spinner loading-sm"></span>
-              ) : (
-                'Email küldése'
-              )}
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-ghost" 
-              onClick={onClose}
-              disabled={loading}
-            >
-              Mégse
-            </button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   );

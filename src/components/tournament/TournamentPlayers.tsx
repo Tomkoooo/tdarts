@@ -5,7 +5,7 @@ import PlayerNotificationModal from '@/components/tournament/PlayerNotificationM
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { useUserContext } from '@/hooks/useUser';
-import { IconMail, IconCheck, IconX, IconTrash } from '@tabler/icons-react';
+import { IconMail, IconCheck, IconTrash } from '@tabler/icons-react';
 
 interface TournamentPlayersProps {
   tournament: any;
@@ -83,6 +83,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   };
 
   const handleRemovePlayer = async (playerId: string) => {
+    const player = localPlayers.find(p => p.playerReference._id === playerId);
+    const playerName = player?.playerReference?.name || 'Játékos';
+    
+    if (!window.confirm(`Biztosan el szeretnéd távolítani ${playerName} játékost a tornáról? Ez a művelet nem vonható vissza.`)) {
+      return;
+    }
+    
     try {
       const response = await axios.delete(`/api/tournaments/${code}/players`, { data: { playerId } });
       if (response.data.success) {
@@ -242,22 +249,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               {allowAdminActions ? (
                 // Show status indicator and action buttons for tournaments where admin actions are allowed
                 <div className="flex items-center gap-2">
-                  {/* Status indicator */}
-                  <div className="flex items-center">
-                    {player.status === 'checked-in' ? (
+                  {/* Status indicator - only show green check for checked-in players */}
+                  {player.status === 'checked-in' && (
+                    <div className="flex items-center">
                       <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center" title="Check-in">
                         <IconCheck className="w-4 h-4 text-white" />
                       </div>
-                    ) : (
-                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center" title="Nincs check-in">
-                        <IconX className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Action buttons */}
                   {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                    <div className="flex flex-wrap gap-1 sm:gap-2 items-center">
                       {player.status !== 'checked-in' && (
                         <button 
                           className="btn btn-xs btn-success" 

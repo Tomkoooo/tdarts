@@ -1,4 +1,5 @@
 import { UserModel } from '@/database/models/user.model';
+import { PlayerModel } from '@/database/models/player.model';
 import { UserDocument as IUserDocument } from '@/interface/user.interface';
 import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
@@ -53,6 +54,25 @@ export class ProfileService {
     }
 
     await user.save();
+
+    // Ha a név változott, frissítsük a kapcsolt player dokumentumot is
+    if (updates.name) {
+      try {
+        const linkedPlayer = await PlayerModel.findOne({ userRef: userId });
+        if (linkedPlayer) {
+          await PlayerModel.findByIdAndUpdate(
+            linkedPlayer._id,
+            { name: updates.name },
+            { new: true }
+          );
+          console.log(`Updated player name for user ${userId} to: ${updates.name}`);
+        }
+      } catch (error) {
+        console.error('Error updating linked player name:', error);
+        // Don't throw error to prevent user update from failing
+      }
+    }
+
     return user;
   }
 

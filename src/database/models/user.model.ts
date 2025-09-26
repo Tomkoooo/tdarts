@@ -42,6 +42,26 @@ userSchema.pre('save', async function (next) {
   if (this.isModified('password') && this.password) {
     this.password = await bcrypt.hash(this.password, 15);
   }
+  
+  // Update linked player document if name changed
+  if (this.isModified('name') && !this.isNew) {
+    try {
+      const { PlayerModel } = await import('./player.model');
+      const linkedPlayer = await PlayerModel.findOne({ userRef: this._id });
+      if (linkedPlayer) {
+        await PlayerModel.findByIdAndUpdate(
+          linkedPlayer._id,
+          { name: this.name },
+          { new: true }
+        );
+        console.log(`Auto-updated player name for user ${this._id} to: ${this.name}`);
+      }
+    } catch (error) {
+      console.error('Error auto-updating player name:', error);
+      // Don't throw error to prevent user update from failing
+    }
+  }
+  
   this.updatedAt = new Date();
   next();
 });

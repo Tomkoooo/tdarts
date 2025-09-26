@@ -4,6 +4,31 @@ import { UserModel } from '../models/user.model';
 import { ClubModel } from '../models/club.model';
 
 export class PlayerService {
+  static async updatePlayerNameByUserRef(userRef: string, newName: string) {
+    try {
+      // Find the player document linked to this user
+      const player = await PlayerModel.findOne({ userRef });
+      
+      if (!player) {
+        console.log(`No player found for userRef: ${userRef}`);
+        return null;
+      }
+
+      // Update the player's name
+      const updatedPlayer = await PlayerModel.findByIdAndUpdate(
+        player._id,
+        { name: newName },
+        { new: true }
+      );
+
+      console.log(`Updated player name for userRef ${userRef} to: ${newName}`);
+      return updatedPlayer;
+    } catch (error) {
+      console.error('Error updating player name by userRef:', error);
+      throw error;
+    }
+  }
+
   static async searchPlayers(query: string, clubId?: string) {
     if (!query || query.length < 2) return [];
     console.log(clubId);
