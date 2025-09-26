@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import axios from "axios";
 
 // Socket inicializálása a különálló socket serverhez
-const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL!
+const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
 
 if (!socketServerUrl) {
   throw new Error('NEXT_PUBLIC_SOCKET_SERVER_URL is not defined');
