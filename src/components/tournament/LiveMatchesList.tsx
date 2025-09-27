@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { getLiveMatches } from '@/lib/socketApi';
 
 interface LiveMatchesListProps {
   tournamentCode: string;
@@ -129,13 +130,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
       
       // Optionally get additional real-time data from external socket server (but don't replace database data)
       try {
-        const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
-        const socketResponse = await fetch(`${socketServerUrl}/api/socket`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'get-live-matches' })
-        });
-        const socketData = await socketResponse.json();
+        const socketData = await getLiveMatches();
         
         if (socketData.success && socketData.matches.length > 0) {
           console.log('Socket data available for real-time updates:', socketData.matches);

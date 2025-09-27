@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { getMatchState } from '@/lib/socketApi';
 import IconDart from '@/components/homapage/icons/IconDart';
 
 interface LiveMatchViewerProps {
@@ -150,14 +151,8 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       socket.emit('join-match', matchId);
     }
     
-    // Get initial state from external socket server
-    const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
-    fetch(`${socketServerUrl}/api/socket`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get-match-state', matchId })
-    })
-    .then(res => res.json())
+    // Get initial state from external socket server using socketApi
+    getMatchState(matchId)
     .then(data => {
       if (data.success && data.state) {
         setMatchState(prev => ({

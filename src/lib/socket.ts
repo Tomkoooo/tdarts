@@ -5,16 +5,16 @@ import axios from "axios";
 
 // Socket inicializálása a különálló socket serverhez
 const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 if (!socketServerUrl) {
   throw new Error('NEXT_PUBLIC_SOCKET_SERVER_URL is not defined');
 }
 
 let socketToken: string | null = null;
-let apiKey: string | null = null;
 
 // Function to get authentication token
-const getAuthToken = async (): Promise<{ token: string; apiKey: string }> => {
+const getAuthToken = async (): Promise<string> => {
   try {
     const response = await axios.post('/api/socket/auth');
     
@@ -23,11 +23,12 @@ const getAuthToken = async (): Promise<{ token: string; apiKey: string }> => {
       throw new Error('Socket authentication not configured');
     }
     
-    return {
-      token: response.data.token,
-      apiKey: response.data.apiKey
-    };
+    return response.data.token;
   } catch (error: any) {
+    if (error.response?.status === 500 || error.response?.status === 401) {
+      console.warn('User not authenticated. Socket features will be disabled.');
+      throw new Error('User not authenticated');
+    }
     console.error('Failed to get socket auth token:', error);
     throw new Error('Authentication failed');
   }
@@ -36,20 +37,18 @@ const getAuthToken = async (): Promise<{ token: string; apiKey: string }> => {
 // Initialize socket with authentication
 export const initializeSocket = async () => {
   try {
-    const auth = await getAuthToken();
-    socketToken = auth.token;
-    apiKey = auth.apiKey;
+    const token = await getAuthToken();
+    socketToken = token;
     
     // Configure socket with auth
     socket.auth = {
       token: socketToken
     };
     
-    // Set headers for API calls
-    socket.io.opts.extraHeaders = {
-      'x-api-key': apiKey,
-      'origin': window.location.origin
-    };
+    console.log('🔑 Socket auth configured:', {
+      hasToken: !!socketToken,
+      tokenLength: socketToken?.length || 0
+    });
     
     return true;
   } catch (error) {
@@ -63,7 +62,10 @@ export const socket = io(socketServerUrl, {
   transports: ['websocket', 'polling'],
   auth: {
     token: null // Will be set during initialization
-  }
+  },
+  extraHeaders: isDevelopment ? {
+    'origin': 'http://localhost:3000'
+  } : {}
 });
 
 // Logoljuk a kapcsolat állapotát

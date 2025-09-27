@@ -58,8 +58,8 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
             console.error('Authentication failed, cannot connect to socket server');
           }
         } catch (error: any) {
-          if (error.message.includes('not configured')) {
-            console.warn('Socket authentication not configured. Socket features disabled.');
+          if (error.message.includes('not configured') || error.message.includes('not authenticated')) {
+            console.warn('Socket authentication not available. Socket features disabled.');
           } else {
             console.error('Socket initialization failed:', error);
           }

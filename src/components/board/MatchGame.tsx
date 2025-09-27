@@ -280,15 +280,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           highestCheckout: newScore === 0 ? Math.max(prev.highestCheckout, throwValue) : prev.highestCheckout
         }));
 
-        // Send throw event to socket
-        if (isConnected) {
+        // Send throw event to socket only if it's not a checkout
+        if (isConnected && newScore !== 0) {
           socket.emit('throw', {
             matchId: match._id,
             playerId: match.player1.playerId._id,
             score: throwValue,
             darts: 3, // Assuming 3 darts per throw
-            isDouble: newScore === 0, // Checkout is always a double
-            isCheckout: newScore === 0,
+            isDouble: false,
+            isCheckout: false,
             remainingScore: newScore,
             legNumber: player1LegsWon + player2LegsWon + 1,
             tournamentCode: window.location.pathname.split('/')[2]
@@ -308,15 +308,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           highestCheckout: newScore === 0 ? Math.max(prev.highestCheckout, throwValue) : prev.highestCheckout
         }));
 
-        // Send throw event to socket
-        if (isConnected) {
+        // Send throw event to socket only if it's not a checkout
+        if (isConnected && newScore !== 0) {
           socket.emit('throw', {
             matchId: match._id,
             playerId: match.player2.playerId._id,
             score: throwValue,
             darts: 3, // Assuming 3 darts per throw
-            isDouble: newScore === 0, // Checkout is always a double
-            isCheckout: newScore === 0,
+            isDouble: false,
+            isCheckout: false,
             remainingScore: newScore,
             legNumber: player1LegsWon + player2LegsWon + 1,
             tournamentCode: window.location.pathname.split('/')[2]
@@ -354,6 +354,22 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       setShowMatchConfirmation(true);
       setShowLegConfirmation(false);
       return;
+    }
+
+    // Send the final checkout throw to socket now that leg is confirmed
+    if (isConnected) {
+      const lastThrow = pendingLegWinner === 1 ? player1Throws[player1Throws.length - 1] : player2Throws[player2Throws.length - 1];
+      socket.emit('throw', {
+        matchId: match._id,
+        playerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+        score: lastThrow,
+        darts: 3,
+        isDouble: true,
+        isCheckout: true,
+        remainingScore: 0,
+        legNumber: player1LegsWon + player2LegsWon + 1,
+        tournamentCode: window.location.pathname.split('/')[2]
+      });
     }
 
     // Send leg completion to API
@@ -417,6 +433,22 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
 
   const confirmMatchEnd = async () => {
     if (!pendingMatchWinner) return;
+    
+    // Send the final checkout throw to socket now that match is confirmed
+    if (isConnected) {
+      const lastThrow = pendingMatchWinner === 1 ? player1Throws[player1Throws.length - 1] : player2Throws[player2Throws.length - 1];
+      socket.emit('throw', {
+        matchId: match._id,
+        playerId: pendingMatchWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+        score: lastThrow,
+        darts: 3,
+        isDouble: true,
+        isCheckout: true,
+        remainingScore: 0,
+        legNumber: player1LegsWon + player2LegsWon + 1,
+        tournamentCode: window.location.pathname.split('/')[2]
+      });
+    }
     
     try {
       await fetch(`/api/matches/${match._id}/finish`, {
@@ -484,6 +516,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       }));
     }
     
+    // No need to send socket event since the checkout throw was never sent
     setShowLegConfirmation(false);
     setPendingLegWinner(null);
   };
@@ -521,6 +554,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       }));
     }
     
+    // No need to send socket event since the checkout throw was never sent
     setShowMatchConfirmation(false);
     setPendingMatchWinner(null);
   };

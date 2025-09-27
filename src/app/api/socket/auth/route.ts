@@ -9,17 +9,10 @@ export async function POST(request: NextRequest) {
   try {
     // Check environment variables
     const JWT_SECRET = process.env.SOCKET_JWT_SECRET;
-    const SOCKET_API_KEY = process.env.SOCKET_API_KEY;
 
     if (!JWT_SECRET) {
       return NextResponse.json({ 
         error: 'Socket authentication not configured. Please set SOCKET_JWT_SECRET environment variable.' 
-      }, { status: 503 });
-    }
-
-    if (!SOCKET_API_KEY) {
-      return NextResponse.json({ 
-        error: 'Socket authentication not configured. Please set SOCKET_API_KEY environment variable.' 
       }, { status: 503 });
     }
 
@@ -49,8 +42,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token: socketToken,
-      apiKey: SOCKET_API_KEY
+      token: socketToken
     });
 
   } catch (error: any) {
