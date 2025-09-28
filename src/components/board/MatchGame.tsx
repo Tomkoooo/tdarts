@@ -625,18 +625,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   const player2Average = player2Stats.totalThrows > 0 ? Math.round(player2Stats.totalScore / player2Stats.totalThrows) : 0;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-base-100 overflow-y-auto">
-      {/* Header - Mobile only */}
-      <div className="md:hidden flex justify-between items-center p-2 flex-shrink-0">
-        <button className="btn btn-xs btn-accent matchgame-btn" onClick={onBack}>
+    <div className="flex flex-col h-[100dvh] bg-base-100 overflow-hidden">
+      {/* Header - Mobile & Tablet Portrait */}
+      <div className="lg:hidden flex justify-between items-center p-2 flex-shrink-0">
+        <button className="btn btn-xs md:btn-sm btn-accent matchgame-btn" onClick={onBack}>
           <IconArrowLeft className="w-4 h-4" />
         </button>
-        <div className="text-sm font-bold text-center flex-1">
+        <div className="text-sm md:text-base font-bold text-center flex-1">
           {match.player1.playerId.name} vs {match.player2.playerId.name} | {match.legsToWin}
         </div>
           <div className=" flex-shrink-0">
               <button
-                className="btn btn-outline w-full matchgame-btn btn-xs"
+                className="btn btn-outline w-full matchgame-btn btn-xs md:btn-sm"
                 onClick={() => setShowThrowHistory(!showThrowHistory)}
               >
                 {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
@@ -644,12 +644,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
             </div>
       </div>
 
-      {/* Main Layout - Side by side on tablet */}
-      <div className="flex flex-col md:flex-row h-full overflow-y-auto">
-        {/* Left Side - Score Input (Tablet) / Full width (Mobile) */}
-        <div className={`md:w-1/2 flex flex-col p-2 overflow-y-auto ${!scoreInputOnLeft ? 'md:order-2' : ''}`}>
-          {/* Header - Tablet only */}
-          <div className="hidden md:flex justify-between items-center mb-2 flex-shrink-0">
+      {/* Main Layout - Side by side only on tablet landscape */}
+      <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+        {/* Left Side - Score Input (Tablet Landscape) / Full width (Mobile & Tablet Portrait) */}
+        <div className={`lg:w-1/2 flex flex-col p-2 overflow-hidden ${!scoreInputOnLeft ? 'lg:order-2' : ''}`}>
+          {/* Header - Tablet Landscape only */}
+          <div className="hidden lg:flex justify-between items-center mb-2 flex-shrink-0">
             <button className="btn btn-sm btn-accent matchgame-btn" onClick={onBack}>
               <IconArrowLeft className="w-4 h-4" />
             </button>
@@ -666,77 +666,77 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           </div>
           </div>
 
-          {/* Player Cards - Mobile only, side by side at top */}
-          <div className="md:hidden flex gap-2 mb-2 h-[12rem] flex-shrink-0">
-            {/* Player 1 Card - Mobile */}
-            <div className={`flex-1 bg-base-200 rounded-lg p-4 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
+          {/* Player Cards - Mobile & Tablet Portrait, side by side at top */}
+          <div className="lg:hidden flex gap-2 mb-2 h-[10rem] md:h-[12rem] flex-shrink-0">
+            {/* Player 1 Card - Mobile & Tablet Portrait */}
+            <div className={`flex-1 bg-base-200 rounded-lg p-2 md:p-4 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
               <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-1xl font-bold mb-2">
+                <div className="text-sm md:text-lg font-bold mb-1 md:mb-2">
                   {match.player1.playerId.name}
                 </div>
-                <div className="text-7xl font-bold mb-2">
+                <div className="text-4xl md:text-6xl lg:text-7xl font-bold mb-1 md:mb-2">
                   {player1Score}
                 </div>
                 <div className="text-xs opacity-75">
-                  <p className="text-sm">Átlag: {player1Average}</p>
-                  <p className="text-sm font-bold">Legek: {player1LegsWon}</p>
-                  <p className="text-sm font-bold">Nyílak: {player1Throws.length*3}</p>
+                  <p className="text-xs md:text-sm">Átlag: {player1Average}</p>
+                  <p className="text-xs md:text-sm font-bold">Legek: {player1LegsWon}</p>
+                  <p className="text-xs md:text-sm font-bold">Nyílak: {player1Throws.length*3}</p>
                 </div>
               </div>
             </div>
 
-            {/* Player 2 Card - Mobile */}
-            <div className={`flex-1 bg-base-200 rounded-lg p-4 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
+            {/* Player 2 Card - Mobile & Tablet Portrait */}
+            <div className={`flex-1 bg-base-200 rounded-lg p-2 md:p-4 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
               <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-1xl font-bold mb-2">
+                <div className="text-sm md:text-lg font-bold mb-1 md:mb-2">
                   {match.player2.playerId.name}
                 </div>
-                <div className="text-7xl font-bold mb-2">
+                <div className="text-4xl md:text-6xl lg:text-7xl font-bold mb-1 md:mb-2">
                   {player2Score}
                 </div>
                 <div className="text-xs opacity-75">
-                  <p className="text-sm">Átlag: {player2Average}</p>
-                  <p className="text-sm font-bold">Legek: {player2LegsWon}</p>
-                  <p className="text-sm font-bold">Nyílak: {player2Throws.length*3}</p>
+                  <p className="text-xs md:text-sm">Átlag: {player2Average}</p>
+                  <p className="text-xs md:text-sm font-bold">Legek: {player2LegsWon}</p>
+                  <p className="text-xs md:text-sm font-bold">Nyílak: {player2Throws.length*3}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Current Player Indicator */}
-          <div className="bg-base-300 rounded-lg p-4 mb-2 flex-shrink-0 h-[3rem]">
+          <div className="bg-base-300 rounded-lg p-2 md:p-4 mb-2 flex-shrink-0 h-[2.5rem] md:h-[3rem]">
             <div className="text-center flex items-center my-auto justify-center">
-              <div className="text-4xl font-bold leading-none">{throwInput}</div>
+              <div className="text-2xl md:text-4xl font-bold leading-none">{throwInput}</div>
             </div>
           </div>
 
-          {/* Number Input - More compact on tablet */}
-          <div className="md:w-full md:mx-auto bg-base-200 rounded-lg p-4 mb-2 flex-shrink-0">
-            <div className="grid grid-cols-3 gap-2 md:gap-3 mb-2">
+          {/* Number Input - Responsive sizing */}
+          <div className="bg-base-200 rounded-lg p-2 md:p-4 mb-2 flex-1 flex flex-col">
+            <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-3 mb-2 flex-1">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  className="btn btn-lg h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl font-bold matchgame-btn"
+                  className="btn btn-lg h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl font-bold matchgame-btn"
                   onClick={() => handleNumberInput(num)}
                 >
                   {num}
                 </button>
               ))}
               <button
-                className="btn btn-warning h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
+                className="btn btn-warning h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
                 onClick={handleBackspace}
                 disabled={!throwInput}
               >
                 ⌫
               </button>
               <button
-                className="btn btn-lg h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl font-bold matchgame-btn"
+                className="btn btn-lg h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl font-bold matchgame-btn"
                 onClick={() => handleNumberInput(0)}
               >
                 0
               </button>
               <button
-                className="btn btn-error h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
+                className="btn btn-error h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
                 onClick={handleClear}
                 disabled={!throwInput}
               >
@@ -744,16 +744,16 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
               </button>
             </div>
             
-            <div className="flex gap-2 md:gap-3">
+            <div className="flex gap-1 md:gap-2 lg:gap-3">
               <button
-                className="btn btn-warning flex-1 h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
+                className="btn btn-warning flex-1 h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
                 onClick={handleUndo}
                 disabled={player1Throws.length === 0 && player2Throws.length === 0}
               >
                 ↶
               </button>
               <button
-                className="btn btn-success flex-1 h-[3.5rem] md:h-20 text-2xl md:text-4xl lg:text-3xl matchgame-btn"
+                className="btn btn-success flex-1 h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
                 onClick={handleThrow}
                 disabled={!throwInput || parseInt(throwInput) < 0 || parseInt(throwInput) > 180 || isNaN(parseInt(throwInput))}
               >
@@ -768,9 +768,9 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           </div>
         </div>
 
-        {/* Right Side - Player Cards (Tablet) / Hidden on Mobile */}
-        <div className={`hidden md:flex md:w-1/2 flex-col p-2 overflow-y-auto ${!scoreInputOnLeft ? 'md:order-1' : ''}`}>
-          {/* Swap Button - Tablet only */}
+        {/* Right Side - Player Cards (Tablet Landscape) / Hidden on Mobile & Tablet Portrait */}
+        <div className={`hidden lg:flex lg:w-1/2 flex-col p-2 overflow-hidden ${!scoreInputOnLeft ? 'lg:order-1' : ''}`}>
+          {/* Swap Button - Tablet Landscape only */}
           <div className="flex justify-center mb-2 flex-shrink-0">
             <button
               className="btn btn-sm btn-outline matchgame-btn"
