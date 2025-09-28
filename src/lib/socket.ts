@@ -68,20 +68,40 @@ export const socket = io(socketServerUrl, {
   } : {}
 });
 
+// Global debug object for production
+if (typeof window !== 'undefined') {
+  (window as any).socketDebug = {
+    socket,
+    isConnected: () => socket.connected,
+    connect: () => socket.connect(),
+    disconnect: () => socket.disconnect(),
+    getAuthToken: () => socketToken,
+    serverUrl: socketServerUrl
+  };
+}
+
 // Logoljuk a kapcsolat állapotát
 socket.on('connect', () => {
-  console.log('🔌 Socket connected to external server');
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+    console.log('🔌 Socket connected to external server');
+  }
 });
 
 socket.on('disconnect', () => {
-  console.log('🔌 Socket disconnected from external server');
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+    console.log('🔌 Socket disconnected from external server');
+  }
 });
 
 socket.on('connect_error', (error) => {
-  console.error('🔌 Socket connection error:', error);
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+    console.error('🔌 Socket connection error:', error);
+  }
   // If auth fails, try to re-authenticate
   if (error.message.includes('Authentication') || error.message.includes('Unauthorized')) {
-    console.log('🔄 Authentication failed, attempting to re-authenticate...');
+    if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+      console.log('🔄 Authentication failed, attempting to re-authenticate...');
+    }
     initializeSocket().then((success) => {
       if (success) {
         socket.connect();

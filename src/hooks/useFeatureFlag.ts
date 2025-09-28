@@ -129,6 +129,13 @@ async function checkSocketFeatureClient(clubId?: string): Promise<boolean> {
     return true;
   }
 
+  // Production-ben is engedélyezzük a socket feature-t alapértelmezetten
+  // ha nincs explicit feature flag konfiguráció
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Production mode: socket feature enabled by default');
+    return true;
+  }
+
   // ENV alapú socket ellenőrzés
   const envSocketEnabled = await checkFeatureFlagClient('SOCKET', clubId);
   

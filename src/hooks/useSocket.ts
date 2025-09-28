@@ -46,24 +46,82 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
 
     // Socket kapcsolat inicializálása csak akkor, ha a feature flag engedélyezett
     const connectWithAuth = async () => {
+      if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+        console.log('🔌 connectWithAuth called:', {
+          shouldEnableSocket,
+          socketConnected: socket.connected,
+          isSocketEnabled,
+          isLoading
+        });
+      }
+      
       if (!socket.connected) {
-        console.log('Socket feature enabled, initializing authentication...');
+        if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+          console.log('Socket feature enabled, initializing authentication...');
+        }
         try {
           const authSuccess = await initializeSocket();
+          if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+            console.log('🔑 Auth result:', authSuccess);
+          }
           if (authSuccess) {
-            console.log('Authentication successful, connecting to external server...');
+            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+              console.log('Authentication successful, connecting to external server...');
+            }
             socket.connect();
-            isConnected.current = true;
+            
+            // Wait for connection with timeout
+            const connectionPromise = new Promise((resolve) => {
+              const timeout = setTimeout(() => {
+                if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+                  console.error('🔌 Socket connection timeout');
+                }
+                resolve(false);
+              }, 5000);
+              
+              socket.once('connect', () => {
+                clearTimeout(timeout);
+                if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+                  console.log('🔌 Socket connected successfully');
+                }
+                isConnected.current = true;
+                resolve(true);
+              });
+              
+              socket.once('connect_error', (error) => {
+                clearTimeout(timeout);
+                if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+                  console.error('🔌 Socket connection failed:', error);
+                }
+                resolve(false);
+              });
+            });
+            
+            await connectionPromise;
           } else {
-            console.error('Authentication failed, cannot connect to socket server');
+            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+              console.error('Authentication failed, cannot connect to socket server');
+            }
           }
         } catch (error: any) {
+          if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+            console.error('🔌 Socket initialization error:', error);
+          }
           if (error.message.includes('not configured') || error.message.includes('not authenticated')) {
-            console.warn('Socket authentication not available. Socket features disabled.');
+            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+              console.warn('Socket authentication not available. Socket features disabled.');
+            }
           } else {
-            console.error('Socket initialization failed:', error);
+            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+              console.error('Socket initialization failed:', error);
+            }
           }
         }
+      } else {
+        if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+          console.log('🔌 Socket already connected');
+        }
+        isConnected.current = true;
       }
     };
 
@@ -123,6 +181,20 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
       }
     }
   }, [shouldEnableSocket]);
+
+  // Debug socket state - always log in production
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
+      console.log('🔌 useSocket state update:', {
+        shouldEnableSocket,
+        socketConnected: socket.connected,
+        isSocketEnabled,
+        isLoading,
+        error,
+        isConnected: shouldEnableSocket && socket.connected
+      });
+    }
+  }, [shouldEnableSocket, socket.connected, isSocketEnabled, isLoading, error]);
 
   return {
     socket,
