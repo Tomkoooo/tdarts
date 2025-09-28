@@ -80,6 +80,16 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
     clubId 
   });
 
+  // Debug socket connection
+  useEffect(() => {
+    console.log('🔌 MatchGame socket status:', {
+      isConnected,
+      socketConnected: socket?.connected,
+      matchId: match._id,
+      clubId
+    });
+  }, [isConnected, socket?.connected, match._id, clubId]);
+
   // Calculate the correct starting player for the next leg
   const calculateNextLegStartingPlayer = (totalLegsPlayed: number, originalStartingPlayer: number): number => {
     // If odd number of legs played, the opposite player starts
@@ -282,6 +292,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
 
         // Send throw event to socket only if it's not a checkout
         if (isConnected && newScore !== 0) {
+          console.log('🎯 Sending throw event for player 1:', {
+            matchId: match._id,
+            playerId: match.player1.playerId._id,
+            score: throwValue,
+            remainingScore: newScore,
+            isConnected,
+            socketConnected: socket?.connected
+          });
           socket.emit('throw', {
             matchId: match._id,
             playerId: match.player1.playerId._id,
@@ -292,6 +310,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
             remainingScore: newScore,
             legNumber: player1LegsWon + player2LegsWon + 1,
             tournamentCode: window.location.pathname.split('/')[2]
+          });
+        } else {
+          console.log('🚫 Not sending throw event for player 1:', {
+            isConnected,
+            socketConnected: socket?.connected,
+            newScore,
+            reason: newScore === 0 ? 'checkout' : 'not connected'
           });
         }
       } else {
@@ -310,6 +335,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
 
         // Send throw event to socket only if it's not a checkout
         if (isConnected && newScore !== 0) {
+          console.log('🎯 Sending throw event for player 2:', {
+            matchId: match._id,
+            playerId: match.player2.playerId._id,
+            score: throwValue,
+            remainingScore: newScore,
+            isConnected,
+            socketConnected: socket?.connected
+          });
           socket.emit('throw', {
             matchId: match._id,
             playerId: match.player2.playerId._id,
@@ -320,6 +353,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
             remainingScore: newScore,
             legNumber: player1LegsWon + player2LegsWon + 1,
             tournamentCode: window.location.pathname.split('/')[2]
+          });
+        } else {
+          console.log('🚫 Not sending throw event for player 2:', {
+            isConnected,
+            socketConnected: socket?.connected,
+            newScore,
+            reason: newScore === 0 ? 'checkout' : 'not connected'
           });
         }
       }

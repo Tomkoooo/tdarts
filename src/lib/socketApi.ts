@@ -3,7 +3,6 @@
 import axios from "axios";
 
 const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 if (!SOCKET_SERVER_URL) {
   throw new Error('NEXT_PUBLIC_SOCKET_SERVER_URL is not defined');
@@ -41,9 +40,9 @@ export const socketApiCall = async (endpoint: string, data?: any) => {
     const response = await axios.post(`${SOCKET_SERVER_URL}${endpoint}`, data, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'origin': isDevelopment ? 'http://localhost:3000' : window.location.origin,
         'Content-Type': 'application/json'
-      }
+      },
+      withCredentials: true
     });
     
     return response.data;
