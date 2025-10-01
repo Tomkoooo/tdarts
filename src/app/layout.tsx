@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
 import Navbar from "@/components/homapage/Navbar";
@@ -83,6 +83,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Get pathname from headers for conditional rendering
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+  
+  // Define paths where you don't want to render certain elements
+  const hideNavbarPaths = ['/board/', '/test']; // Add your specific paths
+  const shouldHideNavbar = hideNavbarPaths.some(path => pathname.startsWith(path));
+  
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value;
   let initialUser = undefined;
@@ -160,6 +168,7 @@ export default async function RootLayout({
   return (
     <html lang="hu" data-theme="tDarts" className="dark">
       <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="only dark" />
         <meta name="theme-color" content="#42010b" />
         <meta name="supported-color-schemes" content="dark" />
@@ -203,12 +212,11 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="flex flex-col pt-16 md:pt-20">
+      <body className={`flex flex-col ${shouldHideNavbar ? '' : 'pt-16 md:pt-20'}`}>
         <SessionProvider>
           <UserProvider initialUser={initialUser}>
             <AuthSync />
-            {/* Navigation */}
-            <Navbar />
+            {!shouldHideNavbar && <Navbar />}
             {children}
           </UserProvider>
         </SessionProvider>

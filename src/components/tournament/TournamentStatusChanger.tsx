@@ -201,6 +201,15 @@ const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ t
   };
 
   const handleCancelKnockout = async () => {
+    // Add confirmation dialog
+    const confirmed = window.confirm(
+      'Biztosan vissza szeretnéd vonni az egyenes kiesést? Ez törölni fogja az összes knockout kört és meccset. Ez a művelet nem vonható vissza!'
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {

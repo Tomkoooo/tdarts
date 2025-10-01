@@ -236,10 +236,46 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           excludePlayerIds={localPlayers.map(p => p.playerReference?._id?.toString() || p._id?.toString()).filter(Boolean)}
         />
       )}
+
+        {/* Show withdrawal button at top if user is registered */}
+        {user && localUserPlayerId && localUserPlayerStatus !== 'none' && (
+          <div className="mt-4 p-3 bg-warning/10 rounded-lg border border-warning/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-warning">Már jelentkeztél erre a tornára</p>
+                <p className="text-sm text-base-content/70">Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.</p>
+              </div>
+              <button className="btn btn-sm btn-warning" onClick={handleSelfWithdraw}>
+                <span className="hidden sm:inline">Jelentkezés visszavonása</span>
+                <span className="sm:hidden">Visszavonás</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Show signup button only if player registration is allowed AND user is not registered */}
+        {allowPlayerRegistration && localUserPlayerStatus === 'none' && (
+        <>
+          {user &&  hasFreeSpots && (
+            <button className="btn btn-primary mt-4" onClick={handleSelfSignUp}>Jelentkezés a tornára</button>
+          )}
+          {user &&  !hasFreeSpots && (
+            <div className="mt-4 text-warning">A torna megtelt, nincs több szabad hely.</div>
+          )}
+          {!user && (
+            <div className="mt-4">
+              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`} className="btn btn-accent">Jelentkezéshez lépj be</Link>
+            </div>
+          )}
+        </>
+      )}
+
+      
       
       <ul className="mt-4 space-y-2">
         {localPlayers.length === 0 && <li className="text-base-content/60">Nincs játékos.</li>}
         {localPlayers.map((player) => (
+          
           <li key={player._id} className="p-3 bg-base-100 rounded shadow">
             {/* Main row with player name, status, and admin buttons */}
             <div className="flex items-center gap-3">
@@ -315,35 +351,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             )}
             </div>
 
-            {/* Withdrawal button row - separate from main content */}
-            {user && localUserPlayerId === player.playerReference._id && localUserPlayerStatus !== 'none' && (
-              <div className="mt-2 pt-2 border-t border-base-300">
-                <button className="btn btn-xs btn-warning" onClick={handleSelfWithdraw}>
-                  <span className="hidden sm:inline">Jelentkezés visszavonása</span>
-                  <span className="sm:hidden">Visszavonás</span>
-                </button>
-              </div>
-            )}
+            
           </li>
         ))}
       </ul>
       
-      {/* Show signup button only if player registration is allowed */}
-      {allowPlayerRegistration && (
-        <>
-          {user &&  hasFreeSpots && (
-            <button className="btn btn-primary mt-4" onClick={handleSelfSignUp}>Jelentkezés a tornára</button>
-          )}
-          {user &&  !hasFreeSpots && (
-            <div className="mt-4 text-warning">A torna megtelt, nincs több szabad hely.</div>
-          )}
-          {!user && (
-            <div className="mt-4">
-              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`} className="btn btn-accent">Jelentkezéshez lépj be</Link>
-            </div>
-          )}
-        </>
-      )}
+    
       
       {/* Show registration status message */}
       {!allowPlayerRegistration && isPending && (

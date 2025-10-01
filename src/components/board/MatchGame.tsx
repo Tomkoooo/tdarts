@@ -290,7 +290,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
     const throwValue = parseInt(throwInput);
     if (throwValue >= 0 && throwValue <= 180) {
       if (currentPlayer === 1) {
-        const newScore = Math.max(0, player1Score - throwValue);
+        // Check for bust - if throw is greater than remaining score
+        if (throwValue > player1Score) {
+          setThrowInput('');
+          setCurrentPlayer(2); // Switch to next player
+          return;
+        }
+        
+        const newScore = player1Score - throwValue;
         setPlayer1Score(newScore);
         setPlayer1Throws([...player1Throws, throwValue]);
         
@@ -337,7 +344,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           }
         }
       } else {
-        const newScore = Math.max(0, player2Score - throwValue);
+        // Check for bust - if throw is greater than remaining score
+        if (throwValue > player2Score) {
+          setThrowInput('');
+          setCurrentPlayer(1); // Switch to next player
+          return;
+        }
+        
+        const newScore = player2Score - throwValue;
         setPlayer2Score(newScore);
         setPlayer2Throws([...player2Throws, throwValue]);
         
@@ -627,133 +641,136 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   return (
     <div className="flex flex-col h-[100dvh] bg-base-100 overflow-hidden">
       {/* Header - Mobile & Tablet Portrait */}
-      <div className="lg:hidden flex justify-between items-center p-2 flex-shrink-0">
-        <button className="btn btn-xs md:btn-sm btn-accent matchgame-btn" onClick={onBack}>
-          <IconArrowLeft className="w-4 h-4" />
+      <div className="lg:hidden flex justify-between items-center p-1 sm:p-2 flex-shrink-0 h-12 sm:h-14">
+        <button className="btn btn-xs sm:btn-sm btn-accent matchgame-btn" onClick={onBack}>
+          <IconArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
         </button>
-        <div className="text-sm md:text-base font-bold text-center flex-1">
+        <div className="text-xs sm:text-sm font-bold text-center flex-1 px-2">
           {match.player1.playerId.name} vs {match.player2.playerId.name} | {match.legsToWin}
         </div>
-          <div className=" flex-shrink-0">
-              <button
-                className="btn btn-outline w-full matchgame-btn btn-xs md:btn-sm"
-                onClick={() => setShowThrowHistory(!showThrowHistory)}
-              >
-                {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
-              </button>
-            </div>
+        <div className="flex-shrink-0">
+          <button
+            className="btn btn-outline w-full matchgame-btn btn-xs sm:btn-sm"
+            onClick={() => setShowThrowHistory(!showThrowHistory)}
+          >
+            {showThrowHistory ? <IconX className="w-3 h-3 sm:w-4 sm:h-4" /> : <IconHistory className="w-3 h-3 sm:w-4 sm:h-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Main Layout - Side by side only on tablet landscape */}
       <div className="flex flex-col lg:flex-row h-full overflow-hidden">
         {/* Left Side - Score Input (Tablet Landscape) / Full width (Mobile & Tablet Portrait) */}
-        <div className={`lg:w-1/2 flex flex-col p-2 overflow-hidden ${!scoreInputOnLeft ? 'lg:order-2' : ''}`}>
+        <div className={`lg:w-1/2 flex flex-col p-1 sm:p-2 overflow-hidden ${!scoreInputOnLeft ? 'lg:order-2' : ''}`}>
           {/* Header - Tablet Landscape only */}
-          <div className="hidden lg:flex justify-between items-center mb-2 flex-shrink-0">
+          <div className="hidden lg:flex justify-between items-center mb-1 sm:mb-2 flex-shrink-0 h-12 sm:h-14">
             <button className="btn btn-sm btn-accent matchgame-btn" onClick={onBack}>
               <IconArrowLeft className="w-4 h-4" />
             </button>
-            <div className="text-lg font-bold text-center flex-1">
+            <div className="text-sm sm:text-base lg:text-lg font-bold text-center flex-1 px-2">
               {match.player1.playerId.name} vs {match.player2.playerId.name}
             </div>
-            <div className=" flex-shrink-0">
-            <button
-              className="btn btn-outline w-full matchgame-btn btn-sm"
-              onClick={() => setShowThrowHistory(!showThrowHistory)}
-            >
-              {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
-            </button>
-          </div>
+            <div className="flex-shrink-0">
+              <button
+                className="btn btn-outline w-full matchgame-btn btn-sm"
+                onClick={() => setShowThrowHistory(!showThrowHistory)}
+              >
+                {showThrowHistory ? <IconX className="w-4 h-4" /> : <IconHistory className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {/* Player Cards - Mobile & Tablet Portrait, side by side at top */}
-          <div className="lg:hidden flex gap-2 mb-2 h-[10rem] md:h-[12rem] flex-shrink-0">
+          <div className="lg:hidden flex gap-1 sm:gap-2 mb-1 sm:mb-2 h-20 sm:h-24 md:h-28 flex-shrink-0">
             {/* Player 1 Card - Mobile & Tablet Portrait */}
-            <div className={`flex-1 bg-base-200 rounded-lg p-2 md:p-4 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
+            <div className={`flex-1 bg-base-200 rounded-lg p-1 sm:p-2 md:p-3 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
               <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-sm md:text-lg font-bold mb-1 md:mb-2">
+                <div className="text-xs sm:text-sm md:text-base font-bold mb-0.5 sm:mb-1">
                   {match.player1.playerId.name}
                 </div>
-                <div className="text-4xl md:text-6xl lg:text-7xl font-bold mb-1 md:mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-0.5 sm:mb-1">
                   {player1Score}
                 </div>
                 <div className="text-xs opacity-75">
-                  <p className="text-xs md:text-sm">Átlag: {player1Average}</p>
-                  <p className="text-xs md:text-sm font-bold">Legek: {player1LegsWon}</p>
-                  <p className="text-xs md:text-sm font-bold">Nyílak: {player1Throws.length*3}</p>
+                  <p className="text-xs">Átlag: {player1Average}</p>
+                  <p className="text-xs font-bold">Legek: {player1LegsWon}</p>
+                  <p className="text-xs font-bold">Nyílak: {player1Throws.length*3}</p>
                 </div>
               </div>
             </div>
 
             {/* Player 2 Card - Mobile & Tablet Portrait */}
-            <div className={`flex-1 bg-base-200 rounded-lg p-2 md:p-4 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
+            <div className={`flex-1 bg-base-200 rounded-lg p-1 sm:p-2 md:p-3 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
               <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-sm md:text-lg font-bold mb-1 md:mb-2">
+                <div className="text-xs sm:text-sm md:text-base font-bold mb-0.5 sm:mb-1">
                   {match.player2.playerId.name}
                 </div>
-                <div className="text-4xl md:text-6xl lg:text-7xl font-bold mb-1 md:mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-0.5 sm:mb-1">
                   {player2Score}
                 </div>
                 <div className="text-xs opacity-75">
-                  <p className="text-xs md:text-sm">Átlag: {player2Average}</p>
-                  <p className="text-xs md:text-sm font-bold">Legek: {player2LegsWon}</p>
-                  <p className="text-xs md:text-sm font-bold">Nyílak: {player2Throws.length*3}</p>
+                  <p className="text-xs">Átlag: {player2Average}</p>
+                  <p className="text-xs font-bold">Legek: {player2LegsWon}</p>
+                  <p className="text-xs font-bold">Nyílak: {player2Throws.length*3}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Current Player Indicator */}
-          <div className="bg-base-300 rounded-lg p-2 md:p-4 mb-2 flex-shrink-0 h-[2.5rem] md:h-[3rem]">
+          <div className="bg-base-300 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-shrink-0 h-8 sm:h-10 md:h-12">
             <div className="text-center flex items-center my-auto justify-center">
-              <div className="text-2xl md:text-4xl font-bold leading-none">{throwInput}</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold leading-none">{throwInput}</div>
             </div>
           </div>
 
           {/* Number Input - Responsive sizing */}
-          <div className="bg-base-200 rounded-lg p-2 md:p-4 mb-2 flex-1 flex flex-col">
-            <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-3 mb-2 flex-1">
+          <div className="bg-base-200 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-1 flex flex-col min-h-0">
+            <div className="grid grid-cols-3 gap-1 flex-1 min-h-0">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  className="btn btn-lg h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl font-bold matchgame-btn"
+                  className="btn btn-xs h-5 sm:h-6 md:h-12 text-xs font-bold matchgame-btn"
                   onClick={() => handleNumberInput(num)}
                 >
                   {num}
                 </button>
               ))}
               <button
-                className="btn btn-warning h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
+                className="btn btn-warning btn-xs h-5 sm:h-6 md:h-12 text-xs matchgame-btn"
                 onClick={handleBackspace}
                 disabled={!throwInput}
               >
                 ⌫
               </button>
               <button
-                className="btn btn-lg h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl font-bold matchgame-btn"
+                className="btn btn-xs h-5 sm:h-6 md:h-12 text-xs font-bold matchgame-btn"
                 onClick={() => handleNumberInput(0)}
               >
                 0
               </button>
               <button
-                className="btn btn-error h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
+                className="btn btn-error btn-xs h-5 sm:h-6 md:h-8 text-xs matchgame-btn"
                 onClick={handleClear}
                 disabled={!throwInput}
               >
                 C
               </button>
             </div>
-            
-            <div className="flex gap-1 md:gap-2 lg:gap-3">
+          </div>
+          
+          {/* Action Buttons - Separate section */}
+          <div className="bg-base-300 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-shrink-0">
+            <div className="flex gap-1 h-6 sm:h-8 md:h-10">
               <button
-                className="btn btn-warning flex-1 h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
+                className="btn btn-warning flex-1 btn-xs h-6 sm:h-8 md:h-10 text-xs sm:text-sm md:text-base matchgame-btn"
                 onClick={handleUndo}
                 disabled={player1Throws.length === 0 && player2Throws.length === 0}
               >
                 ↶
               </button>
               <button
-                className="btn btn-success flex-1 h-[2.5rem] md:h-[3.5rem] lg:h-20 text-lg md:text-2xl lg:text-3xl matchgame-btn"
+                className="btn btn-success flex-1 btn-xs h-6 sm:h-8 md:h-10 text-xs sm:text-sm md:text-base matchgame-btn"
                 onClick={handleThrow}
                 disabled={!throwInput || parseInt(throwInput) < 0 || parseInt(throwInput) > 180 || isNaN(parseInt(throwInput))}
               >
@@ -763,17 +780,17 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           </div>
 
           {/* Scorer Info */}
-          <div className="text-center text-xs opacity-75 flex-shrink-0">
+          <div className="text-center text-xs opacity-75 flex-shrink-0 py-1">
             Író: {match.scorer.name}
           </div>
         </div>
 
         {/* Right Side - Player Cards (Tablet Landscape) / Hidden on Mobile & Tablet Portrait */}
-        <div className={`hidden lg:flex lg:w-1/2 flex-col p-2 overflow-hidden ${!scoreInputOnLeft ? 'lg:order-1' : ''}`}>
+        <div className={`hidden lg:flex lg:w-1/2 flex-col p-1 sm:p-2 overflow-hidden ${!scoreInputOnLeft ? 'lg:order-1' : ''}`}>
           {/* Swap Button - Tablet Landscape only */}
-          <div className="flex justify-center mb-2 flex-shrink-0">
+          <div className="flex justify-center mb-1 sm:mb-2 flex-shrink-0">
             <button
-              className="btn btn-sm btn-outline matchgame-btn"
+              className="btn btn-xs sm:btn-sm btn-outline matchgame-btn"
               onClick={() => setScoreInputOnLeft(!scoreInputOnLeft)}
             >
               Oldalak cseréje
@@ -781,27 +798,27 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           </div>
 
           {/* Player 1 Card */}
-          <div className={`flex-1 bg-base-200 rounded-lg p-8 mb-2 ${currentPlayer === 1 ? 'ring-4 ring-primary' : ''}`}>
+          <div className={`flex-1 bg-base-200 rounded-lg p-2 sm:p-4 md:p-6 mb-1 sm:mb-2 ${currentPlayer === 1 ? 'ring-4 ring-primary' : ''}`}>
             <div className="text-center h-full flex flex-col justify-center">
               {/* Player Name with Leg Count */}
-              <div className="mb-6">
-                <div className="text-3xl md:text-4xl font-bold mb-2">
+              <div className="mb-2 sm:mb-4 md:mb-6">
+                <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">
                   {match.player1.playerId.name}
                 </div>
-                <div className="text-xl md:text-2xl font-bold text-primary">
+                <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-primary">
                   {player1LegsWon} nyert leg
                 </div>
               </div>
               
               {/* Score */}
-              <div className="mb-6">
-                <div className="text-8xl md:text-9xl font-bold text-center">
+              <div className="mb-2 sm:mb-4 md:mb-6">
+                <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center">
                   {player1Score}
                 </div>
               </div>
               
               {/* Stats */}
-              <div className="text-base md:text-lg opacity-75">
+              <div className="text-xs sm:text-sm md:text-base opacity-75">
                 <div>Átlag: {player1Average}</div>
                 <div>180: {player1Stats.oneEightiesCount}</div>
               </div>
@@ -809,27 +826,27 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           </div>
 
           {/* Player 2 Card */}
-          <div className={`flex-1 bg-base-200 rounded-lg p-8 ${currentPlayer === 2 ? 'ring-4 ring-primary' : ''}`}>
+          <div className={`flex-1 bg-base-200 rounded-lg p-2 sm:p-4 md:p-6 ${currentPlayer === 2 ? 'ring-4 ring-primary' : ''}`}>
             <div className="text-center h-full flex flex-col justify-center">
               {/* Player Name with Leg Count */}
-              <div className="mb-6">
-                <div className="text-3xl md:text-4xl font-bold mb-2">
+              <div className="mb-2 sm:mb-4 md:mb-6">
+                <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">
                   {match.player2.playerId.name}
                 </div>
-                <div className="text-lg md:text-xl font-bold text-primary">
+                <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-primary">
                   {player2LegsWon} nyert leg
                 </div>
               </div>
               
               {/* Score */}
               <div className="mb-2">
-                <div className="text-6xl md:text-7xl font-bold text-center">
+                <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-center">
                   {player2Score}
                 </div>
               </div>
               
               {/* Stats */}
-              <div className="text-sm md:text-base opacity-75">
+              <div className="text-xs sm:text-sm md:text-base opacity-75">
                 <div>Átlag: {player2Average}</div>
                 <div>180: {player2Stats.oneEightiesCount}</div>
               </div>
