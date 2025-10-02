@@ -12,6 +12,7 @@ export interface IUser {
     updatedAt: Date;
     lastLogin: Date | null;
     isDeleted?: boolean;
+    twoFactorAuth: boolean;
     // OAuth adatok
     googleId?: string;
     profilePicture?: string;
@@ -20,6 +21,7 @@ export interface IUser {
         reset_password: string | null;
         verify_email: string | null;
         two_factor_auth: string | null;
+        OTP: string | null;
     }
 }
 

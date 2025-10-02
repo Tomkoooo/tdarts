@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
     updatedAt: { type: Date, default: Date.now },
     lastLogin: { type: Date, default: null },
     isDeleted: { type: Boolean, default: false },
+    twoFactorAuth: { type: Boolean, default: false },
     // OAuth adatok
     googleId: { type: String, default: null },
     profilePicture: { type: String, default: null },
@@ -22,6 +23,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
       reset_password: { type: String, default: null },
       verify_email: { type: String, default: null },
       two_factor_auth: { type: String, default: null },
+      OTP: { type: String, default: null },
     },
   },
   { collection: 'users', timestamps: true }

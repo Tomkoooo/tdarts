@@ -4,6 +4,7 @@ import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
 import { sendEmail } from '@/lib/mailer';
+import { hash } from 'bcryptjs';
 
 interface MailOptions {
   from?: string;
@@ -44,7 +45,7 @@ export class AuthService {
     }
   }
 
-  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean}}> {
+  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean, twoFactorAuth: boolean}}> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
@@ -165,5 +166,112 @@ export class AuthService {
       });
     }
     await user.resetPassword(newPassword, code);
+  }
+
+  static async generate2FA(email: string): Promise<void> {
+    await connectMongo();
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
+    }
+    //generate a 4 digit code
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    user.codes.two_factor_auth = code;
+    await user.save();
+    //send email with code
+    const mailOptions: MailOptions = {
+      to: [email],
+      subject: 'tDarts - kétlépcsős autentikáció',
+      text: '',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
+          <h2 style="color: #cc3333;">Kétlépcsős autentikáció</h2>
+          <p>Kérjük, használja az alábbi kódot a 2FA beállításához:</p>
+          <h3 style="color: #cc3333;">${code}</h3>
+          <p>Adja meg ezt a kódot a tDarts weboldalon a 2FA beállításához.</p>
+          <p>Ha nem Ön kérte a 2FA beállítást, kérjük, hagyja figyelmen kívül ezt az emailt.</p>
+          <p>Üdvözlettel,<br>tDarts Csapat</p>
+        </div>
+      `,
+    };
+    const emailSent = await sendEmail(mailOptions);
+    if (!emailSent) {
+      throw new BadRequestError('Failed to send 2FA email', 'auth', {
+        email
+      });
+    }
+  }
+
+  static async verify2FA(email: string, code: string): Promise<void> {
+    await connectMongo();
+    const user = await UserModel.findOne({ email});
+    if (!user) {
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
+    }
+    if (user.codes.two_factor_auth !== code) {
+      throw new BadRequestError('Invalid 2FA code', 'auth', {
+        email
+      });
+    }
+    user.codes.two_factor_auth = null;
+    await user.save();
+  }
+
+  static async generateOTP(email: string): Promise<void> {
+    await connectMongo();
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
+    }
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    user.codes.OTP = code;
+    await user.save();
+    //send email with code
+    const mailOptions: MailOptions = {
+      to: [email],
+      subject: 'tDarts - OTP',
+      text: '',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
+          <h2 style="color: #cc3333;">OTP</h2>
+          <p>Kérjük, használja az alábbi kódot a OTP beállításához:</p>
+          <h3 style="color: #cc3333;">${code}</h3>
+          <p>Adja meg ezt a kódot a tDarts weboldalon a OTP beállításához.</p>
+          <p>Ha nem Ön kérte a OTP beállítást, kérjük, hagyja figyelmen kívül ezt az emailt.</p>
+          <p>Üdvözlettel,<br>tDarts Csapat</p>
+        </div>
+      `,
+  }
+    const emailSent = await sendEmail(mailOptions);
+    if (!emailSent) {
+      throw new BadRequestError('Failed to send OTP email', 'auth', {
+        email
+      });
+    }
+  }
+  
+  static async verifyOTP(email: string, code: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean, twoFactorAuth: boolean}}> {
+    await connectMongo();
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestError('User not found', 'auth', {
+        email
+      });
+    }
+    if (user.codes.OTP !== code) {
+      throw new BadRequestError('Invalid OTP code', 'auth', {
+        email
+      });
+    }
+    user.codes.OTP = null;
+    await user.save();
+    const token = await this.generateAuthToken(user);
+    return { token, user };
   }
 }

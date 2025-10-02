@@ -14,6 +14,36 @@ export async function POST(request: Request) {
     // Authenticate the user and get the token
     const { token, user } = await AuthService.login(email, password);
 
+    if (user.twoFactorAuth) {
+      try {
+        await AuthService.generate2FA(email);
+        const response = NextResponse.json({
+          message: '2FA is enabled',
+          user: {
+            _id: user._id.toString(),
+            username: user.username,
+            name: user.name,
+            email: user.email,
+            isVerified: user.isVerified,
+            isAdmin: user.isAdmin,
+            twoFactorAuth: user.twoFactorAuth,
+          },
+        });
+        response.cookies.set('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 60 * 60 * 24 * 180, // 180 days
+          sameSite: 'strict',
+          path: '/',
+        });
+        return response;
+      } catch (error) {
+        throw new BadRequestError('Failed to generate 2FA', 'auth', {
+          email, error: error
+        });
+      }
+    }
+
     // Create the response with the user object and token
     const response = NextResponse.json({
       message: 'Login successful',
@@ -24,6 +54,7 @@ export async function POST(request: Request) {
         email: user.email,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        twoFactorAuth: user.twoFactorAuth,
       },
     });
 
