@@ -718,7 +718,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   if (selectedMatch) {
     return (
       <MatchGame 
-        match={selectedMatch} 
+        match={{
+          ...selectedMatch,
+          legsToWin: selectedMatch.legsToWin || legsToWin
+        }} 
         onBack={handleBackToMatches}
         clubId={tournamentData?.clubId?._id || tournamentData?.clubId}
       />

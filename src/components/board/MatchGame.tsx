@@ -420,6 +420,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
     // Use the configured legsToWin from match settings
     const requiredLegsToWin = match.legsToWin || 3;
     
+    console.log('🏆 Leg completion check:', {
+      requiredLegsToWin,
+      newPlayer1Legs,
+      newPlayer2Legs,
+      matchLegsToWin: match.legsToWin,
+      shouldFinish: newPlayer1Legs >= requiredLegsToWin || newPlayer2Legs >= requiredLegsToWin
+    });
+    
     if (newPlayer1Legs >= requiredLegsToWin || newPlayer2Legs >= requiredLegsToWin) {
       // Match is finished - pass the correct leg counts
       setPendingMatchWinner(pendingLegWinner);
