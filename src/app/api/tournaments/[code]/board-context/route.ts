@@ -10,13 +10,6 @@ export async function GET(
     if (!tournamentCode) {
       return NextResponse.json({ success: false, error: 'Tournament code is required' }, { status: 400 });
     }
-
-    // Get user from headers (assuming it's set by middleware)
-    const userId = request.headers.get('user-id');
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'User not authenticated' }, { status: 401 });
-    }
-
     // Get board context for the tournament
     const boardContext = await TournamentService.getTournamentBoardContext(tournamentCode);
     
