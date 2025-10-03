@@ -18,22 +18,29 @@ export async function POST(request: NextRequest) {
 
     await connectMongo();
     
-    // Get user from JWT token
+    // Try to get user from JWT token (optional)
     const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let userId = null;
+    let userRole = 'guest';
+
+    if (token) {
+      try {
+        const user = await AuthService.verifyToken(token);
+        if (user) {
+          userId = user._id.toString();
+          userRole = user.isAdmin ? 'admin' : 'user';
+        }
+      } catch (error: any) {
+        // Token is invalid, but we allow guest access
+        console.log('Invalid token, allowing guest access:', error?.message || 'Unknown error');
+      }
     }
 
-    const user = await AuthService.verifyToken(token);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Generate socket JWT token
+    // Generate socket JWT token (for both authenticated and guest users)
     const socketToken = jwt.sign(
       {
-        userId: user._id.toString(),
-        userRole: user.isAdmin ? 'admin' : 'user',
+        userId: userId || 'guest',
+        userRole: userRole,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 hours
       },

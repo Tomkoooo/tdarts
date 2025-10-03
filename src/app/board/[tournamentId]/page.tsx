@@ -76,7 +76,6 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   
   // Match setup state
   const [showMatchSetup, setShowMatchSetup] = useState<boolean>(false);
-  const [showMatchConfirmation, setShowMatchConfirmation] = useState<boolean>(false);
   const [legsToWin, setLegsToWin] = useState<number>(4);
   const [startingPlayer, setStartingPlayer] = useState<1 | 2>(1);
   const [setupLoading, setSetupLoading] = useState<boolean>(false);
@@ -286,7 +285,6 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       
       if (response.data.success) {
         setShowMatchSetup(false);
-        setShowMatchConfirmation(false);
         // Update selectedMatch with fresh data from the API response
         if (response.data.match) {
           setSelectedMatch(response.data.match);
@@ -340,6 +338,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   };
 
   const isAdminOrModerator = userRole?.clubRole === 'admin' || userRole?.clubRole === 'moderator';
+
 
   // Password authentication screen
   if (!isAuthenticated) {
@@ -524,7 +523,23 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 <div className="mt-6 text-center">
                   <button
                     className="btn btn-primary btn-lg"
-                    onClick={() => setShowMatchSetup(true)}
+                    onClick={() => {
+                      // Create a dummy match for new match setup
+                      const dummyMatch: Match = {
+                        _id: 'new-match',
+                        boardReference: selectedBoard.boardNumber,
+                        type: '501',
+                        round: 1,
+                        player1: { playerId: { _id: '', name: 'Player 1' } },
+                        player2: { playerId: { _id: '', name: 'Player 2' } },
+                        scorer: { playerId: '', name: 'Scorer' },
+                        status: 'pending',
+                        startingScore: 501,
+                        legsToWin: 4
+                      };
+                      setSelectedMatch(dummyMatch);
+                      setShowMatchSetup(true);
+                    }}
                   >
                     Új meccs indítása
                   </button>
@@ -612,7 +627,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 </button>
                 <button
                   className="btn btn-success flex-1"
-                  onClick={() => setShowMatchConfirmation(true)}
+                  onClick={() => {
+                    const confirmMessage = `Start match with these settings?\n\nStarting Player: ${startingPlayer === 1 ? 'Player 1' : 'Player 2'}\nLegs to Win: ${legsToWin}\nBoard: ${selectedBoard?.name ? selectedBoard.name : `Board ${selectedBoard?.boardNumber}`}`;
+                    
+                    if (confirm(confirmMessage)) {
+                      handleStartMatch();
+                    }
+                  }}
                   disabled={setupLoading}
                 >
                   {setupLoading ? (
@@ -716,74 +737,6 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     );
   }
 
-  // Match Confirmation Modal
-  if (showMatchConfirmation && selectedMatch) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-md w-full">
-          <h3 className="text-2xl font-bold text-center mb-6">Match Setup Confirmation</h3>
-          
-          <div className="text-center mb-6">
-            <h4 className="text-lg font-bold mb-2">
-              {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
-            </h4>
-            <p className="text-base-content/70">Please confirm the match settings</p>
-          </div>
-          
-          <div className="space-y-4 mb-6">
-            <div className="bg-base-200 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-bold">Starting Player:</span>
-                <span className="text-primary font-bold">
-                  {startingPlayer === 1 ? selectedMatch.player1.playerId.name : selectedMatch.player2.playerId.name}
-                </span>
-              </div>
-            </div>
-            
-            <div className="bg-base-200 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-bold">Legs to Win:</span>
-                <span className="text-primary font-bold">{legsToWin}</span>
-              </div>
-            </div>
-            
-            <div className="bg-base-200 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-bold">Board:</span>
-                <span className="text-primary font-bold">
-                  {selectedBoard?.name ? selectedBoard.name : `Board ${selectedBoard?.boardNumber}`}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              className="btn btn-error flex-1"
-              onClick={() => setShowMatchConfirmation(false)}
-              disabled={setupLoading}
-            >
-              Cancel
-            </button>
-            <button
-              className="btn btn-success flex-1"
-              onClick={handleStartMatch}
-              disabled={setupLoading}
-            >
-              {setupLoading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Starting...
-                </>
-              ) : (
-                "Start Match"
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Game interface
   if (selectedMatch) {
