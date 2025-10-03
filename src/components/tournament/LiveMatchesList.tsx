@@ -39,8 +39,9 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     fetchLiveMatches();
     
     // Socket event handlers
-    function onMatchStarted() {
-
+    function onMatchStarted(data: any) {
+      console.log('🎯 Match started event received:', data);
+      
       // When a new match starts, fetch fresh data from database
       fetchLiveMatches();
     }
@@ -77,10 +78,9 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     }
 
     // Set up event listeners
-    if (socket.connected) {
-      // onConnect(); // This was removed from useSocket, so we don't need this here.
-    }
-
+    console.log('🔌 Setting up socket event listeners for tournament:', tournamentCode);
+    console.log('🔌 Socket connected:', socket.connected);
+    
     socket.on('match-started', onMatchStarted);
     socket.on('match-finished', onMatchFinished);
     socket.on('match-update', onMatchUpdate);
@@ -97,11 +97,13 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
   const fetchLiveMatches = async () => {
     try {
       setIsLoading(true);
+      console.log('🔄 Fetching live matches for tournament:', tournamentCode);
       
       // Always fetch from database first for complete and accurate data
       const response = await fetch(`/api/tournaments/${tournamentCode}/live-matches`);
       const data = await response.json();
 
+      console.log('📊 Live matches API response:', data);
       
       if (data.success) {
         // Ensure player data is properly structured with real names

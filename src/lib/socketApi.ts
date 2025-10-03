@@ -74,3 +74,13 @@ export const getLiveMatches = async () => {
     action: 'get-live-matches'
   });
 };
+
+// Notify that a match has started
+export const notifyMatchStarted = async (matchId: string, tournamentCode: string, matchData: any) => {
+  return socketApiCall('/api/socket', {
+    action: 'notify-match-started',
+    matchId,
+    tournamentCode,
+    matchData
+  });
+};

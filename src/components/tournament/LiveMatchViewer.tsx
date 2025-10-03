@@ -363,16 +363,99 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
         <div className="flex justify-between items-center">
           <div className="text-center flex-1">
             <div className="text-lg font-bold text-base-content">{getPlayer1Name()}</div>
-            <div className="text-2xl font-bold text-primary">{matchState.player1LegsWon || 0}</div>
+            <div className={`text-2xl text-base-content ${matchState.currentLegData.currentPlayer === 1 ? 'text-success' : ''}`}>{matchState.currentLegData.player1Remaining}</div>
+            <div className="text-3xl font-bold text-primary">{matchState.player1LegsWon || 0}</div>
           </div>
           <div className="text-center flex-1">
-            <div className="text-sm text-base-content/70">Legs</div>
             <div className="text-lg font-bold text-base-content">{matchState.legsToWin || 3} to win</div>
+            <div className="text-lg font-bold text-base-content/70">Score</div>
+            <div className="text-sm text-base-content">Legs</div>
           </div>
           <div className="text-center flex-1">
             <div className="text-lg font-bold text-base-content">{getPlayer2Name()}</div>
-            <div className="text-2xl font-bold text-primary">{matchState.player2LegsWon || 0}</div>
+            <div className={`text-2xl text-base-content ${matchState.currentLegData.currentPlayer === 2 ? 'text-success' : ''}`}>{matchState.currentLegData.player2Remaining}</div>
+            <div className="text-3xl font-bold text-primary">{matchState.player2LegsWon || 0}</div>
           </div>
+        </div>
+        <div className="flex justify-center mt-4">
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              const fullscreenWindow = window.open('', '_blank', 'width=1200,height=400,scrollbars=no,resizable=yes');
+              if (fullscreenWindow) {
+                fullscreenWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <title>Live Match - ${getPlayer1Name()} vs ${getPlayer2Name()}</title>
+                      <script src="https://cdn.tailwindcss.com"></script>
+                      <style>
+                        body { margin: 0; padding: 0; background: #1f2937; color: white; font-family: system-ui, sans-serif; }
+                        .score-display { display: flex; justify-content: space-between; align-items: center; height: 100vh; padding: 2rem; }
+                        .player-section { text-align: center; flex: 1; }
+                        .player-name { font-size: 3rem; font-weight: bold; margin-bottom: 1rem; }
+                        .player-score { font-size: 8rem; font-weight: bold; margin-bottom: 1rem; }
+                        .player-legs { font-size: 5rem; font-weight: bold; color: #3b82f6; }
+                        .current-player { color: #10b981; }
+                        .center-info { text-align: center; flex: 1; }
+                        .legs-to-win { font-size: 2rem; font-weight: bold; margin-bottom: 1rem; }
+                        .score-label { font-size: 1.5rem; color: #9ca3af; margin-bottom: 0.5rem; }
+                        .legs-label { font-size: 1rem; color: #9ca3af; }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="score-display">
+                        <div class="player-section">
+                          <div class="player-name">${getPlayer1Name()}</div>
+                          <div class="player-score ${matchState.currentLegData.currentPlayer === 1 ? 'current-player' : ''}">${matchState.currentLegData.player1Remaining}</div>
+                          <div class="player-legs">${matchState.player1LegsWon || 0}</div>
+                        </div>
+                        <div class="center-info">
+                          <div class="legs-to-win">${matchState.legsToWin || 3} to win</div>
+                          <div class="score-label">Score</div>
+                          <div class="legs-label">Legs</div>
+                        </div>
+                        <div class="player-section">
+                          <div class="player-name">${getPlayer2Name()}</div>
+                          <div class="player-score ${matchState.currentLegData.currentPlayer === 2 ? 'current-player' : ''}">${matchState.currentLegData.player2Remaining}</div>
+                          <div class="player-legs">${matchState.player2LegsWon || 0}</div>
+                        </div>
+                      </div>
+                      <script>
+                        // Auto-refresh every 2 seconds to keep scores updated
+                        setInterval(() => {
+                          if (window.opener && !window.opener.closed) {
+                            try {
+                              const openerState = window.opener.matchState;
+                              if (openerState) {
+                                document.querySelector('.player-section:first-child .player-score').textContent = openerState.currentLegData.player1Remaining;
+                                document.querySelector('.player-section:first-child .player-legs').textContent = openerState.player1LegsWon || 0;
+                                document.querySelector('.player-section:last-child .player-score').textContent = openerState.currentLegData.player2Remaining;
+                                document.querySelector('.player-section:last-child .player-legs').textContent = openerState.player2LegsWon || 0;
+                                
+                                // Update current player highlighting
+                                document.querySelectorAll('.player-score').forEach(el => el.classList.remove('current-player'));
+                                if (openerState.currentLegData.currentPlayer === 1) {
+                                  document.querySelector('.player-section:first-child .player-score').classList.add('current-player');
+                                } else {
+                                  document.querySelector('.player-section:last-child .player-score').classList.add('current-player');
+                                }
+                              }
+                            } catch (e) {
+                              console.log('Parent window closed or not accessible');
+                            }
+                          }
+                        }, 2000);
+                      </script>
+                    </body>
+                  </html>
+                `);
+                fullscreenWindow.document.close();
+              }
+            }}
+          >
+            Fullscreen Display
+          </button>
         </div>
       </div>
 

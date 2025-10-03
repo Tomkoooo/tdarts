@@ -292,6 +292,22 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           // Fallback: reload matches to get updated status
           await loadMatches();
         }
+        
+        // Notify other clients that a match has started
+        try {
+          const { notifyMatchStarted } = await import('@/lib/socketApi');
+          await notifyMatchStarted(selectedMatch._id, tournamentId, {
+            matchId: selectedMatch._id,
+            player1: selectedMatch.player1,
+            player2: selectedMatch.player2,
+            boardNumber: selectedBoard.boardNumber,
+            legsToWin,
+            startingPlayer
+          });
+        } catch (socketError) {
+          console.warn('Failed to notify match start via socket:', socketError);
+          // Don't fail the match start if socket notification fails
+        }
       }
     } catch (err) {
       setError("Nem sikerült elindítani a meccset!");
