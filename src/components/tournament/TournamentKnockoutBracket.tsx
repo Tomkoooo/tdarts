@@ -136,12 +136,17 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
   const fetchAvailableBoards = async () => {
     try {
+      console.log('🔍 Fetching boards for tournament:', tournamentCode);
       const response = await axios.get(`/api/tournaments/${tournamentCode}/board-context`);
+      console.log('📊 Board context API response:', response.data);
       if (response.data && response.data.availableBoards) {
         setAvailableBoards(response.data.availableBoards);
+        console.log('✅ Available boards set:', response.data.availableBoards);
+      } else {
+        console.warn('⚠️ No available boards in response');
       }
     } catch (err) {
-      console.error('Failed to fetch available boards:', err);
+      console.error('❌ Failed to fetch available boards:', err);
     }
   };
 

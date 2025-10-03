@@ -3074,7 +3074,7 @@ export class TournamentService {
     }
 
     static async getTournamentBoardContext(tournamentId: string): Promise<{
-        availableBoards: Array<{ boardNumber: number; name: string; isActive: boolean; isAssigned: boolean }>;
+        availableBoards: Array<{ boardNumber: number; name: string; isActive: boolean; isAssigned: boolean; status: string }>;
         selectedBoards: number[];
     }> {
         try {
@@ -3089,23 +3089,20 @@ export class TournamentService {
                 throw new BadRequestError('Club boards not found');
             }
 
-            // Get available boards: active boards that are either unassigned or assigned to this tournament
+            // Get all boards assigned to this tournament (regardless of status)
             const availableBoards = club.boards
-                .filter((board: any) => board.isActive && (
-                    !board.tournamentId || 
-                    board.tournamentId === '' || 
-                    board.tournamentId === tournament.tournamentId
-                ))
+                .filter((board: any) => board.tournamentId === tournament.tournamentId)
                 .map((board: any) => ({
                     boardNumber: board.boardNumber,
                     name: board.name || `Tábla ${board.boardNumber}`,
                     isActive: board.isActive,
-                    isAssigned: board.tournamentId === tournament.tournamentId
+                    isAssigned: true,
+                    status: board.status || 'idle'
                 }));
 
             // Get currently selected boards for this tournament
             const selectedBoards = club.boards
-                .filter((board: any) => board.isActive && board.tournamentId === tournament.tournamentId)
+                .filter((board: any) => board.tournamentId === tournament.tournamentId)
                 .map((board: any) => board.boardNumber);
 
             return {
