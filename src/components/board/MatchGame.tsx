@@ -499,8 +499,20 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
     setPlayer2Throws([]);
     setThrowInput('');
     
-    // Clear localStorage after leg completion to prevent loading old state
-    localStorage.removeItem(`match_game_${match._id}`);
+    // Save the new leg state to localStorage instead of clearing it
+    const newLegState = {
+      player1Score: match.startingScore,
+      player2Score: match.startingScore,
+      currentPlayer: nextLegStartingPlayer,
+      player1Throws: [],
+      player2Throws: [],
+      player1LegsWon: newPlayer1Legs,
+      player2LegsWon: newPlayer2Legs,
+      legStartingPlayer: nextLegStartingPlayer,
+      player1Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
+      player2Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 }
+    };
+    localStorage.setItem(`match_game_${match._id}`, JSON.stringify(newLegState));
     
     setShowLegConfirmation(false);
     setPendingLegWinner(null);
@@ -736,42 +748,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
         <div className={`xl:w-1/2 flex flex-col p-1 sm:p-2 overflow-hidden ${!scoreInputOnLeft ? 'md:order-2' : ''}`}>
 
 
-          {/* Player Cards - Mobile & Small Tablets, side by side at top */}
-          <div className="md:hidden flex gap-1 sm:gap-2 mb-1 sm:mb-2 h-20 sm:h-24 flex-shrink-0">
-            {/* Player 1 Card - Mobile & Tablet Portrait */}
-            <div className={`flex-1 bg-base-200 w-1/2 rounded-lg p-1 sm:p-2 md:p-3 ${currentPlayer === 1 ? 'ring-2 ring-primary' : ''}`}>
-              <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-xs sm:text-sm md:text-base font-bold mb-0.5 sm:mb-1">
-                  {match.player1.playerId.name}
-                </div>
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-0.5 sm:mb-1">
-                  {player1Score}
-                </div>
-                <div className="text-xs opacity-75">
-                  <p className="text-xs">Átlag: {player1Average}</p>
-                  <p className="text-xs font-bold">Legek: {player1LegsWon}</p>
-                  <p className="text-xs font-bold">Nyílak: {player1Throws.length*3}</p>
-                </div>
-              </div>
-            </div>
 
-            {/* Player 2 Card - Mobile & Tablet Portrait */}
-            <div className={`flex-1 bg-base-200 w-1/2 rounded-lg p-1 sm:p-2 md:p-3 ${currentPlayer === 2 ? 'ring-2 ring-primary' : ''}`}>
-              <div className="text-center h-full flex flex-col justify-center">
-                <div className="text-xs sm:text-sm md:text-base font-bold mb-0.5 sm:mb-1">
-                  {match.player2.playerId.name}
-                </div>
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-0.5 sm:mb-1">
-                  {player2Score}
-                </div>
-                <div className="text-xs opacity-75">
-                  <p className="text-xs">Átlag: {player2Average}</p>
-                  <p className="text-xs font-bold">Legek: {player2LegsWon}</p>
-                  <p className="text-xs font-bold">Nyílak: {player2Throws.length*3}</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Current Player Indicator */}
           <div className="bg-base-300 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-shrink-0 h-8 sm:h-10 md:h-12">
@@ -786,7 +763,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  className="btn btn-xs h-5 sm:h-6 md:h-12 text-xs font-bold matchgame-btn"
+                  className="btn btn-xs h-5 sm:h-6 md:h-12 text-xl font-bold matchgame-btn"
                   onClick={() => handleNumberInput(num)}
                 >
                   {num}
