@@ -2289,6 +2289,7 @@ export class TournamentService {
         player1Id: string;
         player2Id: string;
         scorerId?: string;
+        boardNumber?: number;
     }): Promise<any> {
         try {
             await connectMongo();
@@ -2346,9 +2347,19 @@ export class TournamentService {
                 throw new BadRequestError('No active boards available for this tournament');
             }
 
-            // Assign board in round-robin fashion
-            const boardIndex = round.matches.length % availableBoards.length;
-            const assignedBoard = availableBoards[boardIndex];
+            // Assign board: use provided board number if valid, otherwise use round-robin
+            let assignedBoard;
+            if (matchData.boardNumber) {
+                // Validate that the provided board number is available for this tournament
+                assignedBoard = availableBoards.find((board: any) => board.boardNumber === matchData.boardNumber);
+                if (!assignedBoard) {
+                    throw new BadRequestError(`Board ${matchData.boardNumber} is not available for this tournament`);
+                }
+            } else {
+                // Assign board in round-robin fashion if no specific board requested
+                const boardIndex = round.matches.length % availableBoards.length;
+                assignedBoard = availableBoards[boardIndex];
+            }
 
             // Create match
             const match = await MatchModel.create({

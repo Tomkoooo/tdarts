@@ -62,6 +62,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   const [selectedPlayer1, setSelectedPlayer1] = useState<string>('');
   const [selectedPlayer2, setSelectedPlayer2] = useState<string>('');
   const [selectedScorer, setSelectedScorer] = useState<string>('');
+  const [selectedBoard, setSelectedBoard] = useState<string>('');
   const [addingMatch, setAddingMatch] = useState(false);
   const [editForm, setEditForm] = useState({
     player1LegsWon: 0,
@@ -70,6 +71,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     player2Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 }
   });
   const [availablePlayers, setAvailablePlayers] = useState<any[]>([]);
+  const [availableBoards, setAvailableBoards] = useState<any[]>([]);
   const [currentKnockoutMethod, setCurrentKnockoutMethod] = useState<'automatic' | 'manual' | undefined>(knockoutMethod);
   const [showGenerateEmptyRoundsModal, setShowGenerateEmptyRoundsModal] = useState(false);
   const [roundsToGenerate, setRoundsToGenerate] = useState(2);
@@ -87,6 +89,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
   useEffect(() => {
     fetchKnockoutData();
+    fetchAvailableBoards();
   }, [tournamentCode]);
 
   // Debug logging for tournamentPlayers
@@ -128,6 +131,17 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       }
     } catch (err) {
       console.error('Failed to fetch tournament players:', err);
+    }
+  };
+
+  const fetchAvailableBoards = async () => {
+    try {
+      const response = await axios.get(`/api/tournaments/${tournamentCode}/board-context`);
+      if (response.data && response.data.availableBoards) {
+        setAvailableBoards(response.data.availableBoards);
+      }
+    } catch (err) {
+      console.error('Failed to fetch available boards:', err);
     }
   };
 
@@ -249,7 +263,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         round: selectedRound,
         player1Id: selectedPlayer1 || undefined,
         player2Id: selectedPlayer2 || undefined,
-        scorerId: selectedScorer || undefined
+        scorerId: selectedScorer || undefined,
+        boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined
       });
       
       if (response.data && response.data.success) {
@@ -258,6 +273,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         setSelectedPlayer1('');
         setSelectedPlayer2('');
         setSelectedScorer('');
+        setSelectedBoard('');
       } else {
         setError(response.data?.error || 'Nem sikerült hozzáadni a meccset.');
       }
@@ -754,7 +770,13 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                     {getStatusText(match.matchReference?.status || 'pending')}
                                   </span>
                                   <span className="text-xs text-base-content/60">
-                                    {match.matchReference?.boardReference ? `Tábla: ${match.matchReference.boardReference}` : 'Bye meccs'}
+                                    {match.matchReference?.boardReference ? (() => {
+                                      const board = availableBoards.find(b => b.boardNumber === match.matchReference.boardReference);
+                                      const displayName = board?.name && board.name !== `Tábla ${board.boardNumber}` 
+                                        ? board.name 
+                                        : `Tábla ${match.matchReference.boardReference}`;
+                                      return displayName;
+                                    })() : 'Bye meccs'}
                                   </span>
                                   <div className="flex gap-1">
                                     {(match.matchReference?.status === 'ongoing' || match.matchReference?.status === 'finished') && match.player1 && match.player2 && (
@@ -1165,6 +1187,30 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   })}
                 </select>
               </div>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">Tábla:</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={selectedBoard}
+                  onChange={(e) => setSelectedBoard(e.target.value)}
+                >
+                  <option value="">Automatikus kiosztás</option>
+                  {availableBoards.map((board: any) => {
+                    const displayName = board.name && board.name !== `Tábla ${board.boardNumber}` 
+                      ? board.name 
+                      : `Tábla ${board.boardNumber}`;
+                    
+                    return (
+                      <option key={board.boardNumber} value={board.boardNumber.toString()}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
             </div>
             
             <div className="flex gap-3 mt-6">
@@ -1174,6 +1220,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   setShowAddMatchModal(false);
                   setSelectedPlayer1('');
                   setSelectedPlayer2('');
+                  setSelectedScorer('');
+                  setSelectedBoard('');
                 }}
               >
                 Mégse

@@ -23,7 +23,11 @@ const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament 
             return (
               <div key={board.boardNumber || idx} className="card bg-base-200 shadow-md">
                 <div className="card-body">
-                  <h3 className="card-title">Tábla {board.boardNumber} {board.name ? `- ${board.name}` : ''}</h3>
+                  <h3 className="card-title">
+                    {board.name && board.name !== `Tábla ${board.boardNumber}` 
+                      ? board.name 
+                      : `Tábla ${board.boardNumber}`}
+                  </h3>
                   <p
                     className={`text-lg font-bold ${
                       board.status === "idle"

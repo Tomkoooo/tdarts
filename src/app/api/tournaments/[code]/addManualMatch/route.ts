@@ -60,6 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 player1Id: body.player1Id,
                 player2Id: body.player2Id,
                 scorerId: body.scorerId,
+                boardNumber: body.boardNumber,
             });
 
             if (!result) {
