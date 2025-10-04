@@ -2347,51 +2347,20 @@ export class TournamentService {
                 throw new BadRequestError('No active boards available for this tournament');
             }
 
-            // Assign board: use provided board number if valid, otherwise use round-robin
-            let assignedBoard;
-            if (matchData.boardNumber) {
-                // Validate that the provided board number is available for this tournament
-                assignedBoard = availableBoards.find((board: any) => board.boardNumber === matchData.boardNumber);
-                if (!assignedBoard) {
-                    throw new BadRequestError(`Board ${matchData.boardNumber} is not available for this tournament`);
-                }
-                
-                // For manual board selection, we allow assignment even if board is busy
-                // The user explicitly chose this board, so we respect their choice
-                console.log(`Manual board assignment: Board ${matchData.boardNumber} selected by user`);
-            } else {
-                // Assign board in round-robin fashion if no specific board requested
-                // Find the first available (not playing) board
-                let boardIndex = round.matches.length % availableBoards.length;
-                let attempts = 0;
-                
-                while (attempts < availableBoards.length) {
-                    const candidateBoard = availableBoards[boardIndex];
-                    
-                    // Check if this board is currently playing
-                    const currentMatchOnBoard = await MatchModel.findOne({
-                        boardReference: candidateBoard.boardNumber,
-                        tournamentRef: tournament._id,
-                        status: 'ongoing'
-                    });
-                    
-                    if (!currentMatchOnBoard) {
-                        // Board is free, use it
-                        assignedBoard = candidateBoard;
-                        break;
-                    }
-                    
-                    // Try next board
-                    boardIndex = (boardIndex + 1) % availableBoards.length;
-                    attempts++;
-                }
-                
-                // If no free board found, use the first available board anyway
-                if (!assignedBoard) {
-                    assignedBoard = availableBoards[0];
-                    console.log(`No free boards found, using first available: ${assignedBoard.boardNumber}`);
-                }
+            // Assign board: board number is now required
+            if (!matchData.boardNumber) {
+                throw new BadRequestError('Board number is required for manual match creation');
             }
+            
+            // Validate that the provided board number is available for this tournament
+            const assignedBoard = availableBoards.find((board: any) => board.boardNumber === matchData.boardNumber);
+            if (!assignedBoard) {
+                throw new BadRequestError(`Board ${matchData.boardNumber} is not available for this tournament`);
+            }
+            
+            // For manual board selection, we allow assignment even if board is busy
+            // The user explicitly chose this board, so we respect their choice
+            console.log(`Manual board assignment: Board ${matchData.boardNumber} selected by user`);
 
             // Create match
             const match = await MatchModel.create({

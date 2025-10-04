@@ -269,6 +269,11 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       return;
     }
 
+    if (!selectedBoard) {
+      setError('Kérjük válassz ki egy táblát.');
+      return;
+    }
+
     setAddingMatch(true);
     setError('');
     
@@ -1472,13 +1477,15 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-bold">Tábla:</span>
+                  <span className="label-text-alt text-warning">*Kötelező</span>
                 </label>
                 <select
                   className="select select-bordered w-full"
                   value={selectedBoard}
                   onChange={(e) => setSelectedBoard(e.target.value)}
+                  required
                 >
-                  <option value="">Automatikus kiosztás</option>
+                  <option value="">Válassz táblát</option>
                   {availableBoards.map((board: any) => {
                     const displayName = board.name && board.name !== `Tábla ${board.boardNumber}` 
                       ? board.name 
@@ -1513,11 +1520,11 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               >
                 Mégse
               </button>
-              <button
-                className="btn btn-success flex-1"
-                onClick={handleAddMatch}
-                disabled={addingMatch || !selectedPlayer1 || selectedPlayer1 === selectedPlayer2}
-              >
+                <button
+                  className="btn btn-success flex-1"
+                  onClick={handleAddMatch}
+                  disabled={addingMatch || !selectedPlayer1 || selectedPlayer1 === selectedPlayer2 || !selectedBoard}
+                >
                 {addingMatch ? (
                   <>
                     <span className="loading loading-spinner loading-sm"></span>
@@ -1955,13 +1962,15 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-bold">Tábla:</span>
+                  <span className="label-text-alt text-warning">*Kötelező</span>
                 </label>
                 <select
                   className="select select-bordered w-full"
                   value={selectedBoard}
                   onChange={(e) => setSelectedBoard(e.target.value)}
+                  required
                 >
-                  <option value="">Automatikus kiosztás</option>
+                  <option value="">Válassz táblát</option>
                   {availableBoards.map((board: any) => {
                     const displayName = board.name && board.name !== `Tábla ${board.boardNumber}` 
                       ? board.name 
