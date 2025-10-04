@@ -92,6 +92,9 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   const [updatingMatchPlayer, setUpdatingMatchPlayer] = useState(false);
   const [showLegsModal, setShowLegsModal] = useState(false);
   const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<KnockoutMatch | null>(null);
+  const [showMatchSettingsModal, setShowMatchSettingsModal] = useState(false);
+  const [editingMatchSettings, setEditingMatchSettings] = useState<KnockoutMatch | null>(null);
+  const [editSettingsLoading, setEditSettingsLoading] = useState(false);
 
   useEffect(() => {
     fetchKnockoutData();
@@ -436,6 +439,59 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     setSelectedScorer(playerId);
     setScorerSearchTerm(playerName);
     setShowScorerDropdown(false);
+  };
+
+  const handleEditMatchSettings = (match: KnockoutMatch) => {
+    if (!match.matchReference) {
+      setError('Bye meccseket nem lehet szerkeszteni.');
+      return;
+    }
+    
+    setEditingMatchSettings(match);
+    setShowMatchSettingsModal(true);
+  };
+
+  const handleSaveMatchSettings = async () => {
+    if (!editingMatchSettings || !editingMatchSettings.matchReference) return;
+    
+    setEditSettingsLoading(true);
+    setError('');
+    
+    try {
+      const matchId = typeof editingMatchSettings.matchReference === 'object' 
+        ? editingMatchSettings.matchReference._id 
+        : editingMatchSettings.matchReference;
+      
+      const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
+        player1Id: selectedPlayer1,
+        player2Id: selectedPlayer2,
+        scorerId: selectedScorer,
+        boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined
+      });
+      
+      if (response.data && response.data.success) {
+        await fetchKnockoutData();
+        setShowMatchSettingsModal(false);
+        setEditingMatchSettings(null);
+        // Reset form
+        setSelectedPlayer1('');
+        setSelectedPlayer2('');
+        setSelectedScorer('');
+        setSelectedBoard('');
+        setPlayer1SearchTerm('');
+        setPlayer2SearchTerm('');
+        setScorerSearchTerm('');
+        setShowPlayer1Dropdown(false);
+        setShowPlayer2Dropdown(false);
+        setShowScorerDropdown(false);
+      } else {
+        setError(response.data?.error || 'Nem sikerült frissíteni a meccs beállításait.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Nem sikerült frissíteni a meccs beállításait.');
+    } finally {
+      setEditSettingsLoading(false);
+    }
   };
 
   const getAvailablePlayersForRound = (roundNumber: number) => {
@@ -856,10 +912,22 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                       <button
                                         className="btn btn-xs btn-ghost"
                                         onClick={() => handleMatchEdit(match)}
-                                        title="Meccs szerkesztése"
+                                        title="Meccs eredmény szerkesztése"
                                       >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && match.matchReference && (
+                                      <button
+                                        className="btn btn-xs btn-ghost"
+                                        onClick={() => handleEditMatchSettings(match)}
+                                        title="Meccs beállítások szerkesztése"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
                                       </button>
                                     )}
@@ -1642,6 +1710,297 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
           clubId: clubId
         } : null}
       />
+
+      {/* Match Settings Edit Modal */}
+      {showMatchSettingsModal && editingMatchSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4">Meccs Beállítások Szerkesztése</h3>
+            
+            <div className="text-center mb-6">
+              <h4 className="text-lg font-bold mb-2">
+                {editingMatchSettings.player1?.name || 'TBD'} vs {editingMatchSettings.player2?.name || 'TBD'}
+              </h4>
+              <p className="text-base-content/70">Módosítsd a meccs beállításait</p>
+            </div>
+            
+            {error && (
+              <div className="alert alert-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">1. játékos:</span>
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      className="input input-bordered w-full"
+                      placeholder="Keresés..."
+                      value={player1SearchTerm}
+                      onChange={(e) => {
+                        setPlayer1SearchTerm(e.target.value);
+                        setShowPlayer1Dropdown(e.target.value.length > 0);
+                      }}
+                      onFocus={() => {
+                        if (player1SearchTerm.length > 0) {
+                          setShowPlayer1Dropdown(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setShowPlayer1Dropdown(false), 150);
+                      }}
+                    />
+                    {/* Search Results Dropdown */}
+                    {showPlayer1Dropdown && player1SearchTerm.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                        {getFilteredPlayersForSelection(player1SearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
+                          const playerId = player.playerReference?._id || player.playerReference || player._id;
+                          const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                          
+                          return (
+                            <div
+                              key={playerId}
+                              className="p-2 hover:bg-base-200 cursor-pointer text-sm"
+                              onClick={() => handlePlayer1Select(playerId, playerName)}
+                            >
+                              {playerName}
+                            </div>
+                          );
+                        })}
+                        {getFilteredPlayersForSelection(player1SearchTerm, getAllTournamentPlayers()).length === 0 && (
+                          <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    className="select select-bordered w-48"
+                    value={selectedPlayer1}
+                    onChange={(e) => setSelectedPlayer1(e.target.value)}
+                  >
+                    <option value="">Válassz (opcionális)</option>
+                    {getFilteredPlayersForSelection(player1SearchTerm, getAllTournamentPlayers()).map((player: any) => {
+                      const playerId = player.playerReference?._id || player.playerReference || player._id;
+                      const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                      
+                      return (
+                        <option key={playerId} value={playerId}>
+                          {playerName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">2. játékos:</span>
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      className="input input-bordered w-full"
+                      placeholder="Keresés..."
+                      value={player2SearchTerm}
+                      onChange={(e) => {
+                        setPlayer2SearchTerm(e.target.value);
+                        setShowPlayer2Dropdown(e.target.value.length > 0);
+                      }}
+                      onFocus={() => {
+                        if (player2SearchTerm.length > 0) {
+                          setShowPlayer2Dropdown(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setShowPlayer2Dropdown(false), 150);
+                      }}
+                    />
+                    {/* Search Results Dropdown */}
+                    {showPlayer2Dropdown && player2SearchTerm.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                        {getFilteredPlayersForSelection(player2SearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
+                          const playerId = player.playerReference?._id || player.playerReference || player._id;
+                          const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                          
+                          return (
+                            <div
+                              key={playerId}
+                              className="p-2 hover:bg-base-200 cursor-pointer text-sm"
+                              onClick={() => handlePlayer2Select(playerId, playerName)}
+                            >
+                              {playerName}
+                            </div>
+                          );
+                        })}
+                        {getFilteredPlayersForSelection(player2SearchTerm, getAllTournamentPlayers()).length === 0 && (
+                          <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    className="select select-bordered w-48"
+                    value={selectedPlayer2}
+                    onChange={(e) => setSelectedPlayer2(e.target.value)}
+                  >
+                    <option value="">Válassz (opcionális)</option>
+                    {getFilteredPlayersForSelection(player2SearchTerm, getAllTournamentPlayers()).map((player: any) => {
+                      const playerId = player.playerReference?._id || player.playerReference || player._id;
+                      const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                      
+                      return (
+                        <option key={playerId} value={playerId}>
+                          {playerName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">Scorer:</span>
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      className="input input-bordered w-full"
+                      placeholder="Keresés..."
+                      value={scorerSearchTerm}
+                      onChange={(e) => {
+                        setScorerSearchTerm(e.target.value);
+                        setShowScorerDropdown(e.target.value.length > 0);
+                      }}
+                      onFocus={() => {
+                        if (scorerSearchTerm.length > 0) {
+                          setShowScorerDropdown(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setShowScorerDropdown(false), 150);
+                      }}
+                    />
+                    {/* Search Results Dropdown */}
+                    {showScorerDropdown && scorerSearchTerm.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                        {getFilteredPlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
+                          const playerId = player.playerReference?._id || player.playerReference || player._id;
+                          const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                          
+                          return (
+                            <div
+                              key={playerId}
+                              className="p-2 hover:bg-base-200 cursor-pointer text-sm"
+                              onClick={() => handleScorerSelect(playerId, playerName)}
+                            >
+                              {playerName}
+                            </div>
+                          );
+                        })}
+                        {getFilteredPlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).length === 0 && (
+                          <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    className="select select-bordered w-48"
+                    value={selectedScorer}
+                    onChange={(e) => setSelectedScorer(e.target.value)}
+                  >
+                    <option value="">Válassz (opcionális)</option>
+                    {getFilteredPlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).map((player: any) => {
+                      const playerId = player.playerReference?._id || player.playerReference || player._id;
+                      const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                      
+                      return (
+                        <option key={playerId} value={playerId}>
+                          {playerName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">Tábla:</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={selectedBoard}
+                  onChange={(e) => setSelectedBoard(e.target.value)}
+                >
+                  <option value="">Automatikus kiosztás</option>
+                  {availableBoards.map((board: any) => {
+                    const displayName = board.name && board.name !== `Tábla ${board.boardNumber}` 
+                      ? board.name 
+                      : `Tábla ${board.boardNumber}`;
+                    
+                    return (
+                      <option key={board.boardNumber} value={board.boardNumber.toString()}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                className="btn btn-error flex-1"
+                onClick={() => {
+                  setShowMatchSettingsModal(false);
+                  setEditingMatchSettings(null);
+                  setError('');
+                  // Reset form
+                  setSelectedPlayer1('');
+                  setSelectedPlayer2('');
+                  setSelectedScorer('');
+                  setSelectedBoard('');
+                  setPlayer1SearchTerm('');
+                  setPlayer2SearchTerm('');
+                  setScorerSearchTerm('');
+                  setShowPlayer1Dropdown(false);
+                  setShowPlayer2Dropdown(false);
+                  setShowScorerDropdown(false);
+                }}
+                disabled={editSettingsLoading}
+              >
+                Mégse
+              </button>
+              <button
+                className="btn btn-success flex-1"
+                onClick={handleSaveMatchSettings}
+                disabled={editSettingsLoading}
+              >
+                {editSettingsLoading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Mentés...
+                  </>
+                ) : (
+                  "Mentés"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

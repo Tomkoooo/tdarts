@@ -4,6 +4,8 @@ import { BadRequestError } from "@/middleware/errorHandle";
 import { TournamentService } from "./tournament.service";
 import { TournamentModel } from "../models/tournament.model";
 import { ClubModel } from "../models/club.model";
+import { AuthorizationService } from "./authorization.service";
+import { connectMongo } from "@/lib/mongoose";
 
 export class MatchService {
     // Get all matches for a board that haven't finished yet
@@ -472,5 +474,117 @@ export class MatchService {
         });
 
         await tournament.save();
+    }
+
+    // Update match settings (players, scorer, board)
+    static async updateMatchSettings(matchId: string, requesterId: string, settingsData: {
+        player1Id?: string;
+        player2Id?: string;
+        scorerId?: string;
+        boardNumber?: number;
+    }) {
+        try {
+            await connectMongo();
+            
+            const match = await MatchModel.findById(matchId)
+                .populate('tournamentRef');
+            
+            if (!match) {
+                throw new BadRequestError('Match not found');
+            }
+
+            const tournament = match.tournamentRef as any;
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId.toString());
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can update match settings');
+            }
+
+            // Update players if provided
+            if (settingsData.player1Id) {
+                // Validate player exists in tournament
+                const player1 = tournament.tournamentPlayers.find((p: any) => 
+                    p.playerReference.toString() === settingsData.player1Id
+                );
+                if (!player1) {
+                    throw new BadRequestError('Player 1 not found in tournament');
+                }
+
+                match.player1 = {
+                    playerId: settingsData.player1Id,
+                    legsWon: match.player1?.legsWon || 0,
+                    legsLost: match.player1?.legsLost || 0,
+                    average: match.player1?.average || 0,
+                    highestCheckout: match.player1?.highestCheckout || 0,
+                    oneEightiesCount: match.player1?.oneEightiesCount || 0,
+                };
+            }
+
+            if (settingsData.player2Id) {
+                // Validate player exists in tournament
+                const player2 = tournament.tournamentPlayers.find((p: any) => 
+                    p.playerReference.toString() === settingsData.player2Id
+                );
+                if (!player2) {
+                    throw new BadRequestError('Player 2 not found in tournament');
+                }
+
+                match.player2 = {
+                    playerId: settingsData.player2Id,
+                    legsWon: match.player2?.legsWon || 0,
+                    legsLost: match.player2?.legsLost || 0,
+                    average: match.player2?.average || 0,
+                    highestCheckout: match.player2?.highestCheckout || 0,
+                    oneEightiesCount: match.player2?.oneEightiesCount || 0,
+                };
+            }
+
+            // Update scorer if provided
+            if (settingsData.scorerId) {
+                // Validate scorer exists in tournament
+                const scorer = tournament.tournamentPlayers.find((p: any) => 
+                    p.playerReference.toString() === settingsData.scorerId
+                );
+                if (!scorer) {
+                    throw new BadRequestError('Scorer not found in tournament');
+                }
+
+                match.scorer = settingsData.scorerId;
+            }
+
+            // Update board if provided
+            if (settingsData.boardNumber) {
+                // Validate board exists and is assigned to tournament
+                const club = await ClubModel.findById(tournament.clubId);
+                if (!club) {
+                    throw new BadRequestError('Club not found');
+                }
+
+                const board = club.boards.find((b: any) => 
+                    b.boardNumber === settingsData.boardNumber && 
+                    b.tournamentId === tournament.tournamentId
+                );
+                if (!board) {
+                    throw new BadRequestError('Board not found or not assigned to tournament');
+                }
+
+                match.boardReference = settingsData.boardNumber;
+            }
+
+            await match.save();
+
+            return {
+                success: true,
+                match: match
+            };
+
+        } catch (error: any) {
+            console.error('Update match settings error:', error);
+            throw error;
+        }
     }
 }
