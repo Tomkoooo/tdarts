@@ -127,27 +127,48 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
 
     connectWithAuth();
 
-    // Room-okhoz csatlakozás csak egyszer
+    // Room-okhoz csatlakozás - minden alkalommal amikor a socket csatlakozik
+    const joinRooms = () => {
+      if (socket.connected) {
+        console.log('🔌 Joining rooms...', { tournamentId, matchId });
+        
+        // Tournament room csatlakozás
+        if (tournamentId && !joinedRooms.current.has(`tournament-${tournamentId}`)) {
+          console.log('📡 Joining tournament room:', tournamentId);
+          socket.emit('join-tournament', tournamentId);
+          joinedRooms.current.add(`tournament-${tournamentId}`);
+        }
+
+        // Match room csatlakozás
+        if (matchId && !joinedRooms.current.has(`match-${matchId}`)) {
+          console.log('📡 Joining match room:', matchId);
+          socket.emit('join-match', matchId);
+          joinedRooms.current.add(`match-${matchId}`);
+        }
+      }
+    };
+
+    // Csatlakozás a room-okhoz ha a socket csatlakozva van
     if (socket.connected && !hasJoinedRooms.current) {
-      console.log('Joining rooms...');
-      
-      // Tournament room csatlakozás
-      if (tournamentId && !joinedRooms.current.has(`tournament-${tournamentId}`)) {
-        socket.emit('join-tournament', tournamentId);
-        joinedRooms.current.add(`tournament-${tournamentId}`);
-      }
-
-      // Match room csatlakozás
-      if (matchId && !joinedRooms.current.has(`match-${matchId}`)) {
-        socket.emit('join-match', matchId);
-        joinedRooms.current.add(`match-${matchId}`);
-      }
-
+      joinRooms();
       hasJoinedRooms.current = true;
     }
 
+    // Socket reconnect esetén újra csatlakozás a room-okhoz
+    const handleConnect = () => {
+      console.log('🔌 Socket reconnected, rejoining rooms...');
+      isConnected.current = true;
+      hasJoinedRooms.current = false; // Reset to allow rejoining
+      joinRooms();
+      hasJoinedRooms.current = true;
+    };
+
+    socket.on('connect', handleConnect);
+
     // Cleanup function
     return () => {
+      socket.off('connect', handleConnect);
+      
       if (socket.connected && hasJoinedRooms.current) {
         console.log('Leaving rooms...');
         

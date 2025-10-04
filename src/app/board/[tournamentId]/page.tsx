@@ -337,6 +337,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     setShowMatchSetup(false);
   };
 
+  const handleRefetchMatches = async () => {
+    await loadMatches();
+  };
+
   const isAdminOrModerator = userRole?.clubRole === 'admin' || userRole?.clubRole === 'moderator';
 
 
@@ -465,9 +469,21 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               </svg>
               Vissza a táblákhoz
             </button>
-            <h1 className="text-2xl font-bold text-primary">
-              {selectedBoard.name ? `${selectedBoard.name}` : `Tábla ${selectedBoard.boardNumber}`}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-primary">
+                {selectedBoard.name ? `${selectedBoard.name}` : `Tábla ${selectedBoard.boardNumber}`}
+              </h1>
+              <button 
+                className="btn btn-outline btn-sm btn-circle"
+                onClick={handleRefetchMatches}
+                disabled={loading}
+                title="Meccsek frissítése"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
           </div>
           
           {error && (
@@ -500,19 +516,19 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                         {match.player1.playerId.name} vs {match.player2.playerId.name}
                       </h3>
                       <h4 className="card-title text-lg font-bold justify-center mb-2">
-                        iró: {match.scorer.name}
+                        iró: {match.scorer.name} || Scorer: {match.scorer.name}
                       </h4>
                       <div className="text-sm opacity-75 mb-2">
-                        Kezdő pontszám: {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} nyert leg
+                        Kezdő pontszám: {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} nyert leg || Starting Score: {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} legs to win
                       </div>
                       <div className={`badge badge-lg ${
                         match.status === 'ongoing' ? 'badge-primary' : 
                         match.status === 'pending' ? 'badge-warning' : 'badge-ghost'
                       }`}>
-                        {match.status === 'ongoing' ? 'Játékban' :
-                         match.status === 'pending' ? 'Várakozik' : 'Befejezett'}
+                        {match.status === 'ongoing' ? 'Játékban || Playing' :
+                         match.status === 'pending' ? 'Várakozik || Waiting' : 'Befejezett || Finished'}
                       </div>
-                      <button className="btn btn-primary btn-sm">Kiválaszt</button>
+                      <button className="btn btn-primary btn-sm">Kiválaszt || Select</button>
                     </div>
                   </button>
                 ))}
@@ -541,7 +557,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       setShowMatchSetup(true);
                     }}
                   >
-                    Új meccs indítása
+                    Új meccs indítása || Start New Match
                   </button>
                 </div>
               )}
@@ -566,7 +582,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 Vissza
               </button>
               <h2 className="text-lg font-bold text-primary">
-                Tábla {selectedBoard?.boardNumber}
+                {selectedBoard?.name ? `${selectedBoard?.name}` : `Tábla ${selectedBoard?.boardNumber}`}
               </h2>
             </div>
             
@@ -580,7 +596,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             <div className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Hány nyert legig?</span>
+                  <span className="label-text font-bold">Hány nyert legig? || Legs to win:</span>
                 </label>
                 <select 
                   className="select select-bordered select-lg w-full"
@@ -599,9 +615,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               </div>
               
               <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-bold">Ki kezdi?</span>
-                </label>
+                <label className="label flex flex-col items-start">
+                  <span className="label-text font-bold">Ki kezdi? || To throw first:</span>
+                  <i className="text-sm flex mb-2 ml-2">A bull-t a bal oldali ember kezdi <br/> The left player to start the bull</i>
+                  </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     className={`btn btn-lg ${startingPlayer === 1 ? 'btn-primary' : 'btn-outline'}`}
@@ -623,7 +640,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   className="btn btn-error flex-1"
                   onClick={handleBackToMatches}
                 >
-                  Mégse
+                  Cancel
                 </button>
                 <button
                   className="btn btn-success flex-1"
@@ -639,10 +656,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   {setupLoading ? (
                     <>
                       <span className="loading loading-spinner loading-sm"></span>
-                      Indítás...
+                      Starting...
                     </>
                   ) : (
-                    "Meccs indítása"
+                    "Start match"
                   )}
                 </button>
               </div>

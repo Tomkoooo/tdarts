@@ -30,9 +30,18 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
   const { socket, isConnected } = useSocket({ tournamentId: tournamentCode });
 
   useEffect(() => {
+    console.log('🔌 LiveMatchesList useEffect triggered:', {
+      tournamentCode,
+      isConnected,
+      socketConnected: socket.connected
+    });
+
     // Join tournament room - use socket directly to avoid dependency issues
     if (socket.connected) {
+      console.log('📡 LiveMatchesList joining tournament room:', tournamentCode);
       socket.emit('join-tournament', tournamentCode);
+    } else {
+      console.log('❌ LiveMatchesList socket not connected, cannot join room');
     }
     
     // Fetch active matches from API
@@ -81,12 +90,20 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     console.log('🔌 Setting up socket event listeners for tournament:', tournamentCode);
     console.log('🔌 Socket connected:', socket.connected);
     
+    // Socket connection handler
+    const handleSocketConnect = () => {
+      console.log('🔌 LiveMatchesList socket connected, joining tournament room:', tournamentCode);
+      socket.emit('join-tournament', tournamentCode);
+    };
+
+    socket.on('connect', handleSocketConnect);
     socket.on('match-started', onMatchStarted);
     socket.on('match-finished', onMatchFinished);
     socket.on('match-update', onMatchUpdate);
     socket.on('leg-complete', onLegComplete);
 
     return () => {
+      socket.off('connect', handleSocketConnect);
       socket.off('match-started', onMatchStarted);
       socket.off('match-finished', onMatchFinished);
       socket.off('match-update', onMatchUpdate);

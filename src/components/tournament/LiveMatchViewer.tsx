@@ -100,6 +100,14 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     matchId: matchId 
   });
 
+  // Update global matchState for fullscreen popup whenever matchState changes
+  useEffect(() => {
+    if (matchState) {
+      (window as any).matchState = matchState;
+      console.log('📺 Updated global matchState for fullscreen popup:', matchState);
+    }
+  }, [matchState]);
+
   // Fetch match data from database
   const fetchMatchData = async () => {
     try {
@@ -144,6 +152,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
   useEffect(() => {
     // Fetch initial match data from database
     fetchMatchData();
+    
     
     // Join tournament and match rooms - use socket directly to avoid dependency issues
     if (socket.connected) {
@@ -383,6 +392,9 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
             onClick={() => {
               const fullscreenWindow = window.open('', '_blank', 'width=1200,height=400,scrollbars=no,resizable=yes');
               if (fullscreenWindow) {
+                // Make matchState globally accessible for the popup
+                (window as any).matchState = matchState;
+                
                 fullscreenWindow.document.write(`
                   <!DOCTYPE html>
                   <html>
@@ -426,8 +438,10 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                         setInterval(() => {
                           if (window.opener && !window.opener.closed) {
                             try {
+                              // Access the global matchState from the parent window
                               const openerState = window.opener.matchState;
                               if (openerState) {
+                                console.log('Updating fullscreen display with state:', openerState);
                                 document.querySelector('.player-section:first-child .player-score').textContent = openerState.currentLegData.player1Remaining;
                                 document.querySelector('.player-section:first-child .player-legs').textContent = openerState.player1LegsWon || 0;
                                 document.querySelector('.player-section:last-child .player-score').textContent = openerState.currentLegData.player2Remaining;
@@ -440,9 +454,11 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                                 } else {
                                   document.querySelector('.player-section:last-child .player-score').classList.add('current-player');
                                 }
+                              } else {
+                                console.log('No matchState found in parent window');
                               }
                             } catch (e) {
-                              console.log('Parent window closed or not accessible');
+                              console.log('Parent window closed or not accessible:', e.message);
                             }
                           }
                         }, 2000);

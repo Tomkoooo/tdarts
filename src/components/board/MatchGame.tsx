@@ -73,6 +73,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   const [showMatchConfirmation, setShowMatchConfirmation] = useState<boolean>(false);
   const [pendingLegWinner, setPendingLegWinner] = useState<1 | 2 | null>(null);
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
+  
+  // Loading states
+  const [isSavingLeg, setIsSavingLeg] = useState<boolean>(false);
+  const [isSavingMatch, setIsSavingMatch] = useState<boolean>(false);
 
   // Socket hook with feature flag support
   const { socket, isConnected } = useSocket({ 
@@ -143,40 +147,62 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
     });
   }, [isConnected, match._id, match.player1.playerId._id, match.player2.playerId._id, match.startingScore, match.legsToWin, match.startingPlayer]);
 
-  // Load saved game state from localStorage only once on mount
+  // Initialize game state - always try to load from localStorage first
   useEffect(() => {
     // Reset initialization flag when match settings change
     setIsInitialized(false);
     
+    console.log('🔄 Initializing game state for match:', match._id);
+    
+    // Always try to load from localStorage first
     const savedState = localStorage.getItem(`match_game_${match._id}`);
     if (savedState) {
-      const state = JSON.parse(savedState);
-      // Check if the saved state has the same starting player as the current match
-      const savedStartingPlayer = state.legStartingPlayer || 1;
-      if (savedStartingPlayer !== (match.startingPlayer || 1)) {
-        // Starting player changed, clear saved state and start fresh
-        localStorage.removeItem(`match_game_${match._id}`);
-      } else {
-        setPlayer1Score(state.player1Score);
-        setPlayer2Score(state.player2Score);
-        setCurrentPlayer(state.currentPlayer);
-        setPlayer1Throws(state.player1Throws);
-        setPlayer2Throws(state.player2Throws);
+      try {
+        const state = JSON.parse(savedState);
+        console.log('💾 Found saved state in localStorage:', {
+          player1Score: state.player1Score,
+          player2Score: state.player2Score,
+          player1LegsWon: state.player1LegsWon,
+          player2LegsWon: state.player2LegsWon,
+          currentPlayer: state.currentPlayer
+        });
+        
+        // Load saved state
+        setPlayer1Score(state.player1Score || match.startingScore);
+        setPlayer2Score(state.player2Score || match.startingScore);
+        setCurrentPlayer(state.currentPlayer || (match.startingPlayer || 1));
+        setPlayer1Throws(state.player1Throws || []);
+        setPlayer2Throws(state.player2Throws || []);
         setPlayer1LegsWon(state.player1LegsWon || 0);
         setPlayer2LegsWon(state.player2LegsWon || 0);
-        setLegStartingPlayer(state.legStartingPlayer || match.startingPlayer || 1);
+        setLegStartingPlayer(state.legStartingPlayer || (match.startingPlayer || 1));
         setPlayer1Stats(state.player1Stats || { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 });
         setPlayer2Stats(state.player2Stats || { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 });
+        
+        console.log('✅ Successfully loaded game state from localStorage');
         setIsInitialized(true);
         return;
+      } catch (error) {
+        console.error('❌ Error parsing saved state, clearing localStorage:', error);
+        localStorage.removeItem(`match_game_${match._id}`);
       }
     }
     
-    // Initialize with match settings if no saved state or starting player changed
-    // Load current leg counts from match data to preserve progress
+    // No saved state found - initialize with default values from database
+    console.log('🔄 No saved state found, initializing with default values from database');
+    
+    // Calculate starting player for current leg based on completed legs
     const totalLegsPlayed = (match.player1.legsWon || 0) + (match.player2.legsWon || 0);
     const nextLegStartingPlayer = calculateNextLegStartingPlayer(totalLegsPlayed, match.startingPlayer || 1);
     
+    console.log('📊 Database values:', {
+      startingScore: match.startingScore,
+      player1LegsWon: match.player1.legsWon || 0,
+      player2LegsWon: match.player2.legsWon || 0,
+      nextLegStartingPlayer
+    });
+    
+    // Initialize with database values
     setPlayer1Score(match.startingScore);
     setPlayer2Score(match.startingScore);
     setCurrentPlayer(nextLegStartingPlayer as 1 | 2);
@@ -197,12 +223,23 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       totalThrows: 0, 
       totalScore: 0 
     });
+    
     setIsInitialized(true);
   }, [match._id, match.startingPlayer, match.legsToWin]); // Depend on match._id, startingPlayer, and legsToWin
 
-  // Save game state to localStorage whenever it changes (but only after initialization)
+  // Save game state to localStorage whenever it changes (but only after initialization and only if there's an ongoing game)
   useEffect(() => {
     if (!isInitialized) return; // Don't save before initialization is complete
+    
+    // Only save if there's an ongoing game (not just default starting state)
+    const hasOngoingGame = player1Throws.length > 0 || player2Throws.length > 0 || 
+                          (player1Score !== match.startingScore) || (player2Score !== match.startingScore) ||
+                          player1LegsWon > 0 || player2LegsWon > 0;
+    
+    if (!hasOngoingGame) {
+      console.log('⏭️ Skipping localStorage save - no ongoing game detected');
+      return;
+    }
     
     const gameState = {
       player1Score,
@@ -216,8 +253,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       player1Stats,
       player2Stats,
     };
+    
+    console.log('💾 Saving ongoing game state to localStorage:', {
+      player1LegsWon,
+      player2LegsWon,
+      player1Score,
+      player2Score,
+      currentPlayer,
+      hasThrows: player1Throws.length > 0 || player2Throws.length > 0
+    });
+    
     localStorage.setItem(`match_game_${match._id}`, JSON.stringify(gameState));
-  }, [player1Score, player2Score, currentPlayer, player1Throws, player2Throws, player1LegsWon, player2LegsWon, legStartingPlayer, player1Stats, player2Stats, match._id, isInitialized]);
+  }, [player1Score, player2Score, currentPlayer, player1Throws, player2Throws, player1LegsWon, player2LegsWon, legStartingPlayer, player1Stats, player2Stats, match._id, isInitialized, match.startingScore]);
 
   // Check for leg completion when scores change
   useEffect(() => {
@@ -404,7 +451,9 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   };
 
   const confirmLegEnd = async () => {
-    if (!pendingLegWinner) return;
+    if (!pendingLegWinner || isSavingLeg) return;
+    
+    setIsSavingLeg(true);
     
     // Calculate new leg counts
     const newPlayer1Legs = pendingLegWinner === 1 ? player1LegsWon + 1 : player1LegsWon;
@@ -470,6 +519,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       });
     } catch (error) {
       console.error('Error saving leg:', error);
+    } finally {
+      setIsSavingLeg(false);
     }
 
     // Send leg completion to socket
@@ -493,7 +544,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       });
     }
 
-    // Reset for next leg
+    // Reset for next leg - use tournament starting score
     setPlayer1Score(match.startingScore);
     setPlayer2Score(match.startingScore);
     
@@ -507,27 +558,17 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
     setPlayer2Throws([]);
     setThrowInput('');
     
-    // Save the new leg state to localStorage instead of clearing it
-    const newLegState = {
-      player1Score: match.startingScore,
-      player2Score: match.startingScore,
-      currentPlayer: nextLegStartingPlayer,
-      player1Throws: [],
-      player2Throws: [],
-      player1LegsWon: newPlayer1Legs,
-      player2LegsWon: newPlayer2Legs,
-      legStartingPlayer: nextLegStartingPlayer,
-      player1Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
-      player2Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 }
-    };
-    localStorage.setItem(`match_game_${match._id}`, JSON.stringify(newLegState));
+    // Don't save to localStorage after leg completion - let the next throw trigger the save
+    console.log('🏆 Leg completed, reset to tournament starting score:', match.startingScore);
     
     setShowLegConfirmation(false);
     setPendingLegWinner(null);
   };
 
   const confirmMatchEnd = async () => {
-    if (!pendingMatchWinner) return;
+    if (!pendingMatchWinner || isSavingMatch) return;
+    
+    setIsSavingMatch(true);
     
     // Send the final checkout throw to socket now that match is confirmed
     if (isConnected) {
@@ -562,6 +603,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
       });
     } catch (error) {
       console.error('Error finishing match:', error);
+    } finally {
+      setIsSavingMatch(false);
     }
 
     // Inform server to cleanup live state for this match
@@ -579,6 +622,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   };
 
   const cancelLegEnd = () => {
+    if (isSavingLeg) return; // Don't allow cancel while saving
+    
     // Undo the last throw that caused the leg to end
     // pendingLegWinner is the player who just won the leg (who threw the last throw)
     const playerWhoJustThrew = pendingLegWinner;
@@ -617,6 +662,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
   };
 
   const cancelMatchEnd = () => {
+    if (isSavingMatch) return; // Don't allow cancel while saving
+    
     // Undo the last throw that caused the match to end
     // pendingMatchWinner is the player who just won the match (who threw the last throw)
     const playerWhoJustThrew = pendingMatchWinner;
@@ -759,9 +806,9 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
 
 
           {/* Current Player Indicator */}
-          <div className="bg-base-300 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-shrink-0 h-8 sm:h-10 md:h-12">
-            <div className="text-center flex items-center my-auto justify-center">
-              <div className="text-lg sm:text-xl md:text-2xl font-bold leading-none">{throwInput}</div>
+          <div className="bg-base-300 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-shrink-0 h-8 sm:h-10 md:h-[6rem]">
+            <div className="text-center flex h-full items-center my-auto justify-center">
+              <div className="text-lg sm:text-md md:text-5xl font-bold leading-none">{throwInput}</div>
             </div>
           </div>
 
@@ -771,27 +818,27 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  className="btn btn-xs h-5 sm:h-6 md:h-12 text-xl font-bold matchgame-btn"
+                  className="btn btn-xs h-5 sm:h-6 md:h-[5rem] text-lg md:text-2xl font-bold matchgame-btn"
                   onClick={() => handleNumberInput(num)}
                 >
                   {num}
                 </button>
               ))}
               <button
-                className="btn btn-warning btn-xs h-5 sm:h-6 md:h-12 text-xs matchgame-btn"
+                className="btn btn-xs h-5 sm:h-6 md:h-[5rem] text-lg md:text-2xl font-bold matchgame-btn btn-warning"
                 onClick={handleBackspace}
                 disabled={!throwInput}
               >
                 ⌫
               </button>
               <button
-                className="btn btn-xs h-5 sm:h-6 md:h-12 text-xs font-bold matchgame-btn"
+                className="btn btn-xs h-5 sm:h-6 md:h-[5rem] text-lg md:text-2xl font-bold matchgame-btn"
                 onClick={() => handleNumberInput(0)}
               >
                 0
               </button>
               <button
-                className="btn btn-error btn-xs h-5 sm:h-6 md:h-12 text-xs matchgame-btn"
+                className="btn btn-xs h-5 sm:h-6 md:h-[5rem] text-lg md:text-2xl font-bold matchgame-btn btn-error"
                 onClick={handleClear}
                 disabled={!throwInput}
               >
@@ -802,16 +849,16 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
           
           {/* Action Buttons - Separate section */}
           <div className="bg-base-300 rounded-lg p-1 sm:p-2 md:p-3 mb-1 sm:mb-2 flex-shrink-0">
-            <div className="flex gap-1 h-6 sm:h-8 md:h-10">
+            <div className="flex gap-1 h-6 sm:h-8 md:h-[5rem]">
               <button
-                className="btn btn-warning flex-1 btn-xs h-6 sm:h-8 md:h-10 text-xs sm:text-sm md:text-base matchgame-btn"
+                className="btn btn-warning flex-1 btn-xs h-6 sm:h-8 md:h-[5rem] text-xs sm:text-sm md:text-base matchgame-btn"
                 onClick={handleUndo}
                 disabled={player1Throws.length === 0 && player2Throws.length === 0}
               >
                 ↶
               </button>
               <button
-                className="btn btn-success flex-1 btn-xs h-6 sm:h-8 md:h-10 text-xs sm:text-sm md:text-base matchgame-btn"
+                className="btn btn-success flex-1 btn-xs h-6 sm:h-8 md:h-[5rem] text-xs sm:text-sm md:text-base matchgame-btn"
                 onClick={handleThrow}
                 disabled={!throwInput || parseInt(throwInput) < 0 || parseInt(throwInput) > 180 || isNaN(parseInt(throwInput))}
               >
@@ -871,11 +918,26 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
               {pendingLegWinner === 1 ? match.player1.playerId.name : match.player2.playerId.name} nyerte ezt a leg-et!
             </p>
             <div className="flex gap-2">
-              <button className="btn btn-error flex-1 matchgame-btn" onClick={cancelLegEnd}>
+              <button 
+                className="btn btn-error flex-1 matchgame-btn" 
+                onClick={cancelLegEnd}
+                disabled={isSavingLeg}
+              >
                 Visszavonás
               </button>
-              <button className="btn btn-success flex-1 matchgame-btn" onClick={confirmLegEnd}>
-                Igen
+              <button 
+                className="btn btn-success flex-1 matchgame-btn" 
+                onClick={confirmLegEnd}
+                disabled={isSavingLeg}
+              >
+                {isSavingLeg ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Mentés...
+                  </>
+                ) : (
+                  "Igen"
+                )}
               </button>
             </div>
           </div>
@@ -891,11 +953,26 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, clubId }) => {
               {pendingMatchWinner === 1 ? match.player1.playerId.name : match.player2.playerId.name} nyerte a meccset!
             </p>
             <div className="flex gap-2">
-              <button className="btn btn-error flex-1 matchgame-btn" onClick={cancelMatchEnd}>
+              <button 
+                className="btn btn-error flex-1 matchgame-btn" 
+                onClick={cancelMatchEnd}
+                disabled={isSavingMatch}
+              >
                 Visszavonás
               </button>
-              <button className="btn btn-success flex-1 matchgame-btn" onClick={confirmMatchEnd}>
-                Igen
+              <button 
+                className="btn btn-success flex-1 matchgame-btn" 
+                onClick={confirmMatchEnd}
+                disabled={isSavingMatch}
+              >
+                {isSavingMatch ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Mentés...
+                  </>
+                ) : (
+                  "Igen"
+                )}
               </button>
             </div>
           </div>
