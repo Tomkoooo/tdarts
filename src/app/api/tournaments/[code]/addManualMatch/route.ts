@@ -32,7 +32,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             const result = await TournamentService.addPartialMatch(code, requesterId, {
                 round: body.round,
                 player1Id: body.player1Id,
-                player2Id: body.player2Id
+                player2Id: body.player2Id,
+                boardNumber: body.boardNumber
             });
 
             if (!result) {

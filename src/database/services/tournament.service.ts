@@ -1290,6 +1290,7 @@ export class TournamentService {
                         const remainingWinners = winners.slice(1);
 
                         // Create match for bye player vs first winner
+                        // Use round-robin assignment for automatic generation
                         const boardIndex: number = 0 % availableBoards.length;
                         const assignedBoard: any = availableBoards[boardIndex];
 
@@ -1954,6 +1955,7 @@ export class TournamentService {
         player1Id?: string;
         player2Id?: string;
         scorerId?: string;
+        boardNumber?: number;
     }): Promise<any> {
         try {
             await connectMongo();
@@ -2023,9 +2025,24 @@ export class TournamentService {
                 throw new BadRequestError('No active boards available for this tournament');
             }
 
-            // Assign board in round-robin fashion
-            const boardIndex = round.matches.length % availableBoards.length;
-            const assignedBoard = availableBoards[boardIndex];
+            // Assign board: use provided board number if valid, otherwise use round-robin
+            let assignedBoard;
+            if (matchData.boardNumber) {
+                // Validate that the provided board number is available for this tournament
+                assignedBoard = availableBoards.find((board: any) => board.boardNumber === matchData.boardNumber);
+                if (!assignedBoard) {
+                    throw new BadRequestError(`Board ${matchData.boardNumber} is not available for this tournament`);
+                }
+                
+                // For manual board selection, we allow assignment even if board is busy
+                // The user explicitly chose this board, so we respect their choice
+                console.log(`Manual partial match board assignment: Board ${matchData.boardNumber} selected by user`);
+            } else {
+                // Assign board in round-robin fashion if no specific board requested
+                const boardIndex = round.matches.length % availableBoards.length;
+                assignedBoard = availableBoards[boardIndex];
+                console.log(`Auto partial match board assignment: Board ${assignedBoard.boardNumber} assigned by round-robin`);
+            }
 
             // Create match with partial players
             const match = await MatchModel.create({
@@ -2229,12 +2246,12 @@ export class TournamentService {
                 throw new BadRequestError('Match not found in tournament knockout structure');
             }
 
-            // If this was a bye match and now has both players, set status to pending and assign board
+            // If this was a bye match and now has both players, set status to pending
             if (wasByeMatch && match.player1?.playerId && match.player2?.playerId) {
                 match.status = 'pending';
                 match.winnerId = undefined; // Reset winner since it's now a real match
                 
-                // Assign board if not already assigned
+                // Only assign board automatically if no board was manually assigned
                 if (!match.boardReference) {
                     const club = await ClubModel.findById(tournament.clubId);
                     if (!club) {
@@ -2267,6 +2284,9 @@ export class TournamentService {
                     }
 
                     match.boardReference = selectedBoard.boardNumber;
+                    console.log(`Auto-assigned board ${selectedBoard.boardNumber} to bye match ${match._id}`);
+                } else {
+                    console.log(`Keeping manually assigned board ${match.boardReference} for bye match ${match._id}`);
                 }
             }
 
