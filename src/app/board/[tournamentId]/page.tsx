@@ -423,7 +423,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               <span className="loading loading-spinner loading-lg"></span>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row jsutify-center md:justify-around p-3  gap-4 overflow-y-scroll">
+            <div className="flex flex-col md:flex-row jsutify-center md:justify-around p-3  gap-4 flex-wrap">
               {boards.map((board) => (
                 <button
                   key={board.boardNumber}
