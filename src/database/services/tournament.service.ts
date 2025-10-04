@@ -2355,10 +2355,42 @@ export class TournamentService {
                 if (!assignedBoard) {
                     throw new BadRequestError(`Board ${matchData.boardNumber} is not available for this tournament`);
                 }
+                
+                // For manual board selection, we allow assignment even if board is busy
+                // The user explicitly chose this board, so we respect their choice
+                console.log(`Manual board assignment: Board ${matchData.boardNumber} selected by user`);
             } else {
                 // Assign board in round-robin fashion if no specific board requested
-                const boardIndex = round.matches.length % availableBoards.length;
-                assignedBoard = availableBoards[boardIndex];
+                // Find the first available (not playing) board
+                let boardIndex = round.matches.length % availableBoards.length;
+                let attempts = 0;
+                
+                while (attempts < availableBoards.length) {
+                    const candidateBoard = availableBoards[boardIndex];
+                    
+                    // Check if this board is currently playing
+                    const currentMatchOnBoard = await MatchModel.findOne({
+                        boardReference: candidateBoard.boardNumber,
+                        tournamentRef: tournament._id,
+                        status: 'ongoing'
+                    });
+                    
+                    if (!currentMatchOnBoard) {
+                        // Board is free, use it
+                        assignedBoard = candidateBoard;
+                        break;
+                    }
+                    
+                    // Try next board
+                    boardIndex = (boardIndex + 1) % availableBoards.length;
+                    attempts++;
+                }
+                
+                // If no free board found, use the first available board anyway
+                if (!assignedBoard) {
+                    assignedBoard = availableBoards[0];
+                    console.log(`No free boards found, using first available: ${assignedBoard.boardNumber}`);
+                }
             }
 
             // Create match

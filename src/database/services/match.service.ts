@@ -572,7 +572,36 @@ export class MatchService {
                     throw new BadRequestError('Board not found or not assigned to tournament');
                 }
 
+                // Update board reference in match
                 match.boardReference = settingsData.boardNumber;
+
+                // Update club.boards status if this match is currently active
+                if (match.status === 'ongoing') {
+                    // Find the board in club.boards and update currentMatch
+                    const boardIndex = club.boards.findIndex((b: any) => 
+                        b.boardNumber === settingsData.boardNumber && 
+                        b.tournamentId === tournament.tournamentId
+                    );
+                    
+                    if (boardIndex !== -1) {
+                        club.boards[boardIndex].currentMatch = match._id.toString();
+                        club.boards[boardIndex].status = 'playing';
+                    }
+                    
+                    // Clear currentMatch from old board if it was different
+                    const oldBoardIndex = club.boards.findIndex((b: any) => 
+                        b.boardNumber === match.boardReference && 
+                        b.tournamentId === tournament.tournamentId &&
+                        b.currentMatch === match._id.toString()
+                    );
+                    
+                    if (oldBoardIndex !== -1 && oldBoardIndex !== boardIndex) {
+                        club.boards[oldBoardIndex].currentMatch = null;
+                        club.boards[oldBoardIndex].status = 'idle';
+                    }
+                    
+                    await club.save();
+                }
             }
 
             await match.save();

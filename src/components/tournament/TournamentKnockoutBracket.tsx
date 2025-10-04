@@ -448,6 +448,23 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     }
     
     setEditingMatchSettings(match);
+    
+    // Set current values as defaults
+    setSelectedPlayer1(match.player1?._id || '');
+    setSelectedPlayer2(match.player2?._id || '');
+    setSelectedScorer(match.matchReference.scorer?._id || '');
+    setSelectedBoard(match.matchReference.boardReference?.toString() || '');
+    
+    // Set search terms to current player names
+    setPlayer1SearchTerm(match.player1?.name || '');
+    setPlayer2SearchTerm(match.player2?.name || '');
+    setScorerSearchTerm(match.matchReference.scorer?.name || '');
+    
+    // Hide dropdowns
+    setShowPlayer1Dropdown(false);
+    setShowPlayer2Dropdown(false);
+    setShowScorerDropdown(false);
+    
     setShowMatchSettingsModal(true);
   };
 
