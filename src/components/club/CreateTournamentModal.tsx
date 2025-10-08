@@ -15,6 +15,11 @@ interface CreateTournamentModalProps {
 
 type Step = 'details' | 'boards' | 'settings';
 
+interface BoardInput {
+  boardNumber: number;
+  name: string;
+}
+
 const defaultSettings: TournamentSettings = {
   status: 'pending',
   boardCount: 1,
@@ -39,8 +44,7 @@ export default function CreateTournamentModal({
 }: CreateTournamentModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [settings, setSettings] = useState<TournamentSettings>(defaultSettings);
-  const [selectedBoards, setSelectedBoards] = useState<number[]>([]);
-  const [availableBoards, setAvailableBoards] = useState<any[]>([]);
+  const [boards, setBoards] = useState<BoardInput[]>([{ boardNumber: 1, name: 'Tábla 1' }]);
   const [availableLeagues, setAvailableLeagues] = useState<any[]>([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -49,33 +53,14 @@ export default function CreateTournamentModal({
     maxAllowed: number;
     planName: string;
   } | null>(null);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Fetch available boards and leagues when modal opens
+  // Fetch leagues when modal opens
   useEffect(() => {
     if (isOpen) {
-      fetchAvailableBoards();
       fetchAvailableLeagues();
     }
   }, [isOpen, clubId]);
-
-  const fetchAvailableBoards = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/boards`);
-      if (response.ok) {
-        const data = await response.json();
-        // Filter boards that are not assigned to any active tournament
-        const available = data.boards.filter((board: any) => !board.tournamentId);
-        setAvailableBoards(available);
-      }
-    } catch (err) {
-      console.error('Error fetching boards:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchAvailableLeagues = async () => {
     try {
@@ -94,14 +79,23 @@ export default function CreateTournamentModal({
     setError('');
   };
 
-  const handleBoardSelection = (boardNumber: number) => {
-    setSelectedBoards(prev => {
-      if (prev.includes(boardNumber)) {
-        return prev.filter(b => b !== boardNumber);
-      } else {
-        return [...prev, boardNumber];
-      }
-    });
+  const handleAddBoard = () => {
+    const newBoardNumber = boards.length > 0 ? Math.max(...boards.map(b => b.boardNumber)) + 1 : 1;
+    setBoards(prev => [...prev, { boardNumber: newBoardNumber, name: `Tábla ${newBoardNumber}` }]);
+    setError('');
+  };
+
+  const handleRemoveBoard = (index: number) => {
+    if (boards.length > 1) {
+      setBoards(prev => prev.filter((_, i) => i !== index));
+    }
+    setError('');
+  };
+
+  const handleBoardChange = (index: number, field: keyof BoardInput, value: string | number) => {
+    setBoards(prev => prev.map((board, i) => 
+      i === index ? { ...board, [field]: value } : board
+    ));
     setError('');
   };
 
@@ -119,8 +113,8 @@ export default function CreateTournamentModal({
       setCurrentStep('details');
       return;
     }
-    if (selectedBoards.length === 0) {
-      setError('Legalább egy táblát ki kell választani');
+    if (boards.length === 0) {
+      setError('Legalább egy táblát létre kell hozni');
       setCurrentStep('boards');
       return;
     }
@@ -144,8 +138,13 @@ export default function CreateTournamentModal({
         format: settings.format,
         startingScore: settings.startingScore,
         tournamentPassword: settings.tournamentPassword,
-        boardCount: selectedBoards.length,
-        selectedBoards: selectedBoards,
+        boardCount: boards.length,
+        boards: boards.map((b, idx) => ({
+          boardNumber: idx + 1,
+          name: b.name || `Tábla ${idx + 1}`,
+          status: 'idle',
+          isActive: true
+        })),
         location: settings.location,
         type: settings.type,
         registrationDeadline: settings.registrationDeadline,
@@ -325,40 +324,42 @@ export default function CreateTournamentModal({
           {currentStep === 'boards' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Válaszd ki a használni kívánt táblákat</label>
+                <label className="block text-sm font-medium mb-1">Táblák létrehozása</label>
                 <p className="text-sm text-base-content/60 mb-4">
-                  Kiválasztott táblák: {selectedBoards.length} db
+                  Létrehozott táblák: {boards.length} db
                 </p>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <span className="loading loading-spinner loading-md"></span>
-                  </div>
-                ) : availableBoards.length === 0 ? (
-                  <div className="text-center py-8 text-base-content/60">
-                    Nincsenek szabad táblák
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {availableBoards.map((board: any) => (
-                      <button
-                        key={board.boardNumber}
-                        onClick={() => handleBoardSelection(board.boardNumber)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedBoards.includes(board.boardNumber)
-                            ? 'border-primary bg-primary/10'
-                            : 'border-base-300 bg-base-100 hover:border-primary/50'
-                        }`}
-                      >
-                        <div className="text-center">
-                          <div className="font-bold text-lg">Tábla {board.boardNumber}</div>
-                          {board.name && (
-                            <div className="text-sm text-base-content/60">{board.name}</div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {boards.map((board, index) => (
+                    <div key={index} className="flex gap-2 items-center p-3 bg-base-100 rounded-lg">
+                      <div className="flex-1">
+                        <label className="block text-xs text-base-content/60 mb-1">Tábla neve</label>
+                        <input
+                          type="text"
+                          value={board.name}
+                          onChange={(e) => handleBoardChange(index, 'name', e.target.value)}
+                          className="w-full px-3 py-2 bg-base-200 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                          placeholder={`Tábla ${index + 1}`}
+                        />
+                      </div>
+                      {boards.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBoard(index)}
+                          className="btn btn-ghost btn-sm btn-circle text-error"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddBoard}
+                    className="btn btn-outline btn-sm w-full"
+                  >
+                    + Új tábla hozzáadása
+                  </button>
+                </div>
               </div>
             </div>
           )}

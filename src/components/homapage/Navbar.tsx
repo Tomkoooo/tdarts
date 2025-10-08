@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -59,6 +59,7 @@ const Navbar = () => {
   ] : [
     { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
     { name: "Klubbok", icon: IconUsers, href: "/search?type=clubs" },
+    { name: "Tábla", icon: IconDeviceDesktop, href: "/board" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
 
@@ -70,10 +71,10 @@ const Navbar = () => {
         isScrolled || isMobileMenuOpen ? "bg-gradient-to-r from-white/10 via-white/15 to-white/10 backdrop-blur-2xl border-white/20 shadow-lg" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-1">
-        <div className="flex items-center justify-between h-16 md:h-20">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20 gap-4">
           {/* Logo */}
-          <Link href={isAdminPage ? "/admin" : "/"} className="flex items-center space-x-2">
+          <Link href={isAdminPage ? "/admin" : "/"} className="flex items-center space-x-2 flex-shrink-0">
             <Image src="/tdarts_fav.svg" width={40} height={40} alt="tDarts Logo" />
             <span className="text-xl md:text-2xl font-bold text-primary">
               {isAdminPage ? "" : "tDarts"}
@@ -81,62 +82,65 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-6 xl:space-x-8 flex-1 justify-center">
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-200 font-medium"
+                className="flex items-center space-x-1.5 text-gray-300 hover:text-red-400 transition-colors duration-200 font-medium whitespace-nowrap"
               >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm lg:text-base">{item.name}</span>
               </Link>
             ))}
+          </div>
+
+          {/* User Actions - Right Side */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-3 flex-shrink-0">
             {isAdminPage ? (
-              <div className="flex gap-2 items-center">
+              <>
                 <Link href="/" className="btn btn-sm glass-button push-button">
-                <IconLogout/>
+                  <IconLogout/>
                 </Link>
                 <div className="dropdown dropdown-end">
-               
                   <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-box w-52">
                     <li><Link href="/profile" className="text-white hover:text-red-300">Profil</Link></li>
                     <li><Link href="/" className="text-white hover:text-red-300">Főoldal</Link></li>
                     <li><button onClick={logout} className="text-white hover:text-red-300 w-full text-left">Kijelentkezés</button></li>
                   </ul>
                 </div>
-              </div>
+              </>
             ) : user ? (
-              <div className="flex gap-2 items-center">
-                <Link href="/profile" className="flex items-center space-x-2 btn btn-primary glass-button push-button">
-                  <IconUser className="w-5 h-5" />
-                  <span>{user.username}</span>
+              <>
+                <Link href="/profile" className="flex items-center space-x-1.5 btn btn-sm btn-primary glass-button push-button">
+                  <IconUser className="w-4 h-4" />
+                  <span className="hidden lg:inline">{user.username}</span>
                 </Link>
-                <Link href="/myclub" className="flex items-center space-x-2 btn btn-outline push-button">
-                  <IconDart className="w-5 h-5" />
-                  <span>Saját klub</span>
+                <Link href="/myclub" className="flex items-center space-x-1.5 btn btn-sm btn-outline push-button">
+                  <IconDart className="w-4 h-4" />
+                  <span className="hidden xl:inline">Saját klub</span>
                 </Link>
-                <Link href="/feedback" className="flex items-center space-x-2 btn btn-outline push-button">
-                  <IconBug className="w-5 h-5" />
-                  <span>Hibabejelentés</span>
+                <Link href="/feedback" className="flex items-center space-x-1.5 btn btn-sm btn-outline push-button">
+                  <IconBug className="w-4 h-4" />
+                  <span className="hidden xl:inline">Hibabejelentés</span>
                 </Link>
-                            {user.isAdmin && (
-                  <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button"
+                {user.isAdmin && (
+                  <Link href="/admin" className="flex items-center justify-center space-x-1.5 btn btn-sm btn-outline glass-button push-button"
                   onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Admin
                   </Link>
                 )}
-              </div>
+              </>
             ) : (
-              <div className="flex gap-2 items-center">
-                <Link href="/auth/login" className="block glass-button push-button">
+              <>
+                <Link href="/auth/login" className="btn btn-sm glass-button push-button">
                   Bejelentkezés
                 </Link>
-                <Link href="/auth/register" className="block btn-outline  push-button button">
+                <Link href="/auth/register" className="btn btn-sm btn-outline push-button">
                   Regisztráció
                 </Link>
-              </div>
+              </>
             )}
           </div>
 

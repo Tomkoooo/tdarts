@@ -19,16 +19,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             throw new BadRequestError('Missing required field: round');
         }
 
-        // Check if this is a partial match (only one player) or full match (both players)
-        const isPartialMatch = !body.player1Id || !body.player2Id;
+        // Check if this is an empty pair (no players), partial match (one player), or full match (both players)
+        const hasNoPlayers = !body.player1Id && !body.player2Id;
+        const isPartialMatch = (body.player1Id && !body.player2Id) || (!body.player1Id && body.player2Id);
         
-        if (isPartialMatch) {
-            // Partial match - at least one player must be specified
-            if (!body.player1Id && !body.player2Id) {
-                throw new BadRequestError('At least one player must be specified for partial match');
+        if (hasNoPlayers) {
+            // Empty pair - just add to knockout structure without creating a match
+            const result = await TournamentService.addEmptyKnockoutPair(code, requesterId, {
+                round: body.round
+            });
+
+            if (!result) {
+                throw new BadRequestError('Failed to add empty pair');
             }
-            
-            // Call the service method to add partial match
+
+            return NextResponse.json({
+                success: true,
+                message: 'Empty pair added successfully',
+                pair: result
+            });
+        } else if (isPartialMatch) {
+            // Partial match - one player specified, create match with one player
             const result = await TournamentService.addPartialMatch(code, requesterId, {
                 round: body.round,
                 player1Id: body.player1Id,
@@ -46,16 +57,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 match: result
             });
         } else {
-            // Full match - both players required
-            if (body.player1Id === undefined || body.player1Id === null) {
-                throw new BadRequestError('Missing required field: player1Id');
-            }
-
-            if (body.player2Id === undefined || body.player2Id === null) {
-                throw new BadRequestError('Missing required field: player2Id');
-            }
-
-            // Call the service method to add manual match
+            // Full match - both players specified
             const result = await TournamentService.addManualMatch(code, requesterId, {
                 round: body.round,
                 player1Id: body.player1Id,

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
-
+    
     // Párhuzamos lekérdezések a teljesítmény javításához
     const [userClubRole, userPlayerStatus] = await Promise.all([
       ClubService.getUserRoleInClub(user._id.toString(), tournament.clubId._id.toString()),

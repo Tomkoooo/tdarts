@@ -22,9 +22,14 @@ export default function EditTournamentModal({
   const [settings, setSettings] = useState<TournamentSettings>(tournament.tournamentSettings);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [availableBoards, setAvailableBoards] = useState<Array<{ boardNumber: number; name: string; isActive: boolean; isAssigned: boolean }>>([]);
-  const [selectedBoards, setSelectedBoards] = useState<number[]>([]);
-  const [boardsLoading, setBoardsLoading] = useState(false);
+  const [boards, setBoards] = useState<Array<{ 
+    boardNumber: number; 
+    name: string; 
+    isActive: boolean; 
+    status: string;
+    currentMatch?: string;
+    nextMatch?: string;
+  }>>(tournament.boards || []);
   const [subscriptionError, setSubscriptionError] = useState<{
     currentCount: number;
     maxAllowed: number;
@@ -36,51 +41,46 @@ export default function EditTournamentModal({
   useEffect(() => {
     if (tournament?.tournamentSettings) {
       setSettings(tournament.tournamentSettings);
+      setBoards(tournament.boards || []);
       setError('');
     }
   }, [tournament]);
 
-  // Load board context when tournament changes
+  // Update boardCount when boards changes
   useEffect(() => {
-    if (tournament?.tournamentId && tournament?.tournamentSettings?.status === 'pending') {
-      loadBoardContext();
+    if (boards.length > 0) {
+      handleSettingsChange('boardCount', boards.length);
     }
-  }, [tournament]);
-
-  // Update boardCount when selectedBoards changes
-  useEffect(() => {
-    if (selectedBoards.length > 0) {
-      handleSettingsChange('boardCount', selectedBoards.length);
-    }
-  }, [selectedBoards]);
-
-  const loadBoardContext = async () => {
-    try {
-      setBoardsLoading(true);
-      const response = await fetch(`/api/tournaments/${tournament.tournamentId}/boards`);
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableBoards(data.availableBoards);
-        setSelectedBoards(data.selectedBoards);
-      }
-    } catch (error) {
-      console.error('Error loading board context:', error);
-    } finally {
-      setBoardsLoading(false);
-    }
-  };
+  }, [boards]);
 
   const handleSettingsChange = (field: keyof TournamentSettings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }));
     setError('');
   };
 
+  const handleAddBoard = () => {
+    const newBoardNumber = boards.length > 0 ? Math.max(...boards.map(b => b.boardNumber)) + 1 : 1;
+    setBoards(prev => [...prev, { boardNumber: newBoardNumber, name: `Tábla ${newBoardNumber}`, isActive: true, status: 'idle' }]);
+  };
+
+  const handleRemoveBoard = (index: number) => {
+    if (boards.length > 1) {
+      setBoards(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleBoardChange = (index: number, field: 'name', value: string) => {
+    setBoards(prev => prev.map((board, i) => 
+      i === index ? { ...board, [field]: value } : board
+    ));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate board selection
-    if (!isTournamentStarted && selectedBoards.length === 0) {
-      setError('Legalább egy táblát ki kell választani');
+    if (!isTournamentStarted && boards.length === 0) {
+      setError('Legalább egy táblát létre kell hozni');
       return;
     }
     
@@ -97,7 +97,14 @@ export default function EditTournamentModal({
         body: JSON.stringify({
           userId,
           settings,
-          selectedBoards
+          boards: boards.map((b, idx) => ({
+            boardNumber: idx + 1,
+            name: b.name,
+            isActive: b.isActive,
+            status: b.status || 'idle',
+            currentMatch: b.currentMatch,
+            nextMatch: b.nextMatch
+          }))
         }),
       });
 
@@ -125,16 +132,6 @@ export default function EditTournamentModal({
     }
   };
 
-  const handleBoardToggle = (boardNumber: number) => {
-    const newSelectedBoards = selectedBoards.includes(boardNumber) 
-      ? selectedBoards.filter(b => b !== boardNumber)
-      : [...selectedBoards, boardNumber];
-    
-    setSelectedBoards(newSelectedBoards);
-    
-    // Automatically update board count when boards are selected/deselected
-    handleSettingsChange('boardCount', newSelectedBoards.length);
-  };
 
   const isTournamentStarted = tournament?.tournamentSettings?.status !== 'pending';
 
@@ -315,10 +312,10 @@ export default function EditTournamentModal({
               <div>
                 <label className="block text-sm font-medium mb-1">Táblák száma</label>
                 <div className="w-full px-3 py-2 bg-base-200 rounded-lg border border-base-300 text-base-content/70">
-                  {selectedBoards.length} tábla kiválasztva
+                  {boards.length} tábla
                 </div>
                 <p className="text-xs text-base-content/60 mt-1">
-                  Automatikusan frissül a kiválasztott táblák alapján
+                  Automatikusan frissül a táblák alapján
                 </p>
               </div>
 
@@ -360,60 +357,49 @@ export default function EditTournamentModal({
             )}
           </div>
 
-          {/* Board Selection - Only show if tournament hasn't started */}
+          {/* Board Management - Only show if tournament hasn't started */}
           {!isTournamentStarted && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary">Tábla kiválasztás</h3>
+              <h3 className="text-lg font-semibold text-primary">Tábla kezelés</h3>
               
-              {boardsLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <span className="loading loading-spinner loading-md"></span>
-                  <span className="ml-2">Táblák betöltése...</span>
-                </div>
-              ) : availableBoards.length > 0 ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Válaszd ki, mely táblákat szeretnéd használni a tornán
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {availableBoards.map((board) => (
-                      <label
-                        key={board.boardNumber}
-                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedBoards.includes(board.boardNumber)
-                            ? 'border-primary bg-primary/10'
-                            : 'border-base-300 bg-base-100 hover:border-primary/50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedBoards.includes(board.boardNumber)}
-                          onChange={() => handleBoardToggle(board.boardNumber)}
-                          className="checkbox checkbox-primary mr-3"
-                        />
-                        <div className="flex items-center">
-                          <IconTarget className="w-4 h-4 mr-2 text-primary" />
-                          <div>
-                            <div className="font-medium">{board.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              Tábla #{board.boardNumber}
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  {selectedBoards.length === 0 && (
-                    <p className="text-sm text-warning">
-                      Legalább egy táblát ki kell választani
-                    </p>
-                  )}
-                </div>
-              ) : (
+              <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Nincsenek elérhető táblák a klubban
+                  Kezeld a tornához tartozó táblákat
                 </p>
-              )}
+                {boards.map((board, index) => (
+                  <div key={index} className="flex gap-2 items-center p-3 bg-base-100 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <IconTarget className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">#{index + 1}</span>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={board.name}
+                        onChange={(e) => handleBoardChange(index, 'name', e.target.value)}
+                        className="w-full px-3 py-2 bg-base-200 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                        placeholder={`Tábla ${index + 1}`}
+                      />
+                    </div>
+                    {boards.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBoard(index)}
+                        className="btn btn-ghost btn-sm btn-circle text-error"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddBoard}
+                  className="btn btn-outline btn-sm w-full"
+                >
+                  + Új tábla hozzáadása
+                </button>
+              </div>
             </div>
           )}
 
@@ -430,7 +416,7 @@ export default function EditTournamentModal({
             <button
               type="submit"
               className="btn btn-primary order-1 sm:order-2"
-              disabled={loading || (selectedBoards.length === 0 && !isTournamentStarted)}
+              disabled={loading || (boards.length === 0 && !isTournamentStarted)}
             >
               {loading ? (
                 <>

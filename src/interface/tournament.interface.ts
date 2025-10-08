@@ -47,6 +47,15 @@ export interface KnockoutRound {
     }[];
 }
 
+export interface TournamentBoard {
+    boardNumber: number;
+    name?: string;
+    currentMatch?: string | MatchDocument;
+    nextMatch?: string | MatchDocument;
+    status: 'idle' | 'waiting' | 'playing';
+    isActive: boolean;
+}
+
 export interface TournamentSettings {
     status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout';
     name: string;
@@ -84,6 +93,7 @@ export interface Tournament {
     tournamentPlayers: TournamentPlayer[];
     groups: TournamentGroup[];
     knockout: KnockoutRound[];
+    boards: TournamentBoard[];
     tournamentSettings: TournamentSettings;
     league?: string | Document; // Optional reference to League
     createdAt?: Date;
@@ -103,10 +113,20 @@ export interface TournamentPlayerDocument extends Omit<TournamentPlayer, '_id' |
 export interface TournamentGroupDocument extends Omit<TournamentGroup, 'id'> {
     id: Types.ObjectId;
 }
-export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'groups' | 'clubId' | 'league'> {
+export interface TournamentBoardDocument {
+    boardNumber: number;
+    name?: string;
+    currentMatch?: Types.ObjectId;
+    nextMatch?: Types.ObjectId;
+    status: 'idle' | 'waiting' | 'playing';
+    isActive: boolean;
+}
+
+export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'groups' | 'boards' | 'clubId' | 'league'> {
     _id: Types.ObjectId;
     tournamentPlayers: TournamentPlayerDocument[];
     groups: TournamentGroupDocument[];
+    boards: TournamentBoardDocument[];
     clubId: Types.ObjectId;
     league?: Types.ObjectId; // Optional reference to League
 }

@@ -140,12 +140,15 @@ export default function TournamentCard({
         </div>
 
         {/* Entry Fee */}
-        {tournament.tournamentSettings?.entryFee && (
+        {tournament.tournamentSettings?.entryFee ? (
           <div className="flex items-center text-xs md:text-sm text-base-content/70">
             <IconCoin size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0 text-success" />
             <span>Névezési díj: <span className="font-bold">{tournament.tournamentSettings.entryFee} Ft</span></span>
           </div>
-        )}
+        ) : <div className="flex items-center text-xs md:text-sm text-base-content/70">
+        <IconCoin size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0 text-success" />
+        <span>Névezési díj: <span className="font-bold">Ingyenes</span></span>
+      </div>}
       </div>
 
       {/* Footer */}

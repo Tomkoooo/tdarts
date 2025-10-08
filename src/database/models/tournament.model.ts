@@ -51,6 +51,14 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             matchReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' }
         }]
     }],
+    boards: [{
+        boardNumber: { type: Number, required: true },
+        name: { type: String, default: null },
+        currentMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
+        nextMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
+        status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
+        isActive: { type: Boolean, default: true },
+    }],
     tournamentSettings: {
         status: { type: String, enum: ['pending', 'active', 'finished', 'group-stage', 'knockout'], required: true, default: 'pending' },
         name: { type: String, required: true },

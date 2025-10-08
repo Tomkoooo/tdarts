@@ -7,7 +7,8 @@ import {
   IconTrophy, 
   IconTarget, 
   IconFlagCheck,
-  IconShare
+  IconShare,
+  IconChartLine
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import Head from 'next/head';
@@ -21,7 +22,8 @@ const iconMap: { [key: string]: any } = {
   IconTrophy,
   IconTarget,
   IconFlagCheck,
-  IconShare
+  IconShare,
+  IconChartLine
 };
 
 const HowItWorksPage = () => {

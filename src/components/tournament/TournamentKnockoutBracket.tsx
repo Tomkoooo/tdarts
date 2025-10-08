@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import LegsViewModal from './LegsViewModal';
+import { toast } from 'react-hot-toast';
 
 interface TournamentKnockoutBracketProps {
   tournamentCode: string;
@@ -88,13 +89,28 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   const [showScorerDropdown, setShowScorerDropdown] = useState(false);
   const [showMatchPlayerEditModal, setShowMatchPlayerEditModal] = useState(false);
   const [editingMatch, setEditingMatch] = useState<KnockoutMatch | null>(null);
-  const [editingPlayerPosition, setEditingPlayerPosition] = useState<'player1' | 'player2'>('player1');
   const [updatingMatchPlayer, setUpdatingMatchPlayer] = useState(false);
+  const [editPairPlayer1, setEditPairPlayer1] = useState<string>('');
+  const [editPairPlayer2, setEditPairPlayer2] = useState<string>('');
+  const [editPairScorer, setEditPairScorer] = useState<string>('');
+  const [editPairBoard, setEditPairBoard] = useState<string>('');
+  const [editPairPlayer1Search, setEditPairPlayer1Search] = useState<string>('');
+  const [editPairPlayer2Search, setEditPairPlayer2Search] = useState<string>('');
+  const [editPairScorerSearch, setEditPairScorerSearch] = useState<string>('');
+  const [showEditPairPlayer1Dropdown, setShowEditPairPlayer1Dropdown] = useState(false);
+  const [showEditPairPlayer2Dropdown, setShowEditPairPlayer2Dropdown] = useState(false);
+  const [showEditPairScorerDropdown, setShowEditPairScorerDropdown] = useState(false);
   const [showLegsModal, setShowLegsModal] = useState(false);
   const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<KnockoutMatch | null>(null);
   const [showMatchSettingsModal, setShowMatchSettingsModal] = useState(false);
   const [editingMatchSettings, setEditingMatchSettings] = useState<KnockoutMatch | null>(null);
   const [editSettingsLoading, setEditSettingsLoading] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [showDeleteMatchModal, setShowDeleteMatchModal] = useState(false);
+  const [matchToDelete, setMatchToDelete] = useState<{ match: KnockoutMatch; round: number; index: number } | null>(null);
+  const [deletingMatch, setDeletingMatch] = useState(false);
+  const [showDeleteLastRoundModal, setShowDeleteLastRoundModal] = useState(false);
+  const [deletingLastRound, setDeletingLastRound] = useState(false);
 
   useEffect(() => {
     fetchKnockoutData();
@@ -259,18 +275,15 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   };
 
   const handleAddMatch = async () => {
-    if (!selectedPlayer1 && !selectedPlayer2) {
-      setError('Kérjük válassz ki legalább egy játékost.');
-      return;
-    }
-
+    // Allow creating matches without players (empty pairs)
     if (selectedPlayer1 && selectedPlayer2 && selectedPlayer1 === selectedPlayer2) {
       setError('Kérjük válassz ki két különböző játékost.');
       return;
     }
 
-    if (!selectedBoard) {
-      setError('Kérjük válassz ki egy táblát.');
+    // Board is only required if at least one player is selected
+    if ((selectedPlayer1 || selectedPlayer2) && !selectedBoard) {
+      setError('Kérjük válassz ki egy táblát ha játékosokat adsz hozzá.');
       return;
     }
 
@@ -360,32 +373,96 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     }
   };
 
-  const handleUpdateMatchPlayer = async (playerId: string) => {
-    if (!editingMatch || !editingMatch.matchReference) {
-      setError('Nem lehet frissíteni a meccset.');
+  const handleUpdateMatchPlayer = async () => {
+    if (!editingMatch) {
+      toast.error('Nem lehet frissíteni a meccset.');
+      return;
+    }
+
+    // Validate: at least one player must be selected
+    if (!editPairPlayer1 && !editPairPlayer2) {
+      toast.error('Kérjük válassz ki legalább egy játékost!');
+      return;
+    }
+
+    // Validate: board is required if at least one player is selected
+    if ((editPairPlayer1 || editPairPlayer2) && !editPairBoard && !editingMatch.matchReference) {
+      toast.error('Kérjük válassz ki egy táblát!');
       return;
     }
 
     setUpdatingMatchPlayer(true);
-    setError('');
     
     try {
-      const matchId = typeof editingMatch.matchReference === 'object' ? editingMatch.matchReference._id : editingMatch.matchReference;
-      const response = await axios.post(`/api/matches/${matchId}/updatePlayer`, {
-        tournamentId: tournamentCode,
-        playerPosition: editingPlayerPosition,
-        playerId: playerId
-      });
-      
-      if (response.data && response.data.success) {
-        await fetchKnockoutData();
-        setShowMatchPlayerEditModal(false);
-        setEditingMatch(null);
+      // If match has no matchReference, we need to update the empty pair
+      if (!editingMatch.matchReference) {
+        // This is an empty pair - update it to a match
+        // Find which round and pair index this match is in
+        let matchRound = 1;
+        let pairIndex = 0;
+        for (const round of knockoutData) {
+          const idx = round.matches.findIndex(m => m === editingMatch);
+          if (idx !== -1) {
+            matchRound = round.round;
+            pairIndex = idx;
+            break;
+          }
+        }
+        
+        const response = await axios.post(`/api/tournaments/${tournamentCode}/updateEmptyPair`, {
+          round: matchRound,
+          pairIndex: pairIndex,
+          player1Id: editPairPlayer1 || undefined,
+          player2Id: editPairPlayer2 || undefined,
+          scorerId: editPairScorer || undefined,
+          boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined
+        });
+        
+        if (response.data && response.data.success) {
+          await fetchKnockoutData();
+          toast.success('Meccs sikeresen létrehozva!');
+          setShowMatchPlayerEditModal(false);
+          setEditingMatch(null);
+          // Reset form
+          setEditPairPlayer1('');
+          setEditPairPlayer2('');
+          setEditPairScorer('');
+          setEditPairBoard('');
+          setEditPairPlayer1Search('');
+          setEditPairPlayer2Search('');
+          setEditPairScorerSearch('');
+        } else {
+          toast.error(response.data?.error || 'Nem sikerült létrehozni a meccset.');
+        }
       } else {
-        setError(response.data?.error || 'Nem sikerült frissíteni a meccset.');
+        // Match already exists, update via match settings API
+        const matchId = typeof editingMatch.matchReference === 'object' ? editingMatch.matchReference._id : editingMatch.matchReference;
+        const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
+          player1Id: editPairPlayer1 || editingMatch.player1?._id,
+          player2Id: editPairPlayer2 || editingMatch.player2?._id,
+          scorerId: editPairScorer || undefined,
+          boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined
+        });
+        
+        if (response.data && response.data.success) {
+          await fetchKnockoutData();
+          toast.success('Meccs sikeresen frissítve!');
+          setShowMatchPlayerEditModal(false);
+          setEditingMatch(null);
+          // Reset form
+          setEditPairPlayer1('');
+          setEditPairPlayer2('');
+          setEditPairScorer('');
+          setEditPairBoard('');
+          setEditPairPlayer1Search('');
+          setEditPairPlayer2Search('');
+          setEditPairScorerSearch('');
+        } else {
+          toast.error(response.data?.error || 'Nem sikerült frissíteni a meccset.');
+        }
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült frissíteni a meccset.');
+      toast.error(err.response?.data?.error || 'Nem sikerült frissíteni a meccset.');
     } finally {
       setUpdatingMatchPlayer(false);
     }
@@ -400,6 +477,52 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     
     setSelectedMatchForLegs(match);
     setShowLegsModal(true);
+  };
+
+  const handleDeleteMatch = async () => {
+    if (!matchToDelete) return;
+
+    setDeletingMatch(true);
+    
+    try {
+      const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteMatch`, {
+        round: matchToDelete.round,
+        pairIndex: matchToDelete.index
+      });
+      
+      if (response.data && response.data.success) {
+        await fetchKnockoutData();
+        toast.success('Meccs sikeresen törölve!');
+        setShowDeleteMatchModal(false);
+        setMatchToDelete(null);
+      } else {
+        toast.error(response.data?.error || 'Nem sikerült törölni a meccset.');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült törölni a meccset.');
+    } finally {
+      setDeletingMatch(false);
+    }
+  };
+
+  const handleDeleteLastRound = async () => {
+    setDeletingLastRound(true);
+    
+    try {
+      const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteLastRound`);
+      
+      if (response.data && response.data.success) {
+        await fetchKnockoutData();
+        toast.success('Utolsó kör sikeresen törölve!');
+        setShowDeleteLastRoundModal(false);
+      } else {
+        toast.error(response.data?.error || 'Nem sikerült törölni az utolsó kört.');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült törölni az utolsó kört.');
+    } finally {
+      setDeletingLastRound(false);
+    }
   };
 
   const handlePlayerSelectionForPairing = (playerId: string) => {
@@ -689,95 +812,192 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         .scrollbar-thin::-webkit-scrollbar-thumb:hover {
           background: hsl(var(--bc) / 0.5);
         }
+        
+        /* Zoom/Magnification controls */
+        .bracket-container {
+          transition: transform 0.3s ease;
+        }
+        
+        /* Compact match cards */
+        .match-card-compact {
+          min-width: 200px;
+          max-width: 240px;
+        }
+        
+        .match-card-compact .card-body {
+          padding: 0.75rem;
+        }
+        
+        .match-card-compact .player-row {
+          padding: 0.5rem;
+          font-size: 0.875rem;
+        }
       `}</style>
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
-        <div className="flex flex-wrap gap-2">
-          {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
-            <>
-              <button
-                className="btn btn-secondary btn-sm flex-1 min-w-[160px] sm:flex-none"
-                onClick={() => setShowGenerateEmptyRoundsModal(true)}
-                disabled={generatingEmptyRounds}
-              >
-                {generatingEmptyRounds ? (
-                  <>
-                    <span className="loading loading-spinner loading-xs"></span>
-                    Generálás...
-                  </>
-                ) : (
-                  'Üres körök generálása'
-                )}
-              </button>
-              <button
-                className="btn btn-accent btn-sm flex-1 min-w-[160px] sm:flex-none"
-                onClick={() => {
-                  setSelectedRound(1);
-                  setShowRandomPairingModal(true);
-                }}
-                disabled={generatingPairings}
-              >
-                {generatingPairings ? (
-                  <>
-                    <span className="loading loading-spinner loading-xs"></span>
-                    Párosítás...
-                  </>
-                ) : (
-                  'Random párosítás'
-                )}
-              </button>
-              {/* Generate Next Round for Manual Mode - Always enabled */}
-              {knockoutData.length > 0 && (
+      <div className="space-y-3 mb-4">
+        {/* Title and Zoom Controls Row */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
+          
+          {/* Zoom Controls - Always visible */}
+          <div className="flex items-center gap-2 bg-base-200 rounded-lg p-1.5">
+            <button
+              className="btn btn-xs btn-ghost"
+              onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}
+              title="Kicsinyítés"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+              </svg>
+            </button>
+            <span className="text-xs font-mono min-w-[45px] text-center">{Math.round(zoomLevel * 100)}%</span>
+            <button
+              className="btn btn-xs btn-ghost"
+              onClick={() => setZoomLevel(prev => Math.min(1.5, prev + 0.1))}
+              title="Nagyítás"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+              </svg>
+            </button>
+            <button
+              className="btn btn-xs btn-ghost"
+              onClick={() => setZoomLevel(1)}
+              title="Alaphelyzet"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        {/* Moderator Action Buttons Row */}
+        {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
+            {currentKnockoutMethod === 'manual' && (
+              <>
                 <button
-                  className="btn btn-primary btn-sm flex-1 min-w-[160px] sm:flex-none"
-                  onClick={() => setShowGenerateNextRound(true)}
-                  disabled={generatingNextRound}
+                  className="btn btn-secondary btn-sm w-full sm:flex-1"
+                  onClick={() => setShowGenerateEmptyRoundsModal(true)}
+                  disabled={generatingEmptyRounds}
                 >
-                  {generatingNextRound ? (
+                  {generatingEmptyRounds ? (
                     <>
                       <span className="loading loading-spinner loading-xs"></span>
-                      Következő kör...
+                      <span className="hidden sm:inline">Generálás...</span>
+                      <span className="sm:hidden">Körök...</span>
                     </>
                   ) : (
-                    'Következő kör generálása'
+                    <>
+                      <span className="hidden sm:inline">Üres körök generálása</span>
+                      <span className="sm:hidden">Üres körök</span>
+                    </>
                   )}
                 </button>
-              )}
-            </>
-          )}
-          {(userClubRole === 'admin' || userClubRole === 'moderator') && 
-           knockoutData.length > 0 && currentKnockoutMethod === 'automatic' && (
-            <button
-              className="btn btn-primary btn-sm flex-1 min-w-[160px] sm:flex-none"
-              onClick={() => setShowGenerateNextRound(true)}
-              disabled={
-                generatingNextRound ||
-                knockoutData.some(
-                  (round) =>
-                    round.matches &&
-                    round.matches.some(
-                      (match) => match.matchReference?.status !== 'finished'
-                    )
-                )
-              }
-            >
-              {generatingNextRound ? (
-                <>
-                  <span className="loading loading-spinner loading-xs"></span>
-                  Következő kör...
-                </>
-              ) : (
-                'Következő kör generálása'
-              )}
-            </button>
-          )}
-        </div>
+                <button
+                  className="btn btn-accent btn-sm w-full sm:flex-1"
+                  onClick={() => {
+                    setSelectedRound(1);
+                    setShowRandomPairingModal(true);
+                  }}
+                  disabled={generatingPairings}
+                >
+                  {generatingPairings ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Párosítás...
+                    </>
+                  ) : (
+                    'Random párosítás'
+                  )}
+                </button>
+                {knockoutData.length > 0 && (
+                  <>
+                    <button
+                      className="btn btn-primary btn-sm w-full sm:flex-1"
+                      onClick={() => setShowGenerateNextRound(true)}
+                      disabled={generatingNextRound}
+                    >
+                      {generatingNextRound ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs"></span>
+                          <span className="hidden sm:inline">Következő kör...</span>
+                          <span className="sm:hidden">Köv. kör...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="hidden sm:inline">Következő kör generálása</span>
+                          <span className="sm:hidden">Következő kör</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      className="btn btn-error btn-sm w-full sm:flex-1"
+                      onClick={() => setShowDeleteLastRoundModal(true)}
+                      disabled={deletingLastRound}
+                    >
+                      {deletingLastRound ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs"></span>
+                          <span className="hidden sm:inline">Törlés...</span>
+                          <span className="sm:hidden">Törlés...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="hidden sm:inline">Utolsó kör visszavonása</span>
+                          <span className="sm:hidden">Utolsó kör törlése</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+            {knockoutData.length > 0 && currentKnockoutMethod === 'automatic' && (
+              <button
+                className="btn btn-primary btn-sm w-full"
+                onClick={() => setShowGenerateNextRound(true)}
+                disabled={
+                  generatingNextRound ||
+                  knockoutData.some(
+                    (round) =>
+                      round.matches &&
+                      round.matches.some(
+                        (match) => match.matchReference?.status !== 'finished'
+                      )
+                  )
+                }
+              >
+                {generatingNextRound ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs"></span>
+                    <span className="hidden sm:inline">Következő kör...</span>
+                    <span className="sm:hidden">Köv. kör...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Következő kör generálása</span>
+                    <span className="sm:hidden">Következő kör</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Knockout Bracket Display - Horizontal Layout */}
-      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100">
-        <div className="flex gap-20 min-w-max p-6" style={{ minHeight: '600px' }}>
+      {/* Knockout Bracket Display - Horizontal Layout with Zoom */}
+      <div className="overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100" style={{ maxHeight: '800px' }}>
+        <div 
+          className="bracket-container flex gap-16 min-w-max p-6" 
+          style={{ 
+            minHeight: '700px',
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'top left',
+            width: `${100 / zoomLevel}%`
+          }}
+        >
           {knockoutData
             .filter((round) => {
               // In manual mode, show all rounds (including empty ones)
@@ -795,8 +1015,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               const nextRoundMatches = nextRound?.matches || [];
               
               // Calculate optimal height based on matches in this round and next round
-              const matchCardHeight = 220; // Approximate height of a match card
-              const matchSpacing = 30; // Space between matches (increased for better visibility)
+              const matchCardHeight = 160; // Compact card height
+              const matchSpacing = 24; // Compact spacing
               
               // Calculate round height based on bracket positioning
               // Always use the maximum number of matches from any round to ensure consistent spacing
@@ -805,7 +1025,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               const roundHeight = Math.max(maxMatchesInAnyRound * (matchCardHeight + matchSpacing) + matchSpacing, 300);
               
               return (
-                <div key={round.round} className="flex flex-col relative min-w-[320px]">
+                <div key={round.round} className="flex flex-col relative min-w-[240px]">
                   {/* Round Header */}
                   <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-2">
@@ -876,7 +1096,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                         
                         return (
                           <div 
-                            key={match.matchReference._id} 
+                            key={match.matchReference?._id || `empty-${roundIndex}-${matchIndex}`} 
                             className="relative"
                           >
                             {/* Connection Lines to Previous Round */}
@@ -899,11 +1119,12 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                               </div>
                             )}
                             
-                            {/* Match Card */}
-                            <div className={`card bg-base-100 shadow-lg border-2 min-w-[280px] max-w-[320px] hover:shadow-xl transition-shadow relative z-10 ${
+                            {/* Match Card - Compact Version */}
+                            <div className={`card bg-base-100 shadow-md border-2 match-card-compact hover:shadow-lg transition-all relative z-10 ${
+                              !match.player1 && !match.player2 ? 'border-dashed border-base-300' :
                               !match.player2 ? 'border-warning' : 'border-base-200'
                             }`}>
-                              <div className="card-body p-4">
+                              <div className="card-body">
                                 <div className="flex justify-between items-center mb-3">
                                   <span className={`badge badge-sm ${getStatusColor(match.matchReference?.status || 'pending')}`}>
                                     {getStatusText(match.matchReference?.status || 'pending')}
@@ -953,6 +1174,20 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                         </svg>
                                       </button>
                                     )}
+                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
+                                      <button
+                                        className="btn btn-xs btn-ghost text-error"
+                                        onClick={() => {
+                                          setMatchToDelete({ match, round: round.round, index: matchIndex });
+                                          setShowDeleteMatchModal(true);
+                                        }}
+                                        title="Meccs törlése"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                                 
@@ -963,62 +1198,84 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                   </div>
                                 )}
                                 
-                                <div className="space-y-1 sm:space-y-2">
-                                  <div className={`flex justify-between items-center p-1.5 sm:p-2 rounded text-sm ${
+                                <div className="space-y-1">
+                                  {/* Player 1 Row - Compact */}
+                                  <div className={`player-row flex justify-between items-center rounded text-xs ${
+                                    !match.player1 && !match.player2 ? 'bg-base-300/30' :
                                     !match.player2 ? 'bg-success/20 border border-success/30' : 
                                     (match.matchReference?.winnerId === match.player1?._id && match.player1?.name && match.player1.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200')
                                   }`}>
-                                    <div className="flex items-center gap-2 flex-1">
-                                      <span className="font-medium truncate">{match.player1?.name || 'TBD'}</span>
-                                      {!match.player2 && (
-                                        <span className="badge badge-sm badge-warning">Bye</span>
+                                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                                      <span className="font-medium truncate">{match.player1?.name || 'Üres'}</span>
+                                      {!match.player2 && match.player1 && (
+                                        <span className="badge badge-xs badge-warning">Bye</span>
                                       )}
                                       {(userClubRole === 'admin' || userClubRole === 'moderator') && (!match.player1 || !match.player1._id) && (
                                         <button
-                                          className="btn btn-xs btn-success"
+                                          className="btn btn-xs btn-circle btn-ghost"
                                           onClick={() => {
                                             setEditingMatch(match);
-                                            setEditingPlayerPosition('player1');
+                                            setSelectedRound(round.round);
+                                            // Initialize form with existing values
+                                            setEditPairPlayer1(match.player1?._id || '');
+                                            setEditPairPlayer2(match.player2?._id || '');
+                                            setEditPairScorer(match.matchReference?.scorer?._id || '');
+                                            setEditPairBoard(match.matchReference?.boardReference?.toString() || '');
+                                            setEditPairPlayer1Search(match.player1?.name || '');
+                                            setEditPairPlayer2Search(match.player2?.name || '');
+                                            setEditPairScorerSearch(match.matchReference?.scorer?.name || '');
                                             setShowMatchPlayerEditModal(true);
                                           }}
                                           title="Játékos hozzáadása"
                                         >
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                          </svg>
+                                          +
                                         </button>
                                       )}
                                     </div>
-                                    <span className="text-lg font-bold ml-2">
-                                      {!match.player2 ? 'Bye' : (match.matchReference?.player1?.legsWon || 0)}
+                                    <span className="text-sm font-bold ml-1">
+                                      {!match.player1 && !match.player2 ? '-' :
+                                       !match.player2 ? 'W' : (match.matchReference?.player1?.legsWon || 0)}
                                     </span>
                                   </div>
-                                  <div className="text-center text-xs text-base-content/60 font-medium py-0.5">
-                                    {!match.player2 ? 'Bye' : 'vs'}
+                                  
+                                  {/* VS Divider - Compact */}
+                                  <div className="text-center text-xs text-base-content/60 font-medium">
+                                    {!match.player1 && !match.player2 ? '---' :
+                                     !match.player2 ? 'Bye' : 'vs'}
                                   </div>
-                                  <div className={`flex justify-between items-center p-1.5 sm:p-2 rounded text-sm ${
+                                  
+                                  {/* Player 2 Row - Compact */}
+                                  <div className={`player-row flex justify-between items-center rounded text-xs ${
+                                    !match.player1 && !match.player2 ? 'bg-base-300/30' :
                                     match.matchReference?.winnerId === match.player2?._id && match.player2?.name && match.player2.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200'
                                   }`}>
-                                    <div className="flex items-center gap-2 flex-1">
-                                      <span className="font-medium truncate">{match.player2?.name || 'TBD'}</span>
+                                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                                      <span className="font-medium truncate">{match.player2?.name || 'Üres'}</span>
                                       {(userClubRole === 'admin' || userClubRole === 'moderator') && (!match.player2 || !match.player2._id) && (
                                         <button
-                                          className="btn btn-xs btn-success"
+                                          className="btn btn-xs btn-circle btn-ghost"
                                           onClick={() => {
                                             setEditingMatch(match);
-                                            setEditingPlayerPosition('player2');
+                                            setSelectedRound(round.round);
+                                            // Initialize form with existing values
+                                            setEditPairPlayer1(match.player1?._id || '');
+                                            setEditPairPlayer2(match.player2?._id || '');
+                                            setEditPairScorer(match.matchReference?.scorer?._id || '');
+                                            setEditPairBoard(match.matchReference?.boardReference?.toString() || '');
+                                            setEditPairPlayer1Search(match.player1?.name || '');
+                                            setEditPairPlayer2Search(match.player2?.name || '');
+                                            setEditPairScorerSearch(match.matchReference?.scorer?.name || '');
                                             setShowMatchPlayerEditModal(true);
                                           }}
                                           title="Játékos hozzáadása"
                                         >
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                          </svg>
+                                          +
                                         </button>
                                       )}
                                     </div>
-                                    <span className="text-lg font-bold ml-2">
-                                      {!match.player2 ? '' : (match.matchReference?.player2?.legsWon || 0)}
+                                    <span className="text-sm font-bold ml-1">
+                                      {!match.player1 && !match.player2 ? '-' :
+                                       !match.player2 ? '' : (match.matchReference?.player2?.legsWon || 0)}
                                     </span>
                                   </div>
                                 </div>
@@ -1520,11 +1777,15 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               >
                 Mégse
               </button>
-                <button
-                  className="btn btn-success flex-1"
-                  onClick={handleAddMatch}
-                  disabled={addingMatch || !selectedPlayer1 || selectedPlayer1 === selectedPlayer2 || !selectedBoard}
-                >
+              <button
+                className="btn btn-success flex-1"
+                onClick={handleAddMatch}
+                disabled={
+                  addingMatch || 
+                  (!!selectedPlayer1 && !!selectedPlayer2 && selectedPlayer1 === selectedPlayer2) ||
+                  ((!!selectedPlayer1 || !!selectedPlayer2) && !selectedBoard)
+                }
+              >
                 {addingMatch ? (
                   <>
                     <span className="loading loading-spinner loading-sm"></span>
@@ -1672,26 +1933,202 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       {showMatchPlayerEditModal && editingMatch && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">Játékos Hozzáadása</h3>
+            <h3 className="text-xl font-bold mb-4">
+              {!editingMatch.matchReference ? 'Meccs Létrehozása' : 'Meccs Szerkesztése'}
+            </h3>
             <p className="text-base-content/70 mb-4">
-              {editingPlayerPosition === 'player1' ? '1. játékos' : '2. játékos'} pozícióhoz
+              {selectedRound}. kör
             </p>
             
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {getAvailablePlayersForRound(selectedRound).map((player: any) => {
-                const playerId = player.playerReference?._id || player.playerReference || player._id;
-                const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
-                
-                return (
-                  <div
-                    key={playerId}
-                    className="flex items-center p-3 rounded-lg cursor-pointer bg-base-200 hover:bg-base-300 transition-colors"
-                    onClick={() => handleUpdateMatchPlayer(playerId)}
+            <div className="space-y-4">
+              {/* Player 1 */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">1. játékos:</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    placeholder="Keresés..."
+                    value={editPairPlayer1Search}
+                    onChange={(e) => {
+                      setEditPairPlayer1Search(e.target.value);
+                      setShowEditPairPlayer1Dropdown(e.target.value.length > 0);
+                    }}
+                    onFocus={() => {
+                      if (editPairPlayer1Search.length > 0) {
+                        setShowEditPairPlayer1Dropdown(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowEditPairPlayer1Dropdown(false), 150);
+                    }}
+                  />
+                  {/* Dropdown */}
+                  {showEditPairPlayer1Dropdown && editPairPlayer1Search.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      {getFilteredPlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
+                        const playerId = player.playerReference?._id || player.playerReference || player._id;
+                        const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                        
+                        return (
+                          <div
+                            key={playerId}
+                            className="p-2 hover:bg-base-200 cursor-pointer text-sm"
+                            onClick={() => {
+                              setEditPairPlayer1(playerId);
+                              setEditPairPlayer1Search(playerName);
+                              setShowEditPairPlayer1Dropdown(false);
+                            }}
+                          >
+                            {playerName}
+                          </div>
+                        );
+                      })}
+                      {getFilteredPlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).length === 0 && (
+                        <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Player 2 */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">2. játékos:</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    placeholder="Keresés..."
+                    value={editPairPlayer2Search}
+                    onChange={(e) => {
+                      setEditPairPlayer2Search(e.target.value);
+                      setShowEditPairPlayer2Dropdown(e.target.value.length > 0);
+                    }}
+                    onFocus={() => {
+                      if (editPairPlayer2Search.length > 0) {
+                        setShowEditPairPlayer2Dropdown(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowEditPairPlayer2Dropdown(false), 150);
+                    }}
+                  />
+                  {/* Dropdown */}
+                  {showEditPairPlayer2Dropdown && editPairPlayer2Search.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      {getFilteredPlayersForSelection(editPairPlayer2Search, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
+                        const playerId = player.playerReference?._id || player.playerReference || player._id;
+                        const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                        
+                        return (
+                          <div
+                            key={playerId}
+                            className="p-2 hover:bg-base-200 cursor-pointer text-sm"
+                            onClick={() => {
+                              setEditPairPlayer2(playerId);
+                              setEditPairPlayer2Search(playerName);
+                              setShowEditPairPlayer2Dropdown(false);
+                            }}
+                          >
+                            {playerName}
+                          </div>
+                        );
+                      })}
+                      {getFilteredPlayersForSelection(editPairPlayer2Search, getAvailablePlayersForRound(selectedRound)).length === 0 && (
+                        <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Scorer */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">Scorer:</span>
+                  <span className="label-text-alt text-base-content/60">Opcionális</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    placeholder="Keresés..."
+                    value={editPairScorerSearch}
+                    onChange={(e) => {
+                      setEditPairScorerSearch(e.target.value);
+                      setShowEditPairScorerDropdown(e.target.value.length > 0);
+                    }}
+                    onFocus={() => {
+                      if (editPairScorerSearch.length > 0) {
+                        setShowEditPairScorerDropdown(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowEditPairScorerDropdown(false), 150);
+                    }}
+                  />
+                  {/* Dropdown */}
+                  {showEditPairScorerDropdown && editPairScorerSearch.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      {getFilteredPlayersForSelection(editPairScorerSearch, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
+                        const playerId = player.playerReference?._id || player.playerReference || player._id;
+                        const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                        
+                        return (
+                          <div
+                            key={playerId}
+                            className="p-2 hover:bg-base-200 cursor-pointer text-sm"
+                            onClick={() => {
+                              setEditPairScorer(playerId);
+                              setEditPairScorerSearch(playerName);
+                              setShowEditPairScorerDropdown(false);
+                            }}
+                          >
+                            {playerName}
+                          </div>
+                        );
+                      })}
+                      {getFilteredPlayersForSelection(editPairScorerSearch, getAllTournamentPlayers()).length === 0 && (
+                        <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Board Selection */}
+              {!editingMatch.matchReference && (
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-bold">Tábla:</span>
+                    <span className="label-text-alt text-warning">*Kötelező</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={editPairBoard}
+                    onChange={(e) => setEditPairBoard(e.target.value)}
+                    required
                   >
-                    <span className="font-medium">{playerName}</span>
-                  </div>
-                );
-              })}
+                    <option value="">Válassz táblát</option>
+                    {availableBoards.map((board: any) => {
+                      const displayName = board.name && board.name !== `Tábla ${board.boardNumber}` 
+                        ? board.name 
+                        : `Tábla ${board.boardNumber}`;
+                      
+                      return (
+                        <option key={board.boardNumber} value={board.boardNumber.toString()}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
             </div>
             
             <div className="flex gap-3 mt-6">
@@ -1700,10 +2137,31 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                 onClick={() => {
                   setShowMatchPlayerEditModal(false);
                   setEditingMatch(null);
+                  setEditPairPlayer1('');
+                  setEditPairPlayer2('');
+                  setEditPairScorer('');
+                  setEditPairBoard('');
+                  setEditPairPlayer1Search('');
+                  setEditPairPlayer2Search('');
+                  setEditPairScorerSearch('');
                 }}
                 disabled={updatingMatchPlayer}
               >
                 Mégse
+              </button>
+              <button
+                className="btn btn-success flex-1"
+                onClick={handleUpdateMatchPlayer}
+                disabled={updatingMatchPlayer}
+              >
+                {updatingMatchPlayer ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Mentés...
+                  </>
+                ) : (
+                  "Mentés"
+                )}
               </button>
             </div>
           </div>
@@ -2021,6 +2479,99 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   </>
                 ) : (
                   "Mentés"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Match Confirmation Modal */}
+      {showDeleteMatchModal && matchToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Meccs Törlése</h3>
+            <p className="text-base-content/70 mb-4">
+              Biztosan törölni szeretnéd ezt a meccset?
+            </p>
+            {matchToDelete.match.player1 && matchToDelete.match.player2 && (
+              <div className="alert alert-warning mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <div className="font-bold">{matchToDelete.match.player1.name} vs {matchToDelete.match.player2.name}</div>
+                  <div className="text-sm">{matchToDelete.round}. kör</div>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                className="btn btn-ghost flex-1"
+                onClick={() => {
+                  setShowDeleteMatchModal(false);
+                  setMatchToDelete(null);
+                }}
+                disabled={deletingMatch}
+              >
+                Mégse
+              </button>
+              <button
+                className="btn btn-error flex-1"
+                onClick={handleDeleteMatch}
+                disabled={deletingMatch}
+              >
+                {deletingMatch ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Törlés...
+                  </>
+                ) : (
+                  "Törlés"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Last Round Confirmation Modal */}
+      {showDeleteLastRoundModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Utolsó Kör Visszavonása</h3>
+            <p className="text-base-content/70 mb-4">
+              Biztosan törölni szeretnéd az utolsó kört? Ez az összes meccset törli ebből a körből.
+            </p>
+            <div className="alert alert-error mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <div className="font-bold">Figyelem!</div>
+                <div className="text-sm">Ez a művelet nem vonható vissza.</div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                className="btn btn-ghost flex-1"
+                onClick={() => setShowDeleteLastRoundModal(false)}
+                disabled={deletingLastRound}
+              >
+                Mégse
+              </button>
+              <button
+                className="btn btn-error flex-1"
+                onClick={handleDeleteLastRound}
+                disabled={deletingLastRound}
+              >
+                {deletingLastRound ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Törlés...
+                  </>
+                ) : (
+                  "Törlés"
                 )}
               </button>
             </div>

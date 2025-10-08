@@ -5,7 +5,6 @@ import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
-import { BoardModel } from '@/database/models/board.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { AuthorizationService } from './authorization.service';
 
@@ -76,15 +75,8 @@ export class ClubService {
 
     await club.save();
 
-    const boards: string[] = [];
-    for (let i = 1; i < clubData.boardCount + 1; i++) {
-      const board = new BoardModel({
-        clubId: club._id,
-        boardNumber: i,
-      });
-      boards.push(board._id);
-    }
-    await ClubModel.updateOne({ _id: club._id }, { boards: boards });
+    // Note: Boards are now created at tournament level, not club level
+    // No need to create boards here anymore
 
     return club;
   }
@@ -563,66 +555,6 @@ export class ClubService {
       name: user.name,
       username: user.username,
     }));
-  }
-
-  // --- BOARD MANAGEMENT ---
-  static async addBoard(clubId: string, userId: string, boardData: { name?: string; description?: string }): Promise<ClubDocument> {
-    await connectMongo();
-    const club = await ClubModel.findById(clubId);
-    if (!club) throw new BadRequestError('Club not found');
-    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
-    if (!isAuthorized) throw new BadRequestError('Only admins can add boards');
-    // Determine next board number
-    const nextBoardNumber = (club.boards?.length || 0) + 1;
-    club.boards.push({
-      boardNumber: nextBoardNumber,
-      name: boardData.name,
-      isActive: true,
-    });
-    await club.save();
-    return club;
-  }
-
-  static async getBoard(clubId: string, boardNumber: number): Promise<any> {
-    await connectMongo();
-    const club = await ClubModel.findById(clubId);
-    if (!club) throw new BadRequestError('Club not found');
-    const board = club.boards.find((b: any) => b.boardNumber === boardNumber);
-    if (!board) throw new BadRequestError('Board not found');
-    return board;
-    
-  }
-
-  static async updateBoard(clubId: string, userId: string, boardNumber: number, updates: { name?: string; description?: string }): Promise<ClubDocument> {
-    await connectMongo();
-    const club = await ClubModel.findById(clubId);
-    if (!club) throw new BadRequestError('Club not found');
-    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
-    if (!isAuthorized) throw new BadRequestError('Only admins can update boards');
-    // Update in Board collection
-    await BoardModel.findOneAndUpdate({ clubId, boardNumber }, updates);
-    // Update in club.boards array
-    const board = club.boards.find((b: any) => b.boardNumber === boardNumber);
-    if (board) {
-      if (updates.name !== undefined) board.name = updates.name;
-      if (updates.description !== undefined) board.description = updates.description;
-    }
-    await club.save();
-    return club;
-  }
-
-  static async removeBoard(clubId: string, userId: string, boardNumber: number): Promise<ClubDocument> {
-    await connectMongo();
-    const club = await ClubModel.findById(clubId);
-    if (!club) throw new BadRequestError('Club not found');
-    const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
-    if (!isAuthorized) throw new BadRequestError('Only admins can remove boards');
-    // Remove from Board collection
-    await BoardModel.findOneAndDelete({ clubId, boardNumber });
-    // Remove from club.boards array
-    club.boards = club.boards.filter((b: any) => b.boardNumber !== boardNumber);
-    await club.save();
-    return club;
   }
 
   // --- SITEMAP SUPPORT ---

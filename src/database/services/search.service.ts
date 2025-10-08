@@ -43,29 +43,42 @@ export class SearchService {
                     { 'userRef': { $exists: true } } // Include registered players
                 ];
             } else {
-                // If no search query and type is 'players', don't return any players
-                // This prevents showing all players when no search is performed
-                if (filters.type === 'players') {
-                    // Don't add any query, so no players will be returned
-                } else {
-                    // If type is 'all', get all players
-                    playerQuery['userRef'] = { $exists: true };
-                }
+                // If no search query, return all registered players
+                playerQuery['userRef'] = { $exists: true };
             }
 
+            // Fetch ALL matching players (no limit yet) to sort properly in memory
+            // MongoDB sort doesn't handle null/undefined MMR values well
             const players = await PlayerModel.find(playerQuery)
-                .populate('userRef', 'name email')
-                .limit(20)
-                .sort({ name: 1 });
+                .populate('userRef', 'name email');
+            
+            // Sort by MMR in memory (handle missing/null MMR values)
+            const sortedPlayers = players.sort((a, b) => {
+                const aMMR = a.stats?.mmr ?? 800; // Default to base MMR if missing
+                const bMMR = b.stats?.mmr ?? 800;
+                // Sort DESCENDING by MMR (higher MMR first)
+                if (bMMR !== aMMR) return bMMR - aMMR;
+                // Then by name ascending
+                return a.name.localeCompare(b.name);
+            });
 
-            results.players = players.map(player => ({
-                _id: player._id,
-                name: player.name,
-                type: 'player',
-                userRef: player.userRef,
-                stats: player.stats || {},
-                tournamentHistory: player.tournamentHistory || []
-            }));
+            results.players = sortedPlayers.slice(0, 20).map(player => {
+                const mmr = player.stats?.mmr ?? 800;
+                const stats = player.stats || {};
+                // Ensure stats has mmr field
+                stats.mmr = mmr;
+                
+                return {
+                    _id: player._id,
+                    name: player.name,
+                    type: 'player',
+                    userRef: player.userRef,
+                    stats: stats,
+                    tournamentHistory: player.tournamentHistory || [],
+                    mmr: mmr,
+                    mmrTier: this.getMMRTier(mmr)
+                };
+            });
         }
 
         // Search tournaments
@@ -177,7 +190,7 @@ export class SearchService {
                 location: club.location,
                 memberCount: club.members?.length || 0,
                 moderatorCount: club.moderators?.length || 0,
-                boardCount: club.boards?.length || 0,
+                boardCount: 0, // Boards are now managed at tournament level
                 type: 'club'
             }));
         }
@@ -188,6 +201,15 @@ export class SearchService {
                               (results.clubs?.length || 0);
 
         return results;
+    }
+
+    private static getMMRTier(mmr: number): { name: string; color: string } {
+        if (mmr >= 1600) return { name: 'Elit', color: 'text-error' };
+        if (mmr >= 1400) return { name: 'Mester', color: 'text-warning' };
+        if (mmr >= 1200) return { name: 'Haladó', color: 'text-info' };
+        if (mmr >= 1000) return { name: 'Középhaladó', color: 'text-success' };
+        if (mmr >= 800) return { name: 'Kezdő+', color: 'text-primary' };
+        return { name: 'Kezdő', color: 'text-base-content' };
     }
 
     static async getSearchSuggestions(query: string): Promise<string[]> {
@@ -236,26 +258,44 @@ export class SearchService {
     static async getTopPlayers(limit: number = 10, skip: number = 0): Promise<{ players: any[], total: number }> {
         await connectMongo();
         
-        // Get total count
+        // Get total count of registered players
         const total = await PlayerModel.countDocuments({ 
-            $or: [
-                { $expr: { $gt: [ { $size: { $ifNull: ['$tournamentHistory', []] } }, 0 ] } }
-            ]
+            userRef: { $exists: true }
         });
         
-        // Get players with pagination
-        const players = await PlayerModel.find({ 
-            $or: [
-                { $expr: { $gt: [ { $size: { $ifNull: ['$tournamentHistory', []] } }, 0 ] } }
-            ]
+        // Get ALL registered players to sort by MMR in memory (handle null/undefined MMR)
+        const allPlayers = await PlayerModel.find({ 
+            userRef: { $exists: true }
         })
-        .sort({ 
-            'stats.bestPosition': 1, 
-            'stats.averagePosition': 1,
-            'stats.tournamentsPlayed': -1 
-        })
-        .skip(skip)
-        .limit(limit);
+        .populate('userRef', 'name email');
+        
+        // Sort by MMR descending in memory
+        const sortedPlayers = allPlayers.sort((a, b) => {
+            const aMMR = a.stats?.mmr ?? 800; // Default to base MMR if missing
+            const bMMR = b.stats?.mmr ?? 800;
+            // Sort DESCENDING by MMR (higher MMR first)
+            if (bMMR !== aMMR) return bMMR - aMMR;
+            // Then by name ascending
+            return a.name.localeCompare(b.name);
+        });
+        
+        // Apply pagination after sorting
+        const players = sortedPlayers.slice(skip, skip + limit).map(player => {
+            const playerObj = player.toObject();
+            const mmr = playerObj.stats?.mmr ?? 800;
+            
+            // Ensure stats object exists and has mmr
+            if (!playerObj.stats) {
+                playerObj.stats = {};
+            }
+            playerObj.stats.mmr = mmr;
+            
+            return {
+                ...playerObj,
+                mmr: mmr,
+                mmrTier: this.getMMRTier(mmr)
+            };
+        });
         
         return { players, total };
     }

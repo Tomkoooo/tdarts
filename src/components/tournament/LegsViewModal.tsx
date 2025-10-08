@@ -162,13 +162,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
 
 
   const formatThrow = (throwData: Throw, isWinner: boolean) => {
-    const baseClasses = "px-2 py-1 rounded text-sm font-medium";
+    const baseClasses = "inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium min-w-[32px] sm:min-w-[40px]";
     let classes = baseClasses;
 
     if (throwData.isCheckout && isWinner) {
-      classes += " bg-success text-success-content";
+      classes += " bg-success text-success-content ring-2 ring-success/50";
     } else if (throwData.score === 180) {
-      classes += " bg-warning text-warning-content";
+      classes += " bg-warning text-warning-content ring-2 ring-warning/50";
     } else if (throwData.score >= 140) {
       classes += " bg-info text-info-content";
     } else if (throwData.score >= 100) {
@@ -189,34 +189,38 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
 
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-base-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-2xl font-bold">
-              {match.player1?.playerId?.name} vs {match.player2?.playerId?.name}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+          <div className="flex-1 min-w-0 w-full sm:w-auto">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold truncate" title={`${match.player1?.playerId?.name} vs ${match.player2?.playerId?.name}`}>
+              <span className="text-primary">{match.player1?.playerId?.name}</span>
+              <span className="text-base-content/40 mx-2">vs</span>
+              <span className="text-error">{match.player2?.playerId?.name}</span>
             </h3>
-            <p className="text-base-content/70">Legek részletei</p>
+            <p className="text-xs sm:text-sm text-base-content/70">Legek részletei</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Detailed Stats Toggle Button - Only for Pro */}
             {!isFeatureFlagLoading && isDetailedStatsEnabled && (
               <button
                 onClick={() => setShowDetailedStats(!showDetailedStats)}
-                className={`btn btn-sm ${showDetailedStats ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn btn-xs sm:btn-sm flex-1 sm:flex-none ${showDetailedStats ? 'btn-primary' : 'btn-outline'}`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Részletes statisztikák
+                <span className="hidden sm:inline ml-1">Részletes</span>
+                <span className="sm:hidden ml-1">Stats</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="btn btn-circle btn-ghost btn-sm"
+              className="btn btn-circle btn-ghost btn-xs sm:btn-sm flex-shrink-0"
+              aria-label="Bezárás"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -225,15 +229,15 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
 
         {/* Pro Subscription Notice - Only show if detailed stats are not enabled */}
         {!isFeatureFlagLoading && !isDetailedStatsEnabled && (
-          <div className="alert alert-info mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <div className="alert alert-info mb-3 sm:mb-4 p-3 sm:p-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <div>
-              <h3 className="font-bold">Pro funkció</h3>
-              <div className="text-xs">
-                <p>• <strong>Ingyenes:</strong> Dobások megjelenítése, győztesek, kiszállók</p>
-                <p>• <strong>Pro:</strong> Átlagok, futó átlagok, összesített statisztikák, grafikonok</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-sm sm:text-base">Pro funkció</h3>
+              <div className="text-[10px] sm:text-xs space-y-1 mt-1">
+                <p>• <strong>Ingyenes:</strong> Dobások, győztesek, kiszállók</p>
+                <p>• <strong>Pro:</strong> Átlagok, grafikonok, statisztikák</p>
               </div>
             </div>
           </div>
@@ -264,40 +268,59 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
         )}
 
         {!loading && !error && legs.length > 0 && (
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Match Overview Stats */}
             {showDetailedStats && (
               <div className="card bg-base-200 shadow-lg">
-                <div className="card-body">
-                  <h4 className="text-lg font-bold mb-4">Meccs áttekintés</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="card-body p-3 sm:p-4 md:p-6">
+                  <h4 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Meccs összesítő
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {(() => {
                       const { player1Stats, player2Stats } = calculateMatchStats();
                       return (
                         <>
-                          <div className="space-y-3">
-                            <h5 className="font-bold text-primary">{match.player1?.playerId?.name}</h5>
-                            <div className="stats stats-vertical shadow">
-                              <div className="stat">
-                                <div className="stat-title">Átlag</div>
-                                <div className="stat-value text-primary">{player1Stats.average}</div>
+                          <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                            <div className="card-body p-3 sm:p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h5 className="font-bold text-primary text-sm sm:text-base truncate flex-1 mr-2" title={match.player1?.playerId?.name}>
+                                  {match.player1?.playerId?.name}
+                                </h5>
+                                <div className="badge badge-primary badge-xs sm:badge-sm">P1</div>
                               </div>
-                              <div className="stat">
-                                <div className="stat-title">Legmagasabb dobás</div>
-                                <div className="stat-value text-base-content/70">{player1Stats.highestThrow}</div>
+                              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
+                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Átlag</div>
+                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary">{player1Stats.average}</div>
+                                </div>
+                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
+                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Max dobás</div>
+                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-info">{player1Stats.highestThrow}</div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div className="space-y-3">
-                            <h5 className="font-bold text-primary">{match.player2?.playerId?.name}</h5>
-                            <div className="stats stats-vertical shadow">
-                              <div className="stat">
-                                <div className="stat-title">Átlag</div>
-                                <div className="stat-value text-primary">{player2Stats.average}</div>
+                          <div className="card bg-gradient-to-br from-error/10 to-error/5 border border-error/20">
+                            <div className="card-body p-3 sm:p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h5 className="font-bold text-error text-sm sm:text-base truncate flex-1 mr-2" title={match.player2?.playerId?.name}>
+                                  {match.player2?.playerId?.name}
+                                </h5>
+                                <div className="badge badge-error badge-xs sm:badge-sm">P2</div>
                               </div>
-                              <div className="stat">
-                                <div className="stat-title">Legmagasabb dobás</div>
-                                <div className="stat-value text-base-content/70">{player2Stats.highestThrow}</div>
+                              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
+                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Átlag</div>
+                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-error">{player2Stats.average}</div>
+                                </div>
+                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
+                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Max dobás</div>
+                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-info">{player2Stats.highestThrow}</div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -312,8 +335,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
             {/* Charts Section - Only for Pro users */}
             {showDetailedStats && legs.length > 0 && (
               <div className="card bg-base-200 shadow-lg">
-                <div className="card-body">
-                  <h4 className="text-lg font-bold mb-4">Statisztikai Grafikonok</h4>
+                <div className="card-body p-3 sm:p-4 md:p-6">
+                  <h4 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                    Statisztikai grafikonok
+                  </h4>
                   <MatchStatisticsCharts
                     legs={legs}
                     player1Name={match.player1?.playerId?.name || 'Player 1'}
@@ -337,113 +365,158 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
               
               return (
                 <div key={legIndex} className="card bg-base-200 shadow-lg">
-                  <div className="card-body">
+                  <div className="card-body p-3 sm:p-4 md:p-5">
                     {/* Leg Header */}
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-lg font-bold">
-                        {legIndex + 1}. Leg
-                      </h4>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-base-content/70">
-                          Győztes: {leg.winnerId.name}
-                        </span>
-                        {leg.checkoutScore && (
-                          <span className="badge badge-success">
-                            {leg.checkoutScore} kiszálló
+                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-accent/20 flex-shrink-0">
+                          <span className="text-sm sm:text-base font-bold text-accent">{legIndex + 1}</span>
+                        </div>
+                        <div>
+                          <h4 className="text-sm sm:text-base md:text-lg font-bold">
+                            {legIndex + 1}. Leg
+                          </h4>
+                          <span className="text-xs sm:text-sm text-base-content/60">
+                            🏆 {leg.winnerId.name}
                           </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {leg.checkoutScore && (
+                          <div className="badge badge-success badge-sm gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-xs">{leg.checkoutScore}</span>
+                          </div>
                         )}
                       </div>
                     </div>
 
                     {/* Players and Throws - Basic info for everyone */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       {/* Player 1 */}
-                      <div className={`p-4 rounded-lg ${isPlayer1Winner ? 'bg-success/20 border border-success/30' : 'bg-base-100'}`}>
-                        <div className="flex justify-between items-center mb-3">
-                          <h5 className="font-bold text-lg">
-                            {match.player1?.playerId?.name}
-                          </h5>
+                      <div className={`p-3 sm:p-4 rounded-lg ${isPlayer1Winner ? 'bg-success/20 border-2 border-success/40' : 'bg-base-100 border border-base-300'}`}>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="badge badge-primary badge-xs sm:badge-sm flex-shrink-0">P1</div>
+                            <h5 className="font-bold text-sm sm:text-base md:text-lg text-primary truncate" title={match.player1?.playerId?.name}>
+                              {match.player1?.playerId?.name}
+                            </h5>
+                            {isPlayer1Winner && (
+                              <span className="text-sm sm:text-base">🏆</span>
+                            )}
+                          </div>
                           {/* Pro-only detailed stats */}
                           {showDetailedStats && player1LegStats && (
-                            <div className="text-right text-sm">
-                              <div className="font-medium">Átlag: {player1LegStats.average}</div>
-                              <div className="text-base-content/70">Legmagasabb: {player1LegStats.highestThrow}</div>
+                            <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
+                              <div className="bg-base-200 rounded px-2 py-1">
+                                <span className="text-base-content/60">Átlag:</span>
+                                <span className="font-bold ml-1">{player1LegStats.average}</span>
+                              </div>
+                              <div className="bg-base-200 rounded px-2 py-1">
+                                <span className="text-base-content/60">Max:</span>
+                                <span className="font-bold ml-1">{player1LegStats.highestThrow}</span>
+                              </div>
                             </div>
                           )}
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1 sm:gap-1.5">
                             {leg.player1Throws.map((throwData, throwIndex) => (
                               <div key={throwIndex} className="flex items-center gap-1">
                                 {formatThrow(throwData, isPlayer1Winner)}
                                 {/* Pro-only running averages */}
                                 {showDetailedStats && player1RunningAverages[throwIndex] !== undefined && (
-                                  <span className="text-xs text-base-content/50">
+                                  <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
                                     ({player1RunningAverages[throwIndex]})
                                   </span>
                                 )}
                                 {throwIndex < leg.player1Throws.length - 1 && (
-                                  <span className="text-base-content/50">→</span>
+                                  <span className="text-base-content/30 text-xs hidden sm:inline">→</span>
                                 )}
                               </div>
                             ))}
                           </div>
                           {leg.player1Throws.length === 0 && (
-                            <span className="text-base-content/50 text-sm">Nincs dobás</span>
+                            <span className="text-base-content/50 text-xs sm:text-sm">Nincs dobás</span>
                           )}
                         </div>
                       </div>
 
                       {/* Player 2 */}
-                      <div className={`p-4 rounded-lg ${isPlayer2Winner ? 'bg-success/20 border border-success/30' : 'bg-base-100'}`}>
-                        <div className="flex justify-between items-center mb-3">
-                          <h5 className="font-bold text-lg">
-                            {match.player2?.playerId?.name}
-                          </h5>
+                      <div className={`p-3 sm:p-4 rounded-lg ${isPlayer2Winner ? 'bg-success/20 border-2 border-success/40' : 'bg-base-100 border border-base-300'}`}>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="badge badge-error badge-xs sm:badge-sm flex-shrink-0">P2</div>
+                            <h5 className="font-bold text-sm sm:text-base md:text-lg text-error truncate" title={match.player2?.playerId?.name}>
+                              {match.player2?.playerId?.name}
+                            </h5>
+                            {isPlayer2Winner && (
+                              <span className="text-sm sm:text-base">🏆</span>
+                            )}
+                          </div>
                           {/* Pro-only detailed stats */}
                           {showDetailedStats && player2LegStats && (
-                            <div className="text-right text-sm">
-                              <div className="font-medium">Átlag: {player2LegStats.average}</div>
-                              <div className="text-base-content/70">Legmagasabb: {player2LegStats.highestThrow}</div>
+                            <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
+                              <div className="bg-base-200 rounded px-2 py-1">
+                                <span className="text-base-content/60">Átlag:</span>
+                                <span className="font-bold ml-1">{player2LegStats.average}</span>
+                              </div>
+                              <div className="bg-base-200 rounded px-2 py-1">
+                                <span className="text-base-content/60">Max:</span>
+                                <span className="font-bold ml-1">{player2LegStats.highestThrow}</span>
+                              </div>
                             </div>
                           )}
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1 sm:gap-1.5">
                             {leg.player2Throws.map((throwData, throwIndex) => (
                               <div key={throwIndex} className="flex items-center gap-1">
                                 {formatThrow(throwData, isPlayer2Winner)}
                                 {/* Pro-only running averages */}
                                 {showDetailedStats && player2RunningAverages[throwIndex] !== undefined && (
-                                  <span className="text-xs text-base-content/50">
+                                  <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
                                     ({player2RunningAverages[throwIndex]})
                                   </span>
                                 )}
                                 {throwIndex < leg.player2Throws.length - 1 && (
-                                  <span className="text-base-content/50">→</span>
+                                  <span className="text-base-content/30 text-xs hidden sm:inline">→</span>
                                 )}
                               </div>
                             ))}
                           </div>
                           {leg.player2Throws.length === 0 && (
-                            <span className="text-base-content/50 text-sm">Nincs dobás</span>
+                            <span className="text-base-content/50 text-xs sm:text-sm">Nincs dobás</span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* Leg Stats - Basic info for everyone, detailed for pro */}
-                    <div className="mt-4 pt-4 border-t border-base-300">
-                      <div className="flex justify-between items-center text-sm text-base-content/70">
-                        <span>
-                          {new Date(leg.createdAt).toLocaleString('hu-HU')}
-                        </span>
+                    {/* Leg Footer Info */}
+                    <div className="mt-3 pt-3 border-t border-base-300">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs sm:text-sm text-base-content/60">
+                        <div className="flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{new Date(leg.createdAt).toLocaleString('hu-HU', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}</span>
+                        </div>
                         {/* Pro-only detailed stats */}
                         {showDetailedStats && (
-                          <div className="flex gap-4 text-xs">
-                            <span>Dobások száma: {leg.player1Throws.length + leg.player2Throws.length}</span>
+                          <div className="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Összes dobás: {leg.player1Throws.length + leg.player2Throws.length}</span>
                           </div>
                         )}
                       </div>
@@ -456,10 +529,10 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
         )}
 
         {/* Footer */}
-        <div className="flex justify-end mt-6 pt-4 border-t border-base-300">
+        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-base-300">
           <button
             onClick={onClose}
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto"
           >
             Bezárás
           </button>

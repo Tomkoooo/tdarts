@@ -353,7 +353,17 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-primary mb-2">Torna Jelszó</h1>
               <p className="text-base-content/70">Add meg a torna jelszavát a folytatáshoz</p>
-              <Link href={`/tournaments/${tournamentId}`} className="btn btn-primary btn-sm">Vissza a főmenübe</Link>
+              <div className="flex gap-2 justify-center mt-4">
+                <Link href="/board" className="btn btn-ghost btn-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Vissza
+                </Link>
+                <Link href={`/tournaments/${tournamentId}`} className="btn btn-primary btn-sm">
+                  Torna oldal
+                </Link>
+              </div>
             </div>
             
             {error && (
@@ -406,7 +416,17 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           <div className="text-center mb-4 flex-shrink-0">
             <h1 className="text-4xl font-bold text-primary mb-2">Válassz Táblát</h1>
             <p className="text-lg text-base-content/70">Válaszd ki a táblát, amin játszani szeretnél</p>
-            <Link href={`/tournaments/${tournamentId}`} className="btn btn-primary btn-sm">Vissza a főmenübe</Link>
+            <div className="flex gap-2 justify-center mt-4">
+              <Link href="/board" className="btn btn-ghost btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Vissza
+              </Link>
+              <Link href={`/tournaments/${tournamentId}`} className="btn btn-primary btn-sm">
+                Torna oldal
+              </Link>
+            </div>
           </div>
           
           {error && (
@@ -435,7 +455,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 >
                   <div className="card-body text-center p-4">
                     <h2 className="card-title text-xl font-bold justify-center mb-2">
-                      {board.name ? `${board.boardNumber} - ${board.name}` : `Tábla ${board.boardNumber}`}
+                      {board.name ? `${board.name}` : `Tábla ${board.boardNumber}`}
                     </h2>
                     <div className="flex justify-between gap-3 items-center">
                         <div className={`badge badge-lg ${

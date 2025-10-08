@@ -16,15 +16,6 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
     admin: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    boards: [{
-      boardNumber: { type: Number, required: true },
-      name: { type: String },
-      tournamentId: {type: String, default: ""},
-      currentMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
-      nextMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
-      status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
-      isActive: { type: Boolean, default: true },
-    }],
     subscriptionModel: { 
       type: String, 
       enum: ['free', 'basic', 'pro', 'enterprise'], 
@@ -56,12 +47,6 @@ clubSchema.pre('save', async function (next) {
       return next(new Error('Invalid website URL format'));
     }
   }
-
-  //reindex the boardNumbers from 1
-  this.boards = this.boards.map((board, index) => ({
-    ...board,
-    boardNumber: index + 1,
-  }));
 
   this.updatedAt = new Date();
   next();

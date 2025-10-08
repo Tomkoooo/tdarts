@@ -32,7 +32,7 @@ export async function PUT(
     const requesterId = user._id.toString();
     
     const body = await request.json();
-    const { settings, selectedBoards } = body;
+    const { settings, boards } = body;
 
     if (!settings || typeof settings !== 'object') {
       return NextResponse.json({ error: "settings object is required" }, { status: 400 });
@@ -66,7 +66,7 @@ export async function PUT(
 
     const updatedTournament = await TournamentService.updateTournamentSettings(code, requesterId, {
       ...settings,
-      selectedBoards
+      boards
     });
     return NextResponse.json(updatedTournament);
   } catch (error) {

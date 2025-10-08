@@ -5,18 +5,14 @@ interface TournamentBoardsViewProps {
 }
 
 const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament }) => {
-  // Filter boards that belong to this tournament
-  const allBoards = tournament?.clubId?.boards || [];
-  const boards = allBoards.filter((board: any) => 
-    board.tournamentId === tournament?.tournamentId
-  );
-
+  // Get boards directly from tournament
+  const boards = tournament?.boards || [];
 
   return (
     <div className="mt-6">
       <h2 className="text-xl font-bold">Táblák</h2>
       {boards.length === 0 ? (
-        <p>Nincsenek még táblák konfigurálva.</p>
+        <p>Nincsenek még táblák konfigurálva ehhez a tornához.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           {boards.map((board: any, idx: number) => {

@@ -248,7 +248,7 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
               <Link
                 href="/#pricing"
                 className="btn btn-primary gap-2"
-              >ß
+              >
                 <IconPlus size={18} />
                 Előfizetés Frissítése
               </Link>

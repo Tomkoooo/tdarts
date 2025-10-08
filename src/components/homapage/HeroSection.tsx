@@ -41,8 +41,8 @@ const HeroSection = () => {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
           {[
-            { number: '5', label: 'Aktív Klub' },
-            { number: '10', label: 'Verseny Havonta' },
+            { number: '20', label: 'Aktív Klub' },
+            { number: '40', label: 'Verseny Havonta' },
             { number: '24/7', label: 'Valós Idejű Követés' }
           ].map((stat, index) => (
             <div key={index} className="glass-card p-6 hover:scale-105 transition-transform duration-300">

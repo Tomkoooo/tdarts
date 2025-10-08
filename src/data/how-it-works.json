@@ -79,10 +79,18 @@
             "type": "subsection",
             "title": "Táblák kezelése",
             "content": [
-              "Verseny indításához táblákat kell regisztrálnod, amit a klub létrehozásakor vagy később, a &ldquo;Saját klub&rdquo; → &ldquo;Beállítások&rdquo; → &ldquo;Táblák kezelése&rdquo; menüpontban tehetsz meg.",
-              "A táblák automatikusan sorszámot kapnak, de ezek dinamikusan változhatnak (pl. törlés esetén). Ezért javasoljuk a táblák egyedi elnevezését, így a játékosok könnyen azonosíthatják őket.",
-              "Minden tábla mellett található egy nyomtatható QR-kód, amely a táblához tartozó legfrissebb tornára navigál, segítve a játékosokat a fizikai és a platformon lévő tábla azonosításában."
-            ]
+              "A táblák mostantól közvetlenül a versenyekhez tartoznak, nem a klubhoz.",
+              "Verseny létrehozásakor dinamikusan adhatsz hozzá táblákat:",
+              "• Kattints a &ldquo;Tábla hozzáadása&rdquo; gombra",
+              "• Add meg a tábla egyedi nevét (pl. &ldquo;VIP Tábla&rdquo;, &ldquo;Főtábla&rdquo;)",
+              "• A táblák automatikusan sorszámot kapnak (1, 2, 3...)",
+              "• Verseny szerkesztésekor is módosíthatod a táblákat",
+              "A táblák egyedi elnevezése segíti a játékosokat a fizikai és a platformon lévő tábla azonosításában."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Minden versenyhez külön táblák rendelhetők, így rugalmasan kezelheted a különböző méretű versenyeket."
+            }
           },
           {
             "type": "subsection",
@@ -124,8 +132,18 @@
             ],
             "subsections": [
               {
-                "title": "Táblák kiválasztása",
-                "content": ["Válaszd ki a használni kívánt táblákat."]
+                "title": "Táblák hozzáadása",
+                "content": [
+                  "Kattints a &ldquo;Tábla hozzáadása&rdquo; gombra.",
+                  "Add meg a tábla egyedi nevét (pl. &ldquo;Főtábla&rdquo;, &ldquo;VIP Tábla&rdquo;).",
+                  "A táblák automatikusan sorszámot kapnak (1, 2, 3...).",
+                  "Több táblát is hozzáadhatsz dinamikusan.",
+                  "A táblák később is szerkeszthetők a verseny beállításainál."
+                ],
+                "note": {
+                  "type": "info",
+                  "content": "Minden versenyhez külön táblák rendelhetők, így rugalmasan kezelheted a különböző méretű versenyeket. A táblák száma határozza meg, hogy hány meccs játszható párhuzamosan."
+                }
               },
               {
                 "title": "Lebonyolítási mód",
@@ -192,15 +210,132 @@
                 ]
               },
               {
-                "title": "Egyenes kiesés",
+                "title": "Egyenes kiesés (Knockout)",
                 "content": [
                   "Csoportkörös torna esetén ez a lehetőség a csoportkör végeztével jelenik meg.",
-                  "Automatikus mód: A rendszer a megadott számú továbbjutót véletlenszerűen párosítja, figyelembe véve a csoportbeli helyezéseket.",
-                  "Manuális mód: Teljesen testreszabható ágrajz készíthető, kiemelésekkel és egyedi párosításokkal.",
-                  "Hozz létre egy üres kört, majd a &ldquo;Véletlenszerű kör párosítás&rdquo; opcióval válaszd ki a párosítandó játékosokat, vagy manuálisan add meg a párosításokat.",
-                  "Kiemeléshez adj meg csak egy játékost, a másik hely &ldquo;TBD&rdquo; (később meghatározandó) marad, amit utólag módosíthatsz.",
-                  "A &ldquo;Következő kör generálása&rdquo; gomb az előző kör nyerteseit párosítja automatikusan.",
-                  "A torna végén a &ldquo;Torna befejezése&rdquo; gombra kattintva a rendszer összesíti a helyezéseket."
+                  "Két mód közül választhatsz: Automatikus vagy Manuális."
+                ],
+                "subsections": [
+                  {
+                    "title": "Automatikus mód",
+                    "content": [
+                      "A rendszer automatikusan párosítja a továbbjutókat.",
+                      "A csoportbeli helyezések figyelembevételével történik a párosítás.",
+                      "A &ldquo;Következő kör generálása&rdquo; gomb csak akkor aktív, ha az aktuális kör összes meccse befejeződött.",
+                      "A győztesek automatikusan továbbjutnak a következő körbe.",
+                      "Egyszerű és gyors megoldás kisebb versenyekhez."
+                    ]
+                  },
+                  {
+                    "title": "Manuális mód - Teljes kontroll",
+                    "content": [
+                      "Teljesen testreszabható ágrajz (bracket) készíthető.",
+                      "Előre felépítheted a teljes vagy fél bracket struktúrát üres meccsekkel.",
+                      "Később töltheted fel játékosokkal a párosításokat."
+                    ]
+                  },
+                  {
+                    "title": "Üres bracket felépítése",
+                    "content": [
+                      "1. &ldquo;Üres körök generálása&rdquo; - Adj meg hány kört szeretnél (pl. 4 kör = 16 fős bracket)",
+                      "2. Az üres körök megjelennek a bracket nézetben",
+                      "3. Később adhatsz hozzá meccseket és játékosokat"
+                    ]
+                  },
+                  {
+                    "title": "Játékosok hozzáadása",
+                    "content": [
+                      "Kattints a kör neve melletti + gombra új meccs hozzáadásához.",
+                      "Üres meccs létrehozása: Ne válassz játékosokat, csak kattints &ldquo;Hozzáadás&rdquo;-ra.",
+                      "Részleges meccs (Bye): Adj meg csak 1 játékost - ez egy bye meccs lesz.",
+                      "Teljes meccs: Add meg mindkét játékost és válassz táblát.",
+                      "Üres párok szerkesztése: Kattints a + gombra az üres slot mellett."
+                    ]
+                  },
+                  {
+                    "title": "Bye játékosok kezelése",
+                    "content": [
+                      "Bye meccs = csak 1 játékos van megadva, nincs ellenfél.",
+                      "A bye játékos automatikusan továbbjut a következő körbe.",
+                      "Bye meccsek NEM kerülnek táblához - nem kell őket lejátszani.",
+                      "Bye meccsek &ldquo;finished&rdquo; státuszban is szerkeszthetők (2. játékos hozzáadható).",
+                      "Ha bye meccshez hozzáadsz 2. játékost, normál meccs lesz és táblához kerül.",
+                      "Ideális kiemelések (seeding) kezelésére nagy versenyeken."
+                    ]
+                  },
+                  {
+                    "title": "Random párosítás",
+                    "content": [
+                      "A &ldquo;Random párosítás&rdquo; gombbal gyorsan párosíthatsz játékosokat.",
+                      "Válaszd ki a párosítandó játékosokat a listából.",
+                      "A rendszer véletlenszerűen párosítja őket.",
+                      "Páratlan számú játékos esetén az utolsó bye játékos lesz."
+                    ]
+                  },
+                  {
+                    "title": "Meccsek szerkesztése és törlése",
+                    "content": [
+                      "Meccs beállítások ikon (fogaskerék): Játékosok, scorer és tábla módosítása.",
+                      "Csak pending (várakozó) meccseket lehet szerkeszteni.",
+                      "Ongoing (folyamatban) és finished (befejezett) meccseket NEM lehet szerkeszteni.",
+                      "Kivétel: Bye meccsek finished állapotban is szerkeszthetők.",
+                      "Törlés ikon (kuka): Meccs teljes törlése a bracketből.",
+                      "Törlés után a tábla automatikusan a következő meccshez kerül."
+                    ]
+                  },
+                  {
+                    "title": "Következő kör generálása",
+                    "content": [
+                      "Manuális módban bármikor generálható a következő kör.",
+                      "A rendszer a befejezett meccsek győzteseit és a bye játékosokat viszi tovább.",
+                      "Az új körben automatikusan párosítja őket.",
+                      "Páratlan számú továbbjutó esetén az utolsó bye játékos lesz."
+                    ]
+                  },
+                  {
+                    "title": "Utolsó kör visszavonása",
+                    "content": [
+                      "Az &ldquo;Utolsó kör visszavonása&rdquo; gombbal törölheted a legutolsó kört.",
+                      "Az összes meccs törlődik ebből a körből.",
+                      "A táblák automatikusan újra hozzárendelődnek a korábbi meccsekhez.",
+                      "Hasznos, ha hibás generálás történt vagy módosítani szeretnéd a bracket struktúrát."
+                    ]
+                  },
+                  {
+                    "title": "Bracket nézet és navigáció",
+                    "content": [
+                      "Zoom kontrollok: Nagyítás/kicsinyítés a bracket jobb láthatóságához.",
+                      "Vízszintes görgetés: Nagy bracketek esetén görgethetsz jobbra-balra.",
+                      "Kompakt nézet: Optimalizált megjelenítés sok meccs esetén.",
+                      "Színkódok: Zöld = győztes, Sárga = bye meccs, Szürke = üres pár."
+                    ]
+                  },
+                  {
+                    "title": "Példa: 16 fős verseny manuális brackettel",
+                    "content": [
+                      "1. Válaszd a &ldquo;Manuális&rdquo; knockout módot",
+                      "2. Kattints az &ldquo;Üres körök generálása&rdquo; gombra, adj meg 4 kört",
+                      "3. Az 1. körben 8 meccs jelenik meg (üres párokkal)",
+                      "4. Használd a &ldquo;Random párosítás&rdquo; gombot: válaszd ki mind a 16 játékost",
+                      "5. A rendszer véletlenszerűen párosítja őket",
+                      "6. Vagy manuálisan: kattints a kör neve melletti + gombra, adj hozzá meccseket egyesével",
+                      "7. Kiemelések (seeding): Adj meg csak 1 játékost → bye meccs",
+                      "8. A bye játékos automatikusan továbbjut, nem kell lejátszani a meccset",
+                      "9. Meccsek befejezése után: &ldquo;Következő kör generálása&rdquo;",
+                      "10. A győztesek és bye játékosok automatikusan a 2. körbe kerülnek"
+                    ]
+                  },
+                  {
+                    "title": "Tippek és trükkök",
+                    "content": [
+                      "Előre felépítheted a teljes bracket struktúrát üres meccsekkel, majd fokozatosan töltheted fel.",
+                      "Használj egyedi tábla neveket (pl. &ldquo;Döntő tábla&rdquo;) a jobb azonosíthatóságért.",
+                      "A zoom funkció segít nagy bracketek áttekintésében.",
+                      "Bye meccsek használatával biztosíthatod, hogy a legjobb játékosok később csatlakozzanak.",
+                      "Az &ldquo;Utolsó kör visszavonása&rdquo; funkcióval gyorsan javíthatsz hibákat.",
+                      "Törlés előtt mindig ellenőrizd a meccs státuszát - folyamatban lévő meccseket nem lehet törölni."
+                    ]
+                  }
                 ]
               }
             ]
@@ -220,14 +355,19 @@
             "title": "Telefonon keresztül",
             "content": [
               "Olvasd be a tábla melletti QR-kódot, vagy a torna oldalán kattints a &ldquo;Táblák megnyitása&rdquo; gombra.",
-              "Add meg a torna jelszavát (csak az első belépésnél szükséges)."
+              "Add meg a torna jelszavát (csak az első belépésnél szükséges).",
+              "A jelszó automatikusan mentésre kerül a böngésződben, így következő alkalommal nem kell újra megadni."
             ]
           },
           {
             "type": "subsection",
-            "title": "Kihelyezett tableten",
+            "title": "Kihelyezett tableten - Gyors hozzáférés",
             "content": [
-              "Az első meccs előtt add meg a torna azonosítóját és jelszavát (csak egyszer szükséges)."
+              "A felső menüsorban található &ldquo;Tábla&rdquo; gomb (monitor ikon) gyors hozzáférést biztosít.",
+              "Add meg a torna azonosítóját (pl. A1Y5) és a jelszavát.",
+              "A rendszer automatikusan átirányít a torna oldalára.",
+              "A jelszó mentésre kerül, így frissítés után sem kell újra bejelentkezni.",
+              "Ideális megoldás fix tabletek számára a verseny helyszínén."
             ]
           },
           {
@@ -295,6 +435,89 @@
     },
     {
       "id": 5,
+      "title": "MMR Rangsor Rendszer",
+      "icon": "IconChartLine",
+      "description": "Teljesítmény alapú játékos rangsor",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Mi az MMR?",
+            "content": [
+              "Az MMR (Matchmaking Rating) egy teljesítmény alapú rangsor rendszer, amely minden játékos képességeit méri.",
+              "Minden játékos 800 MMR-rel kezd, és ez a szám a versenyeken elért eredmények alapján változik.",
+              "Minél több versenyen veszel részt és minél jobb eredményeket érsz el, annál magasabb lesz az MMR-ed."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "MMR Számítás",
+            "content": [
+              "Az MMR változását több tényező befolyásolja, ahol a helyezés a legfontosabb:",
+              "A helyezés súlya dinamikusan változik a verseny mérete alapján:"
+            ],
+            "list": [
+              "Kis verseny (8 fő vagy kevesebb): Helyezés 60%, Teljesítmény 40%",
+              "Közepes verseny (16 fő): Helyezés 65%, Teljesítmény 35%",
+              "Nagy verseny (32 fő): Helyezés 70%, Teljesítmény 30%",
+              "Nagyon nagy verseny (64+ fő): Helyezés 75%, Teljesítmény 25%"
+            ],
+            "subsections": [
+              {
+                "title": "Teljesítmény összetevői",
+                "content": [
+                  "A teljesítmény pontszám a következőkből áll:",
+                  "• Meccs nyerési arány (50% a teljesítményből)",
+                  "• Leg nyerési arány (30% a teljesítményből)",
+                  "• Átlagos pontszám a verseny átlagához képest (20% a teljesítményből)"
+                ]
+              },
+              {
+                "title": "Verseny méret hatása az MMR változásra",
+                "content": [
+                  "Nagyobb versenyeken több MMR változik (szorzó):",
+                  "• 8 fő vagy kevesebb: 0.5x szorzó",
+                  "• 9-15 fő: 1.0x szorzó (normál)",
+                  "• 16-31 fő: 1.5x szorzó",
+                  "• 32+ fő: 2.0x szorzó (maximum)"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "MMR Rangok",
+            "content": [
+              "Az MMR alapján különböző rangokat érhetsz el:"
+            ],
+            "list": [
+              "Kezdő: 0-799 MMR",
+              "Kezdő+: 800-999 MMR",
+              "Középhaladó: 1000-1199 MMR",
+              "Haladó: 1200-1399 MMR",
+              "Mester: 1400-1599 MMR",
+              "Elit: 1600+ MMR"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Rangsor Megtekintése",
+            "content": [
+              "A keresés oldalon megtekintheted a játékosok rangsorát MMR szerint rendezve.",
+              "Minden játékos kártyáján látható az MMR értéke és a rangja.",
+              "A ranglista folyamatosan frissül a versenyek befejezése után.",
+              "Minél több versenyen veszel részt a tDarts platformon, annál pontosabb lesz az MMR-ed."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Az MMR rendszer motiválja a játékosokat, hogy minél több versenyen induljanak és folyamatosan fejlődjenek. Versenyezz rendszeresen, hogy feljebb kerülj a ranglistán!"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
       "title": "Liga kezelés",
       "icon": "IconTrophy",
       "description": "Verseny ligák létrehozása és kezelése",
@@ -363,7 +586,7 @@
       }
     },
     {
-      "id": 6,
+      "id": 7,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",

@@ -17,16 +17,6 @@ export interface Club {
   // User collection references (only registered users)
   admin: { _id: string; name: string; username: string }[];
   moderators: { _id: string; name: string; username: string }[];
-  // Boards (inline, not references)
-  boards: Array<{
-    boardNumber: number;
-    name?: string;
-    currentMatch?: string;
-    nextMatch?: string;
-    tournamentId?: string
-    status: 'idle' | 'waiting' | 'playing';
-    isActive: boolean;
-  }>;
   subscriptionModel?: 'free' | 'basic' | 'pro' | 'enterprise';
   featureFlags?: {
     liveMatchFollowing: boolean;

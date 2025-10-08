@@ -26,6 +26,7 @@ export interface PlayerStatistics {
     total180s: number;
     highestCheckout: number;
     averagePosition: number;
+    mmr: number; // Matchmaking Rating - performance-based ranking
 }
 
 export interface PlayerDocument {
@@ -60,6 +61,7 @@ export interface PlayerDocument {
         totalLegsWon: number;
         totalLegsLost: number;
         total180s: number;
+        mmr: number; // Matchmaking Rating
     };
     /**
      * Tournament history with detailed results
@@ -85,6 +87,7 @@ export interface Player {
         totalLegsWon: number;
         totalLegsLost: number;
         total180s: number;
+        mmr: number; // Matchmaking Rating
     };
     tournamentHistory?: TournamentHistory[];
     statistics?: PlayerStatistics;

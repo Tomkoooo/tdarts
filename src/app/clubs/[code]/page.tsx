@@ -30,10 +30,6 @@ export default function ClubDetailPage() {
   const searchParams = useSearchParams();
   const code = params.code as string;
 
-  // Board management state
-  const [boardEdit, setBoardEdit] = useState<{ boardNumber: number; name: string } | null>(null);
-  const [boardAddOpen, setBoardAddOpen] = useState(false);
-  const [newBoardName, setNewBoardName] = useState('');
   const [qrCodeModal, setQrCodeModal] = useState<{ isOpen: boolean; boardNumber: number; boardName?: string }>({
     isOpen: false,
     boardNumber: 0
@@ -65,56 +61,6 @@ export default function ClubDetailPage() {
     setClub(clubResponse.data);
   };
 
-  // Board handlers
-  const handleAddBoard = async () => {
-    if (!club || !user?._id) return;
-    try {
-      const toastId = toast.loading('Tábla hozzáadása...');
-      await axios.post(`/api/clubs/${club._id}/addBoard`, {
-        userId: user._id,
-        name: newBoardName,
-      });
-      await fetchClub();
-      setBoardAddOpen(false);
-      setNewBoardName('');
-      toast.success('Tábla hozzáadva!', { id: toastId });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Tábla hozzáadása sikertelen');
-    }
-  };
-
-  const handleEditBoard = async () => {
-    if (!club || !user?._id || !boardEdit) return;
-    try {
-      const toastId = toast.loading('Tábla szerkesztése...');
-      await axios.post(`/api/clubs/${club._id}/editBoard`, {
-        userId: user._id,
-        boardNumber: boardEdit.boardNumber,
-        name: boardEdit.name,
-      });
-      await fetchClub();
-      setBoardEdit(null);
-      toast.success('Tábla módosítva!', { id: toastId });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Tábla szerkesztése sikertelen');
-    }
-  };
-
-  const handleRemoveBoard = async (boardNumber: number) => {
-    if (!club || !user?._id) return;
-    if (!window.confirm('Biztosan törlöd ezt a táblát?')) return;
-    try {
-      const toastId = toast.loading('Tábla törlése...');
-      await axios.post(`/api/clubs/${club._id}/removeBoard`, {
-        userId: user._id,
-        boardNumber,
-      });
-      await fetchClub();
-      toast.success('Tábla törölve!', { id: toastId });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Tábla törlése sikertelen');
-    }
-  };
 
   useEffect(() => {
     const fetchClubAndRole = async () => {
@@ -370,7 +316,7 @@ export default function ClubDetailPage() {
         onClose={() => setIsCreateTournamentModalOpen(false)}
         clubId={club._id}
         userRole={userRole}
-        boardCount={club.boards?.length || 0}
+        boardCount={0}
         onTournamentCreated={() => fetchClub()}
       />
       <div className="card-section">
@@ -402,85 +348,11 @@ export default function ClubDetailPage() {
           <span className="text-lg md:text-xl">Táblák kezelése</span>
         </div>
         <div className="space-y-4">
-          <div className="text-sm md:text-base text-base-content/70">Összesen {club.boards?.length || 0} tábla</div>
-          <ul className="space-y-2">
-            {club.boards && club.boards.length > 0 ? (
-              club.boards.map((board: any) => (
-                <li key={board.boardNumber} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 bg-base-200 rounded-lg">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="font-semibold text-sm md:text-base">#{board.boardNumber}</span>
-                    {board.name && <span className="text-xs md:text-sm text-base-content/60">{board.name}</span>}
-                  </div>
-                                    <div className="flex flex-wrap gap-1">
-                    <button 
-                      className="btn btn-xs btn-primary" 
-                      onClick={() => setQrCodeModal({ 
-                        isOpen: true, 
-                        boardNumber: board.boardNumber, 
-                        boardName: board.name 
-                      })}
-                      title="QR Kód megjelenítése"
-                    >
-                      <IconQrcode size={20}/>
-                    </button>
-                    <button className="btn btn-xs btn-outline" onClick={() => setBoardEdit({ boardNumber: board.boardNumber, name: board.name || '' })}>
-                      <span className="hidden sm:inline">Szerkesztés</span>
-                      <span className="sm:hidden">Szerk</span>
-                    </button>
-                    <button className="btn btn-xs btn-error" onClick={() => handleRemoveBoard(board.boardNumber)}>
-                      <span className="hidden sm:inline">Törlés</span>
-                      <span className="sm:hidden">Töröl</span>
-                    </button>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <li className="text-sm md:text-base text-base-content/60 p-3 bg-base-200 rounded-lg">Nincsenek táblák.</li>
-            )}
-          </ul>
-          <button className="btn btn-xs btn-primary w-full sm:w-auto" onClick={() => setBoardAddOpen(true)}>
-            <span className="hidden sm:inline">Új tábla hozzáadása</span>
-            <span className="sm:hidden">Új tábla</span>
-          </button>
+          <div className="alert alert-info">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>A táblák mostantól a tornáknál kerülnek létrehozásra és kezelésre. Hozz létre egy új tornát, és ott add meg a táblákat!</span>
+          </div>
         </div>
-        {/* Add Board Modal */}
-        {boardAddOpen && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-base-200 rounded-xl p-4 md:p-6 shadow-xl w-full max-w-sm">
-              <h3 className="text-lg font-bold mb-3">Új tábla hozzáadása</h3>
-              <input
-                type="text"
-                className="input input-bordered w-full mb-4"
-                placeholder="Tábla neve (opcionális)"
-                value={newBoardName}
-                onChange={e => setNewBoardName(e.target.value)}
-              />
-              <div className="flex flex-col sm:flex-row gap-2 justify-end">
-                <button className="btn btn-ghost btn-xs w-full sm:w-auto" onClick={() => setBoardAddOpen(false)}>Mégse</button>
-                <button className="btn btn-primary btn-xs w-full sm:w-auto" onClick={handleAddBoard}>Hozzáadás</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Edit Board Modal */}
-        {boardEdit && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-base-200 rounded-xl p-4 md:p-6 shadow-xl w-full max-w-sm">
-              <h3 className="text-lg font-bold mb-3">Tábla szerkesztése</h3>
-              <input
-                type="text"
-                className="input input-bordered w-full mb-4"
-                placeholder="Tábla neve"
-                value={boardEdit.name}
-                onChange={e => setBoardEdit({ ...boardEdit, name: e.target.value })}
-              />
-              <div className="flex flex-col sm:flex-row gap-2 justify-end">
-                <button className="btn btn-ghost btn-xs w-full sm:w-auto" onClick={() => setBoardEdit(null)}>Mégse</button>
-                <button className="btn btn-primary btn-xs w-full sm:w-auto" onClick={handleEditBoard}>Mentés</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       
       {/* QR Code Modal */}

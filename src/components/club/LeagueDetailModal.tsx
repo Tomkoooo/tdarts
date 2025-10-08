@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { IconX, IconTrophy, IconUsers, IconEdit, IconUser } from '@tabler/icons-react';
+import { IconX, IconTrophy, IconUsers, IconEdit, IconUser, IconTrash } from '@tabler/icons-react';
 import { League, LeagueStatsResponse, LeagueLeaderboard } from '@/interface/league.interface';
 import PlayerSearch from './PlayerSearch';
 import TournamentCard from '../tournament/TournamentCard';
@@ -271,24 +271,50 @@ interface LeaderboardTabProps {
 }
 
 function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, league }: LeaderboardTabProps) {
-  const [adjustingPlayer, setAdjustingPlayer] = useState<string | null>(null);
-  const [adjustmentPoints, setAdjustmentPoints] = useState<number>(0);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string } | null>(null);
+  const [adjustmentPoints, setAdjustmentPoints] = useState<string>('');
   const [adjustmentReason, setAdjustmentReason] = useState<string>('');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const handleAdjustment = (playerId: string) => {
-    if (adjustmentPoints === 0 || !adjustmentReason.trim()) {
-      showErrorToast('Kérlek add meg a pontszámot és az okot!', {
+  const openAdjustModal = (playerId: string, playerName: string) => {
+    setSelectedPlayer({ id: playerId, name: playerName });
+    setAdjustmentPoints('');
+    setAdjustmentReason('');
+    setShowAdjustModal(true);
+  };
+
+  const closeAdjustModal = () => {
+    setShowAdjustModal(false);
+    setSelectedPlayer(null);
+    setAdjustmentPoints('');
+    setAdjustmentReason('');
+  };
+
+  const handleAdjustment = () => {
+    if (!selectedPlayer) return;
+    
+    const points = parseInt(adjustmentPoints);
+    
+    if (isNaN(points) || points === 0) {
+      showErrorToast('Kérlek adj meg egy érvényes pontszámot (nem lehet 0)!', {
         context: 'Liga pontszám módosítása',
         showReportButton: false
       });
       return;
     }
 
-    onAdjustPoints(playerId, adjustmentPoints, adjustmentReason);
-    setAdjustingPlayer(null);
-    setAdjustmentPoints(0);
-    setAdjustmentReason('');
+    if (!adjustmentReason.trim()) {
+      showErrorToast('Kérlek add meg az okot!', {
+        context: 'Liga pontszám módosítása',
+        showReportButton: false
+      });
+      return;
+    }
+
+    onAdjustPoints(selectedPlayer.id, points, adjustmentReason);
+    closeAdjustModal();
+    showSuccessToast('Pontszám sikeresen módosítva!');
   };
 
   const handlePlayerSelected = async (player: any) => {
@@ -346,92 +372,134 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Helyezés</th>
-                <th>Játékos</th>
-                <th>Pontok</th>
-                <th>Versenyek</th>
-                <th>Átlag helyezés</th>
-                <th>Legjobb helyezés</th>
-                {canManage && <th>Műveletek</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry) => (
-                <tr key={entry.player._id}>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">{entry.position}</span>
-                      {entry.position <= 3 && (
-                        <div className={`badge ${
-                          entry.position === 1 ? 'badge-warning' :
-                          entry.position === 2 ? 'badge-neutral' :
-                          'badge-accent'
-                        }`}>
-                          {entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉'}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="font-medium">{entry.player.name}</td>
-                  <td>
-                    <span className="font-mono font-bold text-primary">
-                      {entry.totalPoints}
-                    </span>
-                  </td>
-                  <td>{entry.tournamentsPlayed}</td>
-                  <td>{entry.averagePosition > 0 ? entry.averagePosition.toFixed(1) : '-'}</td>
-                  <td>{entry.bestPosition > 0 ? entry.bestPosition : '-'}</td>
-                  {canManage && (
-                    <td>
-                      {adjustingPlayer === entry.player._id ? (
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="number"
-                            value={adjustmentPoints}
-                            onChange={(e) => setAdjustmentPoints(parseInt(e.target.value) || 0)}
-                            className="input input-xs w-16"
-                            placeholder="±pont"
-                          />
-                          <input
-                            type="text"
-                            value={adjustmentReason}
-                            onChange={(e) => setAdjustmentReason(e.target.value)}
-                            className="input input-xs w-24"
-                            placeholder="indok"
-                          />
-                          <button
-                            onClick={() => handleAdjustment(entry.player._id)}
-                            className="btn btn-success btn-xs"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => setAdjustingPlayer(null)}
-                            className="btn btn-error btn-xs"
-                          >
-                            ✗
-                          </button>
-                        </div>
-                      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th className="text-xs sm:text-sm">#</th>
+                  <th className="text-xs sm:text-sm">Játékos</th>
+                  <th className="text-xs sm:text-sm">Pont</th>
+                  <th className="text-xs sm:text-sm hidden sm:table-cell">Versenyek</th>
+                  <th className="text-xs sm:text-sm hidden md:table-cell">Átlag</th>
+                  <th className="text-xs sm:text-sm hidden lg:table-cell">Legjobb</th>
+                  {canManage && <th className="text-xs sm:text-sm"></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboard.map((entry) => (
+                  <tr key={entry.player._id}>
+                    <td className="py-2">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-xs sm:text-sm">{entry.position}</span>
+                        {entry.position <= 3 && (
+                          <span className="text-xs">
+                            {entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="font-medium text-xs sm:text-sm py-2">
+                      <div className="truncate max-w-[120px] sm:max-w-[200px]" title={entry.player.name}>
+                        {entry.player.name}
+                      </div>
+                    </td>
+                    <td className="py-2">
+                      <span className="font-mono font-bold text-primary text-xs sm:text-sm">
+                        {entry.totalPoints}
+                      </span>
+                    </td>
+                    <td className="hidden sm:table-cell text-xs sm:text-sm py-2">{entry.tournamentsPlayed}</td>
+                    <td className="hidden md:table-cell text-xs sm:text-sm py-2">{entry.averagePosition > 0 ? entry.averagePosition.toFixed(1) : '-'}</td>
+                    <td className="hidden lg:table-cell text-xs sm:text-sm py-2">{entry.bestPosition > 0 ? entry.bestPosition : '-'}</td>
+                    {canManage && (
+                      <td className="py-2">
                         <button
-                          onClick={() => setAdjustingPlayer(entry.player._id)}
+                          onClick={() => openAdjustModal(entry.player._id, entry.player.name)}
                           className="btn btn-ghost btn-xs"
-                          title="Pontok manuális módosítása"
+                          title="Pontok módosítása"
                         >
                           <IconEdit size={14} />
                         </button>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Adjust Points Modal */}
+          {showAdjustModal && selectedPlayer && (
+            <dialog open className="modal modal-bottom sm:modal-middle">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg mb-4">Pontszám módosítása</h3>
+                <p className="text-sm text-base-content/70 mb-4">
+                  Játékos: <span className="font-semibold">{selectedPlayer.name}</span>
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Pontszám változás</span>
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="-?[0-9]*"
+                      value={adjustmentPoints}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || value === '-' || /^-?\d+$/.test(value)) {
+                          setAdjustmentPoints(value);
+                        }
+                      }}
+                      className="input input-bordered w-full text-center text-lg"
+                      placeholder="pl: +10 vagy -5"
+                      autoFocus
+                    />
+                    <label className="label">
+                      <span className="label-text-alt text-base-content/60">
+                        Pozitív (+) vagy negatív (-) szám
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Indoklás</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={adjustmentReason}
+                      onChange={(e) => setAdjustmentReason(e.target.value)}
+                      className="input input-bordered w-full"
+                      placeholder="Miért módosítod a pontszámot?"
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-action">
+                  <button
+                    onClick={closeAdjustModal}
+                    className="btn btn-ghost"
+                  >
+                    Mégse
+                  </button>
+                  <button
+                    onClick={handleAdjustment}
+                    className="btn btn-primary"
+                  >
+                    Mentés
+                  </button>
+                </div>
+              </div>
+              <form method="dialog" className="modal-backdrop">
+                <button onClick={closeAdjustModal}>close</button>
+              </form>
+            </dialog>
+          )}
+        </>
       )}
     </div>
   );
@@ -521,6 +589,41 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
   });
   const [loading, setLoading] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'settings' | 'history'>('settings');
+
+  const handleUndoAdjustment = async (playerId: string, adjustmentIndex: number) => {
+    if (!confirm('Biztosan visszavonod ezt a pontszám módosítást?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/undo-adjustment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId,
+          adjustmentIndex
+        }),
+      });
+
+      if (response.ok) {
+        onLeagueUpdated();
+        showSuccessToast('Pontszám módosítás visszavonva!');
+      } else {
+        const errorData = await response.json();
+        showErrorToast(errorData.error || 'Hiba a visszavonás során', {
+          context: 'Liga pontszám visszavonása',
+          error: errorData.error
+        });
+      }
+    } catch (error) {
+      showErrorToast('Hiba a visszavonás során', {
+        context: 'Liga pontszám visszavonása',
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+      });
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -628,28 +731,38 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
                       </div>
                     <div className="space-y-2">
                       {player.manualAdjustments.map((adjustment: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between text-sm bg-base-100 p-3 rounded">
-                          <div className="flex items-center gap-3">
-                            <span className={`badge badge-sm ${
+                        <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm bg-base-100 p-3 rounded gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <span className={`badge badge-sm flex-shrink-0 ${
                               adjustment.points > 0 ? 'badge-success' : 'badge-error'
                             }`}>
                               {adjustment.points > 0 ? '+' : ''}{adjustment.points} pont
                             </span>
-                            <div>
-                              <div className="font-medium">{adjustment.reason}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{adjustment.reason}</div>
                               <div className="text-xs text-base-content/60">
                                 {adjustment.points > 0 ? 'Pont hozzáadva' : 'Pont levonva'} {player.player.name || player.player.username || 'játékosnak'}
                               </div>
                             </div>
                           </div>
-                          <div className="text-base-content/60 text-right">
-                            <div className="flex items-center gap-1 text-xs">
-                              <IconUser size={12} />
-                              <span>{adjustment.adjustedBy?.name || adjustment.adjustedBy?.username || 'Ismeretlen'}</span>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="text-base-content/60 text-right">
+                              <div className="flex items-center gap-1 text-xs">
+                                <IconUser size={12} />
+                                <span>{adjustment.adjustedBy?.name || adjustment.adjustedBy?.username || 'Ismeretlen'}</span>
+                              </div>
+                              <div className="text-xs">
+                                {new Date(adjustment.adjustedAt).toLocaleDateString('hu-HU')}
+                              </div>
                             </div>
-                            <div className="text-xs">
-                              {new Date(adjustment.adjustedAt).toLocaleDateString('hu-HU')}
-                            </div>
+                            <button
+                              onClick={() => handleUndoAdjustment(player.player._id, index)}
+                              className="btn btn-error btn-xs gap-1"
+                              title="Visszavonás"
+                            >
+                              <IconTrash size={12} />
+                              <span className="hidden sm:inline">Visszavonás</span>
+                            </button>
                           </div>
                         </div>
                       ))}

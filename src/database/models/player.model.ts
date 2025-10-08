@@ -20,6 +20,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         totalLegsWon: { type: Number, default: 0 },
         totalLegsLost: { type: Number, default: 0 },
         total180s: { type: Number, default: 0 },
+        mmr: { type: Number, default: 800 }, // Matchmaking Rating - starts at 1200
     },
     tournamentHistory: [{
         tournamentId: { type: String, required: true },

@@ -3,7 +3,6 @@ import { MatchModel } from "../models/match.model";
 import { BadRequestError } from "@/middleware/errorHandle";
 import { TournamentService } from "./tournament.service";
 import { TournamentModel } from "../models/tournament.model";
-import { ClubModel } from "../models/club.model";
 import { AuthorizationService } from "./authorization.service";
 import { connectMongo } from "@/lib/mongoose";
 
@@ -127,13 +126,9 @@ export class MatchService {
             // Group match - use existing logic
             const tournament = await TournamentModel.findById(match.tournamentRef);
             if (!tournament) throw new BadRequestError('Tournament not found');
-            const clubId = tournament.clubId.toString();
-            // Mivel a board a Club dokumentumon belül van, a Club-ot kell frissíteni
-            const club = await ClubModel.findById(clubId);
-            if (!club) throw new BadRequestError('Club not found');
 
-            // Keressük meg a megfelelő board-ot a club.boards tömbben
-            const boardIndex = club.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
+            // Keressük meg a megfelelő board-ot a tournament.boards tömbben
+            const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
             if (boardIndex === -1) throw new BadRequestError('Board not found');
 
             // Következő pending meccs keresése ugyanerre a táblára és tornára
@@ -145,12 +140,12 @@ export class MatchService {
             });
 
             // Frissítjük a board mezőit
-            club.boards[boardIndex].status = 'playing';
-            club.boards[boardIndex].currentMatch = matchId;
-            club.boards[boardIndex].nextMatch = nextMatch?._id || null;
+            tournament.boards[boardIndex].status = 'playing';
+            tournament.boards[boardIndex].currentMatch = matchId as any;
+            tournament.boards[boardIndex].nextMatch = nextMatch?._id as any || undefined;
 
-            // Mentsük el a club dokumentumot
-            await club.save();
+            // Mentsük el a tournament dokumentumot
+            await tournament.save();
         }
         
         // Populate the match data before returning
@@ -375,11 +370,8 @@ export class MatchService {
             // Group match - use existing logic
             const tournament = await TournamentModel.findById(match.tournamentRef);
             if (!tournament) throw new BadRequestError('Tournament not found');
-            
-            const club = await ClubModel.findById(tournament.clubId);
-            if (!club) throw new BadRequestError('Club not found');
 
-            const boardIndex = club.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
+            const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
             if (boardIndex !== -1) {
                 // Find next pending match
                 const nextMatch = await MatchModel.findOne({
@@ -390,16 +382,16 @@ export class MatchService {
                 });
 
                 if (nextMatch) {
-                    club.boards[boardIndex].status = 'waiting';
-                    club.boards[boardIndex].currentMatch = null;
-                    club.boards[boardIndex].nextMatch = nextMatch._id;
+                    tournament.boards[boardIndex].status = 'waiting';
+                    tournament.boards[boardIndex].currentMatch = undefined;
+                    tournament.boards[boardIndex].nextMatch = nextMatch._id as any;
                 } else {
-                    club.boards[boardIndex].status = 'idle';
-                    club.boards[boardIndex].currentMatch = null;
-                    club.boards[boardIndex].nextMatch = null;
+                    tournament.boards[boardIndex].status = 'idle';
+                    tournament.boards[boardIndex].currentMatch = undefined;
+                    tournament.boards[boardIndex].nextMatch = undefined;
                 }
 
-                await club.save();
+                await tournament.save();
             }
         }
 
@@ -493,6 +485,18 @@ export class MatchService {
                 throw new BadRequestError('Match not found');
             }
 
+            // Prevent editing ongoing matches
+            if (match.status === 'ongoing') {
+                throw new BadRequestError('Cannot edit ongoing matches. Please finish or cancel the match first.');
+            }
+            
+            // Prevent editing finished matches ONLY if it's a normal match (2 players)
+            // Bye matches (1 player) can be edited even when finished
+            const isByeMatch = !match.player1?.playerId || !match.player2?.playerId;
+            if (match.status === 'finished' && !isByeMatch) {
+                throw new BadRequestError('Cannot edit finished matches with 2 players.');
+            }
+
             const tournament = match.tournamentRef as any;
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
@@ -503,6 +507,9 @@ export class MatchService {
             if (!isAuthorized) {
                 throw new BadRequestError('Only club admins or moderators can update match settings');
             }
+
+            // Track if this was a bye match before
+            const wasByeMatch = !match.player1?.playerId || !match.player2?.playerId;
 
             // Update players if provided
             if (settingsData.player1Id) {
@@ -558,53 +565,124 @@ export class MatchService {
 
             // Update board if provided
             if (settingsData.boardNumber) {
-                // Validate board exists and is assigned to tournament
-                const club = await ClubModel.findById(tournament.clubId);
-                if (!club) {
-                    throw new BadRequestError('Club not found');
+                // Validate board exists in tournament
+                const tournamentDoc = await TournamentModel.findById(tournament._id);
+                if (!tournamentDoc) {
+                    throw new BadRequestError('Tournament not found');
                 }
 
-                const board = club.boards.find((b: any) => 
-                    b.boardNumber === settingsData.boardNumber && 
-                    b.tournamentId === tournament.tournamentId
+                const board = tournamentDoc.boards.find((b: any) => 
+                    b.boardNumber === settingsData.boardNumber && b.isActive
                 );
                 if (!board) {
-                    throw new BadRequestError('Board not found or not assigned to tournament');
+                    throw new BadRequestError('Board not found in tournament');
                 }
+
+                const oldBoardNumber = match.boardReference;
 
                 // Update board reference in match
                 match.boardReference = settingsData.boardNumber;
 
-                // Update club.boards status if this match is currently active
+                // Update tournament.boards status if this match is currently active
                 if (match.status === 'ongoing') {
-                    // Find the board in club.boards and update currentMatch
-                    const boardIndex = club.boards.findIndex((b: any) => 
-                        b.boardNumber === settingsData.boardNumber && 
-                        b.tournamentId === tournament.tournamentId
+                    // Find the new board in tournament.boards and update currentMatch
+                    const boardIndex = tournamentDoc.boards.findIndex((b: any) => 
+                        b.boardNumber === settingsData.boardNumber
                     );
                     
                     if (boardIndex !== -1) {
-                        club.boards[boardIndex].currentMatch = match._id.toString();
-                        club.boards[boardIndex].status = 'playing';
+                        tournamentDoc.boards[boardIndex].currentMatch = match._id as any;
+                        tournamentDoc.boards[boardIndex].status = 'playing';
                     }
                     
                     // Clear currentMatch from old board if it was different
-                    const oldBoardIndex = club.boards.findIndex((b: any) => 
-                        b.boardNumber === match.boardReference && 
-                        b.tournamentId === tournament.tournamentId &&
-                        b.currentMatch === match._id.toString()
-                    );
-                    
-                    if (oldBoardIndex !== -1 && oldBoardIndex !== boardIndex) {
-                        club.boards[oldBoardIndex].currentMatch = null;
-                        club.boards[oldBoardIndex].status = 'idle';
+                    if (oldBoardNumber !== settingsData.boardNumber) {
+                        const oldBoardIndex = tournamentDoc.boards.findIndex((b: any) => 
+                            b.boardNumber === oldBoardNumber &&
+                            b.currentMatch?.toString() === match._id.toString()
+                        );
+                        
+                        if (oldBoardIndex !== -1) {
+                            tournamentDoc.boards[oldBoardIndex].currentMatch = undefined;
+                            tournamentDoc.boards[oldBoardIndex].status = 'idle';
+                        }
                     }
                     
-                    await club.save();
+                    await tournamentDoc.save();
                 }
             }
 
             await match.save();
+
+            // Update tournament knockout rounds if this is a knockout match and players were changed
+            if (match.type === 'knockout' && (settingsData.player1Id || settingsData.player2Id)) {
+                await this.updateTournamentKnockoutRounds(tournament._id.toString(), matchId, {
+                    player1Id: settingsData.player1Id,
+                    player2Id: settingsData.player2Id
+                });
+            }
+
+            // Update board status based on bye match status change
+            const isNowByeMatch = !match.player1?.playerId || !match.player2?.playerId;
+            
+            if (wasByeMatch !== isNowByeMatch || settingsData.boardNumber) {
+                // Board status needs to be updated
+                const tournamentDoc = await TournamentModel.findById(tournament._id);
+                if (tournamentDoc) {
+                    const currentBoardNumber = match.boardReference;
+                    const boardIdx = tournamentDoc.boards.findIndex((b: any) => b.boardNumber === currentBoardNumber);
+                    
+                    if (boardIdx !== -1) {
+                        if (isNowByeMatch) {
+                            // Changed to bye match - remove from board if it was the next match
+                            if (tournamentDoc.boards[boardIdx].nextMatch?.toString() === matchId) {
+                                tournamentDoc.boards[boardIdx].nextMatch = undefined;
+                                
+                                // Find next non-bye pending match for this board
+                                const nextPendingMatch = await MatchModel.findOne({
+                                    tournamentRef: tournament._id,
+                                    boardReference: currentBoardNumber,
+                                    status: 'pending',
+                                    'player1.playerId': { $ne: null },
+                                    'player2.playerId': { $ne: null },
+                                    _id: { $ne: matchId }
+                                }).sort({ createdAt: 1 });
+                                
+                                if (nextPendingMatch) {
+                                    tournamentDoc.boards[boardIdx].nextMatch = nextPendingMatch._id as any;
+                                    tournamentDoc.boards[boardIdx].status = 'waiting';
+                                } else {
+                                    tournamentDoc.boards[boardIdx].status = 'idle';
+                                }
+                            }
+                        } else if (wasByeMatch && !isNowByeMatch) {
+                            // Changed from bye to normal match - assign to board if it's the earliest
+                            if (!tournamentDoc.boards[boardIdx].nextMatch) {
+                                tournamentDoc.boards[boardIdx].nextMatch = match._id as any;
+                                tournamentDoc.boards[boardIdx].status = 'waiting';
+                            } else {
+                                // Check if this should be the next match (earliest pending)
+                                const earlierMatch = await MatchModel.findOne({
+                                    tournamentRef: tournament._id,
+                                    boardReference: currentBoardNumber,
+                                    status: 'pending',
+                                    'player1.playerId': { $ne: null },
+                                    'player2.playerId': { $ne: null },
+                                    createdAt: { $lt: match.createdAt }
+                                }).sort({ createdAt: 1 });
+                                
+                                if (!earlierMatch) {
+                                    // This is the earliest - make it the next match
+                                    tournamentDoc.boards[boardIdx].nextMatch = match._id as any;
+                                    tournamentDoc.boards[boardIdx].status = 'waiting';
+                                }
+                            }
+                        }
+                        
+                        await tournamentDoc.save();
+                    }
+                }
+            }
 
             return {
                 success: true,
@@ -613,6 +691,44 @@ export class MatchService {
 
         } catch (error: any) {
             console.error('Update match settings error:', error);
+            throw error;
+        }
+    }
+
+    // Update tournament knockout rounds when match players are changed
+    private static async updateTournamentKnockoutRounds(tournamentId: string, matchId: string, playerUpdates: {
+        player1Id?: string;
+        player2Id?: string;
+    }) {
+        try {
+            const tournament = await TournamentModel.findById(tournamentId);
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Find the match in knockout rounds and update player references
+            let updated = false;
+            tournament.knockout = tournament.knockout.map((round: any) => ({
+                ...round,
+                matches: round.matches.map((knockoutMatch: any) => {
+                    if (knockoutMatch.matchReference.toString() === matchId) {
+                        updated = true;
+                        return {
+                            ...knockoutMatch,
+                            player1: playerUpdates.player1Id ? playerUpdates.player1Id : knockoutMatch.player1,
+                            player2: playerUpdates.player2Id ? playerUpdates.player2Id : knockoutMatch.player2
+                        };
+                    }
+                    return knockoutMatch;
+                })
+            }));
+
+            if (updated) {
+                await tournament.save();
+                console.log(`Updated knockout rounds for tournament ${tournamentId}, match ${matchId}`);
+            }
+        } catch (error: any) {
+            console.error('Update tournament knockout rounds error:', error);
             throw error;
         }
     }

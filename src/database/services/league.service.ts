@@ -265,6 +265,47 @@ export class LeagueService {
   }
 
   /**
+   * Undo a manual points adjustment for a player
+   */
+  static async undoPointsAdjustment(
+    leagueId: string,
+    userId: string,
+    playerId: string,
+    adjustmentIndex: number
+  ): Promise<LeagueDocument> {
+    await connectMongo();
+
+    const league = await LeagueModel.findById(leagueId);
+    if (!league) {
+      throw new BadRequestError('League not found');
+    }
+
+    // Check permissions
+    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+    if (!hasPermission) {
+      throw new AuthorizationError('Only club moderators can undo adjustments');
+    }
+
+    const playerIndex = league.players.findIndex((p: any) => p.player.toString() === playerId);
+    if (playerIndex === -1) {
+      throw new BadRequestError('Player not found in this league');
+    }
+
+    // Check if adjustment exists
+    if (adjustmentIndex < 0 || adjustmentIndex >= league.players[playerIndex].manualAdjustments.length) {
+      throw new BadRequestError('Invalid adjustment index');
+    }
+
+    // Remove the adjustment
+    league.players[playerIndex].manualAdjustments.splice(adjustmentIndex, 1);
+
+    // Recalculate total points
+    league.players[playerIndex].totalPoints = league.calculatePlayerTotalPoints(playerId);
+
+    return await league.save();
+  }
+
+  /**
    * Calculate and update points for a tournament
    */
   static async calculatePointsForTournament(
