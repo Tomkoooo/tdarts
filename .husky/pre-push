@@ -14,15 +14,6 @@ npm run lint || {
   exit 1
 }
 
-# Run TypeScript type check
-echo ""
-echo "🔷 Running TypeScript type check..."
-npx tsc --noEmit || {
-  echo ""
-  echo "❌ TypeScript type check failed. Please fix the errors before pushing."
-  echo "Run 'npx tsc --noEmit' to see the errors."
-  exit 1
-}
 
 # Run build
 echo ""

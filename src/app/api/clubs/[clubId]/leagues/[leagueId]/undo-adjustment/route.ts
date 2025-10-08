@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
   try {
-    const { clubId, leagueId } = await params;
+    const { leagueId } = await params;
 
     // Get user from JWT token
     const token = request.cookies.get('token')?.value;
