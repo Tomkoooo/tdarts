@@ -490,6 +490,18 @@ export class LeagueService {
       .populate({
         path: 'players.manualAdjustments.adjustedBy',
         select: 'name username'
+      })
+      .populate({
+        path: 'removedPlayers.player',
+        select: 'name username'
+      })
+      .populate({
+        path: 'removedPlayers.removedBy',
+        select: 'name username'
+      })
+      .populate({
+        path: 'removedPlayers.manualAdjustments.adjustedBy',
+        select: 'name username'
       });
     
     if (!league) {
@@ -584,7 +596,39 @@ export class LeagueService {
           },
           adjustedAt: adjustment.adjustedAt
         }))
-      }))
+      })),
+      // Include removed players with full data
+      removedPlayers: league.removedPlayers ? league.removedPlayers.map((removal: any) => ({
+        player: {
+          _id: removal.player._id,
+          name: removal.player.name,
+          username: removal.player.username
+        },
+        totalPoints: removal.totalPoints,
+        tournamentPoints: removal.tournamentPoints.map((tp: any) => ({
+          tournament: tp.tournament,
+          points: tp.points,
+          position: tp.position,
+          eliminatedIn: tp.eliminatedIn
+        })),
+        manualAdjustments: removal.manualAdjustments.map((adjustment: any) => ({
+          points: adjustment.points,
+          reason: adjustment.reason,
+          adjustedBy: {
+            _id: adjustment.adjustedBy._id || adjustment.adjustedBy,
+            name: adjustment.adjustedBy.name || 'Unknown',
+            username: adjustment.adjustedBy.username || 'Unknown'
+          },
+          adjustedAt: adjustment.adjustedAt
+        })),
+        reason: removal.reason,
+        removedBy: {
+          _id: removal.removedBy._id,
+          name: removal.removedBy.name,
+          username: removal.removedBy.username
+        },
+        removedAt: removal.removedAt
+      })) : []
     };
 
     return {
@@ -642,8 +686,9 @@ export class LeagueService {
    */
   static async removePlayerFromLeague(
     leagueId: string,
+    userId: string,
     playerId: string,
-    userId: string
+    reason: string
   ): Promise<LeagueDocument> {
     await connectMongo();
 
@@ -663,8 +708,80 @@ export class LeagueService {
       throw new BadRequestError('Player not found in this league');
     }
 
-    // Remove player
+    // Get player data before removal (full snapshot)
+    const playerData = league.players[playerIndex];
+
+    // Initialize removedPlayers array if it doesn't exist
+    if (!league.removedPlayers) {
+      league.removedPlayers = [];
+    }
+
+    // Add to removedPlayers history with full data snapshot
+    league.removedPlayers.push({
+      player: playerData.player,
+      totalPoints: playerData.totalPoints,
+      tournamentPoints: playerData.tournamentPoints,
+      manualAdjustments: playerData.manualAdjustments,
+      reason,
+      removedBy: userId as any,
+      removedAt: new Date()
+    });
+
+    // Remove player from active players
     league.players.splice(playerIndex, 1);
+
+    return await league.save();
+  }
+
+  /**
+   * Undo a player removal from a league
+   */
+  static async undoPlayerRemoval(
+    leagueId: string,
+    userId: string,
+    playerId: string,
+    removalIndex: number
+  ): Promise<LeagueDocument> {
+    await connectMongo();
+
+    const league = await LeagueModel.findById(leagueId);
+    if (!league) {
+      throw new BadRequestError('League not found');
+    }
+
+    // Check permissions
+    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+    if (!hasPermission) {
+      throw new AuthorizationError('Only club moderators can undo player removals');
+    }
+
+    if (!league.removedPlayers || league.removedPlayers.length === 0) {
+      throw new BadRequestError('No removed players found');
+    }
+
+    // Check if removal exists
+    if (removalIndex < 0 || removalIndex >= league.removedPlayers.length) {
+      throw new BadRequestError('Invalid removal index');
+    }
+
+    const removal = league.removedPlayers[removalIndex];
+
+    // Check if player is already back in the league
+    const existingPlayer = league.players.find((p: any) => p.player.toString() === playerId);
+    if (existingPlayer) {
+      throw new BadRequestError('Player is already in the league');
+    }
+
+    // Re-add player to the league with their full previous data
+    league.players.push({
+      player: removal.player,
+      totalPoints: removal.totalPoints,
+      tournamentPoints: removal.tournamentPoints,
+      manualAdjustments: removal.manualAdjustments
+    });
+
+    // Remove from removedPlayers history
+    league.removedPlayers.splice(removalIndex, 1);
 
     return await league.save();
   }

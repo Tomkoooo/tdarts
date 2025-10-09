@@ -52,6 +52,25 @@ export interface League {
   club: string | Document; // Reference to Club
   attachedTournaments: Array<string | TournamentDocument>; // Array of tournament references
   players: LeaguePlayer[]; // Array of players with their points
+  removedPlayers?: Array<{
+    player: string | PlayerDocument; // Reference to removed player
+    totalPoints: number; // Total points when removed
+    tournamentPoints: Array<{
+      tournament: string | TournamentDocument;
+      points: number;
+      position: number;
+      eliminatedIn: string;
+    }>;
+    manualAdjustments: Array<{
+      points: number;
+      reason: string;
+      adjustedBy: string;
+      adjustedAt: Date;
+    }>;
+    reason: string; // Reason for removal
+    removedBy: string; // User ID who removed the player
+    removedAt: Date;
+  }>;
   pointsConfig: LeaguePointsConfig; // Point calculation configuration
   createdBy: string; // User ID of creator (must be moderator)
   isActive: boolean; // Whether league is currently active
@@ -62,7 +81,7 @@ export interface League {
 }
 
 // Mongoose Document Interface
-export interface LeagueDocument extends Document, Omit<League, '_id' | 'club' | 'attachedTournaments' | 'players'> {
+export interface LeagueDocument extends Document, Omit<League, '_id' | 'club' | 'attachedTournaments' | 'players' | 'removedPlayers'> {
   _id: Types.ObjectId;
   club: Types.ObjectId;
   attachedTournaments: Types.ObjectId[];
@@ -81,6 +100,25 @@ export interface LeagueDocument extends Document, Omit<League, '_id' | 'club' | 
       adjustedBy: Types.ObjectId;
       adjustedAt: Date;
     }>;
+  }>;
+  removedPlayers?: Array<{
+    player: Types.ObjectId;
+    totalPoints: number;
+    tournamentPoints: Array<{
+      tournament: Types.ObjectId;
+      points: number;
+      position: number;
+      eliminatedIn: string;
+    }>;
+    manualAdjustments: Array<{
+      points: number;
+      reason: string;
+      adjustedBy: Types.ObjectId;
+      adjustedAt: Date;
+    }>;
+    reason: string;
+    removedBy: Types.ObjectId;
+    removedAt: Date;
   }>;
   toJSON: () => League;
 }

@@ -3000,7 +3000,7 @@ export class TournamentService {
                                 // Final round: winner gets 1st, loser gets 2nd
                                 playerStandings.set(winnerId, 1);
                                 playerStandings.set(loserId, 2);
-                            } else {
+            } else {
                                 // Other rounds: losers get position equal to players in this round
                                 playerStandings.set(loserId, positionForThisRound);
                             }
@@ -3319,8 +3319,8 @@ export class TournamentService {
             // Reset all boards to idle status (boards are now part of tournament)
             // Handle both new (tournament.boards) and legacy (club.boards) approaches
             const updateData: any = {
-                'tournamentSettings.status': 'finished',
-                'tournamentPlayers': tournament.tournamentPlayers
+                        'tournamentSettings.status': 'finished',
+                        'tournamentPlayers': tournament.tournamentPlayers
             };
 
             if (tournament.boards && tournament.boards.length > 0) {

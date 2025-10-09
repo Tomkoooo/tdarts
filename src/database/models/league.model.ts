@@ -36,6 +36,17 @@ const leaguePlayerSchema = new mongoose.Schema({
   manualAdjustments: [manualAdjustmentSchema],
 }, { _id: false });
 
+// Removed Player Schema
+const removedPlayerSchema = new mongoose.Schema({
+  player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
+  totalPoints: { type: Number, required: true },
+  tournamentPoints: [tournamentPointsSchema],
+  manualAdjustments: [manualAdjustmentSchema],
+  reason: { type: String, required: true },
+  removedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  removedAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 // Main League Schema
 const leagueSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -43,6 +54,7 @@ const leagueSchema = new mongoose.Schema({
   club: { type: mongoose.Schema.Types.ObjectId, ref: 'Club', required: true },
   attachedTournaments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tournament' }],
   players: [leaguePlayerSchema],
+  removedPlayers: [removedPlayerSchema],
   pointsConfig: { type: pointsConfigSchema, required: true, default: DEFAULT_LEAGUE_POINTS_CONFIG },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   isActive: { type: Boolean, default: true },
@@ -145,6 +157,29 @@ leagueSchema.set('toJSON', {
             ? adj.adjustedBy._id.toString() 
             : adj.adjustedBy.toString()
         })) || []
+      }));
+    }
+    if (ret.removedPlayers) {
+      ret.removedPlayers = ret.removedPlayers.map((removal: any) => ({
+        ...removal,
+        player: typeof removal.player === 'object' && removal.player._id 
+          ? removal.player._id.toString() 
+          : removal.player.toString(),
+        tournamentPoints: removal.tournamentPoints?.map((tp: any) => ({
+          ...tp,
+          tournament: typeof tp.tournament === 'object' && tp.tournament._id 
+            ? tp.tournament._id.toString() 
+            : tp.tournament.toString()
+        })) || [],
+        manualAdjustments: removal.manualAdjustments?.map((adj: any) => ({
+          ...adj,
+          adjustedBy: typeof adj.adjustedBy === 'object' && adj.adjustedBy._id 
+            ? adj.adjustedBy._id.toString() 
+            : adj.adjustedBy.toString()
+        })) || [],
+        removedBy: typeof removal.removedBy === 'object' && removal.removedBy._id 
+          ? removal.removedBy._id.toString() 
+          : removal.removedBy.toString()
       }));
     }
     return ret;

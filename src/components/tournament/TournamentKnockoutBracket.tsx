@@ -3,6 +3,110 @@ import axios from 'axios';
 import LegsViewModal from './LegsViewModal';
 import { toast } from 'react-hot-toast';
 
+// Error Boundary Component
+class KnockoutErrorBoundary extends React.Component<
+  { children: React.ReactNode; tournamentCode: string; userClubRole: string },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Knockout component error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="mt-6">
+          <div className="alert alert-error mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <div className="font-bold">Hiba történt a knockout bracket betöltése során</div>
+              <div className="text-sm">{this.state.error?.message || 'Ismeretlen hiba'}</div>
+            </div>
+          </div>
+          
+          <div className="card bg-base-100 shadow-xl">
+            <div className="card-body">
+              <h2 className="card-title text-error">Sürgősségi Helyreállítás</h2>
+              <p className="text-base-content/70 mb-4">
+                A knockout bracket hibás adatokat tartalmaz. Az alábbi műveletek segíthetnek a probléma megoldásában:
+              </p>
+              
+              <div className="space-y-3">
+                {(this.props.userClubRole === 'admin' || this.props.userClubRole === 'moderator') && (
+                  <>
+                    <button
+                      className="btn btn-error btn-block"
+                      onClick={async () => {
+                        if (confirm('Biztosan törölni szeretnéd az utolsó kört? Ez visszaállíthatja a működést.')) {
+                          try {
+                            const response = await axios.post(`/api/tournaments/${this.props.tournamentCode}/deleteLastRound`);
+                            if (response.data && response.data.success) {
+                              toast.success('Utolsó kör törölve! Frissítsd az oldalt.');
+                              this.setState({ hasError: false, error: null });
+                              window.location.reload();
+                            } else {
+                              toast.error('Nem sikerült törölni az utolsó kört.');
+                            }
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.error || 'Nem sikerült törölni az utolsó kört.');
+                          }
+                        }
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Utolsó kör törlése (Sürgősségi)
+                    </button>
+                    
+                    <div className="divider">VAGY</div>
+                  </>
+                )}
+                
+                <button
+                  className="btn btn-primary btn-block"
+                  onClick={() => {
+                    this.setState({ hasError: false, error: null });
+                    window.location.reload();
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Oldal újratöltése
+                </button>
+                
+                <div className="alert alert-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <div className="text-sm">
+                    <p className="font-bold">Ha a probléma továbbra is fennáll:</p>
+                    <p>Vedd fel a kapcsolatot az adminisztrátorokkal a Hibabejelentés menüpont alatt.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 interface TournamentKnockoutBracketProps {
   tournamentCode: string;
   userClubRole: 'admin' | 'moderator' | 'member' | 'none';
@@ -44,7 +148,7 @@ interface KnockoutRound {
   matches: KnockoutMatch[];
 }
 
-const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({ 
+const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps> = ({ 
   tournamentCode, 
   userClubRole, 
   tournamentPlayers = [],
@@ -111,6 +215,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   const [deletingMatch, setDeletingMatch] = useState(false);
   const [showDeleteLastRoundModal, setShowDeleteLastRoundModal] = useState(false);
   const [deletingLastRound, setDeletingLastRound] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     fetchKnockoutData();
@@ -181,11 +286,33 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
     try {
       const response = await axios.get(`/api/tournaments/${tournamentCode}/knockout`);
       if (response.data && response.data.success) {
-        setKnockoutData(response.data.knockout || []);
+        // Validate knockout data structure
+        const knockoutRounds = response.data.knockout || [];
+        
+        // Check for data integrity
+        for (const round of knockoutRounds) {
+          if (!round.matches) {
+            console.warn(`Round ${round.round} has no matches array`);
+            round.matches = [];
+          }
+          
+          // Validate each match
+          for (const match of round.matches) {
+            if (match.player1 && typeof match.player1 === 'object' && !match.player1._id) {
+              console.warn('Invalid player1 data in match:', match);
+            }
+            if (match.player2 && typeof match.player2 === 'object' && !match.player2._id) {
+              console.warn('Invalid player2 data in match:', match);
+            }
+          }
+        }
+        
+        setKnockoutData(knockoutRounds);
       } else {
         setError(response.data?.error || 'Nem sikerült betölteni a knockout adatokat.');
       }
     } catch (err: any) {
+      console.error('Error fetching knockout data:', err);
       setError(err.response?.data?.error || 'Nem sikerült betölteni a knockout adatokat.');
     } finally {
       setLoading(false);
@@ -436,19 +563,19 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         }
       } else {
         // Match already exists, update via match settings API
-        const matchId = typeof editingMatch.matchReference === 'object' ? editingMatch.matchReference._id : editingMatch.matchReference;
+      const matchId = typeof editingMatch.matchReference === 'object' ? editingMatch.matchReference._id : editingMatch.matchReference;
         const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
           player1Id: editPairPlayer1 || editingMatch.player1?._id,
           player2Id: editPairPlayer2 || editingMatch.player2?._id,
           scorerId: editPairScorer || undefined,
           boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined
-        });
-        
-        if (response.data && response.data.success) {
-          await fetchKnockoutData();
+      });
+      
+      if (response.data && response.data.success) {
+        await fetchKnockoutData();
           toast.success('Meccs sikeresen frissítve!');
-          setShowMatchPlayerEditModal(false);
-          setEditingMatch(null);
+        setShowMatchPlayerEditModal(false);
+        setEditingMatch(null);
           // Reset form
           setEditPairPlayer1('');
           setEditPairPlayer2('');
@@ -457,7 +584,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
           setEditPairPlayer1Search('');
           setEditPairPlayer2Search('');
           setEditPairScorerSearch('');
-        } else {
+      } else {
           toast.error(response.data?.error || 'Nem sikerült frissíteni a meccset.');
         }
       }
@@ -524,6 +651,22 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
       setDeletingLastRound(false);
     }
   };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Handle ESC key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isFullscreen]);
 
   const handlePlayerSelectionForPairing = (playerId: string) => {
     setSelectedPlayersForPairing(prev => {
@@ -796,7 +939,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
   }
 
   return (
-    <div className="mt-6">
+    <>
       <style jsx>{`
         .scrollbar-thin::-webkit-scrollbar {
           height: 8px;
@@ -820,26 +963,39 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         
         /* Compact match cards */
         .match-card-compact {
-          min-width: 200px;
-          max-width: 240px;
+          min-width: 220px;
+          max-width: 260px;
         }
         
         .match-card-compact .card-body {
           padding: 0.75rem;
+          padding-bottom: 2.5rem; /* Extra space for action buttons */
         }
         
         .match-card-compact .player-row {
           padding: 0.5rem;
           font-size: 0.875rem;
         }
+        
+        .match-card-compact .action-buttons {
+          position: absolute;
+          bottom: 0.5rem;
+          left: 0.5rem;
+          display: flex;
+          gap: 0.25rem;
+        }
       `}</style>
       
+      <div className={`${isFullscreen ? 'fixed inset-0 bg-base-100 z-50 overflow-hidden' : 'mt-6'}`}>
+      <div className={`${isFullscreen ? 'h-full flex flex-col' : ''}`}>
+      
+      {!isFullscreen && (
       <div className="space-y-3 mb-4">
-        {/* Title and Zoom Controls Row */}
+        {/* Title and Controls Row */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
+        <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
           
-          {/* Zoom Controls - Always visible */}
+          {/* Zoom and Fullscreen Controls */}
           <div className="flex items-center gap-2 bg-base-200 rounded-lg p-1.5">
             <button
               className="btn btn-xs btn-ghost"
@@ -869,6 +1025,22 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
+            <div className="w-px h-6 bg-base-300 mx-1"></div>
+            <button
+              className="btn btn-xs btn-ghost"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Kilépés a teljes képernyőből" : "Teljes képernyő"}
+            >
+              {isFullscreen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
         
@@ -876,62 +1048,62 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
         {(userClubRole === 'admin' || userClubRole === 'moderator') && (
           <div className="flex flex-col sm:flex-row gap-2 w-full">
             {currentKnockoutMethod === 'manual' && (
-              <>
-                <button
+            <>
+              <button
                   className="btn btn-secondary btn-sm w-full sm:flex-1"
-                  onClick={() => setShowGenerateEmptyRoundsModal(true)}
-                  disabled={generatingEmptyRounds}
-                >
-                  {generatingEmptyRounds ? (
-                    <>
-                      <span className="loading loading-spinner loading-xs"></span>
+                onClick={() => setShowGenerateEmptyRoundsModal(true)}
+                disabled={generatingEmptyRounds}
+              >
+                {generatingEmptyRounds ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs"></span>
                       <span className="hidden sm:inline">Generálás...</span>
                       <span className="sm:hidden">Körök...</span>
-                    </>
-                  ) : (
+                  </>
+                ) : (
                     <>
-                      <span className="hidden sm:inline">Üres körök generálása</span>
+                      <span className="hidden sm:inline">Üres kör hozzáadása</span>
                       <span className="sm:hidden">Üres körök</span>
                     </>
-                  )}
-                </button>
-                <button
+                )}
+              </button>
+              <button
                   className="btn btn-accent btn-sm w-full sm:flex-1"
-                  onClick={() => {
-                    setSelectedRound(1);
-                    setShowRandomPairingModal(true);
-                  }}
-                  disabled={generatingPairings}
+                onClick={() => {
+                  setSelectedRound(1);
+                  setShowRandomPairingModal(true);
+                }}
+                disabled={generatingPairings}
+              >
+                {generatingPairings ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs"></span>
+                    Párosítás...
+                  </>
+                ) : (
+                  'Random párosítás'
+                )}
+              </button>
+              {knockoutData.length > 0 && (
+                  <>
+                <button
+                      className="btn btn-primary btn-sm w-full sm:flex-1"
+                  onClick={() => setShowGenerateNextRound(true)}
+                  disabled={generatingNextRound}
                 >
-                  {generatingPairings ? (
+                  {generatingNextRound ? (
                     <>
                       <span className="loading loading-spinner loading-xs"></span>
-                      Párosítás...
-                    </>
-                  ) : (
-                    'Random párosítás'
-                  )}
-                </button>
-                {knockoutData.length > 0 && (
-                  <>
-                    <button
-                      className="btn btn-primary btn-sm w-full sm:flex-1"
-                      onClick={() => setShowGenerateNextRound(true)}
-                      disabled={generatingNextRound}
-                    >
-                      {generatingNextRound ? (
-                        <>
-                          <span className="loading loading-spinner loading-xs"></span>
                           <span className="hidden sm:inline">Következő kör...</span>
                           <span className="sm:hidden">Köv. kör...</span>
-                        </>
-                      ) : (
+                    </>
+                  ) : (
                         <>
                           <span className="hidden sm:inline">Következő kör generálása</span>
                           <span className="sm:hidden">Következő kör</span>
                         </>
-                      )}
-                    </button>
+                  )}
+                </button>
                     <button
                       className="btn btn-error btn-sm w-full sm:flex-1"
                       onClick={() => setShowDeleteLastRoundModal(true)}
@@ -950,45 +1122,164 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                         </>
                       )}
                     </button>
-                  </>
-                )}
+            </>
+          )}
               </>
             )}
             {knockoutData.length > 0 && currentKnockoutMethod === 'automatic' && (
-              <button
+            <button
                 className="btn btn-primary btn-sm w-full"
-                onClick={() => setShowGenerateNextRound(true)}
-                disabled={
-                  generatingNextRound ||
-                  knockoutData.some(
-                    (round) =>
-                      round.matches &&
-                      round.matches.some(
-                        (match) => match.matchReference?.status !== 'finished'
-                      )
-                  )
-                }
-              >
-                {generatingNextRound ? (
-                  <>
-                    <span className="loading loading-spinner loading-xs"></span>
+              onClick={() => setShowGenerateNextRound(true)}
+              disabled={
+                generatingNextRound ||
+                knockoutData.some(
+                  (round) =>
+                    round.matches &&
+                    round.matches.some(
+                      (match) => match.matchReference?.status !== 'finished'
+                    )
+                )
+              }
+            >
+              {generatingNextRound ? (
+                <>
+                  <span className="loading loading-spinner loading-xs"></span>
                     <span className="hidden sm:inline">Következő kör...</span>
                     <span className="sm:hidden">Köv. kör...</span>
-                  </>
-                ) : (
+                </>
+              ) : (
                   <>
                     <span className="hidden sm:inline">Következő kör generálása</span>
                     <span className="sm:hidden">Következő kör</span>
                   </>
-                )}
-              </button>
-            )}
-          </div>
+              )}
+            </button>
+          )}
+        </div>
         )}
       </div>
+      )}
 
       {/* Knockout Bracket Display - Horizontal Layout with Zoom */}
-      <div className="overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100" style={{ maxHeight: '800px' }}>
+      <div 
+        className={`overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100 ${isFullscreen ? 'flex-1' : ''}`}
+        style={{ maxHeight: isFullscreen ? 'none' : '800px' }}
+      >
+        {/* Fullscreen Controls */}
+        {isFullscreen && (
+          <div className="sticky top-0 left-0 right-0 bg-base-100 border-b border-base-300 p-4 z-50 flex justify-between items-center">
+            <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
+            
+            <div className="flex items-center gap-4">
+              {/* Zoom Controls in Fullscreen */}
+              <div className="flex items-center gap-2 bg-base-200 rounded-lg p-1.5">
+                <button
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}
+                  title="Kicsinyítés"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                  </svg>
+                </button>
+                <span className="text-xs font-mono min-w-[45px] text-center">{Math.round(zoomLevel * 100)}%</span>
+                <button
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => setZoomLevel(prev => Math.min(1.5, prev + 0.1))}
+                  title="Nagyítás"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                </button>
+                <button
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => setZoomLevel(1)}
+                  title="Alaphelyzet"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Action Buttons in Fullscreen */}
+              {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                <div className="flex gap-2">
+                  {currentKnockoutMethod === 'manual' && (
+                    <>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowGenerateEmptyRoundsModal(true)}
+                        disabled={generatingEmptyRounds}
+                      >
+                        Üres körök
+                      </button>
+                      <button
+                        className="btn btn-accent btn-sm"
+                        onClick={() => {
+                          setSelectedRound(1);
+                          setShowRandomPairingModal(true);
+                        }}
+                        disabled={generatingPairings}
+                      >
+                        Random párosítás
+                      </button>
+                      {knockoutData.length > 0 && (
+                        <>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => setShowGenerateNextRound(true)}
+                            disabled={generatingNextRound}
+                          >
+                            Következő kör
+                          </button>
+                          <button
+                            className="btn btn-error btn-sm"
+                            onClick={() => setShowDeleteLastRoundModal(true)}
+                            disabled={deletingLastRound}
+                          >
+                            Utolsó kör törlése
+                          </button>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {knockoutData.length > 0 && currentKnockoutMethod === 'automatic' && (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setShowGenerateNextRound(true)}
+                      disabled={
+                        generatingNextRound ||
+                        knockoutData.some(
+                          (round) =>
+                            round.matches &&
+                            round.matches.some(
+                              (match) => match.matchReference?.status !== 'finished'
+                            )
+                        )
+                      }
+                    >
+                      Következő kör
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Exit Fullscreen */}
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={toggleFullscreen}
+                title="Kilépés"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div 
           className="bracket-container flex gap-16 min-w-max p-6" 
           style={{ 
@@ -1008,8 +1299,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               return round.matches && round.matches.length > 0;
             })
             .map((round, roundIndex) => {
-       
-              
+              try {
               const roundMatches = round.matches || [];
               const nextRound = knockoutData[roundIndex + 1];
               const nextRoundMatches = nextRound?.matches || [];
@@ -1124,7 +1414,8 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                               !match.player1 && !match.player2 ? 'border-dashed border-base-300' :
                               !match.player2 ? 'border-warning' : 'border-base-200'
                             }`}>
-                              <div className="card-body">
+                              <div className="card-body relative">
+                                {/* Status and Board - Top Right */}
                                 <div className="flex justify-between items-center mb-3">
                                   <span className={`badge badge-sm ${getStatusColor(match.matchReference?.status || 'pending')}`}>
                                     {getStatusText(match.matchReference?.status || 'pending')}
@@ -1138,57 +1429,6 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                       return displayName;
                                     })() : 'Bye meccs'}
                                   </span>
-                                  <div className="flex gap-1">
-                                    {(match.matchReference?.status === 'ongoing' || match.matchReference?.status === 'finished') && match.player1 && match.player2 && (
-                                      <button
-                                        className="btn btn-xs btn-ghost"
-                                        onClick={() => handleViewLegs(match)}
-                                        title="Legek megtekintése"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                      </button>
-                                    )}
-                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && match.matchReference && match.player1 && match.player2 && (
-                                      <button
-                                        className="btn btn-xs btn-ghost"
-                                        onClick={() => handleMatchEdit(match)}
-                                        title="Meccs eredmény szerkesztése"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                      </button>
-                                    )}
-                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && match.matchReference && (
-                                      <button
-                                        className="btn btn-xs btn-ghost"
-                                        onClick={() => handleEditMatchSettings(match)}
-                                        title="Meccs beállítások szerkesztése"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                      </button>
-                                    )}
-                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
-                                      <button
-                                        className="btn btn-xs btn-ghost text-error"
-                                        onClick={() => {
-                                          setMatchToDelete({ match, round: round.round, index: matchIndex });
-                                          setShowDeleteMatchModal(true);
-                                        }}
-                                        title="Meccs törlése"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                      </button>
-                                    )}
-                                  </div>
                                 </div>
                                 
                                 {/* Scorer information */}
@@ -1279,6 +1519,59 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                                     </span>
                                   </div>
                                 </div>
+
+                                {/* Action Buttons - Bottom Left */}
+                                <div className="action-buttons">
+                                    {(match.matchReference?.status === 'ongoing' || match.matchReference?.status === 'finished') && match.player1 && match.player2 && (
+                                      <button
+                                        className="btn btn-xs btn-ghost"
+                                        onClick={() => handleViewLegs(match)}
+                                        title="Legek megtekintése"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && match.matchReference && match.player1 && match.player2 && (
+                                      <button
+                                        className="btn btn-xs btn-ghost"
+                                        onClick={() => handleMatchEdit(match)}
+                                        title="Meccs eredmény rögzítése"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                    {(userClubRole === 'admin' || userClubRole === 'moderator') && match.matchReference && (
+                                      <button
+                                        className="btn btn-xs btn-ghost"
+                                        onClick={() => handleEditMatchSettings(match)}
+                                        title="Meccs beállítások szerkesztése"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                  {(userClubRole === 'admin' || userClubRole === 'moderator') && currentKnockoutMethod === 'manual' && (
+                                        <button
+                                      className="btn btn-xs btn-ghost text-error"
+                                          onClick={() => {
+                                        setMatchToDelete({ match, round: round.round, index: matchIndex });
+                                        setShowDeleteMatchModal(true);
+                                          }}
+                                      title="Meccs törlése"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                          </svg>
+                                        </button>
+                                      )}
+                                    </div>
                               </div>
                             </div>
                             
@@ -1314,13 +1607,30 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   </div>
                 </div>
               );
+              } catch (err) {
+                console.error('Error rendering round:', round.round, err);
+                return (
+                  <div key={round.round} className="flex flex-col relative min-w-[240px]">
+                    <div className="alert alert-error">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <div className="font-bold">Hiba a {round.round}. kör megjelenítésében</div>
+                        <div className="text-sm">Kérjük használd az &quot;Utolsó kör törlése&quot; gombot.</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
             })}
         </div>
       </div>
 
+      {/* Modals - Inside fullscreen container */}
       {/* Generate Next Round Modal */}
       {showGenerateNextRound && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Következő Kör Generálása</h3>
             <p className="text-base-content/70 mb-4">
@@ -1373,9 +1683,9 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Match Edit Modal */}
       {showMatchEditModal && selectedMatch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-center mb-6">Meccs Szerkesztése</h3>
+            <h3 className="text-2xl font-bold text-center mb-6">Meccs Eredmény Rögzítése</h3>
             
             <div className="text-center mb-6">
               <h4 className="text-lg font-bold mb-2">
@@ -1383,6 +1693,22 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               </h4>
               <p className="text-base-content/70">Állítsd be a meccs eredményét és statisztikáit</p>
             </div>
+            
+            {/* Warning for ongoing/pending matches */}
+            {(selectedMatch.matchReference?.status === 'ongoing' || selectedMatch.matchReference?.status === 'pending') && (
+              <div className="alert alert-warning mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <div className="font-bold">Figyelem!</div>
+                  <div className="text-sm">
+                    Az eredmény mentése után a meccs <strong>befejezett</strong> állapotba kerül és az írói programon nem lesz elérhető.
+                    {selectedMatch.matchReference?.status === 'ongoing' && ' A folyamatban lévő meccs adatai elvesznek.'}
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* Player 1 Stats */}
@@ -1516,7 +1842,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Add Match Modal */}
       {showAddMatchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Meccs Hozzáadása</h3>
             <p className="text-base-content/70 mb-4">
@@ -1777,15 +2103,15 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
               >
                 Mégse
               </button>
-              <button
-                className="btn btn-success flex-1"
-                onClick={handleAddMatch}
+                <button
+                  className="btn btn-success flex-1"
+                  onClick={handleAddMatch}
                 disabled={
                   addingMatch || 
                   (!!selectedPlayer1 && !!selectedPlayer2 && selectedPlayer1 === selectedPlayer2) ||
                   ((!!selectedPlayer1 || !!selectedPlayer2) && !selectedBoard)
                 }
-              >
+                >
                 {addingMatch ? (
                   <>
                     <span className="loading loading-spinner loading-sm"></span>
@@ -1802,7 +2128,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Generate Empty Rounds Modal */}
       {showGenerateEmptyRoundsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Üres Körök Generálása</h3>
             <p className="text-base-content/70 mb-4">
@@ -1852,7 +2178,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Random Pairing Modal */}
       {showRandomPairingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Random Párosítás</h3>
             <p className="text-base-content/70 mb-4">
@@ -1931,7 +2257,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Match Player Edit Modal */}
       {showMatchPlayerEditModal && editingMatch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">
               {!editingMatch.matchReference ? 'Meccs Létrehozása' : 'Meccs Szerkesztése'}
@@ -1969,12 +2295,12 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                   {showEditPairPlayer1Dropdown && editPairPlayer1Search.length > 0 && (
                     <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                       {getFilteredPlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
-                        const playerId = player.playerReference?._id || player.playerReference || player._id;
-                        const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
-                        
-                        return (
-                          <div
-                            key={playerId}
+                const playerId = player.playerReference?._id || player.playerReference || player._id;
+                const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
+                
+                return (
+                  <div
+                    key={playerId}
                             className="p-2 hover:bg-base-200 cursor-pointer text-sm"
                             onClick={() => {
                               setEditPairPlayer1(playerId);
@@ -1983,9 +2309,9 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                             }}
                           >
                             {playerName}
-                          </div>
-                        );
-                      })}
+                  </div>
+                );
+              })}
                       {getFilteredPlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).length === 0 && (
                         <div className="p-2 text-sm text-base-content/60">Nincs találat</div>
                       )}
@@ -2195,7 +2521,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Match Settings Edit Modal */}
       {showMatchSettingsModal && editingMatchSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Meccs Beállítások Szerkesztése</h3>
             
@@ -2488,7 +2814,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Delete Match Confirmation Modal */}
       {showDeleteMatchModal && matchToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Meccs Törlése</h3>
             <p className="text-base-content/70 mb-4">
@@ -2502,7 +2828,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
                 <div>
                   <div className="font-bold">{matchToDelete.match.player1.name} vs {matchToDelete.match.player2.name}</div>
                   <div className="text-sm">{matchToDelete.round}. kör</div>
-                </div>
+    </div>
               </div>
             )}
             <div className="flex gap-3">
@@ -2537,7 +2863,7 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
 
       {/* Delete Last Round Confirmation Modal */}
       {showDeleteLastRoundModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-base-100 rounded-2xl p-6 shadow-2xl max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Utolsó Kör Visszavonása</h3>
             <p className="text-base-content/70 mb-4">
@@ -2578,7 +2904,21 @@ const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = ({
           </div>
         </div>
       )}
-    </div>
+      </div>
+      </div>
+    </>
+  );
+};
+
+// Wrapper component with Error Boundary
+const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = (props) => {
+  return (
+    <KnockoutErrorBoundary 
+      tournamentCode={props.tournamentCode} 
+      userClubRole={props.userClubRole}
+    >
+      <TournamentKnockoutBracketContent {...props} />
+    </KnockoutErrorBoundary>
   );
 };
 

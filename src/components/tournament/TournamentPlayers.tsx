@@ -272,7 +272,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
 
       
       
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-2 max-h-[600px] overflow-y-auto pr-2">
         {localPlayers.length === 0 && <li className="text-base-content/60">Nincs játékos.</li>}
         {localPlayers.map((player) => (
           

@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from '@tabler/icons-react';
 
 interface ClubLayoutProps {
@@ -16,7 +17,24 @@ interface ClubLayoutProps {
 }
 
 export default function ClubLayout({ userRole, clubName, summary, players, tournaments, leagues, settings, defaultPage = 'summary' }: ClubLayoutProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'summary' | 'players' | 'tournaments' | 'leagues' | 'settings'>(defaultPage);
+
+  // Sync activeTab with URL param on mount and when searchParams change
+  useEffect(() => {
+    const pageParam = searchParams.get('page') as 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' | null;
+    if (pageParam && ['summary', 'players', 'tournaments', 'leagues', 'settings'].includes(pageParam)) {
+      setActiveTab(pageParam);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tab: 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings') => {
+    setActiveTab(tab);
+    const currentPath = window.location.pathname;
+    router.push(`${currentPath}?page=${tab}`, { scroll: false });
+  };
 
   const tabs = [
     { key: 'summary', label: 'Áttekintés', icon: <IconHome size={18} /> },
@@ -52,7 +70,7 @@ export default function ClubLayout({ userRole, clubName, summary, players, tourn
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
+                  onClick={() => handleTabChange(tab.key as any)}
                   className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg text-sm md:text-base font-medium transition-colors duration-150 ${
                     activeTab === tab.key
                       ? 'bg-primary text-white shadow-md'

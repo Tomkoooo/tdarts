@@ -3,6 +3,7 @@ import { IconChevronRight, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { TournamentSettings } from '@/interface/tournament.interface';
 import Link from 'next/link';
+import NumericInput from '@/components/ui/NumericInput';
 
 interface CreateTournamentModalProps {
   isOpen: boolean;
@@ -280,10 +281,10 @@ export default function CreateTournamentModal({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Nevezési díj (Ft)</label>
-                <input
-                  type="number"
+                <NumericInput
                   value={settings.entryFee}
-                  onChange={e => handleSettingsChange('entryFee', parseInt(e.target.value))}
+                  onChange={(value) => handleSettingsChange('entryFee', value)}
+                  min={0}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                   placeholder="Pl.: 2000"
                 />
@@ -380,24 +381,28 @@ export default function CreateTournamentModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Kezdő pontszám</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={settings.startingScore}
-                    onChange={(e) => handleSettingsChange('startingScore', parseInt(e.target.value))}
+                    onChange={(value) => handleSettingsChange('startingScore', value)}
+                    min={101}
+                    max={1001}
                     className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Maximális létszám</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={settings.maxPlayers}
-                    onChange={e => {if (Number(e.target.value) < 4) {
-                      setError('A maximális létszám legalább 4 fő kell legyen');
+                    onChange={(value) => {
+                      if (value < 4) {
+                        setError('A maximális létszám legalább 4 fő kell legyen');
                       } else {
-                        handleSettingsChange('maxPlayers', Number(e.target.value))
+                        setError('');
+                        handleSettingsChange('maxPlayers', value);
                       }
                     }}
+                    min={4}
+                    max={256}
                     className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                     placeholder="Maximális játékosok száma"
                   />

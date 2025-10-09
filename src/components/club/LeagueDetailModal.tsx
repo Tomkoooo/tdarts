@@ -145,6 +145,37 @@ export default function LeagueDetailModal({
     }
   };
 
+  const handleRemovePlayerFromLeague = async (playerId: string, playerName: string, reason: string) => {
+    try {
+      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/players/${playerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason
+        }),
+      });
+
+      if (response.ok) {
+        fetchLeagueStats();
+        showSuccessToast(`${playerName} sikeresen eltávolítva a ligából!`);
+      } else {
+        const errorData = await response.json();
+        showErrorToast(errorData.error || 'Hiba a játékos eltávolítása során', {
+          context: 'Liga játékos eltávolítása',
+          error: errorData.error
+        });
+      }
+    } catch (error) {
+      console.error('Error removing player from league:', error);
+      showErrorToast('Hiba a játékos eltávolítása során', {
+        context: 'Liga játékos eltávolítása',
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+      });
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -230,6 +261,7 @@ export default function LeagueDetailModal({
                   canManage={canManage}
                   onAdjustPoints={handleManualPointsAdjustment}
                   onAddPlayer={handleAddPlayerToLeague}
+                  onRemovePlayer={handleRemovePlayerFromLeague}
                   league={league}
                 />
               )}
@@ -267,20 +299,25 @@ interface LeaderboardTabProps {
   canManage: boolean;
   onAdjustPoints: (playerId: string, points: number, reason: string) => void;
   onAddPlayer: (player: any) => void;
+  onRemovePlayer: (playerId: string, playerName: string, reason: string) => void;
   league: League;
 }
 
-function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, league }: LeaderboardTabProps) {
+function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, onRemovePlayer, league }: LeaderboardTabProps) {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string } | null>(null);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string; currentPoints: number } | null>(null);
+  const [adjustmentMode, setAdjustmentMode] = useState<'adjust' | 'set'>('adjust');
   const [adjustmentPoints, setAdjustmentPoints] = useState<string>('');
   const [adjustmentReason, setAdjustmentReason] = useState<string>('');
+  const [removeReason, setRemoveReason] = useState<string>('');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const openAdjustModal = (playerId: string, playerName: string) => {
-    setSelectedPlayer({ id: playerId, name: playerName });
+  const openAdjustModal = (playerId: string, playerName: string, currentPoints: number) => {
+    setSelectedPlayer({ id: playerId, name: playerName, currentPoints });
     setAdjustmentPoints('');
     setAdjustmentReason('');
+    setAdjustmentMode('adjust');
     setShowAdjustModal(true);
   };
 
@@ -289,15 +326,43 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
     setSelectedPlayer(null);
     setAdjustmentPoints('');
     setAdjustmentReason('');
+    setAdjustmentMode('adjust');
+  };
+
+  const openRemoveModal = (playerId: string, playerName: string, currentPoints: number) => {
+    setSelectedPlayer({ id: playerId, name: playerName, currentPoints });
+    setRemoveReason('');
+    setShowRemoveModal(true);
+  };
+
+  const closeRemoveModal = () => {
+    setShowRemoveModal(false);
+    setSelectedPlayer(null);
+    setRemoveReason('');
+  };
+
+  const handleRemovePlayer = () => {
+    if (!selectedPlayer) return;
+    
+    if (!removeReason.trim()) {
+      showErrorToast('Kérlek add meg az eltávolítás okát!', {
+        context: 'Liga játékos eltávolítása',
+        showReportButton: false
+      });
+      return;
+    }
+
+    onRemovePlayer(selectedPlayer.id, selectedPlayer.name, removeReason);
+    closeRemoveModal();
   };
 
   const handleAdjustment = () => {
     if (!selectedPlayer) return;
     
-    const points = parseInt(adjustmentPoints);
+    const inputValue = parseInt(adjustmentPoints);
     
-    if (isNaN(points) || points === 0) {
-      showErrorToast('Kérlek adj meg egy érvényes pontszámot (nem lehet 0)!', {
+    if (isNaN(inputValue)) {
+      showErrorToast('Kérlek adj meg egy érvényes pontszámot!', {
         context: 'Liga pontszám módosítása',
         showReportButton: false
       });
@@ -312,7 +377,31 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
       return;
     }
 
-    onAdjustPoints(selectedPlayer.id, points, adjustmentReason);
+    // Calculate adjustment based on mode
+    let pointsToAdjust = inputValue;
+    if (adjustmentMode === 'set') {
+      // Calculate difference: new target - current points
+      pointsToAdjust = inputValue - selectedPlayer.currentPoints;
+      
+      if (pointsToAdjust === 0) {
+        showErrorToast('Az új pontszám megegyezik a jelenlegivel!', {
+          context: 'Liga pontszám módosítása',
+          showReportButton: false
+        });
+        return;
+      }
+    } else {
+      // Adjust mode - check if not 0
+      if (pointsToAdjust === 0) {
+        showErrorToast('A pontszám változás nem lehet 0!', {
+          context: 'Liga pontszám módosítása',
+          showReportButton: false
+        });
+        return;
+      }
+    }
+
+    onAdjustPoints(selectedPlayer.id, pointsToAdjust, adjustmentReason);
     closeAdjustModal();
     showSuccessToast('Pontszám sikeresen módosítva!');
   };
@@ -373,10 +462,10 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="table table-zebra w-full">
-              <thead>
-                <tr>
+        <div className="overflow-x-auto">
+          <table className="table table-zebra w-full">
+            <thead>
+              <tr>
                   <th className="text-xs sm:text-sm">#</th>
                   <th className="text-xs sm:text-sm">Játékos</th>
                   <th className="text-xs sm:text-sm">Pont</th>
@@ -384,21 +473,21 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
                   <th className="text-xs sm:text-sm hidden md:table-cell">Átlag</th>
                   <th className="text-xs sm:text-sm hidden lg:table-cell">Legjobb</th>
                   {canManage && <th className="text-xs sm:text-sm"></th>}
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.map((entry) => (
-                  <tr key={entry.player._id}>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((entry) => (
+                <tr key={entry.player._id}>
                     <td className="py-2">
                       <div className="flex items-center gap-1">
                         <span className="font-bold text-xs sm:text-sm">{entry.position}</span>
-                        {entry.position <= 3 && (
+                      {entry.position <= 3 && (
                           <span className="text-xs">
-                            {entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉'}
+                          {entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉'}
                           </span>
-                        )}
-                      </div>
-                    </td>
+                      )}
+                    </div>
+                  </td>
                     <td className="font-medium text-xs sm:text-sm py-2">
                       <div className="truncate max-w-[120px] sm:max-w-[200px]" title={entry.player.name}>
                         {entry.player.name}
@@ -406,21 +495,30 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
                     </td>
                     <td className="py-2">
                       <span className="font-mono font-bold text-primary text-xs sm:text-sm">
-                        {entry.totalPoints}
-                      </span>
-                    </td>
+                      {entry.totalPoints}
+                    </span>
+                  </td>
                     <td className="hidden sm:table-cell text-xs sm:text-sm py-2">{entry.tournamentsPlayed}</td>
                     <td className="hidden md:table-cell text-xs sm:text-sm py-2">{entry.averagePosition > 0 ? entry.averagePosition.toFixed(1) : '-'}</td>
                     <td className="hidden lg:table-cell text-xs sm:text-sm py-2">{entry.bestPosition > 0 ? entry.bestPosition : '-'}</td>
-                    {canManage && (
+                  {canManage && (
                       <td className="py-2">
-                        <button
-                          onClick={() => openAdjustModal(entry.player._id, entry.player.name)}
-                          className="btn btn-ghost btn-xs"
-                          title="Pontok módosítása"
-                        >
-                          <IconEdit size={14} />
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => openAdjustModal(entry.player._id, entry.player.name, entry.totalPoints)}
+                            className="btn btn-ghost btn-xs"
+                            title="Pontok módosítása"
+                          >
+                            <IconEdit size={14} />
+                          </button>
+                          <button
+                            onClick={() => openRemoveModal(entry.player._id, entry.player.name, entry.totalPoints)}
+                            className="btn btn-ghost btn-xs text-error"
+                            title="Játékos eltávolítása"
+                          >
+                            <IconTrash size={14} />
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -429,38 +527,127 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
             </table>
           </div>
 
+          {/* Remove Player Modal */}
+          {showRemoveModal && selectedPlayer && (
+            <dialog open className="modal modal-bottom sm:modal-middle">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg mb-2 text-error">Játékos eltávolítása</h3>
+                <div className="alert alert-warning mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span className="text-sm">
+                    Ez a művelet eltávolítja a játékost a ligából, de visszavonható lesz.
+                  </span>
+                </div>
+                <p className="text-sm text-base-content/70 mb-4">
+                  Játékos: <span className="font-semibold">{selectedPlayer.name}</span>
+                  <br />
+                  Jelenlegi pont: <span className="font-mono font-bold text-primary">{selectedPlayer.currentPoints}</span>
+                </p>
+                
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Eltávolítás oka</span>
+                  </label>
+                  <textarea
+                    value={removeReason}
+                    onChange={(e) => setRemoveReason(e.target.value)}
+                    className="textarea textarea-bordered w-full"
+                    placeholder="Miért távolítod el ezt a játékost?"
+                    rows={3}
+                    autoFocus
+                  />
+                  <label className="label">
+                    <span className="label-text-alt text-base-content/60">
+                      Ez az információ a történetben lesz tárolva
+                    </span>
+                  </label>
+                </div>
+
+                <div className="modal-action">
+                  <button
+                    onClick={closeRemoveModal}
+                    className="btn btn-ghost"
+                  >
+                    Mégse
+                  </button>
+                  <button
+                    onClick={handleRemovePlayer}
+                    className="btn btn-error"
+                  >
+                    Eltávolítás
+                  </button>
+                </div>
+              </div>
+              <form method="dialog" className="modal-backdrop">
+                <button onClick={closeRemoveModal}>close</button>
+              </form>
+            </dialog>
+          )}
+
           {/* Adjust Points Modal */}
           {showAdjustModal && selectedPlayer && (
             <dialog open className="modal modal-bottom sm:modal-middle">
               <div className="modal-box">
-                <h3 className="font-bold text-lg mb-4">Pontszám módosítása</h3>
+                <h3 className="font-bold text-lg mb-2">Pontszám módosítása</h3>
                 <p className="text-sm text-base-content/70 mb-4">
                   Játékos: <span className="font-semibold">{selectedPlayer.name}</span>
+                  <br />
+                  Jelenlegi pont: <span className="font-mono font-bold text-primary">{selectedPlayer.currentPoints}</span>
                 </p>
+                
+                {/* Mode Selector */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => {
+                      setAdjustmentMode('adjust');
+                      setAdjustmentPoints('');
+                    }}
+                    className={`btn btn-sm flex-1 ${adjustmentMode === 'adjust' ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    Módosítás (±)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAdjustmentMode('set');
+                      setAdjustmentPoints('');
+                    }}
+                    className={`btn btn-sm flex-1 ${adjustmentMode === 'set' ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    Beállítás (=)
+                  </button>
+                </div>
                 
                 <div className="space-y-4">
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Pontszám változás</span>
+                      <span className="label-text font-medium">
+                        {adjustmentMode === 'adjust' ? 'Pontszám változás' : 'Új pontszám'}
+                      </span>
                     </label>
-                    <input
+                          <input
                       type="text"
                       inputMode="numeric"
                       pattern="-?[0-9]*"
-                      value={adjustmentPoints}
+                            value={adjustmentPoints}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === '' || value === '-' || /^-?\d+$/.test(value)) {
+                        const pattern = adjustmentMode === 'adjust' ? /^-?\d*$/ : /^\d*$/;
+                        if (value === '' || (adjustmentMode === 'adjust' && value === '-') || pattern.test(value)) {
                           setAdjustmentPoints(value);
                         }
                       }}
                       className="input input-bordered w-full text-center text-lg"
-                      placeholder="pl: +10 vagy -5"
+                      placeholder={adjustmentMode === 'adjust' ? 'pl: +10 vagy -5' : 'pl: 100'}
                       autoFocus
                     />
                     <label className="label">
                       <span className="label-text-alt text-base-content/60">
-                        Pozitív (+) vagy negatív (-) szám
+                        {adjustmentMode === 'adjust' 
+                          ? 'Pozitív (+) vagy negatív (-) szám' 
+                          : `Új érték (most: ${selectedPlayer.currentPoints})`
+                        }
                       </span>
                     </label>
                   </div>
@@ -469,30 +656,59 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, l
                     <label className="label">
                       <span className="label-text font-medium">Indoklás</span>
                     </label>
-                    <input
-                      type="text"
-                      value={adjustmentReason}
-                      onChange={(e) => setAdjustmentReason(e.target.value)}
+                          <input
+                            type="text"
+                            value={adjustmentReason}
+                            onChange={(e) => setAdjustmentReason(e.target.value)}
                       className="input input-bordered w-full"
                       placeholder="Miért módosítod a pontszámot?"
                     />
                   </div>
+
+                  {/* Preview */}
+                  {adjustmentPoints && !isNaN(parseInt(adjustmentPoints)) && (
+                    <div className="alert alert-info">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <span className="text-sm">
+                        {adjustmentMode === 'adjust' ? (
+                          <>
+                            <strong>{selectedPlayer.currentPoints}</strong> 
+                            {' → '}
+                            <strong>{selectedPlayer.currentPoints + parseInt(adjustmentPoints)}</strong>
+                            {' '}
+                            ({parseInt(adjustmentPoints) > 0 ? '+' : ''}{adjustmentPoints} pont)
+                          </>
+                        ) : (
+                          <>
+                            <strong>{selectedPlayer.currentPoints}</strong>
+                            {' → '}
+                            <strong>{parseInt(adjustmentPoints)}</strong>
+                            {' '}
+                            ({(parseInt(adjustmentPoints) - selectedPlayer.currentPoints) > 0 ? '+' : ''}
+                            {parseInt(adjustmentPoints) - selectedPlayer.currentPoints} pont)
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="modal-action">
-                  <button
+                          <button
                     onClick={closeAdjustModal}
                     className="btn btn-ghost"
-                  >
+                          >
                     Mégse
-                  </button>
-                  <button
+                          </button>
+                          <button
                     onClick={handleAdjustment}
                     className="btn btn-primary"
-                  >
+                          >
                     Mentés
-                  </button>
-                </div>
+                          </button>
+                        </div>
               </div>
               <form method="dialog" className="modal-backdrop">
                 <button onClick={closeAdjustModal}>close</button>
@@ -625,6 +841,41 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
     }
   };
 
+  const handleUndoRemoval = async (playerId: string, removalIndex: number) => {
+    if (!confirm('Biztosan visszahelyezed ezt a játékost a ligába?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/undo-removal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId,
+          removalIndex
+        }),
+      });
+
+      if (response.ok) {
+        onLeagueUpdated();
+        showSuccessToast('Játékos visszahelyezve a ligába!');
+      } else {
+        const errorData = await response.json();
+        showErrorToast(errorData.error || 'Hiba a visszahelyezés során', {
+          context: 'Liga játékos visszahelyezése',
+          error: errorData.error
+        });
+      }
+    } catch (error) {
+      showErrorToast('Hiba a visszahelyezés során', {
+        context: 'Liga játékos visszahelyezése',
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+      });
+    }
+  };
+
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -714,8 +965,60 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
       </div>
 
       {activeSubTab === 'history' ? (
-        <div className="space-y-4">
-          <h5 className="font-semibold">Pontszámítás Módosítások</h5>
+        <div className="space-y-6">
+          {/* Removed Players Section */}
+          <div>
+            <h5 className="font-semibold mb-3">Eltávolított Játékosok</h5>
+            {leagueStats?.league?.removedPlayers && leagueStats.league.removedPlayers.length > 0 ? (
+              <div className="space-y-2">
+                {leagueStats.league.removedPlayers.map((removal: any, index: number) => (
+                  <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm bg-base-200 p-3 rounded gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="badge badge-error badge-sm flex-shrink-0">
+                        Eltávolítva
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">{removal.player?.name || removal.player?.username || 'Ismeretlen játékos'}</div>
+                        <div className="text-xs text-base-content/60">
+                          {removal.totalPoints} pont • {removal.tournamentPoints?.length || 0} verseny • {removal.manualAdjustments?.length || 0} módosítás
+                        </div>
+                        <div className="text-xs text-base-content/50 italic">
+                          {removal.reason}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-base-content/60 text-right">
+                        <div className="flex items-center gap-1 text-xs">
+                          <IconUser size={12} />
+                          <span>{removal.removedBy?.name || removal.removedBy?.username || 'Ismeretlen'}</span>
+                        </div>
+                        <div className="text-xs">
+                          {new Date(removal.removedAt).toLocaleDateString('hu-HU')}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleUndoRemoval(removal.player._id, index)}
+                        className="btn btn-success btn-xs gap-1"
+                        title="Visszahelyezés"
+                      >
+                        <IconUser size={12} />
+                        <span className="hidden sm:inline">Visszahelyezés</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 bg-base-200 rounded-lg">
+                <p className="text-sm text-base-content/60">Még nem lett játékos eltávolítva</p>
+              </div>
+            )}
+          </div>
+
+          {/* Manual Adjustments Section */}
+          <div>
+            <h5 className="font-semibold mb-3">Pontszámítás Módosítások</h5>
           {leagueStats?.league?.players && leagueStats.league.players.length > 0 ? (
             <div className="space-y-4">
               {leagueStats.league.players.map((player: any) => {
@@ -731,38 +1034,38 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
                       </div>
                     <div className="space-y-2">
                       {player.manualAdjustments.map((adjustment: any, index: number) => (
-                        <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm bg-base-100 p-3 rounded gap-3">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <span className={`badge badge-sm flex-shrink-0 ${
+                          <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm bg-base-100 p-3 rounded gap-3">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <span className={`badge badge-sm flex-shrink-0 ${
                               adjustment.points > 0 ? 'badge-success' : 'badge-error'
                             }`}>
                               {adjustment.points > 0 ? '+' : ''}{adjustment.points} pont
                             </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{adjustment.reason}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{adjustment.reason}</div>
                               <div className="text-xs text-base-content/60">
                                 {adjustment.points > 0 ? 'Pont hozzáadva' : 'Pont levonva'} {player.player.name || player.player.username || 'játékosnak'}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            <div className="text-base-content/60 text-right">
-                              <div className="flex items-center gap-1 text-xs">
-                                <IconUser size={12} />
-                                <span>{adjustment.adjustedBy?.name || adjustment.adjustedBy?.username || 'Ismeretlen'}</span>
-                              </div>
-                              <div className="text-xs">
-                                {new Date(adjustment.adjustedAt).toLocaleDateString('hu-HU')}
-                              </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="text-base-content/60 text-right">
+                            <div className="flex items-center gap-1 text-xs">
+                              <IconUser size={12} />
+                              <span>{adjustment.adjustedBy?.name || adjustment.adjustedBy?.username || 'Ismeretlen'}</span>
                             </div>
-                            <button
-                              onClick={() => handleUndoAdjustment(player.player._id, index)}
-                              className="btn btn-error btn-xs gap-1"
-                              title="Visszavonás"
-                            >
-                              <IconTrash size={12} />
-                              <span className="hidden sm:inline">Visszavonás</span>
-                            </button>
+                            <div className="text-xs">
+                              {new Date(adjustment.adjustedAt).toLocaleDateString('hu-HU')}
+                            </div>
+                              </div>
+                              <button
+                                onClick={() => handleUndoAdjustment(player.player._id, index)}
+                                className="btn btn-error btn-xs gap-1"
+                                title="Visszavonás"
+                              >
+                                <IconTrash size={12} />
+                                <span className="hidden sm:inline">Visszavonás</span>
+                              </button>
                           </div>
                         </div>
                       ))}
@@ -772,10 +1075,11 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
               })}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-base-content/60">Még nincsenek manuális pontszámítás módosítások</p>
+              <div className="text-center py-4 bg-base-200 rounded-lg">
+                <p className="text-sm text-base-content/60">Még nincsenek manuális pontszámítás módosítások</p>
             </div>
           )}
+          </div>
         </div>
       ) : isEditing ? (
         <div className="space-y-4">

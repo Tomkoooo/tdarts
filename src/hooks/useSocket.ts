@@ -15,6 +15,7 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
   const isConnected = useRef(false);
   const hasJoinedRooms = useRef(false);
   const joinedRooms = useRef<Set<string>>(new Set());
+  const shouldNotRetry = useRef(false); // Flag to prevent retry on auth/CORS errors
 
   // Development módban mindig engedélyezett
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -41,6 +42,12 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
         hasJoinedRooms.current = false;
         joinedRooms.current.clear();
       }
+      return;
+    }
+
+    // Don't retry if we've encountered auth/CORS errors
+    if (shouldNotRetry.current) {
+      console.log('🔌 Socket connection disabled due to previous auth/CORS errors');
       return;
     }
 
@@ -88,33 +95,42 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
                 resolve(true);
               });
               
-              socket.once('connect_error', (error) => {
+              socket.once('connect_error', (error: any) => {
                 clearTimeout(timeout);
-                if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
-                  console.error('🔌 Socket connection failed:', error);
+                console.error('🔌 Socket connection failed:', error);
+                
+                // Check for CORS or auth errors
+                const errorMessage = error?.message || error?.toString() || '';
+                if (errorMessage.includes('CORS') || 
+                    errorMessage.includes('401') || 
+                    errorMessage.includes('Unauthorized') ||
+                    errorMessage.includes('origin')) {
+                  console.error('🔌 CORS or Auth error detected, disabling socket reconnection');
+                  shouldNotRetry.current = true;
+                  socket.disconnect();
                 }
+                
                 resolve(false);
               });
             });
             
             await connectionPromise;
           } else {
-            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
-              console.error('Authentication failed, cannot connect to socket server');
-            }
+            console.error('Authentication failed, cannot connect to socket server');
+            shouldNotRetry.current = true; // Don't retry on auth failure
           }
         } catch (error: any) {
-          if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
-            console.error('🔌 Socket initialization error:', error);
-          }
-          if (error.message.includes('not configured') || error.message.includes('not authenticated')) {
-            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
-              console.warn('Socket authentication not available. Socket features disabled.');
-            }
-          } else {
-            if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_SOCKET === 'true') {
-              console.error('Socket initialization failed:', error);
-            }
+          console.error('🔌 Socket initialization error:', error);
+          
+          // Check for auth/CORS related errors
+          const errorMessage = error?.message || error?.toString() || '';
+          if (errorMessage.includes('not configured') || 
+              errorMessage.includes('not authenticated') ||
+              errorMessage.includes('CORS') ||
+              errorMessage.includes('401') ||
+              errorMessage.includes('Unauthorized')) {
+            console.warn('Socket authentication/CORS error. Socket features disabled.');
+            shouldNotRetry.current = true;
           }
         }
       } else {
@@ -156,6 +172,13 @@ export const useSocket = ({ tournamentId, clubId, matchId }: UseSocketOptions = 
 
     // Socket reconnect esetén újra csatlakozás a room-okhoz
     const handleConnect = () => {
+      // Don't reconnect if we've encountered auth/CORS errors
+      if (shouldNotRetry.current) {
+        console.log('🔌 Ignoring reconnect due to previous auth/CORS errors');
+        socket.disconnect();
+        return;
+      }
+      
       console.log('🔌 Socket reconnected, rejoining rooms...');
       isConnected.current = true;
       hasJoinedRooms.current = false; // Reset to allow rejoining

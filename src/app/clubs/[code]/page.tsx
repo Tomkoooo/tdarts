@@ -268,8 +268,20 @@ export default function ClubDetailPage() {
   // Tournaments section
   const tournamentsSection: React.ReactNode = (
     <div className="space-y-4">
-      <div className="mb-4">
-      </div>
+      {(userRole === 'admin' || userRole === 'moderator') && (
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl md:text-2xl font-semibold text-primary">Versenyek</h2>
+          <button 
+            className="btn btn-primary btn-sm"
+            onClick={() => setIsCreateTournamentModalOpen(true)}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Új verseny
+          </button>
+        </div>
+      )}
       <TournamentList
         tournaments={(club.tournaments || [])}
         userRole={userRole}
@@ -304,21 +316,6 @@ export default function ClubDetailPage() {
           </div>
         </div>
       </div>
-      <EditClubModal
-        userId={user?._id}
-        isOpen={isEditClubModalOpen}
-        onClose={() => setIsEditClubModalOpen(false)}
-        club={club}
-        onClubUpdated={fetchClub}
-      />
-      <CreateTournamentModal
-        isOpen={isCreateTournamentModalOpen}
-        onClose={() => setIsCreateTournamentModalOpen(false)}
-        clubId={club._id}
-        userRole={userRole}
-        boardCount={0}
-        onTournamentCreated={() => fetchClub()}
-      />
       <div className="card-section">
         <div className="section-header">
           <svg className="w-5 h-5 md:w-6 md:h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 3.13a4 4 0 01.88 7.75M8 3.13a4 4 0 00-.88 7.75" /></svg>
@@ -404,7 +401,22 @@ export default function ClubDetailPage() {
         <p>test</p>
       </ClubLayout>
       
-      {/* Club Share Modal - outside ClubLayout so it's always accessible */}
+      {/* Modals - outside sections so they're always accessible */}
+      <EditClubModal
+        userId={user?._id}
+        isOpen={isEditClubModalOpen}
+        onClose={() => setIsEditClubModalOpen(false)}
+        club={club}
+        onClubUpdated={fetchClub}
+      />
+      <CreateTournamentModal
+        isOpen={isCreateTournamentModalOpen}
+        onClose={() => setIsCreateTournamentModalOpen(false)}
+        clubId={club._id}
+        userRole={userRole}
+        boardCount={0}
+        onTournamentCreated={() => fetchClub()}
+      />
       <ClubShareModal
         isOpen={clubShareModal}
         onClose={() => setClubShareModal(false)}

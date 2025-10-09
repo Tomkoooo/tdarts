@@ -784,6 +784,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           legsToWin: selectedMatch.legsToWin || legsToWin
         }} 
         onBack={handleBackToMatches}
+        onMatchFinished={loadMatches}
         clubId={tournamentData?.clubId?._id || tournamentData?.clubId}
       />
     );
