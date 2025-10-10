@@ -149,9 +149,9 @@ const TournamentPage = () => {
         {/* Main content grid */}
         <div className="space-y-8 mt-10">
           {/* Top section - Info, Boards, Groups, Players (side by side) */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left column - Tournament info, boards, groups */}
-            <div className="lg:col-span-3 space-y-8">
+            <div className="lg:col-span-2 space-y-8">
               
               {/* Tournament Info Card */}
               <div className="card bg-base-100 shadow-xl">

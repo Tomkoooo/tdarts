@@ -39,6 +39,17 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             highestCheckout: { type: Number, required: true, default: 0 },
         }
     }],
+    waitingList: [{
+        playerReference: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', required: true },
+        addedAt: { type: Date, default: Date.now },
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
+    notificationSubscribers: [{
+        userRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        email: { type: String, required: true },
+        subscribedAt: { type: Date, default: Date.now },
+        notifiedAt: { type: Date }
+    }],
     groups: [{
         board: { type: Number, required: true },
         matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true }],

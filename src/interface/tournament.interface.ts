@@ -86,11 +86,26 @@ export interface MatchDocument extends Document {
     // Add other match fields as needed
 }
 
+export interface WaitingListPlayer {
+    playerReference: string | PlayerDocument;
+    addedAt: Date;
+    addedBy?: string; // User ID who added them (for admin additions)
+}
+
+export interface NotificationSubscriber {
+    userRef: string; // User ID who subscribed
+    email: string;
+    subscribedAt: Date;
+    notifiedAt?: Date; // Last time they were notified
+}
+
 export interface Tournament {
     _id?: string;
     tournamentId: string;
     clubId: string | Document;
     tournamentPlayers: TournamentPlayer[];
+    waitingList?: WaitingListPlayer[]; // Players waiting for a spot
+    notificationSubscribers?: NotificationSubscriber[]; // Users who want to be notified
     groups: TournamentGroup[];
     knockout: KnockoutRound[];
     boards: TournamentBoard[];
@@ -122,9 +137,24 @@ export interface TournamentBoardDocument {
     isActive: boolean;
 }
 
-export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'groups' | 'boards' | 'clubId' | 'league'> {
+export interface WaitingListPlayerDocument {
+    playerReference: Types.ObjectId;
+    addedAt: Date;
+    addedBy?: Types.ObjectId;
+}
+
+export interface NotificationSubscriberDocument {
+    userRef: Types.ObjectId;
+    email: string;
+    subscribedAt: Date;
+    notifiedAt?: Date;
+}
+
+export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'waitingList' | 'notificationSubscribers' | 'groups' | 'boards' | 'clubId' | 'league'> {
     _id: Types.ObjectId;
     tournamentPlayers: TournamentPlayerDocument[];
+    waitingList?: WaitingListPlayerDocument[];
+    notificationSubscribers?: NotificationSubscriberDocument[];
     groups: TournamentGroupDocument[];
     boards: TournamentBoardDocument[];
     clubId: Types.ObjectId;

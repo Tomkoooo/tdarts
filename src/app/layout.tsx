@@ -6,6 +6,7 @@ import { UserProvider } from "@/hooks/useUser";
 import Navbar from "@/components/homapage/Navbar";
 import SessionProvider from "@/components/providers/SessionProvider";
 import AuthSync from "@/components/providers/AuthSync";
+import PWAProvider from "@/components/providers/PWAProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -47,8 +48,20 @@ export const metadata: Metadata = {
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/tdarts_fav.svg",
+      },
+    ],
   },
   manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "tDarts",
+  },
+  applicationName: "tDarts",
       openGraph: {
       type: "website",
       locale: "hu_HU",
@@ -216,6 +229,7 @@ export default async function RootLayout({
         <SessionProvider>
           <UserProvider initialUser={initialUser}>
             <AuthSync />
+            <PWAProvider />
             {!shouldHideNavbar && <Navbar />}
             {children}
           </UserProvider>

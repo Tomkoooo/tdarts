@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   IconUserPlus, 
   IconBuilding, 
@@ -8,7 +9,8 @@ import {
   IconTarget, 
   IconFlagCheck,
   IconShare,
-  IconChartLine
+  IconChartLine,
+  IconDeviceMobile
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import Head from 'next/head';
@@ -23,11 +25,49 @@ const iconMap: { [key: string]: any } = {
   IconTarget,
   IconFlagCheck,
   IconShare,
-  IconChartLine
+  IconChartLine,
+  IconDeviceMobile
 };
 
 const HowItWorksPage = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const contentRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [shouldScroll, setShouldScroll] = useState(false);
+
+  // Initialize active step from URL param
+  useEffect(() => {
+    const stepParam = searchParams.get('step');
+    if (stepParam) {
+      const stepId = parseInt(stepParam);
+      const stepIndex = howItWorksData.steps.findIndex(s => s.id === stepId);
+      if (stepIndex !== -1) {
+        setActiveStep(stepIndex);
+        setShouldScroll(true);
+      }
+    }
+  }, [searchParams]);
+
+  // Scroll to content when step changes from URL
+  useEffect(() => {
+    if (shouldScroll && contentRef.current) {
+      setTimeout(() => {
+        contentRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+        setShouldScroll(false);
+      }, 100);
+    }
+  }, [shouldScroll]);
+
+  // Update URL when step changes
+  const handleStepChange = (index: number) => {
+    setActiveStep(index);
+    const stepId = howItWorksData.steps[index].id;
+    router.push(`/how-it-works?step=${stepId}`, { scroll: false });
+  };
 
   const currentStep = howItWorksData.steps[activeStep];
   const StepIcon = iconMap[currentStep.icon];
@@ -61,7 +101,7 @@ const HowItWorksPage = () => {
         <meta property="og:title" content="Hogyan Működik a tDarts? - Gyakran Ismételt Kérdések" />
         <meta property="og:description" content="Teljes útmutató a tDarts platform használatához. Regisztráció, klubkezelés, versenyek indítása, eredményrögzítés és liga kezelés lépésről lépésre." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://tdarts.hu/how-it-works" />
+        <meta property="og:url" content="https://tdarts.sironic.hu/how-it-works" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Hogyan Működik a tDarts? - Gyakran Ismételt Kérdések" />
         <meta name="twitter:description" content="Teljes útmutató a tDarts platform használatához. Regisztráció, klubkezelés, versenyek indítása, eredményrögzítés és liga kezelés lépésről lépésre." />
@@ -113,14 +153,8 @@ const HowItWorksPage = () => {
                 </p>
                 <button
                   onClick={() => {
-                    setActiveStep(index);
-                    // Scroll to main content
-                    setTimeout(() => {
-                      document.getElementById('main-content')?.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'start'
-                      });
-                    }, 100);
+                    handleStepChange(index);
+                    setShouldScroll(true);
                   }}
                   className="mt-3 text-red-400 hover:text-red-300 text-sm font-medium"
                 >
@@ -161,7 +195,7 @@ const HowItWorksPage = () => {
                   return (
                     <button
                       key={step.id}
-                      onClick={() => setActiveStep(index)}
+                      onClick={() => handleStepChange(index)}
                       className={`w-full text-left p-2 md:p-3 rounded-lg transition-all duration-200 flex items-center space-x-2 md:space-x-3 ${
                         activeStep === index
                           ? 'bg-red-600 text-white shadow-lg'
@@ -179,7 +213,7 @@ const HowItWorksPage = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-gray-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+            <div ref={contentRef} className="bg-gray-800 rounded-2xl p-4 md:p-8 shadow-2xl">
               {/* Step Header */}
               <div className="flex items-center space-x-3 md:space-x-4 mb-6 md:mb-8">
                 <div className="p-3 md:p-4 rounded-2xl bg-gradient-to-r from-red-500 to-red-700 flex-shrink-0">
@@ -203,7 +237,7 @@ const HowItWorksPage = () => {
               {/* Navigation Buttons */}
               <div className="flex flex-col sm:flex-row justify-between items-center pt-6 md:pt-8 border-t border-gray-700 gap-4">
                 <button
-                  onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
+                  onClick={() => handleStepChange(Math.max(0, activeStep - 1))}
                   disabled={activeStep === 0}
                   className="w-full sm:w-auto px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
@@ -214,7 +248,7 @@ const HowItWorksPage = () => {
                   {howItWorksData.steps.map((_, index) => (
                     <button
                       key={index}
-                      onClick={() => setActiveStep(index)}
+                      onClick={() => handleStepChange(index)}
                       className={`w-3 h-3 rounded-full transition-all duration-200 ${
                         activeStep === index ? 'bg-red-500' : 'bg-gray-600'
                       }`}
@@ -223,7 +257,7 @@ const HowItWorksPage = () => {
                 </div>
 
                 <button
-                  onClick={() => setActiveStep(Math.min(howItWorksData.steps.length - 1, activeStep + 1))}
+                  onClick={() => handleStepChange(Math.min(howItWorksData.steps.length - 1, activeStep + 1))}
                   disabled={activeStep === howItWorksData.steps.length - 1}
                   className="w-full sm:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >

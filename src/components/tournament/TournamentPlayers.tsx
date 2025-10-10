@@ -5,7 +5,7 @@ import PlayerNotificationModal from '@/components/tournament/PlayerNotificationM
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { useUserContext } from '@/hooks/useUser';
-import { IconMail, IconCheck, IconTrash } from '@tabler/icons-react';
+import { IconMail, IconCheck, IconTrash, IconBell, IconBellOff, IconArrowUp } from '@tabler/icons-react';
 
 interface TournamentPlayersProps {
   tournament: any;
@@ -27,18 +27,31 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const {user} = useUserContext()
   const [localUserPlayerStatus, setLocalUserPlayerStatus] = useState(userPlayerStatus);
   const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId);
+  const [waitingList, setWaitingList] = useState(tournament?.waitingList || []);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [notificationModal, setNotificationModal] = useState<{
     isOpen: boolean;
     player: any;
   }>({ isOpen: false, player: null });
   const code = tournament?.tournamentId;
 
+  // Check if user is subscribed to notifications
+  React.useEffect(() => {
+    if (user && tournament?.notificationSubscribers) {
+      const subscribed = tournament.notificationSubscribers.some(
+        (s: any) => s.userRef?._id?.toString() === user._id || s.userRef?.toString() === user._id
+      );
+      setIsSubscribed(subscribed);
+    }
+  }, [user, tournament?.notificationSubscribers]);
+
   // Update local state when props change
   React.useEffect(() => {
     setLocalPlayers(players);
     setLocalUserPlayerStatus(userPlayerStatus);
     setLocalUserPlayerId(userPlayerId);
-  }, [players, userPlayerStatus, userPlayerId]);
+    setWaitingList(tournament?.waitingList || []);
+  }, [players, userPlayerStatus, userPlayerId, tournament?.waitingList]);
 
   const handleAddPlayer = async (player: any) => {
     try {
@@ -184,6 +197,95 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     setNotificationModal({ isOpen: true, player });
   };
 
+  const handleAddToWaitingList = async () => {
+    if (!user?._id) return;
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/waitlist`, { 
+        userRef: user._id, 
+        name: user.name 
+      });
+      if (response.data.success) {
+        const newWaitingPlayer = {
+          playerReference: {
+            _id: response.data.playerId,
+            name: user.name,
+            userRef: user._id
+          },
+          addedAt: new Date()
+        };
+        setWaitingList((prev: any[]) => [...prev, newWaitingPlayer]);
+        toast.success('Sikeresen felkerültél a várólistára!');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült felkerülni a várólistára.');
+      console.error('Add to waiting list error:', err);
+    }
+  };
+
+  const handleRemoveFromWaitingList = async (playerId: string) => {
+    try {
+      const response = await axios.delete(`/api/tournaments/${code}/waitlist`, { 
+        data: { playerId } 
+      });
+      if (response.data.success) {
+        setWaitingList((prev: any[]) => prev.filter((p: any) => p.playerReference._id !== playerId));
+        toast.success('Sikeresen lekerültél a várólistáról!');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült lekerülni a várólistáról.');
+      console.error('Remove from waiting list error:', err);
+    }
+  };
+
+  const handlePromoteFromWaitingList = async (playerId: string) => {
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/waitlist/promote`, { playerId });
+      if (response.data.success) {
+        // Move player from waiting list to tournament players
+        const waitingPlayer = waitingList.find((p: any) => p.playerReference._id === playerId);
+        if (waitingPlayer) {
+          const newPlayer = {
+            _id: playerId,
+            playerReference: waitingPlayer.playerReference,
+            status: 'applied'
+          };
+          setLocalPlayers((prev: any[]) => [...prev, newPlayer]);
+          setWaitingList((prev: any[]) => prev.filter((p: any) => p.playerReference._id !== playerId));
+          toast.success('Játékos sikeresen áthelyezve a tornára!');
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült áthelyezni a játékost.');
+      console.error('Promote from waiting list error:', err);
+    }
+  };
+
+  const handleSubscribeToNotifications = async () => {
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/notifications`);
+      if (response.data.success) {
+        setIsSubscribed(true);
+        toast.success('Sikeresen feliratkoztál az értesítésekre!');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült feliratkozni.');
+      console.error('Subscribe to notifications error:', err);
+    }
+  };
+
+  const handleUnsubscribeFromNotifications = async () => {
+    try {
+      const response = await axios.delete(`/api/tournaments/${code}/notifications`);
+      if (response.data.success) {
+        setIsSubscribed(false);
+        toast.success('Sikeresen leiratkoztál az értesítésekről!');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Nem sikerült leiratkozni.');
+      console.error('Unsubscribe from notifications error:', err);
+    }
+  };
+
   // Calculate if there are free spots
   const maxPlayers = tournament?.tournamentSettings?.maxPlayers || 0;
   const currentPlayers = localPlayers.length;
@@ -240,7 +342,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         {/* Show withdrawal button at top if user is registered */}
         {user && localUserPlayerId && localUserPlayerStatus !== 'none' && (
           <div className="mt-4 p-3 bg-warning/10 rounded-lg border border-warning/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col items-center justify-between gap-2">
               <div>
                 <p className="font-semibold text-warning">Már jelentkeztél erre a tornára</p>
                 <p className="text-sm text-base-content/70">Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.</p>
@@ -260,7 +362,31 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             <button className="btn btn-primary mt-4" onClick={handleSelfSignUp}>Jelentkezés a tornára</button>
           )}
           {user &&  !hasFreeSpots && (
-            <div className="mt-4 text-warning">A torna megtelt, nincs több szabad hely.</div>
+            <div className="mt-4 space-y-2">
+              <div className="alert alert-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div className="flex-1">
+                  <span className="font-semibold">A torna megtelt, nincs több szabad hely.</span>
+                  <p className="text-sm mt-1">Kérj email értesítést ha felszabadul hely!</p>
+                </div>
+                <button 
+                  className="btn btn-sm btn-primary"
+                  onClick={isSubscribed ? handleUnsubscribeFromNotifications : handleSubscribeToNotifications}
+                  title={isSubscribed ? 'Értesítés kikapcsolása' : 'Értesítést kérek ha felszabadul hely'}
+                >
+                  {isSubscribed ? (
+                    <IconBellOff size={18} className="text-white" />
+                  ) : (
+                    <IconBell size={18} className="text-white" />
+                  )}
+                </button>
+              </div>
+              <button className="btn btn-secondary w-full" onClick={handleAddToWaitingList}>
+                Feliratkozás a várólistára
+              </button>
+            </div>
           )}
           {!user && (
             <div className="mt-4">
@@ -268,6 +394,36 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </div>
           )}
         </>
+      )}
+
+      {/* Waiting list button - only if has free spots and user not in tournament/waitlist */}
+      {user && isPending && localUserPlayerStatus === 'none' && hasFreeSpots && !waitingList.some((p: any) => p.playerReference?.userRef?.toString() === user._id || p.playerReference?._id === localUserPlayerId) && (
+        <div className="mt-4">
+          <div className="alert alert-info shadow-lg">
+            <div className="flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current flex-shrink-0 w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h3 className="font-bold">Bizonytalan a részvételed?</h3>
+                <div className="text-xs">Iratkozz fel a várólistára, hogy jelezd a szándékodat!</div>
+              </div>
+            </div>
+            <button className="btn btn-sm btn-secondary" onClick={handleAddToWaitingList}>
+              Várólista
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notification subscription - only if has free spots */}
+      {user && isPending && localUserPlayerStatus === 'none' && hasFreeSpots && !waitingList.some((p: any) => p.playerReference?.userRef?.toString() === user._id) && (
+        <div className="mt-4 flex items-center justify-between p-3 bg-info/10 rounded-lg border border-info/20">
+          <div className="flex-1">
+            <p className="text-sm font-medium">Értesítést szeretnél ha kevés hely marad?</p>
+            <p className="text-xs text-base-content/60">Email értesítést küldünk ha 10 vagy kevesebb hely marad.</p>
+          </div>
+        </div>
       )}
 
       
@@ -370,6 +526,95 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           </p>
         </div>
       )}
+
+      {/* User's own waiting list status */}
+      {user && isPending && waitingList.some((p: any) => p.playerReference?.userRef?.toString() === user._id) && (
+        <div className="mt-4 p-3 bg-secondary/10 rounded-lg border border-secondary/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-secondary">Várólistán vagy</p>
+              <p className="text-sm text-base-content/70">
+                {hasFreeSpots 
+                  ? 'Ha mégis biztosan részt tudsz venni, jelentkezz a tornára fentebb.'
+                  : 'Értesítünk, ha felszabadul hely és a moderátor áthelyez a tornára.'
+                }
+              </p>
+            </div>
+            <button 
+              className="btn btn-sm btn-error gap-1" 
+              onClick={() => {
+                const myPlayer = waitingList.find((p: any) => p.playerReference?.userRef?.toString() === user._id);
+                if (myPlayer) {
+                  handleRemoveFromWaitingList(myPlayer.playerReference._id);
+                }
+              }}
+            >
+              <IconTrash size={16} />
+              <span className="hidden sm:inline">Lekerülés</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Waiting List Section */}
+      {isPending && waitingList && waitingList.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <span>Várólista</span>
+              <span className="badge badge-secondary badge-sm">{waitingList.length}</span>
+            </h3>
+          </div>
+          
+          <ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+            {waitingList.map((waitingPlayer: any, index: number) => {
+              const isOwnPlayer = user && waitingPlayer.playerReference?.userRef?.toString() === user._id;
+              
+              return (
+                <li key={waitingPlayer.playerReference?._id || index} className="p-3 bg-base-200 rounded shadow-sm border border-base-300">
+                  <div className="flex items-center gap-3">
+                    <span className="badge badge-secondary badge-sm">{index + 1}</span>
+                    <span className="flex-1 text-sm font-medium">
+                      {waitingPlayer.playerReference?.name || 'Ismeretlen játékos'}
+                      {isOwnPlayer && <span className="ml-2 text-xs text-secondary">(Te)</span>}
+                    </span>
+                    <span className="text-xs text-base-content/60">
+                      {new Date(waitingPlayer.addedAt).toLocaleDateString('hu-HU')}
+                    </span>
+                    
+                    {/* Admin actions */}
+                    {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                      <>
+                        {!isOwnPlayer && (
+                          <button
+                            className="btn btn-xs btn-success gap-1"
+                            onClick={() => handlePromoteFromWaitingList(waitingPlayer.playerReference._id)}
+                            title="Áthelyezés a tornára (Admin jogosultság - mindig elérhető)"
+                          >
+                            <IconArrowUp size={14} />
+                            <span className="hidden sm:inline">Áthelyezés</span>
+                          </button>
+                        )}
+                        
+                        {!isOwnPlayer && (
+                          <button
+                            className="btn btn-xs btn-ghost text-error"
+                            onClick={() => handleRemoveFromWaitingList(waitingPlayer.playerReference._id)}
+                            title="Eltávolítás a várólistáról"
+                          >
+                            <IconTrash size={14} />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
 
       {/* Player Notification Modal */}
       <PlayerNotificationModal

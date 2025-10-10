@@ -587,6 +587,85 @@
     },
     {
       "id": 7,
+      "title": "PWA - Alkalmazás Telepítése",
+      "icon": "IconDeviceMobile",
+      "description": "Mobilalkalmazásként való használat",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Mi az a PWA?",
+            "content": [
+              "A tDarts Progressive Web App (PWA) technológiával készült, ami azt jelenti, hogy telepítheted a telefonodra vagy tabletedre, és úgy használhatod, mint egy natív alkalmazást.",
+              "Nincs szükség App Store vagy Google Play letöltésre - közvetlenül a böngészőből telepítheted."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Telepítés Android eszközökre",
+            "content": [
+              "1. Nyisd meg a tdarts.sironic.hu oldalt Chrome böngészőben",
+              "2. Koppints a böngésző menü gombra (3 pont jobb felül)",
+              "3. Válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; vagy &ldquo;Alkalmazás telepítése&rdquo; opciót",
+              "4. Erősítsd meg a telepítést",
+              "5. A tDarts ikon megjelenik a kezdőképernyőn"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Telepítés iOS eszközökre (iPhone, iPad)",
+            "content": [
+              "1. Nyisd meg a tdarts.sironic.hu oldalt Safari böngészőben",
+              "2. Koppints a megosztás gombra (négyzet felfelé mutató nyíllal)",
+              "3. Görgess le és válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; opciót",
+              "4. Add meg az alkalmazás nevét (pl. tDarts)",
+              "5. Koppints a &ldquo;Hozzáadás&rdquo; gombra",
+              "6. A tDarts ikon megjelenik a kezdőképernyőn"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "PWA Előnyei",
+            "content": [
+              "Teljes képernyős élmény: Nincs böngésző címsor, több hely a tartalomnak",
+              "Gyorsabb betöltés: Az alkalmazás gyorsítótárazza a gyakran használt elemeket",
+              "Offline működés: Alapvető funkciók offline is elérhetők",
+              "Natív élmény: Úgy viselkedik, mint egy telepített alkalmazás",
+              "Automatikus frissítések: Mindig a legfrissebb verziót használod",
+              "Kisebb adatforgalom: Optimalizált betöltés és gyorsítótárazás"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "PWA Használati Esetek",
+            "content": [
+              "Eredményrögzítés tableten: Telepítsd a tabletre és használd teljes képernyős módban a verseny helyszínén.",
+              "Gyors hozzáférés: Egy koppintással nyithatod meg az alkalmazást a kezdőképernyőről.",
+              "Verseny követés: Játékosként kövesd a verseny állását offline is.",
+              "Moderátori feladatok: Gyors hozzáférés a verseny kezeléséhez.",
+              "Landscape mód: Tableten fekvő módban optimalizált megjelenítés az eredményrögzítéshez."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Teljes képernyős mód",
+            "content": [
+              "PWA módban az alkalmazás automatikusan teljes képernyőn nyílik meg.",
+              "Nincs böngésző címsor vagy navigációs gombok - tiszta, professzionális megjelenés.",
+              "Ideális verseny helyszínén használt tabletekhez.",
+              "A képernyő teljes területe kihasználható az eredményrögzítéshez.",
+              "Landscape (fekvő) módban optimalizált elrendezés nagy számokkal és gombokkal."
+            ],
+            "note": {
+              "type": "tip",
+              "content": "Verseny helyszínén használt fix tableteknél telepítsd PWA-ként, így gyorsabb és professzionálisabb lesz az élmény!"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",

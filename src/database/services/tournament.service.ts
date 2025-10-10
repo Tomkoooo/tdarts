@@ -296,6 +296,9 @@ export class TournamentService {
         const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
             .populate('clubId')
             .populate('tournamentPlayers.playerReference')
+            .populate('waitingList.playerReference')
+            .populate('waitingList.addedBy', 'name username')
+            .populate('notificationSubscribers.userRef', 'name username email')
             .populate('groups.matches')
             .populate('knockout.matches.player1')
             .populate('knockout.matches.player2')
@@ -421,6 +424,15 @@ export class TournamentService {
         try {
             await connectMongo();
             
+            // Get tournament to check current player count
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            const currentPlayers = tournament.tournamentPlayers.length;
+            const maxPlayers = tournament.tournamentSettings.maxPlayers;
+            
             // Use atomic operation to remove player
             const result = await TournamentModel.updateOne(
                 { tournamentId: tournamentId },
@@ -435,6 +447,16 @@ export class TournamentService {
             
             if (result.matchedCount === 0) {
                 throw new BadRequestError('Tournament not found');
+            }
+            
+            // Calculate free spots after removal
+            const freeSpots = maxPlayers - (currentPlayers - 1);
+            
+            // Trigger notifications if spots become available
+            if (freeSpots > 0 && freeSpots <= 10) {
+                // Run notification in background (don't await to avoid blocking)
+                this.notifySubscribersAboutAvailableSpots(tournamentId, freeSpots)
+                    .catch(err => console.error('Failed to notify subscribers:', err));
             }
             
             return true;
@@ -3649,5 +3671,323 @@ export class TournamentService {
             tournamentId: tournament.tournamentId,
             updatedAt: tournament.updatedAt
         }));
+    }
+
+    // --- WAITING LIST MANAGEMENT ---
+    
+    /**
+     * Add a player to the waiting list
+     */
+    static async addToWaitingList(
+        tournamentCode: string,
+        userId: string,
+        playerData: { playerId?: string; userRef?: string; name?: string }
+    ): Promise<{ playerId: string }> {
+        await connectMongo();
+        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        // Only allow adding to waiting list if tournament is pending
+        if (tournament.tournamentSettings.status !== 'pending') {
+            throw new BadRequestError('Can only add to waiting list during pending status');
+        }
+
+        let playerId = playerData.playerId;
+
+        // If no playerId provided, create or find player
+        if (!playerId) {
+            if (playerData.userRef) {
+                // Find existing player with this userRef
+                let player = await PlayerModel.findOne({ userRef: playerData.userRef });
+                if (!player) {
+                    // Create new player
+                    player = await PlayerModel.create({
+                        name: playerData.name,
+                        userRef: playerData.userRef,
+                    });
+                }
+                playerId = player._id.toString();
+            } else if (playerData.name) {
+                // Create guest player
+                const player = await PlayerModel.create({
+                    name: playerData.name,
+                });
+                playerId = player._id.toString();
+            } else {
+                throw new BadRequestError('Player ID, user reference, or name is required');
+            }
+        }
+
+        if (!playerId) {
+            throw new BadRequestError('Failed to get or create player ID');
+        }
+
+        // Check if player is already in tournament
+        const existingPlayer = tournament.tournamentPlayers.find(
+            (p: any) => p.playerReference.toString() === playerId
+        );
+        if (existingPlayer) {
+            throw new BadRequestError('Player is already in the tournament');
+        }
+
+        // Check if player is already in waiting list
+        if (!tournament.waitingList) {
+            tournament.waitingList = [];
+        }
+        
+        const existingWaitingPlayer = tournament.waitingList.find(
+            (p: any) => p.playerReference.toString() === playerId
+        );
+        if (existingWaitingPlayer) {
+            throw new BadRequestError('Player is already in the waiting list');
+        }
+
+        // Add to waiting list
+        tournament.waitingList.push({
+            playerReference: playerId as any,
+            addedAt: new Date(),
+            addedBy: userId as any
+        });
+
+        await tournament.save();
+
+        return { playerId };
+    }
+
+    /**
+     * Remove a player from the waiting list
+     */
+    static async removeFromWaitingList(
+        tournamentCode: string,
+        userId: string,
+        playerId: string
+    ): Promise<void> {
+        await connectMongo();
+        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        if (!tournament.waitingList || tournament.waitingList.length === 0) {
+            throw new BadRequestError('Waiting list is empty');
+        }
+
+        // Find player in waiting list
+        const playerIndex = tournament.waitingList.findIndex(
+            (p: any) => p.playerReference.toString() === playerId
+        );
+
+        if (playerIndex === -1) {
+            throw new BadRequestError('Player not found in waiting list');
+        }
+
+        // Check if user is removing themselves or is admin/moderator
+        const player = await PlayerModel.findById(playerId);
+        const isOwnPlayer = player?.userRef?.toString() === userId;
+        const clubId = tournament.clubId._id?.toString() || tournament.clubId.toString();
+        const isAdmin = await AuthorizationService.checkAdminOrModerator(userId, clubId);
+
+        if (!isOwnPlayer && !isAdmin) {
+            throw new BadRequestError('You can only remove yourself or be an admin/moderator');
+        }
+
+        // Remove from waiting list
+        tournament.waitingList.splice(playerIndex, 1);
+        await tournament.save();
+    }
+
+    /**
+     * Promote a player from waiting list to tournament
+     * Admin/Moderator can promote even if tournament is full (they can override maxPlayers)
+     */
+    static async promoteFromWaitingList(
+        tournamentCode: string,
+        playerId: string
+    ): Promise<void> {
+        await connectMongo();
+        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        // Note: We don't check maxPlayers here because admins/moderators can override it
+        // The authorization check is done in the API route
+
+        // Find player in waiting list
+        if (!tournament.waitingList || tournament.waitingList.length === 0) {
+            throw new BadRequestError('Waiting list is empty');
+        }
+
+        const playerIndex = tournament.waitingList.findIndex(
+            (p: any) => p.playerReference.toString() === playerId
+        );
+
+        if (playerIndex === -1) {
+            throw new BadRequestError('Player not found in waiting list');
+        }
+
+        // Add to tournament players
+        tournament.tournamentPlayers.push({
+            playerReference: playerId as any,
+            status: 'applied',
+            stats: {
+                matchesWon: 0,
+                matchesLost: 0,
+                legsWon: 0,
+                legsLost: 0,
+                avg: 0,
+                oneEightiesCount: 0,
+                highestCheckout: 0,
+            }
+        } as any);
+
+        // Remove from waiting list
+        tournament.waitingList.splice(playerIndex, 1);
+
+        await tournament.save();
+    }
+
+    // --- NOTIFICATION MANAGEMENT ---
+    
+    /**
+     * Subscribe to tournament notifications
+     */
+    static async subscribeToNotifications(
+        tournamentCode: string,
+        userId: string,
+        email: string
+    ): Promise<void> {
+        await connectMongo();
+        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        // Initialize notificationSubscribers if it doesn't exist
+        if (!tournament.notificationSubscribers) {
+            tournament.notificationSubscribers = [];
+        }
+
+        // Check if already subscribed
+        const existingSubscriber = tournament.notificationSubscribers.find(
+            (s: any) => s.userRef.toString() === userId
+        );
+
+        if (existingSubscriber) {
+            throw new BadRequestError('Already subscribed to notifications');
+        }
+
+        // Add subscriber
+        tournament.notificationSubscribers.push({
+            userRef: userId as any,
+            email,
+            subscribedAt: new Date()
+        } as any);
+
+        await tournament.save();
+    }
+
+    /**
+     * Unsubscribe from tournament notifications
+     */
+    static async unsubscribeFromNotifications(
+        tournamentCode: string,
+        userId: string
+    ): Promise<void> {
+        await connectMongo();
+        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        if (!tournament.notificationSubscribers || tournament.notificationSubscribers.length === 0) {
+            throw new BadRequestError('No subscribers found');
+        }
+
+        // Find subscriber
+        const subscriberIndex = tournament.notificationSubscribers.findIndex(
+            (s: any) => s.userRef.toString() === userId
+        );
+
+        if (subscriberIndex === -1) {
+            throw new BadRequestError('Not subscribed to notifications');
+        }
+
+        // Remove subscriber
+        tournament.notificationSubscribers.splice(subscriberIndex, 1);
+        await tournament.save();
+    }
+
+    /**
+     * Send notifications to subscribers when spots become available
+     * This should be called when:
+     * - A player is removed from tournament
+     * - A player withdraws their application
+     * - Free spots reach threshold (e.g., <= 10 or <= 5)
+     */
+    static async notifySubscribersAboutAvailableSpots(
+        tournamentCode: string,
+        freeSpots: number
+    ): Promise<void> {
+        await connectMongo();
+        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode })
+            .populate('notificationSubscribers.userRef', 'name username');
+        
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        if (!tournament.notificationSubscribers || tournament.notificationSubscribers.length === 0) {
+            console.log('No subscribers to notify');
+            return;
+        }
+
+        // Only notify if free spots are <= 10 or <= 5
+        if (freeSpots > 10) {
+            console.log(`Free spots (${freeSpots}) > 10, not notifying yet`);
+            return;
+        }
+
+        const { MailerService } = await import('@/database/services/mailer.service');
+        const now = new Date();
+
+        // Notify subscribers who haven't been notified in the last hour
+        for (const subscriber of tournament.notificationSubscribers) {
+            const lastNotified = (subscriber as any).notifiedAt;
+            const hoursSinceLastNotification = lastNotified 
+                ? (now.getTime() - new Date(lastNotified).getTime()) / (1000 * 60 * 60)
+                : Infinity;
+
+            // Only notify if not notified in the last hour
+            if (hoursSinceLastNotification >= 1) {
+                try {
+                    await MailerService.sendTournamentSpotAvailableEmail(
+                        (subscriber as any).email,
+                        {
+                            tournamentName: tournament.tournamentSettings.name,
+                            tournamentCode: tournament.tournamentId,
+                            freeSpots,
+                            userName: (subscriber as any).userRef?.name || (subscriber as any).userRef?.username || 'Játékos'
+                        }
+                    );
+
+                    // Update notifiedAt timestamp
+                    (subscriber as any).notifiedAt = now;
+                    console.log(`Notified ${(subscriber as any).email} about ${freeSpots} free spots`);
+                } catch (error) {
+                    console.error(`Failed to notify ${(subscriber as any).email}:`, error);
+                }
+            }
+        }
+
+        await tournament.save();
     }
 }
