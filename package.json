@@ -1,6 +1,6 @@
 {
   "name": "tDarts",
-  "version": "beta2.2.0",
+  "version": "beta2.3.0",
   "private": true,
   "scripts": {
     "dev": "NEXT_PUBLIC_ENABLE_SOCKET=true next dev",

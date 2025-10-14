@@ -1,7 +1,22 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconCrown, IconUser, IconTrash, IconRefresh, IconSearch, IconFilter, IconShield, IconMail, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { 
+  IconCrown, 
+  IconUser, 
+  IconTrash, 
+  IconRefresh, 
+  IconSearch, 
+  IconFilter, 
+  IconShield, 
+  IconMail, 
+  IconEye, 
+  IconEyeOff,
+  IconX,
+  IconCalendar,
+  IconClock,
+  IconUsers
+} from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import DailyChart from '@/components/admin/DailyChart';
 
@@ -119,206 +134,254 @@ export default function AdminUsersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading loading-spinner loading-lg text-primary"></div>
-          <p className="mt-4 text-base-content/60">Felhasználók betöltése...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+          </div>
+          <p className="text-base-content/60">Felhasználók betöltése...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-gradient-red mb-2">Felhasználó Kezelés</h1>
-          <p className="text-base-content/60">Felhasználói fiókok kezelése és admin jogosultságok</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-info/20 via-info/10 to-transparent border border-info/30 p-8">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
+            backgroundSize: '32px 32px'
+          }}></div>
         </div>
-        <button 
-          onClick={fetchUsers}
-          className="admin-btn-primary text-sm"
-          disabled={loading}
-        >
-          <IconRefresh className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Frissítés
-        </button>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl lg:text-5xl font-bold text-base-content flex items-center gap-3">
+              <IconUsers className="w-10 h-10 text-info" />
+              Felhasználó Kezelés
+            </h1>
+            <p className="text-base-content/70 text-lg">Felhasználói fiókok kezelése és admin jogosultságok</p>
+          </div>
+          
+          <button 
+            onClick={fetchUsers}
+            disabled={loading}
+            className="btn btn-info gap-2"
+          >
+            <IconRefresh className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            Frissítés
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconUser className="w-6 h-6 text-primary" />
+        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-6 text-center">
+          <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconUser className="w-7 h-7 text-primary" />
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Összes Felhasználó</h3>
-          <p className="text-3xl font-bold text-primary">{stats.total}</p>
+          <h3 className="text-sm font-medium text-base-content/70 mb-2">Összes Felhasználó</h3>
+          <p className="text-4xl font-bold text-primary">{stats.total}</p>
         </div>
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconCrown className="w-6 h-6 text-primary" />
+        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-2xl p-6 text-center">
+          <div className="w-14 h-14 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconCrown className="w-7 h-7 text-warning" />
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Adminok</h3>
-          <p className="text-3xl font-bold text-primary">{stats.admins}</p>
+          <h3 className="text-sm font-medium text-base-content/70 mb-2">Adminok</h3>
+          <p className="text-4xl font-bold text-warning">{stats.admins}</p>
         </div>
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconShield className="w-6 h-6 text-primary" />
+        <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-2xl p-6 text-center">
+          <div className="w-14 h-14 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconShield className="w-7 h-7 text-success" />
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Regisztrált</h3>
-          <p className="text-3xl font-bold text-primary">{stats.verified}</p>
+          <h3 className="text-sm font-medium text-base-content/70 mb-2">Regisztrált</h3>
+          <p className="text-4xl font-bold text-success">{stats.verified}</p>
         </div>
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconUser className="w-6 h-6 text-primary" />
+        <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-2xl p-6 text-center">
+          <div className="w-14 h-14 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconUser className="w-7 h-7 text-error" />
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Nem Regisztrált</h3>
-          <p className="text-3xl font-bold text-primary">{stats.unverified}</p>
+          <h3 className="text-sm font-medium text-base-content/70 mb-2">Nem Regisztrált</h3>
+          <p className="text-4xl font-bold text-error">{stats.unverified}</p>
         </div>
       </div>
 
       {/* Daily Chart */}
-      <DailyChart
-        title="Felhasználók napi regisztrációja"
-        apiEndpoint="/api/admin/charts/users/daily"
-        color="primary"
-        icon="👥"
-      />
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <DailyChart
+          title="Felhasználók napi regisztrációja"
+          apiEndpoint="/api/admin/charts/users/daily"
+          color="primary"
+          icon="👥"
+        />
+      </div>
 
       {/* Filters */}
-      <div className="admin-glass-card">
-        <div className="flex flex-col  gap-4">
-          <div className="form-control flex-1">
-            <div className="input-group flex gap-2">
-              <span className="flex items-center justify-center">
-                <IconSearch className="w-4 h-4 text-primary" />
-              </span>
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <IconFilter className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-bold">Szűrők</h3>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-bold">Keresés</span>
+            </label>
+            <div className="relative">
               <input
                 type="text"
                 placeholder="Keresés név, email vagy felhasználónév alapján..."
-                className="admin-input rounded-l-none border-l-0 flex-1"
+                className="input input-bordered w-full pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <IconSearch className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
             </div>
           </div>
           <div className="form-control">
-            <div className="input-group flex gap-2">
-              <span className="flex items-center justify-center">
-                <IconFilter className="w-4 h-4 text-primary" />
-              </span>
-              <select 
-                className="admin-select rounded-l-none border-l-0"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
-              >
-                <option value="all">Összes felhasználó</option>
-                <option value="admin">Adminok</option>
-                <option value="user">Felhasználók</option>
-              </select>
-            </div>
+            <label className="label">
+              <span className="label-text font-bold">Szűrés típus szerint</span>
+            </label>
+            <select 
+              className="select select-bordered w-full"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+            >
+              <option value="all">Összes felhasználó</option>
+              <option value="admin">Adminok</option>
+              <option value="user">Felhasználók</option>
+            </select>
           </div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="admin-glass-card">
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr className="border-b border-base-300">
-                <th className="text-base-content font-semibold">Név</th>
-                <th className="text-base-content font-semibold">Email</th>
-                <th className="text-base-content font-semibold">Felhasználónév</th>
-                <th className="text-base-content font-semibold">Státusz</th>
-                <th className="text-base-content font-semibold">Regisztráció</th>
-                <th className="text-base-content font-semibold">Utolsó bejelentkezés</th>
-                <th className="text-base-content font-semibold">Műveletek</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user._id} className="hover:bg-base-200/30 transition-colors">
-                  <td className="font-medium text-base-content">{user.name}</td>
-                  <td className="text-base-content/80">
-                    <button
-                      onClick={() => handleEmailClick(user)}
-                      className="text-primary hover:text-primary-focus underline decoration-dotted underline-offset-2 transition-colors cursor-pointer"
-                      title="Email küldése"
-                    >
-                      {user.email}
-                    </button>
-                  </td>
-                  <td className="text-base-content/80 font-mono text-sm">{user.username}</td>
-                  <td>
-                    <div className="flex flex-wrap gap-2">
-                                             {user.isAdmin && (
-                         <span className="admin-badge-warning gap-1 inline-flex items-center">
-                           <IconCrown className="w-3 h-3" />
-                           Admin
-                         </span>
-                       )}
-                       {user.isVerified ? (
-                         <span className="admin-badge-secondary gap-1 inline-flex items-center">
-                           <IconShield className="w-3 h-3" />
-                           Regisztrált
-                         </span>
-                       ) : (
-                         <span className="admin-badge-danger gap-1 inline-flex items-center">
-                           <IconUser className="w-3 h-3" />
-                           Nem regisztrált
-                         </span>
-                       )}
-                    </div>
-                  </td>
-                  <td className="text-base-content/70 text-sm">
-                    {new Date(user.createdAt).toLocaleDateString('hu-HU')}
-                  </td>
-                  <td className="text-base-content/70 text-sm">
-                    {user.lastLogin 
-                      ? new Date(user.lastLogin).toLocaleDateString('hu-HU')
-                      : 'Soha'
-                    }
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-2">
-                                                                    <button
-                         onClick={() => toggleAdminStatus(user._id, user.isAdmin)}
-                         className="btn btn-warning btn-sm text-xs px-3 py-1 gap-1"
-                         title={user.isAdmin ? 'Admin jogosultság eltávolítása' : 'Admin jogosultság hozzáadása'}
-                       >
-                         <IconCrown className="w-3 h-3" />
-                         {user.isAdmin ? 'Admin eltávolítása' : 'Admin létrehozása'}
-                       </button>
-                       <button
-                         onClick={() => deactivateUser(user._id)}
-                         className="btn btn-error btn-sm text-xs px-3 py-1 gap-1"
-                         title="Felhasználó deaktiválása"
-                       >
-                         <IconTrash className="w-3 h-3" />
-                         Törlés
-                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-base-content/20 text-6xl mb-4">👥</div>
-              <h3 className="text-lg font-semibold text-base-content mb-2">Nincsenek felhasználók</h3>
-              <p className="text-base-content/60">
-                {searchTerm || filter !== 'all' 
-                  ? 'Nincsenek felhasználók a megadott feltételekkel.'
-                  : 'Még nincsenek regisztrált felhasználók.'
-                }
-              </p>
-            </div>
-          )}
+      <div className="bg-base-100 border border-base-300 rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-base-300">
+          <h3 className="text-xl font-bold flex items-center gap-2">
+            <IconUsers className="w-6 h-6 text-primary" />
+            Felhasználók ({filteredUsers.length})
+          </h3>
         </div>
+        
+        {filteredUsers.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconUsers className="w-10 h-10 text-base-content/30" />
+            </div>
+            <h3 className="text-xl font-bold text-base-content mb-2">Nincsenek felhasználók</h3>
+            <p className="text-base-content/60">
+              {searchTerm || filter !== 'all' 
+                ? 'Nincsenek felhasználók a megadott feltételekkel.'
+                : 'Még nincsenek regisztrált felhasználók.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table w-full">
+              <thead className="bg-base-200">
+                <tr className="border-b border-base-300">
+                  <th className="font-bold">Felhasználó</th>
+                  <th className="font-bold">Email</th>
+                  <th className="font-bold">Felhasználónév</th>
+                  <th className="font-bold">Státusz</th>
+                  <th className="font-bold">Dátumok</th>
+                  <th className="font-bold">Műveletek</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map(user => (
+                  <tr key={user._id} className="hover:bg-base-200/50 transition-colors border-b border-base-300">
+                    <td>
+                      <div className="flex items-center gap-3">
+
+                        <div>
+                          <div className="font-bold">{user.name}</div>
+                          <div className="text-sm text-base-content/60">ID: {user._id.slice(0, 8)}...</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => handleEmailClick(user)}
+                        className="flex items-center gap-2 text-primary hover:text-primary-focus transition-colors group"
+                        title="Email küldése"
+                      >
+                        <IconMail className="w-4 h-4" />
+                        <span className="underline decoration-dotted underline-offset-2">
+                          {user.email}
+                        </span>
+                      </button>
+                    </td>
+                    <td>
+                      <code className="text-sm bg-base-200 px-2 py-1 rounded">
+                        {user.username}
+                      </code>
+                    </td>
+                    <td>
+                      <div className="flex flex-wrap gap-2">
+                        {user.isAdmin && (
+                          <span className="badge badge-warning gap-1">
+                            <IconCrown size={14} />
+                            Admin
+                          </span>
+                        )}
+                        {user.isVerified ? (
+                          <span className="badge badge-success gap-1">
+                            <IconShield size={14} />
+                            Regisztrált
+                          </span>
+                        ) : (
+                          <span className="badge badge-error gap-1">
+                            <IconUser size={14} />
+                            Nem regisztrált
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2 text-base-content/70">
+                          <IconCalendar size={14} />
+                          <span>{new Date(user.createdAt).toLocaleDateString('hu-HU')}</span>
+                        </div>
+                        {user.lastLogin && (
+                          <div className="flex items-center gap-2 text-base-content/50">
+                            <IconClock size={14} />
+                            <span>{new Date(user.lastLogin).toLocaleDateString('hu-HU')}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => toggleAdminStatus(user._id, user.isAdmin)}
+                          className={`btn btn-sm gap-2 ${user.isAdmin ? 'btn-warning' : 'btn-info'}`}
+                          title={user.isAdmin ? 'Admin jogosultság eltávolítása' : 'Admin jogosultság hozzáadása'}
+                        >
+                          <IconCrown size={16} />
+                          {user.isAdmin ? 'Admin eltávolítása' : 'Admin létrehozása'}
+                        </button>
+                        <button
+                          onClick={() => deactivateUser(user._id)}
+                          className="btn btn-sm btn-error gap-2"
+                          title="Felhasználó deaktiválása"
+                        >
+                          <IconTrash size={16} />
+                          Törlés
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Email Modal */}
@@ -347,8 +410,8 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!subject.trim() || !message.trim()) return;
     
     setLoading(true);
@@ -361,14 +424,11 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
     
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <!-- Header -->
         <div style="background: linear-gradient(135deg, #b62441 0%, #8a1b31 100%); color: white; padding: 20px; text-align: center;">
           <h1 style="margin: 0; font-size: 24px; font-weight: bold;">
             ${isHungarian ? 'tDarts - Admin Értesítés' : 'tDarts - Admin Notification'}
           </h1>
         </div>
-        
-        <!-- Content -->
         <div style="padding: 30px;">
           ${isHungarian ? `
             <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Kedves ${user.name}!</h2>
@@ -404,8 +464,6 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
             </p>
           `}
         </div>
-        
-        <!-- Footer -->
         <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 12px; margin: 0;">
             © 2024 tDarts. Minden jog fenntartva.
@@ -416,162 +474,179 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
   };
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box relative max-w-4xl max-h-[90vh] overflow-y-auto">
-        <button
-          className="btn btn-sm btn-circle absolute right-2 top-2"
-          onClick={onClose}
-        >
-          ✕
-        </button>
-        <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
-          <IconMail className="w-6 h-6" />
-          Email küldése: {user.name}
-        </h3>
-        <p className="text-sm text-base-content/70 mb-6">
-          Email cím: <span className="font-mono">{user.email}</span>
-        </p>
-        
-        {!showPreview ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="label">
-                  <span className="label-text">Email nyelv</span>
-                </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as 'hu' | 'en')}
-                  className="select select-bordered w-full"
-                >
-                  <option value="hu">Magyar (alapértelmezett)</option>
-                  <option value="en">English</option>
-                </select>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-base-100 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-base-100 border-b border-base-300 p-6 flex items-center justify-between">
+          <h3 className="text-2xl font-bold flex items-center gap-2">
+            <IconMail className="w-7 h-7 text-primary" />
+            Email küldése: {user.name}
+          </h3>
+          <button
+            className="btn btn-ghost btn-sm btn-circle"
+            onClick={onClose}
+          >
+            <IconX size={20} />
+          </button>
+        </div>
+
+        <div className="p-6">
+          <p className="text-sm text-base-content/70 mb-6 flex items-center gap-2">
+            <IconMail size={16} />
+            Email cím: <code className="font-mono bg-base-200 px-2 py-1 rounded">{user.email}</code>
+          </p>
+          
+          {!showPreview ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-bold">Email nyelv</span>
+                  </label>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as 'hu' | 'en')}
+                    className="select select-bordered w-full"
+                  >
+                    <option value="hu">Magyar (alapértelmezett)</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-bold">Címzett</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={user.name}
+                    className="input input-bordered w-full"
+                    disabled
+                  />
+                </div>
               </div>
-              <div>
+              
+              <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Címzett</span>
+                  <span className="label-text font-bold">Tárgy</span>
                 </label>
                 <input
                   type="text"
-                  value={user.name}
+                  placeholder="Email tárgya"
                   className="input input-bordered w-full"
-                  disabled
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  required
                 />
               </div>
-            </div>
-            
-            <div>
-              <label className="label">
-                <span className="label-text">Tárgy</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Email tárgya"
-                className="input input-bordered w-full"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="label">
-                <span className="label-text">Üzenet</span>
-              </label>
-              <textarea
-                placeholder="Írd ide az üzenetet..."
-                className="textarea textarea-bordered w-full h-32"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                required
-              ></textarea>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button 
-                type="button" 
-                className="btn btn-ghost flex-1" 
-                onClick={onClose}
-                disabled={loading}
-              >
-                Mégse
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-info flex-1"
-                onClick={() => setShowPreview(true)}
-                disabled={loading || !subject.trim() || !message.trim()}
-              >
-                <IconEye className="w-4 h-4" />
-                Előnézet
-              </button>
-              <button 
-                type="submit" 
-                className="btn btn-primary flex-1" 
-                disabled={loading || !subject.trim() || !message.trim()}
-              >
-                {loading ? (
-                  <span className="loading loading-spinner loading-sm"></span>
-                ) : (
-                  'Email küldése'
-                )}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-lg font-semibold">Email előnézet</h4>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="btn btn-ghost btn-sm"
-              >
-                <IconEyeOff className="w-4 h-4" />
-                Szerkesztés
-              </button>
-            </div>
-            
-            <div className="border border-base-300 rounded-lg overflow-hidden">
-              <div className="bg-base-200 p-3 border-b border-base-300">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">Nyelv:</span>
-                  <span className="badge badge-primary">
-                    {language === 'hu' ? 'Magyar' : 'English'}
-                  </span>
-                  <span className="font-medium ml-4">Címzett:</span>
-                  <span>{user.name}</span>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-bold">Üzenet</span>
+                </label>
+                <textarea
+                  placeholder="Írd ide az üzenetet..."
+                  className="textarea textarea-bordered w-full h-32"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                ></textarea>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button 
+                  type="button" 
+                  className="btn btn-ghost flex-1" 
+                  onClick={onClose}
+                  disabled={loading}
+                >
+                  Mégse
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-info flex-1 gap-2"
+                  onClick={() => setShowPreview(true)}
+                  disabled={loading || !subject.trim() || !message.trim()}
+                >
+                  <IconEye size={18} />
+                  Előnézet
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary flex-1 gap-2" 
+                  disabled={loading || !subject.trim() || !message.trim()}
+                >
+                  {loading ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : (
+                    <>
+                      <IconMail size={18} />
+                      Email küldése
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-semibold">Email előnézet</h4>
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="btn btn-ghost btn-sm gap-2"
+                >
+                  <IconEyeOff size={18} />
+                  Szerkesztés
+                </button>
+              </div>
+              
+              <div className="border border-base-300 rounded-xl overflow-hidden">
+                <div className="bg-base-200 p-4 border-b border-base-300">
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">Nyelv:</span>
+                      <span className="badge badge-primary">
+                        {language === 'hu' ? 'Magyar' : 'English'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">Címzett:</span>
+                      <span>{user.name}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 bg-base-100 max-h-96 overflow-y-auto">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: generateEmailPreview() }}
+                    className="email-preview"
+                  />
                 </div>
               </div>
-              <div className="p-4 bg-base-100 max-h-96 overflow-y-auto">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: generateEmailPreview() }}
-                  className="email-preview"
-                />
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="btn btn-ghost flex-1 gap-2"
+                >
+                  <IconEyeOff size={18} />
+                  Szerkesztés
+                </button>
+                <button
+                  onClick={() => handleSubmit()}
+                  disabled={loading}
+                  className="btn btn-primary flex-1 gap-2"
+                >
+                  {loading ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : (
+                    <>
+                      <IconMail size={18} />
+                      Email küldése
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button
-                onClick={() => setShowPreview(false)}
-                className="btn btn-ghost flex-1"
-              >
-                Szerkesztés
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="btn btn-primary flex-1"
-              >
-                {loading ? (
-                  <span className="loading loading-spinner loading-sm"></span>
-                ) : (
-                  'Email küldése'
-                )}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

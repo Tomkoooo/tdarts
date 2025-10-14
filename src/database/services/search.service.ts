@@ -26,6 +26,8 @@ export class SearchService {
     static async search(query: string, filters: SearchFilters = {}): Promise<SearchResult> {
         await connectMongo();
         
+        console.log('SearchService.search called with:', { query, filters });
+        
         const results: SearchResult = {
             totalResults: 0
         };
@@ -35,22 +37,24 @@ export class SearchService {
 
         // Search players
         if (filters.type === 'players' || filters.type === 'all') {
-            const playerQuery: any = {};
+            let playerQuery: any = {};
             
             if (searchRegex) {
-                playerQuery.$or = [
-                    { name: searchRegex },
-                    { 'userRef': { $exists: true } } // Include registered players
-                ];
+                // Search for players whose name matches the query (registered or not)
+                playerQuery.name = searchRegex;
             } else {
-                // If no search query, return all registered players
-                playerQuery['userRef'] = { $exists: true };
+                // If no search query, return all players
+                playerQuery = {};
             }
 
+            console.log('Player search query:', playerQuery);
+            
             // Fetch ALL matching players (no limit yet) to sort properly in memory
             // MongoDB sort doesn't handle null/undefined MMR values well
             const players = await PlayerModel.find(playerQuery)
                 .populate('userRef', 'name email');
+            
+            console.log('Found players:', players.length);
             
             // Sort by MMR in memory (handle missing/null MMR values)
             const sortedPlayers = players.sort((a, b) => {
@@ -62,11 +66,17 @@ export class SearchService {
                 return a.name.localeCompare(b.name);
             });
 
+            // Get global ranking position for each player
+            const globalRanking = await this.getGlobalPlayerRanking();
+            
             results.players = sortedPlayers.slice(0, 20).map(player => {
                 const mmr = player.stats?.mmr ?? 800;
                 const stats = player.stats || {};
                 // Ensure stats has mmr field
                 stats.mmr = mmr;
+                
+                // Find global ranking position
+                const globalRank = globalRanking.findIndex(p => p._id.toString() === player._id.toString()) + 1;
                 
                 return {
                     _id: player._id,
@@ -76,7 +86,8 @@ export class SearchService {
                     stats: stats,
                     tournamentHistory: player.tournamentHistory || [],
                     mmr: mmr,
-                    mmrTier: this.getMMRTier(mmr)
+                    mmrTier: this.getMMRTier(mmr),
+                    globalRank: globalRank || null
                 };
             });
         }
@@ -218,7 +229,7 @@ export class SearchService {
         const suggestions: string[] = [];
         const searchRegex = new RegExp(query, 'i');
 
-        // Get player name suggestions
+        // Get player name suggestions (all players)
         const playerNames = await PlayerModel.find({ name: searchRegex })
             .select('name')
             .limit(5)
@@ -258,15 +269,11 @@ export class SearchService {
     static async getTopPlayers(limit: number = 10, skip: number = 0): Promise<{ players: any[], total: number }> {
         await connectMongo();
         
-        // Get total count of registered players
-        const total = await PlayerModel.countDocuments({ 
-            userRef: { $exists: true }
-        });
+        // Get total count of all players
+        const total = await PlayerModel.countDocuments();
         
-        // Get ALL registered players to sort by MMR in memory (handle null/undefined MMR)
-        const allPlayers = await PlayerModel.find({ 
-            userRef: { $exists: true }
-        })
+        // Get ALL players to sort by MMR in memory (handle null/undefined MMR)
+        const allPlayers = await PlayerModel.find()
         .populate('userRef', 'name email');
         
         // Sort by MMR descending in memory
@@ -280,7 +287,7 @@ export class SearchService {
         });
         
         // Apply pagination after sorting
-        const players = sortedPlayers.slice(skip, skip + limit).map(player => {
+        const players = sortedPlayers.slice(skip, skip + limit).map((player, index) => {
             const playerObj = player.toObject();
             const mmr = playerObj.stats?.mmr ?? 800;
             
@@ -293,7 +300,8 @@ export class SearchService {
             return {
                 ...playerObj,
                 mmr: mmr,
-                mmrTier: this.getMMRTier(mmr)
+                mmrTier: this.getMMRTier(mmr),
+                globalRank: skip + index + 1 // Calculate global rank based on pagination
             };
         });
         
@@ -316,5 +324,20 @@ export class SearchService {
                 $limit: limit
             }
         ]);
+    }
+
+    private static async getGlobalPlayerRanking(): Promise<any[]> {
+        await connectMongo();
+        
+        // Get ALL players and sort by MMR
+        const allPlayers = await PlayerModel.find().select('_id stats.mmr');
+        
+        // Sort by MMR descending
+        return allPlayers.sort((a, b) => {
+            const aMMR = a.stats?.mmr ?? 800;
+            const bMMR = b.stats?.mmr ?? 800;
+            if (bMMR !== aMMR) return bMMR - aMMR;
+            return a._id.toString().localeCompare(b._id.toString()); // Stable sort
+        });
     }
 } 

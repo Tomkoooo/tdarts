@@ -1,7 +1,24 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconAlertTriangle, IconRefresh, IconClock, IconUser, IconBuilding, IconTrophy } from '@tabler/icons-react';
+import { 
+  IconAlertTriangle, 
+  IconRefresh, 
+  IconClock, 
+  IconUser, 
+  IconBuilding, 
+  IconTrophy,
+  IconAlertCircle,
+  IconBug,
+  IconDatabase,
+  IconServer,
+  IconApi,
+  IconCode,
+  
+  IconChevronDown,
+  IconChevronUp,
+  IconFilter
+} from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import DailyChart from '@/components/admin/DailyChart';
 
@@ -29,20 +46,28 @@ interface ErrorStats {
   recentErrors: ErrorLog[];
 }
 
-
-
 export default function AdminErrorsPage() {
   const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<number>(7); // days
+  const [dateRange, setDateRange] = useState<number>(7);
+  const [showAuthErrors, setShowAuthErrors] = useState<boolean>(false);
+  const [expandedError, setExpandedError] = useState<string | null>(null);
 
   const fetchErrorData = async () => {
     try {
       setLoading(true);
+      
+      const params = new URLSearchParams({
+        days: dateRange.toString(),
+        category: selectedCategory,
+        level: selectedLevel,
+        showAuthErrors: showAuthErrors.toString()
+      });
+
       const [statsResponse] = await Promise.all([
-        axios.get('/api/admin/errors/stats'),
+        axios.get(`/api/admin/errors/stats?${params}`),
       ]);
 
       setErrorStats(statsResponse.data);
@@ -56,30 +81,44 @@ export default function AdminErrorsPage() {
 
   useEffect(() => {
     fetchErrorData();
-  }, [dateRange]);
- 
+  }, [dateRange, selectedCategory, selectedLevel, showAuthErrors]);
 
-
-  const getCategoryIcon = (category: string) => {
-    const icons: Record<string, any> = {
-      auth: IconUser,
-      club: IconBuilding,
-      tournament: IconTrophy,
-      player: IconUser,
-      user: IconUser,
-      api: IconAlertTriangle,
-      system: IconAlertTriangle,
-      database: IconAlertTriangle
+  const getCategoryConfig = (category: string) => {
+    const configs: Record<string, { icon: any; color: string; label: string }> = {
+      auth: { icon: IconUser, color: 'bg-warning/10 text-warning border-warning/30', label: 'Auth' },
+      club: { icon: IconBuilding, color: 'bg-info/10 text-info border-info/30', label: 'Club' },
+      tournament: { icon: IconTrophy, color: 'bg-success/10 text-success border-success/30', label: 'Tournament' },
+      player: { icon: IconUser, color: 'bg-primary/10 text-primary border-primary/30', label: 'Player' },
+      user: { icon: IconUser, color: 'bg-primary/10 text-primary border-primary/30', label: 'User' },
+      api: { icon: IconApi, color: 'bg-error/10 text-error border-error/30', label: 'API' },
+      system: { icon: IconServer, color: 'bg-error/10 text-error border-error/30', label: 'System' },
+      database: { icon: IconDatabase, color: 'bg-error/10 text-error border-error/30', label: 'Database' }
     };
-    return icons[category] || IconAlertTriangle;
+    return configs[category] || { icon: IconBug, color: 'bg-base-300/10 text-base-content border-base-300/30', label: category };
+  };
+
+  const getLevelConfig = (level: string) => {
+    switch (level) {
+      case 'error':
+        return { color: 'bg-error text-error-content', icon: IconAlertCircle };
+      case 'warn':
+        return { color: 'bg-warning text-warning-content', icon: IconAlertTriangle };
+      case 'info':
+        return { color: 'bg-info text-info-content', icon: IconAlertCircle };
+      default:
+        return { color: 'bg-base-300 text-base-content', icon: IconAlertCircle };
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading loading-spinner loading-lg text-primary"></div>
-          <p className="mt-4 text-base-content/60">Hiba adatok betöltése...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+          </div>
+          <p className="text-base-content/60">Hiba adatok betöltése...</p>
         </div>
       </div>
     );
@@ -87,16 +126,20 @@ export default function AdminErrorsPage() {
 
   if (!errorStats) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-error text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-base-content mb-2">Hiba történt</h2>
-          <p className="text-base-content/60 mb-4">Nem sikerült betölteni a hiba adatokat.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto">
+            <IconAlertTriangle className="w-12 h-12 text-error" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-base-content">Hiba történt</h2>
+            <p className="text-base-content/60">Nem sikerült betölteni a hiba adatokat.</p>
+          </div>
           <button 
             onClick={fetchErrorData}
-            className="admin-btn-primary"
+            className="btn btn-primary gap-2"
           >
-            <IconRefresh className="w-4 h-4" />
+            <IconRefresh className="w-5 h-5" />
             Újrapróbálás
           </button>
         </div>
@@ -104,67 +147,85 @@ export default function AdminErrorsPage() {
     );
   }
 
-  const filteredRecentErrors = errorStats.recentErrors.filter(error => {
-    const matchesCategory = selectedCategory === 'all' || error.category === selectedCategory;
-    const matchesLevel = selectedLevel === 'all' || error.level === selectedLevel;
-    return matchesCategory && matchesLevel;
-  });
+  const filteredRecentErrors = errorStats.recentErrors;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-gradient-red mb-2">Hiba Kezelés</h1>
-          <p className="text-base-content/60">Rendszer hibák monitorozása és kezelése</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-error/20 via-error/10 to-transparent border border-error/30 p-8">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
+            backgroundSize: '32px 32px'
+          }}></div>
         </div>
-        <button 
-          onClick={fetchErrorData}
-          className="admin-btn-primary text-sm flex items-center gap-2"
-          disabled={loading}
-        >
-          <IconRefresh className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Frissítés
-        </button>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl lg:text-5xl font-bold text-base-content flex items-center gap-3">
+              <IconAlertTriangle className="w-10 h-10 text-error" />
+              Hiba Kezelés
+            </h1>
+            <p className="text-base-content/70 text-lg">Rendszer hibák monitorozása és kezelése</p>
+          </div>
+          
+          <button 
+            onClick={fetchErrorData}
+            disabled={loading}
+            className="btn btn-error gap-2"
+          >
+            <IconRefresh className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            Frissítés
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconAlertTriangle className="w-6 h-6 text-primary" />
+        <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-2xl p-6 text-center">
+          <div className="w-14 h-14 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconAlertTriangle className="w-7 h-7 text-error" />
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Összes Hiba</h3>
-          <p className="text-3xl font-bold text-primary">{errorStats.totalErrors}</p>
+          <h3 className="text-sm font-medium text-base-content/70 mb-2">Összes Hiba</h3>
+          <p className="text-4xl font-bold text-error">{errorStats.totalErrors}</p>
         </div>
-        {Object.entries(errorStats.errorsByLevel).slice(0, 3).map(([level, count]) => (
-          <div key={level} className="admin-glass-card text-center">
-            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-              <IconAlertTriangle className="w-6 h-6 text-primary" />
+        {Object.entries(errorStats.errorsByLevel).slice(0, 3).map(([level, count]) => {
+          const config = getLevelConfig(level);
+          return (
+            <div key={level} className="bg-base-100 border border-base-300 rounded-2xl p-6 text-center hover:shadow-xl transition-all duration-300">
+              <div className="w-14 h-14 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <config.icon className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-sm font-medium text-base-content/70 mb-2 capitalize">{level}</h3>
+              <p className="text-4xl font-bold text-primary">{count}</p>
             </div>
-            <h3 className="text-sm font-medium text-base-content/60 mb-1 capitalize">{level}</h3>
-            <p className="text-3xl font-bold text-primary">{count}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Daily Chart */}
-      <DailyChart
-        title="Hibák napi előfordulása"
-        apiEndpoint="/api/admin/errors/daily"
-        color="error"
-        icon="🚨"
-      />
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <DailyChart
+          title="Hibák napi előfordulása"
+          apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}`}
+          color="error"
+          icon="🚨"
+        />
+      </div>
 
       {/* Filters */}
-      <div className="admin-glass-card">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="form-control flex-col flex gap-1">
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <IconFilter className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-bold">Szűrők</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Időszak</span>
+              <span className="label-text font-bold">Időszak</span>
             </label>
             <select 
-              className="select select-bordered bg-base-200/50 border-base-300"
+              className="select select-bordered w-full"
               value={dateRange}
               onChange={(e) => setDateRange(Number(e.target.value))}
             >
@@ -174,12 +235,12 @@ export default function AdminErrorsPage() {
               <option value={90}>Utolsó 3 hónap</option>
             </select>
           </div>
-          <div className="form-control flex-col flex gap-1">
+          <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Kategória</span>
+              <span className="label-text font-bold">Kategória</span>
             </label>
             <select 
-              className="select select-bordered bg-base-200/50 border-base-300"
+              className="select select-bordered w-full"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
@@ -189,12 +250,12 @@ export default function AdminErrorsPage() {
               ))}
             </select>
           </div>
-          <div className="form-control flex-col flex gap-1">
+          <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Szint</span>
+              <span className="label-text font-bold">Szint</span>
             </label>
             <select 
-              className="select select-bordered bg-base-200/50 border-base-300"
+              className="select select-bordered w-full"
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
             >
@@ -204,110 +265,192 @@ export default function AdminErrorsPage() {
               ))}
             </select>
           </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-bold">Auth hibák</span>
+            </label>
+            <label className="cursor-pointer label justify-start gap-3">
+              <input 
+                type="checkbox" 
+                className="toggle toggle-primary" 
+                checked={showAuthErrors}
+                onChange={(e) => setShowAuthErrors(e.target.checked)}
+              />
+              <span className="label-text">
+                {showAuthErrors ? 'Megjelenítés' : 'Elrejtés'}
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 
       {/* Category and Level Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="admin-glass-card">
-          <h3 className="text-lg font-semibold text-base-content mb-4">Hibák Kategóriánként</h3>
+        <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-base-content mb-6 flex items-center gap-2">
+            <IconCode className="w-6 h-6 text-primary" />
+            Hibák Kategóriánként
+          </h3>
           <div className="space-y-3">
             {Object.entries(errorStats.errorsByCategory)
               .sort(([,a], [,b]) => b - a)
               .map(([category, count]) => {
-                const Icon = getCategoryIcon(category);
+                const config = getCategoryConfig(category);
                 return (
-                  <div key={category} className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
+                  <div key={category} className={`flex items-center justify-between p-4 rounded-xl ${config.color} border hover:scale-[1.02] transition-transform duration-200`}>
                     <div className="flex items-center gap-3">
-                                         <div className="p-2 rounded-lg bg-primary/10">
-                     <Icon className="w-4 h-4 text-primary" />
-                   </div>
-                   <span className="capitalize font-medium text-primary">{category}</span>
+                      <div className="p-2 rounded-lg bg-base-100/50">
+                        <config.icon className="w-5 h-5" />
+                      </div>
+                      <span className="capitalize font-bold">{config.label}</span>
                     </div>
-                    <span className="font-bold text-base-content">{count}</span>
+                    <span className="text-2xl font-bold">{count}</span>
                   </div>
                 );
               })}
           </div>
         </div>
 
-        <div className="admin-glass-card">
-          <h3 className="text-lg font-semibold text-base-content mb-4">Hibák Szintenként</h3>
+        <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-base-content mb-6 flex items-center gap-2">
+            <IconAlertTriangle className="w-6 h-6 text-primary" />
+            Hibák Szintenként
+          </h3>
           <div className="space-y-3">
             {Object.entries(errorStats.errorsByLevel)
               .sort(([,a], [,b]) => b - a)
-              .map(([level, count]) => (
-                <div key={level} className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
-                  <div className="flex items-center gap-3">
-                                       <div className="p-2 rounded-lg bg-primary/10">
-                     <IconAlertTriangle className="w-4 h-4 text-primary" />
-                   </div>
-                   <span className="capitalize font-medium text-primary">{level}</span>
+              .map(([level, count]) => {
+                const config = getLevelConfig(level);
+                return (
+                  <div key={level} className="flex items-center justify-between p-4 rounded-xl bg-base-200 hover:bg-base-300 transition-colors duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${config.color}`}>
+                        <config.icon className="w-5 h-5" />
+                      </div>
+                      <span className="capitalize font-bold">{level}</span>
+                    </div>
+                    <span className="text-2xl font-bold">{count}</span>
                   </div>
-                  <span className="font-bold text-base-content">{count}</span>
-                </div>
-              ))}
+                );
+              })}
           </div>
         </div>
       </div>
 
       {/* Recent Errors */}
-      <div className="admin-glass-card">
-        <h3 className="text-lg font-semibold text-base-content mb-4">Legutóbbi Hibák</h3>
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <h3 className="text-xl font-bold text-base-content mb-6 flex items-center gap-2">
+          <IconBug className="w-6 h-6 text-primary" />
+          Legutóbbi Hibák ({filteredRecentErrors.length})
+        </h3>
         <div className="space-y-4">
           {filteredRecentErrors.length > 0 ? (
-            filteredRecentErrors.map(error => (
-                             <div key={error._id} className="border-l-4 border-primary pl-4 py-3 bg-base-200/20 rounded-r-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                       <span className="badge badge-sm badge-primary">
-                         {error.level}
-                       </span>
-                       <span className="badge badge-outline badge-sm">
-                         {error.category}
-                       </span>
-                      {error.endpoint && (
-                        <span className="text-xs text-base-content/60 bg-base-200 px-2 py-1 rounded">
-                          {error.method} {error.endpoint}
-                        </span>
-                      )}
+            filteredRecentErrors.map(error => {
+              const categoryConfig = getCategoryConfig(error.category);
+              const levelConfig = getLevelConfig(error.level);
+              const isExpanded = expandedError === error._id;
+
+              return (
+                <div key={error._id} className="border border-base-300 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                  <div className="p-5 bg-base-200/50">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className={`p-2 rounded-lg ${categoryConfig.color} border flex-shrink-0`}>
+                          <categoryConfig.icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <span className={`${levelConfig.color} px-3 py-1 rounded-lg text-xs font-bold uppercase`}>
+                              {error.level}
+                            </span>
+                            <span className="badge badge-outline">
+                              {error.category}
+                            </span>
+                            {error.method && error.endpoint && (
+                              <span className="text-xs text-base-content/60 bg-base-300 px-2 py-1 rounded font-mono">
+                                {error.method} {error.endpoint}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-bold text-base-content break-words">{error.message}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setExpandedError(isExpanded ? null : error._id)}
+                        className="btn btn-ghost btn-sm btn-circle flex-shrink-0"
+                      >
+                        {isExpanded ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                      </button>
                     </div>
-                    <p className="font-medium text-base-content mb-1">{error.message}</p>
-                    {error.error && (
-                      <p className="text-sm text-base-content/60 mb-2">{error.error}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-base-content/40 flex-wrap">
+
+                    {/* Meta Info */}
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-base-content/60">
                       <div className="flex items-center gap-1">
-                        <IconClock className="w-3 h-3" />
+                        <IconClock className="w-4 h-4" />
                         <span>{new Date(error.timestamp).toLocaleString('hu-HU')}</span>
                       </div>
                       {error.userId && (
                         <div className="flex items-center gap-1">
-                          <IconUser className="w-3 h-3" />
-                          <span>User: {error.userId}</span>
+                          <IconUser className="w-4 h-4" />
+                          <span>User: {error.userId.slice(0, 8)}...</span>
                         </div>
                       )}
                       {error.clubId && (
                         <div className="flex items-center gap-1">
-                          <IconBuilding className="w-3 h-3" />
-                          <span>Club: {error.clubId}</span>
+                          <IconBuilding className="w-4 h-4" />
+                          <span>Club: {error.clubId.slice(0, 8)}...</span>
+                        </div>
+                      )}
+                      {error.tournamentId && (
+                        <div className="flex items-center gap-1">
+                          <IconTrophy className="w-4 h-4" />
+                          <span>Tournament: {error.tournamentId.slice(0, 8)}...</span>
                         </div>
                       )}
                     </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-base-300 space-y-3">
+                        {error.error && (
+                          <div className="bg-error/10 border border-error/30 rounded-lg p-3">
+                            <p className="text-sm font-bold text-error mb-1">Error Details:</p>
+                            <p className="text-sm text-base-content/80 font-mono break-all">{error.error}</p>
+                          </div>
+                        )}
+                        {error.stack && (
+                          <div className="bg-base-300/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                            <p className="text-sm font-bold text-base-content mb-2">Stack Trace:</p>
+                            <pre className="text-xs text-base-content/70 font-mono whitespace-pre-wrap break-all">
+                              {error.stack}
+                            </pre>
+                          </div>
+                        )}
+                        {error.metadata && Object.keys(error.metadata).length > 0 && (
+                          <div className="bg-info/10 border border-info/30 rounded-lg p-3">
+                            <p className="text-sm font-bold text-info mb-2">Metadata:</p>
+                            <pre className="text-xs text-base-content/70 font-mono whitespace-pre-wrap break-all">
+                              {JSON.stringify(error.metadata, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div className="text-center py-8">
-              <div className="text-base-content/20 text-6xl mb-4">✅</div>
-              <h3 className="text-lg font-semibold text-base-content mb-2">Nincsenek hibák</h3>
+            <div className="text-center py-12">
+              <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <IconAlertCircle className="w-10 h-10 text-success" />
+              </div>
+              <h3 className="text-xl font-bold text-base-content mb-2">Nincsenek hibák</h3>
               <p className="text-base-content/60">
                 {selectedCategory !== 'all' || selectedLevel !== 'all'
                   ? 'Nincsenek hibák a megadott feltételekkel.'
-                  : 'Nincsenek hibák a rendszerben.'
-                }
+                  : 'Nincsenek hibák a rendszerben.'}
               </p>
             </div>
           )}

@@ -4210,4 +4210,189 @@ export class TournamentService {
 
         await tournament.save();
     }
+
+    /**
+     * Reopen a finished tournament (Super Admin only)
+     * This will:
+     * - Change tournament status from 'finished' back to 'active' or 'group-stage' or 'knockout'
+     * - Reset final positions to null
+     * - Clear player statistics (won/lost matches, final position, etc.)
+     * - Keep all match data and leg data intact
+     */
+    static async reopenTournament(tournamentCode: string, requesterId: string): Promise<TournamentDocument> {
+        try {
+            // Get tournament
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+            if (!tournament) {
+                throw new Error('Torna nem található');
+            }
+
+            // Check if tournament is actually finished
+            if (tournament.tournamentSettings?.status !== 'finished') {
+                throw new Error('A torna nincs befejezve');
+            }
+
+            // Determine what status to set back to based on tournament format and current state
+            let newStatus: string;
+            
+            if (tournament.tournamentSettings?.format === 'group') {
+                // Pure group tournament -> group-stage
+                newStatus = 'group-stage';
+            } else if (tournament.tournamentSettings?.format === 'knockout') {
+                // Pure knockout tournament -> knockout
+                newStatus = 'knockout';
+            } else if (tournament.tournamentSettings?.format === 'group_knockout') {
+                // Group + knockout tournament -> knockout (since groups are already finished)
+                newStatus = 'knockout';
+            } else {
+                // Default to active
+                newStatus = 'active';
+            }
+
+            // Update tournament settings
+            tournament.tournamentSettings.status = newStatus;
+            tournament.tournamentSettings.finishedAt = undefined;
+
+            // Reset all tournament players' statistics and subtract from Player collection
+            if (tournament.tournamentPlayers && tournament.tournamentPlayers.length > 0) {
+                for (const tournamentPlayer of tournament.tournamentPlayers) {
+                    // Reset tournament player statistics
+                    tournamentPlayer.matchesWon = 0;
+                    tournamentPlayer.matchesLost = 0;
+                    tournamentPlayer.legsWon = 0;
+                    tournamentPlayer.legsLost = 0;
+                    
+                    // Reset tournament statistics
+                    tournamentPlayer.finalPosition = null;
+                    tournamentPlayer.eliminationRound = null;
+                    tournamentPlayer.eliminationText = null;
+                    tournamentPlayer.avg = null;
+                    tournamentPlayer.total180s = 0;
+                    tournamentPlayer.highestCheckout = null;
+                    tournamentPlayer.totalCheckouts = 0;
+                    tournamentPlayer.totalDartsThrown = 0;
+                    
+                    // Reset group standings if applicable
+                    if (tournamentPlayer.groupStanding !== undefined) {
+                        tournamentPlayer.groupStanding = null;
+                    }
+
+                    // Subtract tournament statistics from Player collection and remove from tournament history
+                    try {
+                        const playerId = tournamentPlayer.playerReference?._id || tournamentPlayer.playerReference;
+                        if (playerId) {
+                            const player = await PlayerModel.findById(playerId);
+                            if (player) {
+                                // Find tournament in history to get MMR change
+                                const tournamentHistoryIndex = player.tournamentHistory?.findIndex(
+                                    (th: any) => th.tournamentId === tournament.tournamentId
+                                );
+                                
+                                const mmrChange = 0;
+                                if (tournamentHistoryIndex !== undefined && tournamentHistoryIndex !== -1 && player.tournamentHistory) {
+                                    
+                                    // Remove tournament from history
+                                    player.tournamentHistory.splice(tournamentHistoryIndex, 1);
+                                    console.log(`Removed tournament ${tournament.tournamentId} from player ${playerId} history`);
+                                }
+                                
+                                // Subtract tournament statistics from player's global statistics
+                                if (player.stats) {
+                                    // Subtract tournaments played
+                                    player.stats.tournamentsPlayed = Math.max(0, (player.stats.tournamentsPlayed || 0) - 1);
+                                    
+                                    // Subtract match statistics
+                                    player.stats.matchesPlayed = Math.max(0, (player.stats.matchesPlayed || 0) - (tournamentPlayer.matchesWon || 0) - (tournamentPlayer.matchesLost || 0));
+                                    player.stats.totalMatchesWon = Math.max(0, (player.stats.totalMatchesWon || 0) - (tournamentPlayer.matchesWon || 0));
+                                    player.stats.totalMatchesLost = Math.max(0, (player.stats.totalMatchesLost || 0) - (tournamentPlayer.matchesLost || 0));
+                                    
+                                    // Subtract leg statistics
+                                    player.stats.legsWon = Math.max(0, (player.stats.legsWon || 0) - (tournamentPlayer.legsWon || 0));
+                                    player.stats.legsLost = Math.max(0, (player.stats.legsLost || 0) - (tournamentPlayer.legsLost || 0));
+                                    player.stats.totalLegsWon = Math.max(0, (player.stats.totalLegsWon || 0) - (tournamentPlayer.legsWon || 0));
+                                    player.stats.totalLegsLost = Math.max(0, (player.stats.totalLegsLost || 0) - (tournamentPlayer.legsLost || 0));
+                                    
+                                    // Subtract other statistics
+                                    player.stats.total180s = Math.max(0, (player.stats.total180s || 0) - (tournamentPlayer.total180s || 0));
+                                    player.stats.oneEightiesCount = Math.max(0, (player.stats.oneEightiesCount || 0) - (tournamentPlayer.total180s || 0));
+                                    
+                                    // Subtract MMR change
+                                    player.stats.mmr = Math.max(0, (player.stats.mmr || 800) + mmrChange);
+                                    
+                                    // Recalculate average from remaining tournament history
+                                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
+                                        const totalAvg = player.tournamentHistory.reduce((sum: number, th: any) => {
+                                            return sum + (th.stats?.averagePosition || 0);
+                                        }, 0);
+                                        player.stats.averagePosition = totalAvg / player.tournamentHistory.length;
+                                        
+                                        // Recalculate best position
+                                        const bestPos = Math.min(...player.tournamentHistory.map((th: any) => th.position || 999));
+                                        player.stats.bestPosition = bestPos < 999 ? bestPos : 999;
+                                        
+                                        // Recalculate highest checkout from tournament history
+                                        const maxCheckout = Math.max(...player.tournamentHistory.map((th: any) => th.stats?.highestCheckout || 0), 0);
+                                        player.stats.highestCheckout = maxCheckout;
+                                    } else {
+                                        // No tournaments left, reset to defaults
+                                        player.stats.averagePosition = 0;
+                                        player.stats.bestPosition = 999;
+                                        player.stats.highestCheckout = 0;
+                                    }
+                                    
+                                    // Recalculate average if needed (based on remaining data)
+                                    // This is approximate - ideally we'd recalculate from all remaining matches
+                                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
+                                        const totalAvgScore = player.tournamentHistory.reduce((sum: number, th: any) => {
+                                            return sum + (th.stats?.averagePosition || 0);
+                                        }, 0);
+                                        player.stats.avg = totalAvgScore / player.tournamentHistory.length;
+                                    } else {
+                                        player.stats.avg = 0;
+                                    }
+                                }
+                                
+                                await player.save();
+                                console.log(`Subtracted tournament statistics from player ${playerId}, removed from history, adjusted MMR by ${mmrChange}`);
+                            }
+                        }
+                    } catch (playerError) {
+                        console.error(`Error updating player ${tournamentPlayer.playerReference?._id || tournamentPlayer.playerReference} statistics:`, playerError);
+                        // Continue with other players even if one fails
+                    }
+                }
+            }
+
+            // Reset group standings if tournament has groups
+            if (tournament.groups && tournament.groups.length > 0) {
+                tournament.groups.forEach((group: any) => {
+                    if (group.standings && group.standings.length > 0) {
+                        group.standings.forEach((standing: any) => {
+                            standing.matchesPlayed = 0;
+                            standing.matchesWon = 0;
+                            standing.matchesLost = 0;
+                            standing.legsWon = 0;
+                            standing.legsLost = 0;
+                            standing.legDifference = 0;
+                            standing.points = 0;
+                            standing.average = null;
+                            standing.total180s = 0;
+                            standing.highestCheckout = null;
+                        });
+                    }
+                });
+            }
+
+            // Save tournament
+            await tournament.save();
+
+            console.log(`Tournament ${tournamentCode} reopened by super admin ${requesterId}. Status changed from 'finished' to '${newStatus}'`);
+
+            return tournament;
+
+        } catch (error: any) {
+            console.error('Error reopening tournament:', error);
+            throw new Error(`Hiba történt a torna újranyitása során: ${error.message}`);
+        }
+    }
 }

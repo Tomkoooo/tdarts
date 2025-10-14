@@ -3,8 +3,26 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  IconBug, IconBulb, IconSettingsCode, IconCheck, IconEdit, IconTrash,
-  IconSearch, IconRefresh, IconMail, IconCalendar
+  IconBug, 
+  IconBulb, 
+  IconSettingsCode, 
+  IconCheck, 
+  IconEdit, 
+  IconTrash,
+  IconSearch, 
+  IconRefresh, 
+  IconMail, 
+  IconCalendar,
+  IconX,
+  IconDeviceDesktop,
+  IconDeviceMobile,
+  IconDeviceTablet,
+  IconBrowser,
+  IconUser,
+  IconClock,
+  IconCircleCheck,
+  IconProgress,
+  IconCircleX,
 } from '@tabler/icons-react';
 
 interface Feedback {
@@ -50,6 +68,7 @@ export default function FeedbackManager() {
     search: ''
   });
   const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const fetchFeedback = async () => {
     try {
@@ -84,8 +103,6 @@ export default function FeedbackManager() {
       
       toast.success('Hibabejelentés frissítve');
       setEditingFeedback(null);
-      
-      // Frissítjük a statisztikákat
       fetchFeedback();
     } catch (error: any) {
       console.error('Error updating feedback:', error);
@@ -100,8 +117,6 @@ export default function FeedbackManager() {
       await axios.delete(`/api/admin/feedback/${feedbackId}`);
       setFeedback(prev => prev.filter(f => f._id !== feedbackId));
       toast.success('Hibabejelentés törölve');
-      
-      // Frissítjük a statisztikákat
       fetchFeedback();
     } catch (error: any) {
       console.error('Error deleting feedback:', error);
@@ -109,41 +124,83 @@ export default function FeedbackManager() {
     }
   };
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryConfig = (category: string) => {
     switch (category) {
-      case 'bug': return <IconBug className="w-4 h-4 text-error" />;
-      case 'feature': return <IconBulb className="w-4 h-4 text-warning" />;
-      case 'improvement': return <IconSettingsCode className="w-4 h-4 text-info" />;
-      default: return <IconCheck className="w-4 h-4 text-success" />;
+      case 'bug': 
+        return { 
+          icon: IconBug, 
+          label: 'Hiba', 
+          color: 'bg-error/10 text-error border-error/30',
+          emoji: '🐛'
+        };
+      case 'feature': 
+        return { 
+          icon: IconBulb, 
+          label: 'Új funkció', 
+          color: 'bg-warning/10 text-warning border-warning/30',
+          emoji: '💡'
+        };
+      case 'improvement': 
+        return { 
+          icon: IconSettingsCode, 
+          label: 'Fejlesztés', 
+          color: 'bg-info/10 text-info border-info/30',
+          emoji: '📈'
+        };
+      default: 
+        return { 
+          icon: IconCheck, 
+          label: 'Egyéb', 
+          color: 'bg-success/10 text-success border-success/30',
+          emoji: '📝'
+        };
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityConfig = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'admin-badge-error';
-      case 'high': return 'admin-badge-warning';
-      case 'medium': return 'admin-badge-info';
-      case 'low': return 'admin-badge-success';
-      default: return 'admin-badge-outline';
+      case 'critical': return { color: 'bg-error text-error-content', label: 'Kritikus' };
+      case 'high': return { color: 'bg-warning text-warning-content', label: 'Magas' };
+      case 'medium': return { color: 'bg-info text-info-content', label: 'Közepes' };
+      case 'low': return { color: 'bg-success text-success-content', label: 'Alacsony' };
+      default: return { color: 'bg-base-300 text-base-content', label: 'Nincs' };
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'pending': return 'admin-badge-warning';
-      case 'in-progress': return 'admin-badge-info';
-      case 'resolved': return 'admin-badge-success';
-      case 'rejected': return 'admin-badge-error';
-      case 'closed': return 'admin-badge-outline';
-      default: return 'admin-badge-outline';
+      case 'pending': return { icon: IconClock, color: 'bg-warning/20 border-warning', label: 'Függőben' };
+      case 'in-progress': return { icon: IconProgress, color: 'bg-info/20 border-info', label: 'Folyamatban' };
+      case 'resolved': return { icon: IconCircleCheck, color: 'bg-success/20 border-success', label: 'Megoldva' };
+      case 'rejected': return { icon: IconCircleX, color: 'bg-error/20 border-error', label: 'Elutasítva' };
+      case 'closed': return { icon: IconCheck, color: 'bg-base-300/20 border-base-300', label: 'Lezárva' };
+      default: return { icon: IconClock, color: 'bg-base-300/20 border-base-300', label: 'Ismeretlen' };
     }
   };
+
+  const getDeviceIcon = (device?: string) => {
+    switch (device) {
+      case 'desktop': return IconDeviceDesktop;
+      case 'mobile': return IconDeviceMobile;
+      case 'tablet': return IconDeviceTablet;
+      default: return IconDeviceDesktop;
+    }
+  };
+
+  const filteredByCategory = selectedCategory 
+    ? feedback.filter(f => f.category === selectedCategory)
+    : feedback;
 
   if (loading) {
     return (
-      <div className="text-center">
-        <div className="loading loading-spinner loading-lg text-primary"></div>
-        <p className="mt-4 text-base-content/60">Adatok betöltése...</p>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+          </div>
+          <p className="text-base-content/60">Visszajelzések betöltése...</p>
+        </div>
       </div>
     );
   }
@@ -152,276 +209,276 @@ export default function FeedbackManager() {
     <div className="space-y-6">
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="admin-glass-card text-center p-4">
-            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 inline-block mb-2">
-              <IconBug className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="text-xs font-medium text-base-content/60 mb-1">Összes</h3>
-            <p className="text-2xl font-bold text-primary">{stats.total}</p>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
+            <div className="text-sm text-base-content/70 font-medium">Összes</div>
           </div>
-          <div className="admin-glass-card text-center p-4">
-            <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 inline-block mb-2">
-              <IconCalendar className="w-5 h-5 text-warning" />
-            </div>
-            <h3 className="text-xs font-medium text-base-content/60 mb-1">Függőben</h3>
-            <p className="text-2xl font-bold text-warning">{stats.pending}</p>
+          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
+            <div className="text-sm text-base-content/70 font-medium">Függőben</div>
           </div>
-          <div className="admin-glass-card text-center p-4">
-            <div className="p-2 rounded-lg bg-info/10 border border-info/20 inline-block mb-2">
-              <IconSettingsCode className="w-5 h-5 text-info" />
-            </div>
-            <h3 className="text-xs font-medium text-base-content/60 mb-1">Folyamatban</h3>
-            <p className="text-2xl font-bold text-info">{stats.inProgress}</p>
+          <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
+            <div className="text-sm text-base-content/70 font-medium">Folyamatban</div>
           </div>
-          <div className="admin-glass-card text-center p-4">
-            <div className="p-2 rounded-lg bg-success/10 border border-success/20 inline-block mb-2">
-              <IconCheck className="w-5 h-5 text-success" />
-            </div>
-            <h3 className="text-xs font-medium text-base-content/60 mb-1">Megoldva</h3>
-            <p className="text-2xl font-bold text-success">{stats.resolved}</p>
+          <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-success mb-2">{stats.resolved}</div>
+            <div className="text-sm text-base-content/70 font-medium">Megoldva</div>
+          </div>
+          <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-error mb-2">{stats.rejected}</div>
+            <div className="text-sm text-base-content/70 font-medium">Elutasítva</div>
           </div>
         </div>
       )}
 
+      {/* Category Tabs */}
+      <div className="bg-base-100 border border-base-300 rounded-xl p-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedCategory('')}
+            className={`btn btn-sm gap-2 ${!selectedCategory ? 'btn-primary' : 'btn-ghost'}`}
+          >
+            Összes ({feedback.length})
+          </button>
+          {['bug', 'feature', 'improvement', 'other'].map(category => {
+            const config = getCategoryConfig(category);
+            const count = feedback.filter(f => f.category === category).length;
+            return (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`btn btn-sm gap-2 ${selectedCategory === category ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                <span>{config.emoji}</span>
+                {config.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Filters */}
-      <div className="admin-glass-card">
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Státusz</span>
-              </label>
-              <select
-                className="admin-select w-full"
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              >
-                <option value="">Összes státusz</option>
-                <option value="pending">Függőben</option>
-                <option value="in-progress">Folyamatban</option>
-                <option value="resolved">Megoldva</option>
-                <option value="rejected">Elutasítva</option>
-                <option value="closed">Lezárva</option>
-              </select>
-            </div>
+      <div className="bg-base-100 border border-base-300 rounded-xl p-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <select
+              className="select select-bordered select-sm w-full"
+              value={filters.status}
+              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+            >
+              <option value="">Összes státusz</option>
+              <option value="pending">Függőben</option>
+              <option value="in-progress">Folyamatban</option>
+              <option value="resolved">Megoldva</option>
+              <option value="rejected">Elutasítva</option>
+              <option value="closed">Lezárva</option>
+            </select>
             
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Kategória</span>
-              </label>
-              <select
-                className="admin-select w-full"
-                value={filters.category}
-                onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-              >
-                <option value="">Összes kategória</option>
-                <option value="bug">Hiba</option>
-                <option value="feature">Új funkció</option>
-                <option value="improvement">Fejlesztés</option>
-                <option value="other">Egyéb</option>
-              </select>
-            </div>
-            
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Prioritás</span>
-              </label>
-              <select
-                className="admin-select w-full"
-                value={filters.priority}
-                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-              >
-                <option value="">Összes prioritás</option>
-                <option value="critical">Kritikus</option>
-                <option value="high">Magas</option>
-                <option value="medium">Közepes</option>
-                <option value="low">Alacsony</option>
-              </select>
+            <select
+              className="select select-bordered select-sm w-full"
+              value={filters.priority}
+              onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+            >
+              <option value="">Összes prioritás</option>
+              <option value="critical">Kritikus</option>
+              <option value="high">Magas</option>
+              <option value="medium">Közepes</option>
+              <option value="low">Alacsony</option>
+            </select>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Keresés..."
+                className="input input-bordered input-sm w-full pl-10"
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              />
+              <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3 items-start">
-            <div className="form-control flex-1">
-              <label className="label">
-                <span className="label-text font-medium">Keresés</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Keresés..."
-                  className="admin-input w-full pr-10"
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                />
-                <IconSearch className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/50" />
-              </div>
-            </div>
-            
-            <div className="flex gap-2 self-end">
-              <button
-                onClick={fetchFeedback}
-                className="admin-btn-info btn-sm w-full sm:w-auto"
-              >
-                <IconRefresh className="w-4 h-4" />
-                <span className="ml-1">Frissítés</span>
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={fetchFeedback}
+            className="btn btn-primary btn-sm gap-2 whitespace-nowrap"
+          >
+            <IconRefresh size={18} />
+            Frissítés
+          </button>
         </div>
       </div>
 
       {/* Feedback List */}
-      <div className="admin-glass-card">
-        <h3 className="text-lg font-semibold mb-4">Hibabejelentések ({feedback.length})</h3>
-        
-        {feedback.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-base-content/20 text-6xl mb-4">📝</div>
-            <p className="text-base-content/60">Nincsenek hibabejelentések</p>
+      <div className="space-y-4">
+        {filteredByCategory.length === 0 ? (
+          <div className="bg-base-100 border border-base-300 rounded-xl p-12 text-center">
+            <IconBug size={64} className="mx-auto mb-4 text-base-content/20" />
+            <p className="text-lg text-base-content/60">Nincsenek visszajelzések</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {feedback.map((item) => (
-              <div key={item._id} className="border border-base-300 rounded-lg p-4 hover:shadow-md transition-shadow">
-                {/* Header - Title and Badges */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    {getCategoryIcon(item.category)}
-                    <h4 className="font-semibold text-lg">{item.title}</h4>
+          filteredByCategory.map((item) => {
+            const categoryConfig = getCategoryConfig(item.category);
+            const priorityConfig = getPriorityConfig(item.priority);
+            const statusConfig = getStatusConfig(item.status);
+            const DeviceIcon = getDeviceIcon(item.device);
+
+            return (
+              <div key={item._id} className="bg-base-100 border border-base-300 rounded-xl p-6 hover:shadow-xl transition-all duration-300 group">
+                {/* Header */}
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className={`p-2 rounded-lg ${categoryConfig.color} border flex-shrink-0`}>
+                        <categoryConfig.icon size={20} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-lg text-base-content mb-1 break-words">{item.title}</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <span className={`${priorityConfig.color} px-2 py-1 rounded-lg text-xs font-bold`}>
+                            {priorityConfig.label}
+                          </span>
+                          <span className={`${statusConfig.color} border px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1`}>
+                            <statusConfig.icon size={14} />
+                            {statusConfig.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    <span className={`admin-badge text-xs ${getPriorityColor(item.priority)}`}>
-                      {item.priority}
-                    </span>
-                    <span className={`admin-badge text-xs ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
+                  
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => setEditingFeedback(item)}
+                      className="btn btn-sm btn-primary gap-2"
+                    >
+                      <IconEdit size={16} />
+                      Szerkesztés
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFeedback(item._id)}
+                      className="btn btn-sm btn-error gap-2"
+                    >
+                      <IconTrash size={16} />
+                    </button>
                   </div>
                 </div>
                 
                 {/* Description */}
-                <p className="text-base-content/70 mb-3 text-sm leading-relaxed">{item.description}</p>
+                <p className="text-base-content/70 mb-4 leading-relaxed">{item.description}</p>
                 
                 {/* Meta Information */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex flex-col sm:flex-row gap-2 text-xs text-base-content/60">
-                    <div className="flex items-center gap-1">
-                      <IconMail className="w-3 h-3" />
-                      <span className="truncate">{item.email}</span>
-                    </div>
-                    {item.page && (
-                      <>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="truncate">{item.page}</span>
-                      </>
-                    )}
-                    {item.device && (
-                      <>
-                        <span className="hidden sm:inline">•</span>
-                        <span>📱 {item.device}</span>
-                      </>
-                    )}
-                    {item.browser && (
-                      <>
-                        <span className="hidden sm:inline">•</span>
-                        <span>🌐 {item.browser}</span>
-                      </>
-                    )}
-                    <span className="hidden sm:inline">•</span>
-                    <span>{new Date(item.createdAt).toLocaleDateString('hu-HU')}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-base-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <IconMail size={16} className="text-primary flex-shrink-0" />
+                    <span className="truncate">{item.email}</span>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => setEditingFeedback(item)}
-                      className="admin-btn-info btn-xs flex-1 sm:flex-none"
-                    >
-                      <IconEdit className="w-4 h-4" />
-                      <span className="ml-1">Szerkesztés</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteFeedback(item._id)}
-                      className="admin-btn-danger btn-xs flex-1 sm:flex-none"
-                    >
-                      <IconTrash className="w-4 h-4" />
-                      <span className="ml-1">Törlés</span>
-                    </button>
+                  {item.page && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <IconBrowser size={16} className="text-info flex-shrink-0" />
+                      <span className="truncate">{item.page}</span>
+                    </div>
+                  )}
+                  {item.device && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <DeviceIcon size={16} className="text-success flex-shrink-0" />
+                      <span>{item.device}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm">
+                    <IconCalendar size={16} className="text-warning flex-shrink-0" />
+                    <span>{new Date(item.createdAt).toLocaleDateString('hu-HU')}</span>
                   </div>
                 </div>
                 
                 {/* Admin Notes */}
                 {item.adminNotes && (
-                  <div className="mt-3 p-3 bg-base-200 rounded-lg">
-                    <p className="text-sm font-medium text-base-content/80 mb-1">Admin megjegyzés:</p>
-                    <p className="text-sm text-base-content/70">{item.adminNotes}</p>
+                  <div className="mt-4 p-4 bg-info/10 border border-info/30 rounded-lg">
+                    <p className="text-sm font-bold text-info mb-2 flex items-center gap-2">
+                      <IconUser size={16} />
+                      Admin megjegyzés:
+                    </p>
+                    <p className="text-sm text-base-content/80">{item.adminNotes}</p>
                   </div>
                 )}
                 
                 {/* Resolution */}
                 {item.resolution && (
-                  <div className="mt-3 p-3 bg-success/10 rounded-lg">
-                    <p className="text-sm font-medium text-success mb-1">Megoldás:</p>
-                    <p className="text-sm text-success/80">{item.resolution}</p>
+                  <div className="mt-4 p-4 bg-success/10 border border-success/30 rounded-lg">
+                    <p className="text-sm font-bold text-success mb-2 flex items-center gap-2">
+                      <IconCircleCheck size={16} />
+                      Megoldás:
+                    </p>
+                    <p className="text-sm text-base-content/80">{item.resolution}</p>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            );
+          })
         )}
       </div>
 
       {/* Edit Modal */}
       {editingFeedback && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 rounded-xl p-6 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold mb-4">Hibabejelentés szerkesztése</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-base-100 border-b border-base-300 p-6 flex items-center justify-between">
+              <h3 className="text-2xl font-bold">Hibabejelentés szerkesztése</h3>
+              <button
+                onClick={() => setEditingFeedback(null)}
+                className="btn btn-ghost btn-sm btn-circle"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium">Státusz</span>
-                </label>
-                <select
-                  className="admin-select w-full"
-                  value={editingFeedback.status}
-                  onChange={(e) => setEditingFeedback(prev => 
-                    prev ? { ...prev, status: e.target.value as any } : null
-                  )}
-                >
-                  <option value="pending">Függőben</option>
-                  <option value="in-progress">Folyamatban</option>
-                  <option value="resolved">Megoldva</option>
-                  <option value="rejected">Elutasítva</option>
-                  <option value="closed">Lezárva</option>
-                </select>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-bold">Státusz</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={editingFeedback.status}
+                    onChange={(e) => setEditingFeedback(prev => 
+                      prev ? { ...prev, status: e.target.value as any } : null
+                    )}
+                  >
+                    <option value="pending">Függőben</option>
+                    <option value="in-progress">Folyamatban</option>
+                    <option value="resolved">Megoldva</option>
+                    <option value="rejected">Elutasítva</option>
+                    <option value="closed">Lezárva</option>
+                  </select>
+                </div>
+                
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-bold">Prioritás</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={editingFeedback.priority}
+                    onChange={(e) => setEditingFeedback(prev => 
+                      prev ? { ...prev, priority: e.target.value as any } : null
+                    )}
+                  >
+                    <option value="low">Alacsony</option>
+                    <option value="medium">Közepes</option>
+                    <option value="high">Magas</option>
+                    <option value="critical">Kritikus</option>
+                  </select>
+                </div>
               </div>
               
-              <div>
+              <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-medium">Prioritás</span>
-                </label>
-                <select
-                  className="admin-select w-full"
-                  value={editingFeedback.priority}
-                  onChange={(e) => setEditingFeedback(prev => 
-                    prev ? { ...prev, priority: e.target.value as any } : null
-                  )}
-                >
-                  <option value="low">Alacsony</option>
-                  <option value="medium">Közepes</option>
-                  <option value="high">Magas</option>
-                  <option value="critical">Kritikus</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium">Admin megjegyzés</span>
+                  <span className="label-text font-bold">Admin megjegyzés</span>
                 </label>
                 <textarea
-                  className="admin-input w-full h-24"
+                  className="textarea textarea-bordered w-full h-24"
                   value={editingFeedback.adminNotes || ''}
                   onChange={(e) => setEditingFeedback(prev => 
                     prev ? { ...prev, adminNotes: e.target.value } : null
@@ -430,12 +487,12 @@ export default function FeedbackManager() {
                 />
               </div>
               
-              <div>
+              <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-medium">Megoldás</span>
+                  <span className="label-text font-bold">Megoldás</span>
                 </label>
                 <textarea
-                  className="admin-input w-full h-24"
+                  className="textarea textarea-bordered w-full h-24"
                   value={editingFeedback.resolution || ''}
                   onChange={(e) => setEditingFeedback(prev => 
                     prev ? { ...prev, resolution: e.target.value } : null
@@ -445,15 +502,9 @@ export default function FeedbackManager() {
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-2 justify-end mt-6">
+            <div className="sticky bottom-0 bg-base-100 border-t border-base-300 p-6 flex gap-3">
               <button
-                className="admin-btn-ghost btn-sm w-full sm:w-auto"
-                onClick={() => setEditingFeedback(null)}
-              >
-                Mégse
-              </button>
-              <button
-                className="admin-btn-primary btn-sm w-full sm:w-auto"
+                className="btn btn-primary flex-1 gap-2"
                 onClick={() => {
                   if (editingFeedback) {
                     handleUpdateFeedback(editingFeedback._id, {
@@ -465,7 +516,14 @@ export default function FeedbackManager() {
                   }
                 }}
               >
+                <IconCheck size={18} />
                 Mentés
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setEditingFeedback(null)}
+              >
+                Mégse
               </button>
             </div>
           </div>

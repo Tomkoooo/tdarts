@@ -60,24 +60,24 @@ const HomePage = () => {
       {/* Parallax Background */}
       <ParallaxBackground />
       
-      {/* Announcements */}
-      <div className="fixed top-4 left-4 z-50 space-y-4 sm:top-4 sm:left-4 sm:bottom-auto bottom-4 left-4 top-auto">
-        {activeAnnouncements.map((announcement, index) => (
-          <div 
-            key={announcement._id} 
-            style={{ 
-              zIndex: 50 - index,
-              animationDelay: `${index * 200}ms`
-            }}
-            className="animate-slideInFromLeft"
-          >
-            <AnnouncementToast
-              announcement={announcement}
-              onClose={handleCloseAnnouncement}
-            />
-          </div>
-        ))}
-      </div>
+      {/* Announcements - Lower z-index to be behind mobile menu */}
+      <div className="fixed top-4 left-4 z-40 space-y-4 sm:bottom-auto">
+          {activeAnnouncements.map((announcement, index) => (
+            <div 
+              key={announcement._id} 
+              style={{ 
+                zIndex: 40 - index,
+                animationDelay: `${index * 200}ms`
+              }}
+              className="animate-slideInFromLeft"
+            >
+              <AnnouncementToast
+                announcement={announcement}
+                onClose={handleCloseAnnouncement}
+              />
+            </div>
+          ))}
+        </div>
       
       {/* Main Content */}
       <main className="relative z-10">
