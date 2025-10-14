@@ -16,6 +16,8 @@ const legSchema = new mongoose.Schema({
   winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
   checkoutScore: Number,
   checkoutDarts: Number,
+  winnerArrowCount: Number, // Hány nyílból szállt ki a győztes
+  loserRemainingScore: Number, // A vesztes játékos maradék pontjai
   doubleAttempts: Number,
   createdAt: { type: Date, default: Date.now },
 }, { _id: false });

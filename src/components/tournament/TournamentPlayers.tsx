@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import PlayerSearch from '@/components/club/PlayerSearch';
 import PlayerNotificationModal from '@/components/tournament/PlayerNotificationModal';
+import PlayerMatchesModal from './PlayerMatchesModal';
+import LegsViewModal from './LegsViewModal';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { useUserContext } from '@/hooks/useUser';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { IconMail, IconCheck, IconTrash, IconBell, IconBellOff, IconArrowUp } from '@tabler/icons-react';
 
 interface TournamentPlayersProps {
@@ -29,10 +32,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId);
   const [waitingList, setWaitingList] = useState(tournament?.waitingList || []);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [selectedPlayerForMatches, setSelectedPlayerForMatches] = useState<{id: string, name: string} | null>(null);
+  const [showPlayerMatchesModal, setShowPlayerMatchesModal] = useState(false);
+  const [showDetailedStatsModal, setShowDetailedStatsModal] = useState(false);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [notificationModal, setNotificationModal] = useState<{
     isOpen: boolean;
     player: any;
   }>({ isOpen: false, player: null });
+
+  // Check if detailed statistics are enabled
+  const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag(
+    'detailedStatistics', 
+    tournament?.clubId?._id || tournament?.clubId
+  );
   const code = tournament?.tournamentId;
 
   // Check if user is subscribed to notifications
@@ -190,6 +203,16 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       setError('Nem sikerült visszavonni a jelentkezést.');
       toast.error('Nem sikerült visszavonni a jelentkezést.');
       console.error('Self withdraw error:', err);
+    }
+  };
+
+  const handlePlayerNameClick = (player: any) => {
+    const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
+    const playerName = player.playerReference?.name || player.name || player._id;
+    
+    if (playerId) {
+      setSelectedPlayerForMatches({ id: playerId, name: playerName });
+      setShowPlayerMatchesModal(true);
     }
   };
 
@@ -436,7 +459,16 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             {/* Main row with player name, status, and admin buttons */}
             <div className="flex items-center gap-3">
               {/* Player name - takes up most of the space */}
-              <span className="flex-1 text-base font-medium">{player.playerReference?.name || player.name || player._id}</span>
+              {allowAdminActions ? (
+                <span className="flex-1 text-base font-medium">{player.playerReference?.name || player.name || player._id}</span>
+              ) : (
+                <button 
+                  onClick={() => handlePlayerNameClick(player)}
+                  className="flex-1 text-left text-base font-medium hover:text-primary hover:underline transition-colors"
+                >
+                  {player.playerReference?.name || player.name || player._id}
+                </button>
+              )}
               
               {allowAdminActions ? (
                 // Show status indicator and action buttons for tournaments where admin actions are allowed
@@ -615,6 +647,58 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         </div>
       )}
 
+
+      {/* Player Matches Modal */}
+      {selectedPlayerForMatches && (
+        <PlayerMatchesModal
+          isOpen={showPlayerMatchesModal}
+          onClose={() => {
+            setShowPlayerMatchesModal(false);
+            setSelectedPlayerForMatches(null);
+          }}
+          playerId={selectedPlayerForMatches.id}
+          playerName={selectedPlayerForMatches.name}
+          tournamentCode={code}
+          onShowDetailedStats={(matchId) => {
+            setSelectedMatchId(matchId);
+            setShowPlayerMatchesModal(false);
+            setShowDetailedStatsModal(true);
+          }}
+          showDetailedStatsButton={isDetailedStatsEnabled && !isFeatureFlagLoading}
+        />
+      )}
+
+      {/* Detailed Statistics Modal */}
+      {selectedMatchId && (
+        <LegsViewModal
+          isOpen={showDetailedStatsModal}
+          onClose={() => {
+            setShowDetailedStatsModal(false);
+            setSelectedMatchId(null);
+          }}
+          onBackToMatches={() => {
+            setShowDetailedStatsModal(false);
+            setShowPlayerMatchesModal(true);
+            setSelectedMatchId(null);
+          }}
+          match={{
+            _id: selectedMatchId,
+            player1: {
+              playerId: {
+                _id: selectedPlayerForMatches?.id || '',
+                name: selectedPlayerForMatches?.name || ''
+              }
+            },
+            player2: {
+              playerId: {
+                _id: 'opponent',
+                name: 'Ellenfél'
+              }
+            },
+            clubId: tournament?.clubId?._id || tournament?.clubId
+          }}
+        />
+      )}
 
       {/* Player Notification Modal */}
       <PlayerNotificationModal

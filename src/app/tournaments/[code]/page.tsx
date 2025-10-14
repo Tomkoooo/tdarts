@@ -1,6 +1,8 @@
 "use client"
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUserContext } from '@/hooks/useUser';
+import { useTournamentAutoRefresh } from '@/hooks/useAutoRefresh';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import TournamentInfo from '@/components/tournament/TournamentInfo';
@@ -10,7 +12,7 @@ import TournamentGroupsView from '@/components/tournament/TournamentGroupsView';
 import TournamentBoardsView from '@/components/tournament/TournamentBoardsView';
 import TournamentKnockoutBracket from '@/components/tournament/TournamentKnockoutBracket';
 import TournamentShareModal from '@/components/tournament/TournamentShareModal';
-import { IconQrcode } from '@tabler/icons-react';
+import { IconQrcode, IconRefresh } from '@tabler/icons-react';
 
 const TournamentPage = () => {
     const { code } = useParams();
@@ -22,7 +24,16 @@ const TournamentPage = () => {
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
   const [tournamentShareModal, setTournamentShareModal] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
     const { user } = useUserContext();
+
+  // Check if Pro features are enabled for this club
+  const { isEnabled: isProFeature, isLoading: isFeatureLoading } = useFeatureFlag(
+    'detailedStatistics', 
+    tournament?.clubId?._id || tournament?.clubId
+  );
+
+
 
   // Bulk fetch for tournament and user role
   const fetchAll = useCallback(async () => {
@@ -71,6 +82,24 @@ const TournamentPage = () => {
     useEffect(() => {
     fetchAll();
   }, [code, user, fetchAll]);
+
+    // Auto-refresh for Pro users
+    const { isRefreshing, lastRefresh } = useTournamentAutoRefresh(
+      code as string,
+      fetchAll,
+      tournament?.clubId?._id || tournament?.clubId,
+      autoRefreshEnabled
+    );
+
+    // Debug logging
+    console.log('Tournament auto-refresh state:', {
+      autoRefreshEnabled,
+      isRefreshing,
+      lastRefresh,
+      clubId: tournament?.clubId?._id || tournament?.clubId,
+      isProFeature,
+      isFeatureLoading
+    });
 
   // Handler for child components to request a refetch
   const handleRefetch = useCallback(() => {
@@ -133,17 +162,43 @@ const TournamentPage = () => {
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-primary">
-            {tournament.tournamentSettings?.name || 'Torna'}
-          </h1>
-          <button
-            onClick={() => setTournamentShareModal(true)}
-            className="btn btn-outline btn-primary flex items-center gap-2"
-            title="Torna megosztása"
-          >
-            <IconQrcode className="w-5 h-5" />
-            Megosztás
-          </button>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold text-primary">
+              {tournament.tournamentSettings?.name || 'Torna'}
+            </h1>
+            {lastRefresh && !isRefreshing && (
+              <div className="text-xs text-base-content/50">
+                Utoljára frissítve: {lastRefresh.toLocaleTimeString('hu-HU')}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Auto-refresh toggle for Pro users */}
+            {user && isProFeature && !isFeatureLoading && (
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRefreshEnabled}
+                    onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+                    className="toggle toggle-primary toggle-sm"
+                  />
+                  <span className="text-sm text-base-content/70">Auto-frissítés</span>
+                </label>
+                {isRefreshing && (
+                  <IconRefresh className="w-4 h-4 animate-spin text-primary" />
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setTournamentShareModal(true)}
+              className="btn btn-outline btn-primary flex items-center gap-2"
+              title="Torna megosztása"
+            >
+              <IconQrcode className="w-5 h-5" />
+              Megosztás
+            </button>
+          </div>
         </div>
 
         {/* Main content grid */}

@@ -33,6 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 winner: winner,
                 player1Throws: body.finalLegData.player1Throws || [],
                 player2Throws: body.finalLegData.player2Throws || [],
+                winnerArrowCount: body.winnerArrowCount,
                 player1Stats: body.player1Stats,
                 player2Stats: body.player2Stats
             });
@@ -42,8 +43,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const result = await MatchService.finishMatch(matchId, {
             player1LegsWon: body.player1LegsWon,
             player2LegsWon: body.player2LegsWon,
+            winnerArrowCount: body.winnerArrowCount,
             player1Stats: body.player1Stats,
-            player2Stats: body.player2Stats
+            player2Stats: body.player2Stats,
+            finalLegData: body.finalLegData
         });
 
         if (!result) {

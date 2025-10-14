@@ -105,6 +105,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   // Loading states
   const [isSavingLeg, setIsSavingLeg] = useState<boolean>(false);
   const [isSavingMatch, setIsSavingMatch] = useState<boolean>(false);
+  
+  // Arrow count modal
+  const [showArrowCountModal, setShowArrowCountModal] = useState<boolean>(false);
+  const [arrowCount, setArrowCount] = useState<number>(3);
 
   const chalkboardRef = useRef<HTMLDivElement>(null);
   const quickAccessScores = [180, 140, 100, 95, 81, 80, 60, 45, 41, 26, 25, 20];
@@ -232,6 +236,33 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     // Check for bust
     if (currentPlayerData.score - score < 0) {
+      // Add bust (0 score) to throws
+      const newAllThrows = [...currentPlayerData.allThrows, 0];
+      
+      if (currentPlayer === 1) {
+        setPlayer1(prev => ({ 
+          ...prev, 
+          allThrows: newAllThrows,
+          stats: {
+            ...prev.stats,
+            totalThrows: prev.stats.totalThrows + 1,
+            average: ((prev.stats.totalThrows + 1) > 0) ? 
+              Math.round((((prev.stats.totalThrows * prev.stats.average) + 0) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
+          }
+        }));
+      } else {
+        setPlayer2(prev => ({ 
+          ...prev, 
+          allThrows: newAllThrows,
+          stats: {
+            ...prev.stats,
+            totalThrows: prev.stats.totalThrows + 1,
+            average: ((prev.stats.totalThrows + 1) > 0) ? 
+              Math.round((((prev.stats.totalThrows * prev.stats.average) + 0) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
+          }
+        }));
+      }
+      
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
       setScoreInput('');
       return;
@@ -254,7 +285,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             highestCheckout: Math.max(prev.stats.highestCheckout, score),
             average: ((prev.stats.totalThrows + 1) > 0) ? 
-              Math.round(((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) : 0
+              Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
         }));
       } else {
@@ -268,14 +299,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             highestCheckout: Math.max(prev.stats.highestCheckout, score),
             average: ((prev.stats.totalThrows + 1) > 0) ? 
-              Math.round(((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) : 0
+              Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
         }));
       }
       
-      // Show leg confirmation modal
+      // Show arrow count modal first
       setPendingLegWinner(currentPlayer);
-      setShowLegConfirmation(true);
+      setShowArrowCountModal(true);
       setScoreInput('');
     } else {
       // Regular throw
@@ -289,7 +320,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             totalThrows: prev.stats.totalThrows + 1,
             oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             average: ((prev.stats.totalThrows + 1) > 0) ? 
-              Math.round(((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) : 0
+              Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
         }));
 
@@ -314,7 +345,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             totalThrows: prev.stats.totalThrows + 1,
             oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             average: ((prev.stats.totalThrows + 1) > 0) ? 
-              Math.round(((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) : 0
+              Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
         }));
 
@@ -355,7 +386,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             totalThrows: Math.max(0, prev.stats.totalThrows - 1),
             oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
             average: (prev.stats.totalThrows - 1) > 0 ? 
-              Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
+              Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
         }));
       } else {
@@ -368,7 +399,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             totalThrows: Math.max(0, prev.stats.totalThrows - 1),
             oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
             average: (prev.stats.totalThrows - 1) > 0 ? 
-              Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
+              Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
       }));
     }
@@ -446,7 +477,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         stats: {
           ...prev.stats,
           oneEightiesCount: oldThrows.filter(t => t === 180).length,
-          average: oldThrows.length > 0 ? Math.round(oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) : 0
+          average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
         } else {
@@ -457,7 +488,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         stats: {
           ...prev.stats,
           oneEightiesCount: oldThrows.filter(t => t === 180).length,
-          average: oldThrows.length > 0 ? Math.round(oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) : 0
+          average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
     }
@@ -469,6 +500,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const handleCancelEdit = () => {
     setEditingThrow(null);
     setEditScoreInput('');
+  };
+
+  const confirmArrowCount = () => {
+    setShowArrowCountModal(false);
+    setShowLegConfirmation(true);
   };
 
   const confirmLegEnd = async () => {
@@ -518,13 +554,16 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           winner: pendingLegWinner,
           player1Throws: player1.allThrows,
           player2Throws: player2.allThrows,
+          winnerArrowCount: arrowCount,
           player1Stats: {
             ...player1.stats,
-            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0)
+            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
+            totalArrows: player1.allThrows.length * 3 + (pendingLegWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
             ...player2.stats,
-            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0)
+            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
+            totalArrows: player2.allThrows.length * 3 + (pendingLegWinner === 2 ? arrowCount : 0)
           }
         })
       });
@@ -592,13 +631,16 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         body: JSON.stringify({
           player1LegsWon: player1.legsWon,
           player2LegsWon: player2.legsWon,
+          winnerArrowCount: arrowCount,
           player1Stats: {
             ...player1.stats,
-            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0)
+            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
+            totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
             ...player2.stats,
-            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0)
+            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
+            totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
           },
           finalLegData: {
             player1Throws: player1.allThrows,
@@ -640,6 +682,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     }
     
     onBack();
+  };
+
+  const cancelArrowCount = () => {
+    setShowArrowCountModal(false);
+    setPendingLegWinner(null);
+    setArrowCount(3);
   };
 
   const cancelLegEnd = () => {
@@ -686,6 +734,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     setShowLegConfirmation(false);
     setPendingLegWinner(null);
+    setArrowCount(3);
   };
 
   const cancelMatchEnd = () => {
@@ -734,11 +783,53 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     setShowMatchConfirmation(false);
     setPendingMatchWinner(null);
+    setArrowCount(3);
   };
 
   const handleSaveLegsToWin = async () => {
     if (tempLegsToWin < 1 || tempLegsToWin > 20) {
       toast.error('A nyert legek száma 1 és 20 között kell legyen!');
+      return;
+    }
+
+    // Check if any player has already reached the new legsToWin value
+    const player1HasWon = player1.legsWon >= tempLegsToWin;
+    const player2HasWon = player2.legsWon >= tempLegsToWin;
+    
+    if (player1HasWon || player2HasWon) {
+      // Determine winner (player who reached the target first or has more legs)
+      let winner: 1 | 2;
+      if (player1HasWon && player2HasWon) {
+        // Both reached it, winner is the one who reached it first (has more legs)
+        winner = player1.legsWon >= player2.legsWon ? 1 : 2;
+      } else {
+        // Only one reached it
+        winner = player1HasWon ? 1 : 2;
+      }
+      
+      // Ask for match confirmation
+      setPendingMatchWinner(winner);
+      setShowMatchConfirmation(true);
+      setShowSettingsModal(false);
+      
+      // Update legsToWin without closing modal yet
+      setLegsToWin(tempLegsToWin);
+      
+      try {
+        const response = await fetch(`/api/matches/${match._id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ legsToWin: tempLegsToWin })
+        });
+
+        if (!response.ok) {
+          toast.error('Hiba történt a beállítások mentése során!');
+        }
+      } catch (error) {
+        console.error('Error updating legsToWin:', error);
+        toast.error('Hiba történt a beállítások mentése során!');
+      }
+      
       return;
     }
 
@@ -1064,13 +1155,50 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </div>
       )}
 
+      {/* Arrow Count Modal */}
+      {showArrowCountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-3">Nyilak száma</h3>
+            <p className="mb-4">
+              Hány nyílból szállt ki {pendingLegWinner === 1 ? player1.name : player2.name}?
+            </p>
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3].map((count) => (
+                <button
+                  key={count}
+                  onClick={() => setArrowCount(count)}
+                  className={`flex-1 btn ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                >
+                  {count} nyíl
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button 
+                className="btn btn-error flex-1" 
+                onClick={cancelArrowCount}
+              >
+                Mégse
+              </button>
+              <button 
+                className="btn btn-success flex-1" 
+                onClick={confirmArrowCount}
+              >
+                Tovább
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Leg Confirmation Dialog */}
       {showLegConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
             <h3 className="text-lg font-bold mb-3">Leg vége?</h3>
             <p className="mb-4">
-              {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et!
+              {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et! ({arrowCount} nyílból szállt ki)
             </p>
             <div className="flex gap-2">
               <button 
@@ -1105,7 +1233,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
             <h3 className="text-lg font-bold mb-3">Meccs vége?</h3>
             <p className="mb-4">
-              {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset!
+              {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset! ({arrowCount} nyílból szállt ki)
             </p>
             <div className="flex gap-2">
               <button 

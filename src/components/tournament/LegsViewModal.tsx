@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import MatchStatisticsCharts from './MatchStatisticsCharts';
+import { IconTrophy, IconTarget, IconTrendingDown, IconCheck, IconClock } from '@tabler/icons-react';
 
 interface Throw {
   score: number;
@@ -20,6 +21,8 @@ interface Leg {
   };
   checkoutScore?: number;
   checkoutDarts?: number;
+  winnerArrowCount?: number; // Hány nyílból szállt ki a győztes
+  loserRemainingScore?: number; // A vesztes játékos maradék pontjai
   doubleAttempts: number;
   createdAt: string;
 }
@@ -46,9 +49,11 @@ interface LegsViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   match: Match | null;
+  onBackToMatches?: () => void;
 }
 
-const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match }) => {
+const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: initialMatch, onBackToMatches }) => {
+  const [match, setMatch] = useState<Match | null>(initialMatch);
   const [legs, setLegs] = useState<Leg[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -60,12 +65,35 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
 
 
 
-  // Fetch clubId from tournament
+  // Update match when initialMatch changes
   useEffect(() => {
-    if (match?._id) {
+    setMatch(initialMatch);
+  }, [initialMatch]);
+
+  // Fetch match data to get opponent name
+  useEffect(() => {
+    if (match?._id && isOpen) {
+      fetchMatchData();
       fetchClubId();
     }
-  }, [match?._id]);
+  }, [match?._id, isOpen]);
+
+  const fetchMatchData = async () => {
+    if (!match?._id) return;
+
+    try {
+      const response = await fetch(`/api/matches/${match._id}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.match) {
+          // Update match data with full player information
+          setMatch(data.match);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching match data:', err);
+    }
+  };
 
   const fetchClubId = async () => {
     if (!match?._id) return;
@@ -149,6 +177,19 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
     return { average, highestThrow };
   };
 
+  // Calculate total arrows for a player in a leg
+  const calculatePlayerArrows = (throws: Throw[], isWinner: boolean, winnerArrowCount?: number) => {
+    if (throws.length === 0) return 0;
+    
+    if (isWinner) {
+      // Győztes: (dobások száma - 1) * 3 + kiszálló nyilak
+      return (throws.length - 1) * 3 + (winnerArrowCount || 3);
+    } else {
+      // Vesztes: dobások száma * 3
+      return throws.length * 3;
+    }
+  };
+
   // Calculate match statistics
   const calculateMatchStats = () => {
     const player1AllThrows = legs.flatMap(leg => leg.player1Throws);
@@ -169,6 +210,8 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
       classes += " bg-success text-success-content ring-2 ring-success/50";
     } else if (throwData.score === 180) {
       classes += " bg-warning text-warning-content ring-2 ring-warning/50";
+    } else if (throwData.score === 0) {
+      classes += " bg-error text-error-content ring-2 ring-error/50";
     } else if (throwData.score >= 140) {
       classes += " bg-info text-info-content";
     } else if (throwData.score >= 100) {
@@ -202,6 +245,19 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
             <p className="text-xs sm:text-sm text-base-content/70">Legek részletei</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Back to matches button */}
+            {onBackToMatches && (
+              <button
+                onClick={onBackToMatches}
+                className="btn btn-outline btn-sm flex items-center gap-1"
+                title="Vissza a meccsekhez"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="hidden sm:inline">Vissza</span>
+              </button>
+            )}
             {/* Detailed Stats Toggle Button - Only for Pro */}
             {!isFeatureFlagLoading && isDetailedStatsEnabled && (
               <button
@@ -376,17 +432,26 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                           <h4 className="text-sm sm:text-base md:text-lg font-bold">
                             {legIndex + 1}. Leg
                           </h4>
-                          <span className="text-xs sm:text-sm text-base-content/60">
-                            🏆 {leg.winnerId.name}
-                          </span>
+                          <div className="text-xs sm:text-sm text-base-content/60 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <IconTrophy size={12} className="text-warning" />
+                              <span>{leg.winnerId.name}</span>
+                              <IconTarget size={12} className="text-primary" />
+                              <span className="text-primary">{leg.winnerArrowCount || 3} nyíl</span>
+                            </div>
+                            {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
+                              <div className="flex items-center gap-1 text-error text-[10px] sm:text-xs">
+                                <IconTrendingDown size={10} />
+                                <span>Maradt: {leg.loserRemainingScore} pont</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {leg.checkoutScore && (
                           <div className="badge badge-success badge-sm gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            <IconCheck size={12} />
                             <span className="text-xs">{leg.checkoutScore}</span>
                           </div>
                         )}
@@ -404,8 +469,12 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                               {match.player1?.playerId?.name}
                             </h5>
                             {isPlayer1Winner && (
-                              <span className="text-sm sm:text-base">🏆</span>
+                              <IconTrophy size={16} className="text-warning" />
                             )}
+                            <div className="flex items-center gap-1 text-xs text-base-content/60">
+                              <IconTarget size={12} className="text-primary" />
+                              <span>{calculatePlayerArrows(leg.player1Throws, isPlayer1Winner, leg.winnerArrowCount)} nyíl</span>
+                            </div>
                           </div>
                           {/* Pro-only detailed stats */}
                           {showDetailedStats && player1LegStats && (
@@ -417,6 +486,10 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                               <div className="bg-base-200 rounded px-2 py-1">
                                 <span className="text-base-content/60">Max:</span>
                                 <span className="font-bold ml-1">{player1LegStats.highestThrow}</span>
+                              </div>
+                              <div className="bg-base-200 rounded px-2 py-1">
+                                <span className="text-base-content/60">Nyilak:</span>
+                                <span className="font-bold ml-1">{calculatePlayerArrows(leg.player1Throws, isPlayer1Winner, leg.winnerArrowCount)}</span>
                               </div>
                             </div>
                           )}
@@ -454,8 +527,12 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                               {match.player2?.playerId?.name}
                             </h5>
                             {isPlayer2Winner && (
-                              <span className="text-sm sm:text-base">🏆</span>
+                              <IconTrophy size={16} className="text-warning" />
                             )}
+                            <div className="flex items-center gap-1 text-xs text-base-content/60">
+                              <IconTarget size={12} className="text-error" />
+                              <span>{calculatePlayerArrows(leg.player2Throws, isPlayer2Winner, leg.winnerArrowCount)} nyíl</span>
+                            </div>
                           </div>
                           {/* Pro-only detailed stats */}
                           {showDetailedStats && player2LegStats && (
@@ -467,6 +544,10 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                               <div className="bg-base-200 rounded px-2 py-1">
                                 <span className="text-base-content/60">Max:</span>
                                 <span className="font-bold ml-1">{player2LegStats.highestThrow}</span>
+                              </div>
+                              <div className="bg-base-200 rounded px-2 py-1">
+                                <span className="text-base-content/60">Nyilak:</span>
+                                <span className="font-bold ml-1">{calculatePlayerArrows(leg.player2Throws, isPlayer2Winner, leg.winnerArrowCount)}</span>
                               </div>
                             </div>
                           )}
@@ -500,9 +581,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                     <div className="mt-3 pt-3 border-t border-base-300">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs sm:text-sm text-base-content/60">
                         <div className="flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
+                          <IconClock size={14} />
                           <span>{new Date(leg.createdAt).toLocaleString('hu-HU', { 
                             month: 'short', 
                             day: 'numeric', 
@@ -510,15 +589,6 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match })
                             minute: '2-digit' 
                           })}</span>
                         </div>
-                        {/* Pro-only detailed stats */}
-                        {showDetailedStats && (
-                          <div className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span>Összes dobás: {leg.player1Throws.length + leg.player2Throws.length}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

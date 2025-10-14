@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus } from '@tabler/icons-react';
 import EditTournamentModal from './EditTournamentModal';
 
@@ -14,7 +13,6 @@ interface TournamentInfoProps {
 const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, userRole, userId }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const router = useRouter();
 
   // Description with clickable https links
   const rawDescription: string = tournament.tournamentSettings?.description || '-';
@@ -29,10 +27,6 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
     : '-';
   const isDescriptionLong = description.length > 100;
   const displayDescription = isDescriptionExpanded ? description : description.substring(0, 100);
-
-  const handleOpenBoards = () => {
-    router.push(`/board/${tournament.tournamentId}`);
-  };
 
   const canEdit = userRole === 'admin' || userRole === 'moderator';
 
@@ -88,15 +82,12 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
       </div>
       
       <div className="mt-6 flex gap-4 flex-wrap">
-        <button
-          onClick={handleOpenBoards}
-          className="btn btn-primary btn-md flex items-center gap-2"
-        >
+        <Link target="_blank" href={`/board/${tournament.tournamentId}`} className="btn btn-primary btn-md flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Táblák megnyitása
-        </button>
+        </Link>
         <button
           onClick={() => onRefetch()}
           className="btn btn-primary btn-md flex items-center gap-2"

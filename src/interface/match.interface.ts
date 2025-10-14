@@ -24,6 +24,8 @@ export interface Leg {
   winnerId?: Types.ObjectId;
   checkoutScore?: number;
   checkoutDarts?: number;
+  winnerArrowCount?: number; // Hány nyílból szállt ki a győztes
+  loserRemainingScore?: number; // A vesztes játékos maradék pontjai
   doubleAttempts?: number;
   createdAt: Date;
 }

@@ -26,6 +26,7 @@ export async function POST(
       winner: body.winner,
       player1Throws: body.player1Throws || [],
       player2Throws: body.player2Throws || [],
+      winnerArrowCount: body.winnerArrowCount,
       player1Stats: body.player1Stats,
       player2Stats: body.player2Stats
     });

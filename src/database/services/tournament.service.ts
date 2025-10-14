@@ -2916,6 +2916,113 @@ export class TournamentService {
         }
     }
 
+    static async getPlayerMatches(tournamentCode: string, playerId: string): Promise<any[]> {
+        try {
+            const tournament = await this.getTournament(tournamentCode);
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            const { MatchModel } = await import('../models/match.model');
+            const matches = await MatchModel.find({
+                tournamentRef: tournament._id,
+                $or: [
+                    { 'player1.playerId': playerId },
+                    { 'player2.playerId': playerId }
+                ]
+            })
+            .populate('player1.playerId player2.playerId legs')
+            .sort({ createdAt: -1 });
+
+            return matches;
+
+        } catch (error) {
+            console.error('Get player matches error:', error);
+            throw error;
+        }
+    }
+
+    static async movePlayerInGroup(tournamentCode: string, groupId: string, playerId: string, direction: 'up' | 'down'): Promise<boolean> {
+        try {
+            const tournament = await this.getTournament(tournamentCode);
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Check if user has permission to modify tournament
+            const { ClubService } = await import('./club.service');
+            
+            // Handle both ObjectId and populated club object
+            let clubId: string;
+            if (typeof tournament.clubId === 'object' && tournament.clubId._id) {
+                clubId = tournament.clubId._id.toString();
+            } else {
+                clubId = tournament.clubId.toString();
+            }
+            
+            const club = await ClubService.getClub(clubId);
+            if (!club) {
+                throw new BadRequestError('Club not found');
+            }
+
+            const group = tournament.groups.find((g: any) => g._id.toString() === groupId);
+            if (!group) {
+                throw new BadRequestError('Group not found');
+            }
+
+            // Find the player by tournamentPlayer._id
+            const currentPlayerIndex = tournament.tournamentPlayers.findIndex((p: any) => p._id.toString() === playerId);
+            if (currentPlayerIndex === -1) {
+                throw new BadRequestError('Player not found in tournament');
+            }
+
+            const currentPlayer = tournament.tournamentPlayers[currentPlayerIndex];
+            const currentStanding = currentPlayer.groupStanding;
+
+            if (!currentStanding) {
+                throw new BadRequestError('Player has no group standing');
+            }
+
+            // Calculate new standing
+            let newStanding: number;
+            if (direction === 'up') {
+                newStanding = currentStanding - 1;
+                if (newStanding < 1) {
+                    throw new BadRequestError('Player is already at the top');
+                }
+            } else {
+                newStanding = currentStanding + 1;
+                // Check if this would exceed the number of players in the group
+                const groupPlayersCount = tournament.tournamentPlayers.filter((p: any) => 
+                    p.groupId && p.groupId.toString() === groupId
+                ).length;
+                if (newStanding > groupPlayersCount) {
+                    throw new BadRequestError('Player is already at the bottom');
+                }
+            }
+
+            // Find the player who currently has the target standing
+            const targetPlayerIndex = tournament.tournamentPlayers.findIndex((p: any) => 
+                p.groupId && p.groupId.toString() === groupId && p.groupStanding === newStanding
+            );
+
+            if (targetPlayerIndex === -1) {
+                throw new BadRequestError('Target position not found');
+            }
+
+            // Swap standings: current player gets new standing, target player gets current standing
+            tournament.tournamentPlayers[currentPlayerIndex].groupStanding = newStanding;
+            tournament.tournamentPlayers[targetPlayerIndex].groupStanding = currentStanding;
+
+            await tournament.save();
+            return true;
+
+        } catch (error) {
+            console.error('Error moving player in group:', error);
+            throw error;
+        }
+    }
+
     static async finishTournament(tournamentCode: string, requesterId: string): Promise<boolean> {
         try {
             const tournament = await this.getTournament(tournamentCode);
@@ -3120,7 +3227,7 @@ export class TournamentService {
                 }
             });
 
-            // Step 6: Get stats from tournament players
+            // Step 6: Get stats from actual matches
             const playerStats = new Map<string, {
                 average: number;
                 checkoutRate: number;
@@ -3132,22 +3239,10 @@ export class TournamentService {
                 oneEighties: number;
             }>();
 
-            // Get stats directly from tournament players
+            // Initialize all players with zero stats
             checkedInPlayers.forEach((player: any) => {
                 const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                if (playerId && player.stats) {
-                    playerStats.set(playerId, {
-                        average: player.stats.avg || 0,
-                        checkoutRate: 0, // Not stored in tournament stats
-                        legsWon: player.stats.legsWon || 0,
-                        legsPlayed: (player.stats.legsWon || 0) + (player.stats.legsLost || 0),
-                        matchesWon: player.stats.matchesWon || 0,
-                        matchesPlayed: (player.stats.matchesWon || 0) + (player.stats.matchesLost || 0),
-                        highestCheckout: player.stats.highestCheckout || 0,
-                        oneEighties: player.stats.oneEightiesCount || 0,
-                    });
-                } else if (playerId) {
-                    // Fallback if no stats available
+                if (playerId) {
                     playerStats.set(playerId, {
                         average: 0,
                         checkoutRate: 0,
@@ -3160,6 +3255,131 @@ export class TournamentService {
                     });
                 }
             });
+
+            // Get all matches for this tournament
+            const { MatchModel } = await import('../models/match.model');
+            const allMatches = await MatchModel.find({
+                tournamentRef: tournament._id,
+                status: 'finished'
+            }).populate('player1.playerId player2.playerId legs');
+
+            console.log(`Found ${allMatches.length} finished matches for tournament ${tournamentCode}`);
+
+            // Calculate stats from actual match results
+            allMatches.forEach((match: any) => {
+                const player1Id = match.player1?.playerId?._id?.toString();
+                const player2Id = match.player2?.playerId?._id?.toString();
+                
+                if (!player1Id || !player2Id) return;
+
+                const player1Stats = playerStats.get(player1Id);
+                const player2Stats = playerStats.get(player2Id);
+                
+                if (!player1Stats || !player2Stats) return;
+
+                // Update match counts
+                player1Stats.matchesPlayed++;
+                player2Stats.matchesPlayed++;
+
+                // Determine winner and update match wins
+                if (match.winnerId) {
+                    const winnerId = match.winnerId.toString();
+                    if (winnerId === player1Id) {
+                        player1Stats.matchesWon++;
+                    } else if (winnerId === player2Id) {
+                        player2Stats.matchesWon++;
+                    }
+                }
+
+                // Calculate leg statistics from match legs
+                if (match.legs && Array.isArray(match.legs)) {
+                    match.legs.forEach((leg: any) => {
+                        // Player 1 leg stats
+                        if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
+                            const legScore = leg.player1Throws.reduce((sum: number, throwData: any) => sum + (throwData.score || 0), 0);
+                            const legThrows = leg.player1Throws.length;
+                            if (legThrows > 0) {
+                                const legAverage = legScore / legThrows;
+                                // Update average (weighted)
+                                const currentTotal = player1Stats.average * player1Stats.legsPlayed;
+                                player1Stats.legsPlayed++;
+                                player1Stats.average = (currentTotal + legAverage) / player1Stats.legsPlayed;
+                            }
+                            
+                            // Count 180s
+                            leg.player1Throws.forEach((throwData: any) => {
+                                if (throwData.score === 180) {
+                                    player1Stats.oneEighties++;
+                                }
+                                if (throwData.score > player1Stats.highestCheckout && throwData.isCheckout) {
+                                    player1Stats.highestCheckout = throwData.score;
+                                }
+                            });
+                        }
+
+                        // Player 2 leg stats
+                        if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
+                            const legScore = leg.player2Throws.reduce((sum: number, throwData: any) => sum + (throwData.score || 0), 0);
+                            const legThrows = leg.player2Throws.length;
+                            if (legThrows > 0) {
+                                const legAverage = legScore / legThrows;
+                                // Update average (weighted)
+                                const currentTotal = player2Stats.average * player2Stats.legsPlayed;
+                                player2Stats.legsPlayed++;
+                                player2Stats.average = (currentTotal + legAverage) / player2Stats.legsPlayed;
+                            }
+                            
+                            // Count 180s
+                            leg.player2Throws.forEach((throwData: any) => {
+                                if (throwData.score === 180) {
+                                    player2Stats.oneEighties++;
+                                }
+                                if (throwData.score > player2Stats.highestCheckout && throwData.isCheckout) {
+                                    player2Stats.highestCheckout = throwData.score;
+                                }
+                            });
+                        }
+
+                        // Count legs won
+                        if (leg.winnerId) {
+                            const legWinnerId = leg.winnerId.toString();
+                            if (legWinnerId === player1Id) {
+                                player1Stats.legsWon++;
+                            } else if (legWinnerId === player2Id) {
+                                player2Stats.legsWon++;
+                            }
+                        }
+                    });
+                }
+
+                // Fallback to tournament player stats if no legs found
+                if (!match.legs || match.legs.length === 0) {
+                    const player1TournamentStats = tournament.tournamentPlayers.find((tp: any) => {
+                        const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
+                        return tpPlayerId === player1Id;
+                    });
+                    const player2TournamentStats = tournament.tournamentPlayers.find((tp: any) => {
+                        const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
+                        return tpPlayerId === player2Id;
+                    });
+
+                    if (player1TournamentStats?.stats) {
+                        player1Stats.average = player1TournamentStats.stats.avg || 0;
+                        player1Stats.highestCheckout = Math.max(player1Stats.highestCheckout, player1TournamentStats.stats.highestCheckout || 0);
+                        player1Stats.oneEighties += player1TournamentStats.stats.oneEightiesCount || 0;
+                    }
+                    if (player2TournamentStats?.stats) {
+                        player2Stats.average = player2TournamentStats.stats.avg || 0;
+                        player2Stats.highestCheckout = Math.max(player2Stats.highestCheckout, player2TournamentStats.stats.highestCheckout || 0);
+                        player2Stats.oneEighties += player2TournamentStats.stats.oneEightiesCount || 0;
+                    }
+                }
+            });
+
+            console.log('Calculated stats from matches:');
+            for (const [playerId, stats] of playerStats) {
+                console.log(`Player ${playerId}: ${stats.matchesWon}/${stats.matchesPlayed} matches, ${stats.legsWon}/${stats.legsPlayed} legs, avg: ${stats.average.toFixed(2)}`);
+            }
 
             // Step 7: Update tournament players with final standings
             tournament.tournamentPlayers = tournament.tournamentPlayers.map((player: any) => {
