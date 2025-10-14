@@ -3,10 +3,10 @@ import { TournamentService } from '@/database/services/tournament.service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string; playerId: string } }
+  { params }: { params: Promise<{ code: string; playerId: string }> }
 ) {
   try {
-    const { code, playerId } = params;
+    const { code, playerId } =  await params;
 
     if (!code || !playerId) {
       return NextResponse.json(

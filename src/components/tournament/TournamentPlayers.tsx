@@ -7,7 +7,6 @@ import LegsViewModal from './LegsViewModal';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { useUserContext } from '@/hooks/useUser';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { IconMail, IconCheck, IconTrash, IconBell, IconBellOff, IconArrowUp } from '@tabler/icons-react';
 
 interface TournamentPlayersProps {
@@ -42,10 +41,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   }>({ isOpen: false, player: null });
 
   // Check if detailed statistics are enabled
-  const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag(
-    'detailedStatistics', 
-    tournament?.clubId?._id || tournament?.clubId
-  );
   const code = tournament?.tournamentId;
 
   // Check if user is subscribed to notifications
@@ -664,7 +659,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             setShowPlayerMatchesModal(false);
             setShowDetailedStatsModal(true);
           }}
-          showDetailedStatsButton={isDetailedStatsEnabled && !isFeatureFlagLoading}
         />
       )}
 
