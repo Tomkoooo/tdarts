@@ -1,6 +1,8 @@
 "use client"
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUserContext } from '@/hooks/useUser';
+import { useTournamentAutoRefresh } from '@/hooks/useAutoRefresh';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import TournamentInfo from '@/components/tournament/TournamentInfo';
@@ -10,7 +12,7 @@ import TournamentGroupsView from '@/components/tournament/TournamentGroupsView';
 import TournamentBoardsView from '@/components/tournament/TournamentBoardsView';
 import TournamentKnockoutBracket from '@/components/tournament/TournamentKnockoutBracket';
 import TournamentShareModal from '@/components/tournament/TournamentShareModal';
-import { IconQrcode } from '@tabler/icons-react';
+import { IconQrcode, IconRefresh } from '@tabler/icons-react';
 
 const TournamentPage = () => {
     const { code } = useParams();
@@ -22,7 +24,17 @@ const TournamentPage = () => {
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
   const [tournamentShareModal, setTournamentShareModal] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
     const { user } = useUserContext();
+
+  // Check if Pro features are enabled for this club
+  const { isEnabled: isProFeature, isLoading: isFeatureLoading } = useFeatureFlag(
+    'detailedStatistics', 
+    tournament?.clubId?._id || tournament?.clubId
+  );
+
+
 
   // Bulk fetch for tournament and user role
   const fetchAll = useCallback(async () => {
@@ -72,10 +84,56 @@ const TournamentPage = () => {
     fetchAll();
   }, [code, user, fetchAll]);
 
+    // Auto-refresh for Pro users
+    const { isRefreshing, lastRefresh } = useTournamentAutoRefresh(
+      code as string,
+      fetchAll,
+      tournament?.clubId?._id || tournament?.clubId,
+      autoRefreshEnabled
+    );
+
+    // Debug logging
+    console.log('Tournament auto-refresh state:', {
+      autoRefreshEnabled,
+      isRefreshing,
+      lastRefresh,
+      clubId: tournament?.clubId?._id || tournament?.clubId,
+      isProFeature,
+      isFeatureLoading
+    });
+
   // Handler for child components to request a refetch
   const handleRefetch = useCallback(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Handler for reopening tournament (Super Admin only)
+  const handleReopenTournament = useCallback(async () => {
+    // Double-check super admin access
+    if (!user || !user._id || user.isAdmin !== true) {
+      alert('Nincs jogosultság ehhez a művelethez. Csak super adminok használhatják ezt a funkciót.');
+      return;
+    }
+    
+    const confirmMessage = `Biztosan újranyitja ezt a tornát?\n\nEz a művelet:\n- Visszaállítja a torna státuszát "befejezett"-ről "aktív"-ra\n- Törli az összes játékos statisztikáját\n- Megtartja az összes meccs adatot\n- Csak super adminok használhatják\n\nEz a művelet nem vonható vissza!`;
+    
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      setIsReopening(true);
+      const response = await axios.post(`/api/tournaments/${code}/reopen`);
+
+      if (response.data.success) {
+        alert('Torna sikeresen újranyitva! A statisztikák törölve, a torna újra aktív.');
+        await fetchAll(); // Refresh the page data
+      }
+    } catch (error: any) {
+      console.error('Error reopening tournament:', error);
+      alert(error.response?.data?.error || 'Hiba történt a torna újranyitása során');
+    } finally {
+      setIsReopening(false);
+    }
+  }, [user, code, fetchAll]);
 
   // Loading state
   if (loading) {
@@ -133,17 +191,43 @@ const TournamentPage = () => {
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-primary">
-            {tournament.tournamentSettings?.name || 'Torna'}
-          </h1>
-          <button
-            onClick={() => setTournamentShareModal(true)}
-            className="btn btn-outline btn-primary flex items-center gap-2"
-            title="Torna megosztása"
-          >
-            <IconQrcode className="w-5 h-5" />
-            Megosztás
-          </button>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold text-primary">
+              {tournament.tournamentSettings?.name || 'Torna'}
+            </h1>
+            {lastRefresh && !isRefreshing && (
+              <div className="text-xs text-base-content/50">
+                Utoljára frissítve: {lastRefresh.toLocaleTimeString('hu-HU')}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Auto-refresh toggle for Pro users */}
+            {user && isProFeature && !isFeatureLoading && (
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRefreshEnabled}
+                    onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+                    className="toggle toggle-primary toggle-sm"
+                  />
+                  <span className="text-sm text-base-content/70">Auto-frissítés</span>
+                </label>
+                {isRefreshing && (
+                  <IconRefresh className="w-4 h-4 animate-spin text-primary" />
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setTournamentShareModal(true)}
+              className="btn btn-outline btn-primary flex items-center gap-2"
+              title="Torna megosztása"
+            >
+              <IconQrcode className="w-5 h-5" />
+              Megosztás
+            </button>
+          </div>
         </div>
 
         {/* Main content grid */}
@@ -243,6 +327,50 @@ const TournamentPage = () => {
             </div>
           )}
         </div>
+
+        {/* Super Admin Actions - Tournament Reopen */}
+        {user && user.isAdmin === true && tournament?.tournamentSettings?.status === 'finished' && (
+          <div className="mt-8">
+            <div className="card bg-error/10 border border-error/30 shadow-xl">
+              <div className="card-body">
+                <h3 className="card-title text-xl font-bold text-error mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Super Admin Műveletek
+                </h3>
+                <div className="alert alert-warning mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <h4 className="font-bold">Torna újranyitása</h4>
+                    <div className="text-sm">Ez a művelet visszavonja a torna befejezését és törli az összes statisztikát. Csak super adminok használhatják.</div>
+                  </div>
+                </div>
+                <button 
+                  className="btn btn-error gap-2"
+                  onClick={handleReopenTournament}
+                  disabled={isReopening}
+                >
+                  {isReopening ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Újranyitás...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Torna újranyitása
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions for Admins/Moderators */}
         {(userClubRole === 'admin' || userClubRole === 'moderator') && (

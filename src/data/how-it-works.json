@@ -207,6 +207,50 @@
                   "Automatikus generálás: A rendszer véletlenszerűen osztja be a játékosokat csoportokba (3-6 fős csoportokat támogat), és minden csoporthoz hozzárendel egy táblát.",
                   "Manuális generálás: Te választhatod ki, hogy mely játékosok melyik csoportban és táblán játszanak.",
                   "A &ldquo;Generálás&rdquo; gomb megnyomásával indul a játék."
+                ],
+                "subsections": [
+                  {
+                    "title": "Csoport helyezések kezelése",
+                    "content": [
+                      "A csoportokban a játékosok helyezése automatikusan számítódik a meccs eredmények alapján.",
+                      "Ha azonos pontszám és leg arány esetén nem egyértelmű a helyezés, az admin/moderátor manuálisan módosíthatja a sorrendet.",
+                      "A csoport nézetben fel/le nyilakkal mozgathatod a játékosokat a helyezésben.",
+                      "Ez különösen hasznos, ha körbeverés történt (A nyeri B-t, B nyeri C-t, C nyeri A-t)."
+                    ],
+                    "subsections": [
+                      {
+                        "title": "Manuális helyezés módosítás",
+                        "content": [
+                          "A csoport táblázatban minden játékos mellett találhatók fel/le nyilak (csak admin/moderátor jogosultsággal).",
+                          "Fel nyíl: A játékos egy hellyel feljebb kerül a helyezésben.",
+                          "Le nyíl: A játékos egy hellyel lejjebb kerül a helyezésben.",
+                          "A módosítás azonnal érvénybe lép az adatbázisban."
+                        ]
+                      },
+                      {
+                        "title": "Fontos figyelmeztetés",
+                        "content": [
+                          "A manuális helyezés módosítás minden meccs végén újra szükséges lehet.",
+                          "A rendszer automatikusan újraszámolja a helyezéseket minden meccs befejezése után.",
+                          "Ha egy meccs után a helyezések megváltoznak, újra módosítani kell a kívánt sorrendet.",
+                          "Ez különösen fontos körbeverés esetén, ahol a rendszer nem tudja automatikusan eldönteni a helyezést."
+                        ]
+                      },
+                      {
+                        "title": "Mikor használd?",
+                        "content": [
+                          "Körbeverés esetén: Ha A nyeri B-t, B nyeri C-t, C nyeri A-t.",
+                          "Azonos pontszám és leg arány esetén.",
+                          "Speciális esetekben, amikor a rendszer nem tudja automatikusan eldönteni a helyezést.",
+                          "Admin döntés alapján, ha más kritériumok alapján kell eldönteni a sorrendet."
+                        ]
+                      }
+                    ],
+                    "note": {
+                      "type": "warning",
+                      "content": "A manuális helyezés módosítás csak admin/moderátor jogosultsággal érhető el. A módosítás minden meccs után újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket."
+                    }
+                  }
                 ]
               },
               {
@@ -379,6 +423,38 @@
               "A felület egyszerű és intuitív, hasonló a Target DartCounter alkalmazáshoz.",
               "Minden leg végén erősítsd meg a győztest, mivel a mentés nem visszavonható. A meccs végén is szükséges egy végső megerősítés."
             ]
+          },
+          {
+            "type": "subsection",
+            "title": "Meccs beállítások - Nyert legek száma",
+            "content": [
+              "A meccs közben bármikor módosíthatod a nyert legek számát a beállítások gombbal (fogaskerék ikon) a bal felső sarokban.",
+              "A nyert legek száma 1-20 között állítható be.",
+              "A módosítás azonnal érvénybe lép, és visszamenőleg is hatással lehet a meccsre."
+            ],
+            "subsections": [
+              {
+                "title": "Visszamenőleges hatás",
+                "content": [
+                  "Ha valamelyik játékos már elérte az új nyert legek számát, a rendszer automatikusan felajánlja a meccs befejezését.",
+                  "Ha mindkét játékos elérte a célt, akkor aki több leget nyert (hamarabb érte el) lesz a győztes.",
+                  "Ha csak egy játékos érte el, ő lesz automatikusan a győztes.",
+                  "A rendszer megkérdezi, hogy biztos befejezni szeretnéd-e a meccset."
+                ]
+              },
+              {
+                "title": "Példák",
+                "content": [
+                  "Játékos 1: 3 leg, Játékos 2: 1 leg → Nyert legek: 2-re állítva → Játékos 1 nyert",
+                  "Játékos 1: 3 leg, Játékos 2: 3 leg → Nyert legek: 2-re állítva → Játékos 1 nyert (hamarabb érte el)",
+                  "Játékos 1: 1 leg, Játékos 2: 1 leg → Nyert legek: 3-ra állítva → Nincs változás (senki sem érte el)"
+                ]
+              }
+            ],
+            "note": {
+              "type": "warning",
+              "content": "A nyert legek számának módosítása visszavonhatatlan hatással lehet a meccsre. Csak akkor módosítsd, ha biztos vagy benne!"
+            }
           }
         ]
       }

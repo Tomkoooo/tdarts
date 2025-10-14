@@ -145,6 +145,7 @@ const SearchPage: React.FC = () => {
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (searchQuery: string, searchFilters: SearchFilters) => {
+      console.log('Debounced search called with:', { searchQuery, searchFilters });
       if (!searchQuery.trim()) {
         setResults({ totalResults: 0 });
         return;
@@ -157,8 +158,10 @@ const SearchPage: React.FC = () => {
           filters: searchFilters
         });
         
+        console.log('Search API response:', response.data);
         if (response.data.success) {
           setResults(response.data.results);
+          console.log('Search results set:', response.data.results);
         }
       } catch (error) {
         console.error('Search error:', error);
@@ -226,7 +229,15 @@ const SearchPage: React.FC = () => {
     loadInitialData();
   }, [playersPage]);
 
-  // Handle search logic
+
+  // Load filtered data when no query but filters are set
+  useEffect(() => {
+    if (!query.trim() && filters.type !== 'all') {
+      loadFilteredData();
+    }
+  }, [filters, query, playersPage]);
+
+  // Handle search with query
   useEffect(() => {
     if (query.trim()) {
       debouncedSearch(query, filters);
@@ -235,13 +246,6 @@ const SearchPage: React.FC = () => {
     }
     debouncedSuggestions(query);
   }, [query, filters, debouncedSearch, debouncedSuggestions]);
-
-  // Load filtered data when no query but filters are set
-  useEffect(() => {
-    if (!query.trim() && filters.type !== 'all') {
-      loadFilteredData();
-    }
-  }, [filters, query, playersPage]);
 
   const loadFilteredData = async () => {
     setLoading(true);
@@ -276,7 +280,7 @@ const SearchPage: React.FC = () => {
       }
       
       if (filters.type === 'players') {
-        // Load players with pagination (top players ranking)
+        // Load top players (no search query, just show top players)
         const playersRes = await axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`);
         if (playersRes.data.success) {
           results.players = playersRes.data.players;
@@ -338,6 +342,7 @@ const SearchPage: React.FC = () => {
   }, []);
 
   const handleSearch = (searchQuery: string) => {
+    console.log('Search triggered with query:', searchQuery);
     setQuery(searchQuery);
     setShowSuggestions(false);
   };
@@ -679,7 +684,7 @@ const SearchPage: React.FC = () => {
                   <h3 className="text-xl font-bold mb-4">Játékosok</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {results.players.map((player) => (
-                      <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} />
+                      <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} showGlobalRank={true} />
                     ))}
                   </div>
                   {/* Pagination for players */}
@@ -783,7 +788,7 @@ const SearchPage: React.FC = () => {
                   <h3 className="text-xl font-bold mb-4">Játékosok</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {results.players.map((player) => (
-                      <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} />
+                      <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} showGlobalRank={true} />
                     ))}
                   </div>
                 </section>
@@ -881,7 +886,7 @@ const SearchPage: React.FC = () => {
               <h2 className="text-2xl font-bold mb-4">Top Játékosok</h2>
                       <div className="space-y-3">
                         {topPlayers.map((player, index) => (
-                  <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} rank={((playersPage - 1) * itemsPerPage) + index + 1} />
+                  <PlayerCard key={player._id} player={player} onClick={() => openPlayerModal(player)} rank={((playersPage - 1) * itemsPerPage) + index + 1} showGlobalRank={true} />
                 ))}
               </div>
               <Pagination

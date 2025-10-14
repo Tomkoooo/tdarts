@@ -14,6 +14,7 @@ import {
   ChartOptions
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { IconTarget, IconTrendingDown } from '@tabler/icons-react';
 
 ChartJS.register(
   CategoryScale,
@@ -44,6 +45,8 @@ interface Leg {
   };
   checkoutScore?: number;
   checkoutDarts?: number;
+  winnerArrowCount?: number; // Hány nyílból szállt ki a győztes
+  loserRemainingScore?: number; // A vesztes játékos maradék pontjai
   doubleAttempts: number;
   createdAt: string;
 }
@@ -434,6 +437,39 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
                             )}
                           </div>
                         </div>
+                        
+                        {/* Nyilak száma és maradék pontok */}
+                        {leg.winnerId?._id && (
+                          <div className="mt-2 text-[10px] sm:text-xs text-base-content/60">
+                            {leg.winnerId.name === player1Name ? (
+                              <>
+                                <div className="flex items-center gap-1">
+                                  <IconTarget size={10} className="text-primary" />
+                                  <span className="text-primary">{leg.winnerArrowCount || 3} nyíl</span>
+                                </div>
+                                {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
+                                  <div className="flex items-center gap-1 ml-2">
+                                    <IconTrendingDown size={10} className="text-error" />
+                                    <span className="text-error">{leg.loserRemainingScore} pont</span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-1">
+                                  <IconTarget size={10} className="text-error" />
+                                  <span className="text-error">{leg.winnerArrowCount || 3} nyíl</span>
+                                </div>
+                                {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
+                                  <div className="flex items-center gap-1 ml-2">
+                                    <IconTrendingDown size={10} className="text-primary" />
+                                    <span className="text-primary">{leg.loserRemainingScore} pont</span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     
@@ -483,9 +519,29 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
                         }} data={throwData} />
                       </div>
                       <div className="mt-3 p-2 sm:p-3 bg-info/10 rounded-lg border border-info/20">
-                        <p className="text-[10px] sm:text-xs text-base-content/70 leading-relaxed">
-                          💡 <span className="font-semibold">Tipp:</span> A grafikon mutatja, hogyan változott a játékosok teljesítménye a leg során.
-                        </p>
+                        <div className="text-[10px] sm:text-xs text-base-content/70 leading-relaxed space-y-1">
+                          <p>
+                            💡 <span className="font-semibold">Tipp:</span> A grafikon mutatja, hogyan változott a játékosok teljesítménye a leg során.
+                          </p>
+                          {leg.winnerId?._id && (
+                            <div className="flex items-center gap-4 pt-1 border-t border-info/20">
+                              <div className="flex items-center gap-1">
+                                <IconTarget size={12} className="text-primary" />
+                                <span className="font-medium">
+                                  {leg.winnerId.name} kiszállt: {leg.winnerArrowCount || 3} nyíl
+                                </span>
+                              </div>
+                              {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <IconTrendingDown size={12} className="text-error" />
+                                  <span className="font-medium">
+                                    Maradt: {leg.loserRemainingScore} pont
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

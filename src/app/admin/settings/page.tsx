@@ -1,7 +1,23 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { IconSettings, IconDatabase, IconServer, IconRefresh, IconClock, IconCpu, IconSection, IconFile, IconCheck, IconX } from '@tabler/icons-react';
+import { 
+  IconSettings, 
+  IconDatabase, 
+  IconServer, 
+  IconRefresh, 
+  IconClock, 
+  IconSection, 
+  IconCheck, 
+  IconX,
+  IconActivity,
+  IconDeviceFloppy,
+  IconCode,
+  IconMail,
+  IconShield,
+  IconPlug,
+  IconChartBar
+} from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 interface SystemInfo {
@@ -20,6 +36,14 @@ interface SystemInfo {
   features: {
     subscriptionEnabled: boolean;
     socketEnabled: boolean;
+    leaguesEnabled: boolean;
+    detailedStatisticsEnabled: boolean;
+  };
+  environment: {
+    emailUsername: string;
+    nodeEnv: string;
+    subscriptionEnabled: string;
+    socketServerUrl: string;
   };
 }
 
@@ -46,10 +70,13 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading loading-spinner loading-lg text-primary"></div>
-          <p className="mt-4 text-base-content/60">Rendszer információk betöltése...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+          </div>
+          <p className="text-base-content/60">Rendszer információk betöltése...</p>
         </div>
       </div>
     );
@@ -57,16 +84,20 @@ export default function AdminSettingsPage() {
 
   if (!systemInfo) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-error text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-base-content mb-2">Hiba történt</h2>
-          <p className="text-base-content/60 mb-4">Nem sikerült betölteni a rendszer információkat.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto">
+            <IconSettings className="w-12 h-12 text-error" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-base-content">Hiba történt</h2>
+            <p className="text-base-content/60">Nem sikerült betölteni a rendszer információkat.</p>
+          </div>
           <button 
             onClick={fetchSystemInfo}
-            className="admin-btn-primary"
+            className="btn btn-primary gap-2"
           >
-            <IconRefresh className="w-4 h-4" />
+            <IconRefresh className="w-5 h-5" />
             Újrapróbálás
           </button>
         </div>
@@ -74,226 +105,250 @@ export default function AdminSettingsPage() {
     );
   }
 
+  const StatusBadge = ({ active }: { active: boolean }) => (
+    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold ${
+      active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'
+    }`}>
+      {active ? <IconCheck size={16} /> : <IconX size={16} />}
+      {active ? 'Aktív' : 'Inaktív'}
+    </span>
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-gradient-red mb-2">Rendszer Beállítások</h1>
-          <p className="text-base-content/60">Rendszer információk és konfiguráció</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 p-8">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
+            backgroundSize: '32px 32px'
+          }}></div>
         </div>
-        <button 
-          onClick={fetchSystemInfo}
-          className="admin-btn-primary text-sm flex items-center gap-2"
-          disabled={loading}
-        >
-          <IconRefresh className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Frissítés
-        </button>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl lg:text-5xl font-bold text-base-content flex items-center gap-3">
+              <IconSettings className="w-10 h-10 text-primary" />
+              Rendszer Beállítások
+            </h1>
+            <p className="text-base-content/70 text-lg">Rendszer információk és konfiguráció</p>
+          </div>
+          
+          <button 
+            onClick={fetchSystemInfo}
+            disabled={loading}
+            className="btn btn-primary gap-2"
+          >
+            <IconRefresh className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            Frissítés
+          </button>
+        </div>
       </div>
 
-      {/* System Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconServer className="w-6 h-6 text-primary" />
+      {/* System Health Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center">
+              <IconActivity className="w-6 h-6 text-success" />
+            </div>
+            <span className="text-xs font-bold text-success bg-success/20 px-2 py-1 rounded">ONLINE</span>
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Verzió</h3>
-          <p className="text-2xl font-bold text-primary">{systemInfo.version}</p>
+          <h3 className="text-sm font-medium text-base-content/70 mb-1">Rendszer Állapot</h3>
+          <p className="text-2xl font-bold text-success">Működik</p>
         </div>
 
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
+        <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-info/20 rounded-full flex items-center justify-center">
+              <IconClock className="w-6 h-6 text-info" />
+            </div>
+          </div>
+          <h3 className="text-sm font-medium text-base-content/70 mb-1">Üzemidő</h3>
+          <p className="text-2xl font-bold text-info">{systemInfo.uptime}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
+              <IconDeviceFloppy className="w-6 h-6 text-warning" />
+            </div>
+          </div>
+          <h3 className="text-sm font-medium text-base-content/70 mb-1">Memória</h3>
+          <p className="text-2xl font-bold text-warning">{systemInfo.memory.percentage}%</p>
+          <p className="text-xs text-base-content/60 mt-1">{systemInfo.memory.used} / {systemInfo.memory.total}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+              <IconDatabase className="w-6 h-6 text-primary" />
+            </div>
+            <StatusBadge active={systemInfo.database.status === 'connected'} />
+          </div>
+          <h3 className="text-sm font-medium text-base-content/70 mb-1">Adatbázis</h3>
+          <p className="text-2xl font-bold text-primary capitalize">{systemInfo.database.status}</p>
+        </div>
+      </div>
+
+      {/* Database Details */}
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
             <IconDatabase className="w-6 h-6 text-primary" />
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Adatbázis</h3>
-          <p className="text-2xl font-bold text-primary">
-            {systemInfo.database.status === 'connected' ? 'Csatlakozva' : 'Hiba'}
-          </p>
+          <h2 className="text-2xl font-bold">Adatbázis Információk</h2>
         </div>
-
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconCpu className="w-6 h-6 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-base-200 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.collections}</div>
+            <div className="text-sm text-base-content/70 font-medium">Kollekciók</div>
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Memória</h3>
-          <p className="text-2xl font-bold text-primary">
-            {systemInfo.memory.percentage}%
-          </p>
-        </div>
-
-        <div className="admin-glass-card text-center">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 inline-block mb-3">
-            <IconFile className="w-6 h-6 text-primary" />
+          <div className="bg-base-200 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.documents.toLocaleString()}</div>
+            <div className="text-sm text-base-content/70 font-medium">Dokumentumok</div>
           </div>
-          <h3 className="text-sm font-medium text-base-content/60 mb-1">Dokumentumok</h3>
-          <p className="text-2xl font-bold text-primary">{systemInfo.database.documents.toLocaleString()}</p>
+          <div className="bg-base-200 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.status === 'connected' ? '✓' : '✗'}</div>
+            <div className="text-sm text-base-content/70 font-medium">Kapcsolat</div>
+          </div>
         </div>
       </div>
 
-      {/* Daily Chart */}
-
-
-      {/* Detailed Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* System Status */}
-        <div className="admin-glass-card">
-          <h3 className="text-lg font-semibold text-base-content mb-4">Rendszer Állapot</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <IconClock className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-base-content/80">Uptime</span>
-              </div>
-              <span className="font-semibold text-base-content">{systemInfo.uptime}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-accent/10">
-                  <IconCpu className="w-4 h-4 text-accent" />
-                </div>
-                <span className="text-base-content/80">Memória használat</span>
-              </div>
-              <span className="font-semibold text-base-content">
-                {systemInfo.memory.used} / {systemInfo.memory.total}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-secondary/10">
-                  <IconSection className="w-4 h-4 text-secondary" />
-                </div>
-                <span className="text-base-content/80">Adatbázis kollekciók</span>
-              </div>
-              <span className="font-semibold text-base-content">{systemInfo.database.collections}</span>
-            </div>
+      {/* Features */}
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+            <IconPlug className="w-6 h-6 text-success" />
           </div>
+          <h2 className="text-2xl font-bold">Funkciók</h2>
         </div>
-
-        {/* Feature Flags */}
-        <div className="admin-glass-card">
-          <h3 className="text-lg font-semibold text-base-content mb-4">Funkciók</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-success/10">
-                  <IconSettings className="w-4 h-4 text-success" />
-                </div>
-                <span className="text-base-content/80">Előfizetési rendszer</span>
-              </div>
-                             <span className="badge badge-sm badge-primary gap-1">
-                 {systemInfo.features.subscriptionEnabled ? (
-                   <>
-                     <IconCheck className="w-3 h-3" />
-                     Aktív
-                   </>
-                 ) : (
-                   <>
-                     <IconX className="w-3 h-3" />
-                     Inaktív
-                   </>
-                 )}
-               </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-4 bg-base-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <IconShield className="w-5 h-5 text-primary" />
+              <span className="font-medium">Előfizetés rendszer</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-base-200/30">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-info/10">
-                  <IconServer className="w-4 h-4 text-info" />
-                </div>
-                <span className="text-base-content/80">Socket.IO</span>
-              </div>
-                             <span className="badge badge-sm badge-primary gap-1">
-                 {systemInfo.features.socketEnabled ? (
-                   <>
-                     <IconCheck className="w-3 h-3" />
-                     Aktív
-                   </>
-                 ) : (
-                   <>
-                     <IconX className="w-3 h-3" />
-                     Inaktív
-                   </>
-                 )}
-               </span>
+            <StatusBadge active={systemInfo.features.subscriptionEnabled} />
+          </div>
+          <div className="flex items-center justify-between p-4 bg-base-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <IconActivity className="w-5 h-5 text-primary" />
+              <span className="font-medium">Socket kapcsolat</span>
             </div>
+            <StatusBadge active={systemInfo.features.socketEnabled} />
+          </div>
+          <div className="flex items-center justify-between p-4 bg-base-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <IconSection className="w-5 h-5 text-primary" />
+              <span className="font-medium">Ligák</span>
+            </div>
+            <StatusBadge active={systemInfo.features.leaguesEnabled} />
+          </div>
+          <div className="flex items-center justify-between p-4 bg-base-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <IconChartBar className="w-5 h-5 text-primary" />
+              <span className="font-medium">Részletes statisztikák</span>
+            </div>
+            <StatusBadge active={systemInfo.features.detailedStatisticsEnabled} />
           </div>
         </div>
       </div>
 
       {/* Environment Variables */}
-      <div className="admin-glass-card">
-        <h3 className="text-lg font-semibold text-base-content mb-4">Környezeti Változók</h3>
+      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center">
+            <IconCode className="w-6 h-6 text-info" />
+          </div>
+          <h2 className="text-2xl font-bold">Környezeti Változók</h2>
+        </div>
         <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
+          <table className="table w-full">
             <thead>
               <tr className="border-b border-base-300">
-                <th className="text-base-content font-semibold">Változó</th>
-                <th className="text-base-content font-semibold">Érték</th>
-                <th className="text-base-content font-semibold">Státusz</th>
+                <th className="bg-base-200">Változó</th>
+                <th className="bg-base-200">Érték</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="hover:bg-base-200/30 transition-colors">
-                <td className="font-mono text-sm text-base-content/80">NODE_ENV</td>
-                <td className="font-mono text-sm text-base-content">{process.env.NODE_ENV || 'N/A'}</td>
+              <tr className="hover:bg-base-200/50">
+                <td className="font-mono text-sm">
+                  <div className="flex items-center gap-2">
+                    <IconServer className="w-4 h-4 text-primary" />
+                    NODE_ENV
+                  </div>
+                </td>
                 <td>
-                                     <span className="badge badge-sm badge-primary gap-1">
-                     {process.env.NODE_ENV === 'production' ? (
-                       <>
-                         <IconCheck className="w-3 h-3" />
-                         Production
-                       </>
-                     ) : (
-                       <>
-                         <IconX className="w-3 h-3" />
-                         Development
-                       </>
-                     )}
-                   </span>
+                  <span className={`badge ${
+                    systemInfo.environment.nodeEnv === 'production' 
+                      ? 'badge-success' 
+                      : 'badge-warning'
+                  }`}>
+                    {systemInfo.environment.nodeEnv}
+                  </span>
                 </td>
               </tr>
-              <tr className="hover:bg-base-200/30 transition-colors">
-                <td className="font-mono text-sm text-base-content/80">NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED</td>
-                <td className="font-mono text-sm text-base-content">{process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED || 'false'}</td>
+              <tr className="hover:bg-base-200/50">
+                <td className="font-mono text-sm">
+                  <div className="flex items-center gap-2">
+                    <IconShield className="w-4 h-4 text-primary" />
+                    SUBSCRIPTION_ENABLED
+                  </div>
+                </td>
                 <td>
-                                     <span className="badge badge-sm badge-primary gap-1">
-                     {process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true' ? (
-                       <>
-                         <IconCheck className="w-3 h-3" />
-                         Aktív
-                       </>
-                     ) : (
-                       <>
-                         <IconX className="w-3 h-3" />
-                         Inaktív
-                       </>
-                     )}
-                   </span>
+                  <span className="badge badge-info">
+                    {systemInfo.environment.subscriptionEnabled}
+                  </span>
                 </td>
               </tr>
-              <tr className="hover:bg-base-200/30 transition-colors">
-                <td className="font-mono text-sm text-base-content/80">NEXT_PUBLIC_SOCKET_SERVER_URL</td>
-                <td className="font-mono text-sm text-base-content">{process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'N/A'}</td>
+              <tr className="hover:bg-base-200/50">
+                <td className="font-mono text-sm">
+                  <div className="flex items-center gap-2">
+                    <IconActivity className="w-4 h-4 text-primary" />
+                    SOCKET_SERVER_URL
+                  </div>
+                </td>
                 <td>
-                                     <span className="badge badge-sm badge-primary gap-1">
-                     {process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ? (
-                       <>
-                         <IconCheck className="w-3 h-3" />
-                         Beállítva
-                       </>
-                     ) : (
-                       <>
-                         <IconX className="w-3 h-3" />
-                         Nincs beállítva
-                       </>
-                     )}
-                   </span>
+                  <code className="text-xs bg-base-300 px-2 py-1 rounded">
+                    {systemInfo.environment.socketServerUrl || 'Not set'}
+                  </code>
+                </td>
+              </tr>
+              <tr className="hover:bg-base-200/50">
+                <td className="font-mono text-sm">
+                  <div className="flex items-center gap-2">
+                    <IconMail className="w-4 h-4 text-primary" />
+                    EMAIL_USERNAME
+                  </div>
+                </td>
+                <td>
+                  <code className="text-xs bg-base-300 px-2 py-1 rounded">
+                    {systemInfo.environment.emailUsername || 'Not set'}
+                  </code>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* System Version */}
+      <div className="bg-gradient-to-br from-primary/10 to-transparent border border-primary/30 rounded-2xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center">
+              <IconCode className="w-7 h-7 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-base-content">Rendszer Verzió</h3>
+              <p className="text-sm text-base-content/60">Aktuális verzió információk</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-primary">{systemInfo.version}</div>
+            <div className="text-sm text-base-content/60">v{systemInfo.version}</div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import LegsViewModal from './LegsViewModal';
+import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface Player {
   playerId: {
@@ -112,6 +115,40 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const handleViewLegs = (match: Match) => {
     setSelectedMatchForLegs(match);
     setShowLegsModal(true);
+  };
+
+  const handleMovePlayer = async (groupId: string, playerId: string, direction: 'up' | 'down') => {
+    if (userClubRole !== 'admin' && userClubRole !== 'moderator') {
+      toast.error('Nincs jogosultságod a helyezés módosításához!');
+      return;
+    }
+
+    // Show warning about manual standing adjustment
+    const confirmMessage = `Biztosan módosítod a játékos helyezését?\n\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await axios.patch(`/api/tournaments/${tournament.tournamentId}/groups/${groupId}/move-player`, {
+        playerId,
+        direction
+      });
+
+      if (response.data.success) {
+        toast.success('Helyezés sikeresen módosítva!', {
+          duration: 4000,
+        });
+        // Refresh the page to show updated standings
+        window.location.reload();
+      } else {
+        toast.error('Hiba történt a helyezés módosítása során!');
+      }
+    } catch (error) {
+      console.error('Error moving player:', error);
+      toast.error('Hiba történt a helyezés módosítása során!');
+    }
   };
 
   const handleSaveMatch = async () => {
@@ -233,6 +270,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               <th className="text-center">Sorszám</th>
                               <th className="text-center">Helyezés</th>
                               <th>Név</th>
+                              {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                                <th className="text-center">Mozgatás</th>
+                              )}
                               <th className="text-center">Pontok</th>
                               <th className="text-center">Nyert Meccsek</th>
                               <th className="text-center">Vesztett Meccsek</th>
@@ -260,6 +300,28 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                   <td className="font-semibold">
                                     {player.playerReference?.name || 'Ismeretlen'}
                                   </td>
+                                  {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+                                    <td className="text-center">
+                                      <div className="flex flex-col gap-1">
+                                        <button
+                                          onClick={() => handleMovePlayer(group._id, player._id, 'up')}
+                                          disabled={index === 0}
+                                          className="btn btn-xs btn-ghost p-1"
+                                          title="Fel mozgatás"
+                                        >
+                                          <IconArrowUp size={12} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleMovePlayer(group._id, player._id, 'down')}
+                                          disabled={index === groupPlayers.length - 1}
+                                          className="btn btn-xs btn-ghost p-1"
+                                          title="Le mozgatás"
+                                        >
+                                          <IconArrowDown size={12} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
                                   <td className="text-center">
                                     {(stats.matchesWon || 0) * 2}
                                   </td>

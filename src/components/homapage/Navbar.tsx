@@ -160,7 +160,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-                    <div className="md:hidden top-full left-0 right-0 p-2 mt-2 mx-4 rounded-2xl  max-h-[85vh] overflow-y-auto">
+                    <div className="md:hidden top-full left-0 right-0 p-2 mt-2 mx-4 rounded-2xl max-h-[85vh] overflow-y-auto">
 
             {/* Overlay to close menu when clicking outside */}
             <div 

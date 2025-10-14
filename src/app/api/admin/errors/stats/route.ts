@@ -21,22 +21,69 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const days = parseInt(searchParams.get('days') || '7');
+    const category = searchParams.get('category') || 'all';
+    const level = searchParams.get('level') || 'all';
+    const showAuthErrors = searchParams.get('showAuthErrors') === 'true';
+
+    // Calculate date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Build match criteria
+    const matchCriteria: any = {
+      level: 'error',
+      timestamp: { $gte: startDate, $lte: endDate }
+    };
+
+    // Exclude auth errors by default
+    if (!showAuthErrors) {
+      matchCriteria.$and = [
+        { category: { $ne: 'auth' } },
+        { 
+          $nor: [
+            { message: { $regex: /token.*expired|expired.*token/i } },
+            { message: { $regex: /invalid.*password|password.*invalid/i } },
+            { message: { $regex: /email.*already.*exists|already.*registered/i } },
+            { message: { $regex: /user.*not.*found|not.*found.*user/i } },
+            { error: { $regex: /token.*expired|expired.*token/i } },
+            { error: { $regex: /invalid.*password|password.*invalid/i } },
+            { error: { $regex: /email.*already.*exists|already.*registered/i } },
+            { error: { $regex: /user.*not.*found|not.*found.*user/i } }
+          ]
+        }
+      ];
+    }
+
+    // Add category filter
+    if (category !== 'all') {
+      matchCriteria.category = category;
+    }
+
+    // Add level filter
+    if (level !== 'all') {
+      matchCriteria.level = level;
+    }
+
     // Get error statistics
     const [totalErrors, errorsByCategory, errorsByLevel, recentErrors] = await Promise.all([
-      LogModel.countDocuments({ level: 'error' }),
+      LogModel.countDocuments(matchCriteria),
       LogModel.aggregate([
-        { $match: { level: 'error' } },
+        { $match: matchCriteria },
         { $group: { _id: '$category', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
       LogModel.aggregate([
-        { $match: { level: 'error' } },
+        { $match: matchCriteria },
         { $group: { _id: '$level', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
-      LogModel.find({ level: 'error' })
+      LogModel.find(matchCriteria)
         .sort({ timestamp: -1 })
-        .limit(10)
+        .limit(50)
         .lean()
     ]);
 

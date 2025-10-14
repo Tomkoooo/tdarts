@@ -66,7 +66,7 @@ export default function TournamentCard({
   const isFull = playerCount >= maxPlayers;
 
   return (
-    <div className="relative group bg-base-100 rounded-xl p-4 md:p-6 shadow hover:shadow-lg transition-all border border-base-300 hover:border-primary/30 flex flex-col">
+    <Link href={`/tournaments/${tournament.tournamentId}`} className="relative group bg-base-100 rounded-xl p-4 md:p-6 shadow hover:shadow-lg transition-all border border-base-300 hover:border-primary/30 flex flex-col">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
@@ -161,6 +161,6 @@ export default function TournamentCard({
           <IconArrowRight size={14} className="transition-transform group-hover/link:translate-x-1 md:w-4 md:h-4" />
         </Link>
       </div>
-    </div>
+    </Link>
   );
 } 

@@ -21,22 +21,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get days parameter
+    // Get query parameters
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '7');
+    const showAuthErrors = searchParams.get('showAuthErrors') === 'true';
 
     // Calculate date range
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    // Build match criteria
+    const matchCriteria: any = {
+      level: 'error',
+      timestamp: { $gte: startDate, $lte: endDate }
+    };
+
+    // Exclude auth errors by default
+    if (!showAuthErrors) {
+      matchCriteria.$and = [
+        { category: { $ne: 'auth' } },
+        { 
+          $nor: [
+            { message: { $regex: /token.*expired|expired.*token/i } },
+            { message: { $regex: /invalid.*password|password.*invalid/i } },
+            { message: { $regex: /email.*already.*exists|already.*registered/i } },
+            { message: { $regex: /user.*not.*found|not.*found.*user/i } },
+            { error: { $regex: /token.*expired|expired.*token/i } },
+            { error: { $regex: /invalid.*password|password.*invalid/i } },
+            { error: { $regex: /email.*already.*exists|already.*registered/i } },
+            { error: { $regex: /user.*not.*found|not.*found.*user/i } }
+          ]
+        }
+      ];
+    }
+
     // Get daily error breakdown
     const dailyErrors = await LogModel.aggregate([
       {
-        $match: {
-          level: 'error',
-          timestamp: { $gte: startDate, $lte: endDate }
-        }
+        $match: matchCriteria
       },
       {
         $group: {

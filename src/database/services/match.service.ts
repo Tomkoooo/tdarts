@@ -172,17 +172,20 @@ export class MatchService {
         winner: 1 | 2;
         player1Throws: number[];
         player2Throws: number[];
+        winnerArrowCount?: number;
         player1Stats: {
             highestCheckout: number;
             oneEightiesCount: number;
             totalThrows: number;
             totalScore: number;
+            totalArrows?: number;
         };
         player2Stats: {
             highestCheckout: number;
             oneEightiesCount: number;
             totalThrows: number;
             totalScore: number;
+            totalArrows?: number;
         };
     }) {
         const match = await MatchModel.findById(matchId);
@@ -219,6 +222,12 @@ export class MatchService {
         const player2DoubleAttempts = legData.player2Throws.filter(throwScore => throwScore % 2 === 0 && throwScore > 0).length;
         const totalDoubleAttempts = player1DoubleAttempts + player2DoubleAttempts;
 
+        // Calculate remaining score for the loser
+        const startingScore = 501; // Standard starting score
+        const loserRemainingScore = legData.winner === 1 ? 
+            startingScore - legData.player2Stats.totalScore : 
+            startingScore - legData.player1Stats.totalScore;
+
         // Create leg object
         const leg = {
             player1Score: legData.player1Stats.totalScore,
@@ -237,7 +246,9 @@ export class MatchService {
             })),
             winnerId: winnerId,
             checkoutScore: legCheckoutScore > 0 ? legCheckoutScore : undefined,
-            checkoutDarts: legCheckoutScore > 0 ? 3 : undefined, // Simplified - could be calculated more precisely
+            checkoutDarts: legCheckoutScore > 0 ? (legData.winnerArrowCount || 3) : undefined,
+            winnerArrowCount: legData.winnerArrowCount || 3,
+            loserRemainingScore: loserRemainingScore,
             doubleAttempts: totalDoubleAttempts,
             createdAt: new Date()
         };
@@ -256,17 +267,24 @@ export class MatchService {
     static async finishMatch(matchId: string, matchData: {
         player1LegsWon: number;
         player2LegsWon: number;
+        winnerArrowCount?: number;
         player1Stats: {
             highestCheckout: number;
             oneEightiesCount: number;
             totalThrows: number;
             totalScore: number;
+            totalArrows?: number;
         };
         player2Stats: {
             highestCheckout: number;
             oneEightiesCount: number;
             totalThrows: number;
             totalScore: number;
+            totalArrows?: number;
+        };
+        finalLegData?: {
+            player1Throws: number[];
+            player2Throws: number[];
         };
     }) {
         const match = await MatchModel.findById(matchId);
@@ -336,15 +354,33 @@ export class MatchService {
             // Find the highest checkout in this leg
             const legCheckoutScore = Math.max(matchData.player1Stats.highestCheckout, matchData.player2Stats.highestCheckout);
             
-            // Create final leg object (simplified since we don't have throw data here)
+            // Calculate remaining score for the loser
+            const startingScore = 501; // Standard starting score
+            const loserRemainingScore = winner === 1 ? 
+                startingScore - matchData.player2Stats.totalScore : 
+                startingScore - matchData.player1Stats.totalScore;
+
+            // Create final leg object with throw data if available
             const finalLeg = {
                 player1Score: matchData.player1Stats.totalScore,
                 player2Score: matchData.player2Stats.totalScore,
-                player1Throws: [], // Would need to be passed from frontend
-                player2Throws: [], // Would need to be passed from frontend
+                player1Throws: matchData.finalLegData?.player1Throws?.map((score, index) => ({
+                    score: score,
+                    darts: 3,
+                    isDouble: false,
+                    isCheckout: index === (matchData.finalLegData?.player1Throws?.length || 0) - 1 && winner === 1
+                })) || [],
+                player2Throws: matchData.finalLegData?.player2Throws?.map((score, index) => ({
+                    score: score,
+                    darts: 3,
+                    isDouble: false,
+                    isCheckout: index === (matchData.finalLegData?.player2Throws?.length || 0) - 1 && winner === 2
+                })) || [],
                 winnerId: winnerId,
                 checkoutScore: legCheckoutScore > 0 ? legCheckoutScore : undefined,
-                checkoutDarts: legCheckoutScore > 0 ? 3 : undefined,
+                checkoutDarts: legCheckoutScore > 0 ? (matchData.winnerArrowCount || 3) : undefined,
+                winnerArrowCount: matchData.winnerArrowCount || 3,
+                loserRemainingScore: loserRemainingScore,
                 doubleAttempts: 0, // Would need to be calculated from throws
                 createdAt: new Date()
             };

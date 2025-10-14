@@ -6,9 +6,10 @@ interface PlayerCardProps {
   player: Player;
   onClick: () => void;
   rank?: number;
+  showGlobalRank?: boolean;
 }
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank }) => {
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlobalRank = false }) => {
   // Safely get MMR with fallback to base MMR (800)
   const mmr = (player as any).mmr ?? player.stats?.mmr ?? 800;
   
@@ -21,6 +22,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank }) => {
     if (mmr >= 800) return { name: 'Kezdő+', color: 'text-primary' };
     return { name: 'Kezdő', color: 'text-base-content' };
   })();
+  
+  // Get global rank if available
+  const globalRank = (player as any).globalRank;
   
   return (
     <div 
@@ -43,6 +47,12 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank }) => {
                 <span className="text-xs text-base-content/60">
                   {player.stats?.tournamentsPlayed || 0} torna
                 </span>
+                {/* Global Rank Badge */}
+                {showGlobalRank && globalRank && (
+                  <div className="badge badge-sm badge-secondary gap-1">
+                    <span className="text-xs font-bold">#{globalRank}</span>
+                  </div>
+                )}
                 {/* MMR Badge */}
                 <div className={`badge badge-sm ${mmrTier.color} gap-1`}>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
