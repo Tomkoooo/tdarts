@@ -34,7 +34,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
             legsLost: { type: Number, default: 0 },
             oneEightiesCount: { type: Number, default: 0 },
             highestCheckout: { type: Number, default: 0 },
-            averagePosition: { type: Number, default: 0 },
+            average: { type: Number, default: 0 }, // Tornához tartozó átlag (meccs átlagok átlaga)
         },
         date: { type: Date, default: Date.now },
     }]

@@ -669,20 +669,26 @@ const ProfilePage: React.FC = () => {
                                       <div className="flex justify-between">
                                         <span>Meccsek:</span>
                                         <span className="font-semibold">
-                                          {tournament.playerStats.matchesWon || 0} nyert / {tournament.playerStats.matchesLost || 0} vesztett
+                                          {tournament.playerStats.matchesWon || 0}W / {tournament.playerStats.matchesLost || 0}L
                                         </span>
                                       </div>
                                       <div className="flex justify-between">
+                                        <span>Legek:</span>
+                                        <span className="font-semibold">
+                                          {tournament.playerStats.legsWon || 0}W / {tournament.playerStats.legsLost || 0}L
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Átlag:</span>
+                                        <span className="font-semibold">{tournament.playerStats.average?.toFixed(1) || 'N/A'}</span>
+                                      </div>
+                                      <div className="flex justify-between">
                                         <span>180s:</span>
-                                        <span className="font-semibold">{tournament.playerStats.total180s || 0}</span>
+                                        <span className="font-semibold">{tournament.playerStats.oneEightiesCount || 0}</span>
                                       </div>
                                       <div className="flex justify-between">
                                         <span>Max kiszálló:</span>
                                         <span className="font-semibold">{tournament.playerStats.highestCheckout || 'N/A'}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>Átlag:</span>
-                                        <span className="font-semibold">{tournament.playerStats.avg?.toFixed(1) || 'N/A'}</span>
                                       </div>
                                     </div>
                                   </>

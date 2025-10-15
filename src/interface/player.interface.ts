@@ -12,6 +12,7 @@ export interface TournamentHistory {
         legsLost: number;
         oneEightiesCount: number;
         highestCheckout: number;
+        average: number; // Tornához tartozó átlag (meccs átlagok átlaga)
     };
     date: Date;
 }
