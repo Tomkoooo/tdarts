@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { IconX, IconTrophy, IconUsers, IconEdit, IconUser, IconTrash } from '@tabler/icons-react';
+import { IconX, IconTrophy, IconUsers, IconEdit, IconUser, IconTrash, IconShare } from '@tabler/icons-react';
 import { League, LeagueStatsResponse, LeagueLeaderboard } from '@/interface/league.interface';
 import PlayerSearch from './PlayerSearch';
 import TournamentCard from '../tournament/TournamentCard';
@@ -31,6 +31,33 @@ export default function LeagueDetailModal({
   const [error, setError] = useState<string>('');
 
   const canManage = userRole === 'admin' || userRole === 'moderator';
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/clubs/${clubId}?page=leagues&league=${league._id}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${league.name} - Liga`,
+          text: `Nézd meg ezt a ligát: ${league.name}`,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        showSuccessToast('Liga link másolva a vágólapra!');
+      }
+    } catch (error) {
+      // Fallback: copy to clipboard
+      console.error('Error sharing league:', error);
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showSuccessToast('Liga link másolva a vágólapra!');
+      } catch (clipboardError) {
+        showErrorToast('Nem sikerült másolni a linket');
+        console.error('Error copying link to clipboard:', clipboardError);
+      }
+    }
+  };
 
   useEffect(() => {
     if (isOpen && league._id) {
@@ -91,19 +118,24 @@ export default function LeagueDetailModal({
   const handleAddPlayerToLeague = async (player: any) => {
     try {
       let playerId = player._id;
+      const playerName = player.name;
+      
+      console.log('Adding player to league:', { player, playerId, playerName });
       
       // If player is a guest or not in Player collection, create them first
       if (!playerId) {
+        console.log('Player has no ID, creating new player...');
         const createResponse = await fetch('/api/players', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ name: player.name }),
+          body: JSON.stringify({ name: playerName }),
         });
         
         if (!createResponse.ok) {
           const errorData = await createResponse.json();
+          console.error('Error creating player:', errorData);
           showErrorToast(errorData.error || 'Hiba a játékos létrehozása során', {
             context: 'Liga játékos létrehozása',
             error: errorData.error
@@ -113,7 +145,10 @@ export default function LeagueDetailModal({
         
         const createData = await createResponse.json();
         playerId = createData._id;
+        console.log('Player created with ID:', playerId);
       }
+
+      console.log('Adding player to league with ID:', playerId, 'Name:', playerName);
 
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/players`, {
         method: 'POST',
@@ -122,7 +157,7 @@ export default function LeagueDetailModal({
         },
         body: JSON.stringify({
           playerId: playerId,
-          playerName: player.name
+          playerName: playerName
         }),
       });
 
@@ -131,6 +166,7 @@ export default function LeagueDetailModal({
         showSuccessToast('Játékos sikeresen hozzáadva a ligához!');
       } else {
         const errorData = await response.json();
+        console.error('Error adding player to league:', errorData);
         showErrorToast(errorData.error || 'Hiba a játékos hozzáadása során', {
           context: 'Liga játékos hozzáadása',
           error: errorData.error
@@ -186,12 +222,21 @@ export default function LeagueDetailModal({
           <div>
             <h3 className="text-2xl font-bold">{league.name}</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="btn btn-ghost btn-sm"
-          >
-            <IconX  color="white" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              className="btn btn-ghost btn-sm"
+              title="Liga megosztása"
+            >
+              <IconShare size={18} />
+            </button>
+            <button
+              onClick={onClose}
+              className="btn btn-ghost btn-sm"
+            >
+              <IconX  color="white" />
+            </button>
+          </div>
         </div>
 
         {/* Stats Overview */}

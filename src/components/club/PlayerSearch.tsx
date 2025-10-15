@@ -141,20 +141,48 @@ export default function PlayerSearch({
   }, [searchTerm, debouncedSearch]);
 
   const handleSelect = async (player: any) => {
-    // Ensure we have the correct data structure
-    const playerData = {
+    console.log('PlayerSearch - handleSelect called with player:', player);
+    
+    let playerData = {
       _id: player._id,
       name: player.name,
       userRef: player.userRef,
       username: player.username,
       isGuest: !player.userRef && !player.username // If no userRef and no username, it's a guest
     };
+
+    // If this is a user (has username but no userRef), we need to find the corresponding Player document
+    if (player.username && !player.userRef) {
+      try {
+        console.log('Looking for Player document for user:', player._id);
+        const playerResponse = await axios.get(`/api/players/find-by-user/${player._id}`);
+        if (playerResponse.data.success && playerResponse.data.player) {
+          const actualPlayer = playerResponse.data.player;
+          console.log('Found Player document:', actualPlayer);
+          playerData = {
+            _id: actualPlayer._id, // Use the Player document _id, not the User _id
+            name: actualPlayer.name,
+            userRef: actualPlayer.userRef,
+            username: player.username,
+            isGuest: false
+          };
+        } else {
+          console.log('No Player document found for user, will create one');
+          // Player document doesn't exist yet, will be created in the league service
+        }
+      } catch (error) {
+        console.error('Error finding Player document:', error);
+        // Continue with user data, will be handled in the league service
+      }
+    }
+    
+    console.log('PlayerSearch - Final playerData:', playerData);
     
     // Pass the player data to the parent
     onPlayerSelected(playerData);
     
     // Use a more reliable identifier for tracking added players
-    const playerIdentifier = player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name);
+    const playerIdentifier = playerData.userRef ? playerData.userRef.toString() : (playerData._id ? playerData._id.toString() : playerData.name);
     setAddedIds((prev) => [...prev, playerIdentifier]); // Mark as added
     setJustAddedId(playerIdentifier); // For feedback
     setTimeout(() => setJustAddedId(null), 1200); // Remove feedback after 1.2s

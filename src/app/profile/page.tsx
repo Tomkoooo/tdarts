@@ -80,6 +80,8 @@ const ProfilePage: React.FC = () => {
   const [isResendingCode, setIsResendingCode] = useState(false);
   const [showLegsModal, setShowLegsModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
+  const [leagueHistory, setLeagueHistory] = useState<any[]>([]);
+  const [isLoadingLeagueHistory, setIsLoadingLeagueHistory] = useState(false);
 
   const {
     register: registerProfile,
@@ -116,6 +118,8 @@ const ProfilePage: React.FC = () => {
       
       // Load player stats
       loadPlayerStats();
+      // Load league history
+      loadLeagueHistory();
     }
   }, [user, router, resetProfileForm]);
 
@@ -130,6 +134,20 @@ const ProfilePage: React.FC = () => {
       console.error('Error loading player stats:', error);
     } finally {
       setIsLoadingStats(false);
+    }
+  };
+
+  const loadLeagueHistory = async () => {
+    setIsLoadingLeagueHistory(true);
+    try {
+      const response = await axios.get('/api/profile/league-history');
+      if (response.data.success) {
+        setLeagueHistory(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading league history:', error);
+    } finally {
+      setIsLoadingLeagueHistory(false);
     }
   };
 
@@ -724,6 +742,73 @@ const ProfilePage: React.FC = () => {
                       </div>
                     )}
                   </>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Liga history szekció */}
+        {playerStats && playerStats.hasPlayer && leagueHistory.length > 0 && (
+          <section className="mb-8">
+            <div className="card bg-base-100 shadow-lg border border-base-300">
+              <div className="card-body">
+                <h2 className="card-title text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                  <IconUsers className="w-5 h-5" />
+                  Liga részvétel
+                </h2>
+                
+                {isLoadingLeagueHistory ? (
+                  <div className="flex justify-center items-center py-8">
+                    <span className="loading loading-spinner loading-lg text-primary"></span>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {leagueHistory.map((league: any, index: number) => (
+                      <Link 
+                        key={index} 
+                        href={`/clubs/${league.clubId}?page=leagues&league=${league.leagueId}`}
+                        className="block p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-semibold text-sm flex items-center gap-2">
+                              <IconTrophy size={16} className="text-warning" />
+                              <span>{league.leagueName}</span>
+                              <span className="badge badge-primary badge-sm">
+                                {league.clubName}
+                              </span>
+                            </div>
+                            <div className="text-xs text-base-content/60 mt-1">
+                              {league.description && (
+                                <div className="mb-1">
+                                  {league.description.length > 60 
+                                    ? `${league.description.substring(0, 60)}...` 
+                                    : league.description
+                                  }
+                                </div>
+                              )}
+                              <div className="flex items-center gap-4">
+                                <span>Pontszám: <strong className="text-primary">{league.totalPoints}</strong></span>
+                                <span>Versenyek: <strong>{league.tournamentsPlayed}</strong></span>
+                                <span>Pozíció: <strong className="text-warning">#{league.position}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right text-xs text-base-content/60">
+                            <div>
+                              {new Date(league.joinedAt).toLocaleDateString('hu-HU')}
+                            </div>
+                            {league.lastActivity && (
+                              <div className="text-base-content/40">
+                                Utolsó aktivitás: {new Date(league.lastActivity).toLocaleDateString('hu-HU')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
