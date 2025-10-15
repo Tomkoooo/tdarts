@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { LeagueModel } from '@/database/models/league.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { PlayerModel } from '@/database/models/player.model';
@@ -157,7 +158,8 @@ export class LeagueService {
     }
 
     // Check if tournament is already attached to this or another league
-    if (league.attachedTournaments.includes(tournamentId as any)) {
+    const tournamentObjectId = new mongoose.Types.ObjectId(tournamentId);
+    if (league.attachedTournaments.some((id: mongoose.Types.ObjectId) => id.equals(tournamentObjectId))) {
       throw new BadRequestError('Tournament is already attached to this league');
     }
 
@@ -170,7 +172,7 @@ export class LeagueService {
     }
 
     // Attach tournament
-    league.attachedTournaments.push(tournamentId as any);
+    league.attachedTournaments.push(tournamentObjectId);
     await league.save();
 
     // If tournament is finished, calculate points
@@ -440,6 +442,7 @@ export class LeagueService {
     }
 
     const leaderboard: LeagueLeaderboard[] = league.players
+      .filter((player: any) => player.player !== null && player.player !== undefined) // Filter out null/undefined players
       .map((player: any) => {
         const totalPoints = this.calculatePlayerTotalPointsForLeague(player);
         const tournamentsPlayed = player.tournamentPoints.length;
@@ -449,14 +452,21 @@ export class LeagueService {
         
         // Get last tournament date
         const lastTournamentDate = player.tournamentPoints.length > 0 
-          ? new Date(Math.max(...player.tournamentPoints.map((tp: any) => new Date((tp.tournament as any).createdAt || 0).getTime())))
+          ? new Date(Math.max(...player.tournamentPoints.map((tp: { tournament: { createdAt?: Date } }) => new Date(tp.tournament.createdAt || 0).getTime())))
           : undefined;
+
+        // Ensure player object exists and has required properties
+        const playerData = player.player;
+        if (!playerData) {
+          console.warn('Player data is null/undefined for player ID:', player.player);
+          return null;
+        }
 
         return {
           position: 0, // Will be set after sorting
           player: {
-            _id: (player.player as any)._id?.toString() || player.player.toString(),
-            name: (player.player as any).name || 'Unknown Player'
+            _id: playerData._id?.toString() || playerData.toString(),
+            name: playerData.name || 'Unknown Player'
           },
           totalPoints,
           tournamentsPlayed,
@@ -465,6 +475,7 @@ export class LeagueService {
           lastTournamentDate
         };
       })
+      .filter((item: any) => item !== null) // Remove null items
       .sort((a: any, b: any) => b.totalPoints - a.totalPoints)
       .map((player: any, index: number) => ({
         ...player,
@@ -519,8 +530,8 @@ export class LeagueService {
     
     // Debug: Check if players are populated
     console.log('League players populated check:', league.players.map((p: any) => ({
-      playerId: p.player._id || p.player,
-      playerName: p.player.name || 'NOT POPULATED',
+      playerId: p.player?._id || p.player,
+      playerName: p.player?.name || 'NOT POPULATED',
       isPopulated: typeof p.player === 'object'
     })));
     
@@ -582,12 +593,14 @@ export class LeagueService {
         createdAt: tournament.createdAt,
         updatedAt: tournament.updatedAt
       })),
-      // Include populated players
-      players: league.players.map((player: any) => ({
-        player: {
-          _id: player.player._id,
-          name: player.player.name,
-          username: player.player.username
+      // Include populated players (filter out null/undefined players)
+      players: league.players
+        .filter((player: any) => player.player !== null && player.player !== undefined)
+        .map((player: any) => ({
+          player: {
+            _id: player.player._id,
+            name: player.player.name,
+            username: player.player.username
         },
         totalPoints: player.totalPoints,
         tournamentPoints: player.tournamentPoints,

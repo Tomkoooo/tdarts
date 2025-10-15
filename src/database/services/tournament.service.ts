@@ -3263,12 +3263,37 @@ export class TournamentService {
             // ===== REFACTORED: SIMPLE AND STABLE STATS CALCULATION =====
             // Get all matches for this tournament that have a winner (finished matches)
             const { MatchModel } = await import('../models/match.model');
-            const allMatches = await MatchModel.find({
+            
+            // Get group matches
+            const groupMatches = await MatchModel.find({
                 tournamentRef: tournament._id,
+                type: 'group',
                 winnerId: { $exists: true, $ne: null } // Only matches with a winner
             }).populate('player1.playerId player2.playerId legs');
 
-            console.log(`Found ${allMatches.length} finished matches for tournament ${tournamentCode}`);
+            // Get knockout matches from tournament.knockout rounds
+            const knockoutMatchIds: any[] = [];
+            if (tournament.knockout && Array.isArray(tournament.knockout)) {
+                for (const round of tournament.knockout) {
+                    if (round.matches && Array.isArray(round.matches)) {
+                        for (const match of round.matches) {
+                            if (match.matchReference) {
+                                knockoutMatchIds.push(match.matchReference);
+                            }
+                        }
+                    }
+                }
+            }
+
+            const knockoutMatches = knockoutMatchIds.length > 0 ? await MatchModel.find({
+                _id: { $in: knockoutMatchIds },
+                winnerId: { $exists: true, $ne: null } // Only matches with a winner
+            }).populate('player1.playerId player2.playerId legs') : [];
+
+            // Combine all matches
+            const allMatches = [...groupMatches, ...knockoutMatches];
+
+            console.log(`Found ${allMatches.length} finished matches for tournament ${tournamentCode} (${groupMatches.length} group + ${knockoutMatches.length} knockout)`);
 
             // Process each match
             for (const match of allMatches) {

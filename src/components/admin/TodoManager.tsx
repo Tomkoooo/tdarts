@@ -206,13 +206,13 @@ export default function TodoManager() {
           <div className="flex gap-1">
             <button
               onClick={() => setEditingTodo(todo)}
-              className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              className="btn btn-ghost btn-xs md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <IconEdit size={14} />
             </button>
             <button
               onClick={() => handleDeleteTodo(todo._id)}
-              className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 transition-opacity text-error"
+              className="btn btn-ghost btn-xs text-error md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <IconTrash size={14} />
             </button>
