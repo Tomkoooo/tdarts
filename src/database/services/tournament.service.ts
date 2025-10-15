@@ -3237,6 +3237,8 @@ export class TournamentService {
                 matchesPlayed: number;
                 highestCheckout: number;
                 oneEighties: number;
+                tournamentTotal: number;
+                tournamentMatches: number;
             }>();
 
             // Initialize all players with zero stats
@@ -3252,15 +3254,16 @@ export class TournamentService {
                         matchesPlayed: 0,
                         highestCheckout: 0,
                         oneEighties: 0,
+                        tournamentTotal: 0,
+                        tournamentMatches: 0,
                     });
                 }
             });
 
-            // Get all matches for this tournament
+            // Get all matches for this tournament (both finished and any other status)
             const { MatchModel } = await import('../models/match.model');
             const allMatches = await MatchModel.find({
-                tournamentRef: tournament._id,
-                status: 'finished'
+                tournamentRef: tournament._id
             }).populate('player1.playerId player2.playerId legs');
 
             console.log(`Found ${allMatches.length} finished matches for tournament ${tournamentCode}`);
@@ -3277,19 +3280,26 @@ export class TournamentService {
                 
                 if (!player1Stats || !player2Stats) return;
 
+                // Skip matches without winner (incomplete matches)
+                if (!match.winnerId) return;
+
                 // Update match counts
                 player1Stats.matchesPlayed++;
                 player2Stats.matchesPlayed++;
 
                 // Determine winner and update match wins
-                if (match.winnerId) {
-                    const winnerId = match.winnerId.toString();
-                    if (winnerId === player1Id) {
-                        player1Stats.matchesWon++;
-                    } else if (winnerId === player2Id) {
-                        player2Stats.matchesWon++;
-                    }
+                const winnerId = match.winnerId.toString();
+                if (winnerId === player1Id) {
+                    player1Stats.matchesWon++;
+                } else if (winnerId === player2Id) {
+                    player2Stats.matchesWon++;
                 }
+
+                // Calculate match averages for each player
+                let player1MatchTotal = 0;
+                let player1MatchThrows = 0;
+                let player2MatchTotal = 0;
+                let player2MatchThrows = 0;
 
                 // Calculate leg statistics from match legs
                 if (match.legs && Array.isArray(match.legs)) {
@@ -3298,13 +3308,9 @@ export class TournamentService {
                         if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
                             const legScore = leg.player1Throws.reduce((sum: number, throwData: any) => sum + (throwData.score || 0), 0);
                             const legThrows = leg.player1Throws.length;
-                            if (legThrows > 0) {
-                                const legAverage = legScore / legThrows;
-                                player1Stats.legsPlayed++;
-                                // Update average (weighted by leg count)
-                                const currentTotal = player1Stats.average * (player1Stats.legsPlayed - 1);
-                                player1Stats.average = (currentTotal + legAverage) / player1Stats.legsPlayed;
-                            }
+                            player1MatchTotal += legScore;
+                            player1MatchThrows += legThrows;
+                            player1Stats.legsPlayed++;
                             
                             // Count 180s
                             leg.player1Throws.forEach((throwData: any) => {
@@ -3321,13 +3327,9 @@ export class TournamentService {
                         if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
                             const legScore = leg.player2Throws.reduce((sum: number, throwData: any) => sum + (throwData.score || 0), 0);
                             const legThrows = leg.player2Throws.length;
-                            if (legThrows > 0) {
-                                const legAverage = legScore / legThrows;
-                                player2Stats.legsPlayed++;
-                                // Update average (weighted by leg count)
-                                const currentTotal = player2Stats.average * (player2Stats.legsPlayed - 1);
-                                player2Stats.average = (currentTotal + legAverage) / player2Stats.legsPlayed;
-                            }
+                            player2MatchTotal += legScore;
+                            player2MatchThrows += legThrows;
+                            player2Stats.legsPlayed++;
                             
                             // Count 180s
                             leg.player2Throws.forEach((throwData: any) => {
@@ -3350,6 +3352,29 @@ export class TournamentService {
                             }
                         }
                     });
+
+                    // Calculate match averages and add to player's tournament average
+                    if (player1MatchThrows > 0) {
+                        const matchAverage = player1MatchTotal / player1MatchThrows;
+                        // Add match average to running total for tournament average calculation
+                        if (!player1Stats.tournamentTotal) {
+                            player1Stats.tournamentTotal = 0;
+                            player1Stats.tournamentMatches = 0;
+                        }
+                        player1Stats.tournamentTotal += matchAverage;
+                        player1Stats.tournamentMatches++;
+                    }
+
+                    if (player2MatchThrows > 0) {
+                        const matchAverage = player2MatchTotal / player2MatchThrows;
+                        // Add match average to running total for tournament average calculation
+                        if (!player2Stats.tournamentTotal) {
+                            player2Stats.tournamentTotal = 0;
+                            player2Stats.tournamentMatches = 0;
+                        }
+                        player2Stats.tournamentTotal += matchAverage;
+                        player2Stats.tournamentMatches++;
+                    }
                 }
 
                 // Fallback to tournament player stats if no legs found
@@ -3376,9 +3401,18 @@ export class TournamentService {
                 }
             });
 
+            // Calculate final tournament averages for each player
+            /* eslint-disable @typescript-eslint/no-unused-vars */
+            for (const [playerId, stats] of playerStats) {
+                if (stats.tournamentMatches > 0) {
+                    stats.average = stats.tournamentTotal / stats.tournamentMatches;
+                }
+            }
+            /* eslint-enable @typescript-eslint/no-unused-vars */
+
             console.log('Calculated stats from matches:');
             for (const [playerId, stats] of playerStats) {
-                console.log(`Player ${playerId}: ${stats.matchesWon}/${stats.matchesPlayed} matches, ${stats.legsWon}/${stats.legsPlayed} legs, avg: ${stats.average.toFixed(2)}`);
+                console.log(`Player ${playerId}: ${stats.matchesWon}/${stats.matchesPlayed} matches, ${stats.legsWon}/${stats.legsPlayed} legs, tournament avg: ${stats.average.toFixed(2)}`);
             }
 
             // Step 7: Update tournament players with final standings
@@ -3523,6 +3557,8 @@ export class TournamentService {
                     } else {
                         player.stats.avg = stats.average;
                     }
+
+                    console.log(`Player ${player.name} tournament average: ${stats.average.toFixed(2)}, all-time average: ${player.stats.avg.toFixed(2)}`);
 
                     // Calculate average position from tournament history
                     if (player.tournamentHistory && player.tournamentHistory.length > 0) {
