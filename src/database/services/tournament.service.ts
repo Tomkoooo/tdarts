@@ -3260,34 +3260,33 @@ export class TournamentService {
                 }
             });
 
-            // Get all matches for this tournament (both finished and any other status)
+            // ===== REFACTORED: SIMPLE AND STABLE STATS CALCULATION =====
+            // Get all matches for this tournament that have a winner (finished matches)
             const { MatchModel } = await import('../models/match.model');
             const allMatches = await MatchModel.find({
-                tournamentRef: tournament._id
+                tournamentRef: tournament._id,
+                winnerId: { $exists: true, $ne: null } // Only matches with a winner
             }).populate('player1.playerId player2.playerId legs');
 
             console.log(`Found ${allMatches.length} finished matches for tournament ${tournamentCode}`);
 
-            // Calculate stats from actual match results
-            allMatches.forEach((match: any) => {
+            // Process each match
+            for (const match of allMatches) {
                 const player1Id = match.player1?.playerId?._id?.toString();
                 const player2Id = match.player2?.playerId?._id?.toString();
                 
-                if (!player1Id || !player2Id) return;
+                // Skip if players not found
+                if (!player1Id || !player2Id) continue;
 
                 const player1Stats = playerStats.get(player1Id);
                 const player2Stats = playerStats.get(player2Id);
                 
-                if (!player1Stats || !player2Stats) return;
+                if (!player1Stats || !player2Stats) continue;
 
-                // Skip matches without winner (incomplete matches)
-                if (!match.winnerId) return;
-
-                // Update match counts
+                // === 1. COUNT MATCHES ===
                 player1Stats.matchesPlayed++;
                 player2Stats.matchesPlayed++;
 
-                // Determine winner and update match wins
                 const winnerId = match.winnerId.toString();
                 if (winnerId === player1Id) {
                     player1Stats.matchesWon++;
@@ -3295,51 +3294,51 @@ export class TournamentService {
                     player2Stats.matchesWon++;
                 }
 
-                // Calculate match averages for each player
-                let player1MatchTotal = 0;
-                let player1MatchThrows = 0;
-                let player2MatchTotal = 0;
-                let player2MatchThrows = 0;
+                // === 2. CALCULATE MATCH AVERAGE FOR EACH PLAYER ===
+                let player1TotalScore = 0;
+                let player1TotalThrows = 0;
+                let player2TotalScore = 0;
+                let player2TotalThrows = 0;
 
-                // Calculate leg statistics from match legs
+                // Process legs
                 if (match.legs && Array.isArray(match.legs)) {
-                    match.legs.forEach((leg: any) => {
-                        // Player 1 leg stats
+                    for (const leg of match.legs) {
+                        // Player 1 leg processing
                         if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
-                            const legScore = leg.player1Throws.reduce((sum: number, throwData: any) => sum + (throwData.score || 0), 0);
-                            const legThrows = leg.player1Throws.length;
-                            player1MatchTotal += legScore;
-                            player1MatchThrows += legThrows;
-                            player1Stats.legsPlayed++;
-                            
-                            // Count 180s
-                            leg.player1Throws.forEach((throwData: any) => {
+                            for (const throwData of leg.player1Throws) {
+                                player1TotalScore += throwData.score || 0;
+                                player1TotalThrows++;
+                                
+                                // Count 180s
                                 if (throwData.score === 180) {
                                     player1Stats.oneEighties++;
                                 }
-                                if (throwData.score > player1Stats.highestCheckout && throwData.isCheckout) {
+                                
+                                // Track highest checkout
+                                if (throwData.isCheckout && throwData.score > player1Stats.highestCheckout) {
                                     player1Stats.highestCheckout = throwData.score;
                                 }
-                            });
+                            }
+                            player1Stats.legsPlayed++;
                         }
 
-                        // Player 2 leg stats
+                        // Player 2 leg processing
                         if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
-                            const legScore = leg.player2Throws.reduce((sum: number, throwData: any) => sum + (throwData.score || 0), 0);
-                            const legThrows = leg.player2Throws.length;
-                            player2MatchTotal += legScore;
-                            player2MatchThrows += legThrows;
-                            player2Stats.legsPlayed++;
-                            
-                            // Count 180s
-                            leg.player2Throws.forEach((throwData: any) => {
+                            for (const throwData of leg.player2Throws) {
+                                player2TotalScore += throwData.score || 0;
+                                player2TotalThrows++;
+                                
+                                // Count 180s
                                 if (throwData.score === 180) {
                                     player2Stats.oneEighties++;
                                 }
-                                if (throwData.score > player2Stats.highestCheckout && throwData.isCheckout) {
+                                
+                                // Track highest checkout
+                                if (throwData.isCheckout && throwData.score > player2Stats.highestCheckout) {
                                     player2Stats.highestCheckout = throwData.score;
                                 }
-                            });
+                            }
+                            player2Stats.legsPlayed++;
                         }
 
                         // Count legs won
@@ -3351,69 +3350,45 @@ export class TournamentService {
                                 player2Stats.legsWon++;
                             }
                         }
-                    });
-
-                    // Calculate match averages and add to player's tournament average
-                    if (player1MatchThrows > 0) {
-                        const matchAverage = player1MatchTotal / player1MatchThrows;
-                        // Add match average to running total for tournament average calculation
-                        if (!player1Stats.tournamentTotal) {
-                            player1Stats.tournamentTotal = 0;
-                            player1Stats.tournamentMatches = 0;
-                        }
-                        player1Stats.tournamentTotal += matchAverage;
-                        player1Stats.tournamentMatches++;
-                    }
-
-                    if (player2MatchThrows > 0) {
-                        const matchAverage = player2MatchTotal / player2MatchThrows;
-                        // Add match average to running total for tournament average calculation
-                        if (!player2Stats.tournamentTotal) {
-                            player2Stats.tournamentTotal = 0;
-                            player2Stats.tournamentMatches = 0;
-                        }
-                        player2Stats.tournamentTotal += matchAverage;
-                        player2Stats.tournamentMatches++;
                     }
                 }
 
-                // Fallback to tournament player stats if no legs found
-                if (!match.legs || match.legs.length === 0) {
-                    const player1TournamentStats = tournament.tournamentPlayers.find((tp: any) => {
-                        const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
-                        return tpPlayerId === player1Id;
-                    });
-                    const player2TournamentStats = tournament.tournamentPlayers.find((tp: any) => {
-                        const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
-                        return tpPlayerId === player2Id;
-                    });
-
-                    if (player1TournamentStats?.stats) {
-                        player1Stats.average = player1TournamentStats.stats.avg || 0;
-                        player1Stats.highestCheckout = Math.max(player1Stats.highestCheckout, player1TournamentStats.stats.highestCheckout || 0);
-                        player1Stats.oneEighties += player1TournamentStats.stats.oneEightiesCount || 0;
-                    }
-                    if (player2TournamentStats?.stats) {
-                        player2Stats.average = player2TournamentStats.stats.avg || 0;
-                        player2Stats.highestCheckout = Math.max(player2Stats.highestCheckout, player2TournamentStats.stats.highestCheckout || 0);
-                        player2Stats.oneEighties += player2TournamentStats.stats.oneEightiesCount || 0;
-                    }
+                // Calculate this match's average and add to tournament total
+                if (player1TotalThrows > 0) {
+                    const matchAverage = player1TotalScore / player1TotalThrows;
+                    player1Stats.tournamentTotal += matchAverage;
+                    player1Stats.tournamentMatches++;
                 }
-            });
 
-            // Calculate final tournament averages for each player
+                if (player2TotalThrows > 0) {
+                    const matchAverage = player2TotalScore / player2TotalThrows;
+                    player2Stats.tournamentTotal += matchAverage;
+                    player2Stats.tournamentMatches++;
+                }
+            }
+
+            // === 3. CALCULATE FINAL TOURNAMENT AVERAGES ===
             /* eslint-disable @typescript-eslint/no-unused-vars */
             for (const [playerId, stats] of playerStats) {
                 if (stats.tournamentMatches > 0) {
+                    // Tournament average = sum of match averages / number of matches
                     stats.average = stats.tournamentTotal / stats.tournamentMatches;
+                } else {
+                    stats.average = 0;
                 }
             }
             /* eslint-enable @typescript-eslint/no-unused-vars */
 
-            console.log('Calculated stats from matches:');
+            // === 4. LOG RESULTS ===
+            console.log('=== TOURNAMENT STATS SUMMARY ===');
             for (const [playerId, stats] of playerStats) {
-                console.log(`Player ${playerId}: ${stats.matchesWon}/${stats.matchesPlayed} matches, ${stats.legsWon}/${stats.legsPlayed} legs, tournament avg: ${stats.average.toFixed(2)}`);
+                console.log(`Player ${playerId}:`);
+                console.log(`  Matches: ${stats.matchesWon}W / ${stats.matchesPlayed - stats.matchesWon}L (${stats.matchesPlayed} total)`);
+                console.log(`  Legs: ${stats.legsWon}W / ${stats.legsPlayed - stats.legsWon}L (${stats.legsPlayed} total)`);
+                console.log(`  Tournament Average: ${stats.average.toFixed(2)} (from ${stats.tournamentMatches} matches)`);
+                console.log(`  180s: ${stats.oneEighties}, Highest Checkout: ${stats.highestCheckout}`);
             }
+            console.log('===============================');
 
             // Step 7: Update tournament players with final standings
             tournament.tournamentPlayers = tournament.tournamentPlayers.map((player: any) => {
@@ -4385,13 +4360,12 @@ export class TournamentService {
                                         player.stats.highestCheckout = 0;
                                     }
                                     
-                                    // Recalculate average if needed (based on remaining data)
-                                    // This is approximate - ideally we'd recalculate from all remaining matches
+                                    // Recalculate average from tournament history
                                     if (player.tournamentHistory && player.tournamentHistory.length > 0) {
-                                        const totalAvgScore = player.tournamentHistory.reduce((sum: number, th: any) => {
-                                            return sum + (th.stats?.averagePosition || 0);
+                                        const totalAvg = player.tournamentHistory.reduce((sum: number, th: any) => {
+                                            return sum + (th.stats?.average || 0);
                                         }, 0);
-                                        player.stats.avg = totalAvgScore / player.tournamentHistory.length;
+                                        player.stats.avg = totalAvg / player.tournamentHistory.length;
                                     } else {
                                         player.stats.avg = 0;
                                     }

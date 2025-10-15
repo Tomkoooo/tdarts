@@ -54,6 +54,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                       </div>
                       <div className="divider my-1"></div>
                       <StatRow label="Meccsek" value={`${history.stats.matchesWon} nyert / ${history.stats.matchesLost} vesztett`} />
+                      <StatRow label="Legek" value={`${history.stats.legsWon} nyert / ${history.stats.legsLost} vesztett`} />
+                      <StatRow label="Átlag" value={history.stats.average ? history.stats.average.toFixed(1) : 'N/A'} />
                       <StatRow label="180-ak" value={history.stats.oneEightiesCount} />
                       <StatRow label="Legmagasabb kiszálló" value={history.stats.highestCheckout} />
                     </div>
