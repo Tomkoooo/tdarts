@@ -164,15 +164,15 @@ export default function TodoManager() {
   const getCategoryConfig = (category: string) => {
     switch (category) {
       case 'bug':
-        return { emoji: '🐛', label: 'Hiba', color: 'bg-error/10 text-error' };
+        return { emoji: '', label: 'Hiba', color: 'bg-error/10 text-error' };
       case 'feature':
-        return { emoji: '✨', label: 'Új funkció', color: 'bg-primary/10 text-primary' };
+        return { emoji: '', label: 'Új funkció', color: 'bg-primary/10 text-primary' };
       case 'improvement':
-        return { emoji: '📈', label: 'Fejlesztés', color: 'bg-info/10 text-info' };
+        return { emoji: '', label: 'Fejlesztés', color: 'bg-info/10 text-info' };
       case 'maintenance':
-        return { emoji: '🔧', label: 'Karbantartás', color: 'bg-warning/10 text-warning' };
+        return { emoji: '', label: 'Karbantartás', color: 'bg-warning/10 text-warning' };
       default:
-        return { emoji: '📝', label: 'Egyéb', color: 'bg-base-300/10 text-base-content' };
+        return { emoji: '', label: 'Egyéb', color: 'bg-base-300/10 text-base-content' };
     }
   };
 
@@ -387,11 +387,11 @@ export default function TodoManager() {
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
             >
               <option value="">Minden kategória</option>
-              <option value="bug">🐛 Hiba</option>
-              <option value="feature">✨ Új funkció</option>
-              <option value="improvement">📈 Fejlesztés</option>
-              <option value="maintenance">🔧 Karbantartás</option>
-              <option value="other">📝 Egyéb</option>
+              <option value="bug">Hiba</option>
+              <option value="feature">Új funkció</option>
+              <option value="improvement">Fejlesztés</option>
+              <option value="maintenance">Karbantartás</option>
+              <option value="other">Egyéb</option>
             </select>
 
             <div className="relative">
@@ -505,11 +505,11 @@ export default function TodoManager() {
                     value={newTodo.category}
                     onChange={(e) => setNewTodo(prev => ({ ...prev, category: e.target.value as any }))}
                   >
-                    <option value="bug">🐛 Hiba</option>
-                    <option value="feature">✨ Új funkció</option>
-                    <option value="improvement">📈 Fejlesztés</option>
-                    <option value="maintenance">🔧 Karbantartás</option>
-                    <option value="other">📝 Egyéb</option>
+                    <option value="bug">Hiba</option>
+                    <option value="feature">Új funkció</option>
+                    <option value="improvement">Fejlesztés</option>
+                    <option value="maintenance">Karbantartás</option>
+                    <option value="other">Egyéb</option>
                   </select>
                 </div>
 
@@ -687,11 +687,11 @@ export default function TodoManager() {
                   value={editingTodo.category}
                   onChange={(e) => setEditingTodo(prev => prev ? { ...prev, category: e.target.value as any } : null)}
                 >
-                  <option value="bug">🐛 Hiba</option>
-                  <option value="feature">✨ Új funkció</option>
-                  <option value="improvement">📈 Fejlesztés</option>
-                  <option value="maintenance">🔧 Karbantartás</option>
-                  <option value="other">📝 Egyéb</option>
+                  <option value="bug">Hiba</option>
+                  <option value="feature">Új funkció</option>
+                  <option value="improvement">Fejlesztés</option>
+                  <option value="maintenance">Karbantartás</option>
+                  <option value="other">Egyéb</option>
                 </select>
               </div>
 

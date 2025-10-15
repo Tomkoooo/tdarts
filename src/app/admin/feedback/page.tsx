@@ -14,7 +14,7 @@ export default function AdminFeedbackPage() {
         title="Visszajelzések napi beérkezése" 
         apiEndpoint="/api/admin/charts/feedback/daily" 
         color="warning" 
-        icon="📝" 
+        icon="" 
       />
       
       <FeedbackManager />

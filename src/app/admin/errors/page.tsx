@@ -209,7 +209,7 @@ export default function AdminErrorsPage() {
           title="Hibák napi előfordulása"
           apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}`}
           color="error"
-          icon="🚨"
+          icon=""
         />
       </div>
 
