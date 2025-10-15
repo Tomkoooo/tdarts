@@ -189,16 +189,17 @@ const Navbar = () => {
                     </div>
                     <span className="font-medium text-gray-300">{user?.name}</span>
                   </div>
-                  <button 
+                  <Link 
+                    href="/"
                     onClick={() => {
-                      logout();
+                      
                       setIsMobileMenuOpen(false);
                     }}
                     className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
                   >
                     <IconLogout className="w-5 h-5"/>
                     <span>Kilépés</span>
-                  </button>
+                  </Link>
                 </div>
               ) : user ? (
                 <div className="flex flex-col gap-3">

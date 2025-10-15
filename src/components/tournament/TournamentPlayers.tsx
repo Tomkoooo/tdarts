@@ -452,21 +452,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           
           <li key={player._id} className="p-3 bg-base-100 rounded shadow">
             {/* Main row with player name, status, and admin buttons */}
-            <div className="flex items-center gap-3">
-              {/* Player name - takes up most of the space */}
-              {allowAdminActions ? (
-                <span className="flex-1 text-base font-medium">{player.playerReference?.name || player.name || player._id}</span>
-              ) : (
-                <button 
-                  onClick={() => handlePlayerNameClick(player)}
-                  className="flex-1 text-left text-base font-medium hover:text-primary hover:underline transition-colors"
-                >
-                  {player.playerReference?.name || player.name || player._id}
-                </button>
-              )}
-              
-              {allowAdminActions ? (
-                // Show status indicator and action buttons for tournaments where admin actions are allowed
+            {allowAdminActions ? (
+              // Single row layout for pending tournaments
+              <div className="flex items-center gap-3">
+                {/* Player name - always display as text, not clickable */}
+                <span className="flex-1 text-base font-medium min-w-0">{player.playerReference?.name || player.name || player._id}</span>
+                
+                {/* Show status indicator and action buttons for tournaments where admin actions are allowed */}
                 <div className="flex items-center gap-2">
                   {/* Status indicator - only show green check for checked-in players */}
                   {player.status === 'checked-in' && (
@@ -511,28 +503,38 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     </div>
                   )}
                 </div>
-              ) : (
-              // Show player statistics for tournaments where groups are generated
-              <div className="flex gap-2 text-sm w-1/2 ">
-                <div className="flex items-center gap-1 w-1/3">
-                {player.tournamentStanding && <span className="text-base-content/60 text-sm">Top: {player.tournamentStanding}</span>}
+              </div>
+            ) : (
+              // Two row layout for tournaments with statistics (non-pending)
+              <div className="space-y-2">
+                {/* First row: Player name */}
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-medium flex-1 min-w-0">{player.playerReference?.name || player.name || player._id}</span>
+                  <button
+                    onClick={() => handlePlayerNameClick(player)}
+                    className="btn btn-xs btn-primary ml-2 flex-shrink-0"
+                    title="Meccsek megtekintése"
+                  >
+                    Meccsek
+                  </button>
                 </div>
-                <div className="flex items-center gap-1 w-1/3 ">
-                  <span className="text-base-content/60">HC:</span>
-                  <span className="font-semibold text-primary">
-                    {player.stats?.highestCheckout || 0}
+                
+                {/* Second row: Statistics */}
+                <div className="flex items-center gap-4 text-xs text-base-content/70">
+                  {player.tournamentStanding && (
+                    <span>
+                      Top <span className="font-semibold text-primary">{player.tournamentStanding}</span>
+                    </span>
+                  )}
+                  <span>
+                    HC: <span className="font-semibold text-primary">{player.stats?.highestCheckout || 0}</span>
                   </span>
-                </div>
-                <div className="flex items-center gap-1 w-1/3">
-
-                  <span className="font-semibold text-primary">
-                    {player.stats.oneEightiesCount}
+                  <span>
+                    180: <span className="font-semibold text-primary">{player.stats?.oneEightiesCount || 0}</span>
                   </span>
-                  <span className="text-base-content/60">x180</span>
                 </div>
               </div>
             )}
-            </div>
 
             
           </li>

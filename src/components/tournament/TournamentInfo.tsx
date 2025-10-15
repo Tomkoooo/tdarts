@@ -33,7 +33,10 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
   return (
     <>
       <div className="flex justify-between items-start mb-4">
-        <h1 className="text-3xl font-bold">{tournament.tournamentSettings?.name}</h1>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold">{tournament.tournamentSettings?.name}</h1>
+          <h3 className="text-md italic font-semibold">Torna azonosító: {tournament.tournamentId}</h3>
+        </div>
         {canEdit && (
           <button
             onClick={() => setEditModalOpen(true)}
