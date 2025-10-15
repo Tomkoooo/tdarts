@@ -82,7 +82,18 @@ export async function GET(request: NextRequest) {
         status: tournament.tournamentSettings?.status,
         clubName: tournament.clubId?.name,
         clubLocation: tournament.clubId?.location,
-        playerStats: playerInTournament?.stats || {},
+        playerStats: playerInTournament?.stats ? {
+          ...playerInTournament.stats,
+          // Map 'avg' to 'average' for consistency with tournament history
+          average: playerInTournament.stats.avg,
+          // Ensure all expected fields are present
+          matchesWon: playerInTournament.stats.matchesWon || 0,
+          matchesLost: playerInTournament.stats.matchesLost || 0,
+          legsWon: playerInTournament.stats.legsWon || 0,
+          legsLost: playerInTournament.stats.legsLost || 0,
+          oneEightiesCount: playerInTournament.stats.oneEightiesCount || 0,
+          highestCheckout: playerInTournament.stats.highestCheckout || 0
+        } : {},
         finalPosition: playerInTournament?.finalPosition
       };
     });
@@ -124,6 +135,8 @@ export async function GET(request: NextRequest) {
         name: player.name,
         stats: {
           ...playerStats,
+          // Map 'avg' to 'average' for consistency with frontend
+          average: playerStats.avg,
           mmr: mmr,
           globalRank: globalRank,
           mmrTier: getMMRTier(mmr)

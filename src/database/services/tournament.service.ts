@@ -3402,6 +3402,15 @@ export class TournamentService {
                         tournamentStanding: standing,
                         finalPosition: standing,
                         eliminatedIn: this.getEliminationText(standing, format),
+                        stats: {
+                            matchesWon: stats?.matchesWon || 0,
+                            matchesLost: stats?.matchesPlayed ? stats.matchesPlayed - stats.matchesWon : 0,
+                            legsWon: stats?.legsWon || 0,
+                            legsLost: stats?.legsPlayed ? stats.legsPlayed - stats.legsWon : 0,
+                            avg: stats?.average || 0, // Tournament average
+                            oneEightiesCount: stats?.oneEighties || 0,
+                            highestCheckout: stats?.highestCheckout || 0,
+                        },
                         finalStats: stats || {}
                     };
                 }
@@ -3560,10 +3569,10 @@ export class TournamentService {
                         tournamentAverageScore
                     );
                     
-                    const mmrChange = newMMR - currentMMR;
-                    player.stats.mmr = newMMR;
+                    const mmrChange = Math.ceil(newMMR) - currentMMR;
+                    player.stats.mmr = Math.ceil(newMMR); // Felfelé kerekítés tizedesjegyek nélkül
                     
-                    console.log(`Player ${player.name} MMR: ${currentMMR} → ${newMMR} (${mmrChange >= 0 ? '+' : ''}${mmrChange})`);
+                    console.log(`Player ${player.name} MMR: ${currentMMR} → ${Math.ceil(newMMR)} (${mmrChange >= 0 ? '+' : ''}${mmrChange})`);
 
                     await player.save();
                 }
