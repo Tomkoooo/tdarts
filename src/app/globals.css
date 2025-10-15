@@ -1326,6 +1326,18 @@ html {
     animation: slideOutToLeft 0.5s ease-in forwards;
   }
 
+  /* Toast positioning fix */
+  .toast-container {
+    position: fixed !important;
+    bottom: 1rem !important;
+    left: 1rem !important;
+    top: unset !important;
+    right: unset !important;
+    z-index: 40 !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+
   /* Improved Button Styles */
 .btn-primary, .btn {
   border-radius: 0.75rem;
