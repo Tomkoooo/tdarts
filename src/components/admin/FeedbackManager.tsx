@@ -138,21 +138,21 @@ export default function FeedbackManager() {
           icon: IconBulb, 
           label: 'Új funkció', 
           color: 'bg-warning/10 text-warning border-warning/30',
-          emoji: '💡'
+          emoji: ''
         };
       case 'improvement': 
         return { 
           icon: IconSettingsCode, 
           label: 'Fejlesztés', 
           color: 'bg-info/10 text-info border-info/30',
-          emoji: '📈'
+          emoji: ''
         };
       default: 
         return { 
           icon: IconCheck, 
           label: 'Egyéb', 
           color: 'bg-success/10 text-success border-success/30',
-          emoji: '📝'
+          emoji: ''
         };
     }
   };

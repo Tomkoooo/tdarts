@@ -170,7 +170,7 @@ export default function AdminClubsPage() {
           title="Klubok napi létrehozása"
           apiEndpoint="/api/admin/charts/clubs/daily"
           color="secondary"
-          icon="🏢"
+          icon=""
         />
       </div>
 

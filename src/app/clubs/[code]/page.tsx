@@ -53,6 +53,11 @@ export default function ClubDetailPage() {
     }
   };
 
+  // Get league ID from URL parameter for auto-opening
+  const getLeagueIdFromUrl = (): string | null => {
+    return searchParams.get('league');
+  };
+
   // Helper to fetch club data
   const fetchClub = async () => {
     if (!code) return;
@@ -294,6 +299,7 @@ export default function ClubDetailPage() {
     <LeagueManager
       clubId={club._id}
       userRole={userRole}
+      autoOpenLeagueId={getLeagueIdFromUrl()}
     />
   );
 

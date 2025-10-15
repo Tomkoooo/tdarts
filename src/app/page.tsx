@@ -61,7 +61,14 @@ const HomePage = () => {
       <ParallaxBackground />
       
       {/* Announcements - Lower z-index to be behind mobile menu */}
-      <div className="fixed top-4 left-4 z-40 space-y-4 sm:bottom-auto">
+      <div 
+        className="toast-container space-y-4"
+        style={{
+          position: 'fixed',
+          inset: 'auto 16px 16px auto',
+          zIndex: 40
+        }}
+      >
           {activeAnnouncements.map((announcement, index) => (
             <div 
               key={announcement._id} 

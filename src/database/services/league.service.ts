@@ -202,9 +202,14 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can add players to leagues');
     }
 
-    const player = await PlayerModel.findById(playerData.playerId);
+    // No, the approach as written will never reach the second lookup (by userRef) because of the thrown error.
+    // Correct version: try to find by _id, if not found, try by userRef, and only throw if neither found.
+    let player = await PlayerModel.findById(playerData.playerId);
     if (!player) {
-      throw new BadRequestError('Player not found');
+      player = await PlayerModel.findOne({ userRef: playerData.playerId });
+      if (!player) {
+        throw new BadRequestError('Player not found');
+      }
     }
 
     // Check if player is already in the league
@@ -215,7 +220,7 @@ export class LeagueService {
 
     // Add player
     league.players.push({
-      player: playerData.playerId as any,
+      player: player._id,
       totalPoints: 0,
       tournamentPoints: [],
       manualAdjustments: []

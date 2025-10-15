@@ -186,7 +186,7 @@ export default function AdminTournamentsPage() {
           title="Versenyek napi indítása"
           apiEndpoint="/api/admin/charts/tournaments/daily"
           color="warning"
-          icon="🏆"
+          icon=""
         />
       </div>
 

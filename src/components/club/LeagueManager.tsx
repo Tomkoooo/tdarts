@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { IconPlus, IconTrophy, IconUsers, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrophy, IconUsers, IconTrash, IconShare } from '@tabler/icons-react';
 import { League } from '@/interface/league.interface';
 import CreateLeagueModal from './CreateLeagueModal';
 import LeagueDetailModal from './LeagueDetailModal';
@@ -10,9 +10,10 @@ import Link from 'next/link';
 interface LeagueManagerProps {
   clubId: string;
   userRole: 'admin' | 'moderator' | 'member' | 'none';
+  autoOpenLeagueId?: string | null;
 }
 
-export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) {
+export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: LeagueManagerProps) {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -47,7 +48,7 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
     };
     
     initializeComponent();
-  }, [clubId]);
+  }, [clubId, autoOpenLeagueId]);
 
   const fetchLeagues = async () => {
     try {
@@ -56,6 +57,15 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
       if (response.ok) {
         const data = await response.json();
         setLeagues(data.leagues || []);
+        
+        // Auto-open league if specified in URL
+        if (autoOpenLeagueId && data.leagues) {
+          const leagueToOpen = data.leagues.find((league: League) => league._id === autoOpenLeagueId);
+          if (leagueToOpen) {
+            setSelectedLeague(leagueToOpen);
+            setShowDetailModal(true);
+          }
+        }
       } else {
         setError('Failed to load leagues');
       }
@@ -264,6 +274,7 @@ export default function LeagueManager({ clubId, userRole }: LeagueManagerProps) 
               canManage={canManageLeagues}
               onView={() => handleViewLeague(league)}
               onDelete={() => handleDeleteLeague(league._id!)}
+              clubId={clubId}
             />
           ))}
         </div>
@@ -301,9 +312,38 @@ interface LeagueCardProps {
   canManage: boolean;
   onView: () => void;
   onDelete: () => void;
+  clubId: string;
 }
 
-function LeagueCard({ league, canManage, onView, onDelete }: LeagueCardProps) {
+function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardProps) {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/clubs/${clubId}?page=leagues&league=${league._id}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${league.name} - Liga`,
+          text: `Nézd meg ezt a ligát: ${league.name}`,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        showSuccessToast('Liga link másolva a vágólapra!');
+      }
+    } catch (error) {
+      console.error('Error sharing league:', error);
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showSuccessToast('Liga link másolva a vágólapra!');
+      } catch (clipboardError) {
+        showErrorToast('Nem sikerült másolni a linket');
+        console.error('Error copying link to clipboard:', clipboardError);
+      }
+    }
+  };
+
   return (
     <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
       <div className="card-body">
@@ -316,8 +356,17 @@ function LeagueCard({ league, canManage, onView, onDelete }: LeagueCardProps) {
               </p>
             )}
           </div>
-          <div className={`badge ${league.isActive ? 'badge-success' : 'badge-error'}`}>
-            {league.isActive ? 'Aktív' : 'Inaktív'}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              className="btn btn-ghost btn-xs"
+              title="Liga megosztása"
+            >
+              <IconShare size={14} />
+            </button>
+            <div className={`badge ${league.isActive ? 'badge-success' : 'badge-error'}`}>
+              {league.isActive ? 'Aktív' : 'Inaktív'}
+            </div>
           </div>
         </div>
 

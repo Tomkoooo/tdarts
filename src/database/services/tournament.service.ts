@@ -3300,9 +3300,9 @@ export class TournamentService {
                             const legThrows = leg.player1Throws.length;
                             if (legThrows > 0) {
                                 const legAverage = legScore / legThrows;
-                                // Update average (weighted)
-                                const currentTotal = player1Stats.average * player1Stats.legsPlayed;
                                 player1Stats.legsPlayed++;
+                                // Update average (weighted by leg count)
+                                const currentTotal = player1Stats.average * (player1Stats.legsPlayed - 1);
                                 player1Stats.average = (currentTotal + legAverage) / player1Stats.legsPlayed;
                             }
                             
@@ -3323,9 +3323,9 @@ export class TournamentService {
                             const legThrows = leg.player2Throws.length;
                             if (legThrows > 0) {
                                 const legAverage = legScore / legThrows;
-                                // Update average (weighted)
-                                const currentTotal = player2Stats.average * player2Stats.legsPlayed;
                                 player2Stats.legsPlayed++;
+                                // Update average (weighted by leg count)
+                                const currentTotal = player2Stats.average * (player2Stats.legsPlayed - 1);
                                 player2Stats.average = (currentTotal + legAverage) / player2Stats.legsPlayed;
                             }
                             
@@ -3430,6 +3430,7 @@ export class TournamentService {
                             legsLost: stats.legsPlayed - stats.legsWon,
                             oneEightiesCount: stats.oneEighties,
                             highestCheckout: stats.highestCheckout,
+                            average: stats.average, // Add tournament average to history
                         },
                         date: new Date()
                     };
@@ -3510,18 +3511,26 @@ export class TournamentService {
                     player.stats.legsWon += stats.legsWon;
                     player.stats.legsLost += (stats.legsPlayed - stats.legsWon);
 
-                    // Update average (weighted average)
-                    if (player.stats.matchesPlayed > 0) {
-                        const currentTotal = player.stats.avg * (player.stats.matchesPlayed - stats.matchesPlayed);
-                        const newTotal = currentTotal + (stats.average * stats.matchesPlayed);
-                        player.stats.avg = newTotal / player.stats.matchesPlayed;
+                    // Update average - use tournament history to recalculate all-time average
+                    // This ensures accuracy even if tournaments are reopened and re-finished
+                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
+                        // Calculate all-time average from tournament history
+                        const totalAvg = player.tournamentHistory.reduce((sum: number, hist: any) => {
+                            // Get average from tournament stats, fallback to 0
+                            return sum + (hist.stats?.average || 0);
+                        }, 0);
+                        player.stats.avg = totalAvg / player.tournamentHistory.length;
                     } else {
                         player.stats.avg = stats.average;
                     }
 
-                    // Calculate average position
-                    const totalPosition = player.tournamentHistory.reduce((sum: number, hist: any) => sum + hist.position, 0);
-                    player.stats.averagePosition = totalPosition / player.tournamentHistory.length;
+                    // Calculate average position from tournament history
+                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
+                        const totalPosition = player.tournamentHistory.reduce((sum: number, hist: any) => sum + hist.position, 0);
+                        player.stats.averagePosition = totalPosition / player.tournamentHistory.length;
+                    } else {
+                        player.stats.averagePosition = placement;
+                    }
 
                     // Calculate MMR change
                     const matchWinRate = stats.matchesPlayed > 0 ? stats.matchesWon / stats.matchesPlayed : 0;
