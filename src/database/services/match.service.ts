@@ -200,14 +200,12 @@ export class MatchService {
             match.player1.legsLost += 1;
         }
 
-        // Update player statistics
+        // Update player statistics (only highest checkout and average, 180s will be calculated in finishMatch)
         match.player1.highestCheckout = Math.max(match.player1.highestCheckout || 0, legData.player1Stats.highestCheckout);
-        match.player1.oneEightiesCount = (match.player1.oneEightiesCount || 0) + legData.player1Stats.oneEightiesCount;
         match.player1.average = legData.player1Stats.totalThrows > 0 ? 
             Math.round(legData.player1Stats.totalScore / legData.player1Stats.totalThrows) : 0;
 
         match.player2.highestCheckout = Math.max(match.player2.highestCheckout || 0, legData.player2Stats.highestCheckout);
-        match.player2.oneEightiesCount = (match.player2.oneEightiesCount || 0) + legData.player2Stats.oneEightiesCount;
         match.player2.average = legData.player2Stats.totalThrows > 0 ? 
             Math.round(legData.player2Stats.totalScore / legData.player2Stats.totalThrows) : 0;
 
@@ -331,14 +329,14 @@ export class MatchService {
         match.player1.legsWon = matchData.player1LegsWon;
         match.player2.legsWon = matchData.player2LegsWon;
 
-        // Update final player statistics
+        // Update final player statistics (set final values, don't add to existing)
         match.player1.highestCheckout = Math.max(match.player1.highestCheckout || 0, matchData.player1Stats.highestCheckout);
-        match.player1.oneEightiesCount = (match.player1.oneEightiesCount || 0) + matchData.player1Stats.oneEightiesCount;
+        match.player1.oneEightiesCount = matchData.player1Stats.oneEightiesCount; // Set final count, don't add
         match.player1.average = matchData.player1Stats.totalThrows > 0 ? 
             Math.round(matchData.player1Stats.totalScore / matchData.player1Stats.totalThrows) : 0;
 
         match.player2.highestCheckout = Math.max(match.player2.highestCheckout || 0, matchData.player2Stats.highestCheckout);
-        match.player2.oneEightiesCount = (match.player2.oneEightiesCount || 0) + matchData.player2Stats.oneEightiesCount;
+        match.player2.oneEightiesCount = matchData.player2Stats.oneEightiesCount; // Set final count, don't add
         match.player2.average = matchData.player2Stats.totalThrows > 0 ? 
             Math.round(matchData.player2Stats.totalScore / matchData.player2Stats.totalThrows) : 0;
 
