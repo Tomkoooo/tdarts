@@ -4,7 +4,7 @@ import { AuthorizationService } from '@/database/services/authorization.service'
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { AuthService } from '@/database/services/auth.service';
 
-// POST /api/clubs/[clubId]/leagues/[leagueId]/attach-tournament - Attach tournament to league
+// POST /api/clubs/[clubId]/leagues/[leagueId]/detach-tournament - Detach tournament from league
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
@@ -33,7 +33,7 @@ export async function POST(
     // Check if user has admin or moderator permissions for this club
     const hasPermission = await AuthorizationService.checkAdminOrModerator(userId, clubId);
     if (!hasPermission) {
-      return NextResponse.json({ error: 'Only club admins or moderators can attach tournaments to leagues' }, { status: 403 });
+      return NextResponse.json({ error: 'Only club admins or moderators can detach tournaments from leagues' }, { status: 403 });
     }
 
     // Validate payload
@@ -41,28 +41,22 @@ export async function POST(
       return NextResponse.json({ error: 'Tournament ID is required' }, { status: 400 });
     }
 
-    // calculatePoints defaults to true if not specified
-    // Set to false for already finished tournaments to only track averages
-    const calculatePoints = payload.calculatePoints !== undefined ? payload.calculatePoints : true;
-
-    const league = await LeagueService.attachTournamentToLeague(
+    const league = await LeagueService.detachTournamentFromLeague(
       leagueId, 
       payload.tournamentId, 
-      userId,
-      calculatePoints
+      userId
     );
 
     return NextResponse.json({ 
       league: league.toJSON(),
-      message: calculatePoints 
-        ? 'Tournament attached to league successfully with points calculation' 
-        : 'Tournament attached to league successfully (averages only, no points)'
+      message: 'Tournament detached from league successfully and all associated points removed'
     });
   } catch (error: any) {
-    console.error('Error attaching tournament to league:', error);
+    console.error('Error detaching tournament from league:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to attach tournament to league' },
+      { error: error.message || 'Failed to detach tournament from league' },
       { status: error.statusCode || 500 }
     );
   }
 }
+

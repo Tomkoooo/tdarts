@@ -171,6 +171,7 @@ export interface LeagueLeaderboard {
   tournamentsPlayed: number;
   averagePosition: number;
   bestPosition: number;
+  leagueAverage?: number; // Liga átlag a hozzárendelt tornák alapján
   lastTournamentDate?: Date;
 }
 
