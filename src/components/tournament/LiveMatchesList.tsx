@@ -7,6 +7,7 @@ import { getLiveMatches } from '@/lib/socketApi';
 interface LiveMatchesListProps {
   tournamentCode: string;
   onMatchSelect: (matchId: string, match: any) => void;
+  selectedMatchId?: string | null;
 }
 
 interface LiveMatch {
@@ -21,9 +22,9 @@ interface LiveMatch {
   player2LegsWon?: number;
 }
 
-const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMatchSelect }) => {
+const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMatchSelect, selectedMatchId }) => {
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<string | null>(selectedMatchId || null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Use the useSocket hook for proper socket management
