@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import Image from 'next/image';
 import LiveMatchViewer from '@/components/tournament/LiveMatchViewer';
 import LiveMatchesList from '@/components/tournament/LiveMatchesList';
 import { useParams } from 'next/navigation';
@@ -10,6 +9,7 @@ const LiveStreamingPage = () => {
   const { code } = useParams();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
+  const [showMatchList, setShowMatchList] = useState<boolean>(true);
 
   if (!selectedMatchId) {
     console.log("No match selected");
@@ -18,65 +18,44 @@ const LiveStreamingPage = () => {
   const handleMatchSelect = (matchId: string, match: any) => {
     setSelectedMatchId(matchId);
     setSelectedMatch(match);
+    setShowMatchList(false); // Hide match list when match is selected
+  };
+
+  const handleBackToMatches = () => {
+    setShowMatchList(true);
+    setSelectedMatchId(null);
+    setSelectedMatch(null);
   };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-base-100 via-base-200 to-base-300">
-      {/* Header with Logo and Brand */}
-      <div className="w-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 backdrop-blur-sm border-b border-primary/20">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-3">
-              <Image
-                src="/tdarts_logo.svg"
-                alt="tDarts Logo"
-                width={48}
-                height={48}
-                className="w-12 h-12"
-              />
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gradient-red bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  tDarts
-                </h1>
-                <p className="text-sm text-base-content/70 font-medium">
-                  Élő Közvetítés
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+
 
       {/* Main Content */}
       <div className="container mx-auto p-6">
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold mb-2 text-base-content">
-            Real-time Meccs Követés
+           Élő Meccsek Követése
           </h2>
           <p className="text-base-content/70">
             Kövesd a meccseket dobásonkénti frissítésekkel
           </p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Live Matches List */}
-          <div className="glass-card">
-            <LiveMatchesList 
-              tournamentCode={code as string} 
-              onMatchSelect={handleMatchSelect} 
-            />
-          </div>
-          
-          {/* Live Match Viewer */}
-          <div className="glass-card">
-            {selectedMatch ? (
-              <LiveMatchViewer
-                matchId={selectedMatch._id}
-                tournamentCode={code as string}
-                player1={selectedMatch.player1}
-                player2={selectedMatch.player2}
+        {showMatchList ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Live Matches List */}
+            <div className="glass-card">
+              <LiveMatchesList 
+                tournamentCode={code as string} 
+                onMatchSelect={handleMatchSelect}
+                selectedMatchId={selectedMatchId}
               />
-            ) : (
+            </div>
+            
+            {/* Live Match Viewer */}
+            <div className="glass-card">
               <div className="text-center py-8">
                 <div className="mb-6">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
@@ -94,9 +73,32 @@ const LiveStreamingPage = () => {
                   <span>Socket kapcsolat aktív</span>
                 </div>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-card">
+            {/* Back to matches button */}
+            <div className="flex justify-start mb-4">
+              <button
+                className="btn btn-sm btn-outline"
+                onClick={handleBackToMatches}
+              >
+                ← Vissza a meccsekhez
+              </button>
+            </div>
+            
+            {/* Live Match Viewer */}
+            {selectedMatch && (
+              <LiveMatchViewer
+                onBack={handleBackToMatches}
+                matchId={selectedMatch._id}
+                tournamentCode={code as string}
+                player1={selectedMatch.player1}
+                player2={selectedMatch.player2}
+              />
             )}
           </div>
-        </div>
+        )}
         
         {/* Instructions */}
         <div className="mt-8 glass-card">

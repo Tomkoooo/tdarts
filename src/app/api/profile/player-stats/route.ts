@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '@/database/models/player.model';
-import { TournamentModel } from '@/database/models/tournament.model';
 import { MatchModel } from '@/database/models/match.model';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '@/database/models/user.model';
@@ -59,44 +58,24 @@ export async function GET(request: NextRequest) {
       return { name: 'Kezdő', color: 'text-base-content' };
     };
 
-    // Get tournaments where this player participated
-    const tournaments = await TournamentModel.find({
-      'tournamentPlayers.playerReference': player._id
-    })
-    .populate('clubId', 'name location')
-    .select('tournamentId tournamentSettings.name tournamentSettings.startDate tournamentSettings.status tournamentPlayers')
-    .sort({ 'tournamentSettings.startDate': -1 })
-    .limit(10);
-
-    // Process tournament data
-    const tournamentHistory = tournaments.map(tournament => {
-      const playerInTournament = tournament.tournamentPlayers.find(
-        (tp: any) => tp.playerReference?.toString() === player._id.toString()
-      );
-      
-      return {
-        _id: tournament._id,
-        tournamentId: tournament.tournamentId,
-        name: tournament.tournamentSettings?.name,
-        startDate: tournament.tournamentSettings?.startDate,
-        status: tournament.tournamentSettings?.status,
-        clubName: tournament.clubId?.name,
-        clubLocation: tournament.clubId?.location,
-        playerStats: playerInTournament?.stats ? {
-          ...playerInTournament.stats,
-          // Map 'avg' to 'average' for consistency with tournament history
-          average: playerInTournament.stats.avg,
-          // Ensure all expected fields are present
-          matchesWon: playerInTournament.stats.matchesWon || 0,
-          matchesLost: playerInTournament.stats.matchesLost || 0,
-          legsWon: playerInTournament.stats.legsWon || 0,
-          legsLost: playerInTournament.stats.legsLost || 0,
-          oneEightiesCount: playerInTournament.stats.oneEightiesCount || 0,
-          highestCheckout: playerInTournament.stats.highestCheckout || 0
-        } : {},
-        finalPosition: playerInTournament?.finalPosition
-      };
-    });
+    // Use player.tournamentHistory directly (same as PlayerStatsModal)
+    const tournamentHistory = (player.tournamentHistory || []).map((history: any) => ({
+      _id: history.tournamentId, // Use tournamentId as _id for consistency
+      tournamentId: history.tournamentId,
+      name: history.tournamentName,
+      startDate: history.date,
+      status: 'finished', // tournamentHistory only contains finished tournaments
+      stats: {
+        matchesWon: history.stats.matchesWon || 0,
+        matchesLost: history.stats.matchesLost || 0,
+        legsWon: history.stats.legsWon || 0,
+        legsLost: history.stats.legsLost || 0,
+        oneEightiesCount: history.stats.oneEightiesCount || 0,
+        highestCheckout: history.stats.highestCheckout || 0,
+        average: history.stats.average || 0
+      },
+      finalPosition: history.position
+    }));
 
     // Get recent matches
     const recentMatches = await MatchModel.find({
@@ -128,19 +107,22 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Ensure stats has mmr field (same as search service)
+    const stats = { ...playerStats };
+    stats.mmr = mmr;
+
     const playerData = {
       hasPlayer: true,
       player: {
         _id: player._id,
         name: player.name,
-        stats: {
-          ...playerStats,
-          // Map 'avg' to 'average' for consistency with frontend
-          average: playerStats.avg,
-          mmr: mmr,
-          globalRank: globalRank,
-          mmrTier: getMMRTier(mmr)
-        }
+        type: 'player',
+        userRef: player.userRef,
+        stats: stats,
+        tournamentHistory: player.tournamentHistory || [],
+        mmr: mmr,
+        mmrTier: getMMRTier(mmr),
+        globalRank: globalRank
       },
       tournamentHistory,
       matchHistory,

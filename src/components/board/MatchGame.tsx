@@ -106,8 +106,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const [isSavingLeg, setIsSavingLeg] = useState<boolean>(false);
   const [isSavingMatch, setIsSavingMatch] = useState<boolean>(false);
   
-  // Arrow count modal
-  const [showArrowCountModal, setShowArrowCountModal] = useState<boolean>(false);
+  // Arrow count for checkout
   const [arrowCount, setArrowCount] = useState<number>(3);
 
   const chalkboardRef = useRef<HTMLDivElement>(null);
@@ -304,9 +303,9 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         }));
       }
       
-      // Show arrow count modal first
+      // Show leg confirmation modal with arrow count
       setPendingLegWinner(currentPlayer);
-      setShowArrowCountModal(true);
+      setShowLegConfirmation(true);
       setScoreInput('');
     } else {
       // Regular throw
@@ -502,13 +501,26 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setEditScoreInput('');
   };
 
-  const confirmArrowCount = () => {
-    setShowArrowCountModal(false);
-    setShowLegConfirmation(true);
+  // Calculate possible arrow counts based on checkout score
+  const getPossibleArrowCounts = (checkoutScore: number): number[] => {
+    if (checkoutScore <= 40) {
+      return [1, 2, 3]; // 1-40: 1-3 nyíl lehetséges
+    } else if (checkoutScore <= 98) {
+      return [2, 3]; // 41-98: 2-3 nyíl lehetséges
+    } else {
+      return [3]; // 99-180: csak 3 nyíl lehetséges
+    }
   };
 
   const confirmLegEnd = async () => {
     if (!pendingLegWinner || isSavingLeg) return;
+    
+    // Auto-set arrow count if only one option is possible
+    const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+    const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+    if (possibleArrowCounts.length === 1) {
+      setArrowCount(possibleArrowCounts[0]);
+    }
     
     setIsSavingLeg(true);
     
@@ -541,7 +553,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         isCheckout: true,
         remainingScore: 0,
         legNumber: currentLeg,
-        tournamentCode: window.location.pathname.split('/')[2]
+        tournamentCode: window.location.pathname.split('/')[2],
+        arrowCount: arrowCount
       });
     }
 
@@ -620,7 +633,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         isCheckout: true,
         remainingScore: 0,
         legNumber: currentLeg,
-        tournamentCode: window.location.pathname.split('/')[2]
+        tournamentCode: window.location.pathname.split('/')[2],
+        arrowCount: arrowCount
       });
     }
     
@@ -684,11 +698,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     onBack();
   };
 
-  const cancelArrowCount = () => {
-    setShowArrowCountModal(false);
-    setPendingLegWinner(null);
-    setArrowCount(3);
-  };
+
 
   const cancelLegEnd = () => {
     if (isSavingLeg) return;
@@ -858,14 +868,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       {/* Left Side - Players & Chalkboard (Landscape) / Top (Portrait) */}
       <div className="flex flex-col landscape:w-1/2 landscape:h-full">
         {/* Header - Score Display */}
-        <header className="flex h-[26dvh] landscape:h-[35dvh] w-full bg-gradient-to-b from-gray-900 to-black relative">
+        <header className="flex h-[28dvh] landscape:h-[35dvh] w-full bg-gradient-to-b from-gray-900 to-black relative">
           {/* Settings Button - Top Left */}
           <button
             onClick={() => {
               setTempLegsToWin(legsToWin);
               setShowSettingsModal(true);
             }}
-            className="absolute top-1 left-1 z-10 btn btn-xs btn-ghost text-gray-400 hover:text-white p-1"
+            className="absolute top-1 left-1 z-[100] btn btn-xs btn-ghost text-gray-400 hover:text-white p-1"
           >
             <IconSettings className="w-3 h-3" />
           </button>
@@ -873,23 +883,23 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           {/* Back Button - Top Right */}
             <button
             onClick={onBack}
-            className="absolute top-1 right-1 z-10 btn btn-xs btn-ghost text-gray-400 hover:text-white p-1"
+            className="absolute top-1  right-1 z-[100] btn btn-xs btn-ghost text-gray-400 hover:text-white p-1"
             >
             <IconArrowLeft className="w-3 h-3" />
             </button>
 
           {/* Player 1 */}
-          <div className={`flex-1 flex flex-col items-center justify-center border-r border-gray-700 transition-all duration-300 ${currentPlayer === 1 ? 'ring-4 ring-primary' : 'bg-gray-900/50'}`}>
-            <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2 text-white items-center flex gap-2 sm:gap-4">
-              {player1.name} 
-              <span className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-6xl">{player1.legsWon}</span>
+          <div className={`flex-1 flex flex-col items-center justify-center border-r border-gray-700 transition-all duration-300 ${currentPlayer === 1 ? 'border-r-4 border-b-4 border-r-primary border-b-primary bg-primary/10' : 'bg-gray-900/50'}`}>
+            <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
+              <div className="truncate max-w-full">{player1.name}</div>
+              <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
             </div>
-            <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
-            <div className="flex gap-2 sm:gap-4 text-sm sm:text-base md:text-lg">
+            <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
+            <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">Avg: {player1.stats.average}</span>
               <span className="text-gray-400">180: {player1.stats.oneEightiesCount}</span>
+            </div>
           </div>
-      </div>
 
           {/* Center Info */}
           <div className="w-12 sm:w-16 md:w-24 flex flex-col items-center justify-center bg-gray-800 border-x border-gray-700">
@@ -900,21 +910,21 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
           
           {/* Player 2 */}
-          <div className={`flex-1 flex flex-col items-center justify-center border-l border-gray-700 transition-all duration-300 ${currentPlayer === 2 ? 'ring-4 ring-primary' : 'bg-gray-900/50'}`}>
-            <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2 text-white items-center flex gap-2 sm:gap-4">
-              {player2.name} 
-              <span className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-6xl">{player2.legsWon}</span>
-                </div>
-            <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
-            <div className="flex gap-2 sm:gap-4 text-sm sm:text-base md:text-lg">
+          <div className={`flex-1 flex flex-col items-center justify-center border-l border-gray-700 transition-all duration-300 z-50 ${currentPlayer === 2 ? 'border-l-4 border-b-4 border-l-primary border-b-primary bg-primary/10' : 'bg-gray-900/50'}`}>
+            <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
+              <div className="truncate max-w-full">{player2.name}</div>
+              <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
+            </div>
+            <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
+            <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">Avg: {player2.stats.average}</span>
               <span className="text-gray-400">180: {player2.stats.oneEightiesCount}</span>
-                </div>
-              </div>
+            </div>
+          </div>
         </header>
 
         {/* Throw History - Chalkboard Style */}
-        <section className="h-[14dvh] landscape:flex-1 bg-base-200 flex border-b landscape:border-r border-base-300 overflow-hidden">
+        <section className="h-[16dvh] landscape:flex-1 bg-base-200 flex border-b landscape:border-r border-base-300 overflow-hidden">
           <div ref={chalkboardRef} className="flex w-full overflow-y-auto">
             {/* Player 1 All Throws */}
             <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4 border-r border-base-content/20">
@@ -955,17 +965,17 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
 
             {/* Round Numbers */}
             <div className="w-14 sm:w-16 lg:w-20 flex flex-col items-center border-r border-base-content/20 bg-base-100 p-2">
-              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-100 z-10 pb-1">Kör</div>
+              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-100 z-10 pb-1">Nyilak</div>
               <div className="flex-1">
                 <div className="space-y-1">
                   {Array.from({ length: Math.max(player1.allThrows.length, player2.allThrows.length) }).map((_, index) => (
                     <div key={index} className="text-center text-xs sm:text-sm lg:text-base font-bold bg-base-300 rounded p-2 text-base-content h-[2.5rem] flex items-center justify-center">
                       {(index + 1) * 3}
-                </div>
+                    </div>
                   ))}
                 </div>
-                </div>
               </div>
+            </div>
               
             {/* Player 2 All Throws */}
             <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4">
@@ -1010,7 +1020,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       {/* Right Side - Input & Numpad (Landscape) / Bottom (Portrait) */}
       <div className="flex flex-col landscape:w-1/2 landscape:h-full">
         {/* Score Display with BACK button */}
-        <section className="h-[8dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between border-y-2 border-primary/30 px-2 sm:px-4">
+        <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between border-y-2 border-primary/30 px-2 sm:px-4">
           <button
             onClick={handleBack}
             className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border border-base-content/20"
@@ -1031,7 +1041,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </section>
 
         {/* Number Pad */}
-        <main className="h-[52dvh] landscape:flex-[0_0_85dvh] bg-black p-1 sm:p-2 md:p-4">
+        <main className="h-[54dvh] landscape:flex-[0_0_85dvh] bg-black p-1 sm:p-2 md:p-4">
           <div className="h-full flex gap-1 sm:gap-2 md:gap-4">
             {/* Quick Access Scores - Left */}
             <div className="w-1/5 sm:w-1/4 flex flex-col gap-1 sm:gap-2">
@@ -1155,51 +1165,46 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </div>
       )}
 
-      {/* Arrow Count Modal */}
-      {showArrowCountModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-3">Nyilak száma</h3>
-            <p className="mb-4">
-              Hány nyílból szállt ki {pendingLegWinner === 1 ? player1.name : player2.name}?
-            </p>
-            <div className="flex gap-2 mb-4">
-              {[1, 2, 3].map((count) => (
-                <button
-                  key={count}
-                  onClick={() => setArrowCount(count)}
-                  className={`flex-1 btn ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
-                >
-                  {count} nyíl
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-error flex-1" 
-                onClick={cancelArrowCount}
-              >
-                Mégse
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
-                onClick={confirmArrowCount}
-              >
-                Tovább
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Leg Confirmation Dialog */}
+      {/* Leg Confirmation Dialog with Arrow Count */}
       {showLegConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
             <h3 className="text-lg font-bold mb-3">Leg vége?</h3>
             <p className="mb-4">
-              {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et! ({arrowCount} nyílból szállt ki)
+              {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et!
             </p>
+            
+            {/* Arrow count selection */}
+            {(() => {
+              const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+              const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+              
+              return (
+                <div className="mb-4">
+                  <p className="text-sm mb-2">
+                    Kiszálló: {lastThrow} - Hány nyílból?
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {possibleArrowCounts.map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => setArrowCount(count)}
+                        className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                      >
+                        {count} nyíl
+                      </button>
+                    ))}
+                  </div>
+                  {possibleArrowCounts.length === 1 && (
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      Csak {possibleArrowCounts[0]} nyíl lehetséges
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            
             <div className="flex gap-2">
               <button 
                 className="btn btn-error flex-1" 
@@ -1233,8 +1238,39 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
             <h3 className="text-lg font-bold mb-3">Meccs vége?</h3>
             <p className="mb-4">
-              {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset! ({arrowCount} nyílból szállt ki)
+              {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset!
             </p>
+            
+            {/* Arrow count selection for final leg */}
+            {(() => {
+              const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+              const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+              
+              return (
+                <div className="mb-4">
+                  <p className="text-sm mb-2">
+                    Utolsó kiszálló: {lastThrow} - Hány nyílból?
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {possibleArrowCounts.map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => setArrowCount(count)}
+                        className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                      >
+                        {count} nyíl
+                      </button>
+                    ))}
+                  </div>
+                  {possibleArrowCounts.length === 1 && (
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      Csak {possibleArrowCounts[0]} nyíl lehetséges
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            
             <div className="flex gap-2">
               <button 
                 className="btn btn-error flex-1" 

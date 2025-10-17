@@ -128,11 +128,13 @@ export class LeagueService {
 
   /**
    * Attach a tournament to a league
+   * @param calculatePoints - If false, only updates league averages without assigning points (for already finished tournaments)
    */
   static async attachTournamentToLeague(
     leagueId: string,
     tournamentId: string,
-    userId: string
+    userId: string,
+    calculatePoints: boolean = true
   ): Promise<LeagueDocument> {
     await connectMongo();
 
@@ -175,10 +177,69 @@ export class LeagueService {
     league.attachedTournaments.push(tournamentObjectId);
     await league.save();
 
-    // If tournament is finished, calculate points
-    if (tournament.tournamentSettings.status === 'finished') {
+    // If tournament is finished and calculatePoints is true, calculate points
+    // If calculatePoints is false, it means the tournament was already finished and we only want to track averages
+    if (tournament.tournamentSettings.status === 'finished' && calculatePoints) {
       await this.calculatePointsForTournament(tournament, league);
     }
+
+    return league;
+  }
+
+  /**
+   * Detach a tournament from a league and remove all associated tournament points
+   */
+  static async detachTournamentFromLeague(
+    leagueId: string,
+    tournamentId: string,
+    userId: string
+  ): Promise<LeagueDocument> {
+    await connectMongo();
+
+    const league = await LeagueModel.findById(leagueId);
+    if (!league) {
+      throw new BadRequestError('League not found');
+    }
+
+    // Check permissions
+    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+    if (!hasPermission) {
+      throw new AuthorizationError('Only club moderators can detach tournaments from leagues');
+    }
+
+    const tournament = await TournamentModel.findById(tournamentId);
+    if (!tournament) {
+      throw new BadRequestError('Tournament not found');
+    }
+
+    // Check if tournament is actually attached to this league
+    const tournamentObjectId = new mongoose.Types.ObjectId(tournamentId);
+    const tournamentIndex = league.attachedTournaments.findIndex((id: mongoose.Types.ObjectId) => id.equals(tournamentObjectId));
+    
+    if (tournamentIndex === -1) {
+      throw new BadRequestError('Tournament is not attached to this league');
+    }
+
+    // Remove tournament from attachedTournaments
+    league.attachedTournaments.splice(tournamentIndex, 1);
+
+    // Remove all tournamentPoints entries for this tournament from all players
+    for (const player of league.players) {
+      const pointsIndex = player.tournamentPoints.findIndex(
+        (tp: any) => tp.tournament.toString() === tournamentId
+      );
+      
+      if (pointsIndex !== -1) {
+        console.log(`Removing tournament points for player ${player.player} from tournament ${tournamentId}`);
+        player.tournamentPoints.splice(pointsIndex, 1);
+        
+        // Recalculate total points for this player
+        player.totalPoints = this.calculatePlayerTotalPointsForLeague(player);
+      }
+    }
+
+    await league.save();
+    console.log(`Tournament ${tournamentId} detached from league ${leagueId} successfully`);
 
     return league;
   }
@@ -436,19 +497,60 @@ export class LeagueService {
   static async getLeagueLeaderboard(leagueId: string): Promise<LeagueLeaderboard[]> {
     await connectMongo();
 
-    const league = await LeagueModel.findById(leagueId).populate('players.player');
+    const league = await LeagueModel.findById(leagueId)
+      .populate('players.player')
+      .populate('attachedTournaments');
     if (!league) {
       throw new BadRequestError('League not found');
     }
+
+    // Get all attached tournaments to extract player positions and averages
+    const attachedTournaments = league.attachedTournaments || [];
 
     const leaderboard: LeagueLeaderboard[] = league.players
       .filter((player: any) => player.player !== null && player.player !== undefined) // Filter out null/undefined players
       .map((player: any) => {
         const totalPoints = this.calculatePlayerTotalPointsForLeague(player);
-        const tournamentsPlayed = player.tournamentPoints.length;
-        const positions = player.tournamentPoints.map((tp: any) => tp.position).filter((p: number) => p > 0);
-        const averagePosition = positions.length > 0 ? positions.reduce((sum: number, pos: number) => sum + pos, 0) / positions.length : 0;
-        const bestPosition = positions.length > 0 ? Math.min(...positions) : 999;
+       
+        
+        // Get positions from tournamentPoints (tournaments with points)
+        const positionsFromPoints = player.tournamentPoints.map((tp: any) => tp.position).filter((p: number) => p > 0);
+        
+        // Also get positions and averages from all attached tournaments for this player
+        const playerIdStr = player.player._id?.toString() || player.player.toString();
+        const allPositions: number[] = [...positionsFromPoints];
+        const allAverages: number[] = [];
+        
+        attachedTournaments.forEach((tournament: any) => {
+          if (tournament && tournament.tournamentPlayers) {
+            const tournamentPlayer = tournament.tournamentPlayers.find(
+              (tp: any) => tp.playerReference?.toString() === playerIdStr
+            );
+            
+            if (tournamentPlayer) {
+              // Add position if available
+              const position = tournamentPlayer.tournamentStanding || tournamentPlayer.finalPosition;
+              if (position && position > 0 && !positionsFromPoints.includes(position)) {
+                allPositions.push(position);
+              }
+              
+              // Add average if available
+              const avg = tournamentPlayer.stats?.avg || tournamentPlayer.stats?.average;
+              if (avg && avg > 0) {
+                allAverages.push(avg);
+              }
+            }
+          }
+        });
+        
+        // Calculate statistics
+        const averagePosition = allPositions.length > 0 
+          ? allPositions.reduce((sum: number, pos: number) => sum + pos, 0) / allPositions.length 
+          : 0;
+        const bestPosition = allPositions.length > 0 ? Math.min(...allPositions) : 999;
+        const leagueAverage = allAverages.length > 0
+          ? allAverages.reduce((sum: number, avg: number) => sum + avg, 0) / allAverages.length
+          : 0;
         
         // Get last tournament date
         const lastTournamentDate = player.tournamentPoints.length > 0 
@@ -469,9 +571,10 @@ export class LeagueService {
             name: playerData.name || 'Unknown Player'
           },
           totalPoints,
-          tournamentsPlayed,
+          tournamentsPlayed: allPositions.length, // Count all tournaments where player participated
           averagePosition: Math.round(averagePosition * 10) / 10,
           bestPosition: bestPosition === 999 ? 0 : bestPosition,
+          leagueAverage: Math.round(leagueAverage * 100) / 100, // Add league average
           lastTournamentDate
         };
       })

@@ -103,7 +103,7 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
           Nevezés
         </Link>
         {tournament.status !== 'finished' && tournament.status !== 'pending' && (
-          <Link href={`/tournaments/${tournament.tournamentId}/live`} className="btn btn-primary btn-md flex items-center gap-2">
+          <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="btn btn-primary btn-md flex items-center gap-2">
             <IconScreenShare className="w-5 h-5" />
             Élő követés
           </Link>

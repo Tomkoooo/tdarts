@@ -411,6 +411,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
               const isPlayer1Winner = leg.winnerId._id === match.player1?.playerId?._id;
               const isPlayer2Winner = leg.winnerId._id === match.player2?.playerId?._id;
               
+              // Calculate loser's remaining score
+              const loserThrows = isPlayer1Winner ? leg.player2Throws : leg.player1Throws;
+              const loserTotalScore = loserThrows.reduce((sum, t) => sum + t.score, 0);
+              const loserRemainingScore = leg.loserRemainingScore !== undefined 
+                ? leg.loserRemainingScore 
+                : Math.abs(loserTotalScore - 501);
+              
               // Calculate running averages for this leg (only for pro users)
               const player1RunningAverages = showDetailedStats ? calculateRunningAverages(leg.player1Throws) : [];
               const player2RunningAverages = showDetailedStats ? calculateRunningAverages(leg.player2Throws) : [];
@@ -439,12 +446,10 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                               <IconTarget size={12} className="text-primary" />
                               <span className="text-primary">{leg.winnerArrowCount || 3} nyíl</span>
                             </div>
-                            {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
-                              <div className="flex items-center gap-1 text-error text-[10px] sm:text-xs">
-                                <IconTrendingDown size={10} />
-                                <span>Maradt: {leg.loserRemainingScore} pont</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1 text-error text-[10px] sm:text-xs">
+                              <IconTrendingDown size={10} />
+                              <span>Vesztes maradt: {loserRemainingScore} pont</span>
+                            </div>
                           </div>
                         </div>
                       </div>

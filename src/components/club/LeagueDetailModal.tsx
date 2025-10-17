@@ -515,8 +515,9 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, o
                   <th className="text-xs sm:text-sm">Játékos</th>
                   <th className="text-xs sm:text-sm">Pont</th>
                   <th className="text-xs sm:text-sm hidden sm:table-cell">Versenyek</th>
-                  <th className="text-xs sm:text-sm hidden md:table-cell">Átlag</th>
-                  <th className="text-xs sm:text-sm hidden lg:table-cell">Legjobb</th>
+                  <th className="text-xs sm:text-sm hidden md:table-cell">Átlag hely</th>
+                  <th className="text-xs sm:text-sm hidden md:table-cell">Legjobb</th>
+                  <th className="text-xs sm:text-sm hidden lg:table-cell">Dobás átlag</th>
                   {canManage && <th className="text-xs sm:text-sm"></th>}
               </tr>
             </thead>
@@ -545,7 +546,12 @@ function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, o
                   </td>
                     <td className="hidden sm:table-cell text-xs sm:text-sm py-2">{entry.tournamentsPlayed}</td>
                     <td className="hidden md:table-cell text-xs sm:text-sm py-2">{entry.averagePosition > 0 ? entry.averagePosition.toFixed(1) : '-'}</td>
-                    <td className="hidden lg:table-cell text-xs sm:text-sm py-2">{entry.bestPosition > 0 ? entry.bestPosition : '-'}</td>
+                    <td className="hidden md:table-cell text-xs sm:text-sm py-2">{entry.bestPosition > 0 ? entry.bestPosition : '-'}</td>
+                    <td className="hidden lg:table-cell text-xs sm:text-sm py-2">
+                      {entry.leagueAverage && entry.leagueAverage > 0 ? (
+                        <span className="font-mono font-semibold text-accent">{entry.leagueAverage.toFixed(2)}</span>
+                      ) : '-'}
+                    </td>
                   {canManage && (
                       <td className="py-2">
                         <div className="flex gap-1">
@@ -775,7 +781,15 @@ interface TournamentsTabProps {
   onTournamentAttached: () => void;
 }
 
-function TournamentsTab({ tournaments, canManage}: TournamentsTabProps) {
+function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournamentAttached }: TournamentsTabProps) {
+  const [showAttachModal, setShowAttachModal] = useState(false);
+  const [showDetachModal, setShowDetachModal] = useState(false);
+  const [availableTournaments, setAvailableTournaments] = useState<any[]>([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+  const [tournamentToDetach, setTournamentToDetach] = useState<{ id: string; name: string } | null>(null);
+  const [calculatePoints, setCalculatePoints] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+
   // Filter and validate tournaments
   const validTournaments = tournaments.filter((tournament: any) => 
     tournament && 
@@ -783,8 +797,134 @@ function TournamentsTab({ tournaments, canManage}: TournamentsTabProps) {
     (tournament.tournamentSettings || tournament.name)
   );
 
+  const fetchAvailableTournaments = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/clubs/${clubId}/tournaments`);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out tournaments that are already attached
+        const attachedIds = tournaments.map(t => t._id);
+        const available = data.tournaments.filter((t: any) => 
+          !attachedIds.includes(t._id) && t.tournamentSettings.status === 'finished'
+        );
+        setAvailableTournaments(available);
+      }
+    } catch (error) {
+      console.error('Error fetching tournaments:', error);
+      showErrorToast('Nem sikerült betölteni a versenyeket', {
+        context: 'Verseny betöltése',
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAttachTournament = async () => {
+    if (!selectedTournamentId) {
+      showErrorToast('Kérlek válassz egy versenyt!', {
+        context: 'Verseny hozzárendelése',
+        showReportButton: false
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}/attach-tournament`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tournamentId: selectedTournamentId,
+          calculatePoints
+        }),
+      });
+
+      if (response.ok) {
+        showSuccessToast(calculatePoints 
+          ? 'Verseny sikeresen hozzárendelve pontszámítással!' 
+          : 'Verseny sikeresen hozzárendelve (csak átlagok, pontszámítás nélkül)!'
+        );
+        setShowAttachModal(false);
+        setSelectedTournamentId('');
+        setCalculatePoints(false);
+        onTournamentAttached();
+      } else {
+        const errorData = await response.json();
+        showErrorToast(errorData.error || 'Hiba a verseny hozzárendelése során', {
+          context: 'Verseny hozzárendelése',
+          error: errorData.error
+        });
+      }
+    } catch (error) {
+      console.error('Error attaching tournament:', error);
+      showErrorToast('Hiba a verseny hozzárendelése során', {
+        context: 'Verseny hozzárendelése',
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDetachTournament = async () => {
+    if (!tournamentToDetach) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}/detach-tournament`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tournamentId: tournamentToDetach.id
+        }),
+      });
+
+      if (response.ok) {
+        showSuccessToast('Verseny sikeresen eltávolítva a ligából és az automatikus pontok visszavonva!');
+        setShowDetachModal(false);
+        setTournamentToDetach(null);
+        onTournamentAttached();
+      } else {
+        const errorData = await response.json();
+        showErrorToast(errorData.error || 'Hiba a verseny eltávolítása során', {
+          context: 'Verseny eltávolítása',
+          error: errorData.error
+        });
+      }
+    } catch (error) {
+      console.error('Error detaching tournament:', error);
+      showErrorToast('Hiba a verseny eltávolítása során', {
+        context: 'Verseny eltávolítása',
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {canManage && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              fetchAvailableTournaments();
+              setShowAttachModal(true);
+            }}
+            className="btn btn-primary btn-sm gap-2"
+          >
+            <IconTrophy size={16} />
+            Befejezett verseny hozzárendelése
+          </button>
+        </div>
+      )}
+
       {validTournaments.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-6xl mb-4">🏆</div>
@@ -795,9 +935,9 @@ function TournamentsTab({ tournaments, canManage}: TournamentsTabProps) {
               <p className="text-sm text-base-content/70 mb-2">
                 <strong>Versenyek hozzáadása:</strong>
               </p>
-              <ul className="text-sm text-base-content/60 space-y-1">
-                <li>• Verseny létrehozásakor válaszd ki ezt a ligát</li>
-                <li>• Vagy csatold hozzá egy meglévő versenyt</li>
+              <ul className="text-sm text-base-content/60 space-y-1 text-left">
+                <li>• <strong>Új verseny:</strong> Verseny létrehozásakor válaszd ki ezt a ligát (automatikus pontszámítás)</li>
+                <li>• <strong>Befejezett verseny:</strong> Használd a fenti gombot befejezett verseny utólagos hozzárendeléséhez (csak átlagok)</li>
               </ul>
             </div>
           )}
@@ -805,29 +945,201 @@ function TournamentsTab({ tournaments, canManage}: TournamentsTabProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {validTournaments.map((tournament: any) => (
-            <TournamentCard
-              key={tournament._id}
-              tournament={{
-                _id: tournament._id,
-                tournamentId: tournament.tournamentId || tournament._id,
-                tournamentSettings: {
-                  name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny',
-                  startDate: tournament.tournamentSettings?.startDate || tournament.startDate,
-                  location: tournament.tournamentSettings?.location || tournament.location,
-                  type: tournament.tournamentSettings?.type || tournament.type,
-                  entryFee: tournament.tournamentSettings?.entryFee || tournament.entryFee,
-                  maxPlayers: tournament.tournamentSettings?.maxPlayers || tournament.maxPlayers,
-                  registrationDeadline: tournament.tournamentSettings?.registrationDeadline || tournament.registrationDeadline,
-                  status: tournament.tournamentSettings?.status || tournament.status || 'pending'
-                },
-                tournamentPlayers: tournament.tournamentPlayers || [],
-                clubId: tournament.clubId || { name: '' }
-              }}
-              userRole={canManage ? 'moderator' : 'member'}
-              showActions={false}
-            />
+            <div key={tournament._id} className="relative">
+              <TournamentCard
+                tournament={{
+                  _id: tournament._id,
+                  tournamentId: tournament.tournamentId || tournament._id,
+                  tournamentSettings: {
+                    name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny',
+                    startDate: tournament.tournamentSettings?.startDate || tournament.startDate,
+                    location: tournament.tournamentSettings?.location || tournament.location,
+                    type: tournament.tournamentSettings?.type || tournament.type,
+                    entryFee: tournament.tournamentSettings?.entryFee || tournament.entryFee,
+                    maxPlayers: tournament.tournamentSettings?.maxPlayers || tournament.maxPlayers,
+                    registrationDeadline: tournament.tournamentSettings?.registrationDeadline || tournament.registrationDeadline,
+                    status: tournament.tournamentSettings?.status || tournament.status || 'pending'
+                  },
+                  tournamentPlayers: tournament.tournamentPlayers || [],
+                  clubId: tournament.clubId || { name: '' }
+                }}
+                userRole={canManage ? 'moderator' : 'member'}
+                showActions={false}
+              />
+              {canManage && (
+                <button
+                  onClick={() => {
+                    setTournamentToDetach({
+                      id: tournament._id,
+                      name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny'
+                    });
+                    setShowDetachModal(true);
+                  }}
+                  className="absolute top-2 right-2 btn btn-error btn-xs gap-1"
+                  title="Verseny eltávolítása a ligából"
+                >
+                  <IconX size={14} />
+                  Eltávolítás
+                </button>
+              )}
+            </div>
           ))}
         </div>
+      )}
+
+      {/* Attach Tournament Modal */}
+      {showAttachModal && (
+        <dialog open className="modal modal-bottom sm:modal-middle">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-4">Befejezett verseny hozzárendelése</h3>
+            
+            <div className="alert alert-warning mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="text-sm">
+                <p className="font-semibold mb-1">Fontos információk:</p>
+                <ul className="space-y-1">
+                  <li>• Csak <strong>befejezett versenyek</strong> jelennek meg</li>
+                  <li>• Az átlagok automatikusan kiszámításra kerülnek</li>
+                  <li>• <strong>Pontszámítás</strong> csak új versenyek létrehozásakor történik automatikusan</li>
+                  <li>• Már befejezett versenyeknél a pontszámítás nem javasolt</li>
+                </ul>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <span className="loading loading-spinner loading-lg"></span>
+              </div>
+            ) : (
+              <>
+                <div className="form-control mb-4">
+                  <label className="label">
+                    <span className="label-text font-medium">Válassz versenyt</span>
+                  </label>
+                  <select
+                    value={selectedTournamentId}
+                    onChange={(e) => setSelectedTournamentId(e.target.value)}
+                    className="select select-bordered w-full"
+                  >
+                    <option value="">Válassz...</option>
+                    {availableTournaments.map((tournament: any) => (
+                      <option key={tournament._id} value={tournament._id}>
+                        {tournament.tournamentSettings.name} - {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU')}
+                      </option>
+                    ))}
+                  </select>
+                  {availableTournaments.length === 0 && (
+                    <label className="label">
+                      <span className="label-text-alt text-warning">Nincs elérhető befejezett verseny</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="form-control mb-4">
+                  <label className="label cursor-pointer">
+                    <span className="label-text">
+                      <span className="font-medium">Pontszámítás engedélyezése</span>
+                      <span className="block text-xs text-base-content/60 mt-1">
+                        Nem javasolt már befejezett versenyeknél
+                      </span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={calculatePoints}
+                      onChange={(e) => setCalculatePoints(e.target.checked)}
+                      className="checkbox checkbox-primary"
+                    />
+                  </label>
+                </div>
+              </>
+            )}
+
+            <div className="modal-action">
+              <button
+                onClick={() => {
+                  setShowAttachModal(false);
+                  setSelectedTournamentId('');
+                  setCalculatePoints(false);
+                }}
+                className="btn btn-ghost"
+                disabled={loading}
+              >
+                Mégse
+              </button>
+              <button
+                onClick={handleAttachTournament}
+                className="btn btn-primary"
+                disabled={loading || !selectedTournamentId}
+              >
+                {loading ? 'Hozzárendelés...' : 'Hozzárendelés'}
+              </button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => {
+              setShowAttachModal(false);
+              setSelectedTournamentId('');
+              setCalculatePoints(false);
+            }}>close</button>
+          </form>
+        </dialog>
+      )}
+
+      {/* Detach Tournament Confirmation Modal */}
+      {showDetachModal && tournamentToDetach && (
+        <dialog open className="modal modal-bottom sm:modal-middle">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-4">Verseny eltávolítása</h3>
+            
+            <div className="alert alert-warning mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="text-sm">
+                <p className="font-semibold mb-1">Figyelem!</p>
+                <p>Ez a művelet:</p>
+                <ul className="list-disc ml-4 mt-1 space-y-1">
+                  <li>Eltávolítja a versenyt a ligából</li>
+                  <li><strong>Visszavonja az összes automatikusan hozzáadott pontot</strong> ehhez a versenyhez</li>
+                  <li>A manuális pontmódosítások megmaradnak</li>
+                  <li>Az átlag számítás frissül</li>
+                </ul>
+              </div>
+            </div>
+
+            <p className="mb-4">
+              Biztosan eltávolítod ezt a versenyt: <strong>{tournamentToDetach.name}</strong>?
+            </p>
+
+            <div className="modal-action">
+              <button
+                onClick={() => {
+                  setShowDetachModal(false);
+                  setTournamentToDetach(null);
+                }}
+                className="btn btn-ghost"
+                disabled={loading}
+              >
+                Mégse
+              </button>
+              <button
+                onClick={handleDetachTournament}
+                className="btn btn-error"
+                disabled={loading}
+              >
+                {loading ? 'Eltávolítás...' : 'Eltávolítás'}
+              </button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => {
+              setShowDetachModal(false);
+              setTournamentToDetach(null);
+            }}>close</button>
+          </form>
+        </dialog>
       )}
     </div>
   );

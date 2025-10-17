@@ -561,9 +561,9 @@ const ProfilePage: React.FC = () => {
                           <IconTarget className="w-8 h-8" />
                         </div>
                         <div className="stat-title">MMR</div>
-                        <div className="stat-value text-primary">{playerStats.player.stats.mmr}</div>
-                        <div className={`stat-desc ${playerStats.player.stats.mmrTier.color}`}>
-                          {playerStats.player.stats.mmrTier.name}
+                        <div className="stat-value text-primary">{playerStats.player.mmr}</div>
+                        <div className={`stat-desc ${playerStats.player.mmrTier.color}`}>
+                          {playerStats.player.mmrTier.name}
                         </div>
                       </div>
                       
@@ -572,7 +572,7 @@ const ProfilePage: React.FC = () => {
                           <IconTrendingUp className="w-8 h-8" />
                         </div>
                         <div className="stat-title">Globális rang</div>
-                        <div className="stat-value text-info">#{playerStats.player.stats.globalRank}</div>
+                        <div className="stat-value text-info">#{playerStats.player.globalRank}</div>
                         <div className="stat-desc">Összes játékosból</div>
                       </div>
                       
@@ -662,33 +662,33 @@ const ProfilePage: React.FC = () => {
                                     </span>
                                   )}
                                 </div>
-                                {tournament.status === 'finished' && tournament.playerStats && (
+                                {tournament.status === 'finished' && tournament.stats && (
                                   <>
                                     <div className="divider my-1"></div>
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                       <div className="flex justify-between">
                                         <span>Meccsek:</span>
                                         <span className="font-semibold">
-                                          {tournament.playerStats.matchesWon || 0}W / {tournament.playerStats.matchesLost || 0}L
+                                          {tournament.stats.matchesWon || 0} nyert / {tournament.stats.matchesLost || 0} vesztett
                                         </span>
                                       </div>
                                       <div className="flex justify-between">
                                         <span>Legek:</span>
                                         <span className="font-semibold">
-                                          {tournament.playerStats.legsWon || 0}W / {tournament.playerStats.legsLost || 0}L
+                                          {tournament.stats.legsWon || 0} nyert / {tournament.stats.legsLost || 0} vesztett
                                         </span>
                                       </div>
                                       <div className="flex justify-between">
                                         <span>Átlag:</span>
-                                        <span className="font-semibold">{tournament.playerStats.average?.toFixed(1) || 'N/A'}</span>
+                                        <span className="font-semibold">{tournament.stats.average?.toFixed(1) || 'N/A'}</span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span>180s:</span>
-                                        <span className="font-semibold">{tournament.playerStats.oneEightiesCount || 0}</span>
+                                        <span>180-ak:</span>
+                                        <span className="font-semibold">{tournament.stats.oneEightiesCount || 0}</span>
                                       </div>
                                       <div className="flex justify-between">
                                         <span>Max kiszálló:</span>
-                                        <span className="font-semibold">{tournament.playerStats.highestCheckout || 'N/A'}</span>
+                                        <span className="font-semibold">{tournament.stats.highestCheckout || 'N/A'}</span>
                                       </div>
                                     </div>
                                   </>
