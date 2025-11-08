@@ -506,14 +506,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       return;
     }
 
-    // Validate: at least one player must be selected
-    if (!editPairPlayer1 && !editPairPlayer2) {
+    // Allow clearing players if match already exists (for swapping)
+    const isNewMatch = !editingMatch.matchReference;
+    
+    // For new matches, at least one player must be selected
+    if (isNewMatch && !editPairPlayer1 && !editPairPlayer2) {
       toast.error('Kérjük válassz ki legalább egy játékost!');
       return;
     }
 
-    // Validate: board is required if at least one player is selected
-    if ((editPairPlayer1 || editPairPlayer2) && !editPairBoard && !editingMatch.matchReference) {
+    // Validate: board is required for new matches if at least one player is selected
+    if (isNewMatch && (editPairPlayer1 || editPairPlayer2) && !editPairBoard) {
       toast.error('Kérjük válassz ki egy táblát!');
       return;
     }
@@ -563,10 +566,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         }
       } else {
         // Match already exists, update via match settings API
-      const matchId = typeof editingMatch.matchReference === 'object' ? editingMatch.matchReference._id : editingMatch.matchReference;
+        const matchId = typeof editingMatch.matchReference === 'object' ? editingMatch.matchReference._id : editingMatch.matchReference;
+        
+        // editPairPlayer1/2 are initialized with current player IDs when modal opens
+        // If user clears them, they become empty strings which we send as null
+        // If user selects a different player, we send that new ID
         const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
-          player1Id: editPairPlayer1 || editingMatch.player1?._id,
-          player2Id: editPairPlayer2 || editingMatch.player2?._id,
+          player1Id: editPairPlayer1 || null,
+          player2Id: editPairPlayer2 || null,
           scorerId: editPairScorer || undefined,
           boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined
       });
@@ -751,9 +758,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         : editingMatchSettings.matchReference;
       
       const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
-        player1Id: selectedPlayer1,
-        player2Id: selectedPlayer2,
-        scorerId: selectedScorer,
+        player1Id: selectedPlayer1 || null,
+        player2Id: selectedPlayer2 || null,
+        scorerId: selectedScorer || undefined,
         boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined
       });
       
@@ -789,10 +796,31 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     const byePlayersInPreviousRounds = new Set<string>();
     const winnersInPreviousRounds = new Set<string>();
     
-    // Get all players already in this round
+    // Get players from the match being edited (so they can be re-selected)
+    const editingMatchPlayerIds = new Set<string>();
+    if (editingMatch) {
+      if (editingMatch.player1) {
+        const player1Id = typeof editingMatch.player1 === 'object' && editingMatch.player1._id ? editingMatch.player1._id : editingMatch.player1;
+        if (player1Id) editingMatchPlayerIds.add(player1Id.toString());
+      }
+      if (editingMatch.player2) {
+        const player2Id = typeof editingMatch.player2 === 'object' && editingMatch.player2._id ? editingMatch.player2._id : editingMatch.player2;
+        if (player2Id) editingMatchPlayerIds.add(player2Id.toString());
+      }
+    }
+    
+    // Get all players already in this round (excluding the match being edited)
     const roundData = knockoutData.find(r => r.round === roundNumber);
     if (roundData) {
       roundData.matches.forEach(match => {
+        // Skip the match being edited
+        const isEditingThisMatch = editingMatch && (
+          (match.matchReference?._id && editingMatch.matchReference?._id && match.matchReference._id === editingMatch.matchReference._id) ||
+          match === editingMatch
+        );
+        
+        if (isEditingThisMatch) return;
+        
         // Handle both populated and unpopulated player references
         if (match.player1) {
           const player1Id = typeof match.player1 === 'object' && match.player1._id ? match.player1._id : match.player1;
@@ -2271,6 +2299,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-bold">1. játékos:</span>
+                  {editPairPlayer1 && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost btn-error"
+                      onClick={() => {
+                        setEditPairPlayer1('');
+                        setEditPairPlayer1Search('');
+                      }}
+                    >
+                      ✕ Törlés
+                    </button>
+                  )}
                 </label>
                 <div className="relative">
                   <input
@@ -2324,6 +2364,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-bold">2. játékos:</span>
+                  {editPairPlayer2 && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost btn-error"
+                      onClick={() => {
+                        setEditPairPlayer2('');
+                        setEditPairPlayer2Search('');
+                      }}
+                    >
+                      ✕ Törlés
+                    </button>
+                  )}
                 </label>
                 <div className="relative">
                   <input
@@ -2545,6 +2597,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-bold">1. játékos:</span>
+                  {selectedPlayer1 && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost btn-error"
+                      onClick={() => {
+                        setSelectedPlayer1('');
+                        setPlayer1SearchTerm('');
+                      }}
+                    >
+                      ✕ Törlés
+                    </button>
+                  )}
                 </label>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
@@ -2612,6 +2676,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-bold">2. játékos:</span>
+                  {selectedPlayer2 && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost btn-error"
+                      onClick={() => {
+                        setSelectedPlayer2('');
+                        setPlayer2SearchTerm('');
+                      }}
+                    >
+                      ✕ Törlés
+                    </button>
+                  )}
                 </label>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">

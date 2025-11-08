@@ -571,43 +571,53 @@ export class MatchService {
             // Track if this was a bye match before
             const wasByeMatch = !match.player1?.playerId || !match.player2?.playerId;
 
-            // Update players if provided
-            if (settingsData.player1Id) {
-                // Validate player exists in tournament
-                const player1 = tournament.tournamentPlayers.find((p: any) => 
-                    p.playerReference.toString() === settingsData.player1Id
-                );
-                if (!player1) {
-                    throw new BadRequestError('Player 1 not found in tournament');
-                }
+            // Update players if provided (including explicit null to clear)
+            if ('player1Id' in settingsData) {
+                if (settingsData.player1Id === null) {
+                    // Clear player1
+                    match.player1 = null as any;
+                } else if (settingsData.player1Id) {
+                    // Validate player exists in tournament
+                    const player1 = tournament.tournamentPlayers.find((p: any) => 
+                        p.playerReference.toString() === settingsData.player1Id
+                    );
+                    if (!player1) {
+                        throw new BadRequestError('Player 1 not found in tournament');
+                    }
 
-                match.player1 = {
-                    playerId: settingsData.player1Id,
-                    legsWon: match.player1?.legsWon || 0,
-                    legsLost: match.player1?.legsLost || 0,
-                    average: match.player1?.average || 0,
-                    highestCheckout: match.player1?.highestCheckout || 0,
-                    oneEightiesCount: match.player1?.oneEightiesCount || 0,
-                };
+                    match.player1 = {
+                        playerId: settingsData.player1Id,
+                        legsWon: match.player1?.legsWon || 0,
+                        legsLost: match.player1?.legsLost || 0,
+                        average: match.player1?.average || 0,
+                        highestCheckout: match.player1?.highestCheckout || 0,
+                        oneEightiesCount: match.player1?.oneEightiesCount || 0,
+                    };
+                }
             }
 
-            if (settingsData.player2Id) {
-                // Validate player exists in tournament
-                const player2 = tournament.tournamentPlayers.find((p: any) => 
-                    p.playerReference.toString() === settingsData.player2Id
-                );
-                if (!player2) {
-                    throw new BadRequestError('Player 2 not found in tournament');
-                }
+            if ('player2Id' in settingsData) {
+                if (settingsData.player2Id === null) {
+                    // Clear player2
+                    match.player2 = null as any;
+                } else if (settingsData.player2Id) {
+                    // Validate player exists in tournament
+                    const player2 = tournament.tournamentPlayers.find((p: any) => 
+                        p.playerReference.toString() === settingsData.player2Id
+                    );
+                    if (!player2) {
+                        throw new BadRequestError('Player 2 not found in tournament');
+                    }
 
-                match.player2 = {
-                    playerId: settingsData.player2Id,
-                    legsWon: match.player2?.legsWon || 0,
-                    legsLost: match.player2?.legsLost || 0,
-                    average: match.player2?.average || 0,
-                    highestCheckout: match.player2?.highestCheckout || 0,
-                    oneEightiesCount: match.player2?.oneEightiesCount || 0,
-                };
+                    match.player2 = {
+                        playerId: settingsData.player2Id,
+                        legsWon: match.player2?.legsWon || 0,
+                        legsLost: match.player2?.legsLost || 0,
+                        average: match.player2?.average || 0,
+                        highestCheckout: match.player2?.highestCheckout || 0,
+                        oneEightiesCount: match.player2?.oneEightiesCount || 0,
+                    };
+                }
             }
 
             // Update scorer if provided
@@ -675,10 +685,10 @@ export class MatchService {
             await match.save();
 
             // Update tournament knockout rounds if this is a knockout match and players were changed
-            if (match.type === 'knockout' && (settingsData.player1Id || settingsData.player2Id)) {
+            if (match.type === 'knockout' && ('player1Id' in settingsData || 'player2Id' in settingsData)) {
                 await this.updateTournamentKnockoutRounds(tournament._id.toString(), matchId, {
-                    player1Id: settingsData.player1Id,
-                    player2Id: settingsData.player2Id
+                    player1Id: settingsData.player1Id || null,
+                    player2Id: settingsData.player2Id || null
                 });
             }
 
@@ -757,8 +767,8 @@ export class MatchService {
 
     // Update tournament knockout rounds when match players are changed
     private static async updateTournamentKnockoutRounds(tournamentId: string, matchId: string, playerUpdates: {
-        player1Id?: string;
-        player2Id?: string;
+        player1Id?: string | null;
+        player2Id?: string | null;
     }) {
         try {
             const tournament = await TournamentModel.findById(tournamentId);
@@ -773,11 +783,19 @@ export class MatchService {
                 matches: round.matches.map((knockoutMatch: any) => {
                     if (knockoutMatch.matchReference.toString() === matchId) {
                         updated = true;
-                        return {
-                            ...knockoutMatch,
-                            player1: playerUpdates.player1Id ? playerUpdates.player1Id : knockoutMatch.player1,
-                            player2: playerUpdates.player2Id ? playerUpdates.player2Id : knockoutMatch.player2
-                        };
+                        const updatedMatch: any = { ...knockoutMatch };
+                        
+                        // Update player1 if provided (including null to clear)
+                        if ('player1Id' in playerUpdates) {
+                            updatedMatch.player1 = playerUpdates.player1Id;
+                        }
+                        
+                        // Update player2 if provided (including null to clear)
+                        if ('player2Id' in playerUpdates) {
+                            updatedMatch.player2 = playerUpdates.player2Id;
+                        }
+                        
+                        return updatedMatch;
                     }
                     return knockoutMatch;
                 })

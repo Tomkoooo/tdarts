@@ -924,7 +924,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </header>
 
         {/* Throw History - Chalkboard Style */}
-        <section className="h-[16dvh] landscape:flex-1 bg-base-200 flex border-b landscape:border-r border-base-300 overflow-hidden">
+        <section className="h-[10dvh] landscape:flex-1 bg-base-200 flex border-b landscape:border-r border-base-300 overflow-hidden">
           <div ref={chalkboardRef} className="flex w-full overflow-y-auto">
             {/* Player 1 All Throws */}
             <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4 border-r border-base-content/20">
@@ -1041,7 +1041,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </section>
 
         {/* Number Pad */}
-        <main className="h-[54dvh] landscape:flex-[0_0_85dvh] bg-black p-1 sm:p-2 md:p-4">
+        <main className="h-[56dvh] landscape:flex-[0_0_85dvh] bg-black p-1 sm:p-2 md:p-4">
           <div className="h-full flex gap-1 sm:gap-2 md:gap-4">
             {/* Quick Access Scores - Left */}
             <div className="w-1/5 sm:w-1/4 flex flex-col gap-1 sm:gap-2">
