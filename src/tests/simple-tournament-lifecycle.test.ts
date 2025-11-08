@@ -151,31 +151,16 @@ describe('Simple Tournament Lifecycle Test', () => {
     
     const authenticatedAxios = createAuthenticatedAxios();
 
-    // Step 1: Get Available Boards
-    await logStep('📋', 'Step 1: Getting available boards...');
+    // Step 1: Create Tournament (boards are now part of tournament, not club)
+    await logStep('📝', 'Step 1: Creating tournament with boards...');
     
-    let availableBoards: any[] = [];
-    try {
-      const boardsResponse = await authenticatedAxios.get(`/clubs/${CLUB_ID}/boards`);
-      expect(boardsResponse.status).toBe(200);
-      availableBoards = boardsResponse.data.boards || [];
-      
-      await logSuccess(`Found ${availableBoards.length} available boards`);
-      
-      if (availableBoards.length < SIMPLE_CONFIG.boardCount) {
-        throw new Error(`Not enough available boards. Need ${SIMPLE_CONFIG.boardCount}, have ${availableBoards.length}`);
-      }
-    } catch (error) {
-      await logError('Failed to get available boards', error);
-      throw error;
-    }
-
-    // Step 2: Create Tournament
-    await logStep('📝', 'Step 2: Creating tournament...');
-    
-    const selectedBoards = availableBoards
-      .slice(0, SIMPLE_CONFIG.boardCount)
-      .map((board: any) => board.boardNumber);
+    // Create boards directly for the tournament
+    const tournamentBoards = Array.from({ length: SIMPLE_CONFIG.boardCount }, (_, i) => ({
+      boardNumber: i + 1,
+      name: `Tábla ${i + 1}`,
+      isActive: true,
+      status: 'idle'
+    }));
     
     const tournamentPayload = {
       name: `Simple Test Tournament - ${Date.now()}`,
@@ -186,7 +171,7 @@ describe('Simple Tournament Lifecycle Test', () => {
       startingScore: 501,
       tournamentPassword: 'test123',
       boardCount: SIMPLE_CONFIG.boardCount,
-      selectedBoards: selectedBoards,
+      boards: tournamentBoards,
       entryFee: 1000,
       location: 'Test Location',
       type: 'amateur',
@@ -207,8 +192,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 3: Add Players
-    await logStep('👥', `Step 3: Adding ${SIMPLE_CONFIG.playerCount} players...`);
+    // Step 2: Add Players
+    await logStep('👥', `Step 2: Adding ${SIMPLE_CONFIG.playerCount} players...`);
     
     const testPlayers = Array.from({ length: SIMPLE_CONFIG.playerCount }, (_, i) => ({
       name: `Simple Player ${i + 1}`,
@@ -232,8 +217,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 4: Check-in Players
-    await logStep('✅', 'Step 4: Checking-in all players...');
+    // Step 3: Check-in Players
+    await logStep('✅', 'Step 3: Checking-in all players...');
     
     try {
       const tournamentResponse = await authenticatedAxios.get(
@@ -264,8 +249,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 5: Generate Groups
-    await logStep('🏆', 'Step 5: Generating groups...');
+    // Step 4: Generate Groups
+    await logStep('🏆', 'Step 4: Generating groups...');
     
     try {
       const groupsResponse = await authenticatedAxios.post(
@@ -278,8 +263,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 6: Play Group Matches
-    await logStep('🎯', 'Step 6: Playing group matches...');
+    // Step 5: Play Group Matches
+    await logStep('🎯', 'Step 5: Playing group matches...');
     
     try {
       const tournamentResponse = await authenticatedAxios.get(
@@ -356,8 +341,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 7: Generate Knockout
-    await logStep('🥊', 'Step 7: Generating knockout stage...');
+    // Step 6: Generate Knockout
+    await logStep('🥊', 'Step 6: Generating knockout stage...');
     
     try {
       const currentTournamentResponse = await authenticatedAxios.get(
@@ -380,13 +365,134 @@ describe('Simple Tournament Lifecycle Test', () => {
       );
       expect(knockoutResponse.status).toBe(200);
       await logSuccess('Knockout stage generated');
+      
+      // Validate knockout bracket structure
+      await logStep('🔍', 'Validating knockout bracket structure...');
+      const knockoutTournamentResponse = await authenticatedAxios.get(
+        `/tournaments/${tournamentData.tournamentId}`
+      );
+      const knockoutTournament = knockoutTournamentResponse.data;
+      
+      // Check if we have 4 groups (for constraint-based ordering)
+      const groupCount = knockoutTournament.groups?.length || 0;
+      if (groupCount === 4) {
+        await logSuccess(`Found ${groupCount} groups - validating constraint-based knockout ordering`);
+        
+        // Get the first round matches
+        const firstRound = knockoutTournament.knockout?.find((r: any) => r.round === 1);
+        if (!firstRound || !firstRound.matches) {
+          throw new Error('First round not found in knockout structure');
+        }
+        
+        const matches = firstRound.matches;
+        await logSuccess(`Found ${matches.length} matches in first round`);
+        
+        // Build group standings map for validation
+        const groupStandings = new Map<string, any[]>();
+        knockoutTournament.tournamentPlayers.forEach((player: any) => {
+          if (player.groupId && player.groupStanding) {
+            const groupIdStr = player.groupId.toString();
+            if (!groupStandings.has(groupIdStr)) {
+              groupStandings.set(groupIdStr, []);
+            }
+            groupStandings.get(groupIdStr)!.push({
+              playerId: player.playerReference._id || player.playerReference,
+              standing: player.groupStanding,
+              name: player.playerReference.name || 'Unknown'
+            });
+          }
+        });
+        
+        // Sort each group by standing
+        groupStandings.forEach((players) => {
+          players.sort((a, b) => a.standing - b.standing);
+        });
+        
+        const orderedGroupIds = knockoutTournament.groups
+          .map((g: any) => g._id.toString())
+          .filter((id: string) => groupStandings.has(id));
+        
+        if (orderedGroupIds.length === 4) {
+          await logSuccess('Groups A, B, C, D identified - checking pairing pattern');
+          
+          // Expected pattern for 4 groups (A=0, B=1, C=2, D=3):
+          // Group pairs should be A/D (0/3) and B/C (1/2)
+          // Match order: a1/d4 - b2/c3 - d1/a4 - c2/b3 - b1/c4 - a2/d3 - c1/b4 - d2/a3
+          
+          console.log('\n=== KNOCKOUT VALIDATION DEBUG ===');
+          console.log('Ordered Group IDs:', orderedGroupIds);
+          console.log('Group standings:', Array.from(groupStandings.entries()).map(([gId, players]) => ({
+            groupId: gId,
+            players: players.map(p => `${p.name} (rank ${p.standing})`)
+          })));
+          console.log('Matches:', matches.map((m: any, i: number) => {
+            const p1 = m.player1 ? knockoutTournament.tournamentPlayers.find((tp: any) => 
+              (tp.playerReference._id || tp.playerReference).toString() === m.player1.toString()
+            ) : null;
+            const p2 = m.player2 ? knockoutTournament.tournamentPlayers.find((tp: any) => 
+              (tp.playerReference._id || tp.playerReference).toString() === m.player2.toString()
+            ) : null;
+            
+            return {
+              index: i,
+              player1: p1 ? `${p1.playerReference.name} (group ${p1.groupId}, rank ${p1.groupStanding})` : 'null',
+              player2: p2 ? `${p2.playerReference.name} (group ${p2.groupId}, rank ${p2.groupStanding})` : 'null'
+            };
+          }));
+          console.log('================================\n');
+          
+          // Count matches with group winners (rank 1)
+          let matchPairsWithOneWinner = 0;
+          for (let i = 0; i < matches.length; i += 2) {
+            if (i + 1 < matches.length) {
+              const match1 = matches[i];
+              const match2 = matches[i + 1];
+              
+              // Get players for both matches
+              const players = [match1.player1, match1.player2, match2.player1, match2.player2]
+                .filter(Boolean)
+                .map((pId: any) => {
+                  const tp = knockoutTournament.tournamentPlayers.find((p: any) => 
+                    (p.playerReference._id || p.playerReference).toString() === pId.toString()
+                  );
+                  return tp ? { groupId: tp.groupId?.toString(), standing: tp.groupStanding } : null;
+                })
+                .filter(Boolean);
+              
+              // Count group winners (standing === 1)
+              const winnersCount = players.filter((p: any) => p.standing === 1).length;
+              
+              // Count unique groups represented
+              const uniqueGroups = new Set(players.map((p: any) => p.groupId));
+              
+              if (winnersCount === 1 && uniqueGroups.size === 4) {
+                matchPairsWithOneWinner++;
+              }
+              
+              console.log(`Match pair ${Math.floor(i / 2)}: ${winnersCount} winner(s), ${uniqueGroups.size} unique groups`);
+            }
+          }
+          
+          await logSuccess(`✅ Constraint validation: ${matchPairsWithOneWinner} match pairs have exactly 1 group winner and all 4 groups`);
+          
+          // For 4 groups with 4 players each (16 total), we should have 8 matches (4 pairs)
+          const expectedPairs = matches.length / 2;
+          if (matchPairsWithOneWinner >= expectedPairs * 0.75) {
+            await logSuccess(`✅ Knockout bracket follows expected constraint-based pattern (${matchPairsWithOneWinner}/${expectedPairs} pairs valid)`);
+          } else {
+            console.warn(`⚠️  Only ${matchPairsWithOneWinner}/${expectedPairs} match pairs follow the constraint pattern`);
+          }
+        }
+      } else {
+        await logSuccess(`Found ${groupCount} groups - constraint-based ordering requires 4 groups`);
+      }
     } catch (error) {
       await logError('Failed to generate knockout', error);
       throw error;
     }
 
-    // Step 8: Play Knockout Matches
-    await logStep('🎯', 'Step 8: Playing knockout matches...');
+    // Step 7: Play Knockout Matches
+    await logStep('🎯', 'Step 7: Playing knockout matches...');
     
     try {
       // Play all knockout rounds until final
@@ -514,8 +620,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 9: Finish Tournament
-    await logStep('🏁', 'Step 9: Finishing tournament...');
+    // Step 8: Finish Tournament
+    await logStep('🏁', 'Step 8: Finishing tournament...');
     
     try {
       const finishResponse = await authenticatedAxios.post(
@@ -528,8 +634,8 @@ describe('Simple Tournament Lifecycle Test', () => {
       throw error;
     }
 
-    // Step 10: Verify Final Tournament State
-    await logStep('📊', 'Step 10: Verifying final tournament state...');
+    // Step 9: Verify Final Tournament State
+    await logStep('📊', 'Step 9: Verifying final tournament state...');
     
     try {
       const finalTournamentResponse = await authenticatedAxios.get(

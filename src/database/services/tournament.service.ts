@@ -1063,15 +1063,15 @@ export class TournamentService {
             groupPairs.push([groups.get(orderedGroupIds[0])!, groups.get(orderedGroupIds[1])!]);
             console.log('2 csoport párosítás:', orderedGroupIds[0], 'vs', orderedGroupIds[1]);
         } else {
-            // 3+ csoport: A-C, B-D, E-G, F-H stb. (cross-group párosítás)
+            // 3+ csoport: A-D, B-C, E-H, F-G stb. (first with last pairing)
             const groupCount = orderedGroupIds.length;
-            console.log(`${groupCount} csoport párosítás:`);
+            console.log(`${groupCount} csoport párosítás (first-last):`);
             
             for (let i = 0; i < Math.floor(groupCount / 2); i++) {
                 const group1Index = i;
-                const group2Index = i + Math.floor(groupCount / 2);
+                const group2Index = groupCount - 1 - i; // Changed: pair with last instead of middle
                 
-                if (group2Index < groupCount) {
+                if (group1Index < group2Index) {
                     const group1Id = orderedGroupIds[group1Index];
                     const group2Id = orderedGroupIds[group2Index];
                     
@@ -1086,47 +1086,156 @@ export class TournamentService {
 
         // Collect all pairings from all group pairs into a single round
         const allMatches: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[] = [];
-        const usedPlayers = new Set<string>(); // Track used players across all group pairs
         
-        // Generate all pairings first
-        const allPairings: {pairing: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}, groupPairIndex: number}[] = [];
+        // Generate all pairings from each group pair
+        const pairingsByGroupPair: {
+            pairing: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId},
+            groupPairIndex: number,
+            rankInGroupPair: number,
+            hasGroupWinner: boolean,
+            winnerGroupIndex: number // which group in the pair has the winner
+        }[][] = [];
         
         for (let groupPairIndex = 0; groupPairIndex < groupPairs.length; groupPairIndex++) {
             const groupPair = groupPairs[groupPairIndex];
             const pairings = generatePairingsBetweenTwoGroups(groupPair[0], groupPair[1]);
             
-            for (const pairing of pairings) {
-                allPairings.push({pairing, groupPairIndex});
+            pairingsByGroupPair[groupPairIndex] = pairings.map((pairing, index) => {
+                // Determine if this pairing has a group winner (rank 1)
+                // In mirror pairing: first few matches have rank 1 from first group, last few from second group
+                const hasGroupWinner = index === 0 || index === pairings.length - 1;
+                const winnerGroupIndex = index === 0 ? 0 : 1; // 0 for first group, 1 for second group
+                
+                return {
+                    pairing,
+                    groupPairIndex,
+                    rankInGroupPair: index,
+                    hasGroupWinner,
+                    winnerGroupIndex
+                };
+            });
+        }
+        
+        // Check if we should use constraint-based ordering or simple interleaving
+        // Use constraint-based ordering when:
+        // 1. We have power-of-2 groups (2, 4, 8, etc.)
+        // 2. Each group has enough players to make the constraints meaningful
+        const groupCount = groupPairs.length * 2;
+        const isPowerOfTwo = (groupCount & (groupCount - 1)) === 0 && groupCount > 0;
+        const playersPerGroup = pairingsByGroupPair[0]?.length || 0;
+        const useConstraintBasedOrdering = isPowerOfTwo && playersPerGroup >= 2 && groupCount >= 4;
+        
+        if (useConstraintBasedOrdering && groupCount === 4 && playersPerGroup >= 2) {
+            // NEW ALGORITHM for 4 groups with constraint-based ordering
+            // Each consecutive pair of matches should:
+            // 1. Have exactly one group winner (rank 1)
+            // 2. Represent all groups exactly once
+            
+            const matches0 = pairingsByGroupPair[0]; // e.g., A/D pairings: a1-d4, a2-d3, a3-d2, a4-d1
+            const matches1 = pairingsByGroupPair[1]; // e.g., B/C pairings: b1-c4, b2-c3, b3-c2, b4-c1
+            
+            // Pattern for 4 groups: a1/d4 - b2/c3 - d1/a4 - c2/b3 - b1/c4 - a2/d3 - c1/b4 - d2/a3
+            // Breakdown:
+            // Pair 0 (matches 0-1): A/D[0] as-is,     B/C[1] as-is
+            // Pair 1 (matches 2-3): A/D[3] flipped,   B/C[2] flipped
+            // Pair 2 (matches 4-5): B/C[0] as-is,     A/D[1] as-is
+            // Pair 3 (matches 6-7): B/C[3] flipped,   A/D[2] flipped
+            
+            const numPairs = playersPerGroup; // Number of consecutive match pairs
+            
+            for (let pairIdx = 0; pairIdx < numPairs; pairIdx++) {
+                let match1, match2;
+                
+                if (pairIdx === 0) {
+                    // Pair 0: A/D[0] as-is, B/C[1] as-is
+                    match1 = matches0[0].pairing;
+                    match2 = matches1[1].pairing;
+                } else if (pairIdx === 1) {
+                    // Pair 1: A/D[3] flipped, B/C[2] flipped
+                    const m1 = matches0[3].pairing;
+                    match1 = { player1: m1.player2, player2: m1.player1 };
+                    const m2 = matches1[2].pairing;
+                    match2 = { player1: m2.player2, player2: m2.player1 };
+                } else if (pairIdx === 2) {
+                    // Pair 2: B/C[0] as-is, A/D[1] as-is
+                    match1 = matches1[0].pairing;
+                    match2 = matches0[1].pairing;
+                } else if (pairIdx === 3) {
+                    // Pair 3: B/C[3] flipped, A/D[2] flipped
+                    const m1 = matches1[3].pairing;
+                    match1 = { player1: m1.player2, player2: m1.player1 };
+                    const m2 = matches0[2].pairing;
+                    match2 = { player1: m2.player2, player2: m2.player1 };
+                } else {
+                    // For more than 4 players per group, extend the pattern
+                    // This is a simplified extension - may need refinement for specific cases
+                    const mod = pairIdx % 4;
+                    if (mod === 0) {
+                        const idx = Math.floor(pairIdx / 4);
+                        if (idx < matches0.length && idx + 1 < matches1.length) {
+                            match1 = matches0[idx].pairing;
+                            match2 = matches1[idx + 1].pairing;
+                        }
+                    } else if (mod === 1) {
+                        const idx = Math.floor(pairIdx / 4);
+                        const idx0 = matches0.length - 1 - idx;
+                        const idx1 = matches1.length - 2 - idx;
+                        if (idx0 >= 0 && idx0 < matches0.length && idx1 >= 0 && idx1 < matches1.length) {
+                            const m1 = matches0[idx0].pairing;
+                            match1 = { player1: m1.player2, player2: m1.player1 };
+                            const m2 = matches1[idx1].pairing;
+                            match2 = { player1: m2.player2, player2: m2.player1 };
+                        }
+                    } else if (mod === 2) {
+                        const idx = Math.floor(pairIdx / 4);
+                        if (idx < matches1.length && idx + 1 < matches0.length) {
+                            match1 = matches1[idx].pairing;
+                            match2 = matches0[idx + 1].pairing;
+                        }
+                    } else {
+                        const idx = Math.floor(pairIdx / 4);
+                        const idx0 = matches1.length - 1 - idx;
+                        const idx1 = matches0.length - 2 - idx;
+                        if (idx0 >= 0 && idx0 < matches1.length && idx1 >= 0 && idx1 < matches0.length) {
+                            const m1 = matches1[idx0].pairing;
+                            match1 = { player1: m1.player2, player2: m1.player1 };
+                            const m2 = matches0[idx1].pairing;
+                            match2 = { player1: m2.player2, player2: m2.player1 };
+                        }
+                    }
+                }
+                
+                if (match1 && match2) {
+                    allMatches.push(match1);
+                    allMatches.push(match2);
+                }
             }
-        }
-        
-        // Sort pairings to alternate between group pairs
-        // First, group by groupPairIndex
-        const pairingsByGroup: {player1: mongoose.Types.ObjectId, player2: mongoose.Types.ObjectId}[][] = [];
-        for (let i = 0; i < groupPairs.length; i++) {
-            pairingsByGroup.push([]);
-        }
-        
-        for (const {pairing, groupPairIndex} of allPairings) {
-            pairingsByGroup[groupPairIndex].push(pairing);
-        }
-        
-        // Interleave pairings from different groups
-        // eslint-disable-next-line
-        let maxPairings = Math.max(...pairingsByGroup.map(group => group.length));
-        
-        for (let pairingIndex = 0; pairingIndex < maxPairings; pairingIndex++) {
-            for (let groupIndex = 0; groupIndex < pairingsByGroup.length; groupIndex++) {
-                if (pairingIndex < pairingsByGroup[groupIndex].length) {
-                    const pairing = pairingsByGroup[groupIndex][pairingIndex];
-                    const player1Key = pairing.player1.toString();
-                    const player2Key = pairing.player2.toString();
-                    
-                    // Ellenőrizzük, hogy egyik játékos sem szerepelt még másik párosításban
-                    if (!usedPlayers.has(player1Key) && !usedPlayers.has(player2Key)) {
-                        allMatches.push(pairing);
-                        usedPlayers.add(player1Key);
-                        usedPlayers.add(player2Key);
+            
+            console.log('=== CONSTRAINT-BASED KNOCKOUT PAIRING (4 groups) ===');
+            console.log('Generated matches:', allMatches.length);
+        } else if (useConstraintBasedOrdering && isPowerOfTwo && groupCount > 4) {
+            // For 8+ groups, use simple interleaving as suggested by user
+            console.log(`=== USING SIMPLE INTERLEAVING for ${groupCount} groups ===`);
+            
+            const maxPairings = Math.max(...pairingsByGroupPair.map(gp => gp.length));
+            
+            for (let pairingIndex = 0; pairingIndex < maxPairings; pairingIndex++) {
+                for (let groupIndex = 0; groupIndex < pairingsByGroupPair.length; groupIndex++) {
+                    if (pairingIndex < pairingsByGroupPair[groupIndex].length) {
+                        allMatches.push(pairingsByGroupPair[groupIndex][pairingIndex].pairing);
+                    }
+                }
+            }
+        } else {
+            // Fallback: simple interleaving for edge cases
+            console.log('=== USING FALLBACK INTERLEAVING ===');
+            
+            const maxPairings = Math.max(...pairingsByGroupPair.map(gp => gp.length));
+            
+            for (let pairingIndex = 0; pairingIndex < maxPairings; pairingIndex++) {
+                for (let groupIndex = 0; groupIndex < pairingsByGroupPair.length; groupIndex++) {
+                    if (pairingIndex < pairingsByGroupPair[groupIndex].length) {
+                        allMatches.push(pairingsByGroupPair[groupIndex][pairingIndex].pairing);
                     }
                 }
             }
