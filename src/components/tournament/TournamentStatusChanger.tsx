@@ -1,698 +1,745 @@
-import React, {  useState } from 'react';
-import axios from 'axios';
+import React, { useCallback, useMemo, useState } from "react"
+import axios from "axios"
 import {
   CreateManualGroupsRequest,
-  ManualGroupsContextResponse,
   ManualGroupsAvailablePlayer,
+  ManualGroupsContextResponse,
   Tournament,
-} from '@/interface/tournament.interface';
+} from "@/interface/tournament.interface"
 
-interface TournamentGroupsGeneratorProps {
-  tournament: Tournament;
-  userClubRole: 'admin' | 'moderator' | 'member' | 'none';
-  onRefetch: () => void;
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+
+interface TournamentStatusManagerProps {
+  tournament: Tournament
+  userClubRole: "admin" | "moderator" | "member" | "none"
+  onRefetch: () => void
 }
 
-const TournamentGroupsGenerator: React.FC<TournamentGroupsGeneratorProps> = ({ tournament, userClubRole, onRefetch }) => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showKnockoutModal, setShowKnockoutModal] = useState(false);
-  const [selectedPlayers, setSelectedPlayers] = useState(8);
-  const [knockoutMode, setKnockoutMode] = useState<'automatic' | 'manual'>('automatic');
-  const [groupsMode, setGroupsMode] = useState<'automatic' | 'manual'>('automatic');
-  const [showGroupsModal, setShowGroupsModal] = useState(false);
-  const [showManualGroupsBuilder, setShowManualGroupsBuilder] = useState(false);
-  const [manualContext, setManualContext] = useState<(ManualGroupsContextResponse & { searchQuery: string }) | null>(null);
-  const [manualBoard, setManualBoard] = useState<number | null>(null);
-  const [manualSelectedPlayers, setManualSelectedPlayers] = useState<string[]>([]);
-  const [boardAssignments, setBoardAssignments] = useState<Record<number, string[]>>({});
-  const code = tournament?.tournamentId;
-  const tournamentStatus = tournament?.tournamentSettings?.status;
-  const tournamentFormat = tournament?.tournamentSettings?.format || 'group_knockout';
-  const totalPlayers = tournament?.tournamentPlayers?.length || 0;
-  
-  // Calculate checked-in players (available for groups)
-  const checkedInPlayers = tournament?.tournamentPlayers?.filter(p => p.status === 'checked-in') || [];
-  const availablePlayersCount = checkedInPlayers.length;
-  
-  // Calculate number of groups (boards with matches)
-  const groupCount = tournament?.tournamentSettings?.boardCount || 0;
+type KnockoutMode = "automatic" | "manual"
+type GroupsMode = "automatic" | "manual"
+type PendingAction =
+  | "generate-groups"
+  | "generate-knockout"
+  | "finish"
+  | "cancel-knockout"
+  | "manual-groups"
+  | null
 
-  // Check if automatic knockout is allowed (even number of groups required)
-  const isAutomaticKnockoutAllowed = groupCount === 0 || tournamentFormat === 'knockout' || (tournamentFormat === 'group_knockout' && groupCount % 2 === 0);
+const MIN_PLAYERS_PER_GROUP = 3
+const MAX_PLAYERS_PER_GROUP = 6
+const MAX_KNOCKOUT_PLAYERS = 32
 
-  // Group generation validation
-  const minPlayersPerGroup = 3;
-  const maxPlayersPerGroup = 6;
-  const minTotalPlayersForGroups = groupCount * minPlayersPerGroup;
-  const maxTotalPlayersForGroups = groupCount * maxPlayersPerGroup;
-  
-  const isGroupGenerationAllowed = groupCount > 0 && 
-    availablePlayersCount >= minTotalPlayersForGroups && 
-    availablePlayersCount <= maxTotalPlayersForGroups;
+export default function TournamentStatusChanger({
+  tournament,
+  userClubRole,
+  onRefetch,
+}: TournamentStatusManagerProps) {
+  const [action, setAction] = useState<PendingAction>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // Generate available player counts (powers of 2, max totalPlayers)
-  const getAvailablePlayerCounts = () => {
-    const counts = [];
-    let count = 2;
-    while (count <= totalPlayers && count <= 32) { // Max 32 players for knockout
-      counts.push(count);
-      count *= 2;
+  const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
+  const [isManualGroupsDialogOpen, setIsManualGroupsDialogOpen] = useState(false)
+  const [isKnockoutDialogOpen, setIsKnockoutDialogOpen] = useState(false)
+  const [isCancelKnockoutDialogOpen, setIsCancelKnockoutDialogOpen] = useState(false)
+
+  const [knockoutMode, setKnockoutMode] = useState<KnockoutMode>("automatic")
+  const [groupsMode, setGroupsMode] = useState<GroupsMode>("automatic")
+  const [selectedPlayers, setSelectedPlayers] = useState(8)
+
+  const [manualContext, setManualContext] = useState<(ManualGroupsContextResponse & { searchQuery: string }) | null>(null)
+  const [selectedBoard, setSelectedBoard] = useState<number | null>(null)
+  const [boardAssignments, setBoardAssignments] = useState<Record<number, string[]>>({})
+
+  const tournamentCode = tournament?.tournamentId
+  const tournamentStatus = tournament?.tournamentSettings?.status
+  const tournamentFormat = tournament?.tournamentSettings?.format || "group_knockout"
+  const totalPlayers = tournament?.tournamentPlayers?.length ?? 0
+
+  const checkedInPlayers = useMemo(
+    () => tournament?.tournamentPlayers?.filter((player) => player.status === "checked-in") ?? [],
+    [tournament?.tournamentPlayers],
+  )
+  const availablePlayers = checkedInPlayers.length
+  const boardCount = tournament?.tournamentSettings?.boardCount ?? 0
+
+  const minPlayersRequired = boardCount * MIN_PLAYERS_PER_GROUP
+  const maxPlayersAllowed = boardCount * MAX_PLAYERS_PER_GROUP
+
+  const isGroupGenerationAllowed =
+    boardCount > 0 && availablePlayers >= minPlayersRequired && availablePlayers <= maxPlayersAllowed
+
+  const isAutomaticKnockoutAllowed =
+    boardCount === 0 ||
+    tournamentFormat === "knockout" ||
+    (tournamentFormat === "group_knockout" && boardCount % 2 === 0)
+
+  const availableKnockoutPlayerCounts = useMemo(() => {
+    const counts: number[] = []
+    let size = 2
+
+    while (size <= totalPlayers && size <= MAX_KNOCKOUT_PLAYERS) {
+      counts.push(size)
+      size *= 2
     }
-    return counts;
-  };
 
-  const handleGenerateGroups = async () => {
-    setShowGroupsModal(true);
-  };
+    return counts
+  }, [totalPlayers])
 
-  const startAutomaticGroups = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await axios.post(`/api/tournaments/${code}/generateGroups`);
-      if (response.data && response.status === 200) {
-        onRefetch();
-        setShowGroupsModal(false);
-      } else {
-        setError(response.data?.error || 'Nem sikerült csoportokat generálni.');
+  const resetError = () => setError(null)
+
+  const handleApiRequest = useCallback(
+    async (pendingAction: PendingAction, request: () => Promise<void>) => {
+      setAction(pendingAction)
+      setError(null)
+
+      try {
+        await request()
+        onRefetch()
+      } catch (err: any) {
+        const message = err?.response?.data?.error || err?.message || "Ismeretlen hiba történt."
+        setError(message)
+      } finally {
+        setAction(null)
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült csoportokat generálni.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [onRefetch],
+  )
 
-  const openManualGroupsBuilder = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const { data } = await axios.get(`/api/tournaments/${code}/manualGroups/context`);
-      if (data?.success) {
-        const availableBoards = (data.boards || []).filter((b: { isUsed: boolean }) => !b.isUsed);
-        const defaultBoard = availableBoards.length > 0 ? availableBoards[0].boardNumber : null;
+  const handleOpenGroupsDialog = () => {
+    resetError()
+    setIsGroupsDialogOpen(true)
+  }
 
-        setManualContext({ boards: data.boards || [], searchQuery: '', availablePlayers: data.availablePlayers || [] });
-        setShowGroupsModal(false);
-        setShowManualGroupsBuilder(true);
-        setManualBoard(defaultBoard);
-      } else {
-        setError(data?.error || 'Nem sikerült betölteni a manuális csoport kontextust.');
+  const handleAutomaticGroups = () => {
+    handleApiRequest("generate-groups", async () => {
+      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateGroups`)
+      if (!response?.data || response.status !== 200) {
+        throw new Error(response?.data?.error || "Nem sikerült csoportokat generálni.")
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült betölteni a manuális csoport kontextust.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      setIsGroupsDialogOpen(false)
+    })
+  }
 
-  // Single-group creation disabled per product requirement; only all-groups creation is allowed
-
-  const createAllManualGroups = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const entries = Object.entries(boardAssignments)
-        .map(([bn, ids]) => ({ boardNumber: parseInt(bn, 10), playerIds: ids }))
-        .filter(({ playerIds }) => playerIds.length >= 3 && playerIds.length <= 6);
-
-      if (entries.length === 0) {
-        setError('Nincs érvényes csoport kijelölés. (3-6 játékos szükséges táblánként)');
-        return;
-      }
-
-      const payload: CreateManualGroupsRequest = { groups: entries };
-      const { data } = await axios.post(`/api/tournaments/${code}/manualGroups/create`, payload);
+  const handleLoadManualContext = () => {
+    handleApiRequest("manual-groups", async () => {
+      const { data } = await axios.get(`/api/tournaments/${tournamentCode}/manualGroups/context`)
       if (!data?.success) {
-        setError(data?.error || 'Nem sikerült létrehozni az összes csoportot.');
-        return;
+        throw new Error(data?.error || "Nem sikerült betölteni a manuális csoport szerkesztőt.")
       }
 
-      setShowManualGroupsBuilder(false);
-      setManualBoard(null);
-      setManualSelectedPlayers([]);
-      setBoardAssignments({});
-      onRefetch();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült létrehozni az összes csoportot.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      const availableBoards = (data.boards || []).filter((board: { isUsed: boolean }) => !board.isUsed)
+      const defaultBoard = availableBoards.length > 0 ? availableBoards[0].boardNumber : null
 
-  const handleGenerateKnockout = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      let response;
-      
-      if (tournamentFormat === 'knockout') {
-        // For knockout-only tournaments, generate knockout directly from pending status
-        if (knockoutMode === 'automatic') {
-          response = await axios.post(`/api/tournaments/${code}/generateKnockout`, {
+      setManualContext({
+        ...data,
+        searchQuery: "",
+      })
+      setSelectedBoard(defaultBoard)
+      setBoardAssignments({})
+      setIsGroupsDialogOpen(false)
+      setIsManualGroupsDialogOpen(true)
+    })
+  }
+
+  const handleCreateManualGroups = () => {
+    const payloadGroups = Object.entries(boardAssignments)
+      .map(([boardNumber, playerIds]) => ({ boardNumber: parseInt(boardNumber, 10), playerIds }))
+      .filter((group) => group.playerIds.length >= MIN_PLAYERS_PER_GROUP && group.playerIds.length <= MAX_PLAYERS_PER_GROUP)
+
+    if (payloadGroups.length === 0) {
+      setError("Legalább egy érvényes csoportot ki kell jelölni (3-6 játékos táblánként).")
+      return
+    }
+
+    const payload: CreateManualGroupsRequest = {
+      groups: payloadGroups,
+    }
+
+    handleApiRequest("generate-groups", async () => {
+      const { data } = await axios.post(`/api/tournaments/${tournamentCode}/manualGroups/create`, payload)
+      if (!data?.success) {
+        throw new Error(data?.error || "Nem sikerült létrehozni a csoportokat.")
+      }
+
+      setIsManualGroupsDialogOpen(false)
+      setManualContext(null)
+      setBoardAssignments({})
+      setSelectedBoard(null)
+    })
+  }
+
+  const handleGenerateKnockout = () => {
+    handleApiRequest("generate-knockout", async () => {
+      let response
+
+      if (tournamentFormat === "knockout") {
+        if (knockoutMode === "automatic") {
+          response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
             useSeededPlayers: false,
-            seededPlayersCount: 0
-          });
+            seededPlayersCount: 0,
+          })
         } else {
-          response = await axios.post(`/api/tournaments/${code}/generateManualKnockout`);
+          response = await axios.post(`/api/tournaments/${tournamentCode}/generateManualKnockout`)
         }
       } else {
-        // For group_knockout tournaments, use existing logic
-        if (knockoutMode === 'automatic') {
-          response = await axios.post(`/api/tournaments/${code}/generateKnockout`, {
+        if (knockoutMode === "automatic") {
+          response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
             playersCount: selectedPlayers,
             useSeededPlayers: false,
-            seededPlayersCount: 0
-          });
+            seededPlayersCount: 0,
+          })
         } else {
-          response = await axios.post(`/api/tournaments/${code}/generateManualKnockout`);
+          response = await axios.post(`/api/tournaments/${tournamentCode}/generateManualKnockout`)
         }
       }
-      
-      if (response.data && response.data.success) {
-        onRefetch();
-        setShowKnockoutModal(false);
-      } else {
-        setError(response.data?.error || 'Nem sikerült egyenes kiesést generálni.');
+
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.error || "Nem sikerült létrehozni az egyenes kiesést.")
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült egyenes kiesést generálni.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleFinishTournament = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await axios.post(`/api/tournaments/${code}/finish`);
-      if (response.data && response.data.success) {
-        onRefetch();
-      } else {
-        setError(response.data?.error || 'Nem sikerült befejezni a tornát.');
+      setIsKnockoutDialogOpen(false)
+    })
+  }
+
+  const handleFinishTournament = () => {
+    handleApiRequest("finish", async () => {
+      const response = await axios.post(`/api/tournaments/${tournamentCode}/finish`)
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.error || "Nem sikerült befejezni a tornát.")
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült befejezni a tornát.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    })
+  }
 
-  const handleCancelKnockout = async () => {
-    // Add confirmation dialog
-    const confirmed = window.confirm(
-      'Biztosan vissza szeretnéd vonni az egyenes kiesést? Ez törölni fogja az összes knockout kört és meccset. Ez a művelet nem vonható vissza!'
-    );
-    
-    if (!confirmed) {
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    try {
-      const response = await axios.post(`/api/tournaments/${code}/cancel-knockout`);
-      if (response.data && response.data.success) {
-        onRefetch();
-      } else {
-        setError(response.data?.error || 'Nem sikerült visszavonni az egyenes kiesést.');
+  const handleCancelKnockout = () => {
+    handleApiRequest("cancel-knockout", async () => {
+      const response = await axios.post(`/api/tournaments/${tournamentCode}/cancel-knockout`)
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.error || "Nem sikerült visszavonni az egyenes kiesést.")
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Nem sikerült visszavonni az egyenes kiesést.');
-    } finally {
-      setLoading(false);
+      setIsCancelKnockoutDialogOpen(false)
+    })
+  }
+
+  const handleTogglePlayer = (playerId: string, checked: boolean) => {
+    if (!selectedBoard) return
+
+    setBoardAssignments((prev) => {
+      const current = prev[selectedBoard] || []
+
+      if (checked) {
+        if (current.includes(playerId) || current.length >= MAX_PLAYERS_PER_GROUP) {
+          return prev
+        }
+        return {
+          ...prev,
+          [selectedBoard]: [...current, playerId],
+        }
+      }
+
+      return {
+        ...prev,
+        [selectedBoard]: current.filter((id) => id !== playerId),
+      }
+    })
+  }
+
+  const assignedPlayers = useMemo(() => {
+    const entries = Object.entries(boardAssignments)
+    const result = new Map<number, string[]>()
+
+    entries.forEach(([boardNumber, playerIds]) => {
+      result.set(Number(boardNumber), playerIds)
+    })
+
+    return result
+  }, [boardAssignments])
+
+  const filteredManualPlayers = useMemo(() => {
+    if (!manualContext) return []
+
+    const normalize = (value: string) =>
+      (value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .trim()
+
+    const query = normalize(manualContext.searchQuery)
+    const numericQuery = /^\d+$/.test(query)
+
+    const players = manualContext.availablePlayers || []
+    if (!selectedBoard) {
+      return players
     }
-  };
 
-  if (userClubRole !== 'admin' && userClubRole !== 'moderator') return null;
+    const assignedElsewhere = Array.from(assignedPlayers.entries())
+      .filter(([boardNumber]) => boardNumber !== selectedBoard)
+      .flatMap(([, ids]) => ids)
 
-  const availablePlayerCounts = getAvailablePlayerCounts();
+    return players.filter((player: ManualGroupsAvailablePlayer) => {
+      if (assignedElsewhere.includes(player._id)) return false
+
+      if (!query) return true
+
+      const name = normalize(player.name || "")
+      if (numericQuery) {
+        const tokens = name.split(/[^a-z0-9]+/)
+        return tokens.some((token) => token === query)
+      }
+
+      return name.includes(query)
+    })
+  }, [manualContext, assignedPlayers, selectedBoard])
+
+  if (userClubRole !== "admin" && userClubRole !== "moderator") {
+    return null
+  }
 
   return (
-    <div className="mb-4">
-      <div className="flex flex-wrap gap-2">
-        {/* Group Generation Button - only show when tournament is pending and format allows groups */}
-        {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && (
-          <button 
-            className={`btn flex-1 min-w-[200px] sm:flex-none ${isGroupGenerationAllowed ? 'btn-secondary' : 'btn-disabled'}`}
-            onClick={handleGenerateGroups} 
-            disabled={loading || !isGroupGenerationAllowed}
-          >
-            {loading ? 'Csoportok generálása...' : 'Csoportok generálása'}
-          </button>
-        )}
-
-        {/* Knockout Generation Button - show when tournament is in group-stage and format allows knockout, OR when format is knockout and status is pending */}
-        {((tournamentStatus === 'group-stage' && (tournamentFormat === 'knockout' || tournamentFormat === 'group_knockout')) ||
-          (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
-          <button 
-            className="btn btn-primary flex-1 min-w-[200px] sm:flex-none" 
-            onClick={() => setShowKnockoutModal(true)} 
-            disabled={loading}
-          >
-            {loading ? 'Egyenes kiesés generálása...' : 'Egyenes kiesés generálása'}
-          </button>
-        )}
-
-        {/* Cancel Knockout Button - show when tournament is in knockout stage */}
-        {tournamentStatus === 'knockout' && (
-          <button 
-            className="btn btn-error flex-1 min-w-[200px] sm:flex-none" 
-            onClick={handleCancelKnockout} 
-            disabled={loading}
-          >
-            {loading ? 'Egyenes kiesés visszavonása...' : 'Egyenes kiesés visszavonása'}
-          </button>
-        )}
-
-        {/* Finish Tournament Button - show when tournament is in knockout stage or when format is group/knockout only */}
-        {(tournamentStatus === 'knockout' || 
-          (tournamentStatus === 'group-stage' && tournamentFormat === 'group') ||
-          (tournamentStatus === 'pending' && tournamentFormat === 'knockout')) && (
-          <button 
-            className="btn btn-success flex-1 min-w-[200px] sm:flex-none" 
-            onClick={handleFinishTournament} 
-            disabled={loading}
-          >
-            {loading ? 'Torna befejezése...' : 'Torna befejezése'}
-          </button>
-        )}
-      </div>
-
-      {error && <div className="mt-2 text-error">{error}</div>}
-      
-      {/* Group generation validation warning */}
-      {tournamentStatus === 'pending' && (tournamentFormat === 'group' || tournamentFormat === 'group_knockout') && !isGroupGenerationAllowed && groupCount > 0 && (
-        <div className="mt-2 alert alert-warning">
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-          <div>
-            <h3 className="font-bold">Nem megfelelő játékos szám!</h3>
-            <div className="text-xs">
-              Min csoportonként {minPlayersPerGroup}, max {maxPlayersPerGroup} ember szükséges, így {minTotalPlayersForGroups} - {maxTotalPlayersForGroups} játékos szükséges {groupCount} számú csoporthoz.
-              <br />
-              <strong>Jelenleg:</strong> {availablePlayersCount} bejelentkezett játékos ({totalPlayers} összesen)
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Knockout Modal */}
-      {showKnockoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Egyenes Kiesés Generálása</h3>
-            
-            {/* Knockout Mode Selection */}
-            <div className="form-control mb-4 sm:mb-6">
-              <label className="label">
-                <span className="label-text font-bold">Generálás módja:</span>
-              </label>
-              <div className="flex flex-wrap gap-2 sm:gap-4">
-                <label className="label cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="knockoutMode" 
-                    className="radio radio-primary" 
-                    checked={knockoutMode === 'automatic'}
-                    onChange={() => setKnockoutMode('automatic')}
-                  />
-                  <span className="label-text ml-2">Automatikus</span>
-                </label>
-                <label className="label cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="knockoutMode" 
-                    className="radio radio-primary" 
-                    checked={knockoutMode === 'manual'}
-                    onChange={() => setKnockoutMode('manual')}
-                  />
-                  <span className="label-text ml-2">Manuális</span>
-                </label>
-              </div>
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">
-                  Automatikus: játékosok automatikusan párosítva. 
-                  <br />
-                  Manuel: te választod ki a játékosokat és párosítod őket.
-                </span>
-              </label>
-            </div>
-
-            {/* Automatic Mode Settings */}
-            {knockoutMode === 'automatic' && (
-              <>
-                {!isAutomaticKnockoutAllowed && (
-                  <div className="alert alert-error mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <h3 className="font-bold">Páratlan számú csoport!</h3>
-                      <div className="text-xs">
-                        Jelenleg {groupCount} csoport van, ami páratlan szám. 
-                        <br />
-                        <strong>Megoldás:</strong> Válts manuális módra a knockout generálásához.
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {isAutomaticKnockoutAllowed && (
-                  <div className="alert alert-warning mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <div>
-                      <h3 className="font-bold">Kiemelt játékosok!</h3>
-                      <div className="text-xs">
-                        Az automatikus mód nem támogatja a kiemelt játékosokat. 
-                        <br />
-                        <strong>Javaslat:</strong> Válts manuális módra a pontos játékos párosításhoz.
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {isAutomaticKnockoutAllowed && (
-                  <div className="text-center mb-6">
-                    <p className="text-base-content/70 mb-4">
-                      {tournamentFormat === 'knockout' 
-                        ? 'Minden jelentkező játékos részt vesz az egyenes kiesésben.'
-                        : 'Válaszd ki, hogy hány játékos jusson tovább az egyenes kiesésbe:'
-                      }
-                    </p>
-                    <p className="text-sm text-base-content/60">
-                      Összesen {totalPlayers} játékos van a tornán{groupCount > 0 ? `, ${groupCount} csoportban` : ''}
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-            
-            {knockoutMode === 'automatic' && tournamentFormat !== 'knockout' && isAutomaticKnockoutAllowed && (
-              <div className="form-control mb-6">
-                <label className="label">
-                  <span className="label-text font-bold">Továbbjutók száma:</span>
-                </label>
-                <select 
-                  className="select select-bordered w-full"
-                  value={selectedPlayers}
-                  onChange={(e) => setSelectedPlayers(parseInt(e.target.value))}
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-lg font-semibold">Torna státusz műveletek</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            A lenti lehetőségekkel generálhatod a csoportokat és az egyenes kiesést, vagy lezárhatod a tornát.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {tournamentStatus === "pending" &&
+              (tournamentFormat === "group" || tournamentFormat === "group_knockout") && (
+                <Button
+                  variant="secondary"
+                  className="flex-1 min-w-[200px]"
+                  onClick={handleOpenGroupsDialog}
+                  disabled={!isGroupGenerationAllowed}
                 >
-                  {availablePlayerCounts.map(count => (
-                    <option key={count} value={count}>
-                      {count} játékos
-                    </option>
-                  ))}
-                </select>
-                <label className="label">
-                  <span className="label-text-alt text-base-content/60">
-                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32, 64, 128, 256)
-                  </span>
-                </label>
-              </div>
-            )}
+                  Csoportok generálása
+                </Button>
+              )}
 
-            {/* Seeded Players Section - Only for Automatic Mode */}
-            {knockoutMode === 'automatic' && (
-              <>
-                {/* Removed seeded players checkbox */}
-                {/* Removed seeded players count selection */}
-                {/* Removed bracket type info */}
-              </>
-            )}
-
-            {/* Manual Mode Info */}
-            {knockoutMode === 'manual' && (
-              <div className="alert alert-info mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>
-                  <strong>Manuális mód:</strong> Üres körök jönnek létre, ahol te választhatod ki a játékosokat és párosítod őket. 
-                  Minden kör után új üres kör jön létre a következő szinthez.
-                </span>
-              </div>
-            )}
-            
-            <div className="flex flex-wrap gap-3">
-              <button
-                className="btn btn-error flex-1 min-w-[120px]"
+            {((tournamentStatus === "group-stage" &&
+              (tournamentFormat === "knockout" || tournamentFormat === "group_knockout")) ||
+              (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
+              <Button
+                className="flex-1 min-w-[200px]"
                 onClick={() => {
-                  setShowKnockoutModal(false);
-                  setError('');
-                  // Removed seeded players state reset
+                  resetError()
+                  setIsKnockoutDialogOpen(true)
                 }}
               >
-                Mégse
-              </button>
-              <button
-                className="btn btn-success flex-1 min-w-[120px]"
-                onClick={handleGenerateKnockout}
-                disabled={loading || (knockoutMode === 'automatic' && !isAutomaticKnockoutAllowed)}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Generálás...
-                  </>
-                ) : (
-                  "Generálás"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Groups Mode Modal */}
-      {showGroupsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Csoportok generálása</h3>
-            
-            {/* Group generation validation warning in modal */}
-            {!isGroupGenerationAllowed && groupCount > 0 && (
-              <div className="alert alert-warning mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <div>
-                  <h3 className="font-bold">Nem megfelelő játékos szám!</h3>
-                  <div className="text-xs">
-                    Min csoportonként {minPlayersPerGroup}, max {maxPlayersPerGroup} ember szükséges, így {minTotalPlayersForGroups} - {maxTotalPlayersForGroups} játékos szükséges {groupCount} számú csoporthoz.
-                    <br />
-                    <strong>Jelenleg:</strong> {availablePlayersCount} bejelentkezett játékos ({totalPlayers} összesen)
-                  </div>
-                </div>
-              </div>
+                Egyenes kiesés generálása
+              </Button>
             )}
-            
-            <div className="form-control mb-6">
-              <label className="label">
-                <span className="label-text font-bold">Generálás módja:</span>
-              </label>
-              <div className="flex gap-4">
-                <label className="label cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="groupsMode" 
-                    className="radio radio-primary" 
-                    checked={groupsMode === 'automatic'}
-                    onChange={() => setGroupsMode('automatic')}
-                  />
-                  <span className="label-text ml-2">Automatikus</span>
-                </label>
-                <label className="label cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="groupsMode" 
-                    className="radio radio-primary" 
-                    checked={groupsMode === 'manual'}
-                    onChange={() => setGroupsMode('manual')}
-                  />
-                  <span className="label-text ml-2">Manuális</span>
-                </label>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button className="btn btn-error flex-1 min-w-[120px]" onClick={() => setShowGroupsModal(false)}>Mégse</button>
-              {groupsMode === 'automatic' ? (
-                <button 
-                  className="btn btn-success flex-1 min-w-[120px]" 
-                  onClick={startAutomaticGroups} 
-                  disabled={loading || !isGroupGenerationAllowed}
-                >
-                  {loading ? 'Generálás...' : 'Automatikus generálás'}
-                </button>
-              ) : (
-                <button 
-                  className="btn btn-info flex-1 min-w-[120px]" 
-                  onClick={openManualGroupsBuilder} 
-                  disabled={loading || !isGroupGenerationAllowed}
-                >
-                  {loading ? 'Betöltés...' : 'Manuális csoport létrehozás'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Manual Groups Builder Modal */}
-      {showManualGroupsBuilder && manualContext && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Manuális csoport felvétele</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <h4 className="font-bold mb-2">Táblák</h4>
-                <div className="space-y-2">
-                  {manualContext.boards.map((b) => (
-                    <button
-                      key={b.boardNumber}
-                      className={`btn btn-sm w-full ${manualBoard === b.boardNumber ? 'btn-primary' : 'btn-ghost'} ${b.isUsed ? 'btn-disabled' : ''}`}
-                      disabled={b.isUsed}
-                      onClick={() => {
-                        setManualBoard(b.boardNumber);
-                        setManualSelectedPlayers(boardAssignments[b.boardNumber] || []);
-                      }}
-                    >
-                      Tábla {b.boardNumber} {b.isUsed ? '(már használt)' : ''}
-                      <span className="ml-2 opacity-70">({(boardAssignments[b.boardNumber]?.length || 0)} játékos)</span>
-                    </button>
-                  ))}
+            {tournamentStatus === "knockout" && (
+              <Button
+                variant="destructive"
+                className="flex-1 min-w-[200px]"
+                onClick={() => {
+                  resetError()
+                  setIsCancelKnockoutDialogOpen(true)
+                }}
+              >
+                Egyenes kiesés visszavonása
+              </Button>
+            )}
+
+            {(tournamentStatus === "knockout" ||
+              (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
+              (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
+              <Button variant="outline" className="flex-1 min-w-[200px]" onClick={handleFinishTournament}>
+                Torna befejezése
+              </Button>
+            )}
+          </div>
+
+          {!isGroupGenerationAllowed &&
+            tournamentStatus === "pending" &&
+            (tournamentFormat === "group" || tournamentFormat === "group_knockout") &&
+            boardCount > 0 && (
+              <Alert variant="warning">
+                <AlertTitle>Nem megfelelő játékosszám</AlertTitle>
+                <AlertDescription className="space-y-1">
+                  <p>
+                    Minimum {MIN_PLAYERS_PER_GROUP} és maximum {MAX_PLAYERS_PER_GROUP} játékos szükséges csoportonként.
+                  </p>
+                  <p>
+                    Jelenleg {availablePlayers} bejelentkezett játékos áll rendelkezésre {boardCount} táblára (összesen {totalPlayers}
+                    játékos).
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertTitle>Hiba történt</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isGroupsDialogOpen} onOpenChange={setIsGroupsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Csoportok generálása</DialogTitle>
+            <DialogDescription>
+              Válaszd ki, hogy automatikusan generáljuk a csoportokat vagy manuálisan szeretnéd kiosztani a játékosokat.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!isGroupGenerationAllowed && boardCount > 0 && (
+            <Alert variant="warning">
+              <AlertTitle>Játékosszám ellenőrzés</AlertTitle>
+              <AlertDescription>
+                {boardCount} tábla esetén {minPlayersRequired} és {maxPlayersAllowed} játékos között kell lennie a bejelentkezett
+                játékosok számának. Jelenleg {availablePlayers} játékos érhető el.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardContent className="flex flex-col gap-3 pt-4">
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={groupsMode === "automatic" ? "default" : "outline"}
+                    onClick={() => setGroupsMode("automatic")}
+                  >
+                    Automatikus
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={groupsMode === "manual" ? "default" : "outline"}
+                    onClick={() => setGroupsMode("manual")}
+                  >
+                    Manuális
+                  </Button>
                 </div>
               </div>
-              <div>
-                <h4 className="font-bold mb-2">Játékosok (3-6)</h4>
-                <input
-                  type="text"
-                  placeholder="Keresés név szerint..."
-                  className="input input-bordered input-sm w-full mb-2"
-                  value={manualContext.searchQuery || ''}
-                  onChange={(e) => {
-                    const q = e.target.value;
-                    setManualContext(prev => prev ? { ...prev, searchQuery: q } : prev);
-                  }}
-                />
-                 {(() => {
-                  const normalize = (s: string) =>
-                    (s || '')
-                      .toLowerCase()
-                      .normalize('NFD')
-                      .replace(/\p{Diacritic}/gu, '')
-                      .trim();
-                  const query = normalize(manualContext.searchQuery || '');
-                  const isNumeric = /^\d+$/.test(query);
-                                   // Get all players assigned to other boards
-                 const assignedToOtherBoards = Object.entries(boardAssignments)
-                   .filter(([boardNum]) => parseInt(boardNum) !== manualBoard)
-                   .flatMap(([, playerIds]) => playerIds);
-                 
-                 const filtered = (manualContext.availablePlayers || []).filter((p: ManualGroupsAvailablePlayer) => {
-                   // Skip players already assigned to other boards
-                   if (assignedToOtherBoards.includes(p._id)) return false;
-                   
-                   const name = normalize(p.name || '');
-                   if (!query) return true;
-                   if (isNumeric) {
-                     // numeric query: match as a standalone token only
-                     const tokens = name.split(/[^a-z0-9]+/);
-                     return tokens.some((t) => t === query);
-                   }
-                   return name.includes(query);
-                 });
-                   return (
-                   <div className="h-48 sm:h-72 overflow-y-auto space-y-2 border border-base-300 rounded-lg p-2">
-                      {filtered.map((p) => {
-                        const selected = manualSelectedPlayers.includes(p._id);
-                        return (
-                          <label key={p._id} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm"
-                              checked={selected}
-                                                          onChange={(e) => {
-                              if (e.target.checked) {
-                                if (manualSelectedPlayers.length < 6) {
-                                  const newSelected = [...manualSelectedPlayers, p._id];
-                                  setManualSelectedPlayers(newSelected);
-                                  setBoardAssignments(prev => ({
-                                    ...prev,
-                                    [manualBoard!]: newSelected
-                                  }));
-                                }
-                              } else {
-                                const newSelected = manualSelectedPlayers.filter(id => id !== p._id);
-                                setManualSelectedPlayers(newSelected);
-                                setBoardAssignments(prev => ({
-                                  ...prev,
-                                    [manualBoard!]: newSelected
-                                }));
-                              }
-                            }}
-                            />
-                            <span>{p.name || p._id}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-            {/* Assignments summary */}
-            <div className="mt-4">
-              <h4 className="font-bold mb-2">Kijelölt csoportok</h4>
-              <div className="space-y-2">
-                {Object.entries(boardAssignments).filter(([, ids]) => ids.length > 0).map(([boardNum, ids]) => (
-                  <div key={boardNum} className="text-sm">
-                    <span className="font-semibold mr-2">Tábla {boardNum}:</span>
-                    <span>
-                      {ids.map((id, idx) => {
-                        const p = manualContext.availablePlayers.find(ap => ap._id === id);
-                        return (
-                          <span key={id}>
-                            {p?.name || id}{idx < ids.length - 1 ? ', ' : ''}
-                          </span>
-                        );
-                      })}
-                    </span>
-                  </div>
-                ))}
-                {Object.values(boardAssignments).every(ids => ids.length === 0) && (
-                  <div className="text-sm opacity-70">Nincs kijelölt játékos egyik táblán sem.</div>
-                )}
-              </div>
-            </div>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button className="btn btn-error flex-1 min-w-[120px]" onClick={() => setShowManualGroupsBuilder(false)}>Mégse</button>
-              <button
-                className="btn btn-success flex-1 min-w-[120px]"
-                onClick={createAllManualGroups}
-                disabled={
-                  loading ||
-                  (manualContext?.boards || [])
-                    .filter(b => !b.isUsed)
-                    .some(b => {
-                      const c = (boardAssignments[b.boardNumber]?.length || 0);
-                      return c < 3 || c > 6;
-                    })
-                }
-              >
-                {loading ? 'Létrehozás...' : 'Összes csoport létrehozása'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+            </CardContent>
+          </Card>
 
-export default TournamentGroupsGenerator; 
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="ghost" onClick={() => setIsGroupsDialogOpen(false)}>
+              Mégse
+            </Button>
+            {groupsMode === "automatic" ? (
+              <Button onClick={handleAutomaticGroups} disabled={!isGroupGenerationAllowed || action === "generate-groups"}>
+                {action === "generate-groups" ? (
+                  <span className="flex items-center gap-2">
+                    <LoadingSpinner size="sm" />
+                    Generálás...
+                  </span>
+                ) : (
+                  "Automatikus generálás"
+                )}
+              </Button>
+            ) : (
+              <Button onClick={handleLoadManualContext} disabled={!isGroupGenerationAllowed || action === "manual-groups"}>
+                {action === "manual-groups" ? (
+                  <span className="flex items-center gap-2">
+                    <LoadingSpinner size="sm" />
+                    Betöltés...
+                  </span>
+                ) : (
+                  "Manuális kiosztás"
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isManualGroupsDialogOpen} onOpenChange={setIsManualGroupsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Manuális csoportkészítő</DialogTitle>
+            <DialogDescription>
+              Válaszd ki, mely játékosok szerepeljenek az egyes táblákon. Táblánként minimum 3, maximum 6 játékos engedélyezett.
+            </DialogDescription>
+          </DialogHeader>
+
+          {manualContext && (
+            <div className="grid gap-6 md:grid-cols-[260px_1fr]">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Elérhető táblák</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      A már lezárt táblák nem választhatók. A jelölés a kiválasztott játékosok számát mutatja.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {manualContext.boards.map((board) => {
+                      const assignedCount = assignedPlayers.get(board.boardNumber)?.length ?? 0
+                      const isActive = selectedBoard === board.boardNumber
+
+                      return (
+                        <Button
+                          key={board.boardNumber}
+                          variant={isActive ? "default" : "outline"}
+                          className="w-full justify-between"
+                          disabled={board.isUsed}
+                          onClick={() => {
+                            setSelectedBoard(board.boardNumber)
+                          }}
+                        >
+                          <span className="flex items-center gap-2">
+                            Tábla {board.boardNumber}
+                            {board.isUsed && <Badge variant="secondary">Foglalt</Badge>}
+                          </span>
+                          <Badge variant={assignedCount ? "default" : "secondary"}>{assignedCount} játékos</Badge>
+                        </Button>
+                      )
+                    })}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Játékosok kijelölése</h3>
+                    {selectedBoard && (
+                      <Badge variant="outline">Aktív tábla: {selectedBoard}</Badge>
+                    )}
+                  </div>
+                  <Input
+                    placeholder="Keresés név szerint..."
+                    value={manualContext.searchQuery}
+                    onChange={(event) =>
+                      setManualContext((prev) => (prev ? { ...prev, searchQuery: event.target.value } : prev))
+                    }
+                  />
+                </div>
+
+                <div className="rounded-lg border bg-muted/40 p-3">
+                  {selectedBoard ? (
+                    <div className="space-y-3">
+                      <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                        {filteredManualPlayers.map((player) => {
+                          const assignedToCurrentBoard = assignedPlayers.get(selectedBoard) || []
+                          const checked = assignedToCurrentBoard.includes(player._id)
+                          const isBoardFull = assignedToCurrentBoard.length >= MAX_PLAYERS_PER_GROUP
+
+                          return (
+                            <label
+                              key={player._id}
+                              className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">{player.name || player._id}</span>
+                                {player.email && <span className="text-xs text-muted-foreground">{player.email}</span>}
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(event) => handleTogglePlayer(player._id, event.target.checked)}
+                                disabled={!checked && isBoardFull}
+                                className="h-4 w-4"
+                              />
+                            </label>
+                          )
+                        })}
+
+                        {filteredManualPlayers.length === 0 && (
+                          <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                            Nincs a feltételeknek megfelelő játékos.
+                          </div>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">Összegzés</h4>
+                        <div className="rounded-md border bg-background px-3 py-2 text-sm">
+                          {Array.from(assignedPlayers.entries())
+                            .filter(([, ids]) => ids.length > 0)
+                            .map(([boardNumber, playerIds]) => (
+                              <div key={boardNumber} className="flex flex-wrap gap-1">
+                                <span className="font-medium">Tábla {boardNumber}:</span>
+                                <span>
+                                  {playerIds
+                                    .map((playerId) => {
+                                      const player = manualContext.availablePlayers.find((item) => item._id === playerId)
+                                      return player?.name || playerId
+                                    })
+                                    .join(", ")}
+                                </span>
+                              </div>
+                            ))}
+
+                          {Array.from(assignedPlayers.values()).every((ids) => ids.length === 0) && (
+                            <p className="text-muted-foreground">Még nem választottál ki játékosokat.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                      Válassz ki először egy táblát a bal oldali listából.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="ghost" onClick={() => setIsManualGroupsDialogOpen(false)}>
+              Mégse
+            </Button>
+            <Button
+              onClick={handleCreateManualGroups}
+              disabled={
+                action === "generate-groups" || (manualContext?.boards?.every((board) => board.isUsed) ?? false)
+              }
+            >
+              {action === "generate-groups" ? (
+                <span className="flex items-center gap-2">
+                  <LoadingSpinner size="small" />
+                  Mentés...
+                </span>
+              ) : (
+                "Csoportok létrehozása"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isKnockoutDialogOpen} onOpenChange={setIsKnockoutDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Egyenes kiesés generálása</DialogTitle>
+            <DialogDescription>
+              Válaszd ki, hogy automatikusan generáljuk-e a párosításokat vagy manuálisan szeretnéd kiosztani a játékosokat.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Card>
+            <CardContent className="flex flex-col gap-4 pt-4">
+              <div className="space-y-2">
+                <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={knockoutMode === "automatic" ? "default" : "outline"}
+                    onClick={() => setKnockoutMode("automatic")}
+                  >
+                    Automatikus
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={knockoutMode === "manual" ? "default" : "outline"}
+                    onClick={() => setKnockoutMode("manual")}
+                  >
+                    Manuális
+                  </Button>
+                </div>
+              </div>
+
+              {knockoutMode === "automatic" && !isAutomaticKnockoutAllowed && (
+                <Alert variant="destructive">
+                  <AlertTitle>Páratlan számú csoport</AlertTitle>
+                  <AlertDescription>
+                    Automatikus generáláshoz páros számú csoport szükséges. Válts manuális módra vagy állítsd be a csoportokat
+                    megfelelően.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold text-muted-foreground">Továbbjutók száma</span>
+                  <p className="text-xs text-muted-foreground">
+                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32). Összesen {totalPlayers} játékos van a tornán.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableKnockoutPlayerCounts.map((count) => (
+                      <Button
+                        key={count}
+                        type="button"
+                        variant={selectedPlayers === count ? "default" : "outline"}
+                        onClick={() => setSelectedPlayers(count)}
+                      >
+                        {count} játékos
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {knockoutMode === "manual" && (
+                <Alert>
+                  <AlertTitle>Manuális kiosztás</AlertTitle>
+                  <AlertDescription>
+                    Üres köröket hozunk létre, amelyeket később tetszőlegesen kitölthetsz a játékosokkal. Ez a mód javasolt, ha
+                    kiemelt játékosokat szeretnél elhelyezni.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="ghost" onClick={() => setIsKnockoutDialogOpen(false)}>
+              Mégse
+            </Button>
+            <Button onClick={handleGenerateKnockout} disabled={action === "generate-knockout" || (!isAutomaticKnockoutAllowed && knockoutMode === "automatic")}
+            >
+              {action === "generate-knockout" ? (
+                <span className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Generálás...
+                </span>
+              ) : (
+                "Generálás"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCancelKnockoutDialogOpen} onOpenChange={setIsCancelKnockoutDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Knockout visszavonása</DialogTitle>
+            <DialogDescription>
+              A művelet törli az összes knockout kört és meccset. Biztosan folytatod? Ez a lépés nem vonható vissza.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="ghost" onClick={() => setIsCancelKnockoutDialogOpen(false)}>
+              Mégse
+            </Button>
+            <Button variant="destructive" onClick={handleCancelKnockout} disabled={action === "cancel-knockout"}>
+              {action === "cancel-knockout" ? (
+                <span className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Visszavonás...
+                </span>
+              ) : (
+                "Knockout visszavonása"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

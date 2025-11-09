@@ -80,7 +80,7 @@ export default function GoogleAccountLinkModal({
       <div className="bg-base-200 rounded-xl p-6 shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="p-2 rounded-lg bg-primary/10 border">
               <IconBrandGoogle className="w-6 h-6 text-primary" />
             </div>
             <div>

@@ -73,8 +73,8 @@ export default function AdminSettingsPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-16 h-16   rounded-full"></div>
+            <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
           <p className="text-base-content/60">Rendszer információk betöltése...</p>
         </div>
@@ -117,7 +117,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border  p-8">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -147,7 +147,7 @@ export default function AdminSettingsPage() {
 
       {/* System Health Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-2xl p-6">
+        <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center">
               <IconActivity className="w-6 h-6 text-success" />
@@ -158,7 +158,7 @@ export default function AdminSettingsPage() {
           <p className="text-2xl font-bold text-success">Működik</p>
         </div>
 
-        <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-2xl p-6">
+        <div className="bg-gradient-to-br from-info/20 to-info/5 border  rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-info/20 rounded-full flex items-center justify-center">
               <IconClock className="w-6 h-6 text-info" />
@@ -168,7 +168,7 @@ export default function AdminSettingsPage() {
           <p className="text-2xl font-bold text-info">{systemInfo.uptime}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-2xl p-6">
+        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-warning/20 rounded-full flex items-center justify-center">
               <IconDeviceFloppy className="w-6 h-6 text-warning" />
@@ -179,7 +179,7 @@ export default function AdminSettingsPage() {
           <p className="text-xs text-base-content/60 mt-1">{systemInfo.memory.used} / {systemInfo.memory.total}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-6">
+        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
               <IconDatabase className="w-6 h-6 text-primary" />
@@ -192,7 +192,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Database Details */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
             <IconDatabase className="w-6 h-6 text-primary" />
@@ -216,7 +216,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Features */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
             <IconPlug className="w-6 h-6 text-success" />
@@ -256,7 +256,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Environment Variables */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center">
             <IconCode className="w-6 h-6 text-info" />
@@ -266,7 +266,7 @@ export default function AdminSettingsPage() {
         <div className="overflow-x-auto">
           <table className="table w-full">
             <thead>
-              <tr className="border-b border-base-300">
+              <tr className="">
                 <th className="bg-base-200">Változó</th>
                 <th className="bg-base-200">Érték</th>
               </tr>
@@ -334,7 +334,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* System Version */}
-      <div className="bg-gradient-to-br from-primary/10 to-transparent border border-primary/30 rounded-2xl p-6">
+      <div className="bg-gradient-to-br from-primary/10 to-transparent border  rounded-2xl p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center">

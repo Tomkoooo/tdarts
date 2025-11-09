@@ -45,7 +45,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = 
       {/* Fejléc ikonnal és címmel */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border border-[hsl(var(--primary) / 0.3)]">
+          <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border  / 0.3)]">
             <IconCheck className="w-8 h-8 text-[hsl(var(--primary))] text-glow" />
           </div>
         </div>
@@ -69,7 +69,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = 
             {...register('code')}
             type="text"
             placeholder="Kód"
-            className="input input-bordered w-full bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+            className="input input-bordered w-full bg-[hsl(var(--background) / 0.5)]  / 0.5)] focus: focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
             disabled={isLoading}
           />
           {errors.code && (

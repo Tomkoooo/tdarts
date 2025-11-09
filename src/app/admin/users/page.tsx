@@ -137,8 +137,8 @@ export default function AdminUsersPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-16 h-16   rounded-full"></div>
+            <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
           <p className="text-base-content/60">Felhasználók betöltése...</p>
         </div>
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-info/20 via-info/10 to-transparent border border-info/30 p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-info/20 via-info/10 to-transparent border  p-8">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -179,28 +179,28 @@ export default function AdminUsersPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconUser className="w-7 h-7 text-primary" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Összes Felhasználó</h3>
           <p className="text-4xl font-bold text-primary">{stats.total}</p>
         </div>
-        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconCrown className="w-7 h-7 text-warning" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Adminok</h3>
           <p className="text-4xl font-bold text-warning">{stats.admins}</p>
         </div>
-        <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconShield className="w-7 h-7 text-success" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Regisztrált</h3>
           <p className="text-4xl font-bold text-success">{stats.verified}</p>
         </div>
-        <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-error/20 to-error/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconUser className="w-7 h-7 text-error" />
           </div>
@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Daily Chart */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <DailyChart
           title="Felhasználók napi regisztrációja"
           apiEndpoint="/api/admin/charts/users/daily"
@@ -220,7 +220,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <IconFilter className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-bold">Szűrők</h3>
@@ -259,8 +259,8 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl overflow-hidden">
-        <div className="p-6 border-b border-base-300">
+      <div className="bg-base-100 border  rounded-2xl overflow-hidden">
+        <div className="p-6">
           <h3 className="text-xl font-bold flex items-center gap-2">
             <IconUsers className="w-6 h-6 text-primary" />
             Felhasználók ({filteredUsers.length})
@@ -283,7 +283,7 @@ export default function AdminUsersPage() {
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead className="bg-base-200">
-                <tr className="border-b border-base-300">
+                <tr className=""
                   <th className="font-bold">Felhasználó</th>
                   <th className="font-bold">Email</th>
                   <th className="font-bold">Felhasználónév</th>
@@ -294,7 +294,7 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {filteredUsers.map(user => (
-                  <tr key={user._id} className="hover:bg-base-200/50 transition-colors border-b border-base-300">
+                  <tr key={user._id} className="hover:bg-base-200/50 transition-colors"
                     <td>
                       <div className="flex items-center gap-3">
 
@@ -423,7 +423,7 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
     const isHungarian = language === 'hu';
     
     return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;  8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <div style="background: linear-gradient(135deg, #b62441 0%, #8a1b31 100%); color: white; padding: 20px; text-align: center;">
           <h1 style="margin: 0; font-size: 24px; font-weight: bold;">
             ${isHungarian ? 'tDarts - Admin Értesítés' : 'tDarts - Admin Notification'}
@@ -435,7 +435,7 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
             <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
               A tDarts platform adminisztrátoraként szeretnénk értesíteni Önt a következőről:
             </p>
-            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+            <div style="background: #f9fafb;  4px solid #b62441; padding: 16px; margin: 20px 0;">
               <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
               <p style="color: #374151; margin: 0; white-space: pre-line;">${message}</p>
             </div>
@@ -451,7 +451,7 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
             <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
               As a tDarts platform administrator, we would like to inform you about the following:
             </p>
-            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+            <div style="background: #f9fafb;  4px solid #b62441; padding: 16px; margin: 20px 0;">
               <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
               <p style="color: #374151; margin: 0; white-space: pre-line;">${message}</p>
             </div>
@@ -464,7 +464,7 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
             </p>
           `}
         </div>
-        <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <div style="background: #f9fafb; padding: 20px; text-align: center;  1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 12px; margin: 0;">
             © 2024 tDarts. Minden jog fenntartva.
           </p>
@@ -476,7 +476,7 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-base-100 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-base-100 border-b border-base-300 p-6 flex items-center justify-between">
+        <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
           <h3 className="text-2xl font-bold flex items-center gap-2">
             <IconMail className="w-7 h-7 text-primary" />
             Email küldése: {user.name}
@@ -598,8 +598,8 @@ function EmailModal({ user, onClose, onSend }: EmailModalProps) {
                 </button>
               </div>
               
-              <div className="border border-base-300 rounded-xl overflow-hidden">
-                <div className="bg-base-200 p-4 border-b border-base-300">
+              <div className="border  rounded-xl overflow-hidden">
+                <div className="bg-base-200 p-4"
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="font-bold">Nyelv:</span>

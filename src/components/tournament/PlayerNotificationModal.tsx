@@ -76,7 +76,7 @@ const PlayerNotificationModal: React.FC<PlayerNotificationModalProps> = ({
     const isHungarian = language === 'hu';
     
     return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;  8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #b62441 0%, #8a1b31 100%); color: white; padding: 20px; text-align: center;">
           <h1 style="margin: 0; font-size: 24px; font-weight: bold;">
@@ -92,7 +92,7 @@ const PlayerNotificationModal: React.FC<PlayerNotificationModalProps> = ({
             <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
               A ${tournamentName} verseny kapcsán szeretnénk értesíteni Önt a következőről:
             </p>
-            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+            <div style="background: #f9fafb;  4px solid #b62441; padding: 16px; margin: 20px 0;">
               <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
               <p style="color: #374151; margin: 0; white-space: pre-line;">${message}</p>
             </div>
@@ -108,7 +108,7 @@ const PlayerNotificationModal: React.FC<PlayerNotificationModalProps> = ({
             <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
               Regarding the ${tournamentName} tournament, we would like to inform you about the following:
             </p>
-            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
+            <div style="background: #f9fafb;  4px solid #b62441; padding: 16px; margin: 20px 0;">
               <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
               <p style="color: #374151; margin: 0; white-space: pre-line;">${message}</p>
             </div>
@@ -123,7 +123,7 @@ const PlayerNotificationModal: React.FC<PlayerNotificationModalProps> = ({
         </div>
         
         <!-- Footer -->
-        <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <div style="background: #f9fafb; padding: 20px; text-align: center;  1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 12px; margin: 0;">
             © 2024 tDarts. Minden jog fenntartva.
           </p>
@@ -137,7 +137,7 @@ const PlayerNotificationModal: React.FC<PlayerNotificationModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-base-100 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-base-300">
+        <div className="flex items-center justify-between p-4 "
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <IconMail className="w-5 h-5 text-primary" />
             Értesítés küldése
@@ -264,8 +264,8 @@ const PlayerNotificationModal: React.FC<PlayerNotificationModalProps> = ({
                 </button>
               </div>
               
-              <div className="border border-base-300 rounded-lg overflow-hidden">
-                <div className="bg-base-200 p-3 border-b border-base-300">
+              <div className="border  rounded-lg overflow-hidden">
+                <div className="bg-base-200 p-3 "
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-medium">Nyelv:</span>
                     <span className="badge badge-primary">

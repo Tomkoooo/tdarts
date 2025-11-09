@@ -1,10 +1,41 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { IconX, IconTrophy, IconUsers, IconEdit, IconUser, IconTrash, IconShare } from '@tabler/icons-react';
-import { League, LeagueStatsResponse, LeagueLeaderboard } from '@/interface/league.interface';
+
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  IconArrowRight,
+  IconEdit,
+  IconInfoCircle,
+  IconShare,
+  IconTrash,
+  IconTrophy,
+  IconUser,
+  IconUsers,
+  IconX,
+} from '@tabler/icons-react';
 import PlayerSearch from './PlayerSearch';
 import TournamentCard from '../tournament/TournamentCard';
+import {
+  League,
+  LeagueLeaderboard,
+  LeagueStatsResponse,
+} from '@/interface/league.interface';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+;
 
 interface LeagueDetailModalProps {
   league: League;
@@ -23,18 +54,17 @@ export default function LeagueDetailModal({
   userRole,
   isOpen,
   onClose,
-  onLeagueUpdated
+  onLeagueUpdated,
 }: LeagueDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
   const [leagueStats, setLeagueStats] = useState<LeagueStatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
 
   const canManage = userRole === 'admin' || userRole === 'moderator';
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/clubs/${clubId}?page=leagues&league=${league._id}`;
-    
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -46,15 +76,13 @@ export default function LeagueDetailModal({
         await navigator.clipboard.writeText(shareUrl);
         showSuccessToast('Liga link másolva a vágólapra!');
       }
-    } catch (error) {
-      // Fallback: copy to clipboard
-      console.error('Error sharing league:', error);
+    } catch (err) {
+      console.error('Error sharing league:', err);
       try {
         await navigator.clipboard.writeText(shareUrl);
         showSuccessToast('Liga link másolva a vágólapra!');
-      } catch (clipboardError) {
+      } catch {
         showErrorToast('Nem sikerült másolni a linket');
-        console.error('Error copying link to clipboard:', clipboardError);
       }
     }
   };
@@ -87,13 +115,11 @@ export default function LeagueDetailModal({
     try {
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/adjust-points`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           playerId,
           pointsAdjustment: points,
-          reason
+          reason,
         }),
       });
 
@@ -103,13 +129,13 @@ export default function LeagueDetailModal({
         const errorData = await response.json();
         showErrorToast(errorData.error || 'Hiba a pontszám módosítása során', {
           context: 'Liga pontszám módosítása',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (err) {
       showErrorToast('Hiba a pontszám módosítása során', {
         context: 'Liga pontszám módosítása',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba'
+        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
       console.error('Error adjusting points:', err);
     }
@@ -119,46 +145,31 @@ export default function LeagueDetailModal({
     try {
       let playerId = player._id;
       const playerName = player.name;
-      
-      console.log('Adding player to league:', { player, playerId, playerName });
-      
-      // If player is a guest or not in Player collection, create them first
+
       if (!playerId) {
-        console.log('Player has no ID, creating new player...');
         const createResponse = await fetch('/api/players', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: playerName }),
         });
-        
+
         if (!createResponse.ok) {
           const errorData = await createResponse.json();
-          console.error('Error creating player:', errorData);
           showErrorToast(errorData.error || 'Hiba a játékos létrehozása során', {
             context: 'Liga játékos létrehozása',
-            error: errorData.error
+            error: errorData.error,
           });
           return;
         }
-        
+
         const createData = await createResponse.json();
         playerId = createData._id;
-        console.log('Player created with ID:', playerId);
       }
-
-      console.log('Adding player to league with ID:', playerId, 'Name:', playerName);
 
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/players`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerId: playerId,
-          playerName: playerName
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, playerName }),
       });
 
       if (response.ok) {
@@ -166,17 +177,15 @@ export default function LeagueDetailModal({
         showSuccessToast('Játékos sikeresen hozzáadva a ligához!');
       } else {
         const errorData = await response.json();
-        console.error('Error adding player to league:', errorData);
         showErrorToast(errorData.error || 'Hiba a játékos hozzáadása során', {
           context: 'Liga játékos hozzáadása',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (error) {
-      console.error('Error adding player to league:', error);
       showErrorToast('Hiba a játékos hozzáadása során', {
         context: 'Liga játékos hozzáadása',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     }
   };
@@ -185,12 +194,8 @@ export default function LeagueDetailModal({
     try {
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/players/${playerId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          reason
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
       });
 
       if (response.ok) {
@@ -200,117 +205,86 @@ export default function LeagueDetailModal({
         const errorData = await response.json();
         showErrorToast(errorData.error || 'Hiba a játékos eltávolítása során', {
           context: 'Liga játékos eltávolítása',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (error) {
-      console.error('Error removing player from league:', error);
       showErrorToast('Hiba a játékos eltávolítása során', {
         context: 'Liga játékos eltávolítása',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     }
   };
 
-  if (!isOpen) return null;
+  const stats = useMemo(() => {
+    return {
+      totalPlayers: leagueStats?.totalPlayers ?? 0,
+      totalTournaments: leagueStats?.totalTournaments ?? 0,
+      averagePoints:
+        typeof leagueStats?.averagePointsPerTournament === 'number'
+          ? leagueStats?.averagePointsPerTournament.toFixed(1)
+          : '0.0',
+    };
+  }, [leagueStats]);
+
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
 
   return (
-    <dialog open={isOpen} className="modal">
-      <div className="modal-box max-w-4xl max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold">{league.name}</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              className="btn btn-ghost btn-sm"
-              title="Liga megosztása"
-            >
-              <IconShare size={18} />
-            </button>
-            <button
-              onClick={onClose}
-              className="btn btn-ghost btn-sm"
-            >
-              <IconX  color="white" />
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="stat bg-base-200 rounded-lg">
-            <div className="stat-figure text-primary">
-              <IconUsers size={32} />
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-5xl h-[90vh] overflow-hidden px-0 py-0">
+        <div className="flex h-full flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <DialogTitle className="text-2xl font-semibold text-foreground">
+                  {league.name}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  Kezeld a liga ranglistáját, csatolt versenyeket és beállításokat.
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={handleShare}>
+                  <IconShare className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => onClose()}>
+                  <IconX className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <div className="stat-title">Játékosok</div>
-            <div className="stat-value text-primary">{leagueStats?.totalPlayers || 0}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg">
-            <div className="stat-figure text-primary">
-              <IconTrophy size={32} />
-            </div>
-            <div className="stat-title">Versenyek</div>
-            <div className="stat-value text-primary">{leagueStats?.totalTournaments || 0}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg">
-            <div className="stat-title">Átlag pont/verseny</div>
-            <div className="stat-value">{leagueStats?.averagePointsPerTournament?.toFixed(1) || '0.0'}</div>
-          </div>
-        </div>
+          </DialogHeader>
 
-        {/* Tabs */}
-        <div className="tabs tabs-bordered mb-6">
-          <button
-            className={`tab tab-lg ${activeTab === 'leaderboard' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('leaderboard')}
-          >
-            Ranglista
-          </button>
-          <button
-            className={`tab tab-lg ${activeTab === 'tournaments' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('tournaments')}
-          >
-            Versenyek
-          </button>
-          {canManage && (
-            <button
-              className={`tab tab-lg ${activeTab === 'settings' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('settings')}
-            >
-              Beállítások
-            </button>
-          )}
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="alert alert-error mb-4">
-            <span>{error}</span>
+          <div className="px-6">
+            <StatsOverview stats={stats} isLoading={loading} />
           </div>
-        )}
 
-        {/* Tab Content */}
-        <div className="min-h-[400px]">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <span className="loading loading-spinner loading-lg"></span>
-            </div>
-          ) : (
-            <>
-              {activeTab === 'leaderboard' && (
+          <div className="mt-4 flex flex-1 flex-col overflow-hidden px-6 pb-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="flex h-full flex-col">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="leaderboard">Ranglista</TabsTrigger>
+                <TabsTrigger value="tournaments">Versenyek</TabsTrigger>
+                <TabsTrigger value="settings" disabled={!canManage}>
+                  Beállítások
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="leaderboard" className="mt-4 flex-1 overflow-y-auto">
                 <LeaderboardTab
+                  league={league}
                   leaderboard={leagueStats?.leaderboard || []}
                   canManage={canManage}
                   onAdjustPoints={handleManualPointsAdjustment}
                   onAddPlayer={handleAddPlayerToLeague}
                   onRemovePlayer={handleRemovePlayerFromLeague}
-                  league={league}
+                  isLoading={loading}
                 />
-              )}
-              {activeTab === 'tournaments' && (
+              </TabsContent>
+
+              <TabsContent value="tournaments" className="mt-4 flex-1 overflow-y-auto">
                 <TournamentsTab
                   tournaments={leagueStats?.league?.attachedTournaments || []}
                   canManage={canManage}
@@ -318,27 +292,74 @@ export default function LeagueDetailModal({
                   leagueId={league._id!}
                   onTournamentAttached={fetchLeagueStats}
                 />
-              )}
-              {activeTab === 'settings' && canManage && (
+              </TabsContent>
+
+              <TabsContent value="settings" className="mt-4 flex-1 overflow-y-auto">
                 <SettingsTab
                   league={league}
                   clubId={clubId}
-                  onLeagueUpdated={onLeagueUpdated}
+                  onLeagueUpdated={() => {
+                    onLeagueUpdated();
+                    fetchLeagueStats();
+                  }}
                   leagueStats={leagueStats}
+                  disabled={!canManage}
                 />
-              )}
-            </>
-          )}
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
-      </div>
-      <form method="dialog" className="modal-backdrop">
-        <button onClick={onClose}>close</button>
-      </form>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// Leaderboard Tab Component
+const StatsOverview = ({
+  stats,
+  isLoading,
+}: {
+  stats: { totalPlayers: number; totalTournaments: number; averagePoints: string };
+  isLoading: boolean;
+}) => {
+  const items = [
+    {
+      icon: <IconUsers className="h-5 w-5" />,
+      label: 'Játékosok',
+      value: stats.totalPlayers,
+    },
+    {
+      icon: <IconTrophy className="h-5 w-5" />,
+      label: 'Csatlakoztatott versenyek',
+      value: stats.totalTournaments,
+    },
+    {
+      icon: <IconArrowRight className="h-5 w-5" />,
+      label: 'Átlag pont / verseny',
+      value: stats.averagePoints,
+    },
+  ];
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {items.map((item, index) => (
+        <Card key={index} className="border-border bg-card/60 backdrop-blur">
+          <CardContent className="flex items-center gap-3 py-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              {item.icon}
+            </span>
+            <div>
+              <p className="text-sm text-muted-foreground">{item.label}</p>
+              <p className="text-xl font-semibold text-foreground">
+                {isLoading ? '...' : item.value}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
 interface LeaderboardTabProps {
   leaderboard: LeagueLeaderboard[];
   canManage: boolean;
@@ -346,433 +367,383 @@ interface LeaderboardTabProps {
   onAddPlayer: (player: any) => void;
   onRemovePlayer: (playerId: string, playerName: string, reason: string) => void;
   league: League;
+  isLoading: boolean;
 }
 
-function LeaderboardTab({ leaderboard, canManage, onAdjustPoints, onAddPlayer, onRemovePlayer, league }: LeaderboardTabProps) {
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string; currentPoints: number } | null>(null);
-  const [adjustmentMode, setAdjustmentMode] = useState<'adjust' | 'set'>('adjust');
-  const [adjustmentPoints, setAdjustmentPoints] = useState<string>('');
-  const [adjustmentReason, setAdjustmentReason] = useState<string>('');
-  const [removeReason, setRemoveReason] = useState<string>('');
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+function LeaderboardTab({
+  leaderboard,
+  canManage,
+  onAdjustPoints,
+  onAddPlayer,
+  onRemovePlayer,
+  league,
+  isLoading,
+}: LeaderboardTabProps) {
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [adjustDialog, setAdjustDialog] = useState<{
+    open: boolean;
+    mode: 'adjust' | 'set';
+    player?: { id: string; name: string; currentPoints: number };
+  }>({ open: false, mode: 'adjust' });
+  const [removeDialog, setRemoveDialog] = useState<{
+    open: boolean;
+    player?: { id: string; name: string; currentPoints: number };
+  }>({ open: false });
+  const [adjustPoints, setAdjustPoints] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [removeReason, setRemoveReason] = useState('');
 
-  const openAdjustModal = (playerId: string, playerName: string, currentPoints: number) => {
-    setSelectedPlayer({ id: playerId, name: playerName, currentPoints });
-    setAdjustmentPoints('');
-    setAdjustmentReason('');
-    setAdjustmentMode('adjust');
-    setShowAdjustModal(true);
+  const handleOpenAdjust = (playerId: string, playerName: string, currentPoints: number) => {
+    setAdjustDialog({
+      open: true,
+      mode: 'adjust',
+      player: { id: playerId, name: playerName, currentPoints },
+    });
+    setAdjustPoints('');
+    setAdjustReason('');
   };
 
-  const closeAdjustModal = () => {
-    setShowAdjustModal(false);
-    setSelectedPlayer(null);
-    setAdjustmentPoints('');
-    setAdjustmentReason('');
-    setAdjustmentMode('adjust');
-  };
-
-  const openRemoveModal = (playerId: string, playerName: string, currentPoints: number) => {
-    setSelectedPlayer({ id: playerId, name: playerName, currentPoints });
-    setRemoveReason('');
-    setShowRemoveModal(true);
-  };
-
-  const closeRemoveModal = () => {
-    setShowRemoveModal(false);
-    setSelectedPlayer(null);
-    setRemoveReason('');
-  };
-
-  const handleRemovePlayer = () => {
-    if (!selectedPlayer) return;
-    
-    if (!removeReason.trim()) {
-      showErrorToast('Kérlek add meg az eltávolítás okát!', {
-        context: 'Liga játékos eltávolítása',
-        showReportButton: false
-      });
-      return;
-    }
-
-    onRemovePlayer(selectedPlayer.id, selectedPlayer.name, removeReason);
-    closeRemoveModal();
-  };
-
-  const handleAdjustment = () => {
-    if (!selectedPlayer) return;
-    
-    const inputValue = parseInt(adjustmentPoints);
-    
-    if (isNaN(inputValue)) {
-      showErrorToast('Kérlek adj meg egy érvényes pontszámot!', {
+  const handleSubmitAdjust = () => {
+    if (!adjustDialog.player) return;
+    const rawValue = adjustPoints.trim();
+    if (!rawValue) {
+      showErrorToast('Kérlek adj meg egy pontszámot!', {
         context: 'Liga pontszám módosítása',
-        showReportButton: false
+        showReportButton: false,
       });
       return;
     }
 
-    if (!adjustmentReason.trim()) {
+    const parsedValue = parseInt(rawValue, 10);
+    if (Number.isNaN(parsedValue)) {
+      showErrorToast('Érvénytelen pontszám formátum', {
+        context: 'Liga pontszám módosítása',
+        showReportButton: false,
+      });
+      return;
+    }
+
+    if (!adjustReason.trim()) {
       showErrorToast('Kérlek add meg az okot!', {
         context: 'Liga pontszám módosítása',
-        showReportButton: false
+        showReportButton: false,
       });
       return;
     }
 
-    // Calculate adjustment based on mode
-    let pointsToAdjust = inputValue;
-    if (adjustmentMode === 'set') {
-      // Calculate difference: new target - current points
-      pointsToAdjust = inputValue - selectedPlayer.currentPoints;
-      
+    let pointsToAdjust = parsedValue;
+    if (adjustDialog.mode === 'set') {
+      pointsToAdjust = parsedValue - (adjustDialog.player?.currentPoints ?? 0);
       if (pointsToAdjust === 0) {
         showErrorToast('Az új pontszám megegyezik a jelenlegivel!', {
           context: 'Liga pontszám módosítása',
-          showReportButton: false
+          showReportButton: false,
         });
         return;
       }
-    } else {
-      // Adjust mode - check if not 0
-      if (pointsToAdjust === 0) {
-        showErrorToast('A pontszám változás nem lehet 0!', {
-          context: 'Liga pontszám módosítása',
-          showReportButton: false
-        });
-        return;
-      }
+    } else if (pointsToAdjust === 0) {
+      showErrorToast('A pontszám változás nem lehet 0!', {
+        context: 'Liga pontszám módosítása',
+        showReportButton: false,
+      });
+      return;
     }
 
-    onAdjustPoints(selectedPlayer.id, pointsToAdjust, adjustmentReason);
-    closeAdjustModal();
+    onAdjustPoints(adjustDialog.player.id, pointsToAdjust, adjustReason);
+    setAdjustDialog({ open: false, mode: 'adjust' });
+    setAdjustPoints('');
+    setAdjustReason('');
     showSuccessToast('Pontszám sikeresen módosítva!');
   };
 
-  const handlePlayerSelected = async (player: any) => {
-    onAddPlayer(player);
+  const handleSubmitRemove = () => {
+    if (!removeDialog.player) return;
+    if (!removeReason.trim()) {
+      showErrorToast('Kérlek add meg az eltávolítás okát!', {
+        context: 'Liga játékos eltávolítása',
+        showReportButton: false,
+      });
+      return;
+    }
+
+    onRemovePlayer(removeDialog.player.id, removeDialog.player.name, removeReason);
+    setRemoveDialog({ open: false });
+    setRemoveReason('');
   };
 
   return (
     <div className="space-y-4">
-      {/* League Description */}
       {league.description && (
-        <div className="bg-base-200 p-4 rounded-lg">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h5 className="font-semibold mb-2">Liga leírása</h5>
-              <p className="text-sm text-base-content/80">
-                {isDescriptionExpanded 
-                  ? league.description 
-                  : league.description.length > 50 
-                    ? `${league.description.substring(0, 50)}...` 
-                    : league.description
-                }
-              </p>
-            </div>
-            {league.description.length > 50 && (
-              <button
-                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                className="btn btn-ghost btn-xs ml-2 flex-shrink-0"
+        <Card className="border-border bg-card/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Liga leírása</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {descriptionExpanded || league.description.length <= 160
+                ? league.description
+                : `${league.description.slice(0, 160)}...`}
+            </p>
+            {league.description.length > 160 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-0"
+                onClick={() => setDescriptionExpanded((prev) => !prev)}
               >
-                {isDescriptionExpanded ? 'Összecsuk' : 'Bővebben...'}
-              </button>
+                {descriptionExpanded ? 'Kevesebb' : 'Bővebben'}
+              </Button>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {canManage && (
-        <div className="bg-base-200 p-4 rounded-lg">
-          <h5 className="font-semibold mb-3">Játékos hozzáadása a ligához</h5>
-          <PlayerSearch
-            onPlayerSelected={handlePlayerSelected}
-            placeholder="Játékos keresése és hozzáadása..."
-            clubId=""
-            isForTournament={false}
-          />
-        </div>
+        <Card className="border-dashed border-border bg-card/40">
+          <CardContent className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-foreground">Játékos hozzáadása a ligához</h4>
+            </div>
+            <PlayerSearch
+              onPlayerSelected={onAddPlayer}
+              placeholder="Játékos keresése és hozzáadása..."
+              clubId=""
+              isForTournament={false}
+            />
+          </CardContent>
+        </Card>
       )}
-      
-      {leaderboard.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-base-content/60">Még nincsenek játékosok a ranglistán</p>
-          {canManage && (
-            <p className="text-sm text-base-content/40 mt-2">
-              Használd a fenti keresőt játékosok hozzáadásához
-            </p>
-          )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
         </div>
+      ) : leaderboard.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">Még nincsenek játékosok a ranglistán</p>
+            {canManage && (
+              <p className="text-xs text-muted-foreground/80">
+                Használd a fenti keresőt játékosok hozzáadásához.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       ) : (
-        <>
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                  <th className="text-xs sm:text-sm">#</th>
-                  <th className="text-xs sm:text-sm">Játékos</th>
-                  <th className="text-xs sm:text-sm">Pont</th>
-                  <th className="text-xs sm:text-sm hidden sm:table-cell">Versenyek</th>
-                  <th className="text-xs sm:text-sm hidden md:table-cell">Átlag hely</th>
-                  <th className="text-xs sm:text-sm hidden md:table-cell">Legjobb</th>
-                  <th className="text-xs sm:text-sm hidden lg:table-cell">Dobás átlag</th>
-                  {canManage && <th className="text-xs sm:text-sm"></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry) => (
-                <tr key={entry.player._id}>
-                    <td className="py-2">
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold text-xs sm:text-sm">{entry.position}</span>
-                      {entry.position <= 3 && (
-                          <span className="text-xs">
-                          {entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉'}
-                          </span>
-                      )}
-                    </div>
-                  </td>
-                    <td className="font-medium text-xs sm:text-sm py-2">
-                      <div className="truncate max-w-[120px] sm:max-w-[200px]" title={entry.player.name}>
-                        {entry.player.name}
-                      </div>
-                    </td>
-                    <td className="py-2">
-                      <span className="font-mono font-bold text-primary text-xs sm:text-sm">
-                      {entry.totalPoints}
-                    </span>
-                  </td>
-                    <td className="hidden sm:table-cell text-xs sm:text-sm py-2">{entry.tournamentsPlayed}</td>
-                    <td className="hidden md:table-cell text-xs sm:text-sm py-2">{entry.averagePosition > 0 ? entry.averagePosition.toFixed(1) : '-'}</td>
-                    <td className="hidden md:table-cell text-xs sm:text-sm py-2">{entry.bestPosition > 0 ? entry.bestPosition : '-'}</td>
-                    <td className="hidden lg:table-cell text-xs sm:text-sm py-2">
-                      {entry.leagueAverage && entry.leagueAverage > 0 ? (
-                        <span className="font-mono font-semibold text-accent">{entry.leagueAverage.toFixed(2)}</span>
-                      ) : '-'}
-                    </td>
-                  {canManage && (
-                      <td className="py-2">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => openAdjustModal(entry.player._id, entry.player.name, entry.totalPoints)}
-                            className="btn btn-ghost btn-xs"
-                            title="Pontok módosítása"
-                          >
-                            <IconEdit size={14} />
-                          </button>
-                          <button
-                            onClick={() => openRemoveModal(entry.player._id, entry.player.name, entry.totalPoints)}
-                            className="btn btn-ghost btn-xs text-error"
-                            title="Játékos eltávolítása"
-                          >
-                            <IconTrash size={14} />
-                          </button>
+        <Card className="border-border bg-card/60">
+          <CardContent className="px-0">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-border/80 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 text-left">#</th>
+                    <th className="px-4 py-3 text-left">Játékos</th>
+                    <th className="px-4 py-3 text-right">Pont</th>
+                    <th className="px-4 py-3 text-right hidden sm:table-cell">Versenyek</th>
+                    <th className="px-4 py-3 text-right hidden md:table-cell">Átlag hely</th>
+                    <th className="px-4 py-3 text-right hidden md:table-cell">Legjobb</th>
+                    <th className="px-4 py-3 text-right hidden lg:table-cell">Dobás átlag</th>
+                    {canManage && <th className="px-4 py-3 text-right">Műveletek</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((entry) => (
+                    <tr key={entry.player._id} className="border-b-0 last:border-0">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 text-sm font-semibold">
+                          <span>{entry.position}</span>
+                          {entry.position <= 3 && (
+                            <span>
+                              {entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉'}
+                            </span>
+                          )}
                         </div>
                       </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <td className="px-4 py-3">
+                        <div className="max-w-[180px] truncate font-medium" title={entry.player.name}>
+                          {entry.player.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-mono font-semibold text-primary">{entry.totalPoints}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden sm:table-cell">
+                        {entry.tournamentsPlayed}
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">
+                        {entry.averagePosition > 0 ? entry.averagePosition.toFixed(1) : '–'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">
+                        {entry.bestPosition > 0 ? entry.bestPosition : '–'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden lg:table-cell">
+                        {entry.leagueAverage && entry.leagueAverage > 0
+                          ? entry.leagueAverage.toFixed(2)
+                          : '–'}
+                      </td>
+                      {canManage && (
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleOpenAdjust(entry.player._id, entry.player.name, entry.totalPoints)
+                              }
+                            >
+                              <IconEdit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                              onClick={() =>
+                                setRemoveDialog({
+                                  open: true,
+                                  player: {
+                                    id: entry.player._id,
+                                    name: entry.player.name,
+                                    currentPoints: entry.totalPoints,
+                                  },
+                                })
+                              }
+                            >
+                              <IconTrash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog
+        open={adjustDialog.open && !!adjustDialog.player}
+        onOpenChange={(open) => !open && setAdjustDialog({ open: false, mode: 'adjust' })}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pontszám módosítása</DialogTitle>
+            <DialogDescription>
+              {adjustDialog.player?.name} jelenlegi pontszáma:{' '}
+              <span className="font-mono font-semibold text-primary">
+                {adjustDialog.player?.currentPoints}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-2">
+            <Button
+              variant={adjustDialog.mode === 'adjust' ? 'default' : 'outline'}
+              className="flex-1"
+              onClick={() => {
+                setAdjustDialog((prev) => ({ ...prev, mode: 'adjust' }));
+                setAdjustPoints('');
+              }}
+            >
+              Módosítás (±)
+            </Button>
+            <Button
+              variant={adjustDialog.mode === 'set' ? 'default' : 'outline'}
+              className="flex-1"
+              onClick={() => {
+                setAdjustDialog((prev) => ({ ...prev, mode: 'set' }));
+                setAdjustPoints('');
+              }}
+            >
+              Beállítás (=)
+            </Button>
           </div>
 
-          {/* Remove Player Modal */}
-          {showRemoveModal && selectedPlayer && (
-            <dialog open className="modal modal-bottom sm:modal-middle">
-              <div className="modal-box">
-                <h3 className="font-bold text-lg mb-2 text-error">Játékos eltávolítása</h3>
-                <div className="alert alert-warning mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <span className="text-sm">
-                    Ez a művelet eltávolítja a játékost a ligából, de visszavonható lesz.
-                  </span>
-                </div>
-                <p className="text-sm text-base-content/70 mb-4">
-                  Játékos: <span className="font-semibold">{selectedPlayer.name}</span>
-                  <br />
-                  Jelenlegi pont: <span className="font-mono font-bold text-primary">{selectedPlayer.currentPoints}</span>
-                </p>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">Eltávolítás oka</span>
-                  </label>
-                  <textarea
-                    value={removeReason}
-                    onChange={(e) => setRemoveReason(e.target.value)}
-                    className="textarea textarea-bordered w-full"
-                    placeholder="Miért távolítod el ezt a játékost?"
-                    rows={3}
-                    autoFocus
-                  />
-                  <label className="label">
-                    <span className="label-text-alt text-base-content/60">
-                      Ez az információ a történetben lesz tárolva
-                    </span>
-                  </label>
-                </div>
+          <div className="space-y-2">
+            <Label>{adjustDialog.mode === 'adjust' ? 'Pontszám változás' : 'Új pontszám'}</Label>
+            <Input
+              value={adjustPoints}
+              onChange={(event) => {
+                const value = event.target.value;
+                const pattern = adjustDialog.mode === 'adjust' ? /^-?\d*$/ : /^\d*$/;
+                if (value === '' || pattern.test(value)) {
+                  setAdjustPoints(value);
+                }
+              }}
+              placeholder={adjustDialog.mode === 'adjust' ? 'pl.: +10 vagy -5' : 'pl.: 100'}
+            />
+            <p className="text-xs text-muted-foreground">
+              {adjustDialog.mode === 'adjust'
+                ? 'Add meg, mennyi pontot adjunk hozzá vagy vonjunk le.'
+                : 'Állítsd be a játékos új összpontszámát.'}
+            </p>
+          </div>
 
-                <div className="modal-action">
-                  <button
-                    onClick={closeRemoveModal}
-                    className="btn btn-ghost"
-                  >
-                    Mégse
-                  </button>
-                  <button
-                    onClick={handleRemovePlayer}
-                    className="btn btn-error"
-                  >
-                    Eltávolítás
-                  </button>
-                </div>
-              </div>
-              <form method="dialog" className="modal-backdrop">
-                <button onClick={closeRemoveModal}>close</button>
-              </form>
-            </dialog>
-          )}
+          <div className="space-y-2">
+            <Label>Indoklás</Label>
+            <textarea
+              className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              value={adjustReason}
+              onChange={(event) => setAdjustReason(event.target.value)}
+              placeholder="Miért módosítod a pontokat?"
+            />
+          </div>
 
-          {/* Adjust Points Modal */}
-          {showAdjustModal && selectedPlayer && (
-            <dialog open className="modal modal-bottom sm:modal-middle">
-              <div className="modal-box">
-                <h3 className="font-bold text-lg mb-2">Pontszám módosítása</h3>
-                <p className="text-sm text-base-content/70 mb-4">
-                  Játékos: <span className="font-semibold">{selectedPlayer.name}</span>
-                  <br />
-                  Jelenlegi pont: <span className="font-mono font-bold text-primary">{selectedPlayer.currentPoints}</span>
-                </p>
-                
-                {/* Mode Selector */}
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => {
-                      setAdjustmentMode('adjust');
-                      setAdjustmentPoints('');
-                    }}
-                    className={`btn btn-sm flex-1 ${adjustmentMode === 'adjust' ? 'btn-primary' : 'btn-outline'}`}
-                  >
-                    Módosítás (±)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAdjustmentMode('set');
-                      setAdjustmentPoints('');
-                    }}
-                    className={`btn btn-sm flex-1 ${adjustmentMode === 'set' ? 'btn-primary' : 'btn-outline'}`}
-                  >
-                    Beállítás (=)
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">
-                        {adjustmentMode === 'adjust' ? 'Pontszám változás' : 'Új pontszám'}
-                      </span>
-                    </label>
-                          <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="-?[0-9]*"
-                            value={adjustmentPoints}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const pattern = adjustmentMode === 'adjust' ? /^-?\d*$/ : /^\d*$/;
-                        if (value === '' || (adjustmentMode === 'adjust' && value === '-') || pattern.test(value)) {
-                          setAdjustmentPoints(value);
-                        }
-                      }}
-                      className="input input-bordered w-full text-center text-lg"
-                      placeholder={adjustmentMode === 'adjust' ? 'pl: +10 vagy -5' : 'pl: 100'}
-                      autoFocus
-                    />
-                    <label className="label">
-                      <span className="label-text-alt text-base-content/60">
-                        {adjustmentMode === 'adjust' 
-                          ? 'Pozitív (+) vagy negatív (-) szám' 
-                          : `Új érték (most: ${selectedPlayer.currentPoints})`
-                        }
-                      </span>
-                    </label>
-                  </div>
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={() => setAdjustDialog({ open: false, mode: 'adjust' })}>
+              Mégse
+            </Button>
+            <Button onClick={handleSubmitAdjust}>Mentés</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Indoklás</span>
-                    </label>
-                          <input
-                            type="text"
-                            value={adjustmentReason}
-                            onChange={(e) => setAdjustmentReason(e.target.value)}
-                      className="input input-bordered w-full"
-                      placeholder="Miért módosítod a pontszámot?"
-                    />
-                  </div>
+      <Dialog
+        open={removeDialog.open && !!removeDialog.player}
+        onOpenChange={(open) => !open && setRemoveDialog({ open: false })}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Játékos eltávolítása</DialogTitle>
+            <DialogDescription>
+              {removeDialog.player?.name} jelenlegi pontszáma:{' '}
+              <span className="font-mono font-semibold text-primary">
+                {removeDialog.player?.currentPoints}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
 
-                  {/* Preview */}
-                  {adjustmentPoints && !isNaN(parseInt(adjustmentPoints)) && (
-                    <div className="alert alert-info">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      <span className="text-sm">
-                        {adjustmentMode === 'adjust' ? (
-                          <>
-                            <strong>{selectedPlayer.currentPoints}</strong> 
-                            {' → '}
-                            <strong>{selectedPlayer.currentPoints + parseInt(adjustmentPoints)}</strong>
-                            {' '}
-                            ({parseInt(adjustmentPoints) > 0 ? '+' : ''}{adjustmentPoints} pont)
-                          </>
-                        ) : (
-                          <>
-                            <strong>{selectedPlayer.currentPoints}</strong>
-                            {' → '}
-                            <strong>{parseInt(adjustmentPoints)}</strong>
-                            {' '}
-                            ({(parseInt(adjustmentPoints) - selectedPlayer.currentPoints) > 0 ? '+' : ''}
-                            {parseInt(adjustmentPoints) - selectedPlayer.currentPoints} pont)
-                          </>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
+          <Alert className="border-destructive/40 bg-destructive/10">
+            <AlertDescription>
+              Ez a művelet eltávolítja a játékost a ranglistáról, de a történetben visszavonható lesz.
+            </AlertDescription>
+          </Alert>
 
-                <div className="modal-action">
-                          <button
-                    onClick={closeAdjustModal}
-                    className="btn btn-ghost"
-                          >
-                    Mégse
-                          </button>
-                          <button
-                    onClick={handleAdjustment}
-                    className="btn btn-primary"
-                          >
-                    Mentés
-                          </button>
-                        </div>
-              </div>
-              <form method="dialog" className="modal-backdrop">
-                <button onClick={closeAdjustModal}>close</button>
-              </form>
-            </dialog>
-          )}
-        </>
-      )}
+          <div className="space-y-2">
+            <Label>Eltávolítás oka</Label>
+            <textarea
+              className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              value={removeReason}
+              onChange={(event) => setRemoveReason(event.target.value)}
+              placeholder="Miért távolítod el a játékost?"
+            />
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={() => setRemoveDialog({ open: false })}>
+              Mégse
+            </Button>
+            <Button variant="destructive" onClick={handleSubmitRemove}>
+              Eltávolítás
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// Tournaments Tab Component
 interface TournamentsTabProps {
   tournaments: any[];
   canManage: boolean;
@@ -785,16 +756,18 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
   const [showAttachModal, setShowAttachModal] = useState(false);
   const [showDetachModal, setShowDetachModal] = useState(false);
   const [availableTournaments, setAvailableTournaments] = useState<any[]>([]);
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+  const [selectedTournamentId, setSelectedTournamentId] = useState('');
   const [tournamentToDetach, setTournamentToDetach] = useState<{ id: string; name: string } | null>(null);
-  const [calculatePoints, setCalculatePoints] = useState<boolean>(false);
+  const [calculatePoints, setCalculatePoints] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Filter and validate tournaments
-  const validTournaments = tournaments.filter((tournament: any) => 
-    tournament && 
-    tournament._id && 
-    (tournament.tournamentSettings || tournament.name)
+  const validTournaments = useMemo(
+    () =>
+      tournaments.filter(
+        (tournament: any) =>
+          tournament && tournament._id && (tournament.tournamentSettings || tournament.name),
+      ),
+    [tournaments],
   );
 
   const fetchAvailableTournaments = async () => {
@@ -803,18 +776,16 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
       const response = await fetch(`/api/clubs/${clubId}/tournaments`);
       if (response.ok) {
         const data = await response.json();
-        // Filter out tournaments that are already attached
-        const attachedIds = tournaments.map(t => t._id);
-        const available = data.tournaments.filter((t: any) => 
-          !attachedIds.includes(t._id) && t.tournamentSettings.status === 'finished'
+        const attachedIds = tournaments.map((t) => t._id);
+        const available = data.tournaments.filter(
+          (t: any) => !attachedIds.includes(t._id) && t.tournamentSettings.status === 'finished',
         );
         setAvailableTournaments(available);
       }
     } catch (error) {
-      console.error('Error fetching tournaments:', error);
       showErrorToast('Nem sikerült betölteni a versenyeket', {
         context: 'Verseny betöltése',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     } finally {
       setLoading(false);
@@ -825,7 +796,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
     if (!selectedTournamentId) {
       showErrorToast('Kérlek válassz egy versenyt!', {
         context: 'Verseny hozzárendelése',
-        showReportButton: false
+        showReportButton: false,
       });
       return;
     }
@@ -834,19 +805,15 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
       setLoading(true);
       const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}/attach-tournament`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tournamentId: selectedTournamentId,
-          calculatePoints
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId: selectedTournamentId, calculatePoints }),
       });
 
       if (response.ok) {
-        showSuccessToast(calculatePoints 
-          ? 'Verseny sikeresen hozzárendelve pontszámítással!' 
-          : 'Verseny sikeresen hozzárendelve (csak átlagok, pontszámítás nélkül)!'
+        showSuccessToast(
+          calculatePoints
+            ? 'Verseny sikeresen hozzárendelve pontszámítással!'
+            : 'Verseny sikeresen hozzárendelve (csak átlagok, pontszámítás nélkül)!',
         );
         setShowAttachModal(false);
         setSelectedTournamentId('');
@@ -856,14 +823,13 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
         const errorData = await response.json();
         showErrorToast(errorData.error || 'Hiba a verseny hozzárendelése során', {
           context: 'Verseny hozzárendelése',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (error) {
-      console.error('Error attaching tournament:', error);
       showErrorToast('Hiba a verseny hozzárendelése során', {
         context: 'Verseny hozzárendelése',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     } finally {
       setLoading(false);
@@ -877,12 +843,8 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
       setLoading(true);
       const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}/detach-tournament`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tournamentId: tournamentToDetach.id
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId: tournamentToDetach.id }),
       });
 
       if (response.ok) {
@@ -894,14 +856,13 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
         const errorData = await response.json();
         showErrorToast(errorData.error || 'Hiba a verseny eltávolítása során', {
           context: 'Verseny eltávolítása',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (error) {
-      console.error('Error detaching tournament:', error);
       showErrorToast('Hiba a verseny eltávolítása során', {
         context: 'Verseny eltávolítása',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     } finally {
       setLoading(false);
@@ -912,272 +873,221 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
     <div className="space-y-4">
       {canManage && (
         <div className="flex justify-end">
-          <button
+          <Button
             onClick={() => {
               fetchAvailableTournaments();
               setShowAttachModal(true);
             }}
-            className="btn btn-primary btn-sm gap-2"
+            className="gap-2"
           >
-            <IconTrophy size={16} />
+            <IconTrophy className="h-4 w-4" />
             Befejezett verseny hozzárendelése
-          </button>
+          </Button>
         </div>
       )}
 
       {validTournaments.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="text-6xl mb-4">🏆</div>
-          <h3 className="text-lg font-semibold mb-2">Még nincsenek versenyek</h3>
-          <p className="text-base-content/60 mb-4">Ehhez a ligához még nem lettek versenyek csatolva</p>
-          {canManage && (
-            <div className="bg-base-200 p-4 rounded-lg">
-              <p className="text-sm text-base-content/70 mb-2">
-                <strong>Versenyek hozzáadása:</strong>
-              </p>
-              <ul className="text-sm text-base-content/60 space-y-1 text-left">
-                <li>• <strong>Új verseny:</strong> Verseny létrehozásakor válaszd ki ezt a ligát (automatikus pontszámítás)</li>
-                <li>• <strong>Befejezett verseny:</strong> Használd a fenti gombot befejezett verseny utólagos hozzárendeléséhez (csak átlagok)</li>
-              </ul>
-            </div>
-          )}
-        </div>
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center space-y-3">
+            <div className="text-4xl">🏆</div>
+            <p className="text-sm text-muted-foreground">Ehhez a ligához még nem lettek versenyek csatolva.</p>
+            {canManage && (
+              <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-left text-xs text-muted-foreground">
+                <p className="font-semibold text-foreground">Versenyek hozzáadása:</p>
+                <ul className="mt-1 space-y-1">
+                  <li>• Új verseny létrehozásakor válaszd ki ezt a ligát (automatikus pontszámítás).</li>
+                  <li>• Már befejezett versenyeknél a fenti gombbal adhatod hozzá (csak átlagok).</li>
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {validTournaments.map((tournament: any) => (
-            <div key={tournament._id} className="relative">
-              <TournamentCard
-                tournament={{
-                  _id: tournament._id,
-                  tournamentId: tournament.tournamentId || tournament._id,
-                  tournamentSettings: {
-                    name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny',
-                    startDate: tournament.tournamentSettings?.startDate || tournament.startDate,
-                    location: tournament.tournamentSettings?.location || tournament.location,
-                    type: tournament.tournamentSettings?.type || tournament.type,
-                    entryFee: tournament.tournamentSettings?.entryFee || tournament.entryFee,
-                    maxPlayers: tournament.tournamentSettings?.maxPlayers || tournament.maxPlayers,
-                    registrationDeadline: tournament.tournamentSettings?.registrationDeadline || tournament.registrationDeadline,
-                    status: tournament.tournamentSettings?.status || tournament.status || 'pending'
-                  },
-                  tournamentPlayers: tournament.tournamentPlayers || [],
-                  clubId: tournament.clubId || { name: '' }
-                }}
-                userRole={canManage ? 'moderator' : 'member'}
-                showActions={false}
-              />
-              {canManage && (
-                <button
-                  onClick={() => {
-                    setTournamentToDetach({
-                      id: tournament._id,
-                      name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny'
-                    });
-                    setShowDetachModal(true);
+            <Card key={tournament._id} className="border-border bg-card/60">
+              <CardContent className="space-y-3">
+                <TournamentCard
+                  tournament={{
+                    _id: tournament._id,
+                    tournamentId: tournament.tournamentId || tournament._id,
+                    tournamentSettings: {
+                      name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny',
+                      startDate: tournament.tournamentSettings?.startDate || tournament.startDate,
+                      location: tournament.tournamentSettings?.location || tournament.location,
+                      type: tournament.tournamentSettings?.type || tournament.type,
+                      entryFee: tournament.tournamentSettings?.entryFee || tournament.entryFee,
+                      maxPlayers: tournament.tournamentSettings?.maxPlayers || tournament.maxPlayers,
+                      registrationDeadline:
+                        tournament.tournamentSettings?.registrationDeadline || tournament.registrationDeadline,
+                      status: tournament.tournamentSettings?.status || tournament.status || 'pending',
+                    },
+                    tournamentPlayers: tournament.tournamentPlayers || [],
+                    clubId: tournament.clubId || { name: '' },
                   }}
-                  className="absolute top-2 right-2 btn btn-error btn-xs gap-1"
-                  title="Verseny eltávolítása a ligából"
-                >
-                  <IconX size={14} />
-                  Eltávolítás
-                </button>
-              )}
-            </div>
+                  userRole={canManage ? 'moderator' : 'member'}
+                  showActions={false}
+                />
+
+                {canManage && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setTournamentToDetach({
+                        id: tournament._id,
+                        name: tournament.tournamentSettings?.name || tournament.name || 'Névtelen verseny',
+                      });
+                      setShowDetachModal(true);
+                    }}
+                  >
+                    Verseny eltávolítása
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Attach Tournament Modal */}
-      {showAttachModal && (
-        <dialog open className="modal modal-bottom sm:modal-middle">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Befejezett verseny hozzárendelése</h3>
-            
-            <div className="alert alert-warning mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="text-sm">
-                <p className="font-semibold mb-1">Fontos információk:</p>
-                <ul className="space-y-1">
-                  <li>• Csak <strong>befejezett versenyek</strong> jelennek meg</li>
-                  <li>• Az átlagok automatikusan kiszámításra kerülnek</li>
-                  <li>• <strong>Pontszámítás</strong> csak új versenyek létrehozásakor történik automatikusan</li>
-                  <li>• Már befejezett versenyeknél a pontszámítás nem javasolt</li>
-                </ul>
+      <Dialog open={showAttachModal} onOpenChange={(open) => !open && setShowAttachModal(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Verseny hozzárendelése</DialogTitle>
+            <DialogDescription>
+              Csak befejezett versenyek választhatók. A pontszámítás csak friss versenyekhez ajánlott.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Válassz versenyt</Label>
+                <select
+                  value={selectedTournamentId}
+                  onChange={(event) => setSelectedTournamentId(event.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                >
+                  <option value="">Válassz...</option>
+                  {availableTournaments.map((tournament: any) => (
+                    <option key={tournament._id} value={tournament._id}>
+                      {tournament.tournamentSettings.name} •{' '}
+                      {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU')}
+                    </option>
+                  ))}
+                </select>
+                {availableTournaments.length === 0 && (
+                  <p className="text-xs text-amber-500">Nincs elérhető befejezett verseny.</p>
+                )}
+              </div>
+
+              <div className="flex items-start justify-between gap-3 rounded-md border border-border/60 bg-muted/40 px-3 py-2">
+                <label className="text-sm font-medium text-foreground">
+                  Pontszámítás engedélyezése
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Nem javasolt már befejezett versenyeknél.
+                  </span>
+                </label>
+                <input
+                  type="checkbox"
+                  checked={calculatePoints}
+                  onChange={(event) => setCalculatePoints(event.target.checked)}
+                  className="h-4 w-4 rounded border border-border accent-primary"
+                />
               </div>
             </div>
+          )}
 
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <span className="loading loading-spinner loading-lg"></span>
-              </div>
-            ) : (
-              <>
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-medium">Válassz versenyt</span>
-                  </label>
-                  <select
-                    value={selectedTournamentId}
-                    onChange={(e) => setSelectedTournamentId(e.target.value)}
-                    className="select select-bordered w-full"
-                  >
-                    <option value="">Válassz...</option>
-                    {availableTournaments.map((tournament: any) => (
-                      <option key={tournament._id} value={tournament._id}>
-                        {tournament.tournamentSettings.name} - {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU')}
-                      </option>
-                    ))}
-                  </select>
-                  {availableTournaments.length === 0 && (
-                    <label className="label">
-                      <span className="label-text-alt text-warning">Nincs elérhető befejezett verseny</span>
-                    </label>
-                  )}
-                </div>
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowAttachModal(false);
+                setSelectedTournamentId('');
+                setCalculatePoints(false);
+              }}
+            >
+              Mégse
+            </Button>
+            <Button onClick={handleAttachTournament} disabled={loading || !selectedTournamentId}>
+              {loading ? 'Hozzárendelés...' : 'Hozzárendelés'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-                <div className="form-control mb-4">
-                  <label className="label cursor-pointer">
-                    <span className="label-text">
-                      <span className="font-medium">Pontszámítás engedélyezése</span>
-                      <span className="block text-xs text-base-content/60 mt-1">
-                        Nem javasolt már befejezett versenyeknél
-                      </span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={calculatePoints}
-                      onChange={(e) => setCalculatePoints(e.target.checked)}
-                      className="checkbox checkbox-primary"
-                    />
-                  </label>
-                </div>
-              </>
-            )}
+      <Dialog open={showDetachModal} onOpenChange={(open) => !open && setShowDetachModal(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Verseny eltávolítása</DialogTitle>
+            <DialogDescription>
+              A művelet visszavonja a versenyhez tartozó automatikus pontszámításokat is.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="modal-action">
-              <button
-                onClick={() => {
-                  setShowAttachModal(false);
-                  setSelectedTournamentId('');
-                  setCalculatePoints(false);
-                }}
-                className="btn btn-ghost"
-                disabled={loading}
-              >
-                Mégse
-              </button>
-              <button
-                onClick={handleAttachTournament}
-                className="btn btn-primary"
-                disabled={loading || !selectedTournamentId}
-              >
-                {loading ? 'Hozzárendelés...' : 'Hozzárendelés'}
-              </button>
-            </div>
-          </div>
-          <form method="dialog" className="modal-backdrop">
-            <button onClick={() => {
-              setShowAttachModal(false);
-              setSelectedTournamentId('');
-              setCalculatePoints(false);
-            }}>close</button>
-          </form>
-        </dialog>
-      )}
+          <p className="text-sm text-muted-foreground">
+            Verseny: <span className="font-semibold text-foreground">{tournamentToDetach?.name}</span>
+          </p>
 
-      {/* Detach Tournament Confirmation Modal */}
-      {showDetachModal && tournamentToDetach && (
-        <dialog open className="modal modal-bottom sm:modal-middle">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Verseny eltávolítása</h3>
-            
-            <div className="alert alert-warning mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="text-sm">
-                <p className="font-semibold mb-1">Figyelem!</p>
-                <p>Ez a művelet:</p>
-                <ul className="list-disc ml-4 mt-1 space-y-1">
-                  <li>Eltávolítja a versenyt a ligából</li>
-                  <li><strong>Visszavonja az összes automatikusan hozzáadott pontot</strong> ehhez a versenyhez</li>
-                  <li>A manuális pontmódosítások megmaradnak</li>
-                  <li>Az átlag számítás frissül</li>
-                </ul>
-              </div>
-            </div>
+          <Alert className="border-destructive/40 bg-destructive/10">
+            <AlertDescription>
+              Biztosan eltávolítod ezt a versenyt a ligából?
+            </AlertDescription>
+          </Alert>
 
-            <p className="mb-4">
-              Biztosan eltávolítod ezt a versenyt: <strong>{tournamentToDetach.name}</strong>?
-            </p>
-
-            <div className="modal-action">
-              <button
-                onClick={() => {
-                  setShowDetachModal(false);
-                  setTournamentToDetach(null);
-                }}
-                className="btn btn-ghost"
-                disabled={loading}
-              >
-                Mégse
-              </button>
-              <button
-                onClick={handleDetachTournament}
-                className="btn btn-error"
-                disabled={loading}
-              >
-                {loading ? 'Eltávolítás...' : 'Eltávolítás'}
-              </button>
-            </div>
-          </div>
-          <form method="dialog" className="modal-backdrop">
-            <button onClick={() => {
-              setShowDetachModal(false);
-              setTournamentToDetach(null);
-            }}>close</button>
-          </form>
-        </dialog>
-      )}
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={() => setShowDetachModal(false)}>
+              Mégse
+            </Button>
+            <Button variant="destructive" onClick={handleDetachTournament} disabled={loading}>
+              Eltávolítás
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// Settings Tab Component
 interface SettingsTabProps {
   league: League;
   clubId: string;
   onLeagueUpdated: () => void;
   leagueStats: LeagueStatsResponse | null;
+  disabled?: boolean;
 }
 
-function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsTabProps) {
+function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }: SettingsTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<'settings' | 'history'>('settings');
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: league.name,
     description: league.description || '',
-    pointsConfig: { ...league.pointsConfig }
+    pointsConfig: { ...league.pointsConfig },
   });
-  const [loading, setLoading] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<'settings' | 'history'>('settings');
+
+  useEffect(() => {
+    setFormData({
+      name: league.name,
+      description: league.description || '',
+      pointsConfig: { ...league.pointsConfig },
+    });
+  }, [league]);
 
   const handleUndoAdjustment = async (playerId: string, adjustmentIndex: number) => {
-    if (!confirm('Biztosan visszavonod ezt a pontszám módosítást?')) {
-      return;
-    }
+    if (!confirm('Biztosan visszavonod ezt a pontszám módosítást?')) return;
 
     try {
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/undo-adjustment`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerId,
-          adjustmentIndex
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, adjustmentIndex }),
       });
 
       if (response.ok) {
@@ -1187,32 +1097,25 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
         const errorData = await response.json();
         showErrorToast(errorData.error || 'Hiba a visszavonás során', {
           context: 'Liga pontszám visszavonása',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (error) {
       showErrorToast('Hiba a visszavonás során', {
         context: 'Liga pontszám visszavonása',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     }
   };
 
   const handleUndoRemoval = async (playerId: string, removalIndex: number) => {
-    if (!confirm('Biztosan visszahelyezed ezt a játékost a ligába?')) {
-      return;
-    }
+    if (!confirm('Biztosan visszahelyezed ezt a játékost a ligába?')) return;
 
     try {
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}/undo-removal`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerId,
-          removalIndex
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, removalIndex }),
       });
 
       if (response.ok) {
@@ -1222,13 +1125,13 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
         const errorData = await response.json();
         showErrorToast(errorData.error || 'Hiba a visszahelyezés során', {
           context: 'Liga játékos visszahelyezése',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (error) {
       showErrorToast('Hiba a visszahelyezés során', {
         context: 'Liga játékos visszahelyezése',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     }
   };
@@ -1238,9 +1141,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
       setLoading(true);
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
@@ -1249,15 +1150,12 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
         onLeagueUpdated();
         showSuccessToast('Liga beállítások sikeresen mentve!');
       } else {
-        showErrorToast('Hiba a mentés során', {
-          context: 'Liga beállítások mentése'
-        });
+        showErrorToast('Hiba a mentés során', { context: 'Liga beállítások mentése' });
       }
     } catch (error) {
-      console.error('Error updating league:', error);
       showErrorToast('Hiba a mentés során', {
         context: 'Liga beállítások mentése',
-        error: error instanceof Error ? error.message : 'Ismeretlen hiba'
+        error: error instanceof Error ? error.message : 'Ismeretlen hiba',
       });
     } finally {
       setLoading(false);
@@ -1268,294 +1166,275 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats }: SettingsT
     setFormData({
       name: league.name,
       description: league.description || '',
-      pointsConfig: { ...league.pointsConfig }
+      pointsConfig: { ...league.pointsConfig },
     });
     setIsEditing(false);
   };
 
+  if (disabled) {
+    return (
+      <Alert>
+        <AlertDescription>A liga beállításait csak moderátorok módosíthatják.</AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h4 className="text-lg font-semibold">Liga Beállítások</h4>
-        {!isEditing && activeSubTab === 'settings' ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="btn btn-primary btn-sm gap-2"
-          >
-            <IconEdit className="w-4 h-4" />
-            Szerkesztés
-          </button>
-        ) : isEditing ? (
-          <div className="flex gap-2">
-            <button
-              onClick={handleCancel}
-              className="btn btn-ghost btn-sm"
-              disabled={loading}
-            >
-              Mégse
-            </button>
-            <button
-              onClick={handleSave}
-              className="btn btn-success btn-sm"
-              disabled={loading}
-            >
-              {loading ? 'Mentés...' : 'Mentés'}
-            </button>
-          </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h4 className="text-lg font-semibold text-foreground">Liga beállítások</h4>
+        {activeSubTab === 'settings' && !isEditing ? (
+          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            <IconEdit className="mr-2 h-4 w-4" /> Szerkesztés
+          </Button>
         ) : null}
       </div>
 
-      {/* Sub-tabs */}
-      <div className="tabs tabs-bordered">
-        <button
-          className={`tab ${activeSubTab === 'settings' ? 'tab-active' : ''}`}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={activeSubTab === 'settings' ? 'default' : 'outline'}
+          size="sm"
           onClick={() => setActiveSubTab('settings')}
         >
           Beállítások
-        </button>
-        <button
-          className={`tab ${activeSubTab === 'history' ? 'tab-active' : ''}`}
+        </Button>
+        <Button
+          variant={activeSubTab === 'history' ? 'default' : 'outline'}
+          size="sm"
           onClick={() => setActiveSubTab('history')}
         >
-          Pontszámítás Történet
-        </button>
+          Pontszámítás történet
+        </Button>
       </div>
 
       {activeSubTab === 'history' ? (
         <div className="space-y-6">
-          {/* Removed Players Section */}
-          <div>
-            <h5 className="font-semibold mb-3">Eltávolított Játékosok</h5>
-            {leagueStats?.league?.removedPlayers && leagueStats.league.removedPlayers.length > 0 ? (
-              <div className="space-y-2">
-                {leagueStats.league.removedPlayers.map((removal: any, index: number) => (
-                  <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm bg-base-200 p-3 rounded gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="badge badge-error badge-sm flex-shrink-0">
-                        Eltávolítva
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">{removal.player?.name || removal.player?.username || 'Ismeretlen játékos'}</div>
-                        <div className="text-xs text-base-content/60">
-                          {removal.totalPoints} pont • {removal.tournamentPoints?.length || 0} verseny • {removal.manualAdjustments?.length || 0} módosítás
+          <Card className="border-border bg-card/40">
+            <CardHeader>
+              <CardTitle className="text-base">Eltávolított játékosok</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {leagueStats?.league?.removedPlayers?.length ? (
+                leagueStats.league.removedPlayers.map((removal: any, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border border-border bg-background/80 px-3 py-3"
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive" className="text-xs">Eltávolítva</Badge>
+                          <span className="font-medium text-foreground">
+                            {removal.player?.name || removal.player?.username || 'Ismeretlen játékos'}
+                          </span>
                         </div>
-                        <div className="text-xs text-base-content/50 italic">
-                          {removal.reason}
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {removal.totalPoints} pont • {removal.tournamentPoints?.length || 0} verseny •{' '}
+                          {removal.manualAdjustments?.length || 0} módosítás
+                        </p>
+                        <p className="text-xs italic text-muted-foreground/80">{removal.reason}</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-base-content/60 text-right">
-                        <div className="flex items-center gap-1 text-xs">
-                          <IconUser size={12} />
+                      <div className="text-right text-xs text-muted-foreground">
+                        <div className="flex items-center justify-end gap-1">
+                          <IconUser className="h-3 w-3" />
                           <span>{removal.removedBy?.name || removal.removedBy?.username || 'Ismeretlen'}</span>
                         </div>
-                        <div className="text-xs">
-                          {new Date(removal.removedAt).toLocaleDateString('hu-HU')}
-                        </div>
+                        <div>{new Date(removal.removedAt).toLocaleDateString('hu-HU')}</div>
                       </div>
-                      <button
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleUndoRemoval(removal.player._id, index)}
-                        className="btn btn-success btn-xs gap-1"
-                        title="Visszahelyezés"
                       >
-                        <IconUser size={12} />
-                        <span className="hidden sm:inline">Visszahelyezés</span>
-                      </button>
+                        <IconUser className="mr-2 h-4 w-4" /> Visszahelyezés
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 bg-base-200 rounded-lg">
-                <p className="text-sm text-base-content/60">Még nem lett játékos eltávolítva</p>
-              </div>
-            )}
-          </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Még nem lett játékos eltávolítva.</p>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Manual Adjustments Section */}
-          <div>
-            <h5 className="font-semibold mb-3">Pontszámítás Módosítások</h5>
-          {leagueStats?.league?.players && leagueStats.league.players.length > 0 ? (
-            <div className="space-y-4">
-              {leagueStats.league.players.map((player: any) => {
-                if (!player.manualAdjustments || player.manualAdjustments.length === 0) return null;
-                console.log('Player manual adjustments:', player);
-                return (
-                  <div key={player.player._id} className="bg-base-200 p-4 rounded-lg">
-                                          <div className="flex items-center justify-between mb-3">
-                        <h6 className="font-medium">{player.player.name || player.player.username || 'Ismeretlen játékos'}</h6>
-                        <span className="badge badge-primary badge-sm">
+          <Card className="border-border bg-card/40">
+            <CardHeader>
+              <CardTitle className="text-base">Pontszámításhoz kapcsolódó módosítások</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              {leagueStats?.league?.players?.some((player: any) => player.manualAdjustments?.length) ? (
+                leagueStats?.league?.players.map((player: any) => {
+                  if (!player.manualAdjustments || player.manualAdjustments.length === 0) return null;
+                  return (
+                    <div key={player.player._id} className="rounded-lg border border-border px-3 py-3">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h6 className="font-medium text-foreground">
+                          {player.player.name || player.player.username || 'Ismeretlen játékos'}
+                        </h6>
+                        <Badge variant="secondary" className="text-xs">
                           {player.manualAdjustments.length} módosítás
-                        </span>
+                        </Badge>
                       </div>
-                    <div className="space-y-2">
-                      {player.manualAdjustments.map((adjustment: any, index: number) => (
-                          <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm bg-base-100 p-3 rounded gap-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <span className={`badge badge-sm flex-shrink-0 ${
-                              adjustment.points > 0 ? 'badge-success' : 'badge-error'
-                            }`}>
-                              {adjustment.points > 0 ? '+' : ''}{adjustment.points} pont
-                            </span>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium truncate">{adjustment.reason}</div>
-                              <div className="text-xs text-base-content/60">
-                                {adjustment.points > 0 ? 'Pont hozzáadva' : 'Pont levonva'} {player.player.name || player.player.username || 'játékosnak'}
+                      <div className="space-y-2">
+                        {player.manualAdjustments.map((adjustment: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  variant={adjustment.points > 0 ? 'default' : 'destructive'}
+                                  className="text-xs"
+                                >
+                                  {adjustment.points > 0 ? '+' : ''}
+                                  {adjustment.points} pont
+                                </Badge>
+                                <span className="font-medium text-foreground">{adjustment.reason}</span>
                               </div>
+                              <p className="text-xs text-muted-foreground">
+                                {adjustment.points > 0 ? 'Pont hozzáadva' : 'Pont levonva'}{' '}
+                                {player.player.name || player.player.username || 'játékosnak'}
+                              </p>
                             </div>
-                          </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                          <div className="text-base-content/60 text-right">
-                            <div className="flex items-center gap-1 text-xs">
-                              <IconUser size={12} />
-                              <span>{adjustment.adjustedBy?.name || adjustment.adjustedBy?.username || 'Ismeretlen'}</span>
-                            </div>
-                            <div className="text-xs">
-                              {new Date(adjustment.adjustedAt).toLocaleDateString('hu-HU')}
-                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right text-xs text-muted-foreground">
+                                <div className="flex items-center justify-end gap-1">
+                                  <IconUser className="h-3 w-3" />
+                                  <span>
+                                    {adjustment.adjustedBy?.name || adjustment.adjustedBy?.username || 'Ismeretlen'}
+                                  </span>
+                                </div>
+                                <div>{new Date(adjustment.adjustedAt).toLocaleDateString('hu-HU')}</div>
                               </div>
-                              <button
+                              <Button
+                                variant="destructive"
+                                size="sm"
                                 onClick={() => handleUndoAdjustment(player.player._id, index)}
-                                className="btn btn-error btn-xs gap-1"
-                                title="Visszavonás"
                               >
-                                <IconTrash size={12} />
-                                <span className="hidden sm:inline">Visszavonás</span>
-                              </button>
+                                <IconTrash className="mr-2 h-4 w-4" /> Visszavonás
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-              <div className="text-center py-4 bg-base-200 rounded-lg">
-                <p className="text-sm text-base-content/60">Még nincsenek manuális pontszámítás módosítások</p>
-            </div>
-          )}
-          </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground">Még nincsenek manuális pontszámítás módosítások.</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       ) : isEditing ? (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Liga neve</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input input-bordered w-full"
-              placeholder="Liga neve"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Leírás</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="textarea textarea-bordered w-full"
-              placeholder="Liga leírása"
-              rows={3}
-            />
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Liga neve</Label>
+              <Input
+                value={formData.name}
+                onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                placeholder="Liga neve"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Leírás</Label>
+              <textarea
+                className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                value={formData.description}
+                onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                placeholder="Liga leírása"
+              />
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <h5 className="font-semibold">Pontszámítás beállítások</h5>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Csoportkör kiesés pontjai</label>
-                <input
-                  type="number"
-                  value={formData.pointsConfig.groupDropoutPoints}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pointsConfig: { ...formData.pointsConfig, groupDropoutPoints: parseInt(e.target.value) || 0 }
-                  })}
-                  className="input input-bordered w-full"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Egyenes kiesés alappontjai</label>
-                <input
-                  type="number"
-                  value={formData.pointsConfig.knockoutBasePoints}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pointsConfig: { ...formData.pointsConfig, knockoutBasePoints: parseInt(e.target.value) || 0 }
-                  })}
-                  className="input input-bordered w-full"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Szorzó tényező</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.pointsConfig.knockoutMultiplier}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pointsConfig: { ...formData.pointsConfig, knockoutMultiplier: parseFloat(e.target.value) || 1.5 }
-                  })}
-                  className="input input-bordered w-full"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Győztes bónusz pontjai</label>
-                <input
-                  type="number"
-                  value={formData.pointsConfig.winnerBonus}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pointsConfig: { ...formData.pointsConfig, winnerBonus: parseInt(e.target.value) || 0 }
-                  })}
-                  className="input input-bordered w-full"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Max egyenes kiesős körök</label>
-                <input
-                  type="number"
-                  value={formData.pointsConfig.maxKnockoutRounds}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pointsConfig: { ...formData.pointsConfig, maxKnockoutRounds: parseInt(e.target.value) || 3 }
-                  })}
-                  className="input input-bordered w-full"
-                />
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <IconInfoCircle className="h-4 w-4" /> Pontszámítás beállítások
             </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                { key: 'groupDropoutPoints', label: 'Csoportkör kiesés pontjai' },
+                { key: 'knockoutBasePoints', label: 'Egyenes kiesés alappont' },
+                { key: 'knockoutMultiplier', label: 'Szorzó tényező', step: 0.1 },
+                { key: 'winnerBonus', label: 'Győztes bónusz' },
+                { key: 'maxKnockoutRounds', label: 'Max. kiesős körök' },
+              ].map((config) => (
+                <div key={config.key} className="space-y-2">
+                  <Label>{config.label}</Label>
+                  <Input
+                    type="number"
+                    step={config.step ?? 1}
+                    value={(formData.pointsConfig as any)[config.key] ?? 0}
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        pointsConfig: {
+                          ...formData.pointsConfig,
+                          [config.key]: config.step
+                            ? parseFloat(event.target.value) || 0
+                            : parseInt(event.target.value, 10) || 0,
+                        },
+                      })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Alert className="border-primary/30 bg-primary/5">
+            <AlertDescription>
+              Tippek: tartsd alacsonyan a szorzót, hogy a pontszámítás kiegyensúlyozott maradjon.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={handleCancel} disabled={loading}>
+              Mégse
+            </Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? 'Mentés...' : 'Mentés'}
+            </Button>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 text-sm text-muted-foreground">
           <div>
-            <h5 className="font-semibold mb-2">Liga információk</h5>
-            <div className="bg-base-200 p-4 rounded-lg space-y-2 text-sm">
-              <div><strong>Név:</strong> {league.name}</div>
-              {league.description && <div><strong>Leírás:</strong> {league.description}</div>}
-            </div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">
+              Liga neve
+            </p>
+            <p className="text-base text-foreground">{league.name}</p>
           </div>
-          
-          <div>
-            <h5 className="font-semibold mb-2">Jelenlegi Pontszámítás</h5>
-            <div className="bg-base-200 p-4 rounded-lg space-y-2 text-sm">
-              <div>Csoportkör kiesés: <span className="font-mono">{league.pointsConfig.groupDropoutPoints} pont</span></div>
-              <div>Egyenes kiesés alappont: <span className="font-mono">{league.pointsConfig.knockoutBasePoints} pont</span></div>
-              <div>Szorzó tényező: <span className="font-mono">{league.pointsConfig.knockoutMultiplier}x</span></div>
-              <div>Győztes bónusz: <span className="font-mono">{league.pointsConfig.winnerBonus} pont</span></div>
-              <div>Max egyenes kiesős körök: <span className="font-mono">{league.pointsConfig.maxKnockoutRounds}</span></div>
+          {league.description && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Leírás</p>
+              <p className="text-base text-foreground">{league.description}</p>
             </div>
+          )}
+          <div className="grid gap-3 md:grid-cols-2">
+            <InfoRow label="Csoportkör kiesés pontjai" value={league.pointsConfig.groupDropoutPoints} />
+            <InfoRow label="Egyenes kiesés alappont" value={league.pointsConfig.knockoutBasePoints} />
+            <InfoRow
+              label="Szorzó tényező"
+              value={(league.pointsConfig.knockoutMultiplier || 0).toFixed(2)}
+            />
+            <InfoRow label="Győztes bónusz" value={league.pointsConfig.winnerBonus} />
+            <InfoRow label="Max. kiesős körök" value={league.pointsConfig.maxKnockoutRounds} />
           </div>
         </div>
       )}
     </div>
   );
 }
+
+const InfoRow = ({ label, value }: { label: string; value: number | string }) => (
+  <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{label}</p>
+    <p className="text-base font-semibold text-foreground">{value}</p>
+  </div>
+);
+

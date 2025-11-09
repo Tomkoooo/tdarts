@@ -130,29 +130,29 @@ export default function FeedbackManager() {
         return { 
           icon: IconBug, 
           label: 'Hiba', 
-          color: 'bg-error/10 text-error border-error/30',
-          emoji: '🐛'
+          color: 'bg-destructive/15 text-destructive',
+          emoji: '🐛',
         };
       case 'feature': 
         return { 
           icon: IconBulb, 
           label: 'Új funkció', 
-          color: 'bg-warning/10 text-warning border-warning/30',
-          emoji: ''
+          color: 'bg-amber-200/20 text-amber-200',
+          emoji: '💡',
         };
       case 'improvement': 
         return { 
           icon: IconSettingsCode, 
           label: 'Fejlesztés', 
-          color: 'bg-info/10 text-info border-info/30',
-          emoji: ''
+          color: 'bg-sky-200/20 text-sky-200',
+          emoji: '🔧',
         };
       default: 
         return { 
           icon: IconCheck, 
           label: 'Egyéb', 
-          color: 'bg-success/10 text-success border-success/30',
-          emoji: ''
+          color: 'bg-emerald-200/20 text-emerald-200',
+          emoji: '✨',
         };
     }
   };
@@ -169,12 +169,18 @@ export default function FeedbackManager() {
 
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'pending': return { icon: IconClock, color: 'bg-warning/20 border-warning', label: 'Függőben' };
-      case 'in-progress': return { icon: IconProgress, color: 'bg-info/20 border-info', label: 'Folyamatban' };
-      case 'resolved': return { icon: IconCircleCheck, color: 'bg-success/20 border-success', label: 'Megoldva' };
-      case 'rejected': return { icon: IconCircleX, color: 'bg-error/20 border-error', label: 'Elutasítva' };
-      case 'closed': return { icon: IconCheck, color: 'bg-base-300/20 border-base-300', label: 'Lezárva' };
-      default: return { icon: IconClock, color: 'bg-base-300/20 border-base-300', label: 'Ismeretlen' };
+      case 'pending':
+        return { icon: IconClock, color: 'bg-amber-200/25 text-amber-200', label: 'Függőben' };
+      case 'in-progress':
+        return { icon: IconProgress, color: 'bg-sky-200/25 text-sky-200', label: 'Folyamatban' };
+      case 'resolved':
+        return { icon: IconCircleCheck, color: 'bg-emerald-200/25 text-emerald-200', label: 'Megoldva' };
+      case 'rejected':
+        return { icon: IconCircleX, color: 'bg-rose-200/25 text-rose-200', label: 'Elutasítva' };
+      case 'closed':
+        return { icon: IconCheck, color: 'bg-muted/40 text-muted-foreground', label: 'Lezárva' };
+      default:
+        return { icon: IconClock, color: 'bg-muted/40 text-muted-foreground', label: 'Ismeretlen' };
     }
   };
 
@@ -196,8 +202,8 @@ export default function FeedbackManager() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-16 h-16   rounded-full"></div>
+            <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
           <p className="text-base-content/60">Visszajelzések betöltése...</p>
         </div>
@@ -210,23 +216,23 @@ export default function FeedbackManager() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
             <div className="text-sm text-base-content/70 font-medium">Összes</div>
           </div>
-          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
             <div className="text-sm text-base-content/70 font-medium">Függőben</div>
           </div>
-          <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-info/20 to-info/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
             <div className="text-sm text-base-content/70 font-medium">Folyamatban</div>
           </div>
-          <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-success mb-2">{stats.resolved}</div>
             <div className="text-sm text-base-content/70 font-medium">Megoldva</div>
           </div>
-          <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-error/20 to-error/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-error mb-2">{stats.rejected}</div>
             <div className="text-sm text-base-content/70 font-medium">Elutasítva</div>
           </div>
@@ -234,7 +240,7 @@ export default function FeedbackManager() {
       )}
 
       {/* Category Tabs */}
-      <div className="bg-base-100 border border-base-300 rounded-xl p-4">
+      <div className="bg-base-100 border  rounded-xl p-4">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory('')}
@@ -260,7 +266,7 @@ export default function FeedbackManager() {
       </div>
 
       {/* Filters */}
-      <div className="bg-base-100 border border-base-300 rounded-xl p-6">
+      <div className="bg-base-100 border  rounded-xl p-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select
@@ -313,7 +319,7 @@ export default function FeedbackManager() {
       {/* Feedback List */}
       <div className="space-y-4">
         {filteredByCategory.length === 0 ? (
-          <div className="bg-base-100 border border-base-300 rounded-xl p-12 text-center">
+          <div className="bg-base-100 border  rounded-xl p-12 text-center">
             <IconBug size={64} className="mx-auto mb-4 text-base-content/20" />
             <p className="text-lg text-base-content/60">Nincsenek visszajelzések</p>
           </div>
@@ -325,7 +331,7 @@ export default function FeedbackManager() {
             const DeviceIcon = getDeviceIcon(item.device);
 
             return (
-              <div key={item._id} className="bg-base-100 border border-base-300 rounded-xl p-6 hover:shadow-xl transition-all duration-300 group">
+              <div key={item._id} className="bg-base-100 border  rounded-xl p-6 hover:shadow-xl transition-all duration-300 group">
                 {/* Header */}
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
                   <div className="flex-1 min-w-0">
@@ -394,7 +400,7 @@ export default function FeedbackManager() {
                 
                 {/* Admin Notes */}
                 {item.adminNotes && (
-                  <div className="mt-4 p-4 bg-info/10 border border-info/30 rounded-lg">
+                  <div className="mt-4 p-4 bg-info/10 border  rounded-lg">
                     <p className="text-sm font-bold text-info mb-2 flex items-center gap-2">
                       <IconUser size={16} />
                       Admin megjegyzés:
@@ -405,7 +411,7 @@ export default function FeedbackManager() {
                 
                 {/* Resolution */}
                 {item.resolution && (
-                  <div className="mt-4 p-4 bg-success/10 border border-success/30 rounded-lg">
+                  <div className="mt-4 p-4 bg-success/10 border  rounded-lg">
                     <p className="text-sm font-bold text-success mb-2 flex items-center gap-2">
                       <IconCircleCheck size={16} />
                       Megoldás:
@@ -423,7 +429,7 @@ export default function FeedbackManager() {
       {editingFeedback && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-base-100 border-b border-base-300 p-6 flex items-center justify-between">
+            <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
               <h3 className="text-2xl font-bold">Hibabejelentés szerkesztése</h3>
               <button
                 onClick={() => setEditingFeedback(null)}
@@ -502,7 +508,7 @@ export default function FeedbackManager() {
               </div>
             </div>
             
-            <div className="sticky bottom-0 bg-base-100 border-t border-base-300 p-6 flex gap-3">
+            <div className="sticky bottom-0 bg-base-100   p-6 flex gap-3">
               <button
                 className="btn btn-primary flex-1 gap-2"
                 onClick={() => {

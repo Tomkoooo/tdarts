@@ -139,7 +139,7 @@ export default function EditTournamentModal({
 
   return (
     <dialog open={isOpen} className="modal">
-      <div className="modal-box glass-card p-4 sm:p-8 bg-[hsl(var(--background)/0.3)] border-[hsl(var(--border)/0.5)] shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <div className="modal-box glass-card p-4 sm:p-8 bg-[hsl(var(--background)/0.3)]  shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
             Torna szerkesztése
@@ -311,7 +311,7 @@ export default function EditTournamentModal({
 
               <div>
                 <label className="block text-sm font-medium mb-1">Táblák száma</label>
-                <div className="w-full px-3 py-2 bg-base-200 rounded-lg border border-base-300 text-base-content/70">
+                <div className="w-full px-3 py-2 bg-base-200 rounded-lg border  text-base-content/70">
                   {boards.length} tábla
                 </div>
                 <p className="text-xs text-base-content/60 mt-1">
@@ -404,7 +404,7 @@ export default function EditTournamentModal({
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-base-300">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 "
             <button
               type="button"
               onClick={onClose}

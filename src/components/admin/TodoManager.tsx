@@ -196,7 +196,7 @@ export default function TodoManager() {
     const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && todo.status !== 'completed';
 
     return (
-      <div className="bg-base-100 border border-base-300 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
+      <div className="bg-base-100 border  rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
         {/* Priority Badge */}
         <div className="flex items-start justify-between mb-3">
           <span className={`${priorityConfig.color} px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1`}>
@@ -249,7 +249,7 @@ export default function TodoManager() {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-base-content/60 pt-3 border-t border-base-300">
+        <div className="flex items-center justify-between text-xs text-base-content/60 pt-3">
           {todo.dueDate && (
             <div className={`flex items-center gap-1 ${isOverdue ? 'text-error font-bold' : ''}`}>
               <IconCalendar size={14} />
@@ -313,8 +313,8 @@ export default function TodoManager() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-16 h-16   rounded-full"></div>
+            <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
           <p className="text-base-content/60">Todo-k betöltése...</p>
         </div>
@@ -327,19 +327,19 @@ export default function TodoManager() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
             <div className="text-sm text-base-content/70 font-medium">Összes Todo</div>
           </div>
-          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
             <div className="text-sm text-base-content/70 font-medium">Függőben</div>
           </div>
-          <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-info/20 to-info/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
             <div className="text-sm text-base-content/70 font-medium">Folyamatban</div>
           </div>
-          <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-success mb-2">{stats.completed}</div>
             <div className="text-sm text-base-content/70 font-medium">Befejezve</div>
           </div>
@@ -347,7 +347,7 @@ export default function TodoManager() {
       )}
 
       {/* Toolbar */}
-      <div className="bg-base-100 border border-base-300 rounded-xl p-6">
+      <div className="bg-base-100 border  rounded-xl p-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* View Toggle */}
           <div className="flex gap-2">
@@ -424,32 +424,32 @@ export default function TodoManager() {
             status="pending"
             title="Függőben"
             icon={IconClock}
-            color="bg-warning/10 border border-warning/30"
+            color="bg-warning/10 border 
           />
           <KanbanColumn
             status="in-progress"
             title="Folyamatban"
             icon={IconProgress}
-            color="bg-info/10 border border-info/30"
+            color="bg-info/10 border 
           />
           <KanbanColumn
             status="completed"
             title="Befejezve"
             icon={IconCircleCheck}
-            color="bg-success/10 border border-success/30"
+            color="bg-success/10 border 
           />
           <KanbanColumn
             status="cancelled"
             title="Törölve"
             icon={IconCircleX}
-            color="bg-base-300/10 border border-base-300/30"
+            color="bg-base-300/10 border 
           />
         </div>
       )}
 
       {/* List View */}
       {viewMode === 'list' && (
-        <div className="bg-base-100 border border-base-300 rounded-xl p-6">
+        <div className="bg-base-100 border  rounded-xl p-6">
           <h3 className="text-lg font-bold mb-4">Todo-k ({filteredTodos.length})</h3>
           
           {filteredTodos.length === 0 ? (
@@ -471,7 +471,7 @@ export default function TodoManager() {
       {showCreateForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-base-100 border-b border-base-300 p-6 flex items-center justify-between">
+            <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
               <h3 className="text-2xl font-bold">Új Todo létrehozása</h3>
               <button
                 onClick={() => setShowCreateForm(false)}
@@ -597,7 +597,7 @@ export default function TodoManager() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-base-100 border-t border-base-300 p-6 flex gap-3">
+            <div className="sticky bottom-0 bg-base-100   p-6 flex gap-3">
               <button
                 onClick={handleCreateTodo}
                 className="btn btn-primary flex-1 gap-2"
@@ -621,7 +621,7 @@ export default function TodoManager() {
       {editingTodo && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-base-100 border-b border-base-300 p-6 flex items-center justify-between">
+            <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
               <h3 className="text-2xl font-bold">Todo szerkesztése</h3>
               <button
                 onClick={() => setEditingTodo(null)}
@@ -707,7 +707,7 @@ export default function TodoManager() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-base-100 border-t border-base-300 p-6 flex gap-3">
+            <div className="sticky bottom-0 bg-base-100   p-6 flex gap-3">
               <button
                 onClick={() => {
                   if (editingTodo) {

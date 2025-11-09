@@ -1,277 +1,293 @@
-"use client";
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { 
-  IconBuilding, 
-  IconUsers, 
-  IconTrophy, 
-  IconExternalLink, 
-  IconSearch, 
-  IconRefresh, 
-  IconMapPin, 
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+import axios from "axios"
+import Link from "next/link"
+import toast from "react-hot-toast"
+import {
+  IconBuilding,
+  IconUsers,
+  IconTrophy,
+  IconExternalLink,
+  IconSearch,
+  IconRefresh,
+  IconMapPin,
   IconCalendar,
   IconShield,
-  IconStar
-} from '@tabler/icons-react';
-import Link from 'next/link';
-import toast from 'react-hot-toast';
-import DailyChart from '@/components/admin/DailyChart';
+  IconStar,
+} from "@tabler/icons-react"
+
+import DailyChart from "@/components/admin/DailyChart"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+
+const PANEL_SHADOW = "shadow-[12px_13px_0px_-3px_rgba(0,0,0,0.69)]"
 
 interface AdminClub {
-  _id: string;
-  name: string;
-  description?: string;
-  location: string;
-  subscriptionModel?: 'free' | 'basic' | 'pro' | 'enterprise';
-  members: any[];
-  tournaments: any[];
-  createdAt: string;
-  isDeleted: boolean;
-  memberCount: number;
-  tournamentCount: number;
+  _id: string
+  name: string
+  description?: string
+  location: string
+  subscriptionModel?: "free" | "basic" | "pro" | "enterprise"
+  members: any[]
+  tournaments: any[]
+  createdAt: string
+  isDeleted: boolean
+  memberCount: number
+  tournamentCount: number
+}
+
+const subscriptionMeta: Record<
+  NonNullable<AdminClub["subscriptionModel"]>,
+  { label: string; icon: typeof IconBuilding; tone: string }
+> = {
+  free: { label: "Free", icon: IconBuilding, tone: "bg-muted/40 text-muted-foreground" },
+  basic: { label: "Basic", icon: IconBuilding, tone: "bg-primary/15 text-primary" },
+  pro: { label: "Pro", icon: IconShield, tone: "bg-accent/15 text-accent-foreground" },
+  enterprise: { label: "Enterprise", icon: IconStar, tone: "bg-destructive/15 text-destructive" },
 }
 
 export default function AdminClubsPage() {
-  const [clubs, setClubs] = useState<AdminClub[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [clubs, setClubs] = useState<AdminClub[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const fetchClubs = async () => {
     try {
-      setLoading(true);
-      const response = await axios.get('/api/admin/clubs');
-      setClubs(response.data.clubs);
-    } catch (error) {
-      console.error('Error fetching clubs:', error);
-      toast.error('Hiba történt a klubok betöltése során');
+      setLoading(true)
+      const response = await axios.get("/api/admin/clubs")
+      setClubs(response.data.clubs)
+    } catch {
+      toast.error("Hiba történt a klubok betöltése során")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchClubs();
-  }, []);
+    fetchClubs()
+  }, [])
 
-  const filteredClubs = clubs.filter(club => 
-    club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    club.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (club.description && club.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredClubs = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return clubs
+    return clubs.filter((club) => {
+      const haystack = [club.name, club.location, club.description ?? ""].map((value) =>
+        value.toLowerCase(),
+      )
+      return haystack.some((value) => value.includes(term))
+    })
+  }, [clubs, searchTerm])
 
-  const stats = {
-    total: clubs.length,
-    active: clubs.filter(c => !c.isDeleted).length,
-    deleted: clubs.filter(c => c.isDeleted).length,
-    totalMembers: clubs.reduce((total, club) => total + club.memberCount, 0),
-    totalTournaments: clubs.reduce((total, club) => total + club.tournamentCount, 0)
-  };
-
-  const getSubscriptionBadge = (model?: string) => {
-    switch (model) {
-      case 'enterprise':
-        return { color: 'badge-error', label: 'Enterprise', icon: IconStar };
-      case 'pro':
-        return { color: 'badge-warning', label: 'Pro', icon: IconShield };
-      case 'basic':
-        return { color: 'badge-info', label: 'Basic', icon: IconBuilding };
-      default:
-        return { color: 'badge-success', label: 'Free', icon: IconBuilding };
-    }
-  };
+  const stats = useMemo(
+    () => ({
+      total: clubs.length,
+      active: clubs.filter((club) => !club.isDeleted).length,
+      deleted: clubs.filter((club) => club.isDeleted).length,
+      totalMembers: clubs.reduce((total, club) => total + club.memberCount, 0),
+      totalTournaments: clubs.reduce((total, club) => total + club.tournamentCount, 0),
+    }),
+    [clubs],
+  )
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
-          </div>
-          <p className="text-base-content/60">Klubok betöltése...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="size-16 rounded-2xl bg-card/60" />
+          <p className="text-sm text-muted-foreground">Klubok betöltése...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="space-y-8 pb-8">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-success/20 via-success/10 to-transparent border border-success/30 p-8">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
-            backgroundSize: '32px 32px'
-          }}></div>
-        </div>
-        
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div className="space-y-2">
-            <h1 className="text-4xl lg:text-5xl font-bold text-base-content flex items-center gap-3">
-              <IconBuilding className="w-10 h-10 text-success" />
-              Klub Kezelés
-            </h1>
-            <p className="text-base-content/70 text-lg">Klubok áttekintése és kezelése</p>
+    <div className="space-y-10 pb-12 pt-4">
+      <Card className={cn("relative overflow-hidden bg-gradient-to-br from-primary/15 via-background to-background p-8", PANEL_SHADOW)}>
+        <div className="absolute -right-24 -top-24 size-72 rounded-full bg-primary/20 blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-primary">
+              <IconBuilding className="h-10 w-10" />
+              <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">
+                Admin dashboard
+              </span>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground lg:text-5xl">Klubkezelés</h1>
+            <p className="max-w-xl text-sm text-muted-foreground">
+              Részletes áttekintés a klubokról, előfizetésekről, aktivitásról és növekedési trendekről.
+            </p>
           </div>
-          
-          <button 
+          <Button
+            size="lg"
+            className={cn("gap-2 bg-card/90 hover:bg-card text-foreground", PANEL_SHADOW)}
             onClick={fetchClubs}
-            disabled={loading}
-            className="btn btn-success gap-2"
           >
-            <IconRefresh className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            <IconRefresh className="h-4 w-4" />
             Frissítés
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-6 text-center">
-          <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconBuilding className="w-7 h-7 text-primary" />
-          </div>
-          <h3 className="text-sm font-medium text-base-content/70 mb-2">Összes Klub</h3>
-          <p className="text-4xl font-bold text-primary">{stats.total}</p>
+      <section>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {[
+            { label: "Összes klub", value: stats.total, icon: IconBuilding, tone: "text-primary" },
+            { label: "Aktív klubok", value: stats.active, icon: IconShield, tone: "text-emerald-400" },
+            { label: "Archivált klubok", value: stats.deleted, icon: IconStar, tone: "text-amber-300" },
+            { label: "Tagok száma", value: stats.totalMembers, icon: IconUsers, tone: "text-sky-300" },
+            { label: "Összes verseny", value: stats.totalTournaments, icon: IconTrophy, tone: "text-rose-300" },
+          ].map((stat) => (
+            <Card key={stat.label} className={cn("bg-card/90 p-6 text-left", PANEL_SHADOW)}>
+              <CardHeader className="p-0">
+                <div className="flex items-center justify-between gap-4">
+                  <div className={cn("flex size-12 items-center justify-center rounded-xl bg-background/60", stat.tone)}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="mt-6 flex flex-col gap-2 p-0">
+                <CardDescription className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {stat.label}
+                </CardDescription>
+                <CardTitle className="text-3xl font-bold text-foreground">{stat.value}</CardTitle>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-2xl p-6 text-center">
-          <div className="w-14 h-14 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconBuilding className="w-7 h-7 text-success" />
-          </div>
-          <h3 className="text-sm font-medium text-base-content/70 mb-2">Aktív Klubok</h3>
-          <p className="text-4xl font-bold text-success">{stats.active}</p>
-        </div>
-        <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-2xl p-6 text-center">
-          <div className="w-14 h-14 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconBuilding className="w-7 h-7 text-error" />
-          </div>
-          <h3 className="text-sm font-medium text-base-content/70 mb-2">Törölt</h3>
-          <p className="text-4xl font-bold text-error">{stats.deleted}</p>
-        </div>
-        <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-2xl p-6 text-center">
-          <div className="w-14 h-14 bg-info/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconUsers className="w-7 h-7 text-info" />
-          </div>
-          <h3 className="text-sm font-medium text-base-content/70 mb-2">Tagok</h3>
-          <p className="text-4xl font-bold text-info">{stats.totalMembers}</p>
-        </div>
-        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-2xl p-6 text-center">
-          <div className="w-14 h-14 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconTrophy className="w-7 h-7 text-warning" />
-          </div>
-          <h3 className="text-sm font-medium text-base-content/70 mb-2">Versenyek</h3>
-          <p className="text-4xl font-bold text-warning">{stats.totalTournaments}</p>
-        </div>
-      </div>
+      </section>
 
-      {/* Daily Chart */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
-        <DailyChart
-          title="Klubok napi létrehozása"
-          apiEndpoint="/api/admin/charts/clubs/daily"
-          color="secondary"
-          icon=""
-        />
-      </div>
+      <Card className={cn("bg-card/90 p-6", PANEL_SHADOW)}>
+        <CardHeader className="p-0">
+          <CardTitle className="text-xl font-semibold text-foreground">Napi klub növekedés</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Trendek és aktivitás az elmúlt időszak adatai alapján.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="mt-6 p-0">
+          <DailyChart title="Klubok napi létrehozása" apiEndpoint="/api/admin/charts/clubs/daily" color="primary" icon="" />
+        </CardContent>
+      </Card>
 
-      {/* Search */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-bold">Keresés</span>
-          </label>
+      <Card className={cn("bg-card/90 p-6", PANEL_SHADOW)}>
+        <CardHeader className="p-0">
+          <CardTitle className="text-lg font-semibold text-foreground">Keresés</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Szűrés név, helyszín vagy rövid leírás alapján.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="mt-6 flex flex-col gap-4 p-0">
           <div className="relative">
-            <input
-              type="text"
-              placeholder="Keresés név, helyszín vagy leírás alapján..."
-              className="input input-bordered w-full pl-10"
+            <IconSearch className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Keresés klub neve, helyszíne vagy leírása alapján..."
+              className="h-12 rounded-xl bg-muted/40 pl-11 text-sm text-foreground shadow-none focus-visible:bg-muted/60"
             />
-            <IconSearch className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Clubs Grid */}
-      {filteredClubs.length === 0 ? (
-        <div className="bg-base-100 border border-base-300 rounded-2xl p-12 text-center">
-          <div className="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconBuilding className="w-10 h-10 text-base-content/30" />
+      <section>
+        {filteredClubs.length === 0 ? (
+          <Card className={cn("flex flex-col items-center justify-center gap-4 bg-card/80 p-12 text-center", PANEL_SHADOW)}>
+            <div className="flex size-20 items-center justify-center rounded-full bg-muted/40 text-muted-foreground">
+              <IconBuilding className="h-10 w-10" />
+            </div>
+            <CardTitle className="text-2xl font-semibold text-foreground">Nincs találat</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              {searchTerm ? "Nincs olyan klub, amely megfelelne a keresésnek." : "Még nincsenek regisztrált klubok."}
+            </CardDescription>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {filteredClubs.map((club) => {
+              const model = club.subscriptionModel ?? "free"
+              const meta = subscriptionMeta[model]
+              return (
+                <Card key={club._id} className={cn("flex h-full flex-col bg-card/90 p-6", PANEL_SHADOW)}>
+                  <CardHeader className="flex flex-col gap-4 p-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <CardTitle className="truncate text-xl text-foreground">{club.name}</CardTitle>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                          <IconMapPin className="h-4 w-4 flex-shrink-0 text-primary/70" />
+                          <span className="truncate">{club.location}</span>
+                        </div>
+                      </div>
+                      {club.isDeleted && (
+                        <Badge className="rounded-full bg-destructive/15 px-3 py-1 text-xs font-semibold text-destructive">
+                          Archivált
+                        </Badge>
+                      )}
+                    </div>
+                    {club.description && (
+                      <p className="text-sm leading-relaxed text-muted-foreground">{club.description}</p>
+                    )}
+                  </CardHeader>
+
+                  <CardContent className="mt-4 flex flex-col gap-4 p-0">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-2 text-foreground">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                          <IconUsers className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tagok</span>
+                          <span className="text-base font-semibold">{club.memberCount}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-2 text-foreground">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-warning/15 text-warning">
+                          <IconTrophy className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            Versenyek
+                          </span>
+                          <span className="text-base font-semibold">{club.tournamentCount}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/30 px-4 py-3">
+                      <Badge className={cn("flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold", meta.tone)}>
+                        <meta.icon className="h-4 w-4" />
+                        {meta.label}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        Regisztrálva: {new Date(club.createdAt).toLocaleDateString("hu-HU")}
+                      </span>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="mt-auto flex items-center justify-between gap-3 p-0 pt-6">
+                    <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                      <span>Összes tag: {club.memberCount}</span>
+                      <span>Összes torna: {club.tournamentCount}</span>
+                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      className={cn("gap-2 bg-card/80 hover:bg-card text-foreground", PANEL_SHADOW)}
+                    >
+                      <Link href={`/clubs/${club._id}`} target="_blank" rel="noreferrer">
+                        <IconExternalLink className="h-4 w-4" />
+                        Megnyitás
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )
+            })}
           </div>
-          <h3 className="text-xl font-bold text-base-content mb-2">Nincsenek klubok</h3>
-          <p className="text-base-content/60">
-            {searchTerm 
-              ? 'Nincsenek klubok a megadott feltételekkel.'
-              : 'Még nincsenek regisztrált klubok.'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClubs.map(club => {
-            const subBadge = getSubscriptionBadge(club.subscriptionModel);
-            return (
-              <div key={club._id} className="bg-base-100 border border-base-300 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-base-content mb-2 group-hover:text-primary transition-colors truncate">
-                      {club.name}
-                    </h2>
-                    <div className="flex items-center gap-2 text-base-content/60 mb-3">
-                      <IconMapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm truncate">{club.location}</span>
-                    </div>
-                  </div>
-                  {club.isDeleted && (
-                    <span className="badge badge-error gap-1 flex-shrink-0">Törölve</span>
-                  )}
-                </div>
-
-                {club.description && (
-                  <p className="text-sm text-base-content/70 mb-4 line-clamp-2 leading-relaxed">
-                    {club.description}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 bg-info/10 rounded-lg flex items-center justify-center">
-                      <IconUsers className="w-4 h-4 text-info" />
-                    </div>
-                    <span className="font-bold">{club.memberCount}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 bg-warning/10 rounded-lg flex items-center justify-center">
-                      <IconTrophy className="w-4 h-4 text-warning" />
-                    </div>
-                    <span className="font-bold">{club.tournamentCount}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-base-300">
-                  <span className={`badge ${subBadge.color} gap-1`}>
-                    <subBadge.icon size={14} />
-                    {subBadge.label}
-                  </span>
-                  <Link
-                    href={`/clubs/${club._id}`}
-                    className="btn btn-primary btn-sm gap-2"
-                    target="_blank"
-                  >
-                    <IconExternalLink size={16} />
-                    Megnyitás
-                  </Link>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-base-content/50">
-                  <IconCalendar size={14} />
-                  <span>{new Date(club.createdAt).toLocaleDateString('hu-HU')}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        )}
+      </section>
     </div>
-  );
+  )
 }

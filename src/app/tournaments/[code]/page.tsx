@@ -1,438 +1,428 @@
 "use client"
-import React, { useEffect, useState, useCallback } from 'react';
-import { useUserContext } from '@/hooks/useUser';
-import { useTournamentAutoRefresh } from '@/hooks/useAutoRefresh';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import { useParams } from 'next/navigation';
-import axios from 'axios';
-import TournamentInfo from '@/components/tournament/TournamentInfo';
-import TournamentPlayers from '@/components/tournament/TournamentPlayers';
-import TournamentGroupsGenerator from '@/components/tournament/TournamentStatusChanger';
-import TournamentGroupsView from '@/components/tournament/TournamentGroupsView';
-import TournamentBoardsView from '@/components/tournament/TournamentBoardsView';
-import TournamentKnockoutBracket from '@/components/tournament/TournamentKnockoutBracket';
-import TournamentShareModal from '@/components/tournament/TournamentShareModal';
-import { IconQrcode, IconRefresh } from '@tabler/icons-react';
+
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import axios from "axios"
+import { useParams } from "next/navigation"
+import { IconRefresh, IconShare2 } from "@tabler/icons-react"
+import { useUserContext } from "@/hooks/useUser"
+import { useTournamentAutoRefresh } from "@/hooks/useAutoRefresh"
+import { useFeatureFlag } from "@/hooks/useFeatureFlag"
+import TournamentOverview from "@/components/tournament/TournamentOverview"
+import TournamentPlayers from "@/components/tournament/TournamentPlayers"
+import TournamentGroupsGenerator from "@/components/tournament/TournamentStatusChanger"
+import TournamentGroupsView from "@/components/tournament/TournamentGroupsView"
+import TournamentBoardsView from "@/components/tournament/TournamentBoardsView"
+import TournamentKnockoutBracket from "@/components/tournament/TournamentKnockoutBracket"
+import TournamentShareModal from "@/components/tournament/TournamentShareModal"
+import EditTournamentModal from "@/components/tournament/EditTournamentModal"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+
+const statusMeta: Record<
+  string,
+  {
+    label: string
+    badgeClass: string
+    description: string
+  }
+> = {
+  pending: {
+    label: "Előkészítés alatt",
+    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    description: "A torna előkészítés alatt áll, a játékosok még jelentkezhetnek.",
+  },
+  "group-stage": {
+    label: "Csoportkör",
+    badgeClass: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    description: "A csoportkör zajlik, a meccsek eredményei frissülnek.",
+  },
+  knockout: {
+    label: "Egyenes kiesés",
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
+    description: "A torna egyenes kieséses szakasza fut.",
+  },
+  finished: {
+    label: "Befejezett",
+    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    description: "A torna lezárult, az eredmények archiválva vannak.",
+  },
+}
+
+const tabs = [
+  { value: "overview", label: "Áttekintés" },
+  { value: "players", label: "Játékosok" },
+  { value: "boards", label: "Táblák" },
+  { value: "groups", label: "Csoportok" },
+  { value: "bracket", label: "Kiesés" },
+  { value: "admin", label: "Admin" },
+]
 
 const TournamentPage = () => {
-    const { code } = useParams();
-    const [tournament, setTournament] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [userClubRole, setUserClubRole] = useState<'admin' | 'moderator' | 'member' | 'none'>('none');
-  const [userPlayerStatus, setUserPlayerStatus] = useState<'applied' | 'checked-in' | 'none'>('none');
-  const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
-  const [players, setPlayers] = useState<any[]>([]);
-  const [tournamentShareModal, setTournamentShareModal] = useState(false);
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-  const [isReopening, setIsReopening] = useState(false);
-    const { user } = useUserContext();
+  const { code } = useParams()
+  const { user } = useUserContext()
 
-  // Check if Pro features are enabled for this club
+  const [tournament, setTournament] = useState<any | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [userClubRole, setUserClubRole] = useState<'admin' | 'moderator' | 'member' | 'none'>("none")
+  const [userPlayerStatus, setUserPlayerStatus] = useState<'applied' | 'checked-in' | 'none'>("none")
+  const [userPlayerId, setUserPlayerId] = useState<string | null>(null)
+  const [players, setPlayers] = useState<any[]>([])
+  const [tournamentShareModal, setTournamentShareModal] = useState(false)
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false)
+  const [isReopening, setIsReopening] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>("overview")
+
+  // Feature flag for auto refresh
   const { isEnabled: isProFeature, isLoading: isFeatureLoading } = useFeatureFlag(
-    'detailedStatistics', 
-    tournament?.clubId?._id || tournament?.clubId
-  );
+    "detailedStatistics",
+    tournament?.clubId?._id || tournament?.clubId,
+  )
 
-
-
-  // Bulk fetch for tournament and user role
   const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setError('');
+    if (!code) return
+    setLoading(true)
+    setError("")
+
     try {
-      const requests = [axios.get(`/api/tournaments/${code}`)];
+      const requests: Promise<any>[] = [axios.get(`/api/tournaments/${code}`)]
       if (user?._id) {
-        requests.push(axios.get(`/api/tournaments/${code}/getUserRole`, { headers: { 'x-user-id': user._id } }));
-        requests.push(axios.get(`/api/tournaments/${code}/players`, { headers: { 'x-user-id': user._id } }));
-      }
-      const [tournamentRes, userRoleRes] = await Promise.all(requests);
-      setTournament(tournamentRes.data);
-      
-      // Ensure tournamentPlayers are properly populated
-      const tournamentData = tournamentRes.data;
-      if (tournamentData.tournamentPlayers && Array.isArray(tournamentData.tournamentPlayers)) {
-        setPlayers(tournamentData.tournamentPlayers);
-      } else {
-        setPlayers([]);
-        console.log('No tournament players found');
-      }
-      
-      if (user?._id) {
-        setUserClubRole(userRoleRes.data.userClubRole || 'none');
-        setUserPlayerStatus(userRoleRes.data.userPlayerStatus || 'none');
-        // Find user's player ID from tournament data
-        const userPlayer = tournamentData.tournamentPlayers?.find((p: any) => 
-          p.playerReference?.userRef === user._id || p.playerReference?._id?.toString() === user._id
-        );
-        setUserPlayerId(userPlayer ? userPlayer.playerReference?._id || userPlayer.playerReference : null);
-      } else {
-        setUserClubRole('none');
-        setUserPlayerStatus('none');
-        setUserPlayerId(null);
+        requests.push(
+          axios.get(`/api/tournaments/${code}/getUserRole`, {
+            headers: { "x-user-id": user._id },
+          }),
+        )
+        requests.push(
+          axios.get(`/api/tournaments/${code}/players`, {
+            headers: { "x-user-id": user._id },
+          }),
+        )
       }
 
+      const [tournamentRes, userRoleRes] = await Promise.all(requests)
+      const tournamentData = tournamentRes.data
+
+      setTournament(tournamentData)
+      setPlayers(Array.isArray(tournamentData.tournamentPlayers) ? tournamentData.tournamentPlayers : [])
+
+      if (user?._id && userRoleRes) {
+        const roleData = userRoleRes.data
+        setUserClubRole(roleData.userClubRole || 'none')
+        setUserPlayerStatus(roleData.userPlayerStatus || 'none')
+
+        const userPlayer = tournamentData.tournamentPlayers?.find((p: any) =>
+          p.playerReference?.userRef === user._id || p.playerReference?._id?.toString() === user._id,
+        )
+        setUserPlayerId(userPlayer ? userPlayer.playerReference?._id || userPlayer.playerReference : null)
+      } else {
+        setUserClubRole('none')
+        setUserPlayerStatus('none')
+        setUserPlayerId(null)
+      }
     } catch (err: any) {
-      console.error('Tournament fetch error:', err);
-      setError(err.response?.data?.error || 'Nem sikerült betölteni a tornát vagy a szerepeket.');
+      console.error('Tournament fetch error:', err)
+      setError(err.response?.data?.error || 'Nem sikerült betölteni a tornát vagy a szerepeket.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [code, user]);
+  }, [code, user])
 
-    useEffect(() => {
-    fetchAll();
-  }, [code, user, fetchAll]);
+  useEffect(() => {
+    fetchAll()
+  }, [fetchAll])
 
-    // Auto-refresh for Pro users
-    const { isRefreshing, lastRefresh } = useTournamentAutoRefresh(
-      code as string,
-      fetchAll,
-      tournament?.clubId?._id || tournament?.clubId,
-      autoRefreshEnabled
-    );
+  const { isRefreshing, lastRefresh } = useTournamentAutoRefresh(
+    code as string,
+    fetchAll,
+    tournament?.clubId?._id || tournament?.clubId,
+    autoRefreshEnabled,
+  )
 
-    // Debug logging
-    console.log('Tournament auto-refresh state:', {
-      autoRefreshEnabled,
-      isRefreshing,
-      lastRefresh,
-      clubId: tournament?.clubId?._id || tournament?.clubId,
-      isProFeature,
-      isFeatureLoading
-    });
-
-  // Handler for child components to request a refetch
   const handleRefetch = useCallback(() => {
-    fetchAll();
-  }, [fetchAll]);
+    fetchAll()
+  }, [fetchAll])
 
-  // Handler for reopening tournament (Super Admin only)
   const handleReopenTournament = useCallback(async () => {
-    // Double-check super admin access
     if (!user || !user._id || user.isAdmin !== true) {
-      alert('Nincs jogosultság ehhez a művelethez. Csak super adminok használhatják ezt a funkciót.');
-      return;
+      alert('Nincs jogosultság ehhez a művelethez. Csak super adminok használhatják ezt a funkciót.')
+      return
     }
-    
-    const confirmMessage = `Biztosan újranyitja ezt a tornát?\n\nEz a művelet:\n- Visszaállítja a torna státuszát "befejezett"-ről "aktív"-ra\n- Törli az összes játékos statisztikáját\n- Megtartja az összes meccs adatot\n- Csak super adminok használhatják\n\nEz a művelet nem vonható vissza!`;
-    
-    if (!confirm(confirmMessage)) return;
+
+    const confirmMessage = `Biztosan újranyitja ezt a tornát?\n\nEz a művelet:\n- Visszaállítja a torna státuszát "befejezett"-ről "aktív"-ra\n- Törli az összes játékos statisztikáját\n- Megtartja az összes meccs adatot\n- Csak super adminok használhatják\n\nEz a művelet nem vonható vissza!`
+
+    if (!confirm(confirmMessage)) return
 
     try {
-      setIsReopening(true);
-      const response = await axios.post(`/api/tournaments/${code}/reopen`);
-
+      setIsReopening(true)
+      const response = await axios.post(`/api/tournaments/${code}/reopen`)
       if (response.data.success) {
-        alert('Torna sikeresen újranyitva! A statisztikák törölve, a torna újra aktív.');
-        await fetchAll(); // Refresh the page data
+        alert('Torna sikeresen újranyitva! A statisztikák törölve, a torna újra aktív.')
+        await fetchAll()
       }
-    } catch (error: any) {
-      console.error('Error reopening tournament:', error);
-      alert(error.response?.data?.error || 'Hiba történt a torna újranyitása során');
+    } catch (err: any) {
+      console.error('Error reopening tournament:', err)
+      alert(err.response?.data?.error || 'Hiba történt a torna újranyitása során')
     } finally {
-      setIsReopening(false);
+      setIsReopening(false)
     }
-  }, [user, code, fetchAll]);
+  }, [code, fetchAll, user])
 
-  // Loading state
+  const statusInfo = useMemo(() => {
+    const status = tournament?.tournamentSettings?.status || 'pending'
+    return statusMeta[status] || statusMeta.pending
+  }, [tournament?.tournamentSettings?.status])
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
-          <h2 className="text-xl font-bold text-primary">Torna betöltése...</h2>
-          <p className="text-base-content/70 mt-2">Kérjük várjon</p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+          <p className="text-sm text-muted-foreground">Torna betöltése...</p>
         </div>
       </div>
-    );
+    )
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="alert alert-error shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <h3 className="font-bold">Hiba történt!</h3>
-              <div className="text-xs">{error}</div>
-            </div>
-          </div>
-          <button 
-            className="btn btn-primary w-full mt-4"
-            onClick={fetchAll}
-          >
-            Újrapróbálkozás
-          </button>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md border-destructive/40 bg-card">
+          <CardContent className="space-y-4 p-6">
+            <Alert variant="destructive">
+              <AlertTitle>Hiba történt</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <Button onClick={fetchAll} className="w-full">
+              Újrapróbálkozás
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-    );
+    )
   }
 
-  // Not found state
   if (!tournament) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-2xl font-bold text-primary mb-2">Torna nem található</h2>
-          <p className="text-base-content/70">A keresett torna nem létezik vagy nem elérhető.</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md border-dashed">
+          <CardContent className="space-y-4 py-8 text-center">
+            <div className="text-4xl">🏆</div>
+            <p className="text-base font-semibold text-foreground">Torna nem található</p>
+            <p className="text-sm text-muted-foreground">
+              A keresett torna nem létezik vagy nem elérhető.
+            </p>
+          </CardContent>
+        </Card>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto space-y-6 px-4 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-primary">
-              {tournament.tournamentSettings?.name || 'Torna'}
-            </h1>
-            {lastRefresh && !isRefreshing && (
-              <div className="text-xs text-base-content/50">
-                Utoljára frissítve: {lastRefresh.toLocaleTimeString('hu-HU')}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Auto-refresh toggle for Pro users */}
-            {user && isProFeature && !isFeatureLoading && (
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={autoRefreshEnabled}
-                    onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
-                    className="toggle toggle-primary toggle-sm"
-                  />
-                  <span className="text-sm text-base-content/70">Auto-frissítés</span>
-                </label>
-                {isRefreshing && (
-                  <IconRefresh className="w-4 h-4 animate-spin text-primary" />
-                )}
-              </div>
-            )}
-            <button
-              onClick={() => setTournamentShareModal(true)}
-              className="btn btn-outline btn-primary flex items-center gap-2"
-              title="Torna megosztása"
-            >
-              <IconQrcode className="w-5 h-5" />
-              Megosztás
-            </button>
-          </div>
-        </div>
-
-        {/* Main content grid */}
-        <div className="space-y-8 mt-10">
-          {/* Top section - Info, Boards, Groups, Players (side by side) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left column - Tournament info, boards, groups */}
-            <div className="lg:col-span-2 space-y-8">
-              
-              {/* Tournament Info Card */}
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Torna Információk
-                  </h2>
-                  <TournamentInfo 
-                    tournament={tournament} 
-                    onRefetch={handleRefetch} 
-                    userRole={userClubRole}
-                    userId={user?._id}
-                  />
-                </div>
-              </div>
-
-              {/* Boards View Card */}
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    Táblák Állapota
-                  </h2>
-                  <TournamentBoardsView tournament={tournament} />
-                </div>
-              </div>
-
-              {/* Groups View Card */}
-              {tournament.groups && tournament.groups.length > 0 && (
-                <div className="card bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      Csoportok és Meccsek
-                    </h2>
-                    <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
-                  </div>
-                </div>
+        <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-bold text-foreground">
+                {tournament.tournamentSettings?.name || 'Torna'}
+              </h1>
+              <Badge variant="outline" className={statusInfo.badgeClass}>
+                {statusInfo.label}
+              </Badge>
+            </div>
+            <p className="max-w-2xl text-sm text-muted-foreground">{statusInfo.description}</p>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span>
+                Torna kód: <span className="font-mono text-foreground">{tournament.tournamentId}</span>
+              </span>
+              {lastRefresh && (
+                <span>Utolsó frissítés: {lastRefresh.toLocaleTimeString('hu-HU')}</span>
               )}
             </div>
+          </div>
 
-            {/* Right column - Players */}
-            <div className="space-y-8">
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                    Játékosok
-                  </h2>
-                  <TournamentPlayers
-                    tournament={tournament}
-                    players={players}
-                    userClubRole={userClubRole}
-                    userPlayerStatus={userPlayerStatus}
-                    userPlayerId={userPlayerId}
-                  />
-                </div>
-              </div>
+          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
+            {user && !isFeatureLoading && isProFeature && (
+              <Button
+                variant={autoRefreshEnabled ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAutoRefreshEnabled((prev) => !prev)}
+                className={cn("gap-2", !autoRefreshEnabled && "bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]")}
+              >
+                <IconRefresh className={cn('h-4 w-4', autoRefreshEnabled && isRefreshing && 'animate-spin')} />
+                Auto-frissítés {autoRefreshEnabled ? 'BE' : 'KI'}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={handleRefetch} className="gap-2 bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]">
+              <IconRefresh className="h-4 w-4" /> Frissítés
+            </Button>
+            <Button variant="default" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
+              <IconShare2 className="h-4 w-4" /> Megosztás
+            </Button>
+          </div>
+        </header>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-6 pb-24 md:pb-0">
+          <TabsList className="hidden w-full gap-2 rounded-xl border-0 bg-card/90 p-1 md:flex">
+            {tabs.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <div className="md:hidden">
+            <div className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-1rem)] max-w-[380px] -translate-x-1/2 items-center gap-0.5 rounded-2xl border-0 bg-card/85 backdrop-blur-xl p-1 shadow-[0_20px_60px_-25px_oklch(51%_0.18_16_/0.65)]">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.value
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setActiveTab(tab.value)}
+                    className={cn(
+                      "flex flex-1 items-center justify-center rounded-xl px-2 py-2 text-xs font-medium transition-all",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                        : "text-muted-foreground hover:bg-muted/20"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
-          {/* Bottom section - Knockout Bracket (full width) */}
-          {(tournament.tournamentSettings?.status === 'knockout' || tournament.tournamentSettings?.status === 'finished' || (tournament.tournamentSettings?.status === 'group-stage' && (tournament.tournamentSettings.format === 'knockout' || tournament.tournamentSettings.format === 'group_knockout'))) && (
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  Egyenes Kiesés
-                </h2>
-                <TournamentKnockoutBracket 
-                  tournamentCode={tournament.tournamentId} 
-                  userClubRole={userClubRole} 
+          <TabsContent value="overview" className="mt-0 space-y-6">
+            <TournamentOverview
+              tournament={tournament}
+              userRole={userClubRole}
+              onEdit={() => setEditModalOpen(true)}
+              onRefetch={handleRefetch}
+            />
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground">Táblák állapota</h3>
+              <TournamentBoardsView tournament={tournament} />
+            </div>
+
+            {tournament.groups && tournament.groups.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground">Csoportok és mérkőzések</h3>
+                <Card className="bg-card/90 shadow-xl">
+                  <CardContent className="p-4">
+                    <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="players" className="mt-0 space-y-4">
+            <Card className="bg-card/90 shadow-xl border-0">
+              <CardContent className="p-0">
+                <TournamentPlayers
+                  tournament={tournament}
+                  players={players}
+                  userClubRole={userClubRole}
+                  userPlayerStatus={userPlayerStatus}
+                  userPlayerId={userPlayerId}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="boards" className="mt-0 space-y-4">
+            <TournamentBoardsView tournament={tournament} />
+          </TabsContent>
+
+          <TabsContent value="groups" className="mt-0 space-y-4">
+            <Card className="bg-card/90 shadow-xl border-0">
+              <CardContent className="p-4">
+                <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bracket" className="mt-0 space-y-4">
+            <Card className="bg-card/90 shadow-xl border-0">
+              <CardContent className="p-4">
+                <TournamentKnockoutBracket
+                  tournamentCode={tournament.tournamentId}
+                  userClubRole={userClubRole}
                   tournamentPlayers={players}
                   knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
                   clubId={tournament.clubId?.toString()}
                 />
-              </div>
-            </div>
-          )}
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Super Admin Actions - Tournament Reopen */}
-        {user && user.isAdmin === true && tournament?.tournamentSettings?.status === 'finished' && (
-          <div className="mt-8">
-            <div className="card bg-error/10 border border-error/30 shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-xl font-bold text-error mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  Super Admin Műveletek
-                </h3>
-                <div className="alert alert-warning mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <div>
-                    <h4 className="font-bold">Torna újranyitása</h4>
-                    <div className="text-sm">Ez a művelet visszavonja a torna befejezését és törli az összes statisztikát. Csak super adminok használhatják.</div>
-                  </div>
-                </div>
-                <button 
-                  className="btn btn-error gap-2"
-                  onClick={handleReopenTournament}
-                  disabled={isReopening}
-                >
-                  {isReopening ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Újranyitás...
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Torna újranyitása
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Actions for Admins/Moderators */}
-        {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-          <div className="mt-8">
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-xl font-bold text-primary mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Admin Műveletek
-                </h3>
-                <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => window.open(`/board/${tournament.tournamentId}`, '_blank')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Tábla Kezelés
-                  </button>
-                  <button 
-                    className="btn btn-accent"
-                    onClick={() => window.open(`/tournaments/${tournament.tournamentId}/live`, '_blank')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Élő Közvetítés
-                  </button>
-                  <button 
-                    className="btn btn-secondary"
-                    onClick={handleRefetch}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Frissítés
-                  </button>
+          <TabsContent value="admin" className="mt-0 space-y-6">
+            {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+              <Card className="bg-card/90 shadow-xl border-0">
+                <CardContent className="p-4">
                   <TournamentGroupsGenerator
                     tournament={tournament}
                     userClubRole={userClubRole}
                     onRefetch={handleRefetch}
                   />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                </CardContent>
+              </Card>
+            )}
+
+            {user && user.isAdmin === true && tournament?.tournamentSettings?.status === 'finished' && (
+              <Card className="bg-destructive/15 shadow-xl border-0">
+                <CardContent className="space-y-4">
+                  <Alert variant="destructive">
+                    <AlertTitle>Torna újranyitása</AlertTitle>
+                    <AlertDescription>
+                      Ez a művelet visszavonja a befejezést és törli az összes statisztikát. Csak super adminok használhatják.
+                    </AlertDescription>
+                  </Alert>
+                  <Button variant="destructive" onClick={handleReopenTournament} disabled={isReopening} className="gap-2">
+                    {isReopening ? 'Újranyitás...' : 'Torna újranyitása'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-      
-      {/* Tournament Share Modal */}
+
       <TournamentShareModal
         isOpen={tournamentShareModal}
         onClose={() => setTournamentShareModal(false)}
         tournamentCode={tournament.tournamentId}
         tournamentName={tournament.tournamentSettings?.name || 'Torna'}
       />
-    </div>
-  );
-};
 
-export default TournamentPage;
+      {editModalOpen && user?._id && (
+        <EditTournamentModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          tournament={tournament}
+          userId={user._id}
+          onTournamentUpdated={handleRefetch}
+        />
+      )}
+    </div>
+  )
+}
+
+export default TournamentPage

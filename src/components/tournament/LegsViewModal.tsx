@@ -229,8 +229,6 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
 
   if (!isOpen || !match) return null;
 
-
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
       <div className="bg-base-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -340,7 +338,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                       const { player1Stats, player2Stats } = calculateMatchStats();
                       return (
                         <>
-                          <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                          <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border"
                             <div className="card-body p-3 sm:p-4">
                               <div className="flex items-center justify-between mb-3">
                                 <h5 className="font-bold text-primary text-sm sm:text-base truncate flex-1 mr-2" title={match.player1?.playerId?.name}>
@@ -360,7 +358,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                               </div>
                             </div>
                           </div>
-                          <div className="card bg-gradient-to-br from-error/10 to-error/5 border border-error/20">
+                          <div className="card bg-gradient-to-br from-error/10 to-error/5 border"
                             <div className="card-body p-3 sm:p-4">
                               <div className="flex items-center justify-between mb-3">
                                 <h5 className="font-bold text-error text-sm sm:text-base truncate flex-1 mr-2" title={match.player2?.playerId?.name}>
@@ -466,19 +464,33 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                     {/* Players and Throws - Basic info for everyone */}
                     <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       {/* Player 1 */}
-                      <div className={`p-3 sm:p-4 rounded-lg ${isPlayer1Winner ? 'bg-success/20 border-2 border-success/40' : 'bg-base-100 border border-base-300'}`}>
+                      <div
+                        className={`p-3 sm:p-4 rounded-lg ${
+                          isPlayer1Winner ? "bg-success/20" : "bg-base-100 border"
+                        }`}
+                      >
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="badge badge-primary badge-xs sm:badge-sm flex-shrink-0">P1</div>
-                            <h5 className="font-bold text-sm sm:text-base md:text-lg text-primary truncate" title={match.player1?.playerId?.name}>
+                            <div className="badge badge-primary badge-xs sm:badge-sm flex-shrink-0">
+                              P1
+                            </div>
+                            <h5
+                              className="font-bold text-sm sm:text-base md:text-lg text-primary truncate"
+                              title={match.player1?.playerId?.name}
+                            >
                               {match.player1?.playerId?.name}
                             </h5>
-                            {isPlayer1Winner && (
-                              <IconTrophy size={16} className="text-warning" />
-                            )}
+                            {isPlayer1Winner && <IconTrophy size={16} className="text-warning" />}
                             <div className="flex items-center gap-1 text-xs text-base-content/60">
                               <IconTarget size={12} className="text-primary" />
-                              <span>{calculatePlayerArrows(leg.player1Throws, isPlayer1Winner, leg.winnerArrowCount)} nyíl</span>
+                              <span>
+                                {calculatePlayerArrows(
+                                  leg.player1Throws,
+                                  isPlayer1Winner,
+                                  leg.winnerArrowCount
+                                )}{" "}
+                                nyíl
+                              </span>
                             </div>
                           </div>
                           {/* Pro-only detailed stats */}
@@ -494,49 +506,74 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                               </div>
                               <div className="bg-base-200 rounded px-2 py-1">
                                 <span className="text-base-content/60">Nyilak:</span>
-                                <span className="font-bold ml-1">{calculatePlayerArrows(leg.player1Throws, isPlayer1Winner, leg.winnerArrowCount)}</span>
+                                <span className="font-bold ml-1">
+                                  {calculatePlayerArrows(
+                                    leg.player1Throws,
+                                    isPlayer1Winner,
+                                    leg.winnerArrowCount
+                                  )}
+                                </span>
                               </div>
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-1 sm:gap-1.5">
                             {leg.player1Throws.map((throwData, throwIndex) => (
                               <div key={throwIndex} className="flex items-center gap-1">
                                 {formatThrow(throwData, isPlayer1Winner)}
                                 {/* Pro-only running averages */}
-                                {showDetailedStats && player1RunningAverages[throwIndex] !== undefined && (
-                                  <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
-                                    ({player1RunningAverages[throwIndex]})
-                                  </span>
-                                )}
+                                {showDetailedStats &&
+                                  player1RunningAverages[throwIndex] !== undefined && (
+                                    <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
+                                      ({player1RunningAverages[throwIndex]})
+                                    </span>
+                                  )}
                                 {throwIndex < leg.player1Throws.length - 1 && (
-                                  <span className="text-base-content/30 text-xs hidden sm:inline">→</span>
+                                  <span className="text-base-content/30 text-xs hidden sm:inline">
+                                    →
+                                  </span>
                                 )}
                               </div>
                             ))}
                           </div>
                           {leg.player1Throws.length === 0 && (
-                            <span className="text-base-content/50 text-xs sm:text-sm">Nincs dobás</span>
+                            <span className="text-base-content/50 text-xs sm:text-sm">
+                              Nincs dobás
+                            </span>
                           )}
                         </div>
                       </div>
 
                       {/* Player 2 */}
-                      <div className={`p-3 sm:p-4 rounded-lg ${isPlayer2Winner ? 'bg-success/20 border-2 border-success/40' : 'bg-base-100 border border-base-300'}`}>
+                      <div
+                        className={`p-3 sm:p-4 rounded-lg ${
+                          isPlayer2Winner ? "bg-success/20" : "bg-base-100 border"
+                        }`}
+                      >
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="badge badge-error badge-xs sm:badge-sm flex-shrink-0">P2</div>
-                            <h5 className="font-bold text-sm sm:text-base md:text-lg text-error truncate" title={match.player2?.playerId?.name}>
+                            <div className="badge badge-error badge-xs sm:badge-sm flex-shrink-0">
+                              P2
+                            </div>
+                            <h5
+                              className="font-bold text-sm sm:text-base md:text-lg text-error truncate"
+                              title={match.player2?.playerId?.name}
+                            >
                               {match.player2?.playerId?.name}
                             </h5>
-                            {isPlayer2Winner && (
-                              <IconTrophy size={16} className="text-warning" />
-                            )}
+                            {isPlayer2Winner && <IconTrophy size={16} className="text-warning" />}
                             <div className="flex items-center gap-1 text-xs text-base-content/60">
                               <IconTarget size={12} className="text-error" />
-                              <span>{calculatePlayerArrows(leg.player2Throws, isPlayer2Winner, leg.winnerArrowCount)} nyíl</span>
+                              <span>
+                                {calculatePlayerArrows(
+                                  leg.player2Throws,
+                                  isPlayer2Winner,
+                                  leg.winnerArrowCount
+                                )}{" "}
+                                nyíl
+                              </span>
                             </div>
                           </div>
                           {/* Pro-only detailed stats */}
@@ -552,47 +589,60 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                               </div>
                               <div className="bg-base-200 rounded px-2 py-1">
                                 <span className="text-base-content/60">Nyilak:</span>
-                                <span className="font-bold ml-1">{calculatePlayerArrows(leg.player2Throws, isPlayer2Winner, leg.winnerArrowCount)}</span>
+                                <span className="font-bold ml-1">
+                                  {calculatePlayerArrows(
+                                    leg.player2Throws,
+                                    isPlayer2Winner,
+                                    leg.winnerArrowCount
+                                  )}
+                                </span>
                               </div>
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-1 sm:gap-1.5">
                             {leg.player2Throws.map((throwData, throwIndex) => (
                               <div key={throwIndex} className="flex items-center gap-1">
                                 {formatThrow(throwData, isPlayer2Winner)}
                                 {/* Pro-only running averages */}
-                                {showDetailedStats && player2RunningAverages[throwIndex] !== undefined && (
-                                  <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
-                                    ({player2RunningAverages[throwIndex]})
-                                  </span>
-                                )}
+                                {showDetailedStats &&
+                                  player2RunningAverages[throwIndex] !== undefined && (
+                                    <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
+                                      ({player2RunningAverages[throwIndex]})
+                                    </span>
+                                  )}
                                 {throwIndex < leg.player2Throws.length - 1 && (
-                                  <span className="text-base-content/30 text-xs hidden sm:inline">→</span>
+                                  <span className="text-base-content/30 text-xs hidden sm:inline">
+                                    →
+                                  </span>
                                 )}
                               </div>
                             ))}
                           </div>
                           {leg.player2Throws.length === 0 && (
-                            <span className="text-base-content/50 text-xs sm:text-sm">Nincs dobás</span>
+                            <span className="text-base-content/50 text-xs sm:text-sm">
+                              Nincs dobás
+                            </span>
                           )}
                         </div>
                       </div>
                     </div>
 
                     {/* Leg Footer Info */}
-                    <div className="mt-3 pt-3 border-t border-base-300">
+                    <div className="mt-3 pt-3">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs sm:text-sm text-base-content/60">
                         <div className="flex items-center gap-2">
                           <IconClock size={14} />
-                          <span>{new Date(leg.createdAt).toLocaleString('hu-HU', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}</span>
+                          <span>
+                            {new Date(leg.createdAt).toLocaleString("hu-HU", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -600,11 +650,10 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                 </div>
               );
             })}
-          </div>
         )}
 
         {/* Footer */}
-        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-base-300">
+        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 "
           <button
             onClick={onClose}
             className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto"

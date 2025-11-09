@@ -4,7 +4,7 @@ export default function Loading() {
       <div className="text-center">
         {/* Loading Spinner */}
         <div className="mb-8">
-          <div className="w-16 h-16 border-4 border-gray-700 border-t-red-500 rounded-full animate-spin mx-auto"></div>
+          <div className="w-16 h-16    rounded-full animate-spin mx-auto"></div>
         </div>
         
         {/* Loading Text */}

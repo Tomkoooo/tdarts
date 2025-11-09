@@ -3,7 +3,7 @@ import "./globals.css";
 import { cookies, headers } from "next/headers";
 import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
-import Navbar from "@/components/homapage/Navbar";
+import NavbarNew from "@/components/homapage/NavbarNew";
 import SessionProvider from "@/components/providers/SessionProvider";
 import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
@@ -230,7 +230,7 @@ export default async function RootLayout({
           <UserProvider initialUser={initialUser}>
             <AuthSync />
             <PWAProvider />
-            {!shouldHideNavbar && <Navbar />}
+            {!shouldHideNavbar && <NavbarNew />}
             {children}
           </UserProvider>
         </SessionProvider>

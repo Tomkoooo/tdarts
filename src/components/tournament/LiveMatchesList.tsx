@@ -204,8 +204,8 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
               key={match._id} 
               className={`match-card border rounded-lg p-4 cursor-pointer transition-colors ${
                 selectedMatch === match._id 
-                  ? 'border-primary bg-primary/10' 
-                  : 'border-base-300 hover:border-primary/50'
+                  ? ' bg-primary/10' 
+                  : ' hover:
               }`}
               onClick={() => handleMatchSelect(match)}
             >

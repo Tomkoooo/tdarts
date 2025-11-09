@@ -102,8 +102,8 @@ export default function AdminDashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative">
-            <div className="w-20 h-20 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-20 h-20   rounded-full"></div>
+            <div className="w-20 h-20    rounded-full animate-spin absolute top-0"></div>
           </div>
           <div className="space-y-2">
             <p className="text-lg font-semibold text-base-content">Dashboard betöltése</p>
@@ -156,11 +156,11 @@ export default function AdminDashboard() {
     trend?: 'up' | 'down';
   }) => {
     const colorClasses = {
-      primary: 'from-primary/20 to-primary/5 border-primary/30',
-      success: 'from-success/20 to-success/5 border-success/30',
-      warning: 'from-warning/20 to-warning/5 border-warning/30',
-      error: 'from-error/20 to-error/5 border-error/30',
-      info: 'from-info/20 to-info/5 border-info/30'
+      primary: 'from-primary/20 to-primary/5',
+      success: 'from-success/20 to-success/5',
+      warning: 'from-warning/20 to-warning/5',
+      error: 'from-error/20 to-error/5',
+      info: 'from-info/20 to-info/5',
     };
 
     const iconColorClasses = {
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
         <div className="relative z-10">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
-            <div className={`p-3 rounded-xl bg-base-100/50 backdrop-blur-sm border border-base-content/10 group-hover:scale-110 transition-transform duration-300`}>
+            <div className={`p-3 rounded-xl bg-base-100/50 backdrop-blur-sm border  group-hover:scale-110 transition-transform duration-300`}>
               <Icon className={`w-7 h-7 ${iconColorClasses[color as keyof typeof iconColorClasses] || iconColorClasses.primary}`} />
             </div>
             <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
           
           {/* Monthly Stats */}
           {monthlyValue !== undefined && (
-            <div className="flex items-center justify-between pt-4 border-t border-base-content/10">
+            <div className="flex items-center justify-between pt-4"
               <span className="text-xs text-base-content/60">{monthlyLabel}</span>
               <span className={`text-sm font-bold ${iconColorClasses[color as keyof typeof iconColorClasses] || iconColorClasses.primary}`}>
                 +{monthlyValue}
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
     const CustomTooltip = ({ active, payload, label }: any) => {
       if (active && payload && payload.length) {
         return (
-          <div className="bg-base-100 border border-base-300 rounded-lg p-3 shadow-xl backdrop-blur-sm">
+          <div className="bg-base-100 border  rounded-lg p-3 shadow-xl backdrop-blur-sm">
             <p className="text-sm font-medium text-base-content mb-1">{label}</p>
             <p className="text-lg font-bold text-primary">{payload[0].value}</p>
           </div>
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
     const chartColors = getChartColors();
 
     return (
-      <div className="bg-base-100/50 backdrop-blur-xl border border-base-300 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+      <div className="bg-base-100/50 backdrop-blur-xl border  rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-base-content flex items-center gap-2">
             <IconChartBar className="w-5 h-5 text-primary" />
@@ -380,18 +380,18 @@ export default function AdminDashboard() {
     color?: string;
   }) => {
     const colorClasses = {
-      primary: 'from-primary/20 to-primary/5 border-primary/30 hover:border-primary/50',
-      success: 'from-success/20 to-success/5 border-success/30 hover:border-success/50',
-      warning: 'from-warning/20 to-warning/5 border-warning/30 hover:border-warning/50',
-      error: 'from-error/20 to-error/5 border-error/30 hover:border-error/50',
-      info: 'from-info/20 to-info/5 border-info/30 hover:border-info/50'
+      primary: 'from-primary/20 to-primary/5  hover:
+      success: 'from-success/20 to-success/5  hover:
+      warning: 'from-warning/20 to-warning/5  hover:
+      error: 'from-error/20 to-error/5  hover:
+      info: 'from-info/20 to-info/5  hover:
     };
 
     return (
       <Link href={href} className="group">
         <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses] || colorClasses.primary} border backdrop-blur-xl p-5 hover:scale-[1.02] transition-all duration-300`}>
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-base-100/50 backdrop-blur-sm border border-base-content/10 group-hover:scale-110 transition-transform duration-300">
+            <div className="p-3 rounded-lg bg-base-100/50 backdrop-blur-sm border  group-hover:scale-110 transition-transform duration-300">
               <Icon className="w-6 h-6 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
@@ -408,7 +408,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border  p-8">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -525,7 +525,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions Section */}
-      <div className="bg-base-100/50 backdrop-blur-xl border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100/50 backdrop-blur-xl border  rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-base-content mb-6 flex items-center gap-3">
           <IconActivity className="w-7 h-7 text-primary" />
           Gyors Műveletek

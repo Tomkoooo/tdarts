@@ -331,7 +331,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-base-300">
+              <div className="mt-4 pt-3">
                 <div className="flex gap-2">
                   <button
                     onClick={() => onLeagueSelect?.(league)}

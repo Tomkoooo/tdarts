@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
@@ -37,7 +36,6 @@ interface ErrorLog {
   method?: string;
   timestamp: string;
   metadata?: any;
-}
 
 interface ErrorStats {
   totalErrors: number;
@@ -85,16 +83,16 @@ export default function AdminErrorsPage() {
 
   const getCategoryConfig = (category: string) => {
     const configs: Record<string, { icon: any; color: string; label: string }> = {
-      auth: { icon: IconUser, color: 'bg-warning/10 text-warning border-warning/30', label: 'Auth' },
-      club: { icon: IconBuilding, color: 'bg-info/10 text-info border-info/30', label: 'Club' },
-      tournament: { icon: IconTrophy, color: 'bg-success/10 text-success border-success/30', label: 'Tournament' },
-      player: { icon: IconUser, color: 'bg-primary/10 text-primary border-primary/30', label: 'Player' },
-      user: { icon: IconUser, color: 'bg-primary/10 text-primary border-primary/30', label: 'User' },
-      api: { icon: IconApi, color: 'bg-error/10 text-error border-error/30', label: 'API' },
-      system: { icon: IconServer, color: 'bg-error/10 text-error border-error/30', label: 'System' },
-      database: { icon: IconDatabase, color: 'bg-error/10 text-error border-error/30', label: 'Database' }
+      auth: { icon: IconUser, color: 'bg-warning/10 text-warning', label: 'Auth' },
+      club: { icon: IconBuilding, color: 'bg-info/10 text-info', label: 'Club' },
+      tournament: { icon: IconTrophy, color: 'bg-success/10 text-success', label: 'Tournament' },
+      player: { icon: IconUser, color: 'bg-primary/10 text-primary', label: 'Player' },
+      user: { icon: IconUser, color: 'bg-primary/10 text-primary', label: 'User' },
+      api: { icon: IconApi, color: 'bg-error/10 text-error', label: 'API' },
+      system: { icon: IconServer, color: 'bg-error/10 text-error', label: 'System' },
+      database: { icon: IconDatabase, color: 'bg-error/10 text-error', label: 'Database' }
     };
-    return configs[category] || { icon: IconBug, color: 'bg-base-300/10 text-base-content border-base-300/30', label: category };
+    return configs[category] || { icon: IconBug, color: 'bg-base-300/10 text-base-content', label: category };
   };
 
   const getLevelConfig = (level: string) => {
@@ -115,8 +113,8 @@ export default function AdminErrorsPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-16 h-16   rounded-full"></div>
+            <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
           <p className="text-base-content/60">Hiba adatok betöltése...</p>
         </div>
@@ -152,7 +150,7 @@ export default function AdminErrorsPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-error/20 via-error/10 to-transparent border border-error/30 p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-error/20 via-error/10 to-transparent border  p-8">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -182,7 +180,7 @@ export default function AdminErrorsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-error/20 to-error/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconAlertTriangle className="w-7 h-7 text-error" />
           </div>
@@ -192,7 +190,7 @@ export default function AdminErrorsPage() {
         {Object.entries(errorStats.errorsByLevel).slice(0, 3).map(([level, count]) => {
           const config = getLevelConfig(level);
           return (
-            <div key={level} className="bg-base-100 border border-base-300 rounded-2xl p-6 text-center hover:shadow-xl transition-all duration-300">
+            <div key={level} className="bg-base-100 border  rounded-2xl p-6 text-center hover:shadow-xl transition-all duration-300">
               <div className="w-14 h-14 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
                 <config.icon className="w-7 h-7 text-primary" />
               </div>
@@ -204,7 +202,7 @@ export default function AdminErrorsPage() {
       </div>
 
       {/* Daily Chart */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <DailyChart
           title="Hibák napi előfordulása"
           apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}`}
@@ -214,7 +212,7 @@ export default function AdminErrorsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <IconFilter className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-bold">Szűrők</h3>
@@ -286,7 +284,7 @@ export default function AdminErrorsPage() {
 
       {/* Category and Level Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="bg-base-100 border  rounded-2xl p-6">
           <h3 className="text-xl font-bold text-base-content mb-6 flex items-center gap-2">
             <IconCode className="w-6 h-6 text-primary" />
             Hibák Kategóriánként
@@ -311,7 +309,7 @@ export default function AdminErrorsPage() {
           </div>
         </div>
 
-        <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+        <div className="bg-base-100 border  rounded-2xl p-6">
           <h3 className="text-xl font-bold text-base-content mb-6 flex items-center gap-2">
             <IconAlertTriangle className="w-6 h-6 text-primary" />
             Hibák Szintenként
@@ -338,7 +336,7 @@ export default function AdminErrorsPage() {
       </div>
 
       {/* Recent Errors */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <h3 className="text-xl font-bold text-base-content mb-6 flex items-center gap-2">
           <IconBug className="w-6 h-6 text-primary" />
           Legutóbbi Hibák ({filteredRecentErrors.length})
@@ -351,7 +349,7 @@ export default function AdminErrorsPage() {
               const isExpanded = expandedError === error._id;
 
               return (
-                <div key={error._id} className="border border-base-300 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div key={error._id} className="border  rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
                   <div className="p-5 bg-base-200/50">
                     {/* Header */}
                     <div className="flex items-start justify-between gap-4 mb-3">
@@ -412,9 +410,9 @@ export default function AdminErrorsPage() {
 
                     {/* Expanded Details */}
                     {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-base-300 space-y-3">
+                      <div className="mt-4 pt-4   space-y-3">
                         {error.error && (
-                          <div className="bg-error/10 border border-error/30 rounded-lg p-3">
+                          <div className="bg-error/10 border  rounded-lg p-3">
                             <p className="text-sm font-bold text-error mb-1">Error Details:</p>
                             <p className="text-sm text-base-content/80 font-mono break-all">{error.error}</p>
                           </div>
@@ -428,7 +426,7 @@ export default function AdminErrorsPage() {
                           </div>
                         )}
                         {error.metadata && Object.keys(error.metadata).length > 0 && (
-                          <div className="bg-info/10 border border-info/30 rounded-lg p-3">
+                          <div className="bg-info/10 border  rounded-lg p-3">
                             <p className="text-sm font-bold text-info mb-2">Metadata:</p>
                             <pre className="text-xs text-base-content/70 font-mono whitespace-pre-wrap break-all">
                               {JSON.stringify(error.metadata, null, 2)}

@@ -124,13 +124,13 @@ export default function FeedbackPage() {
                         onChange={(e) => handleInputChange('category', e.target.value)}
                         className="sr-only"
                       />
-                      <div className={`
-                        p-4 rounded-lg border-2 transition-all duration-200 text-center
-                        ${formData.category === value 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-base-300 hover:border-primary/50'
-                        }
-                      `}>
+                      <div
+                        className={`p-4 rounded-lg transition-all duration-200 text-center ${
+                          formData.category === value
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/40'
+                        }`}
+                      >
                         <Icon className={`w-6 h-6 mx-auto mb-2 ${color}`} />
                         <span className="text-sm font-medium">{label}</span>
                       </div>

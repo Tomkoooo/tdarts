@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from 'react';
-import RegisterForm from '@/components/auth/RegisterForm';
+import RegisterFormNew from '@/components/auth/RegisterFormNew';
 import VerifyEmail from '@/components/auth/VerifyEmail';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useUserContext } from '@/hooks/useUser';
+import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 
 // Regisztrációs oldal, amely a regisztrációt és az email verifikációt kezeli
 export default function RegisterPage() {
@@ -118,7 +119,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 pt-8">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Parallax Background */}
+      <ParallaxBackground />
+      
+      {/* Registration Form Container */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 pt-8">
       {registeredEmail ? (
         <div className="w-full max-w-md">
           <VerifyEmail
@@ -127,25 +133,22 @@ export default function RegisterPage() {
             isLoading={isLoading}
           />
           {error && (
-            <p className="text-[hsl(var(--destructive))] text-sm mt-4 text-center">
+              <p className="text-destructive text-sm mt-4 text-center">
               {error}
             </p>
           )}
         </div>
       ) : (
         <div className="w-full max-w-md">
-          <RegisterForm
+            <RegisterFormNew
             onSubmit={handleRegister}
             isLoading={isLoading}
             redirectPath={redirectPath}
+              error={error || undefined}
           />
-          {error && (
-            <p className="text-[hsl(var(--destructive))] text-sm mt-4 text-center">
-              {error}
-            </p>
+          </div>
           )}
         </div>
-      )}
     </div>
   );
 }

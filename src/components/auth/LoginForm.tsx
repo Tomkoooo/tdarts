@@ -144,7 +144,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border border-[hsl(var(--primary) / 0.3)]">
+          <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border  / 0.3)]">
             <IconLogin className="w-8 h-8 text-[hsl(var(--primary))] text-glow" />
           </div>
         </div>
@@ -169,7 +169,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               {...register('email')}
               type="email"
               placeholder={t.emailPlaceholder}
-              className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+              className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)]  / 0.5)] focus: focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
           </div>
@@ -192,7 +192,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               placeholder={t.passwordPlaceholder}
-              className="input input-bordered w-full pl-10 pr-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+              className="input input-bordered w-full pl-10 pr-10 bg-[hsl(var(--background) / 0.5)]  / 0.5)] focus: focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
               disabled={isLoading}
             />
             <button
@@ -256,7 +256,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="mt-4 w-full cursor-pointer flex justify-center items-center px-4 py-2 border border-[hsl(var(--border) / 0.5)] rounded-lg shadow-sm bg-[hsl(var(--background) / 0.5)] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background) / 0.8)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+          className="mt-4 w-full cursor-pointer flex justify-center items-center px-4 py-2 border  / 0.5)] rounded-lg shadow-sm bg-[hsl(var(--background) / 0.5)] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background) / 0.8)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
           disabled={isLoading}
         >
           <IconBrandGoogle className="w-5 h-5 mr-2" />

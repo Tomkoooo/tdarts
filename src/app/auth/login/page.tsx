@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import LoginForm from '@/components/auth/LoginForm';
+import LoginFormNew from '@/components/auth/LoginFormNew';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -65,17 +65,6 @@ const Login: React.FC = () => {
     );
   };
 
-  const handleForgotPassword = () => {
-    console.log('Forgot password clicked');
-    // Implement forgot password logic
-  };
-
-  const handleSignUp = () => {
-    console.log('Sign up clicked');
-    // Navigate to register with redirect parameter if present
-    const registerUrl = redirectPath ? `/auth/register?redirect=${encodeURIComponent(redirectPath)}` : '/auth/register';
-    router.push(registerUrl);
-  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -85,10 +74,8 @@ const Login: React.FC = () => {
       {/* Login Form Container */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4 pt-8">
         <div className="w-full max-w-md">
-          <LoginForm
+          <LoginFormNew
             onSubmit={handleLogin}
-            onForgotPassword={handleForgotPassword}
-            onSignUp={handleSignUp}
             redirectPath={redirectPath}
           />
         </div>

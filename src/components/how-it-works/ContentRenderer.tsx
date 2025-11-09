@@ -9,15 +9,15 @@ const Note: React.FC<NoteProps> = ({ type, content }) => {
   const getNoteStyles = () => {
     switch (type) {
       case 'info':
-        return 'bg-blue-500/10 border border-blue-500/20 text-blue-400';
+        return 'bg-blue-500/10 border  text-blue-400';
       case 'warning':
-        return 'bg-red-500/10 border border-red-500/20 text-red-400';
+        return 'bg-red-500/10 border  text-red-400';
       case 'tip':
-        return 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400';
+        return 'bg-yellow-500/10 border  text-yellow-400';
       case 'important':
-        return 'bg-orange-500/10 border border-orange-500/20 text-orange-400';
+        return 'bg-orange-500/10 border  text-orange-400';
       default:
-        return 'bg-gray-500/10 border border-gray-500/20 text-gray-400';
+        return 'bg-gray-500/10 border  text-gray-400';
     }
   };
 

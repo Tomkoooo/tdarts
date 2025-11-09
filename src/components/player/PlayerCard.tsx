@@ -1,101 +1,117 @@
-import React from 'react';
-import { Player } from '@/interface/player.interface';
-import { IconChevronRight } from '@tabler/icons-react';
+import React from "react"
+import { Player } from "@/interface/player.interface"
+import { IconChevronRight, IconMedal, IconMedal2, IconAward, IconTrophy } from "@tabler/icons-react"
+
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 interface PlayerCardProps {
-  player: Player;
-  onClick: () => void;
-  rank?: number;
-  showGlobalRank?: boolean;
+  player: Player
+  onClick: () => void
+  rank?: number
+  showGlobalRank?: boolean
+}
+
+const topRankStyles: Record<
+  number,
+  {
+    icon: typeof IconMedal
+    gradient: string
+  }
+> = {
+  1: { icon: IconMedal, gradient: "from-amber-400 via-amber-500 to-amber-600 text-amber-950" },
+  2: { icon: IconMedal2, gradient: "from-slate-200 via-slate-300 to-slate-400 text-slate-800" },
+  3: { icon: IconAward, gradient: "from-orange-300 via-orange-400 to-orange-500 text-orange-900" },
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlobalRank = false }) => {
-  // Safely get MMR with fallback to base MMR (800)
-  const mmr = (player as any).mmr ?? player.stats?.mmr ?? 800;
-  
-  // Safely get MMR tier with fallback
-  const mmrTier = (player as any).mmrTier ?? (() => {
-    if (mmr >= 1600) return { name: 'Elit', color: 'text-error' };
-    if (mmr >= 1400) return { name: 'Mester', color: 'text-warning' };
-    if (mmr >= 1200) return { name: 'Haladó', color: 'text-info' };
-    if (mmr >= 1000) return { name: 'Középhaladó', color: 'text-success' };
-    if (mmr >= 800) return { name: 'Kezdő+', color: 'text-primary' };
-    return { name: 'Kezdő', color: 'text-base-content' };
-  })();
-  
-  // Get global rank if available
-  const globalRank = (player as any).globalRank;
-  
+  const mmr = (player as any).mmr ?? player.stats?.mmr ?? 800
+
+  const mmrTier =
+    (player as any).mmrTier ??
+    (() => {
+      if (mmr >= 1600) return { name: "Elit", color: "text-[#ff8fa3]" }
+      if (mmr >= 1400) return { name: "Mester", color: "text-[#fcd34d]" }
+      if (mmr >= 1200) return { name: "Haladó", color: "text-blue-300" }
+      if (mmr >= 1000) return { name: "Középhaladó", color: "text-emerald-300" }
+      if (mmr >= 800) return { name: "Kezdő+", color: "text-primary" }
+      return { name: "Kezdő", color: "text-muted-foreground" }
+    })()
+
+  const globalRank = (player as any).globalRank
+  const hasRankBadge = typeof rank === "number" && rank > 0
+  const rankStyle = hasRankBadge && topRankStyles[rank]
+
   return (
-    <div 
-      className="card bg-base-100 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]"
+    <Card
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      className="group h-full cursor-pointer border-0 bg-card/95 shadow-[0_4px_16px_-8px_oklch(51%_0.18_16_/0.25)] transition-all hover:-translate-y-1 hover:shadow-[0_8px_32px_-12px_oklch(51%_0.18_16_/0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <div className="card-body p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            {rank && (
-              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex-shrink-0">
-                <span className="text-sm sm:text-base font-bold text-primary">#{rank}</span>
+      <CardContent className="flex h-full flex-col gap-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            {hasRankBadge && (
+              <div
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-sm font-semibold text-foreground shadow-inner transition-transform group-hover:scale-105",
+                  rankStyle && `bg-gradient-to-br ${rankStyle.gradient}`,
+                )}
+              >
+                {rankStyle ? <rankStyle.icon className="h-6 w-6" /> : <span>#{rank}</span>}
               </div>
             )}
-            <div className="flex-1 min-w-0">
-              <h2 className="card-title text-sm sm:text-base md:text-lg truncate mb-1" title={player.name}>
-                {player.name}
-              </h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-base-content/60">
-                  {player.stats?.tournamentsPlayed || 0} torna
-                </span>
-                {/* Global Rank Badge */}
-                {showGlobalRank && globalRank && (
-                  <div className="badge badge-sm badge-secondary gap-1">
-                    <span className="text-xs font-bold">#{globalRank}</span>
-                  </div>
-                )}
-                {/* MMR Badge */}
-                <div className={`badge badge-sm ${mmrTier.color} gap-1`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                  <span className="text-xs font-bold">{mmr}</span>
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="truncate text-base font-semibold text-foreground md:text-lg" title={player.name}>
+                    {player.name}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {player.stats?.tournamentsPlayed || 0} torna • {player.stats?.matchesPlayed || 0} meccs
+                  </p>
                 </div>
+                <IconChevronRight className="h-4 w-4 text-muted-foreground/60" />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {showGlobalRank && globalRank && (
+                  <Badge variant="secondary" className="gap-1">
+                    <IconTrophy className="h-3.5 w-3.5" />
+                    #{globalRank}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="gap-1 text-xs font-semibold uppercase tracking-wide">
+                  <span className={cn("text-sm", mmrTier.color)}>{mmrTier.name}</span>
+                  <span className="font-mono text-muted-foreground">• {mmr}</span>
+                </Badge>
               </div>
             </div>
           </div>
-          <IconChevronRight className="text-base-content/50 flex-shrink-0" size={20} />
         </div>
-        
-        {/* MMR Tier Display */}
-        <div className="mb-3">
-          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full bg-base-200 ${mmrTier.color}`}>
-            <span className="text-xs font-semibold">{mmrTier.name}</span>
-          </div>
-        </div>
-        
-        <div className="divider my-2"></div>
-        
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:text-sm">
-          <div className="flex justify-between">
-            <span className="font-semibold text-base-content/70">Átlag:</span>
-            <span className="font-bold">{player.stats?.avg?.toFixed(1) || 'N/A'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-semibold text-base-content/70">180s:</span>
-            <span className="font-bold">{player.stats?.total180s || 0}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-semibold text-base-content/70">Legjobb:</span>
-            <span className="font-bold">{player.stats?.bestPosition || 'N/A'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-semibold text-base-content/70">Max kiszálló:</span>
-            <span className="font-bold">{player.stats?.highestCheckout || 'N/A'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
-export default PlayerCard; 
+        <Separator className="opacity-20" />
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs sm:text-sm">
+          <Stat label="Átlag" value={player.stats?.avg?.toFixed(1) ?? "—"} />
+          <Stat label="180-ak" value={player.stats?.total180s ?? 0} />
+          <Stat label="Legjobb helyezés" value={player.stats?.bestPosition ?? "—"} />
+          <Stat label="Max kiszálló" value={player.stats?.highestCheckout ?? "—"} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const Stat = ({ label, value }: { label: string; value: string | number }) => (
+  <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 border-0">
+    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+    <span className="font-semibold text-foreground">{value}</span>
+  </div>
+)
+
+export default PlayerCard

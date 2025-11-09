@@ -6,7 +6,7 @@ export default function AdminAnnouncementsPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border  p-8">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',

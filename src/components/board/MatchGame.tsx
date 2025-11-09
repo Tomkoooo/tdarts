@@ -889,7 +889,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             </button>
 
           {/* Player 1 */}
-          <div className={`flex-1 flex flex-col items-center justify-center border-r border-gray-700 transition-all duration-300 ${currentPlayer === 1 ? 'border-r-4 border-b-4 border-r-primary border-b-primary bg-primary/10' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? '    bg-primary/10' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player1.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
@@ -902,7 +902,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
 
           {/* Center Info */}
-          <div className="w-12 sm:w-16 md:w-24 flex flex-col items-center justify-center bg-gray-800 border-x border-gray-700">
+          <div className="w-12 sm:w-16 md:w-24 flex flex-col items-center justify-center bg-gray-800 "
             <div className="text-xs sm:text-sm font-bold text-yellow-400 mb-1">tDarts</div>
             <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1">{currentLeg}</div>
             <div className="text-xs text-gray-400">Leg</div>
@@ -910,7 +910,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
           
           {/* Player 2 */}
-          <div className={`flex-1 flex flex-col items-center justify-center border-l border-gray-700 transition-all duration-300 z-50 ${currentPlayer === 2 ? 'border-l-4 border-b-4 border-l-primary border-b-primary bg-primary/10' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 z-50 ${currentPlayer === 2 ? '    bg-primary/10' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player2.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
@@ -924,10 +924,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </header>
 
         {/* Throw History - Chalkboard Style */}
-        <section className="h-[10dvh] landscape:flex-1 bg-base-200 flex border-b landscape:border-r border-base-300 overflow-hidden">
+        <section className="h-[10dvh] landscape:flex-1 bg-base-200 flex  landscape:  overflow-hidden">
           <div ref={chalkboardRef} className="flex w-full overflow-y-auto">
             {/* Player 1 All Throws */}
-            <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4 border-r border-base-content/20">
+            <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4 "
               <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-200 z-10 pb-1">{player1.name}</div>
               <div className="flex-1">
                 <div className="space-y-1">
@@ -964,7 +964,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
 
             {/* Round Numbers */}
-            <div className="w-14 sm:w-16 lg:w-20 flex flex-col items-center border-r border-base-content/20 bg-base-100 p-2">
+            <div className="w-14 sm:w-16 lg:w-20 flex flex-col items-center   bg-base-100 p-2">
               <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-100 z-10 pb-1">Nyilak</div>
               <div className="flex-1">
                 <div className="space-y-1">
@@ -1020,10 +1020,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       {/* Right Side - Input & Numpad (Landscape) / Bottom (Portrait) */}
       <div className="flex flex-col landscape:w-1/2 landscape:h-full">
         {/* Score Display with BACK button */}
-        <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between border-y-2 border-primary/30 px-2 sm:px-4">
+        <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between   px-2 sm:px-4">
           <button
             onClick={handleBack}
-            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border border-base-content/20"
+            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border"
           >
             BACK
           </button>
@@ -1052,7 +1052,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                     handleThrow(score);
                     setScoreInput('');
                   }}
-                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors border border-base-content/20"
+                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors border"
                 >
                   {score}
                 </button>
@@ -1066,7 +1066,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               <button
                     key={number}
                     onClick={() => handleNumberInput(number)}
-                    className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl md:text-4xl rounded-lg transition-colors border border-base-content/10"
+                    className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl md:text-4xl rounded-lg transition-colors border"
                   >
                     {number}
                   </button>
@@ -1081,13 +1081,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                       setScoreInput(scoreInput.slice(0, -1));
                     }
                   }}
-                  className="bg-base-300 hover:bg-base-100 text-base-content font-bold text-xl portrait:sm:text-2xl portrait:md:text-3xl sm:text-lg md:text-xl rounded-lg transition-colors border border-base-content/20"
+                  className="bg-base-300 hover:bg-base-100 text-base-content font-bold text-xl portrait:sm:text-2xl portrait:md:text-3xl sm:text-lg md:text-xl rounded-lg transition-colors border"
               >
                 ⌫
               </button>
               <button
                 onClick={() => handleNumberInput(0)}
-                  className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl sm:text-3xl md:text-4xl rounded-lg transition-colors border border-base-content/10"
+                  className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl sm:text-3xl md:text-4xl rounded-lg transition-colors border"
               >
                 0
               </button>
@@ -1120,7 +1120,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                     handleThrow(score);
                     setScoreInput('');
                   }}
-                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors border border-base-content/20"
+                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors border"
                 >
                   {score}
               </button>

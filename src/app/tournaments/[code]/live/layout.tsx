@@ -73,7 +73,7 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-base-300">
+            <div className="mt-6 pt-6">
               <p className="text-xs text-base-content/50">
                 Ha már pro előfizető vagy, de továbbra is ezt az üzenetet látod, 
                 kérjük vedd fel a kapcsolatot az adminisztrátorral.

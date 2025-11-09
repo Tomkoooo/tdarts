@@ -1,296 +1,279 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import debounce from 'lodash.debounce';
-import axios from 'axios';
-import { IconSearch, IconUserPlus } from '@tabler/icons-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react'
+import debounce from 'lodash.debounce'
+import axios from 'axios'
+import { IconSearch, IconUserPlus } from '@tabler/icons-react'
+import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface PlayerSearchProps {
-  onPlayerSelected: (player: any) => void;
-  placeholder?: string;
-  className?: string;
-  showAddGuest?: boolean;
-  userRole?: 'admin' | 'moderator' | 'member' | 'none';
-  clubId?: string; // For filtering out players already in other clubs
-  isForTournament?: boolean; // For showing club info when adding to tournament
-  excludePlayerIds?: string[]; // For excluding players already added to tournament
+  onPlayerSelected: (player: any) => void
+  placeholder?: string
+  className?: string
+  showAddGuest?: boolean
+  userRole?: 'admin' | 'moderator' | 'member' | 'none'
+  clubId?: string
+  isForTournament?: boolean
+  excludePlayerIds?: string[]
 }
 
-export default function PlayerSearch({ 
-  onPlayerSelected, 
-  placeholder = "Játékos keresése...",
-  className = "",
+export default function PlayerSearch({
+  onPlayerSelected,
+  placeholder = 'Játékos keresése...',
+  className = '',
   showAddGuest = true,
   clubId,
   isForTournament = false,
   excludePlayerIds = [],
 }: PlayerSearchProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [addedIds, setAddedIds] = useState<string[]>([]); // Track added players
-  const [justAddedId, setJustAddedId] = useState<string | null>(null); // For visual feedback
+  const [searchTerm, setSearchTerm] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [addedIds, setAddedIds] = useState<string[]>([])
+  const [justAddedId, setJustAddedId] = useState<string | null>(null)
 
-  // Debounced search (stable reference)
   const debouncedSearch = useRef(
     debounce((query: string) => {
-      searchPlayers(query);
+      searchPlayers(query)
     }, 300)
-  ).current;
+  ).current
 
-  const searchPlayers = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+  const searchPlayers = useCallback(
+    async (query: string) => {
+      if (!query.trim()) {
+        setResults([])
+        return
+      }
 
-    setIsLoading(true);
-    try {
-      const [usersResponse, playersResponse] = await Promise.all([
-        axios.get(`/api/users/search?query=${encodeURIComponent(query)}&clubId=${clubId || ''}`),
-        axios.get(`/api/players/search?query=${encodeURIComponent(query)}&clubId=${clubId || ''}`)
-      ]);
+      setIsLoading(true)
+      try {
+        const [usersResponse, playersResponse] = await Promise.all([
+          axios.get(`/api/users/search?query=${encodeURIComponent(query)}&clubId=${clubId || ''}`),
+          axios.get(`/api/players/search?query=${encodeURIComponent(query)}&clubId=${clubId || ''}`),
+        ])
 
-      const users = usersResponse.data.users || [];
-      const players = playersResponse.data.players || [];
-      
-      // Combine and deduplicate results with priority logic
-      let combined = [...users, ...players].reduce((acc: any[], curr) => {
-        // For users (with userRef), check if there's already a player with the same userRef
-        if (curr.userRef) {
-          const existingPlayer = acc.find((item: any) => 
-            (item.userRef && item.userRef.toString() === curr.userRef.toString()) ||
-            (item._id && item._id.toString() === curr.userRef.toString())
-          );
-          
-          if (!existingPlayer) {
-            acc.push(curr);
-          } else {
-            // If we have both a user and a player with the same userRef, prioritize the user
-            // Remove the player and keep the user
-            const existingIndex = acc.findIndex((item: any) => 
+        const users = usersResponse.data.users || []
+        const players = playersResponse.data.players || []
+
+        let combined = [...users, ...players].reduce((acc: any[], curr) => {
+          if (curr.userRef) {
+            const existingPlayer = acc.find((item: any) =>
               (item.userRef && item.userRef.toString() === curr.userRef.toString()) ||
               (item._id && item._id.toString() === curr.userRef.toString())
-            );
-            
-            if (existingIndex !== -1) {
-              const existing = acc[existingIndex];
-              // If current is a user and existing is a player, replace the player with user
-              if (curr.hasOwnProperty('username') && !existing.hasOwnProperty('username')) {
-                acc[existingIndex] = curr;
+            )
+
+            if (!existingPlayer) {
+              acc.push(curr)
+            } else {
+              const existingIndex = acc.findIndex((item: any) =>
+                (item.userRef && item.userRef.toString() === curr.userRef.toString()) ||
+                (item._id && item._id.toString() === curr.userRef.toString())
+              )
+
+              if (existingIndex !== -1) {
+                const existing = acc[existingIndex]
+                if (curr.hasOwnProperty('username') && !existing.hasOwnProperty('username')) {
+                  acc[existingIndex] = curr
+                }
               }
-              // If both are users or both are players, keep the first one
+            }
+          } else {
+            const existingPlayer = acc.find((item: any) => item._id && item._id.toString() === curr._id.toString())
+            if (!existingPlayer) {
+              acc.push(curr)
             }
           }
-        } else {
-          // For players without userRef (guest players), check by _id
-          const existingPlayer = acc.find((item: any) => 
-            item._id && item._id.toString() === curr._id.toString()
-          );
-          if (!existingPlayer) {
-            acc.push(curr);
-          }
+          return acc
+        }, [])
+
+        if (clubId && !isForTournament) {
+          combined = combined.filter((player) => {
+            if (player.isAdminInAnyClub) return false
+            if (player.isCurrentClubMember) return false
+            return true
+          })
         }
-        return acc;
-      }, []);
 
-      // Filter out players who are already admin/moderator in any club or already members of this club (only when adding to club, not tournament)
-      if (clubId && !isForTournament) {
-        combined = combined.filter((player) => {
-          // If player is already admin/moderator in any club, filter them out
-          if (player.isAdminInAnyClub) {
-            return false;
-          }
-          
-          // If player is already a member of this club, filter them out
-          if (player.isCurrentClubMember) {
-            return false;
-          }
-          
-          return true;
-        });
+        if (isForTournament && excludePlayerIds.length > 0) {
+          combined = combined.filter((player) => {
+            const playerId = player._id?.toString()
+            const userRef = player.userRef?.toString()
+            return !excludePlayerIds.some(
+              (excludeId) => excludeId.toString() === playerId || excludeId.toString() === userRef
+            )
+          })
+        }
+
+        setResults(combined)
+      } catch (error) {
+        console.error('Keresési hiba:', error)
+        setResults([])
+      } finally {
+        setIsLoading(false)
       }
+    },
+    [clubId, isForTournament, excludePlayerIds]
+  )
 
-      // Filter out players already added to tournament (when adding to tournament)
-      if (isForTournament && excludePlayerIds.length > 0) {
-        combined = combined.filter((player) => {
-          const playerId = player._id?.toString();
-          const userRef = player.userRef?.toString();
-          
-          // Check if player is already in the exclude list
-          return !excludePlayerIds.some(excludeId => 
-            excludeId.toString() === playerId || excludeId.toString() === userRef
-          );
-        });
-      }
-
-      setResults(combined);
-    } catch (error) {
-      console.error('Keresési hiba:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [clubId, isForTournament, excludePlayerIds]);
-
-  // Effect for debounced search
   useEffect(() => {
-    debouncedSearch(searchTerm);
+    debouncedSearch(searchTerm)
     return () => {
-      debouncedSearch.cancel();
-    };
-  }, [searchTerm, debouncedSearch]);
+      debouncedSearch.cancel()
+    }
+  }, [searchTerm, debouncedSearch])
 
   const handleSelect = async (player: any) => {
-    console.log('PlayerSearch - handleSelect called with player:', player);
-    
     let playerData = {
       _id: player._id,
       name: player.name,
       userRef: player.userRef,
       username: player.username,
-      isGuest: !player.userRef && !player.username // If no userRef and no username, it's a guest
-    };
+      isGuest: !player.userRef && !player.username,
+    }
 
-    // If this is a user (has username but no userRef), we need to find the corresponding Player document
     if (player.username && !player.userRef) {
       try {
-        console.log('Looking for Player document for user:', player._id);
-        const playerResponse = await axios.get(`/api/players/find-by-user/${player._id}`);
+        const playerResponse = await axios.get(`/api/players/find-by-user/${player._id}`)
         if (playerResponse.data.success && playerResponse.data.player) {
-          const actualPlayer = playerResponse.data.player;
-          console.log('Found Player document:', actualPlayer);
+          const actualPlayer = playerResponse.data.player
           playerData = {
-            _id: actualPlayer._id, // Use the Player document _id, not the User _id
+            _id: actualPlayer._id,
             name: actualPlayer.name,
             userRef: actualPlayer.userRef,
             username: player.username,
-            isGuest: false
-          };
-        } else {
-          console.log('No Player document found for user, will create one');
-          // Player document doesn't exist yet, will be created in the league service
+            isGuest: false,
+          }
         }
       } catch (error) {
-        console.error('Error finding Player document:', error);
-        // Continue with user data, will be handled in the league service
+        console.error('Error finding Player document:', error)
       }
     }
-    
-    console.log('PlayerSearch - Final playerData:', playerData);
-    
-    // Pass the player data to the parent
-    onPlayerSelected(playerData);
-    
-    // Use a more reliable identifier for tracking added players
-    const playerIdentifier = playerData.userRef ? playerData.userRef.toString() : (playerData._id ? playerData._id.toString() : playerData.name);
-    setAddedIds((prev) => [...prev, playerIdentifier]); // Mark as added
-    setJustAddedId(playerIdentifier); // For feedback
-    setTimeout(() => setJustAddedId(null), 1200); // Remove feedback after 1.2s
-  };
+
+    onPlayerSelected(playerData)
+
+    const playerIdentifier = playerData.userRef
+      ? playerData.userRef.toString()
+      : playerData._id
+      ? playerData._id.toString()
+      : playerData.name
+
+    setAddedIds((prev) => [...prev, playerIdentifier])
+    setJustAddedId(playerIdentifier)
+    setTimeout(() => setJustAddedId(null), 1200)
+  }
 
   const handleAddGuest = () => {
-    if (!searchTerm.trim()) return;
-    handleSelect({ name: searchTerm, isGuest: true });
-  };
+    if (!searchTerm.trim()) return
+    handleSelect({ name: searchTerm, isGuest: true })
+  }
 
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
     }
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside)
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside)
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   return (
-    <div ref={rootRef} className={`relative ${className}`}>
+    <div ref={rootRef} className={cn('relative', className)}>
       <div className="relative">
-        <input
-          type="text"
+        <Input
           value={searchTerm}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setIsOpen(true);
+            setSearchTerm(e.target.value)
+            setIsOpen(true)
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
-          className="w-full px-4 py-2 pl-10 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20 transition-all"
+          className="pl-10"
         />
-        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60" size={18} />
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       </div>
       {isOpen && (searchTerm.trim() || results.length > 0) && (
-        <div className="absolute z-50 w-full mt-1 bg-base-200 rounded-lg shadow-lg border border-base-300">
-          {isLoading ? (
-            <div className="p-4 text-center text-base-content/60">
-              Keresés...
-            </div>
-          ) : results.length > 0 ? (
-            <ul className="py-2 max-h-64 overflow-auto">
-              {results.filter((player) => {
-                const playerIdentifier = player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name);
-                return !addedIds.includes(playerIdentifier);
-              }).map((player) => (
-                <li
-                  key={player.userRef || player._id || player.name}
-                  className="px-4 py-2 hover:bg-base-100 cursor-pointer flex items-center justify-between gap-2"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium">{player.name}</div>
-                    <div className="text-sm text-base-content/60">
-                      {player.username ? (
-                        <>
-                          <span>(regisztrált)</span>
-                          {player.clubName && (
-                            <span> - {player.clubName}</span>
+        <Card className="absolute z-50 w-full mt-2 border-border shadow-xl">
+          <CardContent className="p-2 max-h-72 overflow-auto space-y-1">
+            {isLoading ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">Keresés...</div>
+            ) : results.length > 0 ? (
+              results
+                .filter((player) => {
+                  const playerIdentifier = player.userRef
+                    ? player.userRef.toString()
+                    : player._id
+                    ? player._id.toString()
+                    : player.name
+                  return !addedIds.includes(playerIdentifier)
+                })
+                .map((player) => {
+                  const playerIdentifier = player.userRef
+                    ? player.userRef.toString()
+                    : player._id
+                    ? player._id.toString()
+                    : player.name
+                  const isJustAdded = justAddedId === playerIdentifier
+
+                  return (
+                    <div
+                      key={playerIdentifier}
+                      className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-muted"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-foreground">{player.name}</div>
+                        <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
+                          {player.username ? (
+                            <>
+                              <span>Regisztrált</span>
+                              {player.clubName && <span>• {player.clubName}</span>}
+                            </>
+                          ) : player.userRef ? (
+                            <>
+                              <span>Regisztrált játékos</span>
+                              {player.clubName && <span>• {player.clubName}</span>}
+                            </>
+                          ) : (
+                            <span>Vendég</span>
                           )}
-                        </>
-                      ) : player.userRef ? (
-                        <>
-                          <span>(regisztrált játékos)</span>
-                          {player.clubName && (
-                            <span> - {player.clubName}</span>
-                          )}
-                        </>
-                      ) : (
-                        <span>(vendég)</span>
-                      )}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSelect(player)}
+                        disabled={isJustAdded}
+                        className={cn('h-8 text-xs px-3', isJustAdded && 'pointer-events-none')}
+                      >
+                        {isJustAdded ? 'Hozzáadva' : 'Hozzáadás'}
+                      </Button>
                     </div>
-                  </div>
-                  <button
-                    className={`btn btn-xs btn-primary ${justAddedId === (player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name)) ? 'btn-success pointer-events-none' : ''}`}
-                    onClick={() => handleSelect(player)}
-                    disabled={justAddedId === (player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name))}
-                  >
-                    {justAddedId === (player.userRef ? player.userRef.toString() : (player._id ? player._id.toString() : player.name)) ? 'Hozzáadva' : 'Hozzáadás'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : searchTerm.trim() && showAddGuest ? (
-            <div
-              onClick={handleAddGuest}
-              className="p-4 text-primary hover:bg-base-100 cursor-pointer flex items-center gap-2"
-            >
-              <IconUserPlus size={18} />
-              <span>Vendég játékos hozzáadása: {searchTerm}</span>
-            </div>
-          ) : (
-            <div className="p-4 text-center text-base-content/60">
-              Nincs találat
-            </div>
-          )}
-        </div>
+                  )
+                })
+            ) : searchTerm.trim() && showAddGuest ? (
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-sm"
+                onClick={handleAddGuest}
+              >
+                <IconUserPlus className="h-4 w-4" />
+                Vendég játékos hozzáadása: {searchTerm}
+              </Button>
+            ) : (
+              <div className="py-6 text-center text-sm text-muted-foreground">Nincs találat</div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
-  );
+  )
 } 

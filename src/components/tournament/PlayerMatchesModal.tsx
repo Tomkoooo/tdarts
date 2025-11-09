@@ -219,7 +219,7 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
                     </div>
 
                     {/* Match Summary */}
-                    <div className="bg-base-100 rounded-lg p-3 border border-base-300">
+                    <div className="bg-base-100 rounded-lg p-3 border"
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold">
@@ -244,7 +244,7 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
 
                     {/* Match Status */}
                     {match.status !== 'finished' && (
-                      <div className="mt-3 p-2 bg-warning/10 border border-warning/20 rounded-lg">
+                      <div className="mt-3 p-2 bg-warning/10 border  rounded-lg">
                         <div className="text-sm text-warning">
                           <IconClock size={14} className="inline mr-1" />
                           Meccs folyamatban...
@@ -259,7 +259,7 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
         )}
 
         {/* Footer */}
-        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-base-300">
+        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 "
           <button
             onClick={onClose}
             className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto"

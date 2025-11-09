@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
-import HeroSection from '@/components/homapage/HeroSection';
+import HeroSectionNew from '@/components/homapage/HeroSectionNew';
 import InfiniteCarousel from '@/components/homapage/InfiniteCarousel';
-import FeaturesSection from '@/components/homapage/FeaturesSection';
+import FeaturesSectionNew from '@/components/homapage/FeaturesSectionNew';
 import PricingSection from '@/components/homapage/PricingSection';
 import AnnouncementToast from '@/components/common/AnnouncementToast';
 
@@ -89,13 +89,13 @@ const HomePage = () => {
       {/* Main Content */}
       <main className="relative z-10">
         {/* Hero Section */}
-        <HeroSection />
+        <HeroSectionNew />
         
         {/* Infinite Carousel */}
         <InfiniteCarousel />
         
         {/* Features Section */}
-        <FeaturesSection />
+        <FeaturesSectionNew />
         
         {/* Pricing Section */}
         <PricingSection />

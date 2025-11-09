@@ -282,7 +282,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
   return (
     <div className="space-y-4">
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-base-300 pb-2 overflow-x-auto">
+      <div className="flex gap-2   pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('overview')}
           className={`btn btn-sm flex-1 sm:flex-none min-w-[120px] ${
@@ -314,7 +314,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
         <div className="space-y-4">
           {/* Statistics summary - Now first */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            <div className="card bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg border border-primary/20">
+            <div className="card bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg border"
               <div className="card-body p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-primary text-base sm:text-lg truncate flex-1 mr-2" title={player1Name}>
@@ -339,7 +339,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
               </div>
             </div>
 
-            <div className="card bg-gradient-to-br from-error/10 to-error/5 shadow-lg border border-error/20">
+            <div className="card bg-gradient-to-br from-error/10 to-error/5 shadow-lg border"
               <div className="card-body p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-error text-base sm:text-lg truncate flex-1 mr-2" title={player2Name}>
@@ -491,7 +491,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
                   
                   {/* Expanded View - Detailed Chart */}
                   {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-base-300">
+                    <div className="mt-4 pt-4 "
                       <div className="mb-3">
                         <div className="flex items-center gap-2 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -518,13 +518,13 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({
                           },
                         }} data={throwData} />
                       </div>
-                      <div className="mt-3 p-2 sm:p-3 bg-info/10 rounded-lg border border-info/20">
+                      <div className="mt-3 p-2 sm:p-3 bg-info/10 rounded-lg border"
                         <div className="text-[10px] sm:text-xs text-base-content/70 leading-relaxed space-y-1">
                           <p>
                             💡 <span className="font-semibold">Tipp:</span> A grafikon mutatja, hogyan változott a játékosok teljesítménye a leg során.
                           </p>
                           {leg.winnerId?._id && (
-                            <div className="flex items-center gap-4 pt-1 border-t border-info/20">
+                            <div className="flex items-center gap-4 pt-1 "
                               <div className="flex items-center gap-1">
                                 <IconTarget size={12} className="text-primary" />
                                 <span className="font-medium">

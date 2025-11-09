@@ -382,7 +382,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                   <head>
                     <title>Live Match - ${getPlayer1Name()} vs ${getPlayer2Name()}</title>
                     <style>
-                      * { margin: 0; padding: 0; box-sizing: border-box; }
+                      * { margin: 0; padding: 0; box-sizing:  }
                       body { 
                         margin: 0; 
                         padding: 0; 
@@ -404,7 +404,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                         align-items: center;
                         padding: 1rem 2rem;
                         background: oklch(15% 0.02 12 / 0.95);
-                        border-radius: 1rem;
+                         1rem;
                         border: 1px solid oklch(51% 0.18 16 / 0.3);
                         margin-bottom: 1rem;
                       }
@@ -448,7 +448,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                         font-size: 1.2rem;
                         color: white;
                         text-align: center;
-                        border-radius: 0.5rem;
+                         0.5rem;
                         margin-bottom: 0.5rem;
                       }
                       .players-container {
@@ -460,7 +460,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                         align-items: center;
                         padding: 1.5rem 2rem;
                         margin-bottom: 0.5rem;
-                        border-radius: 0.75rem;
+                         0.75rem;
                         background: oklch(15% 0.02 12 / 0.8);
                         border: 1px solid oklch(51% 0.18 16 / 0.3);
                         position: relative;
@@ -479,7 +479,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                         width: 20px;
                         height: 20px;
                         background: #ef4444;
-                        border-radius: 50%;
+                         50%;
                         margin-left: 0.5rem;
                         flex-shrink: 0;
                       }

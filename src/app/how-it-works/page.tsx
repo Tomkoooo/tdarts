@@ -235,7 +235,7 @@ const HowItWorksPage = () => {
               </div>
 
               {/* Navigation Buttons */}
-              <div className="flex flex-col sm:flex-row justify-between items-center pt-6 md:pt-8 border-t border-gray-700 gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center pt-6 md:pt-8   gap-4">
                 <button
                   onClick={() => handleStepChange(Math.max(0, activeStep - 1))}
                   disabled={activeStep === 0}

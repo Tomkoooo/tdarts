@@ -1,81 +1,65 @@
-import React from 'react';
-import { IconTrophy } from '@tabler/icons-react';
-import TournamentCard from '@/components/tournament/TournamentCard';
+import { IconTrophy } from '@tabler/icons-react'
+import TournamentCard from '@/components/tournament/TournamentCard'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface TournamentListProps {
   tournaments: Array<{
-    _id: string;
-    tournamentId: string;
+    _id: string
+    tournamentId: string
     tournamentSettings: {
-      name: string;
-      startDate: string;
-      location?: string;
-      type?: 'amateur' | 'open';
-      entryFee?: number;
-      maxPlayers?: number;
-      registrationDeadline?: string;
-      status: 'pending' | 'group-stage' | 'knockout' | 'finished';
-    };
-    tournamentPlayers?: Array<any>;
+      name: string
+      startDate: string
+      location?: string
+      type?: 'amateur' | 'open'
+      entryFee?: number
+      maxPlayers?: number
+      registrationDeadline?: string
+      status: 'pending' | 'group-stage' | 'knockout' | 'finished'
+    }
+    tournamentPlayers?: Array<any>
     clubId?: {
-      name: string;
-    };
-  }>;
-  userRole: 'admin' | 'moderator' | 'member' | 'none';
-  onCreateTournament?: () => void;
-  onDeleteTournament?: (tournamentId: string) => void;
-  onEditTournament?: (tournamentId: string) => void;
+      name: string
+    }
+  }>
+  userRole: 'admin' | 'moderator' | 'member' | 'none'
+  onDeleteTournament?: (tournamentId: string) => void
+  onEditTournament?: (tournamentId: string) => void
 }
 
-export default function TournamentList({ 
-  tournaments, 
-  userRole, 
-  onCreateTournament,
+export default function TournamentList({
+  tournaments,
+  userRole,
   onDeleteTournament,
-  onEditTournament 
+  onEditTournament,
 }: TournamentListProps) {
+  if (!tournaments.length) {
+    return (
+      <Card className="border-dashed border-muted bg-card/50">
+        <CardContent className="py-12 text-center text-muted-foreground space-y-3">
+          <IconTrophy className="w-10 h-10 mx-auto" />
+          <div className="space-y-1">
+            <p className="text-lg font-semibold">Még nincsenek tornák.</p>
+            <p className="text-sm text-muted-foreground/80">
+              Hozz létre egy új eseményt, hogy megkezdődhessen a játék.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h2 className="text-xl md:text-2xl font-semibold">Tornák</h2>
-        {(userRole === 'admin' || userRole === 'moderator') && onCreateTournament && (
-          <button
-            onClick={onCreateTournament}
-            className="btn btn-primary btn-sm md:btn-md w-full sm:w-auto"
-          >
-            Új torna
-          </button>
-        )}
-      </div>
-      {tournaments.length === 0 ? (
-        <div className="text-center py-8 md:py-12 bg-base-100 rounded-xl">
-          <IconTrophy size={32} className="mx-auto mb-3 md:mb-4 text-base-content/40 md:w-12 md:h-12" />
-          <p className="text-sm md:text-base text-base-content/60">
-            Még nincsenek tornák ebben a klubban.
-            {(userRole === 'admin' || userRole === 'moderator') && onCreateTournament && (
-              <button
-                onClick={onCreateTournament}
-                className="ml-2 text-primary hover:underline text-sm md:text-base"
-              >
-                Hozz létre egyet!
-              </button>
-            )}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          {tournaments.map((tournament) => (
-            <TournamentCard
-              key={tournament._id}
-              tournament={tournament}
-              userRole={userRole}
-              showActions={true}
-              onDelete={onDeleteTournament ? () => onDeleteTournament(tournament.tournamentId) : undefined}
-              onEdit={onEditTournament ? () => onEditTournament(tournament.tournamentId) : undefined}
-            />
-          ))}
-        </div>
-      )}
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      {tournaments.map((tournament) => (
+        <TournamentCard
+          key={tournament._id}
+          tournament={tournament}
+          userRole={userRole}
+          showActions={Boolean(onDeleteTournament || onEditTournament)}
+          onDelete={onDeleteTournament ? () => onDeleteTournament(tournament.tournamentId) : undefined}
+          onEdit={onEditTournament ? () => onEditTournament(tournament.tournamentId) : undefined}
+        />
+      ))}
     </div>
-  );
+  )
 }

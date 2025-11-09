@@ -1,103 +1,143 @@
-import React from 'react';
+"use client"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 interface TournamentBoardsViewProps {
-  tournament: any;
+  tournament: any
 }
 
-const TournamentBoardsView: React.FC<TournamentBoardsViewProps> = ({ tournament }) => {
-  // Get boards directly from tournament
-  const boards = tournament?.boards || [];
+const statusMap: Record<
+  string,
+  {
+    label: string
+    badgeClass: string
+    description: string
+  }
+> = {
+  idle: {
+    label: "Üres",
+    badgeClass: "bg-muted text-muted-foreground",
+    description: "Tábla készen áll a következő meccsre.",
+  },
+  waiting: {
+    label: "Várakozik",
+    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    description: "A következő mérkőzés előkészítés alatt.",
+  },
+  playing: {
+    label: "Játékban",
+    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    description: "Aktív mérkőzés folyik ezen a táblán.",
+  },
+}
+
+const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
+
+export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) {
+  const boards = tournament?.boards || []
+
+  if (boards.length === 0) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Ehhez a tornához még nem hoztak létre táblákat.
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-bold">Táblák</h2>
-      {boards.length === 0 ? (
-        <p>Nincsenek még táblák konfigurálva ehhez a tornához.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {boards.map((board: any, idx: number) => {
-            return (
-              <div key={board.boardNumber || idx} className="card bg-base-200 shadow-md">
-                <div className="card-body">
-                  <h3 className="card-title">
-                    {board.name && board.name !== `Tábla ${board.boardNumber}` 
-                      ? board.name 
-                      : `Tábla ${board.boardNumber}`}
-                  </h3>
-                  <p
-                    className={`text-lg font-bold ${
-                      board.status === "idle"
-                        ? "text-gray-500"
-                        : board.status === "waiting"
-                        ? "text-warning"
-                        : board.status === "playing"
-                        ? "text-success"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Állapot:{" "}
-                    {board.status === "idle"
-                      ? "Üres"
-                      : board.status === "waiting"
-                      ? "Várakozik"
-                      : board.status === "playing"
-                      ? "Játékban"
-                      : "Ismeretlen"}
+    <div className="grid gap-4 md:grid-cols-2">
+      {boards.map((board: any, idx: number) => {
+        const statusKey = board.status || "idle"
+        const statusInfo = statusMap[statusKey] || statusMap.idle
+
+        const currentMatch = board.currentMatch
+        const nextMatch = board.nextMatch
+
+        return (
+          <Card key={board.boardNumber || idx} className="border-border bg-card/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-lg font-semibold text-foreground">
+                  {board.name && board.name !== `Tábla ${board.boardNumber}`
+                    ? board.name
+                    : `Tábla ${board.boardNumber}`}
+                </CardTitle>
+                <Badge variant="outline" className={statusInfo.badgeClass}>
+                  {statusInfo.label}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{statusInfo.description}</p>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {statusKey === "playing" && currentMatch ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Jelenlegi mérkőzés
+                    </p>
+                    {typeof board.boardNumber === 'number' && (
+                      <span className="font-mono text-xs text-muted-foreground">#{board.boardNumber}</span>
+                    )}
+                  </div>
+                  <p className="text-base font-semibold text-foreground">
+                    {getPlayerName(currentMatch.player1)} vs {getPlayerName(currentMatch.player2)}
                   </p>
-                  
-                  {board.status === "playing" && board.currentMatch ? (
-                    <div className="mt-2">
-                      <h4 className="font-semibold">Jelenlegi mérkőzés:</h4>
-                      <p className="text-md">
-                        <span className="font-bold">
-                          {board.currentMatch.player1?.playerId?.name || 'N/A'}
-                        </span> vs{" "}
-                        <span className="font-bold">
-                          {board.currentMatch.player2?.playerId?.name || 'N/A'}
-                        </span>
-                      </p>
-                      <p className="text-md">
-                        Állás:{" "}
-                        <span className="font-bold">
-                          {board.currentMatch.player1?.legsWon ?? 0} - {board.currentMatch.player2?.legsWon ?? 0}
-                        </span>
-                      </p>
-                      <p className="text-md">
-                        Eredményíró:{" "}
-                        <span className="font-bold">
-                          {board.currentMatch.scorer.name || "Nincs"}
-                        </span>
-                      </p>
-                    </div>
-                  ) : board.status === "waiting" && board.nextMatch ? (
-                    <div className="mt-2">
-                      <h4 className="font-semibold">Következő mérkőzés:</h4>
-                      <p className="text-md">
-                        <span className="font-bold">
-                          {board.nextMatch.player1?.playerId?.name || 'N/A'}
-                        </span> vs{" "}
-                        <span className="font-bold">
-                          {board.nextMatch.player2?.playerId?.name || 'N/A'}
-                        </span>
-                      </p>
-                      <p className="text-md">
-                        Eredményíró:{" "}
-                        <span className="font-bold">
-                          {board.nextMatch.scorer?.name || "Nincs"}
-                        </span>
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-md italic">Nincs további információ.</p>
+                  <p className="font-mono text-sm text-primary">
+                    Állás: {currentMatch.player1?.legsWon ?? 0} - {currentMatch.player2?.legsWon ?? 0}
+                  </p>
+                  {currentMatch.scorer?.name && (
+                    <p className="text-xs text-muted-foreground">
+                      Eredményíró: {currentMatch.scorer.name}
+                    </p>
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
+              ) : statusKey === "waiting" && nextMatch ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Következő mérkőzés
+                  </p>
+                  <p className="text-base font-semibold text-foreground">
+                    {getPlayerName(nextMatch.player1)} vs {getPlayerName(nextMatch.player2)}
+                  </p>
+                  {nextMatch.scorer?.name && (
+                    <p className="text-xs text-muted-foreground">
+                      Eredményíró: {nextMatch.scorer.name}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Nincs aktív mérkőzés információ.</p>
+              )}
 
-export default TournamentBoardsView; 
+              <Separator className="my-2" />
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div>
+                  <p className="font-medium text-foreground">Utolsó frissítés</p>
+                  <p>
+                    {board.updatedAt
+                      ? new Date(board.updatedAt).toLocaleTimeString('hu-HU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '–'}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Aktív mérkőzések száma</p>
+                  <p>{board.matchesInQueue ?? 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
+
+export default TournamentBoardsView 

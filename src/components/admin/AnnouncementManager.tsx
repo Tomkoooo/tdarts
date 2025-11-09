@@ -314,7 +314,7 @@ const AnnouncementManager: React.FC = () => {
             )}
 
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-base-300">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => {

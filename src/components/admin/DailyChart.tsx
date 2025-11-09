@@ -155,7 +155,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-base-200 border border-base-300 rounded-lg p-3 shadow-lg">
+        <div className="bg-base-200 border  rounded-lg p-3 shadow-lg">
           <p className="text-sm font-medium text-base-content">{`Dátum: ${formatDate(label)}`}</p>
           <p className="text-sm text-primary font-semibold">{`Mennyiség: ${payload[0].value}`}</p>
         </div>

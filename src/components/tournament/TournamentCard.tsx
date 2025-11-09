@@ -1,166 +1,187 @@
-import React from 'react';
-import Link from 'next/link';
-import { IconTrophy, IconCalendar, IconMapPin, IconUsers, IconCoin, IconArrowRight, IconDotsVertical } from '@tabler/icons-react';
+import Link from 'next/link'
+import {
+  IconTrophy,
+  IconCalendar,
+  IconMapPin,
+  IconUsers,
+  IconCoin,
+  IconDotsVertical,
+  IconChevronRight
+} from '@tabler/icons-react'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 interface TournamentCardProps {
   tournament: {
-    _id: string;
-    tournamentId: string;
+    _id: string
+    tournamentId: string
     tournamentSettings: {
-      name: string;
-      startDate: string;
-      location?: string;
-      type?: 'amateur' | 'open';
-      entryFee?: number;
-      maxPlayers?: number;
-      registrationDeadline?: string;
-      status: 'pending' | 'group-stage' | 'knockout' | 'finished';
-    };
-    tournamentPlayers?: Array<any>;
+      name: string
+      startDate: string
+      location?: string
+      type?: 'amateur' | 'open'
+      entryFee?: number
+      maxPlayers?: number
+      registrationDeadline?: string
+      status: 'pending' | 'group-stage' | 'knockout' | 'finished'
+    }
+    tournamentPlayers?: Array<any>
     clubId?: {
-      name: string;
-    };
-  };
-  userRole?: 'admin' | 'moderator' | 'member' | 'none';
-  showActions?: boolean;
-  onDelete?: () => void;
-  onEdit?: () => void;
+      name: string
+    }
+  }
+  userRole?: 'admin' | 'moderator' | 'member' | 'none'
+  showActions?: boolean
+  onDelete?: () => void
+  onEdit?: () => void
 }
 
-const statusColors = {
-  pending: 'bg-warning/10 text-warning border-warning/20',
-  'group-stage': 'bg-info/10 text-info border-info/20',
+const statusStyles: Record<string, string> = {
+  pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  'group-stage': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   knockout: 'bg-primary/10 text-primary border-primary/20',
-  finished: 'bg-success/10 text-success border-success/20',
-};
+  finished: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+}
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   pending: 'Várakozó',
   'group-stage': 'Csoportkör',
   knockout: 'Kieséses',
   finished: 'Befejezett',
-};
+}
 
-const typeLabels = {
+const typeLabels: Record<string, string> = {
   amateur: 'Amatőr',
   open: 'Open',
-};
+}
 
-export default function TournamentCard({ 
-  tournament, 
-  userRole = 'none', 
+export default function TournamentCard({
+  tournament,
+  userRole = 'none',
   showActions = false,
   onDelete,
-  onEdit 
+  onEdit,
 }: TournamentCardProps) {
-  const now = new Date();
-  const registrationDeadline = tournament.tournamentSettings?.registrationDeadline 
-    ? new Date(tournament.tournamentSettings.registrationDeadline) 
-    : null;
-  const isRegistrationClosed = 
-    (registrationDeadline !== null && registrationDeadline < now) ||
-    tournament.tournamentSettings?.status !== 'pending';
-
-  const playerCount = tournament.tournamentPlayers?.length || 0;
-  const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0;
-  const isFull = playerCount >= maxPlayers;
+  const status = tournament.tournamentSettings?.status || 'pending'
+  const playerCount = tournament.tournamentPlayers?.length || 0
+  const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
+  const isFull = maxPlayers > 0 && playerCount >= maxPlayers
+  const entryFee = tournament.tournamentSettings?.entryFee || 0
 
   return (
-    <Link href={`/tournaments/${tournament.tournamentId}`} className="relative group bg-base-100 rounded-xl p-4 md:p-6 shadow hover:shadow-lg transition-all border border-base-300 hover:border-primary/30 flex flex-col">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold group-hover:text-primary transition-colors text-sm md:text-base line-clamp-2 mb-1">
-            {tournament.tournamentSettings?.name}
-          </h3>
-          {tournament.clubId?.name && (
-            <p className="text-xs text-base-content/60 line-clamp-1">
-              {tournament.clubId.name}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 ml-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[tournament.tournamentSettings?.status || 'pending']}`}>
-            {statusLabels[tournament.tournamentSettings?.status || 'pending']}
-          </span>
-          {showActions && (userRole === 'admin' || userRole === 'moderator') && (
-            <div className="dropdown dropdown-end">
-              <label tabIndex={0} className="btn btn-xs btn-ghost px-1">
-                <IconDotsVertical size={14} className="md:w-4 md:h-4" />
-              </label>
-              <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-28 md:w-32">
-                {onEdit && <li><button onClick={onEdit} className="text-xs md:text-sm">Szerkesztés</button></li>}
-                {onDelete && <li><button onClick={onDelete} className="text-error text-xs md:text-sm">Törlés</button></li>}
-              </ul>
+    <Card className="border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col">
+      <CardHeader className="space-y-4 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <IconTrophy className="w-4 h-4" />
+              <span className="truncate">
+                {tournament.clubId?.name || 'Torna részletei'}
+              </span>
             </div>
-          )}
-        </div>
-      </div>
+            <h3 className="text-lg font-semibold text-foreground leading-tight line-clamp-2">
+              {tournament.tournamentSettings?.name}
+            </h3>
+          </div>
 
-      {/* Tournament Details */}
-      <div className="space-y-3 flex-1">
-        {/* Date and Location */}
-        <div className="space-y-2">
-          {tournament.tournamentSettings?.startDate && (
-            <div className="flex items-center text-xs md:text-sm text-base-content/70">
-              <IconCalendar size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0" />
-              <span>{new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU')}</span>
-            </div>
-          )}
-          {tournament.tournamentSettings?.location && (
-            <div className="flex items-center text-xs md:text-sm text-base-content/70">
-              <IconMapPin size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0" />
-              <span className="line-clamp-1">{tournament.tournamentSettings.location}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn('border px-2 py-1 text-xs font-medium', statusStyles[status])}
+            >
+              {statusLabels[status]}
+            </Badge>
+
+            {showActions && (userRole === 'admin' || userRole === 'moderator') && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <IconDotsVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  {onEdit && (
+                    <DropdownMenuItem onClick={onEdit} className="gap-2">
+                      Szerkesztés
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      onClick={onDelete}
+                      className="gap-2 text-destructive focus:text-destructive"
+                    >
+                      Törlés
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
-        {/* Tournament Type */}
         {tournament.tournamentSettings?.type && (
-          <div className="flex items-center">
-            <IconTrophy size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0 text-warning" />
-            <span className="text-xs md:text-sm font-medium">
-              {typeLabels[tournament.tournamentSettings.type]}
+          <Badge variant="secondary" className="w-fit bg-muted text-muted-foreground">
+            {typeLabels[tournament.tournamentSettings.type]}
+          </Badge>
+        )}
+      </CardHeader>
+
+      <CardContent className="space-y-4 text-sm text-muted-foreground">
+        {tournament.tournamentSettings?.startDate && (
+          <div className="flex items-center gap-2">
+            <IconCalendar className="w-4 h-4" />
+            <span>
+              {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </span>
           </div>
         )}
 
-        {/* Players and Registration Status */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center text-xs md:text-sm text-base-content/70">
-            <IconUsers size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0" />
-            <span>
-              {playerCount}/{maxPlayers} játékos
-              {isFull && <span className="text-warning ml-1">(Tele)</span>}
-            </span>
+        {tournament.tournamentSettings?.location && (
+          <div className="flex items-center gap-2">
+            <IconMapPin className="w-4 h-4" />
+            <span className="truncate">{tournament.tournamentSettings.location}</span>
           </div>
-          <span className={`badge badge-xs ${isRegistrationClosed ? 'badge-error' : 'badge-success'}`}>
-            {isRegistrationClosed ? 'Zárva' : 'Nyitva'}
+        )}
+
+        <div className="flex items-center gap-2">
+          <IconUsers className="w-4 h-4" />
+          <span>
+            {playerCount} / {maxPlayers || '∞'} játékos
+            {isFull && <span className="ml-1 text-xs text-amber-500">(Betelt)</span>}
           </span>
         </div>
 
-        {/* Entry Fee */}
-        {tournament.tournamentSettings?.entryFee ? (
-          <div className="flex items-center text-xs md:text-sm text-base-content/70">
-            <IconCoin size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0 text-success" />
-            <span>Névezési díj: <span className="font-bold">{tournament.tournamentSettings.entryFee} Ft</span></span>
+        {entryFee > 0 && (
+          <div className="flex items-center gap-2">
+            <IconCoin className="w-4 h-4" />
+            <span>Nevezési díj: {entryFee} Ft</span>
           </div>
-        ) : <div className="flex items-center text-xs md:text-sm text-base-content/70">
-        <IconCoin size={14} className="mr-2 md:w-4 md:h-4 flex-shrink-0 text-success" />
-        <span>Névezési díj: <span className="font-bold">Ingyenes</span></span>
-      </div>}
-      </div>
+        )}
+      </CardContent>
 
-      {/* Footer */}
-      <div className="mt-4 pt-3 border-t border-base-300">
-        <Link
-          href={`/tournaments/${tournament.tournamentId}`}
-          className="flex items-center justify-between text-primary hover:underline group/link"
-        >
-          <span className="text-xs md:text-sm font-medium">Részletek</span>
-          <IconArrowRight size={14} className="transition-transform group-hover/link:translate-x-1 md:w-4 md:h-4" />
-        </Link>
-      </div>
-    </Link>
-  );
+      <CardFooter className="mt-auto flex items-center justify-between pt-4">
+        <div className="text-xs text-muted-foreground">
+          ID: {tournament.tournamentId}
+        </div>
+        <Button variant="ghost" size="sm" className="gap-2" asChild>
+          <Link href={`/tournaments/${tournament.tournamentId}`}>
+            Részletek
+            <IconChevronRight className="w-4 h-4" />
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
 } 

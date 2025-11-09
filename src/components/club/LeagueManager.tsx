@@ -1,11 +1,16 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { IconPlus, IconTrophy, IconUsers, IconTrash, IconShare } from '@tabler/icons-react';
+import Link from 'next/link';
 import { League } from '@/interface/league.interface';
 import CreateLeagueModal from './CreateLeagueModal';
 import LeagueDetailModal from './LeagueDetailModal';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
-import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface LeagueManagerProps {
   clubId: string;
@@ -25,20 +30,16 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   const [subscriptionModelEnabled, setSubscriptionModelEnabled] = useState<boolean>(true);
 
   const canManageLeagues = userRole === 'admin' || userRole === 'moderator';
-  // Allow league creation if:
-  // 1. Feature is enabled AND
-  // 2. User has permissions AND
-  // 3. Either subscription model is disabled OR club has premium subscription
-  const canCreateLeagues = canManageLeagues && featureEnabled && (
-    !subscriptionModelEnabled || 
-    clubSubscription !== 'free'
-  );
+  const canCreateLeagues =
+    canManageLeagues &&
+    featureEnabled &&
+    (!subscriptionModelEnabled || clubSubscription !== 'free');
 
   useEffect(() => {
     const initializeComponent = async () => {
       const enabled = await checkFeatureEnabled();
       setFeatureEnabled(enabled);
-      
+
       if (enabled) {
         fetchLeagues();
         fetchClubSubscription();
@@ -46,7 +47,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
         setLoading(false);
       }
     };
-    
+
     initializeComponent();
   }, [clubId, autoOpenLeagueId]);
 
@@ -57,8 +58,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       if (response.ok) {
         const data = await response.json();
         setLeagues(data.leagues || []);
-        
-        // Auto-open league if specified in URL
+
         if (autoOpenLeagueId && data.leagues) {
           const leagueToOpen = data.leagues.find((league: League) => league._id === autoOpenLeagueId);
           if (leagueToOpen) {
@@ -73,7 +73,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       setError('Error loading leagues');
       showErrorToast('Hiba a ligák betöltése során', {
         context: 'Liga lista betöltése',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba'
+        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
       console.error('Error fetching leagues:', err);
     } finally {
@@ -91,7 +91,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
     } catch (err) {
       showErrorToast('Hiba a klub előfizetési adatok betöltése során', {
         context: 'Klub előfizetés betöltése',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba'
+        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
       console.error('Error fetching club subscription:', err);
     }
@@ -102,7 +102,6 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       const response = await fetch(`/api/feature-flags/check?feature=leagues&clubId=${clubId}`);
       if (response.ok) {
         const data = await response.json();
-        // Also check if subscription model is enabled
         setSubscriptionModelEnabled(data.subscriptionModelEnabled !== false);
         return data.enabled;
       }
@@ -110,7 +109,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
     } catch (err) {
       showErrorToast('Hiba a funkció ellenőrzése során', {
         context: 'Feature flag ellenőrzése',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba'
+        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
       console.error('Error checking feature flag:', err);
       return false;
@@ -118,7 +117,6 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   };
 
   const handleLeagueCreated = () => {
-    setShowCreateModal(false);
     fetchLeagues();
   };
 
@@ -128,31 +126,30 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   };
 
   const handleDeleteLeague = async (leagueId: string) => {
-    if (!confirm('Are you sure you want to delete this league? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Biztosan törölni szeretnéd ezt a ligát?')) return;
 
     try {
+      setLoading(true);
       const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        fetchLeagues();
         showSuccessToast('Liga sikeresen törölve!');
+        fetchLeagues();
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to delete league');
         showErrorToast(errorData.error || 'Hiba a liga törlése során', {
           context: 'Liga törlése',
-          error: errorData.error
+          error: errorData.error,
         });
       }
     } catch (err) {
       setError('Error deleting league');
       showErrorToast('Hiba a liga törlése során', {
         context: 'Liga törlése',
-        error: err instanceof Error ? err.message : 'Ismeretlen hiba'
+        error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
       console.error('Error deleting league:', err);
     }
@@ -160,113 +157,109 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <span className="loading loading-spinner loading-lg"></span>
+      <div className="flex justify-center py-12">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
       </div>
     );
   }
 
-  // If feature is not enabled, show disabled message
   if (!featureEnabled) {
     return (
-      <div className="text-center py-12">
-        <IconTrophy size={64} className="mx-auto text-base-content/20 mb-4" />
-        <h3 className="text-lg font-medium text-base-content/60 mb-2">
-          Ligák funkció nem elérhető
-        </h3>
-        <p className="text-base-content/40 mb-4">
-          Ez a funkció jelenleg nem engedélyezett ezen a klubon.
-        </p>
-        {canManageLeagues && clubSubscription === 'free' && (
-          <div className="space-y-4">
-            <div className="alert alert-info max-w-md mx-auto">
-              <span>A ligák használatához prémium előfizetés szükséges.</span>
-            </div>
-            <Link
-              href="/#pricing"
-              className="btn btn-primary gap-2"
-            >
-              <IconPlus className="w-4 h-4" />
-              Előfizetés Frissítése
-            </Link>
+      <Card className="border-dashed">
+        <CardContent className="py-12 text-center space-y-4">
+          <IconTrophy size={48} className="mx-auto text-muted-foreground/40" />
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold text-foreground/80">Ligák funkció nem elérhető</h3>
+            <p className="text-sm text-muted-foreground">
+              Ez a funkció jelenleg nem engedélyezett ezen a klubon.
+            </p>
           </div>
-        )}
-      </div>
+          {canManageLeagues && clubSubscription === 'free' && (
+            <div className="space-y-3">
+              <Alert>
+                <AlertDescription>
+                  A ligák használatához prémium előfizetés szükséges.
+                </AlertDescription>
+              </Alert>
+              <Button asChild>
+                <Link href="/#pricing" className="gap-2">
+                  <IconPlus className="h-4 w-4" />
+                  Előfizetés frissítése
+                </Link>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-base-content">Ligák</h2>
+          <h2 className="text-2xl font-bold text-foreground">Ligák</h2>
+          <p className="text-sm text-muted-foreground">
+            Kövesd nyomon a versenyeidet és a játékosok pontszámait ligákon keresztül.
+          </p>
         </div>
         {canCreateLeagues ? (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary gap-2"
-          >
-            <IconPlus className="w-4 h-4" />
-            Új Liga
-          </button>
+          <Button onClick={() => setShowCreateModal(true)} className="gap-2">
+            <IconPlus className="h-4 w-4" />
+            Új liga
+          </Button>
         ) : canManageLeagues && clubSubscription === 'free' && process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false' ? (
-          <Link
-            href="/#pricing"
-            className="btn btn-outline btn-primary gap-2"
-            title="Prémium előfizetés szükséges"
-          >
-            <IconPlus className="w-4 h-4" />
-            Új Liga (Prémium)
-          </Link>
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/#pricing" title="Prémium előfizetés szükséges">
+              <IconPlus className="h-4 w-4" />
+              Új liga (Prémium)
+            </Link>
+          </Button>
         ) : null}
       </div>
 
-      {/* Error Display */}
       {error && (
-        <div className="alert alert-error">
-          <span>{error}</span>
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Leagues Grid */}
       {leagues.length === 0 ? (
-        <div className="text-center py-12">
-          <IconTrophy size={64} className="mx-auto text-base-content/20 mb-4" />
-          <h3 className="text-lg font-medium text-base-content/60 mb-2">
-            Még nincsenek ligák
-          </h3>
-          <p className="text-base-content/40 mb-4">
-            {canManageLeagues 
-              ? 'Hozz létre egy új ligát a versenyeid nyomon követéséhez'
-              : 'A klub moderátorai még nem hoztak létre ligákat'
-            }
-          </p>
-          {canCreateLeagues ? (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="btn btn-primary gap-2"
-            >
-              <IconPlus size={18} />
-              Első Liga Létrehozása
-            </button>
-          ) : canManageLeagues && clubSubscription === 'free' ? (
-            <div className="space-y-4">
-              <div className="alert alert-info">
-                <span>A ligák létrehozásához prémium előfizetés szükséges.</span>
-              </div>
-              <Link
-                href="/#pricing"
-                className="btn btn-primary gap-2"
-              >
-                <IconPlus size={18} />
-                Előfizetés Frissítése
-              </Link>
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center space-y-4">
+            <IconTrophy size={48} className="mx-auto text-muted-foreground/40" />
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-foreground/80">Még nincsenek ligák</h3>
+              <p className="text-sm text-muted-foreground">
+                {canManageLeagues
+                  ? 'Hozz létre egy új ligát a versenyeid nyomon követéséhez.'
+                  : 'A klub moderátorai még nem hoztak létre ligákat.'}
+              </p>
             </div>
-          ) : null}
-        </div>
+            {canCreateLeagues ? (
+              <Button onClick={() => setShowCreateModal(true)} className="gap-2">
+                <IconPlus className="h-4 w-4" />
+                Első liga létrehozása
+              </Button>
+            ) : canManageLeagues && clubSubscription === 'free' ? (
+              <div className="space-y-3">
+                <Alert>
+                  <AlertDescription>
+                    A ligák létrehozásához prémium előfizetés szükséges.
+                  </AlertDescription>
+                </Alert>
+                <Button asChild className="gap-2">
+                  <Link href="/#pricing">
+                    <IconPlus className="h-4 w-4" />
+                    Előfizetés frissítése
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {leagues.map((league) => (
             <LeagueCard
               key={league._id}
@@ -280,7 +273,6 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
         </div>
       )}
 
-      {/* Modals */}
       {showCreateModal && (
         <CreateLeagueModal
           clubId={clubId}
@@ -319,7 +311,7 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/clubs/${clubId}?page=leagues&league=${league._id}`;
-    
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -333,7 +325,6 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
       }
     } catch (error) {
       console.error('Error sharing league:', error);
-      // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
         showSuccessToast('Liga link másolva a vágólapra!');
@@ -345,72 +336,57 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-      <div className="card-body">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="card-title text-lg mb-2">{league.name}</h3>
+    <Card className="h-full border-0 bg-card/60 backdrop-blur shadow-sm">
+      <CardHeader className="space-y-3 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-lg leading-tight line-clamp-2">{league.name}</CardTitle>
             {league.description && (
-              <p className="text-base-content/60 text-sm mb-3 line-clamp-2">
-                {league.description}
-              </p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{league.description}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              className="btn btn-ghost btn-xs"
-              title="Liga megosztása"
-            >
-              <IconShare size={14} />
-            </button>
-            <div className={`badge ${league.isActive ? 'badge-success' : 'badge-error'}`}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare}>
+              <IconShare className="h-4 w-4" />
+            </Button>
+            <Badge variant={league.isActive ? 'default' : 'outline'} className={cn('text-xs', league.isActive ? '' : 'bg-muted')}>
               {league.isActive ? 'Aktív' : 'Inaktív'}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <IconUsers className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-base font-semibold text-foreground">{league.players?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">Játékosok</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent">
+              <IconTrophy className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-base font-semibold text-foreground">{league.attachedTournaments?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">Versenyek</p>
             </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="stat">
-            <div className="stat-figure text-primary">
-              <IconUsers size={20} />
-            </div>
-            <div className="stat-value text-sm">
-              {league.players?.length || 0}
-            </div>
-            <div className="stat-desc">Játékosok</div>
-          </div>
-          <div className="stat">
-            <div className="stat-figure text-secondary">
-              <IconTrophy size={20} />
-            </div>
-            <div className="stat-value text-sm">
-              {league.attachedTournaments?.length || 0}
-            </div>
-            <div className="stat-desc">Versenyek</div>
-          </div>
-        </div>
-
-        <div className="card-actions justify-between">
-          <button
-            onClick={onView}
-            className="btn btn-primary btn-sm flex-1"
-          >
-            Részletek
-          </button>
-          {canManage && (
-            <div className="flex gap-2">
-              <button
-                onClick={onDelete}
-                className="btn btn-error btn-sm"
-                title="Liga törlése"
-              >
-                <IconTrash size={16}/>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      </CardContent>
+      <CardFooter className="flex items-center justify-between gap-2">
+        <Button className="flex-1" onClick={onView}>
+          Részletek
+        </Button>
+        {canManage && (
+          <Button variant="destructive" size="icon" onClick={onDelete}>
+            <IconTrash className="h-4 w-4" />
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 }

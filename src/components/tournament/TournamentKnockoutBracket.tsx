@@ -974,11 +974,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         }
         .scrollbar-thin::-webkit-scrollbar-track {
           background: hsl(var(--b2));
-          border-radius: 4px;
+           4px;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb {
           background: hsl(var(--bc) / 0.3);
-          border-radius: 4px;
+           4px;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb:hover {
           background: hsl(var(--bc) / 0.5);
@@ -1195,7 +1195,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       >
         {/* Fullscreen Controls */}
         {isFullscreen && (
-          <div className="sticky top-0 left-0 right-0 bg-base-100 border-b border-base-300 p-4 z-50 flex justify-between items-center">
+          <div className="sticky top-0 left-0 right-0 bg-base-100   p-4 z-50 flex justify-between items-center">
             <h2 className="text-xl font-bold">Egyenes Kiesés</h2>
             
             <div className="flex items-center gap-4">
@@ -1438,9 +1438,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             )}
                             
                             {/* Match Card - Compact Version */}
-                            <div className={`card bg-base-100 shadow-md border-2 match-card-compact hover:shadow-lg transition-all relative z-10 ${
-                              !match.player1 && !match.player2 ? 'border-dashed border-base-300' :
-                              !match.player2 ? 'border-warning' : 'border-base-200'
+                            <div className={`card bg-base-100 shadow-md  match-card-compact hover:shadow-lg transition-all relative z-10 ${
+                              !match.player1 && !match.player2 ? '  :
+                              !match.player2 ? ' : '
                             }`}>
                               <div className="card-body relative">
                                 {/* Status and Board - Top Right */}
@@ -1470,8 +1470,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                   {/* Player 1 Row - Compact */}
                                   <div className={`player-row flex justify-between items-center rounded text-xs ${
                                     !match.player1 && !match.player2 ? 'bg-base-300/30' :
-                                    !match.player2 ? 'bg-success/20 border border-success/30' : 
-                                    (match.matchReference?.winnerId === match.player1?._id && match.player1?.name && match.player1.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200')
+                                    !match.player2 ? 'bg-success/20 border  : 
+                                    (match.matchReference?.winnerId === match.player1?._id && match.player1?.name && match.player1.name !== 'TBD' ? 'bg-success/20 border  : 'bg-base-200')
                                   }`}>
                                     <div className="flex items-center gap-1 flex-1 min-w-0">
                                       <span className="font-medium truncate">{match.player1?.name || 'Üres'}</span>
@@ -1515,7 +1515,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                                   {/* Player 2 Row - Compact */}
                                   <div className={`player-row flex justify-between items-center rounded text-xs ${
                                     !match.player1 && !match.player2 ? 'bg-base-300/30' :
-                                    match.matchReference?.winnerId === match.player2?._id && match.player2?.name && match.player2.name !== 'TBD' ? 'bg-success/20 border border-success/30' : 'bg-base-200'
+                                    match.matchReference?.winnerId === match.player2?._id && match.player2?.name && match.player2.name !== 'TBD' ? 'bg-success/20 border  : 'bg-base-200'
                                   }`}>
                                     <div className="flex items-center gap-1 flex-1 min-w-0">
                                       <span className="font-medium truncate">{match.player2?.name || 'Üres'}</span>
@@ -1905,7 +1905,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     />
                     {/* Search Results Dropdown */}
                     {showPlayer1Dropdown && player1SearchTerm.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                         {getFilteredPlayersForSelection(player1SearchTerm, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
                           const playerId = player.playerReference?._id || player.playerReference || player._id;
                           const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -1974,7 +1974,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     />
                     {/* Search Results Dropdown */}
                     {showPlayer2Dropdown && player2SearchTerm.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                         {getFilteredPlayersForSelection(player2SearchTerm, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
                           const playerId = player.playerReference?._id || player.playerReference || player._id;
                           const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2043,7 +2043,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     />
                     {/* Search Results Dropdown */}
                     {showScorerDropdown && scorerSearchTerm.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                         {getFilteredPlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
                           const playerId = player.playerReference?._id || player.playerReference || player._id;
                           const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2236,7 +2236,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   <div
                     key={playerId}
                     className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
-                      isSelected ? 'bg-primary/20 border border-primary/30' : 'bg-base-200 hover:bg-base-300'
+                      isSelected ? 'bg-primary/20 border  : 'bg-base-200 hover:bg-base-300'
                     }`}
                     onClick={() => handlePlayerSelectionForPairing(playerId)}
                   >
@@ -2333,7 +2333,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   />
                   {/* Dropdown */}
                   {showEditPairPlayer1Dropdown && editPairPlayer1Search.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                    <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                       {getFilteredPlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
                 const playerId = player.playerReference?._id || player.playerReference || player._id;
                 const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2398,7 +2398,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   />
                   {/* Dropdown */}
                   {showEditPairPlayer2Dropdown && editPairPlayer2Search.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                    <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                       {getFilteredPlayersForSelection(editPairPlayer2Search, getAvailablePlayersForRound(selectedRound)).slice(0, 10).map((player: any) => {
                         const playerId = player.playerReference?._id || player.playerReference || player._id;
                         const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2452,7 +2452,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   />
                   {/* Dropdown */}
                   {showEditPairScorerDropdown && editPairScorerSearch.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                    <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                       {getFilteredPlayersForSelection(editPairScorerSearch, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
                         const playerId = player.playerReference?._id || player.playerReference || player._id;
                         const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2632,7 +2632,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     />
                     {/* Search Results Dropdown */}
                     {showPlayer1Dropdown && player1SearchTerm.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                         {getFilteredPlayersForSelection(player1SearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
                           const playerId = player.playerReference?._id || player.playerReference || player._id;
                           const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2711,7 +2711,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     />
                     {/* Search Results Dropdown */}
                     {showPlayer2Dropdown && player2SearchTerm.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                         {getFilteredPlayersForSelection(player2SearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
                           const playerId = player.playerReference?._id || player.playerReference || player._id;
                           const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';
@@ -2778,7 +2778,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     />
                     {/* Search Results Dropdown */}
                     {showScorerDropdown && scorerSearchTerm.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute top-full left-0 right-0 bg-base-100 border  rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
                         {getFilteredPlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).slice(0, 10).map((player: any) => {
                           const playerId = player.playerReference?._id || player.playerReference || player._id;
                           const playerName = player.playerReference?.name || player.name || 'Ismeretlen játékos';

@@ -101,8 +101,8 @@ export default function AdminTournamentsPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className="w-16 h-16   rounded-full"></div>
+            <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
           <p className="text-base-content/60">Versenyek betöltése...</p>
         </div>
@@ -113,7 +113,7 @@ export default function AdminTournamentsPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-warning/20 via-warning/10 to-transparent border border-warning/30 p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-warning/20 via-warning/10 to-transparent border  p-8">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
@@ -143,35 +143,35 @@ export default function AdminTournamentsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconTrophy className="w-7 h-7 text-primary" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Összes</h3>
           <p className="text-4xl font-bold text-primary">{stats.total}</p>
         </div>
-        <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-info/20 to-info/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-info/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconClock className="w-7 h-7 text-info" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Aktív</h3>
           <p className="text-4xl font-bold text-info">{stats.active}</p>
         </div>
-        <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconTrophy className="w-7 h-7 text-success" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Befejezett</h3>
           <p className="text-4xl font-bold text-success">{stats.finished}</p>
         </div>
-        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconClock className="w-7 h-7 text-warning" />
           </div>
           <h3 className="text-sm font-medium text-base-content/70 mb-2">Függőben</h3>
           <p className="text-4xl font-bold text-warning">{stats.pending}</p>
         </div>
-        <div className="bg-gradient-to-br from-error/20 to-error/5 border border-error/30 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-br from-error/20 to-error/5 border  rounded-2xl p-6 text-center">
           <div className="w-14 h-14 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconUsers className="w-7 h-7 text-error" />
           </div>
@@ -181,7 +181,7 @@ export default function AdminTournamentsPage() {
       </div>
 
       {/* Daily Chart */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <DailyChart
           title="Versenyek napi indítása"
           apiEndpoint="/api/admin/charts/tournaments/daily"
@@ -191,7 +191,7 @@ export default function AdminTournamentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-base-100 border border-base-300 rounded-2xl p-6">
+      <div className="bg-base-100 border  rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <IconFilter className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-bold">Szűrők</h3>
@@ -234,7 +234,7 @@ export default function AdminTournamentsPage() {
 
       {/* Tournaments List */}
       {filteredTournaments.length === 0 ? (
-        <div className="bg-base-100 border border-base-300 rounded-2xl p-12 text-center">
+        <div className="bg-base-100 border  rounded-2xl p-12 text-center">
           <div className="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconTrophy className="w-10 h-10 text-base-content/30" />
           </div>
@@ -251,7 +251,7 @@ export default function AdminTournamentsPage() {
             const statusConfig = getStatusConfig(tournament.status);
             const typeConfig = getTypeConfig(tournament.tournamentType);
             return (
-              <div key={tournament._id} className="bg-base-100 border border-base-300 rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
+              <div key={tournament._id} className="bg-base-100 border  rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-3 mb-3">
