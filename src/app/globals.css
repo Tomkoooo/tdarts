@@ -234,6 +234,16 @@ html[data-theme="tDarts"] {
     --input: oklch(20% 0.03 12);
     --ring: oklch(51% 0.18 16);
     --radius: 0.75rem;
+
+    /* Additional shadcn/ui colors */
+    --info: oklch(70% 0.16 233);
+    --info-foreground: oklch(100% 0 0);
+    --success: oklch(64% 0.2 132);
+    --success-foreground: oklch(100% 0 0);
+    --warning: oklch(68% 0.162 76);
+    --warning-foreground: oklch(100% 0 0);
+    --error: oklch(60% 0.184 16);
+    --error-foreground: oklch(100% 0 0);
   }
 
   body {

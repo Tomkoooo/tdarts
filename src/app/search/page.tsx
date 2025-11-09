@@ -8,7 +8,13 @@ import TournamentCard from '@/components/tournament/TournamentCard';
 import PlayerCard from '@/components/player/PlayerCard';
 import PlayerStatsModal from '@/components/player/PlayerStatsModal';
 import Pagination from '@/components/common/Pagination';
-import { IconSearch, IconFilter, IconX, IconList, IconCalendar, IconChevronLeft, IconChevronRight} from '@tabler/icons-react';
+import SearchHeader from '@/components/search/SearchHeader';
+import SearchFilters from '@/components/search/SearchFilters';
+import TournamentViewControls from '@/components/search/TournamentViewControls';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Spinner } from '@/components/ui/Spinner';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Interfaces
 interface SearchFilters {
@@ -353,20 +359,6 @@ const SearchPage: React.FC = () => {
     }
   };
 
-  const clearFilters = () => {
-    setFilters({
-      type: 'all',
-      status: undefined,
-      format: undefined,
-      dateFrom: undefined,
-      dateTo: undefined,
-      minPlayers: undefined,
-      maxPlayers: undefined,
-      location: undefined,
-      tournamentType: undefined
-    });
-  };
-
   // Count active filters
   const getActiveFiltersCount = () => {
     let count = 0;
@@ -499,14 +491,16 @@ const SearchPage: React.FC = () => {
         <div className="space-y-6">
           {/* Navigation Header */}
           <div className="flex items-center justify-between">
-            <button
-              className="btn btn-ghost btn-sm"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setCurrentDateIndex(Math.max(0, validIndex - 1))}
               disabled={validIndex === 0}
+              className="gap-2"
             >
-              <IconChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
               Előző nap
-            </button>
+            </Button>
             
             <div className="text-center">
               <div className="text-lg font-bold text-primary">{formatDateHeader(date)}</div>
@@ -515,14 +509,16 @@ const SearchPage: React.FC = () => {
               </div>
             </div>
             
-            <button
-              className="btn btn-ghost btn-sm"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setCurrentDateIndex(Math.min(sortedDates.length - 1, validIndex + 1))}
               disabled={validIndex >= sortedDates.length - 1}
+              className="gap-2"
             >
               Következő nap
-              <IconChevronRight className="w-4 h-4" />
-            </button>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Current Day Tournaments */}
@@ -551,16 +547,17 @@ const SearchPage: React.FC = () => {
                 const tournamentsCount = groupedTournaments[dateKey].length;
                 
                 return (
-                  <button
+                  <Button
                     key={dateKey}
-                    className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+                    variant={isActive ? 'default' : 'ghost'}
+                    size="sm"
                     onClick={() => setCurrentDateIndex(index)}
                     title={formatDateHeader(date)}
                   >
                     <span className="text-xs">
                       {index === 0 ? 'Ma' : index === 1 ? 'Holnap' : `${date.getDate()}/${date.getMonth() + 1}`} ({tournamentsCount})
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -602,7 +599,7 @@ const SearchPage: React.FC = () => {
     <div className="max-w-6xl mx-auto">
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <span className="loading loading-spinner loading-lg"></span>
+          <Spinner size="lg" />
         </div>
       ) : (
         <>
@@ -610,7 +607,7 @@ const SearchPage: React.FC = () => {
             <h2 className="text-2xl font-bold mb-2">
               {query ? `Eredmények: "${query}"` : `Szűrt eredmények: ${filters.type === 'tournaments' ? 'Tornák' : filters.type === 'players' ? 'Játékosok' : filters.type === 'clubs' ? 'Klubok' : 'Minden'}`}
             </h2>
-            <p className="text-base-content/70">{results.totalResults} találat</p>
+            <p className="text-muted-foreground">{results.totalResults} találat</p>
           </div>
 
           {results.totalResults === 0 ? (
@@ -627,49 +624,13 @@ const SearchPage: React.FC = () => {
               {/* Only show tournaments if type is 'tournaments' */}
               {filters.type === 'tournaments' && results.tournaments && results.tournaments.length > 0 && (
                 <section className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold">Tornák</h3>
-                    <div className="flex gap-2 flex-wrap">
-                      <div className="flex gap-1">
-                        <button
-                          className={`btn btn-sm ${tournamentView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
-                          onClick={() => setTournamentView('list')}
-                        >
-                          <IconList className="w-4 h-4" />
-                          Lista
-                        </button>
-                        <button
-                          className={`btn btn-sm ${tournamentView === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
-                          onClick={() => setTournamentView('calendar')}
-                        >
-                          <IconCalendar className="w-4 h-4" />
-                          Naptár
-                        </button>
-                      </div>
-                      {tournamentView === 'list' && (
-                        <div className="flex gap-1 border-l pl-2 items-center">
-                          <button
-                            className={`btn btn-xs ${listViewMode === 'all' ? 'btn-outline' : 'btn-ghost'}`}
-                            onClick={() => {
-                              setListViewMode('all');
-                              setCurrentDateIndex(0);
-                            }}
-                          >
-                            Összes
-                          </button>
-                          <button
-                            className={`btn btn-xs ${listViewMode === 'navigation' ? 'btn-outline' : 'btn-ghost'}`}
-                            onClick={() => {
-                              setListViewMode('navigation');
-                              setCurrentDateIndex(0);
-                            }}
-                          >
-                            Navigálás
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <TournamentViewControls
+                    tournamentView={tournamentView}
+                    setTournamentView={setTournamentView}
+                    listViewMode={listViewMode}
+                    setListViewMode={setListViewMode}
+                    setCurrentDateIndex={setCurrentDateIndex}
+                  />
                   {tournamentView === 'calendar' ? (
                     renderTournamentCalendar(results.tournaments.map(t => t.tournament))
                   ) : (
@@ -725,51 +686,18 @@ const SearchPage: React.FC = () => {
               {/* Only show tournaments if type is 'all' or 'tournaments' */}
               {(filters.type === 'all' || filters.type === 'tournaments') && results.tournaments && results.tournaments.length > 0 && (
                 <section className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold">Tornák</h3>
-                    {filters.type === 'tournaments' && (
-                      <div className="flex gap-2 flex-wrap">
-                        <div className="flex gap-1">
-                          <button
-                            className={`btn btn-sm ${tournamentView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
-                            onClick={() => setTournamentView('list')}
-                          >
-                            <IconList className="w-4 h-4" />
-                            Lista
-                          </button>
-                          <button
-                            className={`btn btn-sm ${tournamentView === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
-                            onClick={() => setTournamentView('calendar')}
-                          >
-                            <IconCalendar className="w-4 h-4" />
-                            Naptár
-                          </button>
-                        </div>
-                        {tournamentView === 'list' && (
-                          <div className="flex gap-1 border-l pl-2 items-center">
-                            <button
-                              className={`btn btn-xs ${listViewMode === 'all' ? 'btn-outline' : 'btn-ghost'}`}
-                              onClick={() => {
-                                setListViewMode('all');
-                                setCurrentDateIndex(0);
-                              }}
-                            >
-                              Összes
-                            </button>
-                            <button
-                              className={`btn btn-xs ${listViewMode === 'navigation' ? 'btn-outline' : 'btn-ghost'}`}
-                              onClick={() => {
-                                setListViewMode('navigation');
-                                setCurrentDateIndex(0);
-                              }}
-                            >
-                              Navigálás
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  {filters.type === 'tournaments' && (
+                    <TournamentViewControls
+                      tournamentView={tournamentView}
+                      setTournamentView={setTournamentView}
+                      listViewMode={listViewMode}
+                      setListViewMode={setListViewMode}
+                      setCurrentDateIndex={setCurrentDateIndex}
+                    />
+                  )}
+                  {filters.type !== 'tournaments' && (
+                    <h3 className="text-xl font-bold mb-4">Tornák</h3>
+                  )}
                   {filters.type === 'tournaments' && tournamentView === 'calendar' ? (
                     renderTournamentCalendar(results.tournaments.map(t => t.tournament))
                   ) : filters.type === 'tournaments' && tournamentView === 'list' ? (
@@ -826,53 +754,20 @@ const SearchPage: React.FC = () => {
           <div className="max-w-6xl mx-auto">
       {isLoadingInitial ? (
         <div className="flex justify-center items-center py-12">
-          <span className="loading loading-spinner loading-lg"></span>
+          <Spinner size="lg" />
                     </div>
                   ) : (
         <>
           <section className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">Közelgő Tornák</h2>
-              <div className="flex gap-2 flex-wrap">
-                <div className="flex gap-1">
-                  <button
-                    className={`btn btn-sm ${tournamentView === 'list' ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => setTournamentView('list')}
-                  >
-                    <IconList className="w-4 h-4" />
-                    Lista
-                  </button>
-                  <button
-                    className={`btn btn-sm ${tournamentView === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => setTournamentView('calendar')}
-                  >
-                    <IconCalendar className="w-4 h-4" />
-                    Naptár
-                  </button>
-                </div>
-                {tournamentView === 'list' && (
-                  <div className="flex gap-1 border-l pl-2 items-center">
-                    <button
-                      className={`btn btn-xs ${listViewMode === 'all' ? 'btn-outline' : 'btn-ghost'}`}
-                      onClick={() => {
-                        setListViewMode('all');
-                        setCurrentDateIndex(0);
-                      }}
-                    >
-                      Összes
-                    </button>
-                    <button
-                      className={`btn btn-xs ${listViewMode === 'navigation' ? 'btn-outline' : 'btn-ghost'}`}
-                      onClick={() => {
-                        setListViewMode('navigation');
-                        setCurrentDateIndex(0);
-                      }}
-                    >
-                      Navigálás
-                    </button>
-                  </div>
-                )}
-              </div>
+              <TournamentViewControls
+                tournamentView={tournamentView}
+                setTournamentView={setTournamentView}
+                listViewMode={listViewMode}
+                setListViewMode={setListViewMode}
+                setCurrentDateIndex={setCurrentDateIndex}
+              />
             </div>
             
             {tournamentView === 'calendar' ? (
@@ -932,129 +827,27 @@ const SearchPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
       <div className="container mx-auto px-4 py-6 md:py-8">
         {/* Search Header */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <div className="relative search-container">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Keress tornára, játékosra, klubra..."
-                    className="input input-lg input-bordered w-full pl-12 pr-12"
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onClick={handleInputClick}
-                  />
-                  <IconSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/50" />
-                  {query && (
-                    <button
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-base-content/50 hover:text-base-content"
-                      onClick={() => setQuery('')}
-                    >
-                      <IconX size={20} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <button
-                className={`btn btn-lg ${showFilters ? 'btn-primary' : 'btn-ghost'} relative`}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <IconFilter size={20} />
-                {activeFiltersCount > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-primary text-primary-content rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    {activeFiltersCount}
-                  </div>
-                )}
-              </button>
-            </div>
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-base-100 border border-base-300 rounded-lg shadow-lg z-50 mt-2">
-                {suggestions.map((s, i) => <button key={i} onClick={() => handleSearch(s)} className="w-full text-left px-4 py-3 hover:bg-base-200 transition-colors">{s}</button>)}
-              </div>
-            )}
-          </div>
-          {query && (
-            <div className="tabs tabs-boxed justify-center mt-4">
-              <button className={`tab ${filters.type === 'all' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'all' }))}>Minden</button>
-              <button className={`tab ${filters.type === 'tournaments' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'tournaments' }))}>Tornák</button>
-              <button className={`tab ${filters.type === 'players' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'players' }))}>Játékosok</button>
-              <button className={`tab ${filters.type === 'clubs' ? 'tab-active' : ''}`} onClick={() => setFilters(prev => ({ ...prev, type: 'clubs' }))}>Klubok</button>
-            </div>
-          )}
-        </div>
+        <SearchHeader
+          query={query}
+          setQuery={setQuery}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          activeFiltersCount={activeFiltersCount}
+          showSuggestions={showSuggestions}
+          suggestions={suggestions}
+          handleSearch={handleSearch}
+          handleInputClick={handleInputClick}
+          filters={filters}
+          setFilters={setFilters}
+        />
 
         {/* Filters */}
-        {showFilters && (
-          <div className="max-w-4xl mx-auto mb-8">
-            <div className="card bg-base-100 shadow-lg">
-              <div className="card-body">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="card-title">Szűrők</h3>
-                  <button
-                    className="btn btn-ghost btn-sm text-error"
-                    onClick={clearFilters}
-                  >
-                    Szűrők törlése
-                  </button>
-                </div>
-                
-                {/* Content Type Filter */}
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-semibold">Tartalom típusa:</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <label className="label cursor-pointer">
-                      <input
-                        type="radio"
-                        name="contentType"
-                        className="radio radio-primary"
-                        checked={filters.type === 'all'}
-                        onChange={() => setFilters(prev => ({ ...prev, type: 'all' }))}
-                      />
-                      <span className="label-text ml-2">Minden</span>
-                    </label>
-                    <label className="label cursor-pointer">
-                      <input
-                        type="radio"
-                        name="contentType"
-                        className="radio radio-primary"
-                        checked={filters.type === 'tournaments'}
-                        onChange={() => setFilters(prev => ({ ...prev, type: 'tournaments' }))}
-                      />
-                      <span className="label-text ml-2">Versenyek</span>
-                    </label>
-                    <label className="label cursor-pointer">
-                      <input
-                        type="radio"
-                        name="contentType"
-                        className="radio radio-primary"
-                        checked={filters.type === 'players'}
-                        onChange={() => setFilters(prev => ({ ...prev, type: 'players' }))}
-                      />
-                      <span className="label-text ml-2">Játékosok</span>
-                    </label>
-                    <label className="label cursor-pointer">
-                      <input
-                        type="radio"
-                        name="contentType"
-                        className="radio radio-primary"
-                        checked={filters.type === 'clubs'}
-                        onChange={() => setFilters(prev => ({ ...prev, type: 'clubs' }))}
-                      />
-                      <span className="label-text ml-2">Klubok</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <SearchFilters
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          filters={filters}
+          setFilters={setFilters}
+        />
         
         {query || filters.type !== 'all' ? renderSearchResults() : renderInitialView()}
         

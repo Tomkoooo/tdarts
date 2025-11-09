@@ -4,9 +4,14 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock, IconLanguage, IconBrandGoogle } from '@tabler/icons-react';
+import { Eye, EyeOff, LogIn, Mail, Lock, Languages, Chrome } from 'lucide-react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/Form';
 
 // Nyelvi szövegek
 const translations = {
@@ -127,157 +132,168 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="glass-card p-8 w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto">
       {/* Nyelv választó */}
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end p-6 pb-0">
         <div className="dropdown dropdown-end">
           <div tabIndex={0} role="button" className="btn btn-sm btn-ghost">
-            <IconLanguage className="w-4 h-4" />
+            <Languages className="w-4 h-4" />
             {t.language}
           </div>
-          <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
+          <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-background rounded-box w-32">
             <li><button onClick={() => setLanguage('hu')}>Magyar</button></li>
             <li><button onClick={() => setLanguage('en')}>English</button></li>
           </ul>
         </div>
       </div>
 
-      <div className="text-center mb-8">
+      <CardHeader className="text-center pb-2">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border border-[hsl(var(--primary) / 0.3)]">
-            <IconLogin className="w-8 h-8 text-[hsl(var(--primary))] text-glow" />
+          <div className="p-3 rounded-full bg-primary/10 border border-primary/20">
+            <LogIn className="w-8 h-8 text-primary" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-gradient-red mb-2">
+        <CardTitle className="text-2xl text-primary">
           {t.title}
-        </h1>
-        <p className="text-[hsl(var(--muted-foreground))] text-sm">
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
           {t.subtitle}
         </p>
-      </div>
+      </CardHeader>
 
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        <div>
-          <label className="label">
-            <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              {t.email}
-            </span>
-          </label>
-          <div className="relative">
-            <IconMail  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 z-10 text-[hsl(var(--muted-foreground))]" />
-            <input
-              {...register('email')}
-              type="email"
-              placeholder={t.emailPlaceholder}
-              className="input input-bordered w-full pl-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
-              disabled={isLoading}
-            />
-          </div>
-          {errors.email && (
-            <p className="text-error italic text-sm mt-1">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="label">
-            <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              {t.password}
-            </span>
-          </label>
-          <div className="relative">
-            <IconLock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 z-10 text-[hsl(var(--muted-foreground))]" />
-            <input
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
-              placeholder={t.passwordPlaceholder}
-              className="input input-bordered w-full pl-10 pr-10 bg-[hsl(var(--background) / 0.5)] border-[hsl(var(--border) / 0.5)] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-              disabled={isLoading}
-              title={showPassword ? t.hidePassword : t.showPassword}
-            >
-              {showPassword ? (
-                <IconEyeOff className="w-5 h-5" />
-              ) : (
-                <IconEye className="w-5 h-5" />
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.email}</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        placeholder={t.emailPlaceholder}
+                        className="pl-10"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </button>
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.password}</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder={t.passwordPlaceholder}
+                        className="pl-10 pr-10"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex items-center justify-between">
+              {onForgotPassword && (
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline hover:text-primary/80 transition-colors"
+                >
+                  {t.forgotPassword}
+                </Link>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full gap-2"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>{t.loggingIn}</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>{t.login}</span>
+                </>
+              )}
+            </Button>
+          </form>
+        </Form>
+
+        {/* Google bejelentkezés */}
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                {t.or}
+              </span>
+            </div>
           </div>
-          {errors.password && (
-            <p className="text-error italic text-sm mt-1">
-              {errors.password.message}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGoogleLogin}
+            className="mt-4 w-full gap-2"
+            disabled={isLoading}
+          >
+            <Chrome className="w-4 h-4" />
+            {t.loginWithGoogle}
+          </Button>
+        </div>
+
+        {onSignUp && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {t.noAccount}{' '}
+              <Link
+                href={`/auth/register${redirectPath ? `?redirect=${redirectPath}` : ''}`}
+                className="text-primary hover:underline hover:text-primary/80 transition-colors font-medium"
+              >
+                {t.registerHere}
+              </Link>
             </p>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between">
-
-          {onForgotPassword && (
-            <Link
-              href="/auth/forgot-password"
-              className="text-sm text-[hsl(var(--primary))] hover:underline hover:text-[hsl(var(--primary-dark))] transition-colors"
-            >
-              {t.forgotPassword}
-            </Link>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          className="btn btn-primary glass-button w-full"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <div className="flex items-center space-x-2">
-              <span className="loading loading-spinner w-4 h-4"></span>
-              <span>{t.loggingIn}</span>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <IconLogin className="w-5 h-5" />
-              <span>{t.login}</span>
-            </div>
-          )}
-        </button>
-      </form>
-
-      {/* Google bejelentkezés */}
-      <div className="mt-6">
-      <div className="divider">
-              {t.or}
           </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="mt-4 w-full cursor-pointer flex justify-center items-center px-4 py-2 border border-[hsl(var(--border) / 0.5)] rounded-lg shadow-sm bg-[hsl(var(--background) / 0.5)] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background) / 0.8)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
-          disabled={isLoading}
-        >
-          <IconBrandGoogle className="w-5 h-5 mr-2" />
-          {t.loginWithGoogle}
-        </button>
-      </div>
-
-      {onSignUp && (
-        <div className="mt-6 text-center">
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            {t.noAccount}{' '}
-            <Link
-              href={`/auth/register${redirectPath ? `?redirect=${redirectPath}` : ''}`}
-              className="text-[hsl(var(--primary))] hover:underline hover:text-[hsl(var(--primary-dark))] transition-colors font-medium"
-            >
-              {t.registerHere}
-            </Link>
-          </p>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

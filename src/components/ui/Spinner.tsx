@@ -1,16 +1,38 @@
-import React from 'react';
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-interface SpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
-}
+import { cn } from "@/lib/utils"
 
-const sizeClassMap: Record<NonNullable<SpinnerProps['size']>, string> = {
-  sm: 'text-sm py-2',
-  md: 'text-base py-4',
-  lg: 'text-lg py-6',
-};
+const spinnerVariants = cva(
+  "animate-spin rounded-full border-2 border-gray-300 border-t-gray-600",
+  {
+    variants: {
+      size: {
+        default: "h-4 w-4",
+        sm: "h-3 w-3",
+        lg: "h-6 w-6",
+        xl: "h-8 w-8",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+)
 
-export function Spinner({ size = 'md' }: SpinnerProps) {
-  const sizeClass = sizeClassMap[size] || sizeClassMap['md'];
-  return <div className={`text-center text-muted ${sizeClass}`}>Betöltés...</div>;
-}
+export interface SpinnerProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof spinnerVariants> {}
+
+const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
+  ({ className, size, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(spinnerVariants({ size }), className)}
+      {...props}
+    />
+  )
+)
+Spinner.displayName = "Spinner"
+
+export { Spinner, spinnerVariants }

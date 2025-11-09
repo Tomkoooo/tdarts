@@ -1,6 +1,8 @@
 import React from 'react';
-import { IconTarget, IconPlayerPlay, IconTrophy } from '@tabler/icons-react';
+import { Target, Play, Trophy } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 const HeroSection = () => {
   return (
@@ -8,10 +10,10 @@ const HeroSection = () => {
       {/* Main Content */}
       <div className="relative z-10 text-center max-w-6xl mx-auto px-6">
         {/* Hero Badge */}
-        <div className="glass-card inline-flex items-center gap-2 px-6 py-3 mb-8 text-sm font-medium">
-          <IconTarget className="w-4 h-4 text-red-400" />
-          <span className="text-gray-300">Professzionális Darts Tournament Platform</span>
-        </div>
+        <GlassCard className="inline-flex items-center gap-2 px-6 py-3 mb-8 text-sm font-medium border-primary/20">
+          <Target className="w-4 h-4 text-primary" />
+          <span className="text-muted-foreground">Professzionális Darts Tournament Platform</span>
+        </GlassCard>
 
         {/* Main Heading */}
         <h1 className="text-6xl md:text-8xl font-bold mb-6 text-glow">
@@ -27,15 +29,19 @@ const HeroSection = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-          <Link href="/search" className="glass-button push-button group flex items-center gap-3">
-            <IconPlayerPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            Kezdés Most
-          </Link>
-          
-          <Link href="/myclub" className="tournament-create-button push-button px-8 py-4 rounded-xl font-semibold text-white hover:text-red-400 transition-colors">
-            <IconTrophy className="w-5 h-5 inline mr-2" />
-            Verseny Létrehozása
-          </Link>
+          <Button asChild size="lg" className="gap-3">
+            <Link href="/search">
+              <Play className="w-5 h-5" />
+              Kezdés Most
+            </Link>
+          </Button>
+
+          <Button asChild variant="outline" size="lg" className="gap-3">
+            <Link href="/myclub">
+              <Trophy className="w-5 h-5" />
+              Verseny Létrehozása
+            </Link>
+          </Button>
         </div>
 
         {/* Stats */}
@@ -45,10 +51,10 @@ const HeroSection = () => {
             { number: '40', label: 'Verseny Havonta' },
             { number: '24/7', label: 'Valós Idejű Követés' }
           ].map((stat, index) => (
-            <div key={index} className="glass-card p-6 hover:scale-105 transition-transform duration-300">
-              <div className="text-3xl font-bold text-gradient-red mb-2">{stat.number}</div>
-              <div className="text-gray-400">{stat.label}</div>
-            </div>
+            <GlassCard key={index} className="p-6 hover:scale-105 transition-transform duration-300">
+              <div className="text-3xl font-bold text-primary mb-2">{stat.number}</div>
+              <div className="text-muted-foreground">{stat.label}</div>
+            </GlassCard>
           ))}
         </div>
       </div>

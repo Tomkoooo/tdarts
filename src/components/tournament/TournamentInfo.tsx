@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus } from '@tabler/icons-react';
+import { Share, RefreshCw, Edit, UserPlus } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import EditTournamentModal from './EditTournamentModal';
 
 interface TournamentInfoProps {
@@ -38,14 +40,15 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
           <h3 className="text-md italic font-semibold">Torna azonosító: {tournament.tournamentId}</h3>
         </div>
         {canEdit && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setEditModalOpen(true)}
-            className="btn btn-outline btn-sm flex items-center gap-2"
-            title="Torna szerkesztése"
+            className="gap-2"
           >
-            <IconEdit className="w-4 h-4" />
+            <Edit className="w-4 h-4" />
             Szerkesztés
-          </button>
+          </Button>
         )}
       </div>
       

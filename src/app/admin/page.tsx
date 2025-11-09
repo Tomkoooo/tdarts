@@ -1,24 +1,28 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { 
-  IconUsers, 
-  IconBuilding, 
-  IconTrophy, 
-  IconAlertTriangle, 
-  IconTrendingUp, 
-  IconTrendingDown, 
-  IconRefresh, 
-  IconSpeakerphone, 
-  IconCheck, 
-  IconBug,
-  IconActivity,
-  IconServer,
-  IconArrowRight,
-  IconChartBar
-} from '@tabler/icons-react';
+import {
+  Users,
+  Building,
+  Trophy,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+  Speakerphone,
+  Check,
+  Bug,
+  Activity,
+  Server,
+  ArrowRight,
+  BarChart3
+} from 'lucide-react';
 import Link from 'next/link';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface DashboardStats {
   totalUsers: number;
@@ -99,80 +103,88 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-primary/20 rounded-full"></div>
-            <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0"></div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-lg font-semibold text-base-content">Dashboard betöltése</p>
-            <p className="text-sm text-base-content/60">Adatok lekérdezése...</p>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+            <Spinner size="xl" className="mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Dashboard betöltése</h2>
+            <p className="text-sm text-muted-foreground">Adatok lekérdezése...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto">
-            <IconAlertTriangle className="w-12 h-12 text-error" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-base-content">Hiba történt</h2>
-            <p className="text-base-content/60">Nem sikerült betölteni a dashboard adatokat.</p>
-          </div>
-          <button 
-            onClick={fetchDashboardData}
-            className="btn btn-primary gap-2"
-          >
-            <IconRefresh className="w-5 h-5" />
-            Újrapróbálás
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <Card className="w-full max-w-md border-destructive/50">
+          <CardContent className="p-8 text-center">
+            <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6 text-destructive" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Hiba történt</h2>
+            <p className="text-sm text-muted-foreground mb-6">Nem sikerült betölteni a dashboard adatokat.</p>
+            <Button onClick={fetchDashboardData} className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Újrapróbálás
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const HeroStatCard = ({ 
-    title, 
-    value, 
-    change, 
-    icon: Icon, 
+  const HeroStatCard = ({
+    title,
+    value,
+    change,
+    icon: Icon,
     color = 'primary',
     monthlyValue,
     monthlyLabel,
-  }: { 
-    title: string; 
-    value: number; 
-    change: number; 
-    icon: any; 
+  }: {
+    title: string;
+    value: number;
+    change: number;
+    icon: any;
     color?: string;
     monthlyValue?: number;
     monthlyLabel?: string;
     trend?: 'up' | 'down';
   }) => {
-    const colorClasses = {
-      primary: 'from-primary/20 to-primary/5 border-primary/30',
-      success: 'from-success/20 to-success/5 border-success/30',
-      warning: 'from-warning/20 to-warning/5 border-warning/30',
-      error: 'from-error/20 to-error/5 border-error/30',
-      info: 'from-info/20 to-info/5 border-info/30'
+    const getColorClasses = () => {
+      switch (color) {
+        case 'success':
+          return 'border-success/30 bg-success/5';
+        case 'warning':
+          return 'border-warning/30 bg-warning/5';
+        case 'error':
+          return 'border-destructive/30 bg-destructive/5';
+        case 'info':
+          return 'border-info/30 bg-info/5';
+        default:
+          return 'border-primary/30 bg-primary/5';
+      }
     };
 
-    const iconColorClasses = {
-      primary: 'text-primary',
-      success: 'text-success',
-      warning: 'text-warning',
-      error: 'text-error',
-      info: 'text-info'
+    const getIconColor = () => {
+      switch (color) {
+        case 'success':
+          return 'text-success';
+        case 'warning':
+          return 'text-warning';
+        case 'error':
+          return 'text-destructive';
+        case 'info':
+          return 'text-info';
+        default:
+          return 'text-primary';
+      }
     };
 
     return (
-      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses] || colorClasses.primary} border backdrop-blur-xl p-6 hover:scale-[1.02] transition-all duration-300 group`}>
+      <Card className={`${getColorClasses()} hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -181,70 +193,70 @@ export default function AdminDashboard() {
           }}></div>
         </div>
 
-        <div className="relative z-10">
+        <CardContent className="relative z-10 p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
-            <div className={`p-3 rounded-xl bg-base-100/50 backdrop-blur-sm border border-base-content/10 group-hover:scale-110 transition-transform duration-300`}>
-              <Icon className={`w-7 h-7 ${iconColorClasses[color as keyof typeof iconColorClasses] || iconColorClasses.primary}`} />
+            <div className={`p-3 rounded-xl bg-background/50 backdrop-blur-sm border border-border/10 group-hover:scale-110 transition-transform duration-300`}>
+              <Icon className={`w-7 h-7 ${getIconColor()}`} />
             </div>
             <div className="flex items-center gap-2">
               {change >= 0 ? (
-                <IconTrendingUp className="w-5 h-5 text-success" />
+                <TrendingUp className="w-5 h-5 text-success" />
               ) : (
-                <IconTrendingDown className="w-5 h-5 text-error" />
+                <TrendingDown className="w-5 h-5 text-destructive" />
               )}
-              <span className={`text-sm font-bold ${change >= 0 ? 'text-success' : 'text-error'}`}>
+              <span className={`text-sm font-bold ${change >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {change >= 0 ? '+' : ''}{change}%
               </span>
             </div>
           </div>
-          
+
           {/* Title */}
-          <h3 className="text-sm font-medium text-base-content/70 mb-2">{title}</h3>
-          
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">{title}</h3>
+
           {/* Value */}
-          <p className="text-4xl font-bold text-base-content mb-4 tabular-nums">
+          <p className="text-4xl font-bold text-foreground mb-4 tabular-nums">
             {value.toLocaleString()}
           </p>
-          
+
           {/* Monthly Stats */}
           {monthlyValue !== undefined && (
-            <div className="flex items-center justify-between pt-4 border-t border-base-content/10">
-              <span className="text-xs text-base-content/60">{monthlyLabel}</span>
-              <span className={`text-sm font-bold ${iconColorClasses[color as keyof typeof iconColorClasses] || iconColorClasses.primary}`}>
+            <div className="flex items-center justify-between pt-4 border-t border-border/10">
+              <span className="text-xs text-muted-foreground">{monthlyLabel}</span>
+              <span className={`text-sm font-bold ${getIconColor()}`}>
                 +{monthlyValue}
               </span>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
-  const ModernChartCard = ({ 
-    title, 
-    data, 
+  const ModernChartCard = ({
+    title,
+    data,
     color = 'primary',
     type = 'area'
-  }: { 
-    title: string; 
-    data: ChartData | null; 
+  }: {
+    title: string;
+    data: ChartData | null;
     color?: string;
     type?: 'area' | 'bar';
   }) => {
     const CustomTooltip = ({ active, payload, label }: any) => {
       if (active && payload && payload.length) {
         return (
-          <div className="bg-base-100 border border-base-300 rounded-lg p-3 shadow-xl backdrop-blur-sm">
-            <p className="text-sm font-medium text-base-content mb-1">{label}</p>
+          <Card className="p-3">
+            <p className="text-sm font-medium mb-1">{label}</p>
             <p className="text-lg font-bold text-primary">{payload[0].value}</p>
-          </div>
+          </Card>
         );
       }
       return null;
     };
 
-    const chartData = data && data.datasets && data.datasets[0] && data.datasets[0].data 
+    const chartData = data && data.datasets && data.datasets[0] && data.datasets[0].data
       ? data.labels.map((label, index) => ({
           month: label,
           count: data.datasets[0].data[index] || 0
@@ -254,122 +266,123 @@ export default function AdminDashboard() {
     const getChartColors = () => {
       switch (color) {
         case 'error':
-          return { stroke: '#ef4444', gradient: 'rgba(239, 68, 68, 0.3)', fill: 'rgba(239, 68, 68, 0.1)' };
+          return { stroke: 'hsl(var(--destructive))', gradient: 'hsl(var(--destructive) / 0.3)', fill: 'hsl(var(--destructive) / 0.1)' };
         case 'warning':
-          return { stroke: '#f59e0b', gradient: 'rgba(245, 158, 11, 0.3)', fill: 'rgba(245, 158, 11, 0.1)' };
+          return { stroke: 'hsl(var(--warning))', gradient: 'hsl(var(--warning) / 0.3)', fill: 'hsl(var(--warning) / 0.1)' };
         case 'success':
-          return { stroke: '#10b981', gradient: 'rgba(16, 185, 129, 0.3)', fill: 'rgba(16, 185, 129, 0.1)' };
+          return { stroke: 'hsl(var(--success))', gradient: 'hsl(var(--success) / 0.3)', fill: 'hsl(var(--success) / 0.1)' };
         case 'info':
-          return { stroke: '#3b82f6', gradient: 'rgba(59, 130, 246, 0.3)', fill: 'rgba(59, 130, 246, 0.1)' };
+          return { stroke: 'hsl(var(--info))', gradient: 'hsl(var(--info) / 0.3)', fill: 'hsl(var(--info) / 0.1)' };
         default:
-          return { stroke: '#ef4444', gradient: 'rgba(239, 68, 68, 0.3)', fill: 'rgba(239, 68, 68, 0.1)' };
+          return { stroke: 'hsl(var(--primary))', gradient: 'hsl(var(--primary) / 0.3)', fill: 'hsl(var(--primary) / 0.1)' };
       }
     };
 
     const chartColors = getChartColors();
 
     return (
-      <div className="bg-base-100/50 backdrop-blur-xl border border-base-300 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-base-content flex items-center gap-2">
-            <IconChartBar className="w-5 h-5 text-primary" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <BarChart3 className="w-5 h-5" />
             {title}
-          </h3>
-        </div>
-        
-        {chartData.length > 0 ? (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              {type === 'area' ? (
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={chartColors.gradient} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={chartColors.fill} stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke="rgba(156, 163, 175, 0.1)" 
-                    vertical={false}
-                  />
-                  
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
-                  />
-                  
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
-                  />
-                  
-                  <Tooltip content={<CustomTooltip />} />
-                  
-                  <Area
-                    type="monotone"
-                    dataKey="count"
-                    stroke={chartColors.stroke}
-                    strokeWidth={3}
-                    fill={`url(#gradient-${title})`}
-                    dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: chartColors.stroke, strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              ) : (
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke="rgba(156, 163, 175, 0.1)" 
-                    vertical={false}
-                  />
-                  
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
-                  />
-                  
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
-                  />
-                  
-                  <Tooltip content={<CustomTooltip />} />
-                  
-                  <Bar
-                    dataKey="count"
-                    fill={chartColors.stroke}
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center">
-            <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-base-200 rounded-full flex items-center justify-center mx-auto">
-                <IconChartBar className="w-8 h-8 text-base-content/30" />
-              </div>
-              <p className="text-base-content/60 text-sm">Nincs megjeleníthető adat</p>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {chartData.length > 0 ? (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                {type === 'area' ? (
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={chartColors.gradient} stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor={chartColors.fill} stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      vertical={false}
+                    />
+
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+
+                    <Tooltip content={<CustomTooltip />} />
+
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke={chartColors.stroke}
+                      strokeWidth={3}
+                      fill={`url(#gradient-${title})`}
+                      dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: chartColors.stroke, strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                ) : (
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      vertical={false}
+                    />
+
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+
+                    <Tooltip content={<CustomTooltip />} />
+
+                    <Bar
+                      dataKey="count"
+                      fill={chartColors.stroke}
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                  <BarChart3 className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">Nincs megjeleníthető adat</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
-  const QuickActionCard = ({ 
-    title, 
-    description, 
-    icon: Icon, 
+  const QuickActionCard = ({
+    title,
+    description,
+    icon: Icon,
     href,
     color = 'primary'
   }: {
@@ -379,28 +392,37 @@ export default function AdminDashboard() {
     href: string;
     color?: string;
   }) => {
-    const colorClasses = {
-      primary: 'from-primary/20 to-primary/5 border-primary/30 hover:border-primary/50',
-      success: 'from-success/20 to-success/5 border-success/30 hover:border-success/50',
-      warning: 'from-warning/20 to-warning/5 border-warning/30 hover:border-warning/50',
-      error: 'from-error/20 to-error/5 border-error/30 hover:border-error/50',
-      info: 'from-info/20 to-info/5 border-info/30 hover:border-info/50'
+    const getCardClasses = () => {
+      switch (color) {
+        case 'success':
+          return 'border-success/30 bg-success/5 hover:border-success/50';
+        case 'warning':
+          return 'border-warning/30 bg-warning/5 hover:border-warning/50';
+        case 'error':
+          return 'border-destructive/30 bg-destructive/5 hover:border-destructive/50';
+        case 'info':
+          return 'border-info/30 bg-info/5 hover:border-info/50';
+        default:
+          return 'border-primary/30 bg-primary/5 hover:border-primary/50';
+      }
     };
 
     return (
       <Link href={href} className="group">
-        <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses] || colorClasses.primary} border backdrop-blur-xl p-5 hover:scale-[1.02] transition-all duration-300`}>
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-base-100/50 backdrop-blur-sm border border-base-content/10 group-hover:scale-110 transition-transform duration-300">
-              <Icon className="w-6 h-6 text-primary" />
+        <Card className={`${getCardClasses()} hover:scale-[1.02] transition-all duration-300 p-5`}>
+          <CardContent className="p-0">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/10 group-hover:scale-110 transition-transform duration-300">
+                <Icon className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold truncate">{title}</h4>
+                <p className="text-sm text-muted-foreground truncate">{description}</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-base-content mb-1 truncate">{title}</h4>
-              <p className="text-sm text-base-content/60 truncate">{description}</p>
-            </div>
-            <IconArrowRight className="w-5 h-5 text-base-content/40 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </Link>
     );
   };
@@ -408,44 +430,46 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 p-8">
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
             backgroundSize: '32px 32px'
           }}></div>
         </div>
-        
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div className="space-y-2">
-            <h1 className="text-4xl lg:text-5xl font-bold text-base-content flex items-center gap-3">
-              <IconActivity className="w-10 h-10 text-primary" />
-              Admin Dashboard
-            </h1>
-            <p className="text-base-content/70 text-lg">Rendszer áttekintés és statisztikák</p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="text-sm text-base-content/60">
-              <div className="flex items-center gap-2 mb-1">
-                <IconRefresh className="w-4 h-4" />
-                <span className="font-medium">Utolsó frissítés:</span>
-              </div>
-              <div className="font-mono text-base-content">
-                {lastUpdate.toLocaleString('hu-HU')}
-              </div>
+
+        <CardContent className="relative z-10 p-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl lg:text-5xl font-bold flex items-center gap-3">
+                <Activity className="w-10 h-10 text-primary" />
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground text-lg">Rendszer áttekintés és statisztikák</p>
             </div>
-            <button 
-              onClick={fetchDashboardData}
-              disabled={isRefreshing}
-              className="btn btn-primary gap-2 min-w-[140px]"
-            >
-              <IconRefresh className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Frissítés...' : 'Frissítés'}
-            </button>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 mb-1">
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="font-medium">Utolsó frissítés:</span>
+                </div>
+                <div className="font-mono">
+                  {lastUpdate.toLocaleString('hu-HU')}
+                </div>
+              </div>
+              <Button
+                onClick={fetchDashboardData}
+                disabled={isRefreshing}
+                className="gap-2 min-w-[140px]"
+              >
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Frissítés...' : 'Frissítés'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Hero Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -525,70 +549,74 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions Section */}
-      <div className="bg-base-100/50 backdrop-blur-xl border border-base-300 rounded-2xl p-6">
-        <h2 className="text-2xl font-bold text-base-content mb-6 flex items-center gap-3">
-          <IconActivity className="w-7 h-7 text-primary" />
-          Gyors Műveletek
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-primary">
+            <Activity className="w-7 h-7" />
+            Gyors Műveletek
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <QuickActionCard
             title="Announcement Kezelő"
             description="Rendszerüzenetek kezelése"
-            icon={IconSpeakerphone}
+            icon={Speakerphone}
             href="/admin/announcements"
             color="primary"
           />
           <QuickActionCard
             title="Todo Kezelő"
             description="Feladatok és észrevételek"
-            icon={IconCheck}
+            icon={Check}
             href="/admin/todos"
             color="info"
           />
           <QuickActionCard
             title="Hibabejelentések"
             description="Felhasználói visszajelzések"
-            icon={IconBug}
+            icon={Bug}
             href="/admin/feedback"
             color="warning"
           />
           <QuickActionCard
             title="Felhasználók"
             description="Felhasználók kezelése"
-            icon={IconUsers}
+            icon={Users}
             href="/admin/users"
             color="success"
           />
           <QuickActionCard
             title="Klubok"
             description="Klubok áttekintése"
-            icon={IconBuilding}
+            icon={Building}
             href="/admin/clubs"
             color="info"
           />
           <QuickActionCard
             title="Versenyek"
             description="Versenyek kezelése"
-            icon={IconTrophy}
+            icon={Trophy}
             href="/admin/tournaments"
             color="success"
           />
           <QuickActionCard
             title="Hibák"
             description="Rendszerhibák áttekintése"
-            icon={IconAlertTriangle}
+            icon={AlertTriangle}
             href="/admin/errors"
             color="error"
           />
           <QuickActionCard
             title="Beállítások"
             description="Rendszer konfiguráció"
-            icon={IconServer}
+            icon={Server}
             href="/admin/settings"
             color="primary"
           />
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

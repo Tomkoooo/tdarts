@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconX, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
+import { Search, Trophy, Users, Menu2, X, User, MessageCircle, Help, LayoutDashboard, Building, Target, AlertTriangle, Settings, Bug, SettingsCheck, Bell, LogOut, Monitor } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
 import { useLogout } from "@/hooks/useLogout";
 import IconDart from "./icons/IconDart";
 import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -47,22 +48,21 @@ const Navbar = () => {
   const isAdminPage = pathname?.startsWith('/admin');
 
   const navItems = isAdminPage ? [
-    { name: "Dashboard", icon: IconDashboard, href: "/admin" },
-    { name: "Felhasználók", icon: IconUsers, href: "/admin/users" },
-    { name: "Klubok", icon: IconBuilding, href: "/admin/clubs" },
-    { name: "Versenyek", icon: IconTrophy, href: "/admin/tournaments" },
-    { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
-    { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
-    { name: "Visszajelzés", icon: IconMessageCircle, href: "/admin/feedback" },
-    { name: "Todos", icon: IconSettingsCheck, href: "/admin/todos" },
-    { name: "Jelzések", icon: IconBell, href: "/admin/announcements" },
+    { name: "Dashboard", icon: LayoutDashboard, href: "/admin" },
+    { name: "Felhasználók", icon: Users, href: "/admin/users" },
+    { name: "Klubok", icon: Building, href: "/admin/clubs" },
+    { name: "Versenyek", icon: Trophy, href: "/admin/tournaments" },
+    { name: "Hibák", icon: AlertTriangle, href: "/admin/errors" },
+    { name: "Beállítások", icon: Settings, href: "/admin/settings" },
+    { name: "Visszajelzés", icon: MessageCircle, href: "/admin/feedback" },
+    { name: "Todos", icon: SettingsCheck, href: "/admin/todos" },
+    { name: "Jelzések", icon: Bell, href: "/admin/announcements" },
   ] : [
-    { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
-    { name: "Klubbok", icon: IconUsers, href: "/search?type=clubs" },
-    { name: "Tábla", icon: IconDeviceDesktop, href: "/board" },
-    { name: "Keresés", icon: IconSearch, href: "/search" },
-    { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
-
+    { name: "Versenyek", icon: Trophy, href: "/search?type=tournaments" },
+    { name: "Klubbok", icon: Users, href: "/search?type=clubs" },
+    { name: "Tábla", icon: Monitor, href: "/board" },
+    { name: "Keresés", icon: Search, href: "/search" },
+    { name: "Hogyan működik", icon: Help, href: "/how-it-works" },
   ];
 
   return (
@@ -99,9 +99,11 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-2 lg:gap-3 flex-shrink-0">
             {isAdminPage ? (
               <>
-                <Link href="/" className="btn btn-sm glass-button push-button">
-                  <IconLogout/>
-                </Link>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/">
+                    <LogOut className="w-4 h-4" />
+                  </Link>
+                </Button>
                 <div className="dropdown dropdown-end">
                   <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-box w-52">
                     <li><Link href="/profile" className="text-white hover:text-red-300">Profil</Link></li>
@@ -112,50 +114,58 @@ const Navbar = () => {
               </>
             ) : user ? (
               <>
-                <Link href="/profile" className="flex items-center space-x-1.5 btn btn-sm btn-primary glass-button push-button">
-                  <IconUser className="w-4 h-4" />
-                  <span className="hidden lg:inline">{user.username}</span>
-                </Link>
-                <Link href="/myclub" className="flex items-center space-x-1.5 btn btn-sm btn-outline push-button">
-                  <IconDart className="w-4 h-4" />
-                  <span className="hidden xl:inline">Saját klub</span>
-                </Link>
-                <Link href="/feedback" className="flex items-center space-x-1.5 btn btn-sm btn-outline push-button">
-                  <IconBug className="w-4 h-4" />
-                  <span className="hidden xl:inline">Hibabejelentés</span>
-                </Link>
+                <Button asChild size="sm" className="gap-1.5">
+                  <Link href="/profile">
+                    <User className="w-4 h-4" />
+                    <span className="hidden lg:inline">{user.username}</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                  <Link href="/myclub">
+                    <IconDart className="w-4 h-4" />
+                    <span className="hidden xl:inline">Saját klub</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                  <Link href="/feedback">
+                    <Bug className="w-4 h-4" />
+                    <span className="hidden xl:inline">Hibabejelentés</span>
+                  </Link>
+                </Button>
                 {user.isAdmin && (
-                  <Link href="/admin" className="flex items-center justify-center space-x-1.5 btn btn-sm btn-outline glass-button push-button"
+                  <Button asChild variant="outline" size="sm"
                   onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    Admin
-                  </Link>
+                    <Link href="/admin">Admin</Link>
+                  </Button>
                 )}
               </>
             ) : (
               <>
-                <Link href="/auth/login" className="btn btn-sm glass-button push-button">
-                  Bejelentkezés
-                </Link>
-                <Link href="/auth/register" className="btn btn-sm btn-outline push-button">
-                  Regisztráció
-                </Link>
+                <Button asChild size="sm">
+                  <Link href="/auth/login">Bejelentkezés</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/auth/register">Regisztráció</Link>
+                </Button>
               </>
             )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg bg-gray-800/50 text-gray-300 hover:text-white transition-colors relative"
+            className="md:hidden relative"
           >
-            {isMobileMenuOpen ? <IconX className="w-6 h-6" /> : <IconMenu2 className="w-6 h-6" />}
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu2 className="w-6 h-6" />}
             {!user && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">!</span>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
+                <span className="text-destructive-foreground text-xs font-bold">!</span>
               </div>
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Mobile Menu */}
@@ -189,64 +199,59 @@ const Navbar = () => {
                     </div>
                     <span className="font-medium text-gray-300">{user?.name}</span>
                   </div>
-                  <Link 
-                    href="/"
-                    onClick={() => {
-                      
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                  <Button asChild variant="outline" className="w-full gap-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <IconLogout className="w-5 h-5"/>
-                    <span>Kilépés</span>
-                  </Link>
+                    <Link href="/">
+                      <LogOut className="w-5 h-5"/>
+                      <span>Kilépés</span>
+                    </Link>
+                  </Button>
                 </div>
               ) : user ? (
                 <div className="flex flex-col gap-3">
-                <Link 
-                  href="/profile" 
-                  className="flex items-center justify-center space-x-2 btn btn-primary glass-button push-button w-full"
+                <Button asChild className="w-full gap-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <IconUser className="w-5 h-5" />
-                  <span>{user.username}</span>
-                </Link>
-                <Link 
-                  href="/myclub" 
-                  className="flex items-center justify-center space-x-2 btn btn-outline btn-primary push-button w-full"
+                  <Link href="/profile">
+                    <User className="w-5 h-5" />
+                    <span>{user.username}</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full gap-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                <IconDart className="w-5 h-5" />
-                <span>Saját klub</span>
-                </Link>
-                <Link href="/feedback" className="flex items-center space-x-2 btn btn-outline push-button">
-                  <IconBug className="w-5 h-5" />
-                  <span>Hibabejelentés</span>
-                </Link>
+                  <Link href="/myclub">
+                    <IconDart className="w-5 h-5" />
+                    <span>Saját klub</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full gap-2">
+                  <Link href="/feedback" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Bug className="w-5 h-5" />
+                    <span>Hibabejelentés</span>
+                  </Link>
+                </Button>
                 {user.isAdmin && (
-                  <Link href="/admin" className="flex items-center justify-center space-x-2 btn btn-outline glass-button push-button w-full"
+                  <Button asChild variant="outline" className="w-full"
                   onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    Admin
-                  </Link>
+                    <Link href="/admin">Admin</Link>
+                  </Button>
                 )}
               </div>
               ) : (
-                <div>
-                <Link
-                  href="/auth/login"
-                  className="glass-button justify-center flex push-button w-full mt-4"
+                <div className="space-y-3">
+                <Button asChild className="w-full"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Bejelentkezés
-                </Link>
-                <Link 
-                  href="/auth/register" 
-                  onClick={() => setIsMobileMenuOpen(false)} 
-                  className="block btn btn-outline push-button w-full mt-2"
+                  <Link href="/auth/login">Bejelentkezés</Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Regisztráció
-                </Link>
+                  <Link href="/auth/register">Regisztráció</Link>
+                </Button>
                 </div>
               )}
             </div>

@@ -12,7 +12,11 @@ import TournamentGroupsView from '@/components/tournament/TournamentGroupsView';
 import TournamentBoardsView from '@/components/tournament/TournamentBoardsView';
 import TournamentKnockoutBracket from '@/components/tournament/TournamentKnockoutBracket';
 import TournamentShareModal from '@/components/tournament/TournamentShareModal';
-import { IconQrcode, IconRefresh } from '@tabler/icons-react';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Spinner } from '@/components/ui/Spinner';
+import { QrCode, RefreshCw, Trophy, Users, BarChart3, Target, Zap } from 'lucide-react';
 
 const TournamentPage = () => {
     const { code } = useParams();
@@ -138,12 +142,14 @@ const TournamentPage = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
-          <h2 className="text-xl font-bold text-primary">Torna betöltése...</h2>
-          <p className="text-base-content/70 mt-2">Kérjük várjon</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-8">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+            <Spinner size="lg" className="mb-4" />
+            <h2 className="text-xl font-bold text-primary mb-2">Torna betöltése...</h2>
+            <p className="text-muted-foreground">Kérjük várjon</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -151,24 +157,19 @@ const TournamentPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="alert alert-error shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <h3 className="font-bold">Hiba történt!</h3>
-              <div className="text-xs">{error}</div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-8">
+        <Card className="w-full max-w-md border-destructive/50">
+          <CardContent className="p-8 text-center">
+            <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="w-6 h-6 text-destructive" />
             </div>
-          </div>
-          <button 
-            className="btn btn-primary w-full mt-4"
-            onClick={fetchAll}
-          >
-            Újrapróbálkozás
-          </button>
-        </div>
+            <h3 className="text-lg font-bold mb-2">Hiba történt!</h3>
+            <p className="text-sm text-muted-foreground mb-6">{error}</p>
+            <Button onClick={fetchAll} className="w-full">
+              Újrapróbálkozás
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -176,32 +177,37 @@ const TournamentPage = () => {
   // Not found state
   if (!tournament) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-2xl font-bold text-primary mb-2">Torna nem található</h2>
-          <p className="text-base-content/70">A keresett torna nem létezik vagy nem elérhető.</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-8">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-primary mb-2">Torna nem található</h2>
+            <p className="text-muted-foreground">A keresett torna nem létezik vagy nem elérhető.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-primary">
-              {tournament.tournamentSettings?.name || 'Torna'}
-            </h1>
-            {lastRefresh && !isRefreshing && (
-              <div className="text-xs text-base-content/50">
-                Utoljára frissítve: {lastRefresh.toLocaleTimeString('hu-HU')}
-              </div>
-            )}
+            <Trophy className="w-8 h-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold text-primary">
+                {tournament.tournamentSettings?.name || 'Torna'}
+              </h1>
+              {lastRefresh && !isRefreshing && (
+                <p className="text-xs text-muted-foreground">
+                  Utoljára frissítve: {lastRefresh.toLocaleTimeString('hu-HU')}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Auto-refresh toggle for Pro users */}
             {user && isProFeature && !isFeatureLoading && (
               <div className="flex items-center gap-2">
@@ -212,88 +218,88 @@ const TournamentPage = () => {
                     onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
                     className="toggle toggle-primary toggle-sm"
                   />
-                  <span className="text-sm text-base-content/70">Auto-frissítés</span>
+                  <span className="text-sm text-muted-foreground">Auto-frissítés</span>
                 </label>
                 {isRefreshing && (
-                  <IconRefresh className="w-4 h-4 animate-spin text-primary" />
+                  <RefreshCw className="w-4 h-4 animate-spin text-primary" />
                 )}
               </div>
             )}
-            <button
+            <Button
+              variant="outline"
               onClick={() => setTournamentShareModal(true)}
-              className="btn btn-outline btn-primary flex items-center gap-2"
-              title="Torna megosztása"
+              className="gap-2"
             >
-              <IconQrcode className="w-5 h-5" />
+              <QrCode className="w-4 h-4" />
               Megosztás
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Main content grid */}
-        <div className="space-y-8 mt-10">
+        <div className="space-y-8">
           {/* Top section - Info, Boards, Groups, Players (side by side) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left column - Tournament info, boards, groups */}
             <div className="lg:col-span-2 space-y-8">
-              
+
               {/* Tournament Info Card */}
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <Target className="w-5 h-5" />
                     Torna Információk
-                  </h2>
-                  <TournamentInfo 
-                    tournament={tournament} 
-                    onRefetch={handleRefetch} 
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TournamentInfo
+                    tournament={tournament}
+                    onRefetch={handleRefetch}
                     userRole={userClubRole}
                     userId={user?._id}
                   />
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Boards View Card */}
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <BarChart3 className="w-5 h-5" />
                     Táblák Állapota
-                  </h2>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <TournamentBoardsView tournament={tournament} />
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Groups View Card */}
               {tournament.groups && tournament.groups.length > 0 && (
-                <div className="card bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-primary">
+                      <Users className="w-5 h-5" />
                       Csoportok és Meccsek
-                    </h2>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
 
             {/* Right column - Players */}
             <div className="space-y-8">
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <Users className="w-5 h-5" />
                     Játékosok
-                  </h2>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <TournamentPlayers
                     tournament={tournament}
                     players={players}
@@ -301,125 +307,108 @@ const TournamentPage = () => {
                     userPlayerStatus={userPlayerStatus}
                     userPlayerId={userPlayerId}
                   />
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
           {/* Bottom section - Knockout Bracket (full width) */}
           {(tournament.tournamentSettings?.status === 'knockout' || tournament.tournamentSettings?.status === 'finished' || (tournament.tournamentSettings?.status === 'group-stage' && (tournament.tournamentSettings.format === 'knockout' || tournament.tournamentSettings.format === 'group_knockout'))) && (
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title text-2xl font-bold text-primary mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Trophy className="w-5 h-5" />
                   Egyenes Kiesés
-                </h2>
-                <TournamentKnockoutBracket 
-                  tournamentCode={tournament.tournamentId} 
-                  userClubRole={userClubRole} 
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TournamentKnockoutBracket
+                  tournamentCode={tournament.tournamentId}
+                  userClubRole={userClubRole}
                   tournamentPlayers={players}
                   knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
                   clubId={tournament.clubId?.toString()}
                 />
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
         {/* Super Admin Actions - Tournament Reopen */}
         {user && user.isAdmin === true && tournament?.tournamentSettings?.status === 'finished' && (
           <div className="mt-8">
-            <div className="card bg-error/10 border border-error/30 shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-xl font-bold text-error mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
+            <Card className="border-destructive/50 bg-destructive/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <Target className="w-5 h-5" />
                   Super Admin Műveletek
-                </h3>
-                <div className="alert alert-warning mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <div>
-                    <h4 className="font-bold">Torna újranyitása</h4>
-                    <div className="text-sm">Ez a művelet visszavonja a torna befejezését és törli az összes statisztikát. Csak super adminok használhatják.</div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Target className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-warning mb-1">Torna újranyitása</h4>
+                      <p className="text-sm text-muted-foreground">Ez a művelet visszavonja a torna befejezését és törli az összes statisztikát. Csak super adminok használhatják.</p>
+                    </div>
                   </div>
                 </div>
-                <button 
-                  className="btn btn-error gap-2"
+                <Button
+                  variant="destructive"
                   onClick={handleReopenTournament}
                   disabled={isReopening}
+                  className="gap-2"
                 >
                   {isReopening ? (
                     <>
-                      <span className="loading loading-spinner loading-sm"></span>
+                      <Spinner size="sm" />
                       Újranyitás...
                     </>
                   ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
+                      <RefreshCw className="w-4 h-4" />
                       Torna újranyitása
                     </>
                   )}
-                </button>
-              </div>
-            </div>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
         {/* Quick Actions for Admins/Moderators */}
         {(userClubRole === 'admin' || userClubRole === 'moderator') && (
           <div className="mt-8">
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-xl font-bold text-primary mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Target className="w-5 h-5" />
                   Admin Műveletek
-                </h3>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="flex flex-wrap gap-4">
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => window.open(`/board/${tournament.tournamentId}`, '_blank')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+                  <Button onClick={() => window.open(`/board/${tournament.tournamentId}`, '_blank')}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
                     Tábla Kezelés
-                  </button>
-                  <button 
-                    className="btn btn-accent"
-                    onClick={() => window.open(`/tournaments/${tournament.tournamentId}/live`, '_blank')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                  </Button>
+                  <Button variant="secondary" onClick={() => window.open(`/tournaments/${tournament.tournamentId}/live`, '_blank')}>
+                    <Zap className="w-4 h-4 mr-2" />
                     Élő Közvetítés
-                  </button>
-                  <button 
-                    className="btn btn-secondary"
-                    onClick={handleRefetch}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                  </Button>
+                  <Button variant="outline" onClick={handleRefetch}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
                     Frissítés
-                  </button>
+                  </Button>
                   <TournamentGroupsGenerator
                     tournament={tournament}
                     userClubRole={userClubRole}
                     onRefetch={handleRefetch}
                   />
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
