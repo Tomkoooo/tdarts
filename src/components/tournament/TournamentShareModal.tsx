@@ -74,7 +74,8 @@ export default function TournamentShareModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md overflow-hidden border border-border/40 bg-card/95 p-0 shadow-2xl shadow-black/45">
+        <div className="max-h-[80vh] overflow-y-auto px-6 py-6 space-y-5">
         <DialogHeader className="space-y-2">
           <DialogTitle>Torna megosztása</DialogTitle>
           <DialogDescription>
@@ -82,7 +83,7 @@ export default function TournamentShareModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="flex items-center gap-2">
             <Button
               variant={shareType === 'public' ? 'default' : 'outline'}
@@ -115,9 +116,9 @@ export default function TournamentShareModal({
 
           <div className="space-y-2 text-sm">
             <p className="font-medium text-foreground">Megosztandó link</p>
-            <div className="flex items-center justify-between rounded-lg border bg-muted px-3 py-2">
-              <span className="truncate text-xs text-muted-foreground">{shareUrl}</span>
-              <Badge variant="outline" className="ml-3">
+            <div className="flex items-start gap-3 rounded-lg bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
+              <span className="flex-1 min-w-0 break-all leading-relaxed">{shareUrl}</span>
+              <Badge variant="outline" className="shrink-0 whitespace-nowrap px-3 py-1 text-[11px]">
                 {shareType === 'auth' ? 'Bejelentkezés szükséges' : 'Nyilvános'}
               </Badge>
             </div>
@@ -125,13 +126,14 @@ export default function TournamentShareModal({
         </div>
 
         <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={handleCopyLink} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={handleCopyLink} className="w-full sm:w-auto bg-card/85 hover:bg-card">
             <IconCopy className="mr-2 h-4 w-4" /> Link másolása
           </Button>
           <Button onClick={handlePrint} className="w-full sm:w-auto">
             <IconPrinter className="mr-2 h-4 w-4" /> Nyomtatás
           </Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )

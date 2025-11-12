@@ -107,15 +107,15 @@ export default function CreateLeagueModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader className="space-y-2">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="space-y-2 flex-shrink-0">
           <DialogTitle>Új liga létrehozása</DialogTitle>
           <DialogDescription>
             Adj meg minden szükséges információt, és alakítsd ki a pontszámítási rendszert a klub ligájához.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto flex-1 px-1">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="league-name">Liga neve *</Label>
@@ -244,7 +244,7 @@ export default function CreateLeagueModal({
             </Alert>
           )}
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 flex-shrink-0 mt-4">
             <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto" disabled={loading}>
               Mégse
             </Button>

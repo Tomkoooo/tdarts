@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 interface TournamentBoardsViewProps {
   tournament: any
@@ -14,22 +15,34 @@ const statusMap: Record<
     label: string
     badgeClass: string
     description: string
+    cardClass: string
+    accentClass: string
+    scoreClass: string
   }
 > = {
   idle: {
     label: "Üres",
-    badgeClass: "bg-muted text-muted-foreground",
+    badgeClass: "bg-muted/50 text-muted-foreground",
     description: "Tábla készen áll a következő meccsre.",
+    cardClass: "bg-card/90",
+    accentClass: "text-muted-foreground",
+    scoreClass: "text-muted-foreground",
   },
   waiting: {
     label: "Várakozik",
-    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    badgeClass: "bg-amber-500/15 text-amber-400",
     description: "A következő mérkőzés előkészítés alatt.",
+    cardClass: "bg-gradient-to-br from-amber-500/10 via-card/90 to-card/95 ring-1 ring-amber-500/20",
+    accentClass: "text-amber-400",
+    scoreClass: "text-amber-400 font-semibold",
   },
   playing: {
     label: "Játékban",
-    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    badgeClass: "bg-emerald-500/15 text-emerald-300",
     description: "Aktív mérkőzés folyik ezen a táblán.",
+    cardClass: "bg-gradient-to-br from-emerald-500/10 via-card/92 to-card ring-1 ring-emerald-500/25",
+    accentClass: "text-emerald-300",
+    scoreClass: "text-emerald-300 font-bold",
   },
 }
 
@@ -40,8 +53,8 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
 
   if (boards.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+      <Card className="bg-card/90 text-muted-foreground shadow-lg shadow-black/30">
+        <CardContent className="py-12 text-center text-sm">
           Ehhez a tornához még nem hoztak létre táblákat.
         </CardContent>
       </Card>
@@ -58,7 +71,10 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
         const nextMatch = board.nextMatch
 
         return (
-          <Card key={board.boardNumber || idx} className="border-border bg-card/60">
+          <Card
+            key={board.boardNumber || idx}
+            className={cn("shadow-md shadow-black/25", statusInfo.cardClass)}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-lg font-semibold text-foreground">
@@ -70,13 +86,13 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
                   {statusInfo.label}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">{statusInfo.description}</p>
+              <p className={cn("text-xs", statusInfo.accentClass)}>{statusInfo.description}</p>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {statusKey === "playing" && currentMatch ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className={cn("text-xs font-semibold uppercase tracking-wide", statusInfo.accentClass)}>
                       Jelenlegi mérkőzés
                     </p>
                     {typeof board.boardNumber === 'number' && (
@@ -84,9 +100,11 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
                     )}
                   </div>
                   <p className="text-base font-semibold text-foreground">
-                    {getPlayerName(currentMatch.player1)} vs {getPlayerName(currentMatch.player2)}
+                    <span className="font-semibold">{getPlayerName(currentMatch.player1)}</span>
+                    <span className="mx-1 text-muted-foreground">vs</span>
+                    <span className="font-semibold">{getPlayerName(currentMatch.player2)}</span>
                   </p>
-                  <p className="font-mono text-sm text-primary">
+                  <p className={cn("font-mono text-sm", statusInfo.scoreClass)}>
                     Állás: {currentMatch.player1?.legsWon ?? 0} - {currentMatch.player2?.legsWon ?? 0}
                   </p>
                   {currentMatch.scorer?.name && (
@@ -97,11 +115,13 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
                 </div>
               ) : statusKey === "waiting" && nextMatch ? (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <p className={cn("text-xs font-semibold uppercase tracking-wide", statusInfo.accentClass)}>
                     Következő mérkőzés
                   </p>
                   <p className="text-base font-semibold text-foreground">
-                    {getPlayerName(nextMatch.player1)} vs {getPlayerName(nextMatch.player2)}
+                    <span>{getPlayerName(nextMatch.player1)}</span>
+                    <span className="mx-1 text-muted-foreground">vs</span>
+                    <span>{getPlayerName(nextMatch.player2)}</span>
                   </p>
                   {nextMatch.scorer?.name && (
                     <p className="text-xs text-muted-foreground">

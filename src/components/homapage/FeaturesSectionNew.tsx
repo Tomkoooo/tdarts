@@ -115,7 +115,7 @@ const FeaturesSectionNew = () => {
                 key={index} 
                 className={cn(
                   "group relative overflow-hidden transition-all duration-500",
-                  "hover:shadow-[0_8px_32px_0_oklch(51%_0.18_16_/_0.18)]",
+                  "hover:shadow-lg hover:shadow-black/30",
                   "hover:-translate-y-1",
                   "border-primary/20 bg-card/50 backdrop-blur-sm"
                 )}

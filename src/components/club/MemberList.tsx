@@ -127,7 +127,7 @@ export default function MemberList({
   return (
     <div className="space-y-4">
       {members.length === 0 ? (
-        <Card className="border-dashed border-muted">
+        <Card className="bg-muted/15">
           <CardContent className="py-12 flex flex-col items-center justify-center text-muted-foreground">
             <IconUser className="w-12 h-12 mb-4" />
             <p className="text-lg font-medium">Nincsenek tagok.</p>
@@ -158,8 +158,11 @@ export default function MemberList({
                 : userRole === 'moderator' && member.role === 'member' && !isSelf
 
             return (
-              <Card key={member._id} className="border-0 bg-card/60 backdrop-blur-sm shadow-sm">
-                <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-4">
+              <Card
+                key={member._id}
+                className="bg-card/85 shadow-sm shadow-black/20"
+              >
+                <CardContent className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -171,22 +174,19 @@ export default function MemberList({
                         <h3 className="text-lg font-semibold text-foreground">
                           {member.name}
                         </h3>
-                        <Badge
-                          variant="outline"
-                          className={cn('gap-1 border', roleBadge.className)}
-                        >
+                        <Badge variant="outline" className={cn("gap-1 border-none bg-muted/40", roleBadge.className)}>
                           {roleBadge.icon}
                           {roleBadge.label}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         {isGuest ? (
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                          <Badge variant="outline" className="border-none bg-muted/40 text-muted-foreground">
                             Vendég
                           </Badge>
                         ) : (
                           <>
-                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                            <Badge variant="outline" className="border-none bg-emerald-500/10 text-emerald-500">
                               Regisztrált
                             </Badge>
                             <span>@{member.username}</span>

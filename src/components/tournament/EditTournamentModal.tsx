@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { TournamentSettings } from '@/interface/tournament.interface';
-import { IconEdit, IconX, IconTarget, IconExternalLink } from '@tabler/icons-react';
+import { IconX, IconTarget, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -139,7 +140,7 @@ export default function EditTournamentModal({
 
   return (
     <dialog open={isOpen} className="modal">
-      <div className="modal-box glass-card p-4 sm:p-8 bg-[hsl(var(--background)/0.3)]  shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <div className="modal-box glass-card p-4 sm:p-8 bg-[hsl(var(--background)/0.3)] rounded-xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/45">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
             Torna szerkesztése
@@ -404,32 +405,23 @@ export default function EditTournamentModal({
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 "
-            <button
+          <div className="flex flex-col justify-end gap-3 pt-4 sm:flex-row">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="btn btn-outline order-2 sm:order-1"
               disabled={loading}
+              className="order-2 sm:order-1"
             >
               Mégse
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="btn btn-primary order-1 sm:order-2"
               disabled={loading || (boards.length === 0 && !isTournamentStarted)}
+              className="order-1 sm:order-2"
             >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Mentés...
-                </>
-              ) : (
-                <>
-                  <IconEdit className="w-4 h-4" />
-                  Mentés
-                </>
-              )}
-            </button>
+              Mentés
+            </Button>
           </div>
         </form>
       </div>

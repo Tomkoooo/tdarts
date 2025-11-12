@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { getLiveMatches } from '@/lib/socketApi';
+import { Badge } from '@/components/ui/badge';
 
 interface LiveMatchesListProps {
   tournamentCode: string;
@@ -20,6 +21,7 @@ interface LiveMatch {
   status: string;
   player1LegsWon?: number;
   player2LegsWon?: number;
+  lastUpdate?: string;
 }
 
 const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMatchSelect, selectedMatchId }) => {
@@ -72,7 +74,8 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
             player1Remaining: data.state.currentLegData?.player1Remaining || match.player1Remaining,
             player2Remaining: data.state.currentLegData?.player2Remaining || match.player2Remaining,
             player1LegsWon: data.state.player1LegsWon || match.player1LegsWon || 0,
-            player2LegsWon: data.state.player2LegsWon || match.player2LegsWon || 0
+            player2LegsWon: data.state.player2LegsWon || match.player2LegsWon || 0,
+            lastUpdate: new Date().toISOString()
           };
 
           return updatedMatch;
@@ -142,7 +145,8 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
               name: match.player2?.playerId?.name || match.player2?.name || 'Loading...'
             },
             player1LegsWon: match.player1?.legsWon || 0,
-            player2LegsWon: match.player2?.legsWon || 0
+            player2LegsWon: match.player2?.legsWon || 0,
+            lastUpdate: match.lastUpdate || new Date().toISOString()
           };
         });
         setLiveMatches(processedMatches);
@@ -200,25 +204,23 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
       ) : (
         <div className="space-y-3">
           {liveMatches.map((match) => (
-            <div 
-              key={match._id} 
-              className={`match-card border rounded-lg p-4 cursor-pointer transition-colors ${
-                selectedMatch === match._id 
-                  ? ' bg-primary/10' 
-                  : ' hover:
+            <div
+              key={match._id}
+              className={`cursor-pointer rounded-xl border border-border/50 bg-card/80 p-4 transition hover:bg-card/90 ${
+                selectedMatch === match._id ? "ring-2 ring-primary" : ""
               }`}
               onClick={() => handleMatchSelect(match)}
             >
-              <div className="flex justify-between items-center mb-2">
-                <div className="match-info">
-                  <span className="font-medium">
-                    {match.player1?.name || 'Loading...'} vs {match.player2?.name || 'Loading...'}
-                  </span>
-                </div>
-                <span className="badge badge-info badge-sm">LIVE</span>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-medium text-foreground">
+                  {match.player1?.name || "Betöltés…"} vs {match.player2?.name || "Betöltés…"}
+                </span>
+                <Badge variant="outline" className="rounded-full border-primary/40 text-xs text-primary">
+                  LIVE
+                </Badge>
               </div>
               
-              <div className="flex justify-between items-center text-xs text-base-content/70">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Leg {match.currentLeg}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs">
@@ -228,6 +230,9 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                     {match.player1Remaining} - {match.player2Remaining}
                   </span>
                 </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Utolsó frissítés: {match.lastUpdate ? new Date(match.lastUpdate).toLocaleTimeString('hu-HU') : 'ismeretlen'}
               </div>
             </div>
           ))}

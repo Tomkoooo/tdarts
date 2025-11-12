@@ -77,7 +77,8 @@ export default function TournamentCard({
   const entryFee = tournament.tournamentSettings?.entryFee || 0
 
   return (
-    <Card className="border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col">
+    <Link href={`/tournaments/${tournament.tournamentId}`} className="block">
+      <Card className="border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col transition-all hover:shadow-2xl hover:bg-card/70 cursor-pointer">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-1">
@@ -175,13 +176,12 @@ export default function TournamentCard({
         <div className="text-xs text-muted-foreground">
           ID: {tournament.tournamentId}
         </div>
-        <Button variant="ghost" size="sm" className="gap-2" asChild>
-          <Link href={`/tournaments/${tournament.tournamentId}`}>
-            Részletek
-            <IconChevronRight className="w-4 h-4" />
-          </Link>
+        <Button variant="ghost" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
+          Részletek
+          <IconChevronRight className="w-4 h-4" />
         </Button>
       </CardFooter>
     </Card>
+    </Link>
   )
 } 

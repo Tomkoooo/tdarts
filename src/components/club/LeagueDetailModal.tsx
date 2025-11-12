@@ -235,9 +235,9 @@ export default function LeagueDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl h-[90vh] overflow-hidden px-0 py-0">
-        <div className="flex h-full flex-col">
-          <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden px-0 py-0 flex flex-col">
+        <div className="flex h-full flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <DialogTitle className="text-2xl font-semibold text-foreground">

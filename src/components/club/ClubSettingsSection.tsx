@@ -6,14 +6,11 @@ import {
   IconEdit,
   IconPlus,
   IconUsers,
-  IconTarget,
   IconTrash,
   IconDoorExit,
-  IconAlertCircle,
 } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import PlayerSearch from "./PlayerSearch"
 import MemberList from "./MemberList"
 import QRCodeModal from "./QRCodeModal"
@@ -122,23 +119,6 @@ export function ClubSettingsSection({
         </CardContent>
       </Card>
 
-      {/* Board Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconTarget className="w-5 h-5" />
-            Táblák kezelése
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert className="bg-blue-500/10 border-blue-500/20">
-            <IconAlertCircle className="w-4 h-4 text-blue-500" />
-            <AlertDescription className="text-blue-500/90">
-              A táblák mostantól a tornáknál kerülnek létrehozásra és kezelésre. Hozz létre egy új tornát, és ott add meg a táblákat!
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
 
       {/* QR Code Modal */}
       <QRCodeModal

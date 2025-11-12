@@ -1,669 +1,504 @@
-import React, { useState, useEffect } from 'react';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import MatchStatisticsCharts from './MatchStatisticsCharts';
-import { IconTrophy, IconTarget, IconTrendingDown, IconCheck, IconClock } from '@tabler/icons-react';
+"use client"
 
-interface Throw {
-  score: number;
-  darts: number;
-  isDouble: boolean;
-  isCheckout: boolean;
+import React, { useEffect, useMemo, useState } from "react"
+
+import { useFeatureFlag } from "@/hooks/useFeatureFlag"
+import MatchStatisticsCharts from "./MatchStatisticsCharts"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconClock,
+  IconLoader2,
+  IconTarget,
+  IconTargetArrow,
+  IconTrendingDown,
+  IconCrown,
+  IconSparkles,
+  IconAlertTriangle,
+} from "@tabler/icons-react"
+
+type Throw = {
+  score: number
+  darts: number
+  isDouble: boolean
+  isCheckout: boolean
 }
 
-interface Leg {
-  player1Score: number;
-  player2Score: number;
-  player1Throws: Throw[];
-  player2Throws: Throw[];
+type Leg = {
+  player1Score: number
+  player2Score: number
+  player1Throws: Throw[]
+  player2Throws: Throw[]
   winnerId: {
-    _id: string;
-    name: string;
-  };
-  checkoutScore?: number;
-  checkoutDarts?: number;
-  winnerArrowCount?: number; // Hány nyílból szállt ki a győztes
-  loserRemainingScore?: number; // A vesztes játékos maradék pontjai
-  doubleAttempts: number;
-  createdAt: string;
+    _id: string
+    name: string
+  }
+  checkoutScore?: number
+  checkoutDarts?: number
+  winnerArrowCount?: number
+  loserRemainingScore?: number
+  doubleAttempts: number
+  createdAt: string
 }
 
-interface Match {
-  _id: string;
+type Match = {
+  _id: string
   player1: {
     playerId: {
-      _id: string;
-      name: string;
-    };
-  };
+      _id: string
+      name: string
+    }
+  }
   player2: {
     playerId: {
-      _id: string;
-      name: string;
-    };
-  };
-  legs?: Leg[];
-  clubId?: string;
+      _id: string
+      name: string
+    }
+  }
+  legs?: Leg[]
+  clubId?: string
 }
 
 interface LegsViewModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  match: Match | null;
-  onBackToMatches?: () => void;
+  isOpen: boolean
+  onClose: () => void
+  match: Match | null
+  onBackToMatches?: () => void
 }
 
 const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: initialMatch, onBackToMatches }) => {
-  const [match, setMatch] = useState<Match | null>(initialMatch);
-  const [legs, setLegs] = useState<Leg[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showDetailedStats, setShowDetailedStats] = useState(false);
-  const [clubId, setClubId] = useState<string | undefined>(undefined);
+  const [match, setMatch] = useState<Match | null>(initialMatch)
+  const [legs, setLegs] = useState<Leg[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [showDetailedStats, setShowDetailedStats] = useState(false)
+  const [clubId, setClubId] = useState<string | undefined>(undefined)
 
-  // Feature flag for detailed statistics (requires pro subscription)
-  const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag('detailedStatistics', clubId);
+  const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag("detailedStatistics", clubId)
 
-
-
-  // Update match when initialMatch changes
   useEffect(() => {
-    setMatch(initialMatch);
-  }, [initialMatch]);
+    setMatch(initialMatch)
+  }, [initialMatch])
 
-  // Fetch match data to get opponent name
   useEffect(() => {
-    if (match?._id && isOpen) {
-      fetchMatchData();
-      fetchClubId();
-    }
-  }, [match?._id, isOpen]);
+    if (!match?._id || !isOpen) return
+    void fetchMatchData()
+    void fetchClubId()
+  }, [match?._id, isOpen])
+
+  useEffect(() => {
+    if (!isOpen || !match) return
+    void fetchLegs()
+  }, [isOpen, match])
 
   const fetchMatchData = async () => {
-    if (!match?._id) return;
-
+    if (!match?._id) return
     try {
-      const response = await fetch(`/api/matches/${match._id}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.match) {
-          // Update match data with full player information
-          setMatch(data.match);
-        }
+      const response = await fetch(`/api/matches/${match._id}`)
+      if (!response.ok) return
+      const data = await response.json()
+      if (data.success && data.match) {
+        setMatch(data.match)
       }
     } catch (err) {
-      console.error('Error fetching match data:', err);
+      console.error("Error fetching match data:", err)
     }
-  };
+  }
 
   const fetchClubId = async () => {
-    if (!match?._id) return;
-
+    if (!match?._id) return
     try {
-      const response = await fetch(`/api/matches/${match._id}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.match?.tournamentRef) {
-          // Fetch tournament to get clubId using tournamentRef (ObjectId)
-          const tournamentResponse = await fetch(`/api/tournaments/by-id/${data.match.tournamentRef}`);
-          if (tournamentResponse.ok) {
-            const tournamentData = await tournamentResponse.json();
-            if (tournamentData.success && tournamentData.tournament?.clubId) {
-              setClubId(tournamentData.tournament.clubId);
-            }
-          }
+      const response = await fetch(`/api/matches/${match._id}`)
+      if (!response.ok) return
+      const data = await response.json()
+      if (data.success && data.match?.tournamentRef) {
+        const tournamentResponse = await fetch(`/api/tournaments/by-id/${data.match.tournamentRef}`)
+        if (!tournamentResponse.ok) return
+        const tournamentData = await tournamentResponse.json()
+        if (tournamentData.success && tournamentData.tournament?.clubId) {
+          setClubId(tournamentData.tournament.clubId)
         }
       }
     } catch (err) {
-      console.error('Error fetching clubId:', err);
+      console.error("Error fetching clubId:", err)
     }
-  };
-
-  useEffect(() => {
-    if (isOpen && match) {
-      fetchLegs();
-    }
-  }, [isOpen, match]);
+  }
 
   const fetchLegs = async () => {
-    if (!match) return;
-
-    setLoading(true);
-    setError('');
-
+    if (!match?._id) return
+    setLoading(true)
+    setError("")
     try {
-      const response = await fetch(`/api/matches/${match._id}/legs`);
-      if (!response.ok) {
-        throw new Error('Nem sikerült betölteni a legeket');
-      }
-
-      const data = await response.json();
+      const response = await fetch(`/api/matches/${match._id}/legs`)
+      if (!response.ok) throw new Error("Nem sikerült betölteni a legek adatát")
+      const data = await response.json()
       if (data.success) {
-        setLegs(data.legs || []);
+        setLegs(data.legs ?? data.match?.legs ?? [])
       } else {
-        setError(data.error || 'Nem sikerült betölteni a legeket');
+        setError(data.error || "Nem sikerült betölteni a legek adatát")
       }
     } catch (err) {
-      setError('Hiba történt a legek betöltése során');
-      console.error('Fetch legs error:', err);
+      console.error("Fetch legs error", err)
+      setError("Hiba történt a legek betöltésekor")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  // Calculate running averages for a player's throws
-  const calculateRunningAverages = (throws: Throw[]) => {
-    const averages: number[] = [];
-    let totalScore = 0;
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      setShowDetailedStats(false)
+      setLegs([])
+      onClose()
+    }
+  }
 
-    throws.forEach((throwData, index) => {
-      totalScore += throwData.score;
-      // 3-dart average: total score / number of throws so far
-      const average = (index + 1) > 0 ? Math.round((totalScore / (index + 1)) * 100) / 100 : 0;
-      averages.push(average);
-    });
+  const playerOneName = match?.player1?.playerId?.name || "Player 1"
+  const playerTwoName = match?.player2?.playerId?.name || "Player 2"
+  const summaryLegs = useMemo(() => legs || [], [legs])
 
-    return averages;
-  };
+  const getLoserRemainingScore = (leg: Leg, isPlayer1Winner: boolean) => {
+    if (typeof leg.loserRemainingScore === "number") return leg.loserRemainingScore
+    const loserThrows = isPlayer1Winner ? leg.player2Throws : leg.player1Throws
+    const loserScore = loserThrows.reduce((sum, current) => sum + current.score, 0)
+    return Math.max(0, 501 - loserScore)
+  }
 
-  // Calculate leg statistics
-  const calculateLegStats = (throws: Throw[]) => {
-    if (throws.length === 0) return { average: 0, highestThrow: 0 };
-
-    const totalScore = throws.reduce((sum, t) => sum + t.score, 0);
-    // 3-dart average: total score / number of throws
-    const average = throws.length > 0 ? Math.round((totalScore / throws.length) * 100) / 100 : 0;
-    const highestThrow = Math.max(...throws.map(t => t.score));
-
-    return { average, highestThrow };
-  };
-
-  // Calculate total arrows for a player in a leg
   const calculatePlayerArrows = (throws: Throw[], isWinner: boolean, winnerArrowCount?: number) => {
-    if (throws.length === 0) return 0;
-    
-    if (isWinner) {
-      // Győztes: (dobások száma - 1) * 3 + kiszálló nyilak
-      return (throws.length - 1) * 3 + (winnerArrowCount || 3);
-    } else {
-      // Vesztes: dobások száma * 3
-      return throws.length * 3;
+    if (!throws.length) return 0
+    if (isWinner && typeof winnerArrowCount === "number") {
+      return (throws.length - 1) * 3 + winnerArrowCount
     }
-  };
+    return throws.length * 3
+  }
 
-  // Calculate match statistics
-  const calculateMatchStats = () => {
-    const player1AllThrows = legs.flatMap(leg => leg.player1Throws);
-    const player2AllThrows = legs.flatMap(leg => leg.player2Throws);
+  const calculateTotalArrowsForLeg = (leg: Leg) => {
+    const player1Arrows = calculatePlayerArrows(leg.player1Throws, leg.winnerId?._id === match?.player1?.playerId?._id, leg.winnerArrowCount)
+    const player2Arrows = calculatePlayerArrows(leg.player2Throws, leg.winnerId?._id === match?.player2?.playerId?._id, leg.winnerArrowCount)
+    return player1Arrows + player2Arrows
+  }
 
-    const player1Stats = calculateLegStats(player1AllThrows);
-    const player2Stats = calculateLegStats(player2AllThrows);
+  const calculateRunningAverages = (throws: Throw[]) => {
+    let total = 0
+    return throws.map((entry, idx) => {
+      total += entry.score
+      return Number(((total / (idx + 1)) || 0).toFixed(2))
+    })
+  }
 
-    return { player1Stats, player2Stats };
-  };
-
-
-  const formatThrow = (throwData: Throw, isWinner: boolean) => {
-    const baseClasses = "inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium min-w-[32px] sm:min-w-[40px]";
-    let classes = baseClasses;
-
-    if (throwData.isCheckout && isWinner) {
-      classes += " bg-success text-success-content ring-2 ring-success/50";
-    } else if (throwData.score === 180) {
-      classes += " bg-warning text-warning-content ring-2 ring-warning/50";
-    } else if (throwData.score === 0) {
-      classes += " bg-error text-error-content ring-2 ring-error/50";
-    } else if (throwData.score >= 140) {
-      classes += " bg-info text-info-content";
-    } else if (throwData.score >= 100) {
-      classes += " bg-primary text-primary-content";
-    } else {
-      classes += " bg-base-300 text-base-content";
+  const renderThrowSequence = (throws: Throw[], isWinner: boolean) => {
+    if (!throws.length) {
+      return <span className="text-[11px] text-white/60">Nincs dobás rögzítve</span>
     }
+
+    const running = calculateRunningAverages(throws)
 
     return (
-      <span className={classes} title={`${throwData.score} pont (${throwData.darts} nyil)`}>
-        {throwData.score}
-      </span>
-    );
-  };
+      <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-[#f9d7de]">
+        {throws.map((throwData, idx) => (
+          <React.Fragment key={`throw-${idx}-${throwData.score}`}>
+            <div className="flex flex-col items-center gap-1">
+              <span
+                className={cn(
+                  "inline-flex min-w-[48px] items-center justify-center rounded-lg px-2 py-1 backdrop-blur",
+                  throwData.score === 180
+                    ? "bg-[#f59f3a]/30 text-[#fcd7a1]"
+                    : throwData.isCheckout && isWinner
+                      ? "bg-[#39b778]/25 text-[#c3f0d6]"
+                      : throwData.score === 0
+                        ? "bg-[#ab1f3b]/35 text-[#ffd9e0]"
+                        : "bg-[#57101c] text-[#f9d7de]"
+                )}
+                title={`${throwData.score} pont (${throwData.darts} nyíl)`}
+              >
+                {throwData.score}
+              </span>
+              {typeof running[idx] === "number" ? (
+                <span className="text-[10px] font-medium text-[#f5a3b1]">({running[idx].toFixed(1)})</span>
+              ) : null}
+            </div>
+            {idx < throws.length - 1 && <IconArrowRight className="h-3.5 w-3.5 text-[#f5a3b1]/70" />}
+          </React.Fragment>
+        ))}
+      </div>
+    )
+  }
 
-  if (!isOpen || !match) return null;
+  if (!match) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-base-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
-          <div className="flex-1 min-w-0 w-full sm:w-auto">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold truncate" title={`${match.player1?.playerId?.name} vs ${match.player2?.playerId?.name}`}>
-              <span className="text-primary">{match.player1?.playerId?.name}</span>
-              <span className="text-base-content/40 mx-2">vs</span>
-              <span className="text-error">{match.player2?.playerId?.name}</span>
-            </h3>
-            <p className="text-xs sm:text-sm text-base-content/70">Legek részletei</p>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Back to matches button */}
-            {onBackToMatches && (
-              <button
-                onClick={onBackToMatches}
-                className="btn btn-outline btn-sm flex items-center gap-1"
-                title="Vissza a meccsekhez"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="hidden sm:inline">Vissza</span>
-              </button>
-            )}
-            {/* Detailed Stats Toggle Button - Only for Pro */}
-            {!isFeatureFlagLoading && isDetailedStatsEnabled && (
-              <button
-                onClick={() => setShowDetailedStats(!showDetailedStats)}
-                className={`btn btn-xs sm:btn-sm flex-1 sm:flex-none ${showDetailedStats ? 'btn-primary' : 'btn-outline'}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span className="hidden sm:inline ml-1">Részletes</span>
-                <span className="sm:hidden ml-1">Stats</span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="btn btn-circle btn-ghost btn-xs sm:btn-sm flex-shrink-0"
-              aria-label="Bezárás"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
+      <DialogContent className="max-w-5xl border-0 bg-[#1a0409] px-0 pb-0 pt-6 shadow-[18px_20px_0px_-8px_rgba(0,0,0,0.7)]">
+        <DialogHeader className="px-6">
+          <DialogTitle className="flex flex-col gap-1 text-2xl font-semibold text-white">
+            <span className="text-sm uppercase tracking-[0.35em] text-white/35">Részletes statisztika</span>
+            <span>
+              <span className={cn("text-white", summaryLegs.length > 0 && summaryLegs[0].winnerId?._id === match.player1?.playerId?._id && "text-[#39b778]")}>{playerOneName}</span>
+              <span className="mx-2 text-white/40">vs</span>
+              <span className={cn("text-white", summaryLegs.length > 0 && summaryLegs[0].winnerId?._id === match.player2?.playerId?._id && "text-[#39b778]")}>{playerTwoName}</span>
+            </span>
+          </DialogTitle>
+          <DialogDescription className="text-xs text-white/60">
+            Legenkénti bontás, checkout információk és dobásonkénti átlagok – minden, amivel lenyűgözheted a nézőidet és motiválhatod a játékosaidat.
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Pro Subscription Notice - Only show if detailed stats are not enabled */}
-        {!isFeatureFlagLoading && !isDetailedStatsEnabled && (
-          <div className="alert alert-info mb-3 sm:mb-4 p-3 sm:p-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm sm:text-base">Pro funkció</h3>
-              <div className="text-[10px] sm:text-xs space-y-1 mt-1">
-                <p>• <strong>Ingyenes:</strong> Dobások, győztesek, kiszállók</p>
-                <p>• <strong>Pro:</strong> Átlagok, grafikonok, statisztikák</p>
+        <ScrollArea className="max-h-[70vh] px-6">
+          <div className="space-y-6 pb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {onBackToMatches ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-[#7a1f2d] bg-[#3d0c16] text-[#f9d7de] hover:bg-[#471019]"
+                    onClick={onBackToMatches}
+                  >
+                    <IconArrowLeft className="h-4 w-4" />
+                    Vissza a meccsekhez
+                  </Button>
+                ) : null}
+                {!isFeatureFlagLoading && isDetailedStatsEnabled ? (
+                  <Button
+                    variant={showDetailedStats ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "gap-2 rounded-full border-[#f64c6b]/40 bg-[#57101c] text-[#f9d7de] transition",
+                      showDetailedStats ? "shadow-[0_0_18px_-6px_rgba(246,76,107,0.35)]" : ""
+                    )}
+                    onClick={() => setShowDetailedStats((prev) => !prev)}
+                  >
+                    <IconSparkles className="h-4 w-4 text-[#fcd7a1]" />
+                    {showDetailedStats ? "Grafikonok elrejtése" : "Részletes grafikonok"}
+                  </Button>
+                ) : null}
               </div>
+
+              {!isFeatureFlagLoading && !isDetailedStatsEnabled ? (
+                <Badge variant="outline" className="rounded-full border-[#f64c6b]/40 bg-[#57101c] px-3 py-1 text-[11px] text-[#f9d7de]">
+                  Pro előfizetéssel érhető el a teljes statisztika
+                </Badge>
+              ) : null}
             </div>
-          </div>
-        )}
 
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
-        )}
-
-        {error && (
-          <div className="alert alert-error mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{error}</span>
-          </div>
-        )}
-
-        {!loading && !error && legs.length === 0 && (
-          <div className="alert alert-info">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>Még nincsenek rögzített legek ehhez a meccshez.</span>
-          </div>
-        )}
-
-        {!loading && !error && legs.length > 0 && (
-          <div className="space-y-3 sm:space-y-4 md:space-y-6">
-            {/* Match Overview Stats */}
-            {showDetailedStats && (
-              <div className="card bg-base-200 shadow-lg">
-                <div className="card-body p-3 sm:p-4 md:p-6">
-                  <h4 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Meccs összesítő
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    {(() => {
-                      const { player1Stats, player2Stats } = calculateMatchStats();
-                      return (
-                        <>
-                          <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border"
-                            <div className="card-body p-3 sm:p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h5 className="font-bold text-primary text-sm sm:text-base truncate flex-1 mr-2" title={match.player1?.playerId?.name}>
-                                  {match.player1?.playerId?.name}
-                                </h5>
-                                <div className="badge badge-primary badge-xs sm:badge-sm">P1</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
-                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Átlag</div>
-                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary">{player1Stats.average}</div>
-                                </div>
-                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
-                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Max dobás</div>
-                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-info">{player1Stats.highestThrow}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="card bg-gradient-to-br from-error/10 to-error/5 border"
-                            <div className="card-body p-3 sm:p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h5 className="font-bold text-error text-sm sm:text-base truncate flex-1 mr-2" title={match.player2?.playerId?.name}>
-                                  {match.player2?.playerId?.name}
-                                </h5>
-                                <div className="badge badge-error badge-xs sm:badge-sm">P2</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
-                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Átlag</div>
-                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-error">{player2Stats.average}</div>
-                                </div>
-                                <div className="bg-base-100 rounded-lg p-2 sm:p-3 text-center">
-                                  <div className="text-[10px] sm:text-xs text-base-content/60 mb-1">Max dobás</div>
-                                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-info">{player2Stats.highestThrow}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
+            {loading ? (
+              <div className="flex h-48 items-center justify-center">
+                <IconLoader2 className="h-6 w-6 animate-spin text-[oklch(75%_0.24_25)]" />
               </div>
-            )}
+            ) : null}
 
-            {/* Charts Section - Only for Pro users */}
-            {showDetailedStats && legs.length > 0 && (
-              <div className="card bg-base-200 shadow-lg">
-                <div className="card-body p-3 sm:p-4 md:p-6">
-                  <h4 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                    </svg>
-                    Statisztikai grafikonok
-                  </h4>
-                  <MatchStatisticsCharts
-                    legs={legs}
-                    player1Name={match.player1?.playerId?.name || 'Player 1'}
-                    player2Name={match.player2?.playerId?.name || 'Player 2'}
-                  />
-                </div>
-              </div>
-            )}
+            {!loading && error ? (
+              <Alert variant="destructive" className="border border-red-500/40 bg-red-500/10 text-red-200">
+                <IconAlertTriangle className="h-5 w-5" />
+                <AlertTitle>Hiba történt</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-            {legs.map((leg, legIndex) => {
-              const isPlayer1Winner = leg.winnerId._id === match.player1?.playerId?._id;
-              const isPlayer2Winner = leg.winnerId._id === match.player2?.playerId?._id;
-              
-              // Calculate loser's remaining score
-              const loserThrows = isPlayer1Winner ? leg.player2Throws : leg.player1Throws;
-              const loserTotalScore = loserThrows.reduce((sum, t) => sum + t.score, 0);
-              const loserRemainingScore = leg.loserRemainingScore !== undefined 
-                ? leg.loserRemainingScore 
-                : Math.abs(loserTotalScore - 501);
-              
-              // Calculate running averages for this leg (only for pro users)
-              const player1RunningAverages = showDetailedStats ? calculateRunningAverages(leg.player1Throws) : [];
-              const player2RunningAverages = showDetailedStats ? calculateRunningAverages(leg.player2Throws) : [];
-              
-              // Calculate leg stats (only for pro users)
-              const player1LegStats = showDetailedStats ? calculateLegStats(leg.player1Throws) : null;
-              const player2LegStats = showDetailedStats ? calculateLegStats(leg.player2Throws) : null;
-              
-              return (
-                <div key={legIndex} className="card bg-base-200 shadow-lg">
-                  <div className="card-body p-3 sm:p-4 md:p-5">
-                    {/* Leg Header */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-accent/20 flex-shrink-0">
-                          <span className="text-sm sm:text-base font-bold text-accent">{legIndex + 1}</span>
-                        </div>
-                        <div>
-                          <h4 className="text-sm sm:text-base md:text-lg font-bold">
-                            {legIndex + 1}. Leg
-                          </h4>
-                          <div className="text-xs sm:text-sm text-base-content/60 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <IconTrophy size={12} className="text-warning" />
-                              <span>{leg.winnerId.name}</span>
-                              <IconTarget size={12} className="text-primary" />
-                              <span className="text-primary">{leg.winnerArrowCount || 3} nyíl</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-error text-[10px] sm:text-xs">
-                              <IconTrendingDown size={10} />
-                              <span>Vesztes maradt: {loserRemainingScore} pont</span>
+            {!loading && !error && summaryLegs.length === 0 ? (
+              <Card className="border border-white/10 bg-white/5 text-center text-sm text-white/60 backdrop-blur">
+                <CardContent className="py-10">Ehhez a meccshez még nem érkeztek részletes statisztikák.</CardContent>
+              </Card>
+            ) : null}
+
+            {!loading && !error && summaryLegs.length > 0 ? (
+              <div className="space-y-6">
+                {showDetailedStats && isDetailedStatsEnabled ? (
+                  <MatchStatisticsCharts legs={summaryLegs} player1Name={playerOneName} player2Name={playerTwoName} />
+                ) : null}
+
+                {summaryLegs.map((leg, index) => {
+                  const isPlayer1Winner = leg.winnerId?._id === match.player1?.playerId?._id
+                  const isPlayer2Winner = leg.winnerId?._id === match.player2?.playerId?._id
+                  const loserRemaining = getLoserRemainingScore(leg, isPlayer1Winner)
+
+                  return (
+                    <Card
+                      key={`${leg.createdAt}-${index}`}
+                      className="relative overflow-hidden border-0 bg-[#1a0409] shadow-[10px_12px_0px_-6px_rgba(20,0,0,0.45)] transition hover:shadow-[12px_15px_0px_-6px_rgba(20,0,0,0.4)]"
+                    >
+                      <CardHeader className="relative pb-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#57101c] text-base font-semibold text-[#f8b4c0]">
+                              {index + 1}
+                            </span>
+                            <div className="flex flex-col gap-1">
+                              <CardTitle className="text-base font-semibold text-white">
+                                {leg.winnerId?.name ? `${leg.winnerId.name} nyert` : `${index + 1}. leg`}
+                              </CardTitle>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#f5a3b1]">
+                                {leg.checkoutScore ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#2f6c45] px-2 py-1 text-[#b9f3d2]">
+                                    <IconTargetArrow className="h-3.5 w-3.5" />
+                                    Checkout {leg.checkoutScore}
+                                  </span>
+                                ) : null}
+                                {typeof leg.winnerArrowCount === "number" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#2a3f7d] px-2 py-1 text-[#ccd9ff]">
+                                    <IconTarget className="h-3.5 w-3.5" />
+                                    {leg.winnerArrowCount} nyíl
+                                  </span>
+                                ) : null}
+                                {loserRemaining > 0 ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#7a3810] px-2 py-1 text-[#ffd8a4]">
+                                    <IconTrendingDown className="h-3.5 w-3.5" />
+                                    Vesztes: {loserRemaining} pont
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {leg.checkoutScore && (
-                          <div className="badge badge-success badge-sm gap-1">
-                            <IconCheck size={12} />
-                            <span className="text-xs">{leg.checkoutScore}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      </CardHeader>
 
-                    {/* Players and Throws - Basic info for everyone */}
-                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
-                      {/* Player 1 */}
-                      <div
-                        className={`p-3 sm:p-4 rounded-lg ${
-                          isPlayer1Winner ? "bg-success/20" : "bg-base-100 border"
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="badge badge-primary badge-xs sm:badge-sm flex-shrink-0">
-                              P1
-                            </div>
-                            <h5
-                              className="font-bold text-sm sm:text-base md:text-lg text-primary truncate"
-                              title={match.player1?.playerId?.name}
-                            >
-                              {match.player1?.playerId?.name}
-                            </h5>
-                            {isPlayer1Winner && <IconTrophy size={16} className="text-warning" />}
-                            <div className="flex items-center gap-1 text-xs text-base-content/60">
-                              <IconTarget size={12} className="text-primary" />
-                              <span>
-                                {calculatePlayerArrows(
-                                  leg.player1Throws,
-                                  isPlayer1Winner,
-                                  leg.winnerArrowCount
-                                )}{" "}
-                                nyíl
-                              </span>
-                            </div>
-                          </div>
-                          {/* Pro-only detailed stats */}
-                          {showDetailedStats && player1LegStats && (
-                            <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
-                              <div className="bg-base-200 rounded px-2 py-1">
-                                <span className="text-base-content/60">Átlag:</span>
-                                <span className="font-bold ml-1">{player1LegStats.average}</span>
-                              </div>
-                              <div className="bg-base-200 rounded px-2 py-1">
-                                <span className="text-base-content/60">Max:</span>
-                                <span className="font-bold ml-1">{player1LegStats.highestThrow}</span>
-                              </div>
-                              <div className="bg-base-200 rounded px-2 py-1">
-                                <span className="text-base-content/60">Nyilak:</span>
-                                <span className="font-bold ml-1">
-                                  {calculatePlayerArrows(
-                                    leg.player1Throws,
-                                    isPlayer1Winner,
-                                    leg.winnerArrowCount
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                      <CardContent className="relative space-y-4">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <LegParticipantSummary
+                            label="P1"
+                            name={playerOneName}
+                            isWinner={isPlayer1Winner}
+                            throws={leg.player1Throws}
+                            arrowCount={calculatePlayerArrows(leg.player1Throws, isPlayer1Winner, leg.winnerArrowCount)}
+                          />
+                          <LegParticipantSummary
+                            label="P2"
+                            name={playerTwoName}
+                            isWinner={isPlayer2Winner}
+                            throws={leg.player2Throws}
+                            arrowCount={calculatePlayerArrows(leg.player2Throws, isPlayer2Winner, leg.winnerArrowCount)}
+                          />
                         </div>
+
+                        <Separator className="bg-[#7a1f2d]" />
 
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                            {leg.player1Throws.map((throwData, throwIndex) => (
-                              <div key={throwIndex} className="flex items-center gap-1">
-                                {formatThrow(throwData, isPlayer1Winner)}
-                                {/* Pro-only running averages */}
-                                {showDetailedStats &&
-                                  player1RunningAverages[throwIndex] !== undefined && (
-                                    <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
-                                      ({player1RunningAverages[throwIndex]})
-                                    </span>
-                                  )}
-                                {throwIndex < leg.player1Throws.length - 1 && (
-                                  <span className="text-base-content/30 text-xs hidden sm:inline">
-                                    →
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          {leg.player1Throws.length === 0 && (
-                            <span className="text-base-content/50 text-xs sm:text-sm">
-                              Nincs dobás
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Player 2 */}
-                      <div
-                        className={`p-3 sm:p-4 rounded-lg ${
-                          isPlayer2Winner ? "bg-success/20" : "bg-base-100 border"
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="badge badge-error badge-xs sm:badge-sm flex-shrink-0">
-                              P2
-                            </div>
-                            <h5
-                              className="font-bold text-sm sm:text-base md:text-lg text-error truncate"
-                              title={match.player2?.playerId?.name}
-                            >
-                              {match.player2?.playerId?.name}
-                            </h5>
-                            {isPlayer2Winner && <IconTrophy size={16} className="text-warning" />}
-                            <div className="flex items-center gap-1 text-xs text-base-content/60">
-                              <IconTarget size={12} className="text-error" />
-                              <span>
-                                {calculatePlayerArrows(
-                                  leg.player2Throws,
-                                  isPlayer2Winner,
-                                  leg.winnerArrowCount
-                                )}{" "}
-                                nyíl
-                              </span>
-                            </div>
-                          </div>
-                          {/* Pro-only detailed stats */}
-                          {showDetailedStats && player2LegStats && (
-                            <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
-                              <div className="bg-base-200 rounded px-2 py-1">
-                                <span className="text-base-content/60">Átlag:</span>
-                                <span className="font-bold ml-1">{player2LegStats.average}</span>
-                              </div>
-                              <div className="bg-base-200 rounded px-2 py-1">
-                                <span className="text-base-content/60">Max:</span>
-                                <span className="font-bold ml-1">{player2LegStats.highestThrow}</span>
-                              </div>
-                              <div className="bg-base-200 rounded px-2 py-1">
-                                <span className="text-base-content/60">Nyilak:</span>
-                                <span className="font-bold ml-1">
-                                  {calculatePlayerArrows(
-                                    leg.player2Throws,
-                                    isPlayer2Winner,
-                                    leg.winnerArrowCount
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                          {renderThrowSequence(leg.player1Throws, isPlayer1Winner)}
+                          {renderThrowSequence(leg.player2Throws, isPlayer2Winner)}
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                            {leg.player2Throws.map((throwData, throwIndex) => (
-                              <div key={throwIndex} className="flex items-center gap-1">
-                                {formatThrow(throwData, isPlayer2Winner)}
-                                {/* Pro-only running averages */}
-                                {showDetailedStats &&
-                                  player2RunningAverages[throwIndex] !== undefined && (
-                                    <span className="text-[10px] sm:text-xs text-base-content/50 hidden sm:inline">
-                                      ({player2RunningAverages[throwIndex]})
-                                    </span>
-                                  )}
-                                {throwIndex < leg.player2Throws.length - 1 && (
-                                  <span className="text-base-content/30 text-xs hidden sm:inline">
-                                    →
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          {leg.player2Throws.length === 0 && (
-                            <span className="text-base-content/50 text-xs sm:text-sm">
-                              Nincs dobás
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Leg Footer Info */}
-                    <div className="mt-3 pt-3">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs sm:text-sm text-base-content/60">
-                        <div className="flex items-center gap-2">
-                          <IconClock size={14} />
-                          <span>
+                        <div className="flex items-center justify-between rounded-2xl border border-[#611827] bg-[#471019] px-4 py-2 text-xs text-[#f9d7de]">
+                          <span className="inline-flex items-center gap-2">
+                            <IconClock className="h-4 w-4 text-[#fcd7a1]" />
                             {new Date(leg.createdAt).toLocaleString("hu-HU", {
                               month: "short",
                               day: "numeric",
                               hour: "2-digit",
-                              minute: "2-digit"
+                              minute: "2-digit",
                             })}
                           </span>
+                          <span className="inline-flex items-center gap-2 text-[#fcd7a1]">
+                            <IconSparkles className="h-4 w-4" />
+                            Összes nyíl: {calculateTotalArrowsForLeg(leg)}
+                          </span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            ) : null}
+          </div>
+        </ScrollArea>
 
-        {/* Footer */}
-        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 "
-          <button
-            onClick={onClose}
-            className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto"
-          >
+        <DialogFooter className="flex items-center justify-between gap-3 border-t border-white/10 bg-black/60 px-6 py-4 backdrop-blur">
+          {!isFeatureFlagLoading && !isDetailedStatsEnabled ? (
+            <span className="text-xs text-white/60">
+              Tipp: aktiváld a Pro előfizetést, hogy minden grafikon és dobássorozat látható legyen a játékosaidnak.
+            </span>
+          ) : (
+            <span />
+          )}
+          <Button onClick={onClose} className="rounded-full bg-white/90 px-6 py-2 text-sm font-semibold text-black shadow-lg shadow-black/40 hover:bg-white">
             Bezárás
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
-export default LegsViewModal; 
+interface LegParticipantSummaryProps {
+  label: string
+  name: string
+  isWinner: boolean
+  throws: Throw[]
+  arrowCount: number
+}
+
+const LegParticipantSummary: React.FC<LegParticipantSummaryProps> = ({ label, name, isWinner, throws, arrowCount }) => {
+  const totalScore = throws.reduce((sum, current) => sum + current.score, 0)
+  const average = throws.length ? Math.round((totalScore / throws.length) * 100) / 100 : 0
+  const highest = throws.length ? Math.max(...throws.map((t) => t.score)) : 0
+  const oneEighties = throws.filter((t) => t.score === 180).length
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border border-[#611827] bg-[#3d0c16] shadow-[8px_10px_0px_-6px_rgba(20,0,0,0.45)] backdrop-blur",
+        isWinner ? "ring-2 ring-[#f64c6b]" : ""
+      )}
+    >
+      <div className={cn("absolute inset-0", isWinner ? "bg-[#611827]/50" : "bg-[#471019]/40")} />
+      <CardContent className="relative space-y-5 p-5 text-xs text-[#f9d7de]">
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#57101c] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#f9d7de]">
+            {label}
+          </span>
+          {isWinner ? (
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#39b778] px-3 py-1 text-[11px] font-semibold text-[#0f2f27] shadow-sm shadow-black/20">
+              <IconCrown className="h-3.5 w-3.5" />
+              Nyertes
+            </span>
+          ) : null}
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-white">{name}</p>
+          <p className="text-[10px] text-[#f5a3b1]">
+            Nyilak száma: <span className="font-semibold text-white">{arrowCount}</span>
+          </p>
+        </div>
+        <div className="grid grid-cols-4 gap-2 text-center text-[11px]">
+          <SummaryTile value={average.toFixed(1)} label="Átlag" tone="bg-[#57101c]" valueTone="text-[#f8b4c0]" labelTone="text-[#f5a3b1]" />
+          <SummaryTile value={highest} label="Max" tone="bg-[#611827]" valueTone="text-[#fcd7a1]" labelTone="text-[#f5a3b1]" />
+          <SummaryTile value={oneEighties} label="180" tone="bg-[#7a1f2d]" valueTone="text-[#fcd7a1]" labelTone="text-[#f5a3b1]" />
+          <SummaryTile value={`${throws.length}`} label="Körök" tone="bg-[#471019]" valueTone="text-[#f9d7de]" labelTone="text-[#f5a3b1]" />
+        </div>
+      </CardContent>
+    </div>
+  )
+}
+
+interface SummaryTileProps {
+  value: string | number
+  label: string
+  tone: string
+  valueTone?: string
+  labelTone?: string
+}
+
+const SummaryTile: React.FC<SummaryTileProps> = ({ value, label, tone, valueTone = "text-white", labelTone = "text-[#f5a3b1]" }) => {
+  return (
+    <div className={cn("rounded-xl px-3 py-2 shadow-inner shadow-black/35", tone)}>
+      <div className={cn("text-sm font-semibold", valueTone)}>{value}</div>
+      <div className={cn("text-[10px] uppercase tracking-[0.2em]", labelTone)}>{label}</div>
+    </div>
+  )
+}
+
+export default LegsViewModal 

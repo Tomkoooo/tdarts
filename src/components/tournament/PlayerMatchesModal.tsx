@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconTrophy, IconClock, IconX, IconChartBar } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
 
 interface Throw {
   score: number;
@@ -47,6 +48,8 @@ interface Match {
   createdAt: string;
   round?: string;
   groupName?: string;
+  average?: number;
+  checkout?: string;
 }
 
 interface PlayerMatchesModalProps {
@@ -71,8 +74,11 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen && playerId) {
+    if (isOpen && playerId && tournamentCode) {
       fetchPlayerMatches();
+    } else if (isOpen && (!playerId || !tournamentCode)) {
+      setError('Hiányzó játékos azonosító vagy torna kód');
+      setLoading(false);
     }
   }, [isOpen, playerId, tournamentCode]);
 
@@ -211,34 +217,58 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="text-xs text-base-content/60">
-                          <IconClock size={14} />
-                          <span className="ml-1">{new Date(match.createdAt).toLocaleDateString('hu-HU')}</span>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <IconClock size={14} className="shrink-0" />
+                          <span>{new Date(match.createdAt).toLocaleDateString('hu-HU')}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Match Summary */}
-                    <div className="bg-base-100 rounded-lg p-3 border"
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold">
-                            {match.legs ? `${match.legs.length} leg` : '0 leg'}
+                    <div className="rounded-lg bg-muted/30 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="font-semibold text-foreground">
+                            {match.legs ? `${match.legs.length} leg` : "0 leg"}
                           </span>
-                          {match.status === 'finished' && (
-                            <span className="text-xs text-base-content/60">
-                              • {isPlayerWinner ? 'Győzelem' : 'Vereség'}
+                          {match.status === "finished" && (
+                            <span className="text-xs">
+                              • {isPlayerWinner ? "Győzelem" : "Vereség"}
                             </span>
                           )}
                         </div>
-                        <button
-                          onClick={() => (match._id && onShowDetailedStats && onShowDetailedStats(match._id))}
-                          className="btn btn-outline btn-primary btn-sm flex items-center gap-1"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (match._id && onShowDetailedStats) {
+                              onShowDetailedStats(match._id)
+                            }
+                          }}
                           disabled={!match.legs || match.legs.length === 0}
+                          className="gap-1"
                         >
                           <IconChartBar size={14} />
-                          <span>Legek</span>
-                        </button>
+                          Statisztikák
+                        </Button>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div>
+                          <span className="font-medium text-foreground">Átlag:</span>
+                          <span className="ml-2">
+                            {match.stats?.player1?.average && match.stats?.player2?.average
+                              ? `${match.stats.player1.average.toFixed(1)} - ${match.stats.player2.average.toFixed(1)}`
+                              : match.average?.toFixed(1) || "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-foreground">Checkout:</span>
+                          <span className="ml-2">
+                            {match.stats?.player1?.highestCheckout || match.stats?.player2?.highestCheckout
+                              ? `${match.stats.player1?.highestCheckout || 0} / ${match.stats.player2?.highestCheckout || 0}`
+                              : match.checkout || "—"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -259,13 +289,10 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
         )}
 
         {/* Footer */}
-        <div className="flex justify-end mt-4 sm:mt-6 pt-3 sm:pt-4 "
-          <button
-            onClick={onClose}
-            className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto"
-          >
+        <div className="mt-4 flex justify-end pt-3 sm:mt-6 sm:pt-4">
+          <Button onClick={onClose} className="w-full sm:w-auto">
             Bezárás
-          </button>
+          </Button>
         </div>
       </div>
     </div>

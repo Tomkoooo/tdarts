@@ -147,7 +147,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
   ]
 
   return (
-    <Card className="bg-card/90 shadow-xl backdrop-blur border-0">
+    <Card className="bg-card/92 shadow-xl shadow-black/35">
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -166,18 +166,18 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
           </div>
 
           <div className="flex flex-wrap justify-start gap-2 md:justify-end">
-            <Button variant="outline" size="sm" onClick={onRefetch} className="bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]">
+            <Button variant="outline" size="sm" onClick={onRefetch} className="bg-card/80 hover:bg-card">
               <IconRefresh className="mr-2 h-4 w-4" />
               Frissítés
             </Button>
-            <Button asChild size="sm" className="bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]">
+            <Button asChild size="sm" className="bg-card/80 hover:bg-card">
               <Link href={`/board/${tournament.tournamentId}`} target="_blank" className="flex items-center gap-2">
                 <IconTarget className="h-4 w-4" />
                 Táblák
               </Link>
             </Button>
             {(status === 'group-stage' || status === 'knockout') && (
-              <Button asChild variant="outline" size="sm" className="bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]">
+              <Button asChild variant="outline" size="sm" className="bg-card/80 hover:bg-card">
                 <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="flex items-center gap-2">
                   <IconScreenShare className="h-4 w-4" /> Élő közvetítés
                 </Link>
@@ -195,7 +195,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
               size="sm"
               className="md:hidden"
             >
-              <Link href={`/tournaments/${tournament.tournamentId}#registration`} className="flex items-center gap-2">
+              <Link href={`/tournaments/${tournament.tournamentId}?tab=players#registration`} className="flex items-center gap-2">
                 <IconUserPlus className="h-4 w-4" />
                 Nevezés
               </Link>
@@ -209,7 +209,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
           {details.map((detail) => (
             <div
               key={detail.label}
-              className="rounded-xl bg-muted/30 px-3 py-3 shadow-inner"
+              className="rounded-xl bg-muted/15 px-4 py-3 shadow-inner shadow-black/10"
             >
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
                 {detail.icon}
@@ -231,7 +231,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
             <Button
               size="sm"
               variant="ghost"
-              className="px-0"
+              className="px-0 text-primary hover:text-primary/80"
               onClick={() => setIsDescriptionExpanded((prev) => !prev)}
             >
               {isDescriptionExpanded ? "Kevesebb" : "Bővebben"}

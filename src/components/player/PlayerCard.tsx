@@ -49,15 +49,15 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
       role="button"
       tabIndex={0}
       onClick={onClick}
-      className="group h-full cursor-pointer border-0 bg-card/95 shadow-[0_4px_16px_-8px_oklch(51%_0.18_16_/0.25)] transition-all hover:-translate-y-1 hover:shadow-[0_8px_32px_-12px_oklch(51%_0.18_16_/0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group relative h-full cursor-pointer bg-card/90 shadow-md shadow-black/30 transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
     >
-      <CardContent className="flex h-full flex-col gap-4 p-5">
+      <CardContent className="flex h-full flex-col gap-5 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             {hasRankBadge && (
               <div
                 className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-sm font-semibold text-foreground shadow-inner transition-transform group-hover:scale-105",
+                  "flex h-12 w-12 items-center justify-center rounded-full bg-muted/40 text-sm font-semibold text-foreground transition-transform duration-200 group-hover:scale-105",
                   rankStyle && `bg-gradient-to-br ${rankStyle.gradient}`,
                 )}
               >
@@ -94,9 +94,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
           </div>
         </div>
 
-        <Separator className="opacity-20" />
+        <Separator className="opacity-10" />
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs sm:text-sm">
+        <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
           <Stat label="Átlag" value={player.stats?.avg?.toFixed(1) ?? "—"} />
           <Stat label="180-ak" value={player.stats?.total180s ?? 0} />
           <Stat label="Legjobb helyezés" value={player.stats?.bestPosition ?? "—"} />
@@ -108,7 +108,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
 }
 
 const Stat = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 border-0">
+  <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/25 px-3 py-2">
     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
     <span className="font-semibold text-foreground">{value}</span>
   </div>

@@ -105,7 +105,7 @@ const HeroSectionNew = () => {
               <Card 
                 key={index} 
                 className={cn(
-                  "group hover:shadow-[0_8px_32px_0_oklch(51%_0.18_16_/_0.18)] transition-all duration-300 hover:-translate-y-1",
+                  "group hover:shadow-lg hover:shadow-black/30 transition-all duration-300 hover:-translate-y-1",
                   "border-primary/20 bg-card/50 backdrop-blur-sm"
                 )}
               >

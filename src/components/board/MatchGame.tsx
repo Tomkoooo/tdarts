@@ -881,12 +881,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </button>
 
           {/* Back Button - Top Right */}
-            <button
+          <button
             onClick={onBack}
-            className="absolute top-1  right-1 z-[100] btn btn-xs btn-ghost text-gray-400 hover:text-white p-1"
-            >
-            <IconArrowLeft className="w-3 h-3" />
-            </button>
+            className="absolute top-1 right-1 z-[100] flex items-center justify-center rounded-full bg-background/70 p-1 text-muted-foreground shadow-sm transition hover:bg-background hover:text-foreground"
+          >
+            <IconArrowLeft className="h-3 w-3" />
+          </button>
 
           {/* Player 1 */}
           <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? '    bg-primary/10' : 'bg-gray-900/50'}`}>
@@ -902,7 +902,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
 
           {/* Center Info */}
-          <div className="w-12 sm:w-16 md:w-24 flex flex-col items-center justify-center bg-gray-800 "
+          <div className="flex w-12 flex-col items-center justify-center bg-gray-800 sm:w-16 md:w-24">
             <div className="text-xs sm:text-sm font-bold text-yellow-400 mb-1">tDarts</div>
             <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1">{currentLeg}</div>
             <div className="text-xs text-gray-400">Leg</div>
@@ -927,7 +927,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         <section className="h-[10dvh] landscape:flex-1 bg-base-200 flex  landscape:  overflow-hidden">
           <div ref={chalkboardRef} className="flex w-full overflow-y-auto">
             {/* Player 1 All Throws */}
-            <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4 "
+            <div className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4">
               <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-200 z-10 pb-1">{player1.name}</div>
               <div className="flex-1">
                 <div className="space-y-1">

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,7 +9,6 @@ import IconDart from "./icons/IconDart";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +17,11 @@ import { cn } from "@/lib/utils";
 const NavbarNew = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user } = useUserContext();
   const { logout } = useLogout();
   const pathname = usePathname();
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +31,31 @@ const NavbarNew = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsUserMenuOpen(false);
+  }, [pathname, isMobileMenuOpen]);
 
   const isAdminPage = pathname?.startsWith('/admin');
 
@@ -61,7 +87,7 @@ const NavbarNew = () => {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
         isScrolled
-          ? "bg-card/85 backdrop-blur-xl shadow-[0_10px_40px_-15px_oklch(51%_0.18_16_/0.45)]"
+          ? "bg-card/85 backdrop-blur-xl shadow-lg shadow-black/40"
           : "bg-transparent"
       )}
     >
@@ -96,7 +122,7 @@ const NavbarNew = () => {
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
                     isActive 
-                      ? "bg-primary text-primary-foreground shadow-[0_2px_8px_0_oklch(51%_0.18_16_/_0.3)]" 
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
                   )}
                 >
@@ -132,59 +158,93 @@ const NavbarNew = () => {
                     <span className="hidden xl:inline">Hibabejelentés</span>
                   </Link>
                 </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2 px-2 lg:px-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="text-sm">
-                          {getUserInitials()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="hidden xl:inline">{user.username}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-64 border-0 bg-card/95 shadow-xl backdrop-blur-md"
+                <div className="relative" ref={userMenuRef}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 px-2 lg:px-3"
+                    onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                    aria-expanded={isUserMenuOpen}
+                    aria-haspopup="true"
+                    aria-controls="user-menu"
                   >
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col">
-                        <span className="font-semibold">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile" className="cursor-pointer">
-                        <IconUser className="w-4 h-4 mr-2" />
-                        Profil
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/myclub" className="cursor-pointer">
-                        <IconDart className="w-4 h-4 mr-2" />
-                        Saját klub
-                      </Link>
-                    </DropdownMenuItem>
-                    {user.isAdmin && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link href="/admin" className="cursor-pointer">
-                            <IconSettings className="w-4 h-4 mr-2" />
-                            Admin
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="text-sm">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden xl:inline">{user.username}</span>
+                  </Button>
+                  <div
+                    id="user-menu"
+                    className={cn(
+                      "absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/35 backdrop-blur-md transition-all duration-200",
+                      "bg-card/95",
+                      "before:absolute before:left-0 before:top-2 before:h-[calc(100%-1rem)] before:w-[2px] before:rounded-full before:bg-gradient-to-b before:from-primary/60 before:via-primary/30 before:to-transparent",
+                      isUserMenuOpen
+                        ? "pointer-events-auto opacity-100 translate-y-0"
+                        : "pointer-events-none opacity-0 -translate-y-2"
                     )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive">
-                      <IconLogout className="w-4 h-4 mr-2" />
-                      Kijelentkezés
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    aria-hidden={!isUserMenuOpen}
+                    style={{ backdropFilter: "blur(14px)" }}
+                  >
+                    <div
+                      className={cn(
+                        "overflow-hidden transition-[max-height] duration-200 ease-in-out",
+                        isUserMenuOpen ? "max-h-96" : "max-h-0"
+                      )}
+                    >
+                      <div className="space-y-1 p-2">
+                        <div className="px-2 py-1.5 text-sm font-semibold">
+                          <p className="text-foreground">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                        <Separator className="my-1" />
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted/20 hover:text-foreground"
+                        >
+                          <IconUser className="h-4 w-4" />
+                          Profil
+                        </Link>
+                        <Link
+                          href="/myclub"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted/20 hover:text-foreground"
+                        >
+                          <IconDart className="h-4 w-4" />
+                          Saját klub
+                        </Link>
+                        {user.isAdmin && (
+                          <>
+                            <Separator className="my-1" />
+                            <Link
+                              href="/admin"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted/20 hover:text-foreground"
+                            >
+                              <IconSettings className="h-4 w-4" />
+                              Admin
+                            </Link>
+                          </>
+                        )}
+                        <Separator className="my-1" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            logout();
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-destructive transition hover:bg-destructive/10"
+                        >
+                          <IconLogout className="h-4 w-4" />
+                          Kijelentkezés
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             ) : (
               <>
@@ -215,7 +275,7 @@ const NavbarNew = () => {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-full max-w-sm border-0 bg-card/95 px-4 py-6 shadow-2xl backdrop-blur"
+                className="flex h-full w-full max-w-sm flex-col bg-card/95 px-4 py-6 shadow-2xl shadow-black/45 backdrop-blur"
               >
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
@@ -226,7 +286,7 @@ const NavbarNew = () => {
                   </SheetTitle>
                 </SheetHeader>
 
-                <div className="mt-6 space-y-6">
+                <div className="mt-4 flex-1 overflow-y-auto space-y-4">
                   {/* User Info */}
                   {user && (
                     <>
@@ -260,7 +320,7 @@ const NavbarNew = () => {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium",
                             isActive 
-                              ? "bg-primary text-primary-foreground shadow-[0_2px_8px_0_oklch(51%_0.18_16_/_0.3)]" 
+                              ? "bg-primary text-primary-foreground"
                               : "text-foreground hover:bg-accent/10"
                           )}
                         >
@@ -286,7 +346,7 @@ const NavbarNew = () => {
                       </Link>
                     </Button>
                   ) : user ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 pb-4">
                       <Button 
                         variant="outline" 
                         className="w-full justify-start gap-2"
@@ -343,7 +403,7 @@ const NavbarNew = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2 pb-4">
                       <Button 
                         className="w-full"
                         asChild

@@ -1,167 +1,173 @@
-import React, { useState } from 'react';
-import LegsViewModal from './LegsViewModal';
-import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+"use client"
+
+import React, { useState } from 'react'
+import LegsViewModal from './LegsViewModal'
+import { IconArrowUp, IconArrowDown, IconChevronDown, IconEye, IconEdit, IconTarget } from '@tabler/icons-react'
+import axios from 'axios'
+import toast from 'react-hot-toast'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 
 interface Player {
   playerId: {
-    _id: string;
-    name: string;
-  };
-  legsWon?: number;
-  legsLost?: number;
-  average?: number;
-  highestCheckout?: number;
-  oneEightiesCount?: number;
+    _id: string
+    name: string
+  }
+  legsWon?: number
+  legsLost?: number
+  average?: number
+  highestCheckout?: number
+  oneEightiesCount?: number
 }
 
 interface Match {
-  _id: string;
-  player1: Player;
-  player2: Player;
-  status: string;
-  winnerId?: string;
-  legsToWin?: number;
+  _id: string
+  player1: Player
+  player2: Player
+  status: string
+  winnerId?: string
+  legsToWin?: number
   scorer?: {
-    _id: string;
-    name: string;
-  };
+    _id: string
+    name: string
+  }
   stats?: {
     player1: {
-      average: number;
-      legsWon: number;
-    };
+      average: number
+      legsWon: number
+    }
     player2: {
-      average: number;
-      legsWon: number;
-    };
-  };
+      average: number
+      legsWon: number
+    }
+  }
 }
 
 interface TournamentGroupsViewProps {
-  tournament: any;
-  userClubRole?: 'admin' | 'moderator' | 'member' | 'none';
+  tournament: any
+  userClubRole?: 'admin' | 'moderator' | 'member' | 'none'
 }
 
 const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament, userClubRole }) => {
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [player1Legs, setPlayer1Legs] = useState(0);
-  const [player2Legs, setPlayer2Legs] = useState(0);
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+  const [player1Legs, setPlayer1Legs] = useState(0)
+  const [player2Legs, setPlayer2Legs] = useState(0)
   const [player1Stats, setPlayer1Stats] = useState({
     highestCheckout: 0,
     oneEightiesCount: 0,
     totalThrows: 0,
     totalScore: 0
-  });
+  })
   const [player2Stats, setPlayer2Stats] = useState({
     highestCheckout: 0,
     oneEightiesCount: 0,
     totalThrows: 0,
     totalScore: 0
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set());
-  const [matchFilter, setMatchFilter] = useState<'all' | 'pending' | 'ongoing' | 'finished'>('all');
-  const [showLegsModal, setShowLegsModal] = useState(false);
-  const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<Match | null>(null);
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set())
+  const [matchFilter, setMatchFilter] = useState<'all' | 'pending' | 'ongoing' | 'finished'>('all')
+  const [showLegsModal, setShowLegsModal] = useState(false)
+  const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<Match | null>(null)
 
-  const isAdminOrModerator = userClubRole === 'admin' || userClubRole === 'moderator';
+  const isAdminOrModerator = userClubRole === 'admin' || userClubRole === 'moderator'
 
   const toggleGroup = (groupId: string) => {
-    const newExpanded = new Set(expandedGroups);
+    const newExpanded = new Set(expandedGroups)
     if (newExpanded.has(groupId)) {
-      newExpanded.delete(groupId);
+      newExpanded.delete(groupId)
     } else {
-      newExpanded.add(groupId);
+      newExpanded.add(groupId)
     }
-    setExpandedGroups(newExpanded);
-  };
+    setExpandedGroups(newExpanded)
+  }
 
   const toggleMatches = (groupId: string) => {
-    const newExpanded = new Set(expandedMatches);
+    const newExpanded = new Set(expandedMatches)
     if (newExpanded.has(groupId)) {
-      newExpanded.delete(groupId);
+      newExpanded.delete(groupId)
     } else {
-      newExpanded.add(groupId);
+      newExpanded.add(groupId)
     }
-    setExpandedMatches(newExpanded);
-  };
-
+    setExpandedMatches(newExpanded)
+  }
 
   const handleEditMatch = (match: Match) => {
-    setSelectedMatch(match);
-    setPlayer1Legs(match.player1.legsWon || 0);
-    setPlayer2Legs(match.player2.legsWon || 0);
+    setSelectedMatch(match)
+    setPlayer1Legs(match.player1.legsWon || 0)
+    setPlayer2Legs(match.player2.legsWon || 0)
     setPlayer1Stats({
       highestCheckout: match.player1.highestCheckout || 0,
       oneEightiesCount: match.player1.oneEightiesCount || 0,
       totalThrows: 0,
       totalScore: 0
-    });
+    })
     setPlayer2Stats({
       highestCheckout: match.player2.highestCheckout || 0,
       oneEightiesCount: match.player2.oneEightiesCount || 0,
       totalThrows: 0,
       totalScore: 0
-    });
-    setShowAdminModal(true);
-    setError('');
-  };
+    })
+    setShowAdminModal(true)
+    setError('')
+  }
 
   const handleViewLegs = (match: Match) => {
-    setSelectedMatchForLegs(match);
-    setShowLegsModal(true);
-  };
+    setSelectedMatchForLegs(match)
+    setShowLegsModal(true)
+  }
 
   const handleMovePlayer = async (groupId: string, playerId: string, direction: 'up' | 'down') => {
     if (userClubRole !== 'admin' && userClubRole !== 'moderator') {
-      toast.error('Nincs jogosultságod a helyezés módosításához!');
-      return;
+      toast.error('Nincs jogosultságod a helyezés módosításához!')
+      return
     }
 
-    // Show warning about manual standing adjustment
-    const confirmMessage = `Biztosan módosítod a játékos helyezését?\n\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.`;
+    const confirmMessage = `Biztosan módosítod a játékos helyezését?\n\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.`
     
     if (!window.confirm(confirmMessage)) {
-      return;
+      return
     }
 
     try {
       const response = await axios.patch(`/api/tournaments/${tournament.tournamentId}/groups/${groupId}/move-player`, {
         playerId,
         direction
-      });
+      })
 
       if (response.data.success) {
         toast.success('Helyezés sikeresen módosítva!', {
           duration: 4000,
-        });
-        // Refresh the page to show updated standings
-        window.location.reload();
+        })
+        window.location.reload()
       } else {
-        toast.error('Hiba történt a helyezés módosítása során!');
+        toast.error('Hiba történt a helyezés módosítása során!')
       }
     } catch (error) {
-      console.error('Error moving player:', error);
-      toast.error('Hiba történt a helyezés módosítása során!');
+      console.error('Error moving player:', error)
+      toast.error('Hiba történt a helyezés módosítása során!')
     }
-  };
+  }
 
   const handleSaveMatch = async () => {
-    if (!selectedMatch) return;
+    if (!selectedMatch) return
 
-    // Validate no tie
     if (player1Legs === player2Legs) {
-      setError('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.');
-      return;
+      setError('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.')
+      return
     }
 
-    setLoading(true);
-    setError('');
+    setLoading(true)
+    setError('')
 
     try {
       const response = await fetch(`/api/matches/${selectedMatch._id}/finish`, {
@@ -173,85 +179,94 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           player1Stats,
           player2Stats
         })
-      });
+      })
 
       if (!response.ok) {
-        throw new Error('Hiba történt a mentés során');
+        throw new Error('Hiba történt a mentés során')
       }
 
-      setShowAdminModal(false);
-      setSelectedMatch(null);
-      // Optionally trigger a refetch of tournament data
-      window.location.reload();
+      setShowAdminModal(false)
+      setSelectedMatch(null)
+      window.location.reload()
     } catch (err) {
-      setError('Hiba történt a mentés során!');
-      console.error('Save match error:', err);
+      setError('Hiba történt a mentés során!')
+      console.error('Save match error:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (!tournament.groups || tournament.groups.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-base-content/70">Még nincsenek csoportok generálva.</p>
-      </div>
-    );
+      <Card className="bg-card/90 text-muted-foreground shadow-xl shadow-black/30">
+        <CardContent className="py-12 text-center text-sm">
+          Még nincsenek csoportok generálva.
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="warning">Függőben</Badge>
+      case 'ongoing':
+        return <Badge variant="info">Folyamatban</Badge>
+      case 'finished':
+        return <Badge variant="success">Befejezett</Badge>
+      default:
+        return <Badge variant="outline">Ismeretlen</Badge>
+    }
   }
 
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-bold">Csoportok</h2>
-      <div className="space-y-4 mt-4">
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-foreground">Csoportok</h2>
+      <div className="space-y-4">
         {tournament.groups.map((group: any, groupIndex: number) => {
           const groupPlayers = tournament.tournamentPlayers
             .filter((player: any) => player.groupId === group._id)
-            .sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0));
+            .sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0))
           
-          const isExpanded = expandedGroups.has(group._id);
-          const isMatchesExpanded = expandedMatches.has(group._id);
+          const isExpanded = expandedGroups.has(group._id)
+          const isMatchesExpanded = expandedMatches.has(group._id)
 
           return (
-            <div key={group._id} className="card bg-base-200 shadow-md w-full">
-              <div className="card-body">
-                <div className="flex justify-between items-center">
-                  <h3 className="card-title">
+            <Card key={group._id} className="bg-card/92 shadow-xl shadow-black/30">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">
                     Csoport {groupIndex + 1} (Tábla {group.board})
-                  </h3>
-                  <button
-                    className="btn btn-ghost btn-sm"
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => toggleGroup(group._id)}
+                    className="h-8 w-8"
                   >
-                    <svg
-                      className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                    <IconChevronDown className={cn("h-4 w-4 transition-transform duration-200", isExpanded && "rotate-180")} />
+                  </Button>
                 </div>
+              </CardHeader>
 
+              <CardContent>
                 {/* Collapsed State - Compact Player Cards */}
                 {!isExpanded && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2">
                     {groupPlayers.map((player: any, index: number) => (
-                      <div key={player._id} className="bg-base-100 rounded-md p-2 hover:bg-base-300 transition-colors ">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <span className="badge badge-primary badge-xs font-bold">
-                              {player.groupStanding || index + 1}.
-                            </span>
-                            <span className="font-medium text-xs truncate">
-                              {player.playerReference?.name || 'Ismeretlen'}
-                            </span>
-                          </div>
-                          <div className="text-xs text-base-content/70 ml-2">
-                            {(player.stats?.matchesWon || 0) * 2}p
-                          </div>
-                        </div>
+                      <div
+                        key={player._id}
+                        className="flex items-center gap-2 rounded-lg bg-muted/20 px-3 py-2 shadow-sm shadow-black/15"
+                      >
+                        <Badge variant="default" className="text-[10px] font-bold px-1.5 py-0">
+                          {player.groupStanding || index + 1}.
+                        </Badge>
+                        <span className="text-sm font-medium truncate max-w-[120px]">
+                          {player.playerReference?.name || 'Ismeretlen'}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {(player.stats?.matchesWon || 0) * 2}p
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -259,98 +274,100 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
                 {/* Expanded State */}
                 {isExpanded && (
-                  <div className="mt-4">
+                  <div className="space-y-6">
                     {/* Players Table */}
-                    <div className="mb-6">
-                      <h4 className="font-bold text-lg mb-3">Játékosok Rangsora</h4>
-                      <div className="overflow-x-auto">
-                        <table className="table table-zebra w-full">
-                          <thead>
+                    <div>
+                      <h4 className="font-semibold text-base mb-3 text-foreground">Játékosok Rangsora</h4>
+                      <div className="overflow-x-auto rounded-lg">
+                        <table className="w-full text-sm">
+                          <thead className="bg-muted/30">
                             <tr>
-                              <th className="text-center">Sorszám</th>
-                              <th className="text-center">Helyezés</th>
-                              <th>Név</th>
-                              {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                                <th className="text-center">Mozgatás</th>
+                              <th className="text-center px-3 py-2 text-xs font-semibold text-muted-foreground">#</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">Név</th>
+                              {isAdminOrModerator && (
+                                <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Mozgatás</th>
                               )}
-                              <th className="text-center">Pontok</th>
-                              <th className="text-center">Nyert Meccsek</th>
-                              <th className="text-center">Vesztett Meccsek</th>
-                              <th className="text-center">Nyert Legek</th>
-                              <th className="text-center">Vesztett Legek</th>
-                              <th className="text-center">Legkülönbség</th>
-                              <th className="text-center">Átlag</th>
-                              <th className="text-center">180-ak</th>
-                              <th className="text-center">Legmagasabb Kiszálló</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Pont</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Gy</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">V</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">L Gy</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">L V</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">L ±</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Átlag</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">180</th>
+                              <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">HC</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-border/20">
                             {groupPlayers.map((player: any, index: number) => {
-                              const stats = player.stats || {};
-                              const legDifference = (stats.legsWon || 0) - (stats.legsLost || 0);
+                              const stats = player.stats || {}
+                              const legDifference = (stats.legsWon || 0) - (stats.legsLost || 0)
                               
                               return (
-                                <tr key={player._id} className="hover:bg-base-200">
-                                  <td className="text-center font-bold">
-                                    {player.groupOrdinalNumber +1}.
+                                <tr key={player._id} className="hover:bg-muted/20 transition-colors">
+                                  <td className="text-center px-3 py-2 font-bold text-xs">
+                                    {player.groupOrdinalNumber + 1}.
                                   </td>
-                                  <td className="text-center font-bold">
-                                    {player.groupStanding || index + 1}.
-                                  </td>
-                                  <td className="font-semibold">
+                                  <td className="px-3 py-2 font-semibold text-sm">
                                     {player.playerReference?.name || 'Ismeretlen'}
                                   </td>
-                                  {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                                    <td className="text-center">
-                                      <div className="flex flex-col gap-1">
-                                        <button
+                                  {isAdminOrModerator && (
+                                    <td className="text-center px-2 py-2">
+                                      <div className="flex flex-col gap-1 items-center">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
                                           onClick={() => handleMovePlayer(group._id, player._id, 'up')}
                                           disabled={index === 0}
-                                          className="btn btn-xs btn-ghost p-1"
-                                          title="Fel mozgatás"
+                                          className="h-6 w-6"
                                         >
-                                          <IconArrowUp size={12} />
-                                        </button>
-                                        <button
+                                          <IconArrowUp className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
                                           onClick={() => handleMovePlayer(group._id, player._id, 'down')}
                                           disabled={index === groupPlayers.length - 1}
-                                          className="btn btn-xs btn-ghost p-1"
-                                          title="Le mozgatás"
+                                          className="h-6 w-6"
                                         >
-                                          <IconArrowDown size={12} />
-                                        </button>
+                                          <IconArrowDown className="h-3 w-3" />
+                                        </Button>
                                       </div>
                                     </td>
                                   )}
-                                  <td className="text-center">
+                                  <td className="text-center px-2 py-2 text-sm font-medium">
                                     {(stats.matchesWon || 0) * 2}
                                   </td>
-                                  <td className="text-center text-success">
+                                  <td className="text-center px-2 py-2 text-sm text-[oklch(64%_0.2_132)]">
                                     {stats.matchesWon || 0}
                                   </td>
-                                  <td className="text-center text-error">
+                                  <td className="text-center px-2 py-2 text-sm text-destructive">
                                     {stats.matchesLost || 0}
                                   </td>
-                                  <td className="text-center text-success">
+                                  <td className="text-center px-2 py-2 text-sm text-[oklch(64%_0.2_132)]">
                                     {stats.legsWon || 0}
                                   </td>
-                                  <td className="text-center text-error">
+                                  <td className="text-center px-2 py-2 text-sm text-destructive">
                                     {stats.legsLost || 0}
                                   </td>
-                                  <td className={`text-center font-bold ${legDifference > 0 ? 'text-success' : legDifference < 0 ? 'text-error' : ''}`}>
+                                  <td className={cn(
+                                    "text-center px-2 py-2 text-sm font-bold",
+                                    legDifference > 0 && "text-[oklch(64%_0.2_132)]",
+                                    legDifference < 0 && "text-destructive"
+                                  )}>
                                     {legDifference > 0 ? '+' : ''}{legDifference}
                                   </td>
-                                  <td className="text-center">
-                                    {stats.avg || 0}
+                                  <td className="text-center px-2 py-2 text-sm font-medium">
+                                    {stats.average ? stats.average.toFixed(1) : (stats.avg ? stats.avg.toFixed(1) : '0.0')}
                                   </td>
-                                  <td className="text-center">
+                                  <td className="text-center px-2 py-2 text-sm">
                                     {stats.oneEightiesCount || 0}
                                   </td>
-                                  <td className="text-center">
+                                  <td className="text-center px-2 py-2 text-sm">
                                     {stats.highestCheckout || 0}
                                   </td>
                                 </tr>
-                              );
+                              )
                             })}
                           </tbody>
                         </table>
@@ -359,30 +376,26 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
                     {/* Matches Section */}
                     <div>
-                      <button
-                        className="btn shadow-md btn-sm w-full flex justify-between items-center mb-4"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => toggleMatches(group._id)}
+                        className="w-full justify-between mb-4"
                       >
-                        <span>Mérkőzések</span>
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isMatchesExpanded ? "rotate-180" : ""}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
+                        <span className="flex items-center gap-2">
+                          <IconTarget className="h-4 w-4" />
+                          Mérkőzések
+                        </span>
+                        <IconChevronDown className={cn("h-4 w-4 transition-transform duration-200", isMatchesExpanded && "rotate-180")} />
+                      </Button>
 
                       {isMatchesExpanded && (
-                        <div className="mt-4">
-                          <div className="mb-4 flex flex-col items-start gap-2">
-                            <label className="label">
-                              <span className="label-text">Szűrés állapot szerint:</span>
-                            </label>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`filter-${group._id}`} className="text-sm">Szűrés:</Label>
                             <select
-                              className="select select-sm select-bordered"
+                              id={`filter-${group._id}`}
+                              className="flex h-9 rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               value={matchFilter}
                               onChange={(e) => setMatchFilter(e.target.value as 'all' | 'pending' | 'ongoing' | 'finished')}
                             >
@@ -394,89 +407,77 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                           </div>
 
                           {group.matches && group.matches.length > 0 ? (
-                            <div className="overflow-x-auto">
-                              <table className="table table-zebra w-full">
-                                <thead>
+                            <div className="overflow-x-auto rounded-lg">
+                              <table className="w-full text-sm">
+                                <thead className="bg-muted/30">
                                   <tr>
-                                    <th className="text-center">Sorszám</th>
-                                    <th>Játékosok</th>
-                                    <th>Pontozó</th>
-                                    <th className="text-center">Állapot</th>
-                                    <th className="text-center">Átlag</th>
-                                    <th className="text-center">Eredmény</th>
-                                    <th className="text-center">Műveletek</th>
+                                    <th className="text-center px-3 py-2 text-xs font-semibold text-muted-foreground">#</th>
+                                    <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">Játékosok</th>
+                                    <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">Pontozó</th>
+                                    <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Állapot</th>
+                                    <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Átlag</th>
+                                    <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Eredmény</th>
+                                    <th className="text-center px-2 py-2 text-xs font-semibold text-muted-foreground">Műveletek</th>
                                   </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-border/20">
                                   {group.matches
                                     .filter((match: Match) =>
                                       matchFilter === 'all' ? true : match.status === matchFilter
                                     )
                                     .map((match: Match, matchIndex: number) => (
-                                    <tr key={match._id} className="hover:bg-base-200">
-                                      <td className="text-center font-bold">
+                                    <tr key={match._id} className="hover:bg-muted/20 transition-colors">
+                                      <td className="text-center px-3 py-2 font-bold text-xs">
                                         {matchIndex + 1}.
                                       </td>
-                                      <td className="font-semibold">
+                                      <td className="px-3 py-2 font-semibold text-sm">
                                         {match.player1?.playerId?.name || 'Ismeretlen'} vs {match.player2?.playerId?.name || 'Ismeretlen'}
                                       </td>
-                                      <td>
+                                      <td className="px-3 py-2 text-sm text-muted-foreground">
                                         {match.scorer?.name || 'Nincs'}
                                       </td>
-                                      <td className="text-center">
-                                        <span className={`badge ${
-                                          match.status === 'pending' ? 'badge-warning' : 
-                                          match.status === 'ongoing' ? 'badge-primary' : 
-                                          match.status === 'finished' ? 'badge-success' : 'badge-ghost'
-                                        }`}>
-                                          {match.status === 'pending' ? 'Függőben' : 
-                                           match.status === 'ongoing' ? 'Folyamatban' : 
-                                           match.status === 'finished' ? 'Befejezett' : 'Ismeretlen'}
-                                        </span>
+                                      <td className="text-center px-2 py-2">
+                                        {getStatusBadge(match.status)}
                                       </td>
-                                      <td className="text-center">
-                                        {match.player1.average && match.player2.average ? (
+                                      <td className="text-center px-2 py-2 text-sm">
+                                        {match.stats?.player1?.average && match.stats?.player2?.average ? (
                                           <span>
-                                            {match.player1.average?.toFixed(1)} - {match.player2.average?.toFixed(1)}
+                                            {match.stats.player1.average.toFixed(1)} - {match.stats.player2.average.toFixed(1)}
                                           </span>
                                         ) : (
                                           '-'
                                         )}
                                       </td>
-                                      <td className="text-center">
+                                      <td className="text-center px-2 py-2">
                                         {(match.status === 'finished' || match.status === 'ongoing') ? (
-                                          <span className="badge badge-neutral">
+                                          <Badge variant="outline" className="font-semibold">
                                             {match.player1.legsWon} - {match.player2.legsWon}
-                                          </span>
+                                          </Badge>
                                         ) : (
                                           '-'
                                         )}
                                       </td>
-                                      <td className="text-center">
-                                        <div className="flex gap-1">
+                                      <td className="text-center px-2 py-2">
+                                        <div className="flex items-center justify-center gap-1">
                                           {(match.status === 'ongoing' || match.status === 'finished') && (
-                                            <button
-                                              className="btn btn-info btn-sm"
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
                                               onClick={() => handleViewLegs(match)}
-                                              title="Legek megtekintése"
+                                              className="h-8 px-2"
                                             >
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                              </svg>
-                                              Legek
-                                            </button>
+                                              <IconEye className="h-4 w-4" />
+                                            </Button>
                                           )}
                                           {isAdminOrModerator && (
-                                            <button
-                                              className="btn btn-warning btn-sm"
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
                                               onClick={() => handleEditMatch(match)}
+                                              className="h-8 px-2"
                                             >
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                              </svg>
-                                              Szerkesztés
-                                            </button>
+                                              <IconEdit className="h-4 w-4" />
+                                            </Button>
                                           )}
                                         </div>
                                       </td>
@@ -486,184 +487,170 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               </table>
                             </div>
                           ) : (
-                            <p>Nincsenek mérkőzések a csoportban.</p>
+                            <Card className="bg-muted/20">
+                              <CardContent className="py-6 text-center text-sm text-muted-foreground">
+                                Nincsenek mérkőzések a csoportban.
+                              </CardContent>
+                            </Card>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          );
+              </CardContent>
+            </Card>
+          )
         })}
       </div>
 
       {/* Admin Modal */}
-      {showAdminModal && selectedMatch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-center mb-6">Meccs Szerkesztése</h3>
-            
-            <div className="text-center mb-6">
-              <h4 className="text-lg font-bold mb-2">
-                {selectedMatch.player1?.playerId?.name} vs {selectedMatch.player2?.playerId?.name}
-              </h4>
-              <p className="text-base-content/70">Állítsd be a meccs eredményét és statisztikáit</p>
-            </div>
-            
-            {error && (
-              <div className="alert alert-error mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Player 1 Stats */}
-              <div className="space-y-4">
-                <h5 className="font-bold text-lg text-primary">{selectedMatch.player1?.playerId?.name}</h5>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Nyert legek:</span>
-                  </label>
-                  <input
-                    type="number"
-                    max="10"
-                    className="input input-bordered w-full"
-                    value={player1Legs}
-                    onChange={(e) => setPlayer1Legs(parseInt(e.target.value) || 0)}
-                  />
-                </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">180-ak száma:</span>
-                  </label>
-                  <input
-                    type="number"
-                    max="50"
-                    className="input input-bordered w-full"
-                    value={player1Stats.oneEightiesCount || 0 }
-                    onChange={(e) => setPlayer1Stats(prev => ({
-                      ...prev,
-                      oneEightiesCount: parseInt(e.target.value) || 0
-                    }))}
-                  />
-                </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Legmagasabb kiszálló:</span>
-                  </label>
-                  <input
-                    type="number"
-                    max="170"
-                    className="input input-bordered w-full"
-                    value={player1Stats.highestCheckout || 0}
-                    onChange={(e) => setPlayer1Stats(prev => ({
-                      ...prev,
-                      highestCheckout: parseInt(e.target.value) || 0
-                    }))}
-                  />
-                </div>
-              </div>
+      <Dialog open={showAdminModal} onOpenChange={setShowAdminModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Meccs Szerkesztése</DialogTitle>
+            <DialogDescription>
+              {selectedMatch && (
+                <>
+                  {selectedMatch.player1?.playerId?.name} vs {selectedMatch.player2?.playerId?.name}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
 
-              {/* Player 2 Stats */}
-              <div className="space-y-4">
-                <h5 className="font-bold text-lg text-primary">{selectedMatch.player2?.playerId?.name}</h5>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Nyert legek:</span>
-                  </label>
-                  <input
-                    type="number"
-                    max="10"
-                    className="input input-bordered w-full"
-                    value={player2Legs}
-                    onChange={(e) => setPlayer2Legs(parseInt(e.target.value) || 0)}
-                  />
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {selectedMatch && (
+            <div className="overflow-y-auto flex-1 px-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Player 1 Stats */}
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-lg text-primary">{selectedMatch.player1?.playerId?.name}</h5>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="player1-legs">Nyert legek:</Label>
+                    <Input
+                      id="player1-legs"
+                      type="number"
+                      max={10}
+                      value={player1Legs}
+                      onChange={(e) => setPlayer1Legs(parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="player1-180s">180-ak száma:</Label>
+                    <Input
+                      id="player1-180s"
+                      type="number"
+                      max={50}
+                      value={player1Stats.oneEightiesCount || 0}
+                      onChange={(e) => setPlayer1Stats(prev => ({
+                        ...prev,
+                        oneEightiesCount: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="player1-hc">Legmagasabb kiszálló:</Label>
+                    <Input
+                      id="player1-hc"
+                      type="number"
+                      max={170}
+                      value={player1Stats.highestCheckout || 0}
+                      onChange={(e) => setPlayer1Stats(prev => ({
+                        ...prev,
+                        highestCheckout: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
                 </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">180-ak száma:</span>
-                  </label>
-                  <input
-                    type="number"
-                    max="50"
-                    className="input input-bordered w-full"
-                    value={player2Stats.oneEightiesCount || 0}
-                    onChange={(e) => setPlayer2Stats(prev => ({
-                      ...prev,
-                      oneEightiesCount: parseInt(e.target.value) || 0
-                    }))}
-                  />
-                </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Legmagasabb kiszálló:</span>
-                  </label>
-                  <input
-                    type="number"
-                    max="170"
-                    className="input input-bordered w-full"
-                    value={player2Stats.highestCheckout || 0}
-                    onChange={(e) => setPlayer2Stats(prev => ({
-                      ...prev,
-                      highestCheckout: parseInt(e.target.value) || 0
-                    }))}
-                  />
+
+                {/* Player 2 Stats */}
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-lg text-primary">{selectedMatch.player2?.playerId?.name}</h5>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="player2-legs">Nyert legek:</Label>
+                    <Input
+                      id="player2-legs"
+                      type="number"
+                      max={10}
+                      value={player2Legs}
+                      onChange={(e) => setPlayer2Legs(parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="player2-180s">180-ak száma:</Label>
+                    <Input
+                      id="player2-180s"
+                      type="number"
+                      max={50}
+                      value={player2Stats.oneEightiesCount || 0}
+                      onChange={(e) => setPlayer2Stats(prev => ({
+                        ...prev,
+                        oneEightiesCount: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="player2-hc">Legmagasabb kiszálló:</Label>
+                    <Input
+                      id="player2-hc"
+                      type="number"
+                      max={170}
+                      value={player2Stats.highestCheckout || 0}
+                      onChange={(e) => setPlayer2Stats(prev => ({
+                        ...prev,
+                        highestCheckout: parseInt(e.target.value) || 0
+                      }))}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="flex gap-3">
-              <button
-                className="btn btn-error flex-1"
-                onClick={() => {
-                  setShowAdminModal(false);
-                  setSelectedMatch(null);
-                  setError('');
-                }}
-              >
-                Mégse
-              </button>
-              <button
-                className="btn btn-success flex-1"
-                onClick={handleSaveMatch}
-                disabled={loading || player1Legs === player2Legs}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Mentés"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+          
+          <DialogFooter className="flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAdminModal(false)
+                setSelectedMatch(null)
+                setError('')
+              }}
+            >
+              Mégse
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleSaveMatch}
+              disabled={loading || player1Legs === player2Legs}
+            >
+              {loading ? 'Mentés...' : 'Mentés'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Legs View Modal */}
       <LegsViewModal
         isOpen={showLegsModal}
         onClose={() => {
-          setShowLegsModal(false);
-          setSelectedMatchForLegs(null);
+          setShowLegsModal(false)
+          setSelectedMatchForLegs(null)
         }}
         match={selectedMatchForLegs}
       />
     </div>
-  );
-};
+  )
+}
 
-export default TournamentGroupsView; 
+export default TournamentGroupsView

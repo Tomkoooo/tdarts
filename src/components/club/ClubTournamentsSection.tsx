@@ -27,9 +27,10 @@ export function ClubTournamentsSection({
         </div>
 
         {(userRole === 'admin' || userRole === 'moderator') && (
-          <Button onClick={onCreateTournament}>
-            <IconPlus className="w-4 h-4 mr-2" />
-            Új verseny
+          <Button onClick={onCreateTournament} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
+            <IconPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+            <span className="hidden xs:inline">Új verseny</span>
+            <span className="xs:hidden">Új</span>
           </Button>
         )}
       </div>

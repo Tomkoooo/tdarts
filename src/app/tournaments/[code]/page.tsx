@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import axios from "axios"
+import Link from "next/link"
 import { useParams } from "next/navigation"
 import { IconRefresh, IconShare2 } from "@tabler/icons-react"
 import { useUserContext } from "@/hooks/useUser"
@@ -82,6 +83,15 @@ const TournamentPage = () => {
   const [isReopening, setIsReopening] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("overview")
+
+  // Handle tab from URL
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const tabParam = searchParams.get('tab')
+    if (tabParam && tabs.some(t => t.value === tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [])
 
   // Feature flag for auto refresh
   const { isEnabled: isProFeature, isLoading: isFeatureLoading } = useFeatureFlag(
@@ -258,15 +268,22 @@ const TournamentPage = () => {
                 variant={autoRefreshEnabled ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setAutoRefreshEnabled((prev) => !prev)}
-                className={cn("gap-2", !autoRefreshEnabled && "bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]")}
+                className={cn("gap-2", !autoRefreshEnabled && "bg-card/80 hover:bg-card")}
               >
                 <IconRefresh className={cn('h-4 w-4', autoRefreshEnabled && isRefreshing && 'animate-spin')} />
                 Auto-frissítés {autoRefreshEnabled ? 'BE' : 'KI'}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleRefetch} className="gap-2 bg-card/80 hover:bg-card shadow-[2px_2px_0px_0px_oklch(51%_0.18_16_/0.4)]">
+            <Button variant="outline" size="sm" onClick={handleRefetch} className="gap-2 bg-card/80 hover:bg-card">
               <IconRefresh className="h-4 w-4" /> Frissítés
             </Button>
+            {tournament && (
+              <Button asChild variant="outline" size="sm" className="gap-2">
+                <Link href={`/board/${tournament.tournamentId}`} target="_blank" rel="noopener noreferrer">
+                  Táblák / Író program
+                </Link>
+              </Button>
+            )}
             <Button variant="default" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
               <IconShare2 className="h-4 w-4" /> Megosztás
             </Button>
@@ -274,34 +291,42 @@ const TournamentPage = () => {
         </header>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-6 pb-24 md:pb-0">
-          <TabsList className="hidden w-full gap-2 rounded-xl border-0 bg-card/90 p-1 md:flex">
+          <TabsList className="hidden w-full gap-2 rounded-xl bg-card/90 p-1 md:flex">
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:bg-primary data-[state=active]:hover:text-primary-foreground hover:bg-muted/20 hover:text-foreground"
               >
                 {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
           <div className="md:hidden">
-            <div className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-1rem)] max-w-[380px] -translate-x-1/2 items-center gap-0.5 rounded-2xl border-0 bg-card/85 backdrop-blur-xl p-1 shadow-[0_20px_60px_-25px_oklch(51%_0.18_16_/0.65)]">
+            <div className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-1rem)] max-w-[380px] -translate-x-1/2 items-center gap-0.5 rounded-2xl bg-card/85 backdrop-blur-xl p-1 shadow-lg shadow-black/30">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.value
+                const isAdmin = tab.value === 'admin'
                 return (
                   <button
                     key={tab.value}
                     type="button"
                     onClick={() => setActiveTab(tab.value)}
                     className={cn(
-                      "flex flex-1 items-center justify-center rounded-xl px-2 py-2 text-xs font-medium transition-all",
+                      "flex flex-1 items-center justify-center rounded-xl px-2 py-2 text-xs font-medium transition-all duration-200",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                        ? "bg-primary text-primary-foreground animate-in fade-in-0 zoom-in-95"
                         : "text-muted-foreground hover:bg-muted/20"
                     )}
                   >
-                    {tab.label}
+                    {isAdmin ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    ) : (
+                      tab.label
+                    )}
                   </button>
                 )
               })}
@@ -324,27 +349,19 @@ const TournamentPage = () => {
             {tournament.groups && tournament.groups.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-muted-foreground">Csoportok és mérkőzések</h3>
-                <Card className="bg-card/90 shadow-xl">
-                  <CardContent className="p-4">
-                    <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
-                  </CardContent>
-                </Card>
+                <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="players" className="mt-0 space-y-4">
-            <Card className="bg-card/90 shadow-xl border-0">
-              <CardContent className="p-0">
-                <TournamentPlayers
-                  tournament={tournament}
-                  players={players}
-                  userClubRole={userClubRole}
-                  userPlayerStatus={userPlayerStatus}
-                  userPlayerId={userPlayerId}
-                />
-              </CardContent>
-            </Card>
+            <TournamentPlayers
+              tournament={tournament}
+              players={players}
+              userClubRole={userClubRole}
+              userPlayerStatus={userPlayerStatus}
+              userPlayerId={userPlayerId}
+            />
           </TabsContent>
 
           <TabsContent value="boards" className="mt-0 space-y-4">
@@ -352,30 +369,22 @@ const TournamentPage = () => {
           </TabsContent>
 
           <TabsContent value="groups" className="mt-0 space-y-4">
-            <Card className="bg-card/90 shadow-xl border-0">
-              <CardContent className="p-4">
-                <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
-              </CardContent>
-            </Card>
+            <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
           </TabsContent>
 
           <TabsContent value="bracket" className="mt-0 space-y-4">
-            <Card className="bg-card/90 shadow-xl border-0">
-              <CardContent className="p-4">
-                <TournamentKnockoutBracket
-                  tournamentCode={tournament.tournamentId}
-                  userClubRole={userClubRole}
-                  tournamentPlayers={players}
-                  knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
-                  clubId={tournament.clubId?.toString()}
-                />
-              </CardContent>
-            </Card>
+            <TournamentKnockoutBracket
+              tournamentCode={tournament.tournamentId}
+              userClubRole={userClubRole}
+              tournamentPlayers={players}
+              knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
+              clubId={tournament.clubId?.toString()}
+            />
           </TabsContent>
 
           <TabsContent value="admin" className="mt-0 space-y-6">
             {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-              <Card className="bg-card/90 shadow-xl border-0">
+              <Card className="bg-card/90 shadow-lg shadow-black/30">
                 <CardContent className="p-4">
                   <TournamentGroupsGenerator
                     tournament={tournament}
@@ -387,7 +396,7 @@ const TournamentPage = () => {
             )}
 
             {user && user.isAdmin === true && tournament?.tournamentSettings?.status === 'finished' && (
-              <Card className="bg-destructive/15 shadow-xl border-0">
+              <Card className="bg-destructive/15 shadow-lg shadow-black/25">
                 <CardContent className="space-y-4">
                   <Alert variant="destructive">
                     <AlertTitle>Torna újranyitása</AlertTitle>

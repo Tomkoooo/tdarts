@@ -8,9 +8,11 @@ import {
   IconPlus,
   IconSettings,
   IconTable,
+  IconTarget,
   IconTrophy,
   IconUsers,
-  IconX,
+  IconTrash,
+  IconInfoCircle,
 } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -21,7 +23,6 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormField } from "@/components/ui/form-field"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 
@@ -231,270 +232,245 @@ export default function CreateTournamentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent
+        className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden border-0 bg-card/95 p-0 shadow-2xl shadow-black/40"
+      >
+        <DialogHeader className="border-b border-border/40 px-6 py-5">
           <DialogTitle className="text-2xl">Új torna létrehozása</DialogTitle>
           <DialogDescription>Hozz létre egy új tornát a klubodban</DialogDescription>
         </DialogHeader>
 
-        <div className="mb-6 flex items-center justify-between">
-          {steps.map((step, idx) => {
-            const StepIcon = step.icon
-            const isActive = currentStep === step.id
-            const isCompleted = getCurrentStepIndex() > idx
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="mb-6 flex items-center justify-between">
+            {steps.map((step, idx) => {
+              const StepIcon = step.icon
+              const isActive = currentStep === step.id
+              const isCompleted = getCurrentStepIndex() > idx
 
-            return (
-              <React.Fragment key={step.id}>
-                <button
-                  onClick={() => setCurrentStep(step.id as Step)}
-                  className={cn(
-                    "flex items-center gap-2 transition-all",
-                    isActive && "text-primary",
-                    !isActive && !isCompleted && "text-muted-foreground",
-                    isCompleted && "text-emerald-500",
-                  )}
-                >
-                  <div
+              return (
+                <React.Fragment key={step.id}>
+                  <button
+                    key={step.id}
+                    onClick={() => setCurrentStep(step.id as Step)}
                     className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-full transition-all",
-                      isActive && "bg-primary text-primary-foreground shadow-lg",
-                      !isActive && !isCompleted && "bg-muted",
-                      isCompleted && "bg-emerald-500 text-white",
+                      "flex items-center gap-2 text-sm transition-colors",
+                      isActive ? "text-primary" : isCompleted ? "text-emerald-500" : "text-muted-foreground",
                     )}
                   >
-                    {isCompleted ? <IconCheck className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
-                  </div>
-                  <span className="hidden text-sm font-medium sm:inline">{step.label}</span>
-                </button>
-                {idx < steps.length - 1 && (
-                  <div className="mx-2 flex-1">
-                    <Separator className={cn("transition-all", isCompleted ? "bg-emerald-500" : "bg-muted")}
-                    />
-                  </div>
-                )}
-              </React.Fragment>
-            )
-          })}
-        </div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <p className="font-medium">{error}</p>
-                  {subscriptionError && (
-                    <div className="text-sm">
-                      <p>
-                        Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span>
-                      </p>
-                      <p>
-                        Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}
-                      </p>
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-white/10",
+                        isActive && "ring-primary/40 bg-primary text-primary-foreground",
+                        !isActive && !isCompleted && "bg-muted/60",
+                        isCompleted && "ring-emerald-500/40 bg-emerald-500 text-white",
+                      )}
+                    >
+                      {isCompleted ? <IconCheck className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
+                    </div>
+                    <span className="hidden text-sm font-medium sm:inline">{step.label}</span>
+                  </button>
+                  {idx < steps.length - 1 && (
+                    <div className="mx-2 flex-1">
+                      <Separator className={cn("transition-all", isCompleted ? "bg-emerald-500" : "bg-muted")} />
                     </div>
                   )}
-                </div>
-                {subscriptionError && (
-                  <Link href="/#pricing" onClick={onClose} className="shrink-0">
-                    <Button size="sm" className="gap-2">
-                      <IconExternalLink className="h-4 w-4" /> Csomagok
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+                </React.Fragment>
+              )
+            })}
+          </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            {currentStep === "details" && (
-              <div className="space-y-4">
-                <FormField
-                  label="Torna neve"
-                  placeholder="Pl.: Nyári Darts Bajnokság 2024"
-                  value={settings.name}
-                  onChange={(event) => handleSettingsChange("name", event.target.value)}
-                  icon={<IconTrophy className="h-5 w-5" />}
-                  required
-                />
-                <FormField
-                  label="Leírás"
-                  placeholder="Add meg a torna részleteit..."
-                  value={settings.description}
-                  onChange={(event) => handleSettingsChange("description", event.target.value)}
-                  helperText="Opcionális, de segít a játékosoknak megérteni a torna célját."
-                />
-                <FormField
-                  type="datetime-local"
-                  label="Kezdés időpontja"
-                  value={new Date(settings.startDate).toLocaleString("sv-SE", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).replace(" ", "T")}
-                  onChange={(event) => handleSettingsChange("startDate", new Date(event.target.value))}
-                  icon={<IconCalendar className="h-5 w-5" />}
-                  required
-                />
-                <FormField
-                  label="Helyszín"
-                  placeholder="Pl.: Budapest, Sport Klub"
-                  value={settings.location}
-                  onChange={(event) => handleSettingsChange("location", event.target.value)}
-                  icon={<IconMapPin className="h-5 w-5" />}
-                />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField
-                    type="number"
-                    label="Nevezési díj (Ft)"
-                    placeholder="0"
-                    value={settings.entryFee}
-                    onChange={(event) => handleSettingsChange("entryFee", Number(event.target.value))}
-                  />
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>
+                <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Típus</label>
-                    <select
-                      value={settings.type}
-                      onChange={(event) => handleSettingsChange("type", event.target.value)}
-                      className="flex h-11 w-full rounded-lg border  bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="amateur">Amatőr</option>
-                      <option value="open">Open</option>
-                    </select>
+                    <p className="font-medium">{error}</p>
+                    {subscriptionError && (
+                      <div className="text-sm">
+                        <p>
+                          Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span>
+                        </p>
+                        <p>
+                          Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}
+                        </p>
+                      </div>
+                    )}
                   </div>
+                  {subscriptionError && (
+                    <Link href="/#pricing" onClick={onClose} className="shrink-0">
+                      <Button size="sm" className="gap-2">
+                        <IconExternalLink className="h-4 w-4" /> Csomagok
+                      </Button>
+                    </Link>
+                  )}
                 </div>
-                <FormField
-                  type="datetime-local"
-                  label="Nevezési határidő"
-                  value={new Date(settings.registrationDeadline).toLocaleString("sv-SE", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).replace(" ", "T")}
-                  onChange={(event) => handleSettingsChange("registrationDeadline", new Date(event.target.value))}
-                />
-              </div>
-            )}
+              </AlertDescription>
+            </Alert>
+          )}
 
-            {currentStep === "boards" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">Táblák</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Létrehozott táblák: <Badge variant="default">{boards.length} db</Badge>
-                    </p>
+          <Card className="bg-card/90 shadow-lg shadow-black/30">
+            <CardContent className="pt-6">
+              {currentStep === "details" && (
+                <div className="space-y-4">
+                  <FormField
+                    label="Torna neve"
+                    placeholder="Pl.: Nyári Darts Bajnokság 2024"
+                    value={settings.name}
+                    onChange={(event) => handleSettingsChange("name", event.target.value)}
+                    icon={<IconTrophy className="h-5 w-5" />}
+                    required
+                  />
+                  <FormField
+                    label="Leírás"
+                    placeholder="Add meg a torna részleteit..."
+                    value={settings.description}
+                    onChange={(event) => handleSettingsChange("description", event.target.value)}
+                    helperText="Opcionális, de segít a játékosoknak megérteni a torna célját."
+                  />
+                  <FormField
+                    type="datetime-local"
+                    label="Kezdés időpontja"
+                    value={new Date(settings.startDate).toLocaleString("sv-SE", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).replace(" ", "T")}
+                    onChange={(event) => handleSettingsChange("startDate", new Date(event.target.value))}
+                    icon={<IconCalendar className="h-5 w-5" />}
+                    required
+                  />
+                  <FormField
+                    label="Helyszín"
+                    placeholder="Pl.: Budapest, Sport Klub"
+                    value={settings.location}
+                    onChange={(event) => handleSettingsChange("location", event.target.value)}
+                    icon={<IconMapPin className="h-5 w-5" />}
+                  />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField
+                      type="number"
+                      label="Nevezési díj (Ft)"
+                      placeholder="0"
+                      value={settings.entryFee}
+                      onChange={(event) => handleSettingsChange("entryFee", Number(event.target.value))}
+                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Típus</label>
+                      <select
+                        value={settings.type}
+                        onChange={(event) => handleSettingsChange("type", event.target.value)}
+                        className="flex h-11 w-full rounded-lg bg-background/90 px-3 py-2 text-sm ring-1 ring-inset ring-white/10 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        <option value="amateur">Amatőr</option>
+                        <option value="open">Open</option>
+                      </select>
+                    </div>
                   </div>
-                  <Button onClick={handleAddBoard} size="sm" className="gap-2">
-                    <IconPlus className="h-4 w-4" /> Új tábla
-                  </Button>
                 </div>
-                <Separator />
-                <div className="max-h-[400px] space-y-3 overflow-y-auto">
-                  {boards.map((board, index) => (
-                    <Card key={index}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            <span className="font-bold">{index + 1}</span>
+              )}
+
+              {currentStep === "boards" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Táblák beállítása</h3>
+                    <Button onClick={handleAddBoard} variant="outline" className="gap-2">
+                      <IconPlus className="h-4 w-4" />
+                      Új tábla
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Adj meg annyi táblát, amennyi egyszerre használható lesz a tornán.
+                  </p>
+                  <div className="space-y-3">
+                    {boards.map((board, index) => (
+                      <div
+                        key={board.boardNumber}
+                        className="rounded-xl bg-muted/15 px-4 py-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 space-y-2">
+                            <label className="text-sm font-medium">Tábla {board.boardNumber}</label>
+                            <input
+                              type="text"
+                              value={board.name}
+                              onChange={(event) => handleBoardChange(index, "name", event.target.value)}
+                              className="h-11 w-full rounded-lg border border-border/40 bg-background px-3 py-2 text-sm"
+                            />
                           </div>
-                          <FormField
-                            placeholder={`Tábla ${index + 1}`}
-                            value={board.name}
-                            onChange={(event) => handleBoardChange(index, "name", event.target.value)}
-                            className="flex-1"
-                          />
                           {boards.length > 1 && (
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleRemoveBoard(index)}
-                              className="text-destructive"
+                              className="text-destructive hover:text-destructive"
                             >
-                              <IconX className="h-5 w-5" />
+                              <IconTrash className="h-5 w-5" />
                             </Button>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {currentStep === "settings" && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Formátum</label>
-                  <select
-                    value={settings.format}
-                    onChange={(event) => handleSettingsChange("format", event.target.value)}
-                    className="flex h-11 w-full rounded-lg border  bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="group">Csak csoportkör</option>
-                    <option value="knockout">Csak egyenes kiesés</option>
-                    <option value="group_knockout">Csoportkör + Egyenes kiesés</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField
-                    type="number"
-                    label="Kezdő pontszám"
-                    value={settings.startingScore}
-                    onChange={(event) => handleSettingsChange("startingScore", Number(event.target.value))}
-                    helperText="101-1001"
-                  />
-                  <FormField
-                    type="number"
-                    label="Max. játékosok"
-                    value={settings.maxPlayers}
-                    onChange={(event) => handleSettingsChange("maxPlayers", Number(event.target.value))}
-                    helperText="Min. 4 fő"
-                    icon={<IconUsers className="h-5 w-5" />}
-                    required
-                  />
-                </div>
-                <FormField
-                  label="Torna jelszó"
-                  placeholder="Jelszó a táblákhoz való csatlakozáshoz"
-                  value={settings.tournamentPassword}
-                  onChange={(event) => handleSettingsChange("tournamentPassword", event.target.value)}
-                  helperText="Ezt a jelszót kell megadni a játékosoknak a csatlakozáshoz"
-                  required
-                />
-                {availableLeagues.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Liga hozzárendelés</label>
-                    <select
+              {currentStep === "settings" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField
+                      type="number"
+                      label="Maximális létszám"
+                      placeholder="16"
+                      value={settings.maxPlayers}
+                      onChange={(event) => handleSettingsChange("maxPlayers", Number(event.target.value))}
+                      icon={<IconUsers className="h-5 w-5" />}
+                      required
+                    />
+                    <FormField
+                      type="number"
+                      label="Kezdő pontszám"
+                      placeholder="501"
+                      value={settings.startingScore}
+                      onChange={(event) => handleSettingsChange("startingScore", Number(event.target.value))}
+                      icon={<IconTarget className="h-5 w-5" />}
+                      required
+                    />
+                    <FormField
+                      label="Torna jelszó"
+                      placeholder="Add meg a jelszót a jelszóval védett tornához"
+                      value={settings.tournamentPassword}
+                      onChange={(event) => handleSettingsChange("tournamentPassword", event.target.value)}
+                      required
+                    />
+                    <FormField
+                      label="Ligához csatolás"
                       value={selectedLeagueId}
                       onChange={(event) => setSelectedLeagueId(event.target.value)}
-                      className="flex h-11 w-full rounded-lg border  bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Nincs liga hozzárendelés</option>
-                      {availableLeagues
-                        .filter((league) => league.isActive)
-                        .map((league) => (
-                          <option key={league._id} value={league._id}>
-                            {league.name}
-                          </option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground">
-                      Ha kiválasztasz egy ligát, a verseny eredményei automatikusan hozzáadódnak a liga ranglistához.
-                    </p>
+                      helperText="Válassz ligát, ha szeretnéd a tornát ligához kötni."
+                      selectOptions={availableLeagues.map((league) => ({
+                        label: league.name,
+                        value: league._id,
+                      }))}
+                      placeholder="Válassz ligát"
+                    />
                   </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <Alert className="border-primary/60 bg-primary/10">
+                    <AlertDescription className="flex items-start gap-3 text-sm">
+                      <IconInfoCircle className="h-5 w-5 text-primary" />
+                      <span>
+                        A torna jelszó beállítása kötelező, hogy csak meghívott játékosok csatlakozhassanak.
+                      </span>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <DialogFooter className="flex flex-col gap-3 border-t border-border/40 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Mégse
           </Button>

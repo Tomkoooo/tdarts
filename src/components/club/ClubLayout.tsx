@@ -58,9 +58,12 @@ export default function ClubLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="relative flex h-48 flex-col justify-end overflow-hidden bg-gradient-to-br from-primary/90 via-primary/70 to-accent/70 md:h-64">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.1),_transparent_50%)]" />
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-8">
+      <div className="relative flex h-48 flex-col justify-end overflow-hidden bg-gradient-to-br from-[#310c0c] via-[#4b1018] to-[#241217] pb-12 md:h-64 md:pb-16">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.18),_transparent_60%)]"
+          style={{ maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 55%, rgba(0,0,0,0))" }}
+        />
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-6 md:pb-10">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 backdrop-blur md:h-16 md:w-16">
               <svg className="h-6 w-6 text-white md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -75,24 +78,24 @@ export default function ClubLayout({
         </div>
       </div>
 
-      <div className="mx-auto -mt-4 w-full max-w-6xl px-4 pb-12 md:-mt-8">
+      <div className="relative z-10 mx-auto -mt-10 w-full max-w-6xl px-4 pb-12 md:-mt-14">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="rounded-2xl border-0 bg-card/80 p-2 shadow-xl backdrop-blur">
-            <TabsList className="flex w-full gap-0.5 overflow-x-auto rounded-xl bg-muted/20 p-1 sm:flex-wrap sm:justify-between">
+          <div className="rounded-2xl bg-card/85/95 p-2 shadow-lg shadow-black/30 backdrop-blur">
+            <TabsList className="flex w-full gap-0.5 overflow-x-auto rounded-2xl bg-transparent p-1 sm:flex-wrap sm:justify-between [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {tabs.map((tab) => (
                 <TabsTrigger
                   key={tab.key}
                   value={tab.key}
-                  className="flex min-w-[100px] items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:min-w-0 sm:px-3"
+                  className="flex min-w-[60px] items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/15 data-[state=active]:bg-primary/20 data-[state=active]:text-primary sm:min-w-[80px] sm:px-2.5 sm:text-sm"
                 >
-                  <tab.icon className="h-4 w-4" />
+                  <tab.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="hidden xs:inline sm:inline">{tab.label}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
 
-          <div className="rounded-2xl border-0 bg-card/90 p-6 shadow-2xl backdrop-blur md:p-8">
+          <div className="rounded-2xl bg-card/92 p-6 shadow-xl shadow-black/35 md:p-8">
             <TabsContent value="summary" className="mt-0">
               {summary}
             </TabsContent>

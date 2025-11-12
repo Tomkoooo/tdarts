@@ -225,8 +225,8 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       )}
 
       {leagues.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center space-y-4">
+        <Card className="bg-card/85 shadow-lg shadow-black/30">
+          <CardContent className="space-y-4 px-6 py-12 text-center">
             <IconTrophy size={48} className="mx-auto text-muted-foreground/40" />
             <div className="space-y-1">
               <h3 className="text-lg font-semibold text-foreground/80">Még nincsenek ligák</h3>

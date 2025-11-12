@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import { IconQrcode, IconCopy, IconLogin } from "@tabler/icons-react"
+import { IconQrcode, IconCopy, IconLogin, IconMapPin } from "@tabler/icons-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Club } from "@/interface/club.interface"
@@ -58,7 +58,7 @@ export function ClubSummarySection({
               </p>
               <div className="flex flex-wrap gap-4 items-center text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
-                  📍 
+                  <IconMapPin className="h-4 w-4" />
                   <span className="font-medium text-foreground">{club.location}</span>
                 </span>
               </div>

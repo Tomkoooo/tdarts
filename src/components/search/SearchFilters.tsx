@@ -35,7 +35,7 @@ export function SearchFiltersPanel({
   }
 
   return (
-    <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
+    <Card className="bg-card/85 shadow-md shadow-black/20 backdrop-blur-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl">Szűrők</CardTitle>

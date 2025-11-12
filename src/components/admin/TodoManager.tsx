@@ -424,25 +424,25 @@ export default function TodoManager() {
             status="pending"
             title="Függőben"
             icon={IconClock}
-            color="bg-warning/10 border 
+            color="bg-amber-200/20 border border-amber-200/40"
           />
           <KanbanColumn
             status="in-progress"
             title="Folyamatban"
             icon={IconProgress}
-            color="bg-info/10 border 
+            color="bg-sky-200/20 border border-sky-200/40"
           />
           <KanbanColumn
             status="completed"
             title="Befejezve"
             icon={IconCircleCheck}
-            color="bg-success/10 border 
+            color="bg-emerald-200/20 border border-emerald-200/40"
           />
           <KanbanColumn
             status="cancelled"
             title="Törölve"
             icon={IconCircleX}
-            color="bg-base-300/10 border 
+            color="bg-muted/40 border border-muted/60"
           />
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { IconMapPin, IconUsers } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TournamentResults } from "./TournamentResults"
@@ -116,28 +117,32 @@ export function InitialView({
           <CardHeader className="px-0">
             <CardTitle className="text-2xl font-bold">Népszerű Klubbok</CardTitle>
           </CardHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {popularClubs
               .slice((clubsPage - 1) * itemsPerPage, clubsPage * itemsPerPage)
               .map((club, index) => (
                 <Link key={club._id} href={`/clubs/${club._id}`}>
-                  <Card className="transition-all hover:shadow-lg hover:-translate-y-0.5 border-primary/20 bg-card/50 backdrop-blur-sm">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-                          <span className="text-lg font-bold text-primary">
-                            #{(clubsPage - 1) * itemsPerPage + index + 1}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-lg truncate">
-                            {club.name}
-                          </h4>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p>📍 {club.location}</p>
-                            <p>👥 {club.memberCount} tag</p>
-                          </div>
-                        </div>
+                  <Card
+                    className="bg-card/88 shadow-md shadow-black/20 transition-transform duration-200 hover:-translate-y-1"
+                  >
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                        <span className="text-lg font-bold text-primary">
+                          #{(clubsPage - 1) * itemsPerPage + index + 1}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h4 className="truncate text-lg font-semibold text-foreground">
+                          {club.name}
+                        </h4>
+                        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <IconMapPin className="h-3.5 w-3.5" />
+                          {club.location}
+                        </p>
+                        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <IconUsers className="h-3.5 w-3.5" />
+                          {club.memberCount} tag
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
