@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { IconTrophy, IconPlus } from "@tabler/icons-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import TournamentList from "./TournamentList"
 
 interface ClubTournamentsSectionProps {

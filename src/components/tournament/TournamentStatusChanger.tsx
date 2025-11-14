@@ -7,12 +7,12 @@ import {
   Tournament,
 } from "@/interface/tournament.interface"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/Button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/Badge"
+import { Input } from "@/components/ui/Input"
 import { Separator } from "@/components/ui/separator"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -541,7 +541,6 @@ export default function TournamentStatusChanger({
                             >
                               <div className="flex flex-col">
                                 <span className="font-medium">{player.name || player._id}</span>
-                                {player.email && <span className="text-xs text-muted-foreground">{player.email}</span>}
                               </div>
                               <input
                                 type="checkbox"
@@ -610,7 +609,7 @@ export default function TournamentStatusChanger({
             >
               {action === "generate-groups" ? (
                 <span className="flex items-center gap-2">
-                  <LoadingSpinner size="small" />
+                  <LoadingSpinner size="sm" />
                   Mentés...
                 </span>
               ) : (

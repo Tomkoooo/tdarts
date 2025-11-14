@@ -19,10 +19,11 @@ import Link from "next/link"
 
 import { TournamentSettings } from "@/interface/tournament.interface"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormField } from "@/components/ui/form-field"
-import { Card, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/Label"
+import { Card, CardContent } from "@/components/ui/Card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 
@@ -444,17 +445,26 @@ export default function CreateTournamentModal({
                       onChange={(event) => handleSettingsChange("tournamentPassword", event.target.value)}
                       required
                     />
-                    <FormField
-                      label="Ligához csatolás"
-                      value={selectedLeagueId}
-                      onChange={(event) => setSelectedLeagueId(event.target.value)}
-                      helperText="Válassz ligát, ha szeretnéd a tornát ligához kötni."
-                      selectOptions={availableLeagues.map((league) => ({
-                        label: league.name,
-                        value: league._id,
-                      }))}
-                      placeholder="Válassz ligát"
-                    />
+                    <div className="space-y-2">
+                      <Label className="text-foreground font-medium">
+                        Ligához csatolás
+                      </Label>
+                      <select
+                        value={selectedLeagueId}
+                        onChange={(event) => setSelectedLeagueId(event.target.value)}
+                        className="flex h-11 w-full rounded-lg bg-white/8 backdrop-blur-md border border-white/15 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-white/12 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Válassz ligát</option>
+                        {availableLeagues.map((league) => (
+                          <option key={league._id} value={league._id}>
+                            {league.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-muted-foreground">
+                        Válassz ligát, ha szeretnéd a tornát ligához kötni.
+                      </p>
+                    </div>
                   </div>
                   <Alert className="border-primary/60 bg-primary/10">
                     <AlertDescription className="flex items-start gap-3 text-sm">

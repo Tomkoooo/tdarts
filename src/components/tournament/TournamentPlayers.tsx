@@ -22,9 +22,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
+import { Button } from "@/components/ui/Button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -609,7 +609,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         isOpen={notificationModal.isOpen}
         onClose={() => setNotificationModal({ isOpen: false, player: null })}
         player={notificationModal.player}
-        tournamentId={code}
+        tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
       />
 
       {selectedPlayerForMatches && (

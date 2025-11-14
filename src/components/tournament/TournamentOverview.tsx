@@ -17,9 +17,9 @@ import {
   IconPhone,
   IconExternalLink,
 } from "@tabler/icons-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
+import { Button } from "@/components/ui/Button"
 import { Separator } from "@/components/ui/separator"
 
 interface TournamentOverviewProps {
@@ -57,7 +57,7 @@ const statusConfig: Record<
 const formatDescription = (text: string) => {
   if (!text) return []
 
-  const parts: Array<string | JSX.Element> = []
+  const parts: Array<string | React.ReactElement> = []
   const regex = /((?:https?:\/\/|www\.)[^\s]+)/g
   let lastIndex = 0
   let match

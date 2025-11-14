@@ -2,9 +2,9 @@
 
 import * as React from "react"
 import { IconX } from "@tabler/icons-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/Button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Label } from "@/components/ui/Label"
 import { Separator } from "@/components/ui/separator"
 
 interface SearchFilters {

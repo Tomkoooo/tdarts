@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { IconMapPin, IconUsers } from "@tabler/icons-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TournamentResults } from "./TournamentResults"
 import PlayerCard from "@/components/player/PlayerCard"

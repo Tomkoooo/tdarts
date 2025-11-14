@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/Badge"
 import { cn } from "@/lib/utils"
 
 export type TournamentStatus = 
@@ -21,7 +21,11 @@ export type PlayerStatus =
   | "playing" 
   | "eliminated"
 
-type StatusType = TournamentStatus | BoardStatus | PlayerStatus
+export type MatchStatus = 
+  | "scheduled" 
+  | "in_progress"
+
+type StatusType = TournamentStatus | BoardStatus | PlayerStatus | MatchStatus
 
 interface StatusBadgeProps {
   status: StatusType
@@ -50,6 +54,10 @@ const statusConfig: Record<StatusType, {
   "checked-in": { label: "Bejelentkezett", variant: "success" },
   playing: { label: "Játszik", variant: "default" },
   eliminated: { label: "Kiesett", variant: "secondary" },
+  
+  // Match statuses (finished and cancelled are already defined in Tournament statuses)
+  scheduled: { label: "Ütemezett", variant: "secondary" },
+  in_progress: { label: "Folyamatban", variant: "warning" },
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {

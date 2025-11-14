@@ -2,9 +2,9 @@
 
 import * as React from "react"
 import { IconSearch, IconX, IconFilter } from "@tabler/icons-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/Input"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
 
 interface SearchHeaderProps {
   query: string

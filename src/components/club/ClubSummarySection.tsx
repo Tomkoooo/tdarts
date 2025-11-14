@@ -4,8 +4,8 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { IconQrcode, IconCopy, IconLogin, IconMapPin } from "@tabler/icons-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import { Club } from "@/interface/club.interface"
 
 interface ClubSummarySectionProps {

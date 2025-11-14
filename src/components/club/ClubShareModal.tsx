@@ -5,8 +5,8 @@ import { QRCodeSVG } from 'qrcode.react'
 import { IconPrinter, IconCopy } from '@tabler/icons-react'
 import toast from 'react-hot-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 interface ClubShareModalProps {
   isOpen: boolean

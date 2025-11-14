@@ -3,7 +3,7 @@ import { TournamentSettings } from '@/interface/tournament.interface';
 import { IconX, IconTarget, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 interface EditTournamentModalProps {
   isOpen: boolean;

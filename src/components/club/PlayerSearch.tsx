@@ -3,9 +3,9 @@ import debounce from 'lodash.debounce'
 import axios from 'axios'
 import { IconSearch, IconUserPlus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Input } from "@/components/ui/Input"
+import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from "@/components/ui/Card"
 
 interface PlayerSearchProps {
   onPlayerSelected: (player: any) => void

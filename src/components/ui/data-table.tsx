@@ -15,8 +15,8 @@ import {
 } from "@tanstack/react-table"
 import { IconArrowUp, IconArrowDown, IconSearch, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 

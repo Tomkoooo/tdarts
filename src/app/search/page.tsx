@@ -11,7 +11,7 @@ import InitialView from '@/components/search/InitialView'
 import EmptyState from '@/components/search/EmptyState'
 import PlayerCard from '@/components/player/PlayerCard'
 import PlayerStatsModal from '@/components/player/PlayerStatsModal'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import Link from 'next/link'
 import { IconMoodSad, IconMapPin, IconUsers } from '@tabler/icons-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'

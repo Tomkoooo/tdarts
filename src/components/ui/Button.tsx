@@ -99,23 +99,41 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, disableMotion = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : disableMotion ? "button" : motion.button
+    if (asChild) {
+      // Extract motion props for Slot (eslint-disable-next-line for unused destructured vars)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { variants, initial, whileHover, whileTap, ...slotProps } = props as any
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...slotProps}
+        />
+      )
+    }
     
-    const motionProps = disableMotion
-      ? {}
-      : {
-          variants: hoverLift,
-          initial: "rest",
-          whileHover: "hover",
-          whileTap: "tap",
-        }
+    if (disableMotion) {
+      // Extract motion props for regular button
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { variants, initial, whileHover, whileTap, ...buttonProps } = props as any
+      return (
+        <button
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...buttonProps}
+        />
+      )
+    }
     
     return (
-      <Comp
+      <motion.button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        {...motionProps}
-        {...props}
+        variants={hoverLift}
+        initial="rest"
+        whileHover="hover"
+        whileTap="tap"
+        {...(props as HTMLMotionProps<"button">)}
       />
     )
   }

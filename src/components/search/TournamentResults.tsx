@@ -3,9 +3,9 @@
 import * as React from "react"
 import { IconList, IconCalendar } from "@tabler/icons-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/Button"
+import { Card, CardContent } from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
 import TournamentCard from "@/components/tournament/TournamentCard"
 
 interface Tournament {

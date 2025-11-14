@@ -9,8 +9,8 @@ import {
   IconTrash,
   IconDoorExit,
 } from "@tabler/icons-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import PlayerSearch from "./PlayerSearch"
 import MemberList from "./MemberList"
 import QRCodeModal from "./QRCodeModal"

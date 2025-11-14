@@ -1,6 +1,6 @@
 import { IconTrophy } from '@tabler/icons-react'
 import TournamentCard from '@/components/tournament/TournamentCard'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from "@/components/ui/Card"
 
 interface TournamentListProps {
   tournaments: Array<{

@@ -81,6 +81,7 @@ export const forgotPasswordSchema = z.object({
 })
 
 export const resetPasswordSchema = z.object({
+  email: emailValidator,
   password: passwordValidator,
   confirmPassword: z.string(),
   token: z.string().min(1, "Érvénytelen token"),

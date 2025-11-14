@@ -19,20 +19,20 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/Card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/Input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/Label";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -1219,7 +1219,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 />
               </div>
             </div>
-            <ScrollBar orientation="horizontal" className="h-3" />
+            <ScrollBar className="h-3" />
           </ScrollArea>
         </div>
 
@@ -1322,7 +1322,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     )
                   })}
                 </div>
-                <ScrollBar orientation="vertical" />
+                <ScrollBar />
               </ScrollArea>
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">

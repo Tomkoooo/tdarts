@@ -11,9 +11,9 @@ import {
 } from '@tabler/icons-react'
 import { Club } from '@/interface/club.interface'
 import PlayerStatsModal from '@/components/player/PlayerStatsModal'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from "@/components/ui/Card"
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,

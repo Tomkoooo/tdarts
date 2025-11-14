@@ -2,8 +2,8 @@ import React from "react"
 import { Player } from "@/interface/player.interface"
 import { IconChevronRight, IconMedal, IconMedal2, IconAward, IconTrophy } from "@tabler/icons-react"
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 

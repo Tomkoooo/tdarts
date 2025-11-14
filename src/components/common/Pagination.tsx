@@ -1,6 +1,6 @@
 import React from 'react';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
 interface PaginationProps {

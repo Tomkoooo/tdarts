@@ -16,11 +16,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormSuccess,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/Input"
+import { Button } from "@/components/ui/Button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { cn } from "@/lib/utils"
 import { createTournamentSchema, CreateTournamentFormData } from "@/lib/validations"
 
@@ -39,7 +38,7 @@ export function CreateTournamentFormEnhanced({
   const [submitSuccess, setSubmitSuccess] = React.useState(false)
 
   const form = useForm<CreateTournamentFormData>({
-    resolver: zodResolver(createTournamentSchema),
+    resolver: zodResolver(createTournamentSchema) as any,
     defaultValues: {
       name: "",
       description: "",
@@ -414,8 +413,11 @@ export function CreateTournamentFormEnhanced({
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription icon={<IconInfoCircle className="w-4 h-4" />}>
-                      A játékosoknak ezt a jelszót kell megadniuk a csatlakozáshoz
+                    <FormDescription>
+                      <div className="flex items-center gap-2">
+                        <IconInfoCircle className="w-4 h-4" />
+                        <span>A játékosoknak ezt a jelszót kell megadniuk a csatlakozáshoz</span>
+                      </div>
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -427,9 +429,9 @@ export function CreateTournamentFormEnhanced({
 
         {/* Submit Success Message */}
         {submitSuccess && (
-          <FormSuccess>
+          <div className="text-sm font-medium text-success">
             Verseny sikeresen létrehozva!
-          </FormSuccess>
+          </div>
         )}
 
         {/* Actions */}

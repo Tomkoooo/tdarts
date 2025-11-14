@@ -1,9 +1,9 @@
 import * as React from "react"
-import { Label } from "@/components/ui/label"
-import { Input, type InputProps } from "@/components/ui/input"
+import { Label } from "@/components/ui/Label"
+import { Input, type InputProps } from "@/components/ui/Input"
 import { cn } from "@/lib/utils"
 
-export interface FormFieldProps extends InputProps {
+export interface FormFieldProps extends Omit<InputProps, 'error'> {
   label?: string
   error?: string
   helperText?: string

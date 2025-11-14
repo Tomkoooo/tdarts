@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import QRCode from 'react-qr-code'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import {
   Dialog,
   DialogContent,

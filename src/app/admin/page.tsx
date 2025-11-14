@@ -11,8 +11,8 @@ import {
   IconRefresh,
 } from "@tabler/icons-react"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const PANEL_SHADOW = "shadow-lg shadow-black/35"

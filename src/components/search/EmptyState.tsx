@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { IconSearch } from "@tabler/icons-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/Card"
 
 interface EmptyStateProps {
   title: string

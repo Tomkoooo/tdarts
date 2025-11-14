@@ -11,10 +11,9 @@ import {
   FormProvider,
   useFormContext,
 } from "react-hook-form"
-import { IconAlertCircle, IconCheck } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
+import { Label } from "@/components/ui/Label"
 
 const Form = FormProvider
 
@@ -92,21 +91,17 @@ const FormLabel = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
     required?: boolean
   }
->(({ className, required, children, ...props }, ref) => {
+>(({ className, required, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
   return (
     <Label
       ref={ref}
-      className={cn(
-        error && "text-destructive",
-        "font-medium",
-        className
-      )}
+      className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}
       {...props}
     >
-      {children}
+      {props.children}
       {required && <span className="text-destructive ml-1">*</span>}
     </Label>
   )
@@ -137,32 +132,25 @@ FormControl.displayName = "FormControl"
 
 const FormDescription = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement> & {
-    icon?: React.ReactNode
-  }
->(({ className, icon, children, ...props }, ref) => {
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => {
   const { formDescriptionId } = useFormField()
 
   return (
     <p
       ref={ref}
       id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground flex items-start gap-2", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
-    >
-      {icon && <span className="mt-0.5">{icon}</span>}
-      <span>{children}</span>
-    </p>
+    />
   )
 })
 FormDescription.displayName = "FormDescription"
 
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement> & {
-    showIcon?: boolean
-  }
->(({ className, children, showIcon = true, ...props }, ref) => {
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message) : children
 
@@ -174,42 +162,14 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn(
-        "text-sm font-medium text-destructive flex items-start gap-2 animate-in fade-in-50 slide-in-from-top-1",
-        className
-      )}
+      className={cn("text-sm font-medium text-destructive", className)}
       {...props}
     >
-      {showIcon && <IconAlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-      <span>{body}</span>
+      {body}
     </p>
   )
 })
 FormMessage.displayName = "FormMessage"
-
-const FormSuccess = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
-  if (!children) {
-    return null
-  }
-
-  return (
-    <p
-      ref={ref}
-      className={cn(
-        "text-sm font-medium text-success flex items-center gap-2 animate-in fade-in-50 slide-in-from-top-1",
-        className
-      )}
-      {...props}
-    >
-      <IconCheck className="w-4 h-4 flex-shrink-0" />
-      <span>{children}</span>
-    </p>
-  )
-})
-FormSuccess.displayName = "FormSuccess"
 
 export {
   useFormField,
@@ -219,7 +179,5 @@ export {
   FormControl,
   FormDescription,
   FormMessage,
-  FormSuccess,
   FormField,
 }
-

@@ -6,9 +6,9 @@ import { League } from '@/interface/league.interface';
 import CreateLeagueModal from './CreateLeagueModal';
 import LeagueDetailModal from './LeagueDetailModal';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from '@/components/ui/Badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 

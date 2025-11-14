@@ -28,10 +28,10 @@ import {
 } from "@tabler/icons-react"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils"
 import {
   Tooltip as UiTooltip,
@@ -90,7 +90,7 @@ const chartOptions: ChartOptions<"line"> = {
       backgroundColor: "rgba(12,12,15,0.92)",
       borderColor: "rgba(255,255,255,0.08)",
       borderWidth: 1,
-      titleFont: { size: 12, weight: "600" },
+      titleFont: { size: 12, weight: 600 },
       bodyFont: { size: 11 },
       padding: 10,
     },

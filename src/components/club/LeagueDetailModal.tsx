@@ -29,12 +29,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Input } from "@/components/ui/Input";
+import { Label } from '@/components/ui/Label';
 ;
 
 interface LeagueDetailModalProps {
@@ -101,10 +101,9 @@ export default function LeagueDetailModal({
         const data = await response.json();
         setLeagueStats(data);
       } else {
-        setError('Failed to load league details');
+        console.error('Failed to load league details');
       }
     } catch (err) {
-      setError('Error loading league details');
       console.error('Error fetching league stats:', err);
     } finally {
       setLoading(false);

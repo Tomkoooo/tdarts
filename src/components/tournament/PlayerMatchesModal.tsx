@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconTrophy, IconClock, IconX, IconChartBar } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 interface Throw {
   score: number;
@@ -256,17 +256,13 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
                         <div>
                           <span className="font-medium text-foreground">Átlag:</span>
                           <span className="ml-2">
-                            {match.stats?.player1?.average && match.stats?.player2?.average
-                              ? `${match.stats.player1.average.toFixed(1)} - ${match.stats.player2.average.toFixed(1)}`
-                              : match.average?.toFixed(1) || "N/A"}
+                            {match.average ? match.average.toFixed(1) : "N/A"}
                           </span>
                         </div>
                         <div>
                           <span className="font-medium text-foreground">Checkout:</span>
                           <span className="ml-2">
-                            {match.stats?.player1?.highestCheckout || match.stats?.player2?.highestCheckout
-                              ? `${match.stats.player1?.highestCheckout || 0} / ${match.stats.player2?.highestCheckout || 0}`
-                              : match.checkout || "—"}
+                            {match.checkout || "—"}
                           </span>
                         </div>
                       </div>

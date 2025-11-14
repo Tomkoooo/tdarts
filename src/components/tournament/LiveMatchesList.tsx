@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { getLiveMatches } from '@/lib/socketApi';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/Badge';
 
 interface LiveMatchesListProps {
   tournamentCode: string;

@@ -5,8 +5,8 @@ import { ColumnDef } from "@tanstack/react-table"
 import { IconDots, IconEye, IconTrash, IconUserCheck } from "@tabler/icons-react"
 
 import { DataTable } from "@/components/ui/data-table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {

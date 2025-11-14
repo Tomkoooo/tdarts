@@ -8,9 +8,9 @@ import {
   IconDotsVertical,
   IconChevronRight
 } from '@tabler/icons-react'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/Badge'
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
+import { Button } from '@/components/ui/Button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,21 +22,23 @@ import { cn } from '@/lib/utils'
 interface TournamentCardProps {
   tournament: {
     _id: string
-    tournamentId: string
-    tournamentSettings: {
-      name: string
-      startDate: string
+    tournamentId?: string
+    tournamentSettings?: {
+      name?: string
+      startDate?: string
       location?: string
       type?: 'amateur' | 'open'
       entryFee?: number
       maxPlayers?: number
       registrationDeadline?: string
-      status: 'pending' | 'group-stage' | 'knockout' | 'finished'
+      status?: 'pending' | 'group-stage' | 'knockout' | 'finished' | string
     }
+    name?: string
+    startDate?: string
     tournamentPlayers?: Array<any>
     clubId?: {
       name: string
-    }
+    } | string
   }
   userRole?: 'admin' | 'moderator' | 'member' | 'none'
   showActions?: boolean
@@ -75,9 +77,10 @@ export default function TournamentCard({
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
   const isFull = maxPlayers > 0 && playerCount >= maxPlayers
   const entryFee = tournament.tournamentSettings?.entryFee || 0
+  const tournamentId = tournament.tournamentId || tournament._id
 
   return (
-    <Link href={`/tournaments/${tournament.tournamentId}`} className="block">
+    <Link href={`/tournaments/${tournamentId}`} className="block">
       <Card className="border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col transition-all hover:shadow-2xl hover:bg-card/70 cursor-pointer">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-start justify-between gap-3">
@@ -85,7 +88,9 @@ export default function TournamentCard({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <IconTrophy className="w-4 h-4" />
               <span className="truncate">
-                {tournament.clubId?.name || 'Torna részletei'}
+                {typeof tournament.clubId === 'object' && tournament.clubId?.name 
+                  ? tournament.clubId.name 
+                  : 'Torna részletei'}
               </span>
             </div>
             <h3 className="text-lg font-semibold text-foreground leading-tight line-clamp-2">
