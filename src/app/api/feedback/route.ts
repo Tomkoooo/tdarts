@@ -65,6 +65,21 @@ export async function POST(request: NextRequest) {
           <p>Ha további információra van szükség, válaszoljon erre az emailre.</p>
         `
       });
+      await sendEmail({
+        to: ['toth.tamas@sironic.hu', 'skoda.david@sironic.hu'],
+        subject: `Hibabejelentés fogadva: ${title}`,
+        text: `Hibabejelentés fogadva: ${title}`,
+        html: `
+          <h2>Hibabejelentés fogadva: ${title}</h2>
+          <p>Kategória: ${category}</p>
+          <p>Email: ${email}</p>
+          <p>Oldal: ${page}</p>
+          <p>Eszköz: ${device}</p>
+          <p>Böngésző: ${browser}</p>
+          <p>UserAgent: ${userAgent}</p>
+          <p>Felhasználó ID: ${userId}</p>
+        `
+      });
     } catch (emailError) {
       console.error('Error sending confirmation email:', emailError);
       // Email hiba nem akadályozza a hibabejelentés mentését
