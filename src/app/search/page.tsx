@@ -14,6 +14,7 @@ import PlayerStatsModal from '@/components/player/PlayerStatsModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { IconMoodSad, IconMapPin, IconUsers } from '@tabler/icons-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 // Interfaces
 interface SearchFilters {
@@ -216,7 +217,7 @@ export default function SearchPage() {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-24">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <LoadingSpinner size="lg" />
         </div>
       )
     }

@@ -19,14 +19,23 @@ const config: Config = {
         primary: {
           DEFAULT: "oklch(51% 0.18 16)",
           foreground: "oklch(100% 0 0)",
+          hover: "oklch(calc(51% + 0.05) 0.18 16)",
+          active: "oklch(calc(51% - 0.03) calc(0.18 * 1.1) 16)",
+          disabled: "oklch(calc(51% * 0.7) calc(0.18 * 0.6) 16) / 0.5",
+          dark: "oklch(41% 0.18 16)",
+          darker: "oklch(31% 0.18 16)",
         },
         secondary: {
           DEFAULT: "oklch(18% 0.03 12)",
           foreground: "oklch(95% 0.005 0)",
+          hover: "oklch(calc(18% + 0.05) 0.03 12)",
+          active: "oklch(calc(18% - 0.03) calc(0.03 * 1.1) 12)",
         },
         destructive: {
           DEFAULT: "oklch(60% 0.184 16)",
           foreground: "oklch(100% 0 0)",
+          hover: "oklch(calc(60% + 0.05) 0.184 16)",
+          active: "oklch(calc(60% - 0.03) calc(0.184 * 1.1) 16)",
         },
         muted: {
           DEFAULT: "oklch(15% 0.025 12)",
@@ -35,6 +44,8 @@ const config: Config = {
         accent: {
           DEFAULT: "oklch(51% 0.18 16)",
           foreground: "oklch(100% 0 0)",
+          hover: "oklch(calc(51% + 0.05) 0.18 16)",
+          active: "oklch(calc(51% - 0.03) calc(0.18 * 1.1) 16)",
         },
         popover: {
           DEFAULT: "oklch(12% 0.025 12)",
@@ -44,6 +55,25 @@ const config: Config = {
           DEFAULT: "oklch(12% 0.025 12)",
           foreground: "oklch(95% 0.005 0)",
         },
+        // Glass Material Colors
+        glass: {
+          bg: "oklch(100% 0 0 / 0.08)",
+          bgElevated: "oklch(100% 0 0 / 0.12)",
+          bgModal: "oklch(100% 0 0 / 0.15)",
+          border: "oklch(100% 0 0 / 0.10)",
+          borderFocus: "oklch(100% 0 0 / 0.20)",
+          innerGlow: "oklch(100% 0 0 / 0.05)",
+          shadow: "oklch(0% 0 0 / 0.20)",
+        },
+      },
+      backdropBlur: {
+        xs: "2px",
+        sm: "4px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "24px",
+        "3xl": "32px",
       },
       borderRadius: {
         lg: "0.75rem",

@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8 pb-12 pt-4">
-      <Card className={`relative overflow-hidden bg-gradient-to-br from-primary/20 via-background to-background p-8 ${PANEL_SHADOW}`}>
+      <Card elevation="elevated" className={`relative overflow-hidden bg-gradient-to-br from-primary/20 via-background to-background p-8 ${PANEL_SHADOW}`}>
         <div className="absolute -right-24 -top-24 size-72 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="space-y-3">
@@ -98,7 +98,8 @@ export default function AdminDashboardPage() {
           <Button
             onClick={fetchSummary}
             disabled={isRefreshing}
-            className="gap-2 bg-card/90 text-foreground hover:bg-card shadow-md shadow-black/25"
+            variant="ghost"
+            className="gap-2"
           >
             {isRefreshing ? (
               <span className="flex items-center gap-2 text-sm">
@@ -117,7 +118,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 gap-6">
         {summaryMeta.map((item) => (
-          <Card key={item.key} className={`${PANEL_SHADOW} bg-card/50`}>
+          <Card key={item.key} elevation="base" className={`${PANEL_SHADOW} bg-card/50`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div className="flex items-center gap-3">
                 <item.icon className={`h-6 w-6 ${item.tone}`} />

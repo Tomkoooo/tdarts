@@ -1,6 +1,12 @@
 "use client"
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
 
 const BoardPage: React.FC = () => {
   const [tournamentCode, setTournamentCode] = useState<string>("");
@@ -58,100 +64,95 @@ const BoardPage: React.FC = () => {
 
 
   return (
-    <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="h-screen bg-gradient-to-br from-muted/20 to-background flex items-center justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-md">
-        <div className="bg-base-100 rounded-2xl p-8 shadow-2xl">
+        <Card elevation="elevated" className="p-8">
           <div className="flex justify-between items-center mb-6">
-            <button 
+            <Button 
               onClick={() => router.push('/')}
-              className="btn btn-ghost btn-sm"
+              variant="ghost"
+              size="sm"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <IconArrowLeft className="h-5 w-5 mr-1" />
               Vissza
-            </button>
+            </Button>
           </div>
           
           <div className="text-center mb-8">
             <div className="mb-4">
-              <svg className="w-16 h-16 mx-auto text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-primary/10">
+                <IconCheck className="w-8 h-8 text-primary" />
+              </div>
             </div>
             <h1 className="text-3xl font-bold text-primary mb-2">Tábla Csatlakozás</h1>
-            <p className="text-base-content/70">Add meg a torna kódot és jelszót</p>
+            <p className="text-muted-foreground">Add meg a torna kódot és jelszót</p>
           </div>
           
           {error && (
-            <div className="alert alert-error mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
-            </div>
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-bold">Torna Kód</span>
-              </label>
-              <input
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="tournamentCode" className="font-bold">
+                Torna Kód
+              </Label>
+              <Input
+                id="tournamentCode"
                 type="text"
                 placeholder="Pl.: ABC1"
-                className="input input-bordered input-lg w-full text-center text-2xl font-mono tracking-widest uppercase"
+                className="text-center text-2xl font-mono tracking-widest uppercase h-14"
                 value={tournamentCode}
                 onChange={(e) => setTournamentCode(e.target.value.toUpperCase())}
                 maxLength={4}
                 autoFocus
               />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">4 karakteres kód</span>
-              </label>
+              <p className="text-xs text-muted-foreground">4 karakteres kód</p>
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-bold">Jelszó</span>
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password" className="font-bold">
+                Jelszó
+              </Label>
+              <Input
+                id="password"
                 type="password"
                 placeholder="Torna jelszó"
-                className="input input-bordered input-lg w-full"
+                className="h-14"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">Kérd el a szervezőtől</span>
-              </label>
+              <p className="text-xs text-muted-foreground">Kérd el a szervezőtől</p>
             </div>
             
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary btn-lg w-full"
+              size="lg"
+              className="w-full"
               disabled={!tournamentCode.trim() || tournamentCode.length !== 4 || !password.trim() || loading}
             >
               {loading ? (
                 <>
-                  <span className="loading loading-spinner"></span>
+                  <div className="w-4 h-4 border-2 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
                   Csatlakozás...
                 </>
               ) : (
                 'Csatlakozás a tornához'
               )}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-6 text-center space-y-2">
-            <p className="text-sm text-base-content/60">
+            <p className="text-sm text-muted-foreground">
               Nincs torna kódod? Kérdezd meg a szervezőt!
             </p>
-            <p className="text-xs text-base-content/50">
+            <p className="text-xs text-muted-foreground/70">
               A jelszó mentésre kerül a böngésződben a könnyebb használat érdekében.
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

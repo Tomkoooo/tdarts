@@ -8,6 +8,7 @@ import ClubRegistrationForm from "@/components/club/ClubRegistrationForm"
 import toast from "react-hot-toast"
 import axios from "axios"
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
+import { LoadingScreen } from "@/components/ui/loading-spinner"
 
 export default function MyClubPage() {
   const { user } = useUserContext()
@@ -48,10 +49,7 @@ export default function MyClubPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-          <p className="text-lg text-muted-foreground">Klubok betöltése...</p>
-        </div>
+        <LoadingScreen text="Klubok betöltése..." />
       </div>
     )
   }
