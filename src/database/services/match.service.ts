@@ -333,24 +333,33 @@ export class MatchService {
         let player1TotalOneEighties = 0;
         let player2TotalOneEighties = 0;
         
-        // Count 180s from existing legs
+        // Count 180s from all existing legs (including the final leg if it was already saved by finishLeg)
         if (match.legs && match.legs.length > 0) {
             for (const leg of match.legs) {
-                if (leg.player1Throws) {
-                    player1TotalOneEighties += leg.player1Throws.filter((throwData: any) => throwData.score === 180).length;
+                if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
+                    // Handle both number[] and {score: number}[] formats
+                    const throws = leg.player1Throws.map((t: any) => typeof t === 'number' ? t : t.score);
+                    player1TotalOneEighties += throws.filter((score: number) => score === 180).length;
                 }
-                if (leg.player2Throws) {
-                    player2TotalOneEighties += leg.player2Throws.filter((throwData: any) => throwData.score === 180).length;
+                if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
+                    // Handle both number[] and {score: number}[] formats
+                    const throws = leg.player2Throws.map((t: any) => typeof t === 'number' ? t : t.score);
+                    player2TotalOneEighties += throws.filter((score: number) => score === 180).length;
                 }
             }
         }
         
-        // Add 180s from final leg if provided
-        if (matchData.finalLegData) {
-            if (matchData.finalLegData.player1Throws) {
+        // Calculate total legs and existing legs to determine if final leg needs to be saved
+        const totalLegs = matchData.player1LegsWon + matchData.player2LegsWon;
+        const existingLegs = match.legs ? match.legs.length : 0;
+        
+        // Only add 180s from finalLegData if the leg hasn't been saved yet
+        // If final leg was already saved by finishLeg in the API route, it's already counted above
+        if (matchData.finalLegData && existingLegs < totalLegs) {
+            if (matchData.finalLegData.player1Throws && Array.isArray(matchData.finalLegData.player1Throws)) {
                 player1TotalOneEighties += matchData.finalLegData.player1Throws.filter((score: number) => score === 180).length;
             }
-            if (matchData.finalLegData.player2Throws) {
+            if (matchData.finalLegData.player2Throws && Array.isArray(matchData.finalLegData.player2Throws)) {
                 player2TotalOneEighties += matchData.finalLegData.player2Throws.filter((score: number) => score === 180).length;
             }
         }
@@ -368,8 +377,6 @@ export class MatchService {
 
         // Save the final leg data if it hasn't been saved yet
         // This ensures the last leg is also stored in the legs array
-        const totalLegs = matchData.player1LegsWon + matchData.player2LegsWon;
-        const existingLegs = match.legs ? match.legs.length : 0;
         
         if (existingLegs < totalLegs) {
             // The final leg hasn't been saved yet, so save it now
@@ -418,9 +425,19 @@ export class MatchService {
 
         await match.save();
 
-        // Update tournament player statistics
-        await this.updateTournamentPlayerStats(match.tournamentRef.toString(), match.player1.playerId.toString(), matchData.player1Stats);
-        await this.updateTournamentPlayerStats(match.tournamentRef.toString(), match.player2.playerId.toString(), matchData.player2Stats);
+        // Update tournament player statistics - use calculated values from match document, not from frontend
+        await this.updateTournamentPlayerStats(match.tournamentRef.toString(), match.player1.playerId.toString(), {
+            highestCheckout: match.player1.highestCheckout || 0,
+            oneEightiesCount: player1TotalOneEighties, // Use calculated value from throws
+            totalThrows: matchData.player1Stats.totalThrows,
+            totalScore: matchData.player1Stats.totalScore
+        });
+        await this.updateTournamentPlayerStats(match.tournamentRef.toString(), match.player2.playerId.toString(), {
+            highestCheckout: match.player2.highestCheckout || 0,
+            oneEightiesCount: player2TotalOneEighties, // Use calculated value from throws
+            totalThrows: matchData.player2Stats.totalThrows,
+            totalScore: matchData.player2Stats.totalScore
+        });
 
         // Update board status for all matches (both new and updated)
         if (match.type === 'knockout') {
@@ -497,7 +514,18 @@ export class MatchService {
             const playerData = isPlayer1 ? playerMatch.player1 : playerMatch.player2;
 
             totalHighestCheckout = Math.max(totalHighestCheckout, playerData.highestCheckout || 0);
-            totalOneEighties += playerData.oneEightiesCount || 0;
+            
+            // Count 180s from all legs' throws to avoid duplication
+            if (playerMatch.legs && playerMatch.legs.length > 0) {
+                for (const leg of playerMatch.legs) {
+                    const playerThrows = isPlayer1 ? leg.player1Throws : leg.player2Throws;
+                    if (playerThrows && Array.isArray(playerThrows)) {
+                        // Handle both number[] and {score: number}[] formats
+                        const throws = playerThrows.map((t: any) => typeof t === 'number' ? t : t.score);
+                        totalOneEighties += throws.filter((score: number) => score === 180).length;
+                    }
+                }
+            }
             
             // For average calculation, we need to estimate throws and score from the average
             if (playerData.average && playerData.average > 0) {

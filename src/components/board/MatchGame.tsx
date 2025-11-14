@@ -569,12 +569,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           player2Throws: player2.allThrows,
           winnerArrowCount: arrowCount,
           player1Stats: {
-            ...player1.stats,
+            highestCheckout: player1.stats.highestCheckout,
+            // Don't send oneEightiesCount - backend doesn't use it for legs (will calculate in finishMatch)
+            oneEightiesCount: 0,
+            totalThrows: player1.stats.totalThrows,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingLegWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
-            ...player2.stats,
+            highestCheckout: player2.stats.highestCheckout,
+            // Don't send oneEightiesCount - backend doesn't use it for legs (will calculate in finishMatch)
+            oneEightiesCount: 0,
+            totalThrows: player2.stats.totalThrows,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingLegWinner === 2 ? arrowCount : 0)
           }
@@ -647,12 +653,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           player2LegsWon: player2.legsWon,
           winnerArrowCount: arrowCount,
           player1Stats: {
-            ...player1.stats,
+            highestCheckout: player1.stats.highestCheckout,
+            // Don't send oneEightiesCount - backend will calculate from all legs' throws
+            oneEightiesCount: 0,
+            totalThrows: player1.stats.totalThrows,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
-            ...player2.stats,
+            highestCheckout: player2.stats.highestCheckout,
+            // Don't send oneEightiesCount - backend will calculate from all legs' throws
+            oneEightiesCount: 0,
+            totalThrows: player2.stats.totalThrows,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
           },
