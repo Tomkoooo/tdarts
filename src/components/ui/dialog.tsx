@@ -33,11 +33,11 @@ const DialogOverlay = React.forwardRef<
       initial="initial"
       animate="animate"
       exit="exit"
-      className={cn(
+    className={cn(
         "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
-        className
-      )}
-    />
+      className
+    )}
+  />
   </DialogPrimitive.Overlay>
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
@@ -54,15 +54,15 @@ const DialogContent = React.forwardRef<
         initial="initial"
         animate="animate"
         exit="exit"
-        className={cn(
+      className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4",
           "border border-white/10 bg-glass-bg-modal backdrop-blur-2xl rounded-xl p-6",
           "shadow-glass-xl",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-          className
-        )}
-      >
-        {children}
+        className
+      )}
+    >
+      {children}
         <DialogPrimitive.Close
           className={cn(
             "absolute right-4 top-4 rounded-md p-1",
@@ -72,9 +72,9 @@ const DialogContent = React.forwardRef<
             "disabled:pointer-events-none disabled:opacity-50"
           )}
         >
-          <IconX className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
+        <IconX className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
       </motion.div>
     </DialogPrimitive.Content>
   </DialogPortal>

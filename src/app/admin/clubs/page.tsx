@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import Link from "next/link"
-import toast from "react-hot-toast"
 import {
   IconBuilding,
   IconUsers,
@@ -23,6 +22,7 @@ import { Input } from "@/components/ui/Input"
 import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { showErrorToast } from "@/lib/toastUtils"
 
 const PANEL_SHADOW = "shadow-lg shadow-black/35"
 
@@ -60,8 +60,12 @@ export default function AdminClubsPage() {
       setLoading(true)
       const response = await axios.get("/api/admin/clubs")
       setClubs(response.data.clubs)
-    } catch {
-      toast.error("Hiba történt a klubok betöltése során")
+    } catch (error: any) {
+      showErrorToast("Hiba történt a klubok betöltése során", {
+        error: error?.response?.data?.error,
+        context: "Admin klub lista",
+        errorName: "Klubok betöltése sikertelen",
+      })
     } finally {
       setLoading(false)
     }

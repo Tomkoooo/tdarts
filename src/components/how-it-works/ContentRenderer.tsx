@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface NoteProps {
   type: 'info' | 'warning' | 'tip' | 'important';
@@ -9,15 +10,15 @@ const Note: React.FC<NoteProps> = ({ type, content }) => {
   const getNoteStyles = () => {
     switch (type) {
       case 'info':
-        return 'bg-blue-500/10 border  text-blue-400';
+        return { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' };
       case 'warning':
-        return 'bg-red-500/10 border  text-red-400';
+        return { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' };
       case 'tip':
-        return 'bg-yellow-500/10 border  text-yellow-400';
+        return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' };
       case 'important':
-        return 'bg-orange-500/10 border  text-orange-400';
+        return { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' };
       default:
-        return 'bg-gray-500/10 border  text-gray-400';
+        return { bg: 'bg-muted/20', text: 'text-muted-foreground', border: 'border-border/40' };
     }
   };
 
@@ -36,9 +37,11 @@ const Note: React.FC<NoteProps> = ({ type, content }) => {
     }
   };
 
+  const styles = getNoteStyles();
+
   return (
-    <div className={`${getNoteStyles()} p-4 rounded-lg`}>
-      <p className="text-sm">
+    <div className={cn("p-4 rounded-xl", styles.bg, styles.border, "border")}>
+      <p className={cn("text-sm leading-relaxed", styles.text)}>
         <span className="mr-2">{getIcon()}</span>
         <strong>{type === 'info' ? 'Info:' : type === 'warning' ? 'Fontos:' : type === 'tip' ? 'Tipp:' : 'Megjegyzés:'}</strong> {content}
       </p>
@@ -56,11 +59,11 @@ const ContentRenderer: React.FC<ContentRendererProps> = ({ content }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {content.sections.map((section: any, index: number) => {
         if (section.type === 'text') {
           return (
-            <p key={index} className="text-gray-300 leading-relaxed" 
+            <p key={index} className="text-foreground/90 leading-relaxed text-base" 
                dangerouslySetInnerHTML={{ __html: section.content }}>
             </p>
           );
@@ -68,50 +71,53 @@ const ContentRenderer: React.FC<ContentRendererProps> = ({ content }) => {
 
         if (section.type === 'subsection') {
           return (
-            <div key={index} className="space-y-4">
-              <h4 className="font-semibold text-white text-lg">{section.title}</h4>
+            <section key={index} className="space-y-4">
+              <h3 className="font-semibold text-foreground text-xl">{section.title}</h3>
               
               {Array.isArray(section.content) ? (
-                <ul className="text-gray-300 space-y-2">
+                <ul className="text-foreground/80 space-y-3 list-none">
                   {section.content.map((item: string, itemIndex: number) => (
-                    <li key={itemIndex} className="flex items-start">
-                      <span className="mr-2 mt-1">•</span>
-                      <span dangerouslySetInnerHTML={{ __html: item }}></span>
+                    <li key={itemIndex} className="flex items-start gap-3">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      <span className="leading-relaxed" dangerouslySetInnerHTML={{ __html: item }}></span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-300 leading-relaxed" 
+                <p className="text-foreground/80 leading-relaxed" 
                    dangerouslySetInnerHTML={{ __html: section.content }}>
                 </p>
               )}
 
               {section.list && (
-                <div className="bg-base-200 p-4 rounded-lg">
-                  <ul className="text-gray-300 space-y-1 text-sm">
+                <div className="bg-muted/20 p-4 rounded-xl">
+                  <ul className="text-foreground/80 space-y-2 text-sm">
                     {section.list.map((item: string, itemIndex: number) => (
-                      <li key={itemIndex} dangerouslySetInnerHTML={{ __html: `• ${item}` }}></li>
+                      <li key={itemIndex} className="flex items-start gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <span dangerouslySetInnerHTML={{ __html: item }}></span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
 
               {section.subsections && (
-                <div className="space-y-4 ml-4">
+                <div className="space-y-6 ml-2 pl-4 border-l-2 border-border/40">
                   {section.subsections.map((sub: any, subIndex: number) => (
-                    <div key={subIndex} className="space-y-2">
-                      <h5 className="font-medium text-white text-base">{sub.title}</h5>
+                    <div key={subIndex} className="space-y-3">
+                      <h4 className="font-semibold text-foreground text-lg">{sub.title}</h4>
                       {Array.isArray(sub.content) ? (
-                        <ul className="text-gray-300 space-y-1 text-sm">
+                        <ul className="text-foreground/80 space-y-2 text-sm list-none">
                           {sub.content.map((item: string, itemIndex: number) => (
-                            <li key={itemIndex} className="flex items-start">
-                              <span className="mr-2 mt-1">•</span>
-                              <span dangerouslySetInnerHTML={{ __html: item }}></span>
+                            <li key={itemIndex} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                              <span className="leading-relaxed" dangerouslySetInnerHTML={{ __html: item }}></span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-gray-300 text-sm" 
+                        <p className="text-foreground/80 text-sm leading-relaxed" 
                            dangerouslySetInnerHTML={{ __html: sub.content }}>
                         </p>
                       )}
@@ -123,7 +129,7 @@ const ContentRenderer: React.FC<ContentRendererProps> = ({ content }) => {
               {section.note && (
                 <Note type={section.note.type} content={section.note.content} />
               )}
-            </div>
+            </section>
           );
         }
 

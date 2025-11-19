@@ -12,7 +12,6 @@ import {
   IconLoader2,
 } from "@tabler/icons-react"
 import axios from "axios"
-import toast from "react-hot-toast"
 
 import { Player } from "@/interface/player.interface"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -22,6 +21,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card, CardContent } from "@/components/ui/Card"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { showErrorToast } from "@/lib/toastUtils"
 
 interface PlayerStatsModalProps {
   player: Player | null
@@ -40,13 +40,18 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
       setIsLoading(true)
       try {
         const response = await axios.get(`/api/players/${player._id}/stats`)
-        setPlayerStats(response.data)
-        if (response.data.tournamentHistory && response.data.tournamentHistory.length > 0) {
+        console.log(response.data, response);
+        setPlayerStats(response.data.player)
+        if (response.data.player.tournamentHistory && response.data.player.tournamentHistory.length > 0) {
           setExpandedTournament(0)
         }
       } catch (error: any) {
         console.error('Failed to fetch player stats:', error)
-        toast.error('Nem sikerült betölteni a játékos statisztikáit')
+        showErrorToast('Nem sikerült betölteni a játékos statisztikáit', {
+          error: error?.response?.data?.error,
+          context: 'Játékos statisztika betöltése',
+          errorName: 'Statisztika betöltése sikertelen',
+        })
         // Fallback to the player object passed as prop
         setPlayerStats(player)
       } finally {

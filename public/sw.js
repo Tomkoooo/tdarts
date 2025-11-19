@@ -40,23 +40,34 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests - Cache API doesn't support POST, PUT, DELETE, etc.
+  if (event.request.method !== 'GET') {
+    // For non-GET requests, just fetch from network without caching
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response
-        const responseToCache = response.clone();
-        
-        // Cache successful responses
-        if (response.status === 200) {
+        // Only cache successful GET responses
+        if (response.status === 200 && event.request.method === 'GET') {
+          // Clone the response before caching
+          const responseToCache = response.clone();
+          
+          // Cache the response (only for GET requests)
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
+            cache.put(event.request, responseToCache).catch((error) => {
+              // Silently fail if caching fails (e.g., for non-cacheable requests)
+              console.warn('Failed to cache request:', event.request.url, error);
+            });
           });
         }
         
         return response;
       })
       .catch(() => {
-        // Network failed, try cache
+        // Network failed, try cache (only for GET requests)
         return caches.match(event.request).then((response) => {
           if (response) {
             return response;

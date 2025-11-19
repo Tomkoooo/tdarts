@@ -14,7 +14,7 @@ import {
   IconTarget
 } from '@tabler/icons-react';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
+import { showErrorToast } from '@/lib/toastUtils';
 import DailyChart from '@/components/admin/DailyChart';
 
 interface AdminTournament {
@@ -46,9 +46,13 @@ export default function AdminTournamentsPage() {
       setLoading(true);
       const response = await axios.get('/api/admin/tournaments');
       setTournaments(response.data.tournaments);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching tournaments:', error);
-      toast.error('Hiba történt a versenyek betöltése során');
+      showErrorToast('Hiba történt a versenyek betöltése során', {
+        error: error?.response?.data?.error,
+        context: 'Admin verseny lista',
+        errorName: 'Versenyek betöltése sikertelen',
+      });
     } finally {
       setLoading(false);
     }

@@ -35,6 +35,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/Label";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { showErrorToast } from "@/lib/toastUtils";
 
 import LegsViewModal from "./LegsViewModal";
 import KnockoutBracketDiagram, { DiagramMatch, DiagramRound, RoundSummary } from "./KnockoutBracketDiagram";
@@ -420,17 +421,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     try {
       // Convert empty strings to 0
       const cleanedForm = {
-        player1LegsWon: editForm.player1LegsWon === '' ? 0 : editForm.player1LegsWon,
-        player2LegsWon: editForm.player2LegsWon === '' ? 0 : editForm.player2LegsWon,
+        player1LegsWon: editForm.player1LegsWon === '' as unknown as number ? 0 : editForm.player1LegsWon,
+        player2LegsWon: editForm.player2LegsWon === '' as unknown as number ? 0 : editForm.player2LegsWon,
         player1Stats: {
           ...editForm.player1Stats,
-          oneEightiesCount: editForm.player1Stats.oneEightiesCount === '' ? 0 : editForm.player1Stats.oneEightiesCount,
-          highestCheckout: editForm.player1Stats.highestCheckout === '' ? 0 : editForm.player1Stats.highestCheckout,
+          oneEightiesCount: editForm.player1Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player1Stats.oneEightiesCount,
+          highestCheckout: editForm.player1Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player1Stats.highestCheckout,
         },
         player2Stats: {
           ...editForm.player2Stats,
-          oneEightiesCount: editForm.player2Stats.oneEightiesCount === '' ? 0 : editForm.player2Stats.oneEightiesCount,
-          highestCheckout: editForm.player2Stats.highestCheckout === '' ? 0 : editForm.player2Stats.highestCheckout,
+          oneEightiesCount: editForm.player2Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player2Stats.oneEightiesCount,
+          highestCheckout: editForm.player2Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player2Stats.highestCheckout,
         },
       };
 
@@ -596,7 +597,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleUpdateMatchPlayer = async () => {
     if (!editingMatch) {
-      toast.error("Nem lehet frissíteni a meccset.")
+      showErrorToast("Nem lehet frissíteni a meccset.", {
+        context: "Knockout meccs frissítés",
+        errorName: "Meccs frissítése sikertelen",
+      })
       return
     }
 
@@ -640,7 +644,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
-          toast.error(response.data?.error || "Nem sikerült létrehozni a meccset.")
+          showErrorToast(response.data?.error || "Nem sikerült létrehozni a meccset.", {
+            error: response.data?.error,
+            context: "Knockout meccs létrehozása",
+            errorName: "Meccs létrehozása sikertelen",
+          })
         }
       } else {
         const matchId =
@@ -661,11 +669,19 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
-          toast.error(response.data?.error || "Nem sikerült frissíteni a meccset.")
+          showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
+            error: response.data?.error,
+            context: "Knockout meccs frissítése",
+            errorName: "Meccs frissítése sikertelen",
+          })
         }
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Nem sikerült frissíteni a meccset.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült frissíteni a meccset.", {
+        error: err?.response?.data?.error,
+        context: "Knockout meccs frissítése",
+        errorName: "Meccs frissítése sikertelen",
+      })
     } finally {
       setUpdatingMatchPlayer(false)
     }
@@ -694,10 +710,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowDeleteMatchModal(false)
         setMatchToDelete(null)
       } else {
-        toast.error(response.data?.error || "Nem sikerült törölni a meccset.")
+        showErrorToast(response.data?.error || "Nem sikerült törölni a meccset.", {
+          error: response.data?.error,
+          context: "Knockout meccs törlése",
+          errorName: "Meccs törlése sikertelen",
+        })
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Nem sikerült törölni a meccset.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült törölni a meccset.", {
+        error: err?.response?.data?.error,
+        context: "Knockout meccs törlése",
+        errorName: "Meccs törlése sikertelen",
+      })
     } finally {
       setDeletingMatch(false)
     }
@@ -712,10 +736,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         toast.success("Utolsó kör sikeresen törölve!")
         setShowDeleteLastRoundModal(false)
       } else {
-        toast.error(response.data?.error || "Nem sikerült törölni az utolsó kört.")
+        showErrorToast(response.data?.error || "Nem sikerült törölni az utolsó kört.", {
+          error: response.data?.error,
+          context: "Knockout kör törlése",
+          errorName: "Utolsó kör törlése sikertelen",
+        })
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Nem sikerült törölni az utolsó kört.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült törölni az utolsó kört.", {
+        error: err?.response?.data?.error,
+        context: "Knockout kör törlése",
+        errorName: "Utolsó kör törlése sikertelen",
+      })
     } finally {
       setDeletingLastRound(false)
     }
@@ -1106,10 +1138,20 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <div className="flex items-center gap-2 rounded-full bg-muted/20 px-3 py-1 font-mono text-xs text-muted-foreground">
+                
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    
+                    onClick={() => setZoomLevel(1)}
+                    title="Alaphelyzet"
+                  >
+                    <IconRefresh size={16} className="text-foreground" />
+                  </Button>
+                  <Separator orientation="vertical" className="h-6 bg-border/60" />
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => setZoomLevel((prev) => Math.max(0.6, +(prev - 0.1).toFixed(2)))}
                     title="Kicsinyítés"
                   >
@@ -1119,22 +1161,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
                     onClick={() => setZoomLevel((prev) => Math.min(1.6, +(prev + 0.1).toFixed(2)))}
                     title="Nagyítás"
                   >
-                    <IconPlus size={16} className="text-foreground" />
+                    <IconPlus className="text-foreground" />
                   </Button>
-                  <Separator orientation="vertical" className="h-6 bg-border/60" />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setZoomLevel(1)}
-                    title="Alaphelyzet"
-                  >
-                    <IconRefresh size={16} className="text-foreground" />
-                  </Button>
+                  
                 </div>
 
                 <Button
@@ -1281,7 +1313,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 min={0}
                 max={10}
                 value={roundsToGenerate ?? ''}
-                onChange={(event) => setRoundsToGenerate(event.target.value === '' ? '' : Number(event.target.value))}
+                onChange={(event) => setRoundsToGenerate(event.target.value === '' ? '' as unknown as number : Number(event.target.value))}
               />
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -1568,7 +1600,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             value={editForm.player1LegsWon ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
-                              player1LegsWon: event.target.value === '' ? '' : Number(event.target.value),
+                              player1LegsWon: event.target.value === '' ? 0 : Number(event.target.value),
                             }))}
                           />
                         </div>
@@ -1583,7 +1615,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                oneEightiesCount: event.target.value === '' ? '' : Number(event.target.value),
+                                oneEightiesCount: event.target.value === '' ? 0 : Number(event.target.value),
                               },
                             }))}
                           />
@@ -1599,7 +1631,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                highestCheckout: event.target.value === '' ? '' : Number(event.target.value),
+                                highestCheckout: event.target.value === '' ? 0 : Number(event.target.value),
                               },
                             }))}
                           />
@@ -1619,7 +1651,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             value={editForm.player2LegsWon ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
-                              player2LegsWon: event.target.value === '' ? '' : Number(event.target.value),
+                              player2LegsWon: event.target.value === '' ? 0 : Number(event.target.value),
                             }))}
                           />
                         </div>
@@ -1634,7 +1666,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                oneEightiesCount: event.target.value === '' ? '' : Number(event.target.value),
+                                oneEightiesCount: event.target.value === '' ? 0 : Number(event.target.value),
                               },
                             }))}
                           />
@@ -1650,7 +1682,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                highestCheckout: event.target.value === '' ? '' : Number(event.target.value),
+                                highestCheckout: event.target.value === '' ? 0 : Number(event.target.value),
                               },
                             }))}
                           />

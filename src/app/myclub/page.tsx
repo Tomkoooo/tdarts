@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useUserContext } from "@/hooks/useUser"
 import { Club } from "@/interface/club.interface"
 import ClubRegistrationForm from "@/components/club/ClubRegistrationForm"
-import toast from "react-hot-toast"
+import { showErrorToast } from "@/lib/toastUtils"
 import axios from "axios"
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
@@ -34,8 +34,12 @@ export default function MyClubPage() {
           // Redirect to the first club's page if user is associated with a club
           router.push(`/clubs/${userClubs[0]._id}`)
         }
-      } catch (error) {
-        toast.error("Hiba történt a klubok lekérdezése során")
+      } catch (error: any) {
+        showErrorToast("Hiba történt a klubok lekérdezése során", {
+          error: error?.response?.data?.error,
+          context: "Saját klub ellenőrzés",
+          errorName: "Klubok lekérdezése sikertelen",
+        })
         console.error("Error fetching user clubs:", error)
       } finally {
         setIsLoading(false)

@@ -78,7 +78,7 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
         </motion.div>
         
         <AnimatePresence mode="wait">
-          {error && (
+        {error && (
             <motion.p
               key="error"
               variants={errorVariants}
@@ -89,8 +89,8 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
             >
               {error}
             </motion.p>
-          )}
-          {helperText && !error && (
+        )}
+        {helperText && !error && (
             <motion.p
               key="helper"
               initial={{ opacity: 0 }}
@@ -101,7 +101,7 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
             >
               {helperText}
             </motion.p>
-          )}
+        )}
         </AnimatePresence>
       </div>
     )

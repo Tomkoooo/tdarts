@@ -33,11 +33,11 @@ const SheetOverlay = React.forwardRef<
       initial="initial"
       animate="animate"
       exit="exit"
-      className={cn(
+    className={cn(
         "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
-        className
-      )}
-    />
+      className
+    )}
+  />
   </SheetPrimitive.Overlay>
 ))
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
@@ -67,7 +67,7 @@ const slideVariants: Record<string, Variants> = {
 }
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-card/95 backdrop-blur-xl p-6 shadow-glass-xl border border-white/10",
+  "fixed z-50 gap-4 bg-card/95 backdrop-blur-xl p-6 shadow-glass-xl",
   {
     variants: {
       side: {
@@ -94,17 +94,17 @@ const SheetContent = React.forwardRef<
   const sideVariant = slideVariants[side || "right"]
   
   return (
-    <SheetPortal>
-      <SheetOverlay />
+  <SheetPortal>
+    <SheetOverlay />
       <SheetPrimitive.Content ref={ref} asChild {...props}>
         <motion.div
           variants={sideVariant}
           initial="initial"
           animate="animate"
           exit="exit"
-          className={cn(sheetVariants({ side }), className)}
-        >
-          {children}
+      className={cn(sheetVariants({ side }), className)}
+    >
+      {children}
           <SheetPrimitive.Close
             className={cn(
               "absolute right-4 top-4 rounded-md p-1",
@@ -114,12 +114,12 @@ const SheetContent = React.forwardRef<
               "disabled:pointer-events-none disabled:opacity-50"
             )}
           >
-            <IconX className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
+        <IconX className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </SheetPrimitive.Close>
         </motion.div>
-      </SheetPrimitive.Content>
-    </SheetPortal>
+    </SheetPrimitive.Content>
+  </SheetPortal>
   )
 })
 SheetContent.displayName = SheetPrimitive.Content.displayName

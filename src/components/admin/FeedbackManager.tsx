@@ -24,6 +24,7 @@ import {
   IconProgress,
   IconCircleX,
 } from '@tabler/icons-react';
+import { showErrorToast } from '@/lib/toastUtils';
 
 interface Feedback {
   _id: string;
@@ -80,9 +81,13 @@ export default function FeedbackManager() {
       
       setFeedback(feedbackResponse.data.feedback);
       setStats(statsResponse.data.stats);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching feedback:', error);
-      toast.error('Hiba történt az adatok betöltése során');
+      showErrorToast('Hiba történt az adatok betöltése során', {
+        error: error?.response?.data?.error,
+        context: 'Feedback kezelő betöltés',
+        errorName: 'Feedback adatok betöltése sikertelen',
+      });
     } finally {
       setLoading(false);
     }
@@ -101,12 +106,16 @@ export default function FeedbackManager() {
         f._id === feedbackId ? updatedFeedback : f
       ));
       
-      toast.success('Hibabejelentés frissítve');
+      toast.success('Visszajelzésfrissítve');
       setEditingFeedback(null);
       fetchFeedback();
     } catch (error: any) {
       console.error('Error updating feedback:', error);
-      toast.error(error.response?.data?.error || 'Hiba történt a frissítés során');
+      showErrorToast(error.response?.data?.error || 'Hiba történt a frissítés során', {
+        error: error?.response?.data?.error,
+        context: 'Feedback frissítés',
+        errorName: 'Visszajelzés frissítése sikertelen',
+      });
     }
   };
 
@@ -116,11 +125,15 @@ export default function FeedbackManager() {
     try {
       await axios.delete(`/api/admin/feedback/${feedbackId}`);
       setFeedback(prev => prev.filter(f => f._id !== feedbackId));
-      toast.success('Hibabejelentés törölve');
+      toast.success('Visszajelzéstörölve');
       fetchFeedback();
     } catch (error: any) {
       console.error('Error deleting feedback:', error);
-      toast.error(error.response?.data?.error || 'Hiba történt a törlés során');
+      showErrorToast(error.response?.data?.error || 'Hiba történt a törlés során', {
+        error: error?.response?.data?.error,
+        context: 'Feedback törlés',
+        errorName: 'Visszajelzés törlése sikertelen',
+      });
     }
   };
 
@@ -430,7 +443,7 @@ export default function FeedbackManager() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold">Hibabejelentés szerkesztése</h3>
+              <h3 className="text-2xl font-bold">Visszajelzésszerkesztése</h3>
               <button
                 onClick={() => setEditingFeedback(null)}
                 className="btn btn-ghost btn-sm btn-circle"

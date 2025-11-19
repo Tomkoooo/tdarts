@@ -10,7 +10,6 @@ import {
   IconTrophy,
   IconUser,
   IconUsers,
-  IconX,
 } from '@tabler/icons-react';
 import PlayerSearch from './PlayerSearch';
 import TournamentCard from '../tournament/TournamentCard';
@@ -250,9 +249,7 @@ export default function LeagueDetailModal({
                 <Button variant="outline" size="icon" onClick={handleShare}>
                   <IconShare className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => onClose()}>
-                  <IconX className="h-4 w-4" />
-                </Button>
+                <div className="w-8"></div>
               </div>
             </div>
           </DialogHeader>
@@ -262,8 +259,8 @@ export default function LeagueDetailModal({
           </div>
 
           <div className="mt-4 flex flex-1 flex-col overflow-hidden px-6 pb-6">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="flex h-full flex-col">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="flex h-full flex-col overflow-hidden">
+              <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
                 <TabsTrigger value="leaderboard">Ranglista</TabsTrigger>
                 <TabsTrigger value="tournaments">Versenyek</TabsTrigger>
                 <TabsTrigger value="settings" disabled={!canManage}>
@@ -271,7 +268,7 @@ export default function LeagueDetailModal({
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="leaderboard" className="mt-4 flex-1 overflow-y-auto">
+              <TabsContent value="leaderboard" className="mt-4 flex-1 overflow-y-auto min-h-0">
                 <LeaderboardTab
                   league={league}
                   leaderboard={leagueStats?.leaderboard || []}
@@ -283,7 +280,7 @@ export default function LeagueDetailModal({
                 />
               </TabsContent>
 
-              <TabsContent value="tournaments" className="mt-4 flex-1 overflow-y-auto">
+              <TabsContent value="tournaments" className="mt-4 flex-1 overflow-y-auto min-h-0">
                 <TournamentsTab
                   tournaments={leagueStats?.league?.attachedTournaments || []}
                   canManage={canManage}
@@ -293,7 +290,7 @@ export default function LeagueDetailModal({
                 />
               </TabsContent>
 
-              <TabsContent value="settings" className="mt-4 flex-1 overflow-y-auto">
+              <TabsContent value="settings" className="mt-4 flex-1 overflow-y-auto min-h-0">
                 <SettingsTab
                   league={league}
                   clubId={clubId}
@@ -341,7 +338,7 @@ const StatsOverview = ({
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {items.map((item, index) => (
-        <Card key={index} className="border-border bg-card/60 backdrop-blur">
+        <Card key={index} className="border-none bg-card/60">
           <CardContent className="flex items-center gap-3 py-4">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
               {item.icon}
@@ -408,7 +405,7 @@ function LeaderboardTab({
     if (!rawValue) {
       showErrorToast('Kérlek adj meg egy pontszámot!', {
         context: 'Liga pontszám módosítása',
-        showReportButton: false,
+        reportable: false,
       });
       return;
     }
@@ -417,7 +414,7 @@ function LeaderboardTab({
     if (Number.isNaN(parsedValue)) {
       showErrorToast('Érvénytelen pontszám formátum', {
         context: 'Liga pontszám módosítása',
-        showReportButton: false,
+        reportable: false,
       });
       return;
     }
@@ -425,7 +422,7 @@ function LeaderboardTab({
     if (!adjustReason.trim()) {
       showErrorToast('Kérlek add meg az okot!', {
         context: 'Liga pontszám módosítása',
-        showReportButton: false,
+        reportable: false,
       });
       return;
     }
@@ -436,14 +433,14 @@ function LeaderboardTab({
       if (pointsToAdjust === 0) {
         showErrorToast('Az új pontszám megegyezik a jelenlegivel!', {
           context: 'Liga pontszám módosítása',
-          showReportButton: false,
+          reportable: false,
         });
         return;
       }
     } else if (pointsToAdjust === 0) {
       showErrorToast('A pontszám változás nem lehet 0!', {
         context: 'Liga pontszám módosítása',
-        showReportButton: false,
+        reportable: false,
       });
       return;
     }
@@ -460,7 +457,7 @@ function LeaderboardTab({
     if (!removeReason.trim()) {
       showErrorToast('Kérlek add meg az eltávolítás okát!', {
         context: 'Liga játékos eltávolítása',
-        showReportButton: false,
+        reportable: false,
       });
       return;
     }
@@ -473,7 +470,7 @@ function LeaderboardTab({
   return (
     <div className="space-y-4">
       {league.description && (
-        <Card className="border-border bg-card/60">
+        <Card className="border-none bg-card/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Liga leírása</CardTitle>
           </CardHeader>
@@ -498,7 +495,7 @@ function LeaderboardTab({
       )}
 
       {canManage && (
-        <Card className="border-dashed border-border bg-card/40">
+        <Card className="border-dashed bg-card/40">
           <CardContent className="space-y-4 py-4">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-foreground">Játékos hozzáadása a ligához</h4>
@@ -529,11 +526,11 @@ function LeaderboardTab({
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-border bg-card/60">
+        <Card className="border-none bg-card/60">
           <CardContent className="px-0">
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
-                <thead className="border-b border-border/80 text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-muted/20 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 text-left">#</th>
                     <th className="px-4 py-3 text-left">Játékos</th>
@@ -547,7 +544,7 @@ function LeaderboardTab({
                 </thead>
                 <tbody>
                   {leaderboard.map((entry) => (
-                    <tr key={entry.player._id} className="border-b-0 last:border-0">
+                    <tr key={entry.player._id} className="hover:bg-muted/10 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 text-sm font-semibold">
                           <span>{entry.position}</span>
@@ -682,7 +679,7 @@ function LeaderboardTab({
           <div className="space-y-2">
             <Label>Indoklás</Label>
             <textarea
-              className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              className="min-h-[80px] w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
               value={adjustReason}
               onChange={(event) => setAdjustReason(event.target.value)}
               placeholder="Miért módosítod a pontokat?"
@@ -722,7 +719,7 @@ function LeaderboardTab({
           <div className="space-y-2">
             <Label>Eltávolítás oka</Label>
             <textarea
-              className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              className="min-h-[80px] w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
               value={removeReason}
               onChange={(event) => setRemoveReason(event.target.value)}
               placeholder="Miért távolítod el a játékost?"
@@ -795,7 +792,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
     if (!selectedTournamentId) {
       showErrorToast('Kérlek válassz egy versenyt!', {
         context: 'Verseny hozzárendelése',
-        showReportButton: false,
+        reportable: false,
       });
       return;
     }
@@ -891,7 +888,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
             <div className="text-4xl">🏆</div>
             <p className="text-sm text-muted-foreground">Ehhez a ligához még nem lettek versenyek csatolva.</p>
             {canManage && (
-              <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-left text-xs text-muted-foreground">
+              <div className="rounded-lg bg-muted/30 px-4 py-3 text-left text-xs text-muted-foreground shadow-sm shadow-black/5">
                 <p className="font-semibold text-foreground">Versenyek hozzáadása:</p>
                 <ul className="mt-1 space-y-1">
                   <li>• Új verseny létrehozásakor válaszd ki ezt a ligát (automatikus pontszámítás).</li>
@@ -904,7 +901,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {validTournaments.map((tournament: any) => (
-            <Card key={tournament._id} className="border-border bg-card/60">
+            <Card key={tournament._id} className="border-none bg-card/60">
               <CardContent className="space-y-3">
                 <TournamentCard
                   tournament={{
@@ -970,7 +967,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                 <select
                   value={selectedTournamentId}
                   onChange={(event) => setSelectedTournamentId(event.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                  className="w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
                 >
                   <option value="">Válassz...</option>
                   {availableTournaments.map((tournament: any) => (
@@ -985,7 +982,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                 )}
               </div>
 
-              <div className="flex items-start justify-between gap-3 rounded-md border border-border/60 bg-muted/40 px-3 py-2">
+              <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
                 <label className="text-sm font-medium text-foreground">
                   Pontszámítás engedélyezése
                   <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -996,7 +993,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                   type="checkbox"
                   checked={calculatePoints}
                   onChange={(event) => setCalculatePoints(event.target.checked)}
-                  className="h-4 w-4 rounded border border-border accent-primary"
+                  className="h-4 w-4 rounded accent-primary"
                 />
               </div>
             </div>
@@ -1140,7 +1137,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
       setLoading(true);
       // Convert empty strings to 0 in pointsConfig
       const cleanedPointsConfig = Object.entries(formData.pointsConfig || {}).reduce((acc, [key, val]) => {
-        acc[key] = val === '' ? 0 : val;
+        acc[key] = val === null || val === undefined || val === '' as unknown as number ? 0 : val;
         return acc;
       }, {} as any);
 
@@ -1200,26 +1197,35 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={activeSubTab === 'settings' ? 'default' : 'outline'}
-          size="sm"
+      {/* Pseudo TabsList - styled as tabs but using buttons to avoid nested Tabs conflict */}
+      <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+        <button
+          type="button"
           onClick={() => setActiveSubTab('settings')}
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 ${
+            activeSubTab === 'settings' 
+              ? 'bg-background text-foreground shadow-sm' 
+              : 'hover:bg-background/50'
+          }`}
         >
           Beállítások
-        </Button>
-        <Button
-          variant={activeSubTab === 'history' ? 'default' : 'outline'}
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveSubTab('history')}
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 ${
+            activeSubTab === 'history' 
+              ? 'bg-background text-foreground shadow-sm' 
+              : 'hover:bg-background/50'
+          }`}
         >
           Pontszámítás történet
-        </Button>
+        </button>
       </div>
 
       {activeSubTab === 'history' ? (
         <div className="space-y-6">
-          <Card className="border-border bg-card/40">
+          <Card className="border-none bg-card/40">
             <CardHeader>
               <CardTitle className="text-base">Eltávolított játékosok</CardTitle>
             </CardHeader>
@@ -1228,7 +1234,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                 leagueStats.league.removedPlayers.map((removal: any, index: number) => (
                   <div
                     key={index}
-                    className="rounded-lg border border-border bg-background/80 px-3 py-3"
+                    className="rounded-lg bg-background/80 px-3 py-3"
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -1269,7 +1275,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/40">
+          <Card className="border-none bg-card/40">
             <CardHeader>
               <CardTitle className="text-base">Pontszámításhoz kapcsolódó módosítások</CardTitle>
             </CardHeader>
@@ -1278,7 +1284,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                 leagueStats?.league?.players.map((player: any) => {
                   if (!player.manualAdjustments || player.manualAdjustments.length === 0) return null;
                   return (
-                    <div key={player.player._id} className="rounded-lg border border-border px-3 py-3">
+                    <div key={player.player._id} className="rounded-lg bg-background/80 px-3 py-3 shadow-sm shadow-black/5">
                       <div className="mb-3 flex items-center justify-between">
                         <h6 className="font-medium text-foreground">
                           {player.player.name || player.player.username || 'Ismeretlen játékos'}
@@ -1291,7 +1297,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                         {player.manualAdjustments.map((adjustment: any, index: number) => (
                           <div
                             key={index}
-                            className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                            className="flex flex-col gap-2 rounded-md bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div>
                               <div className="flex items-center gap-2">
@@ -1353,7 +1359,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             <div className="space-y-2">
               <Label>Leírás</Label>
               <textarea
-                className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="min-h-[80px] w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
                 value={formData.description}
                 onChange={(event) => setFormData({ ...formData, description: event.target.value })}
                 placeholder="Liga leírása"
@@ -1442,7 +1448,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
 }
 
 const InfoRow = ({ label, value }: { label: string; value: number | string }) => (
-  <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+  <div className="rounded-md bg-muted/30 px-3 py-2">
     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{label}</p>
     <p className="text-base font-semibold text-foreground">{value}</p>
   </div>

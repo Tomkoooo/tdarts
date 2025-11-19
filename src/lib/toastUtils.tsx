@@ -1,57 +1,68 @@
 import React from 'react';
+import { IconBug } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+
+import { Button } from '@/components/ui/Button';
 
 interface ErrorToastOptions {
   error?: string;
   context?: string;
-  showReportButton?: boolean;
+  errorName?: string;
+  reportable?: boolean;
 }
 
 /**
- * Enhanced error toast with optional error reporting link
+ * Enhanced error toast with optional error reporting link.
+ * Adds a CTA that routes users to the feedback page with prefilled params.
  */
 export const showErrorToast = (message: string, options: ErrorToastOptions = {}) => {
-  const { error, context, showReportButton = true } = options;
-  
-  if (showReportButton) {
-    // Create error reporting URL with context
+  const { error, context, errorName, reportable = true } = options;
+  const canUseWindow = typeof window !== 'undefined';
+
+  if (reportable && canUseWindow) {
     const reportUrl = new URL('/feedback', window.location.origin);
     reportUrl.searchParams.set('category', 'bug');
-    reportUrl.searchParams.set('title', `Hiba: ${context || 'Ismeretlen helyen'}`);
-    reportUrl.searchParams.set('description', `Hibaüzenet: ${message}\n\n${error ? `Technikai részletek: ${error}` : ''}\n\nOldal: ${window.location.pathname}`);
+    reportUrl.searchParams.set('title', errorName || context || 'Ismeretlen hiba');
+
+    const descriptionParts = [
+      `Hibaüzenet: ${message}`,
+      error ? `\n\nTechnikai részletek: ${error}` : '',
+      context ? `\n\nKontekstus: ${context}` : '',
+      `\n\nOldal: ${window.location.pathname}`,
+    ].filter(Boolean);
+
+    reportUrl.searchParams.set('description', descriptionParts.join(' ').trim());
     reportUrl.searchParams.set('page', window.location.pathname);
-    
-    // Show toast with action button
+
     toast.error(
-      (t) => {
-        const handleReportClick = () => {
-          window.open(reportUrl.toString(), '_blank', 'noopener,noreferrer');
-          toast.dismiss(t.id);
-        };
-        
-        return (
-          <div className="flex flex-col gap-2">
-            <span>{message}</span>
-            <button
-              onClick={handleReportClick}
-              className="btn btn-xs btn-outline btn-error"
-            >
-              Hibabejelentés
-            </button>
-          </div>
-        );
-      },
+      (t) => (
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-foreground">{message}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2"
+            onClick={() => {
+              window.location.href = reportUrl.toString();
+              toast.dismiss(t.id);
+            }}
+          >
+            <IconBug size={16} className="text-destructive" />
+            Hibabejelentés
+          </Button>
+        </div>
+      ),
       {
-        duration: 8000, // Longer duration to allow user to click report button
-        id: `error-${Date.now()}`, // Unique ID to prevent duplicates
+        duration: 8000,
+        id: `error-${Date.now()}`,
       }
     );
-  } else {
-    // Simple error toast without report button
-    toast.error(message, {
-      duration: 4000,
-    });
+    return;
   }
+
+  toast.error(message, {
+    duration: 4000,
+  });
 };
 
 /**
@@ -77,6 +88,6 @@ export const updateToast = (toastId: string, type: 'success' | 'error', message:
   if (type === 'success') {
     toast.success(message, { id: toastId });
   } else {
-    showErrorToast(message, { showReportButton: false });
+    showErrorToast(message, { reportable: false });
   }
 };

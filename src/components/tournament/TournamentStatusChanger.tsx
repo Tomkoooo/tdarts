@@ -304,7 +304,7 @@ export default function TournamentStatusChanger({
 
   return (
     <div className="space-y-4">
-      <Card>
+      <div className="bg-transparent">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg font-semibold">Torna státusz műveletek</CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -386,7 +386,7 @@ export default function TournamentStatusChanger({
             </Alert>
           )}
         </CardContent>
-      </Card>
+      </div>
 
       <Dialog open={isGroupsDialogOpen} onOpenChange={setIsGroupsDialogOpen}>
         <DialogContent className="max-w-lg">
@@ -459,8 +459,8 @@ export default function TournamentStatusChanger({
       </Dialog>
 
       <Dialog open={isManualGroupsDialogOpen} onOpenChange={setIsManualGroupsDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Manuális csoportkészítő</DialogTitle>
             <DialogDescription>
               Válaszd ki, mely játékosok szerepeljenek az egyes táblákon. Táblánként minimum 3, maximum 6 játékos engedélyezett.
@@ -468,6 +468,7 @@ export default function TournamentStatusChanger({
           </DialogHeader>
 
           {manualContext && (
+            <div className="flex-1 overflow-y-auto px-1">
             <div className="grid gap-6 md:grid-cols-[260px_1fr]">
               <div className="space-y-4">
                 <Card>
@@ -591,9 +592,18 @@ export default function TournamentStatusChanger({
                 </div>
               </div>
             </div>
+            </div>
           )}
 
-          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          {!manualContext && (
+            <div className="flex-1 flex items-center justify-center py-12">
+              <div className="text-center text-muted-foreground">
+                <p>Betöltés...</p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex-shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button variant="ghost" onClick={() => setIsManualGroupsDialogOpen(false)}>
               Mégse
             </Button>

@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card } from "@/components/ui/Card";
-import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { IconArrowLeft, IconDeviceDesktop } from "@tabler/icons-react";
 
 const BoardPage: React.FC = () => {
   const [tournamentCode, setTournamentCode] = useState<string>("");
@@ -64,94 +64,99 @@ const BoardPage: React.FC = () => {
 
 
   return (
-    <div className="h-screen bg-gradient-to-br from-muted/20 to-background flex items-center justify-center p-4 overflow-y-auto">
+    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Card elevation="elevated" className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <Button 
-              onClick={() => router.push('/')}
-              variant="ghost"
-              size="sm"
-            >
-              <IconArrowLeft className="h-5 w-5 mr-1" />
-              Vissza
-            </Button>
-          </div>
-          
-          <div className="text-center mb-8">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-primary/10">
-                <IconCheck className="w-8 h-8 text-primary" />
+        <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">
+          <CardHeader>
+            <div className="flex items-start justify-between mb-4">
+              <Button 
+                onClick={() => router.push('/')}
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+              >
+                <IconArrowLeft size={18} />
+                Vissza
+              </Button>
+            </div>
+            <div className="text-center space-y-4">
+              <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/10">
+                <IconDeviceDesktop className="text-primary" size={32} />
+              </div>
+              <div>
+                <CardTitle className="text-3xl font-bold tracking-tight">Tábla Csatlakozás</CardTitle>
+                <CardDescription className="text-base mt-2">
+                  Add meg a torna kódot és jelszót
+                </CardDescription>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-primary mb-2">Tábla Csatlakozás</h1>
-            <p className="text-muted-foreground">Add meg a torna kódot és jelszót</p>
-          </div>
-          
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="tournamentCode" className="font-bold">
-                Torna Kód
-              </Label>
-              <Input
-                id="tournamentCode"
-                type="text"
-                placeholder="Pl.: ABC1"
-                className="text-center text-2xl font-mono tracking-widest uppercase h-14"
-                value={tournamentCode}
-                onChange={(e) => setTournamentCode(e.target.value.toUpperCase())}
-                maxLength={4}
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">4 karakteres kód</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="font-bold">
-                Jelszó
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Torna jelszó"
-                className="h-14"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Kérd el a szervezőtől</p>
-            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={!tournamentCode.trim() || tournamentCode.length !== 4 || !password.trim() || loading}
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                  Csatlakozás...
-                </>
-              ) : (
-                'Csatlakozás a tornához'
-              )}
-            </Button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="tournamentCode" className="text-sm font-semibold">
+                  Torna Kód
+                </Label>
+                <Input
+                  id="tournamentCode"
+                  type="text"
+                  placeholder="Pl.: ABC1"
+                  className="text-center text-2xl font-mono tracking-widest uppercase h-14"
+                  value={tournamentCode}
+                  onChange={(e) => setTournamentCode(e.target.value.toUpperCase())}
+                  maxLength={4}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">4 karakteres kód</p>
+              </div>
 
-          <div className="mt-6 text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Nincs torna kódod? Kérdezd meg a szervezőt!
-            </p>
-            <p className="text-xs text-muted-foreground/70">
-              A jelszó mentésre kerül a böngésződben a könnyebb használat érdekében.
-            </p>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-semibold">
+                  Jelszó
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Torna jelszó"
+                  className="h-14"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Kérd el a szervezőtől</p>
+              </div>
+              
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={!tournamentCode.trim() || tournamentCode.length !== 4 || !password.trim() || loading}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
+                    Csatlakozás...
+                  </>
+                ) : (
+                  'Csatlakozás a tornához'
+                )}
+              </Button>
+            </form>
+
+            <div className="pt-4 space-y-2 text-center border-t border-border/40">
+              <p className="text-sm text-muted-foreground">
+                Nincs torna kódod? Kérdezd meg a szervezőt!
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                A jelszó mentésre kerül a böngésződben a könnyebb használat érdekében.
+              </p>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>

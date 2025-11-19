@@ -18,7 +18,7 @@ import {
   IconPlug,
   IconChartBar
 } from '@tabler/icons-react';
-import toast from 'react-hot-toast';
+import { showErrorToast } from '@/lib/toastUtils';
 
 interface SystemInfo {
   version: string;
@@ -56,9 +56,13 @@ export default function AdminSettingsPage() {
       setLoading(true);
       const response = await axios.get('/api/admin/system-info');
       setSystemInfo(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching system info:', error);
-      toast.error('Hiba történt a rendszer információk betöltése során');
+      showErrorToast('Hiba történt a rendszer információk betöltése során', {
+        error: error?.response?.data?.error,
+        context: 'Rendszer információk',
+        errorName: 'Adatbetöltés sikertelen',
+      });
     } finally {
       setLoading(false);
     }

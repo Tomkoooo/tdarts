@@ -62,7 +62,12 @@ export default function CreateLeagueModal({
 
     // Convert empty strings to 0 in pointsConfig
     const cleanedPointsConfig = Object.entries(formData.pointsConfig || {}).reduce((acc, [key, val]) => {
-      acc[key] = val === '' ? 0 : val;
+      // Handle string values (from empty inputs) and convert to 0
+      if (typeof val === 'string' && val === '') {
+        acc[key] = 0;
+      } else {
+        acc[key] = val;
+      }
       return acc;
     }, {} as any);
 

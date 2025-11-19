@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { IconMapPin, IconUsers } from "@tabler/icons-react"
+import { IconMapPin, IconUsers, IconTrophy, IconCalendar, IconCheck, IconListCheck } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/Button"
 import { TournamentResults } from "./TournamentResults"
 import PlayerCard from "@/components/player/PlayerCard"
 import Pagination from "@/components/common/Pagination"
@@ -21,6 +22,7 @@ interface InitialViewProps {
   onPlayersPageChange: (page: number) => void
   onClubsPageChange: (page: number) => void
   onPlayerClick: (player: any) => void
+  onQuickAction?: (action: 'all-tournaments' | 'todays-tournaments' | 'active-tournaments' | 'finished-tournaments' | 'all-clubs') => void
 }
 
 export function InitialView({
@@ -35,6 +37,7 @@ export function InitialView({
   onPlayersPageChange,
   onClubsPageChange,
   onPlayerClick,
+  onQuickAction,
 }: InitialViewProps) {
   if (loading) {
     return (
@@ -70,6 +73,57 @@ export function InitialView({
 
   return (
     <div className="space-y-12">
+      {/* Quick Actions */}
+      {onQuickAction && (
+        <section>
+          <CardHeader className="px-0">
+            <CardTitle className="text-2xl font-bold">Gyors Műveletek</CardTitle>
+          </CardHeader>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <Button
+              variant="outline"
+              className="flex flex-col h-auto py-4 gap-2"
+              onClick={() => onQuickAction('all-tournaments')}
+            >
+              <IconTrophy size={24} className="text-primary" />
+              <span className="text-sm font-medium">Összes Torna</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex flex-col h-auto py-4 gap-2"
+              onClick={() => onQuickAction('todays-tournaments')}
+            >
+              <IconCalendar size={24} className="text-info" />
+              <span className="text-sm font-medium">Mai Tornák</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex flex-col h-auto py-4 gap-2"
+              onClick={() => onQuickAction('active-tournaments')}
+            >
+              <IconListCheck size={24} className="text-success" />
+              <span className="text-sm font-medium">Aktív Tornák</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex flex-col h-auto py-4 gap-2"
+              onClick={() => onQuickAction('finished-tournaments')}
+            >
+              <IconCheck size={24} className="text-warning" />
+              <span className="text-sm font-medium">Lezárt Tornák</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex flex-col h-auto py-4 gap-2"
+              onClick={() => onQuickAction('all-clubs')}
+            >
+              <IconUsers size={24} className="text-accent" />
+              <span className="text-sm font-medium">Összes Klub</span>
+            </Button>
+          </div>
+        </section>
+      )}
+
       {/* Upcoming Tournaments */}
       <section>
         <CardHeader className="px-0">
@@ -117,7 +171,7 @@ export function InitialView({
           <CardHeader className="px-0">
             <CardTitle className="text-2xl font-bold">Népszerű Klubbok</CardTitle>
           </CardHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 flex flex-col">
             {popularClubs
               .slice((clubsPage - 1) * itemsPerPage, clubsPage * itemsPerPage)
               .map((club, index) => (

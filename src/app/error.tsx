@@ -19,37 +19,37 @@ export default function Error({ error, reset }: ErrorProps) {
   }, [error, isClient]);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-2xl mx-auto text-center">
         {/* Error Icon */}
         <div className="mb-8">
-          <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconAlertTriangle className="w-12 h-12 text-red-500" />
+          <div className="w-24 h-24 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconAlertTriangle size={48} className="text-destructive" />
           </div>
-          <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full"></div>
+          <div className="w-32 h-1 bg-gradient-to-r from-destructive to-accent mx-auto rounded-full"></div>
         </div>
 
         {/* Main Content */}
         <div className="mb-12">
-          <h1 className="text-3xl font-bold text-white mb-4">
+          <h1 className="text-3xl font-bold text-foreground mb-4">
             Hiba történt
           </h1>
-          <p className="text-xl text-gray-300 mb-6">
+          <p className="text-xl text-muted-foreground mb-6">
             Sajnos valami hiba történt az oldal betöltése közben.
           </p>
-          <p className="text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             Próbáld meg újratölteni az oldalt, vagy lépj vissza a főoldalra.
           </p>
           
           {/* Error Details (only in development) */}
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-6 p-4 bg-gray-800 rounded-lg text-left">
-              <h3 className="text-sm font-semibold text-white mb-2">Hiba részletei (fejlesztői mód):</h3>
-              <p className="text-xs text-gray-300 font-mono break-all">
+            <div className="mt-6 p-4 bg-card/60 rounded-lg text-left border border-destructive/20">
+              <h3 className="text-sm font-semibold text-foreground mb-2">Hiba részletei (fejlesztői mód):</h3>
+              <p className="text-xs text-muted-foreground font-mono break-all">
                 {error.message}
               </p>
               {error.digest && (
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Error ID: {error.digest}
                 </p>
               )}
@@ -61,29 +61,29 @@ export default function Error({ error, reset }: ErrorProps) {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
           <button
             onClick={reset}
-            className="flex items-center space-x-2 px-8 py-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-semibold"
+            className="flex items-center space-x-2 px-8 py-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200 font-semibold shadow-lg shadow-primary/30"
           >
-            <IconRefresh className="w-5 h-5" />
+            <IconRefresh size={20} />
             <span>Újrapróbálkozás</span>
           </button>
           
           <Link 
             href="/"
-            className="flex items-center space-x-2 px-8 py-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 font-semibold"
+            className="flex items-center space-x-2 px-8 py-4 bg-card text-foreground rounded-lg hover:bg-accent transition-all duration-200 font-semibold border border-primary/20"
           >
-            <IconHome className="w-5 h-5" />
+            <IconHome size={20} />
             <span>Főoldal</span>
           </Link>
         </div>
 
         {/* Additional Help */}
-        <div className="p-6 bg-gray-800 rounded-2xl">
-          <h3 className="text-lg font-semibold text-white mb-3">
+        <div className="p-6 bg-card/60 rounded-2xl border border-primary/10">
+          <h3 className="text-lg font-semibold text-foreground mb-3">
             Mit tehetsz?
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
             <div className="text-left">
-              <h4 className="font-medium text-white mb-2">Azonnali megoldások:</h4>
+              <h4 className="font-medium text-foreground mb-2">Azonnali megoldások:</h4>
               <ul className="space-y-1">
                 <li>• Kattints az &ldquo;Újrapróbálkozás&rdquo; gombra</li>
                 <li>• Frissítsd az oldalt (F5)</li>
@@ -91,7 +91,7 @@ export default function Error({ error, reset }: ErrorProps) {
               </ul>
             </div>
             <div className="text-left">
-              <h4 className="font-medium text-white mb-2">Alternatív megoldások:</h4>
+              <h4 className="font-medium text-foreground mb-2">Alternatív megoldások:</h4>
               <ul className="space-y-1">
                 <li>• Lépj vissza a főoldalra</li>
                 <li>• Próbáld másik böngészőben</li>
@@ -102,7 +102,7 @@ export default function Error({ error, reset }: ErrorProps) {
         </div>
 
         {/* Contact Info */}
-        <div className="mt-8 text-xs text-gray-500">
+        <div className="mt-8 text-xs text-muted-foreground">
           <p>
             Ha a probléma továbbra is fennáll, kérjük vedd fel a kapcsolatot a fejlesztőkkel.
           </p>

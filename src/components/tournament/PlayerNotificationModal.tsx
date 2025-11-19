@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
+import { showErrorToast } from "@/lib/toastUtils"
 
 interface PlayerNotificationModalProps {
   isOpen: boolean
@@ -65,11 +66,19 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
         setMessage("")
         onClose()
       } else {
-        toast.error("Nem sikerült elküldeni az értesítést")
+        showErrorToast("Nem sikerült elküldeni az értesítést", {
+          context: "Játékos értesítés",
+          errorName: "Értesítés küldése sikertelen",
+        })
       }
     } catch (error: unknown) {
-      console.error("Notification error", error)
-      toast.error("Hiba történt az értesítés küldése közben")
+      const err = error as any
+      console.error("Notification error", err)
+      showErrorToast("Hiba történt az értesítés küldése közben", {
+        error: err?.response?.data?.error,
+        context: "Játékos értesítés",
+        errorName: "Értesítés küldése sikertelen",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -83,8 +92,8 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className={`max-w-3xl overflow-hidden border-0 bg-card/95 p-0 text-foreground ${PANEL_SHADOW}`}>
-        <DialogHeader className="space-y-3 border-b border-border/40 bg-card/90 px-6 py-5">
+      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 text-foreground ${PANEL_SHADOW}`}>
+        <DialogHeader className="space-y-3 bg-card/90 px-6 py-5 flex-shrink-0 shadow-sm shadow-primary/5">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <IconMail className="h-5 w-5 text-primary" />
             Értesítés küldése játékosnak
@@ -94,7 +103,8 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="grid gap-6 px-6 py-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="grid gap-6 px-6 py-6 overflow-y-auto flex-1">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="subject">
               Tárgy
@@ -164,8 +174,9 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
               />
             )}
           </div>
+          </div>
 
-          <DialogFooter className="flex flex-col items-stretch gap-3 pt-4 sm:flex-row sm:justify-end">
+          <DialogFooter className="flex-shrink-0 flex flex-col items-stretch gap-3 px-6 py-4 sm:flex-row sm:justify-end shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Mégse
             </Button>

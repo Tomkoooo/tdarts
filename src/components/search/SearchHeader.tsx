@@ -61,7 +61,7 @@ export function SearchHeader({
 
           {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/20 rounded-lg z-50 overflow-hidden">
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
@@ -69,7 +69,7 @@ export function SearchHeader({
                     onSuggestionClick(suggestion)
                     onSuggestionsToggle(false)
                   }}
-                  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors text-sm"
+                  className="w-full text-left px-4 py-3 hover:bg-muted/60 transition-colors text-sm border-b border-border/40 last:border-0"
                 >
                   <IconSearch className="w-4 h-4 inline mr-2 text-muted-foreground" />
                   {suggestion}

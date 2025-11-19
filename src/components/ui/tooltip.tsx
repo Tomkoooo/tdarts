@@ -23,14 +23,14 @@ const TooltipContent = React.forwardRef<
       initial="initial"
       animate="animate"
       exit="exit"
-      className={cn(
+    className={cn(
         "z-50 overflow-hidden rounded-xl border border-white/10",
         "bg-popover/95 backdrop-blur-xl px-3 py-2",
         "text-xs text-popover-foreground",
         "shadow-glass-lg",
-        className
-      )}
-    />
+      className
+    )}
+  />
   </TooltipPrimitive.Content>
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName

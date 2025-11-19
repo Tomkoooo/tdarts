@@ -32,21 +32,11 @@ export function TournamentResults({
 }: TournamentResultsProps) {
   const [view, setView] = React.useState<'list' | 'calendar'>('list')
 
-  // Helper function to check if tournament is in the future
-  const isFutureTournament = (tournament: Tournament) => {
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-    const startDate = new Date(tournament.tournamentSettings?.startDate)
-    startDate.setHours(0, 0, 0, 0)
-    return tournament.tournamentSettings?.status === 'pending' && startDate >= now
-  }
-
   // Group tournaments by date
   const groupedTournaments = React.useMemo(() => {
     const groups: { [key: string]: Tournament[] } = {}
     
     tournaments
-      .filter(isFutureTournament)
       .sort((a, b) => 
         new Date(a.tournamentSettings.startDate).getTime() - 
         new Date(b.tournamentSettings.startDate).getTime()

@@ -75,9 +75,9 @@ export async function PUT(
     // Email értesítés küldése a felhasználónak
     try {
       if (status === 'resolved' || status === 'rejected' || status === 'closed') {
-        const subject = status === 'resolved' ? 'Hibabejelentés megoldva' :
-                       status === 'rejected' ? 'Hibabejelentés elutasítva' :
-                       'Hibabejelentés lezárva';
+        const subject = status === 'resolved' ? 'Visszajelzésmegoldva' :
+                       status === 'rejected' ? 'Visszajelzéselutasítva' :
+                       'Visszajelzéslezárva';
         
         await sendEmail({
           to: [updatedFeedback.email],

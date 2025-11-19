@@ -88,7 +88,7 @@ const PricingSection = () => {
           
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold">
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Válaszd ki a Tökéletes Csomagot
+            Válaszd ki a Tökéletes Csomagot
             </span>
           </h2>
           
@@ -104,59 +104,59 @@ const PricingSection = () => {
             
             return (
               <Card 
-                key={index} 
+              key={index}
                 className={cn(
                   "group relative transition-all duration-300",
                   "hover:shadow-lg hover:shadow-black/30",
                   "border-primary/20 bg-card/50 backdrop-blur-sm",
                   pkg.popular && "ring-2 ring-primary shadow-primary/20"
                 )}
-              >
-                {/* Popular Badge */}
-                {pkg.popular && (
+            >
+              {/* Popular Badge */}
+              {pkg.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                     <Badge className="bg-primary text-primary-foreground shadow-lg">
-                      Legnépszerűbb
+                    Legnépszerűbb
                     </Badge>
-                  </div>
-                )}
+                </div>
+              )}
 
                 <CardHeader className="text-center space-y-4 pt-8">
-                  {/* Package Icon */}
+              {/* Package Icon */}
                   <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
                     <Icon className="w-8 h-8 text-primary" />
-                  </div>
+              </div>
 
-                  {/* Package Info */}
+              {/* Package Info */}
                   <div>
                     <CardTitle className="text-2xl mb-2">{pkg.name}</CardTitle>
                     <div className="mb-3">
                       <span className="text-4xl font-bold text-foreground">{pkg.price}</span>
                       <span className="text-muted-foreground">{pkg.period}</span>
-                    </div>
+                </div>
                     <CardDescription className="text-sm">
                       {pkg.description}
                     </CardDescription>
-                  </div>
+              </div>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {/* Features */}
-                  {pkg.features.map((feature, featureIndex) => (
+              {/* Features */}
+                {pkg.features.map((feature, featureIndex) => (
                     <div key={featureIndex} className="flex items-start gap-3">
-                      {feature.included ? (
+                    {feature.included ? (
                         <IconCheck className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                      ) : (
+                    ) : (
                         <IconX className="w-5 h-5 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
-                      )}
+                    )}
                       <span className={cn(
                         "text-sm",
                         feature.included ? "text-foreground" : "text-muted-foreground/70"
                       )}>
-                        {feature.text}
-                      </span>
-                    </div>
-                  ))}
+                      {feature.text}
+                    </span>
+                  </div>
+                ))}
                 </CardContent>
 
                 <CardFooter>
@@ -165,7 +165,7 @@ const PricingSection = () => {
                     size="lg" 
                     className="w-full"
                   >
-                    {pkg.name === 'Ingyenes' ? 'Kezdés Most' : 'Teszt Üzem'}
+                {pkg.name === 'Ingyenes' ? 'Kezdés Most' : 'Teszt Üzem'}
                   </Button>
                 </CardFooter>
               </Card>

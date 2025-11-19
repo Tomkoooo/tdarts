@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
 import axios from "axios"
 import toast from "react-hot-toast"
+import { showErrorToast } from "@/lib/toastUtils"
 import { useUserContext } from "@/hooks/useUser"
 import { Club } from "@/interface/club.interface"
 import ClubLayout from "@/components/club/ClubLayout"
@@ -45,7 +46,6 @@ export default function ClubDetailPage() {
         return
       }
 
-      const toastId = toast.loading('Klub adatok betöltése...')
       try {
         const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`)
         setClub(clubResponse.data)
@@ -60,9 +60,13 @@ export default function ClubDetailPage() {
           setUserRole('none')
         }
 
-        toast.success('Klub adatok betöltve!', { id: toastId })
       } catch (err: any) {
-        toast.error(err.response?.data?.error || 'Klub betöltése sikertelen', { id: toastId })
+
+        showErrorToast(err.response?.data?.error || 'Klub betöltése sikertelen', {
+          error: err?.response?.data?.error,
+          context: "Klub részletek",
+          errorName: "Klub betöltése sikertelen",
+        })
         console.error(err)
         router.push('/clubs')
       }
@@ -84,7 +88,12 @@ export default function ClubDetailPage() {
       toast.success('Sikeresen kiléptél a klubból!', { id: toastId })
       router.push('/clubs')
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Kilépés sikertelen', { id: toastId })
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Kilépés sikertelen', {
+        error: err?.response?.data?.error,
+        context: "Klubból kilépés",
+        errorName: "Kilépés sikertelen",
+      })
     }
   }
 
@@ -99,7 +108,12 @@ export default function ClubDetailPage() {
       toast.success('Klub sikeresen deaktiválva!', { id: toastId })
       router.push('/clubs')
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Klub deaktiválása sikertelen', { id: toastId })
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Klub deaktiválása sikertelen', {
+        error: err?.response?.data?.error,
+        context: "Klub deaktiválása",
+        errorName: "Deaktiválás sikertelen",
+      })
     }
   }
 
@@ -120,7 +134,11 @@ export default function ClubDetailPage() {
       await fetchClub()
       toast.success('Játékos hozzáadva!', { id: toastId })
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Játékos hozzáadása sikertelen')
+      showErrorToast(err.response?.data?.error || 'Játékos hozzáadása sikertelen', {
+        error: err?.response?.data?.error,
+        context: "Klub tag hozzáadása",
+        errorName: "Játékos hozzáadása sikertelen",
+      })
     }
   }
 

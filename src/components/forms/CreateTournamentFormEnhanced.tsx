@@ -60,11 +60,11 @@ export function CreateTournamentFormEnhanced({
       // Convert empty strings to 0 for number fields
       const cleanedData = {
         ...data,
-        maxPlayers: data.maxPlayers === '' ? 0 : data.maxPlayers,
-        legsToWin: data.legsToWin === '' ? 0 : data.legsToWin,
+        maxPlayers: typeof data.maxPlayers === 'string' && data.maxPlayers === '' ? 0 : data.maxPlayers,
+        legsToWin: typeof data.legsToWin === 'string' && data.legsToWin === '' ? 0 : data.legsToWin,
         boards: data.boards?.map((board: any) => ({
           ...board,
-          number: board.number === '' ? 0 : board.number,
+          number: typeof board.number === 'string' && board.number === '' ? 0 : board.number,
         })) || [],
       };
       

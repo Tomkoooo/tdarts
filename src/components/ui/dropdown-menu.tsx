@@ -52,13 +52,13 @@ const DropdownMenuSubContent = React.forwardRef<
       initial="initial"
       animate="animate"
       exit="exit"
-      className={cn(
+    className={cn(
         "z-50 min-w-[8rem] overflow-hidden rounded-lg border border-white/10",
         "bg-popover/95 backdrop-blur-xl p-1 text-popover-foreground",
         "shadow-glass-lg",
-        className
-      )}
-    />
+      className
+    )}
+  />
   </DropdownMenuPrimitive.SubContent>
 ))
 DropdownMenuSubContent.displayName =
@@ -75,13 +75,13 @@ const DropdownMenuContent = React.forwardRef<
         initial="initial"
         animate="animate"
         exit="exit"
-        className={cn(
+      className={cn(
           "z-50 min-w-[8rem] overflow-hidden rounded-lg border border-white/10",
           "bg-popover/95 backdrop-blur-xl p-1 text-popover-foreground",
           "shadow-glass-lg",
-          className
-        )}
-      />
+        className
+      )}
+    />
     </DropdownMenuPrimitive.Content>
   </DropdownMenuPrimitive.Portal>
 ))

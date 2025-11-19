@@ -93,9 +93,9 @@ export default function EditTournamentModal({
       // Convert empty strings to 0 for number fields
       const cleanedSettings = {
         ...settings,
-        maxPlayers: settings.maxPlayers === '' ? 0 : settings.maxPlayers,
-        startingScore: settings.startingScore === '' ? 0 : settings.startingScore,
-        entryFee: settings.entryFee === '' ? 0 : settings.entryFee,
+        maxPlayers: typeof settings.maxPlayers === 'string' && settings.maxPlayers === '' ? 0 : settings.maxPlayers,
+        startingScore: typeof settings.startingScore === 'string' && settings.startingScore === '' ? 0 : settings.startingScore,
+        entryFee: typeof settings.entryFee === 'string' && settings.entryFee === '' ? 0 : settings.entryFee,
       };
 
       const response = await fetch(`/api/tournaments/${tournament.tournamentId}`, {

@@ -5,6 +5,22 @@ import MatchGame from "@/components/board/MatchGame";
 import Link from "next/link";
 import '../board.css'
 import { useUserContext } from "@/hooks/useUser";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import {
+  IconArrowLeft,
+  IconDeviceDesktop,
+  IconRefresh,
+  IconPlayerPlay,
+} from "@tabler/icons-react";
+import { showErrorToast } from "@/lib/toastUtils";
+import toast from "react-hot-toast";
 
 // --- Types ---
 interface Player {
@@ -79,12 +95,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [legsToWin, setLegsToWin] = useState<number>(4);
   const [startingPlayer, setStartingPlayer] = useState<1 | 2>(1);
   const [setupLoading, setSetupLoading] = useState<boolean>(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
 
   // Admin modal state
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [adminMatch, setAdminMatch] = useState<Match | null>(null);
-  const [player1Legs, setPlayer1Legs] = useState<number>(0);
-  const [player2Legs, setPlayer2Legs] = useState<number>(0);
+  const [player1Legs, setPlayer1Legs] = useState<number | ''>(0);
+  const [player2Legs, setPlayer2Legs] = useState<number | ''>(0);
   const [adminLoading, setAdminLoading] = useState<boolean>(false);
 
   // Check URL parameters for QR code authentication
@@ -163,16 +180,26 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         try {
           const tournamentResponse = await axios.get(`/api/tournaments/${tournamentId}`);
           setTournamentData(tournamentResponse.data);
-        } catch (err) {
+        } catch (err: any) {
           console.error('Failed to load tournament data:', err);
+          showErrorToast('Nem sikerült betölteni a torna adatokat.', {
+            error: err?.response?.data?.error,
+            context: 'Torna adatok betöltése',
+            errorName: 'Torna adatok betöltése sikertelen',
+          });
         }
         
         await loadBoards();
       } else {
-        setError("Hibás jelszó!");
+        toast.error('Hibás jelszó!');
       }
-    } catch (err) {
+    } catch (err: any) {
       setError("Hiba történt a bejelentkezés során!");
+      showErrorToast('Nem sikerült bejelentkezni.', {
+        error: err?.response?.data?.error,
+        context: 'Tábla bejelentkezés',
+        errorName: 'Bejelentkezés sikertelen',
+      });
       console.error('Password submit error:', err);
     } finally {
       setLoading(false);
@@ -184,8 +211,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     try {
       const response = await axios.get(`/api/boards/${tournamentId}/getBoards`);
       setBoards(response.data.boards);
-    } catch (err) {
+    } catch (err: any) {
       setError("Nem sikerült betölteni a táblákat!");
+      showErrorToast('Nem sikerült betölteni a táblákat.', {
+        error: err?.response?.data?.error,
+        context: 'Táblák betöltése',
+        errorName: 'Táblák betöltése sikertelen',
+      });
       console.error('Load boards error:', err);
     } finally {
       setLoading(false);
@@ -199,8 +231,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     try {
       const response = await axios.get(`/api/boards/${tournamentId}/${selectedBoard.boardNumber}/matches`);
       setMatches(response.data.matches);
-    } catch (err) {
+    } catch (err: any) {
       setError("Nem sikerült betölteni a meccseket!");
+      showErrorToast('Nem sikerült betölteni a meccseket.', {
+        error: err?.response?.data?.error,
+        context: 'Meccsek betöltése',
+        errorName: 'Meccsek betöltése sikertelen',
+      });
       console.error('Load matches error:', err);
     } finally {
       setLoading(false);
@@ -234,8 +271,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     if (!adminMatch) return;
     
     // Convert empty strings to 0
-    const cleanedPlayer1Legs = player1Legs === '' ? 0 : player1Legs;
-    const cleanedPlayer2Legs = player2Legs === '' ? 0 : player2Legs;
+    const cleanedPlayer1Legs = player1Legs === '' ? 0 : Number(player1Legs);
+    const cleanedPlayer2Legs = player2Legs === '' ? 0 : Number(player2Legs);
     
     // Ensure no tie
     if (cleanedPlayer1Legs === cleanedPlayer2Legs) {
@@ -266,9 +303,16 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       
       setShowAdminModal(false);
       setAdminMatch(null);
+      setPlayer1Legs(0);
+      setPlayer2Legs(0);
       await loadMatches(); // Reload matches to see updated status
-    } catch (err) {
+    } catch (err: any) {
       setError("Hiba történt a meccs befejezése során!");
+      showErrorToast('Nem sikerült befejezni a meccset.', {
+        error: err?.response?.data?.error,
+        context: 'Meccs befejezése',
+        errorName: 'Meccs befejezése sikertelen',
+      });
       console.error('Finish match error:', err);
     } finally {
       setAdminLoading(false);
@@ -313,8 +357,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           // Don't fail the match start if socket notification fails
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       setError("Nem sikerült elindítani a meccset!");
+      showErrorToast('Nem sikerült elindítani a meccset.', {
+        error: err?.response?.data?.error,
+        context: 'Meccs indítása',
+        errorName: 'Meccs indítása sikertelen',
+      });
       console.error('Start match error:', err);
     } finally {
       setSetupLoading(false);
@@ -351,62 +400,75 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Password authentication screen
   if (!isAuthenticated) {
     return (
-      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-primary mb-2">Torna Jelszó</h1>
-              <p className="text-base-content/70">Add meg a torna jelszavát a folytatáshoz</p>
-              <div className="flex gap-2 justify-center mt-4">
-                <Link href="/board" className="btn btn-ghost btn-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Vissza
-                </Link>
-                <Link href={`/tournaments/${tournamentId}`} className="btn btn-primary btn-sm">
-                  Torna oldal
-                </Link>
+          <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">
+            <CardHeader>
+              <div className="text-center space-y-4">
+                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/10">
+                  <IconDeviceDesktop className="text-primary" size={32} />
+                </div>
+                <div>
+                  <CardTitle className="text-3xl font-bold tracking-tight">Torna Jelszó</CardTitle>
+                  <CardDescription className="text-base mt-2">
+                    Add meg a torna jelszavát a folytatáshoz
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2 justify-center pt-2">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/board">
+                      <IconArrowLeft size={18} />
+                      Vissza
+                    </Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href={`/tournaments/${tournamentId}`}>Torna oldal</Link>
+                  </Button>
+                </div>
               </div>
-            </div>
-            
-            {error && (
-              <div className="alert alert-error mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-            
-            <div className="space-y-4">
-              <div className="form-control">
-                <input
-                  type="password"
-                  placeholder="Torna jelszó"
-                  className="input input-bordered input-lg w-full"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                />
-              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               
-              <button
-                className="btn btn-primary btn-lg w-full"
-                onClick={() => handlePasswordSubmit()}
-                disabled={loading || !password.trim()}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Bejelentkezés...
-                  </>
-                ) : (
-                  "Bejelentkezés"
-                )}
-              </button>
-            </div>
-          </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="board-password" className="text-sm font-semibold">
+                    Torna jelszó
+                  </Label>
+                  <Input
+                    id="board-password"
+                    type="password"
+                    placeholder="Torna jelszó"
+                    className="h-14"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                    autoFocus
+                  />
+                </div>
+                
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={() => handlePasswordSubmit()}
+                  disabled={loading || !password.trim()}
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
+                      Bejelentkezés...
+                    </>
+                  ) : (
+                    "Bejelentkezés"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -415,65 +477,77 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Board selection screen
   if (!selectedBoard) {
     return (
-      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 p-4 overflow-y-auto">
-        <div className="max-w-6xl mx-auto h-full flex flex-col">
-          <div className="text-center mb-4 flex-shrink-0">
-            <h1 className="text-4xl font-bold text-primary mb-2">Válassz Táblát</h1>
-            <p className="text-lg text-base-content/70">Válaszd ki a táblát, amin játszani szeretnél</p>
-            <div className="flex gap-2 justify-center mt-4">
-              <Link href="/board" className="btn btn-ghost btn-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Vissza
-              </Link>
-              <Link href={`/tournaments/${tournamentId}`} className="btn btn-primary btn-sm">
-                Torna oldal
-              </Link>
+      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 p-4">
+        <div className="container mx-auto max-w-6xl py-8">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <IconDeviceDesktop className="text-primary" size={24} />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold tracking-tight">Válassz Táblát</h1>
+                <p className="text-muted-foreground mt-1">Válaszd ki a táblát, amin játszani szeretnél</p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-center">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/board">
+                  <IconArrowLeft size={18} />
+                  Vissza
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href={`/tournaments/${tournamentId}`}>Torna oldal</Link>
+              </Button>
             </div>
           </div>
           
           {error && (
-            <div className="alert alert-error mb-4 max-w-2xl mx-auto flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
-            </div>
+            <Alert variant="destructive" className="mb-6 max-w-2xl mx-auto">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           
           {loading ? (
-            <div className="flex justify-center items-center flex-1">
-              <span className="loading loading-spinner loading-lg"></span>
+            <div className="flex justify-center items-center py-20">
+              <div className="w-8 h-8 border-2 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row jsutify-center md:justify-around p-3  gap-4 flex-wrap">
-              {boards.map((board) => (
-                <button
-                  key={board.boardNumber}
-                  className={`card bg-base-100  shadow-xl hover:shadow-2xl transition-all duration-300 ${
-                    board.status === 'playing' ? 'ring-2 ring-primary' : 
-                    board.status === 'waiting' ? 'ring-2 ring-warning' : ''
-                  }`}
-                  onClick={() => handleBoardSelect(board)}
-                >
-                  <div className="card-body text-center p-4">
-                    <h2 className="card-title text-xl font-bold justify-center mb-2">
-                      {board.name ? `${board.name}` : `Tábla ${board.boardNumber}`}
-                    </h2>
-                    <div className="flex justify-between gap-3 items-center">
-                        <div className={`badge badge-lg ${
-                          board.status === 'playing' ? 'badge-primary' :
-                          board.status === 'waiting' ? 'badge-warning' : 'badge-ghost'
-                        }`}>
-                          {board.status === 'playing' ? 'Játékban' :
-                           board.status === 'waiting' ? 'Várakozik' : 'Szabad'}
-                        </div>
-                        <button className="btn btn-primary btn-sm">Kiválaszt</button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {boards.map((board) => {
+                const statusConfig = {
+                  playing: { label: 'Játékban', variant: 'default' as const, ring: 'ring-2 ring-primary' },
+                  waiting: { label: 'Várakozik', variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
+                  idle: { label: 'Szabad', variant: 'outline' as const, ring: '' },
+                };
+                const config = statusConfig[board.status as keyof typeof statusConfig] || statusConfig.idle;
+                
+                return (
+                  <button
+                    key={board.boardNumber}
+                    onClick={() => handleBoardSelect(board)}
+                    className={cn(
+                      "text-left p-6 rounded-xl transition-all",
+                      "bg-card/50 backdrop-blur-xl shadow-xl shadow-black/20 hover:shadow-2xl",
+                      config.ring
+                    )}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold">
+                          {board.name || `Tábla ${board.boardNumber}`}
+                        </h2>
+                        <Badge variant={config.variant}>{config.label}</Badge>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button size="sm" variant="outline">
+                          Kiválaszt
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -484,87 +558,91 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Match selection screen
   if (!selectedMatch) {
     return (
-      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 p-4 overflow-y-auto">
-        <div className="max-w-6xl mx-auto h-full flex flex-col">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 flex-shrink-0">
-            <button className="btn btn-accent btn-sm mb-2 sm:mb-0" onClick={handleBackToBoards}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 p-4">
+        <div className="container mx-auto max-w-6xl py-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+            <Button variant="outline" size="sm" onClick={handleBackToBoards} className="gap-2">
+              <IconArrowLeft size={18} />
               Vissza a táblákhoz
-            </button>
+            </Button>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-primary">
-                {selectedBoard.name ? `${selectedBoard.name}` : `Tábla ${selectedBoard.boardNumber}`}
+              <h1 className="text-2xl font-bold">
+                {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
               </h1>
-              <button 
-                className="btn btn-outline btn-sm btn-circle"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleRefetchMatches}
                 disabled={loading}
-                title="Meccsek frissítése"
+                className="gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg"  fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
+                <IconRefresh size={18} />
+                Frissítés
+              </Button>
             </div>
           </div>
           
           {error && (
-            <div className="alert alert-error mb-4 flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
-            </div>
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           
           {loading ? (
-            <div className="flex justify-center items-center flex-1">
-              <span className="loading loading-spinner loading-lg"></span>
+            <div className="flex justify-center items-center py-20">
+              <div className="w-8 h-8 border-2 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {matches.map((match) => (
-                  <button
-                    key={match._id}
-                    className={`card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 ${
-                      match.status === 'playing' ? 'ring-2 ring-primary' : 
-                      match.status === 'pending' ? 'ring-2 ring-warning' : ''
-                    }`}
-                    onClick={() => handleMatchSelect(match)}
-                  >
-                    <div className="card-body text-center p-4">
-                      <h3 className="card-title text-lg font-bold justify-center mb-2">
-                        {match.player1.playerId.name} vs {match.player2.playerId.name}
-                      </h3>
-                      <h4 className="card-title text-lg font-bold justify-center mb-2">
-                        iró: {match.scorer.name} || Scorer: {match.scorer.name}
-                      </h4>
-                      <div className="text-sm opacity-75 mb-2">
-                        Kezdő pontszám: {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} nyert leg || Starting Score: {match.type === '501' ? '501' : match.type} • {match.legsToWin || 3} legs to win
+                {matches.map((match) => {
+                  const statusConfig = {
+                    ongoing: { label: 'Játékban', variant: 'default' as const, ring: 'ring-2 ring-primary' },
+                    pending: { label: 'Várakozik', variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
+                    finished: { label: 'Befejezett', variant: 'outline' as const, ring: '' },
+                  };
+                  const config = statusConfig[match.status as keyof typeof statusConfig] || statusConfig.finished;
+                  
+                  return (
+                    <button
+                      key={match._id}
+                      onClick={() => handleMatchSelect(match)}
+                      className={cn(
+                        "text-left p-6 rounded-xl transition-all",
+                        "bg-card/50 backdrop-blur-xl shadow-xl shadow-black/20 hover:shadow-2xl",
+                        config.ring
+                      )}
+                    >
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-bold mb-1">
+                            {match.player1.playerId.name} vs {match.player2.playerId.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Író: {match.scorer.name}
+                          </p>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <p>Kezdő pontszám: {match.type === '501' ? '501' : match.type}</p>
+                          <p>{match.legsToWin || 3} nyert leg</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Badge variant={config.variant}>{config.label}</Badge>
+                          <Button size="sm" variant="outline">
+                            Kiválaszt
+                          </Button>
+                        </div>
                       </div>
-                      <div className={`badge badge-lg ${
-                        match.status === 'ongoing' ? 'badge-primary' : 
-                        match.status === 'pending' ? 'badge-warning' : 'badge-ghost'
-                      }`}>
-                        {match.status === 'ongoing' ? 'Játékban || Playing' :
-                         match.status === 'pending' ? 'Várakozik || Waiting' : 'Befejezett || Finished'}
-                      </div>
-                      <button className="btn btn-primary btn-sm">Kiválaszt || Select</button>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
               
-              {/* Start New Match Button */}
               {isAdminOrModerator && (
-                <div className="mt-6 text-center">
-                  <button
-                    className="btn btn-primary btn-lg"
+                <div className="text-center pt-4">
+                  <Button
+                    size="lg"
                     onClick={() => {
-                      // Create a dummy match for new match setup
                       const dummyMatch: Match = {
                         _id: 'new-match',
                         boardReference: selectedBoard.boardNumber,
@@ -580,12 +658,119 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       setSelectedMatch(dummyMatch);
                       setShowMatchSetup(true);
                     }}
+                    className="gap-2"
                   >
-                    Új meccs indítása || Start New Match
-                  </button>
+                    <IconPlayerPlay size={20} />
+                    Új meccs indítása
+                  </Button>
                 </div>
               )}
             </div>
+          )}
+          
+          {/* Admin Modal */}
+          {showAdminModal && adminMatch && (
+            <Dialog open={showAdminModal} onOpenChange={(open) => {
+              if (!open) {
+                setShowAdminModal(false);
+                setAdminMatch(null);
+                setError("");
+              }
+            }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl">Admin - Meccs Beállítás</DialogTitle>
+                  <DialogDescription>
+                    <div className="text-center mt-4">
+                      <h4 className="text-lg font-bold mb-2">
+                        {adminMatch.player1.playerId.name} vs {adminMatch.player2.playerId.name}
+                      </h4>
+                      <p className="text-muted-foreground">Állítsd be a nyert legek számát</p>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      {adminMatch.player1.playerId.name} nyert legek
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="10"
+                      className="h-14"
+                      value={player1Legs === '' ? '' : player1Legs}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPlayer1Legs(value === '' ? '' : parseInt(value) || 0);
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '') {
+                          setPlayer1Legs(0);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      {adminMatch.player2.playerId.name} nyert legek
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="10"
+                      className="h-14"
+                      value={player2Legs === '' ? '' : player2Legs}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPlayer2Legs(value === '' ? '' : parseInt(value) || 0);
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '') {
+                          setPlayer2Legs(0);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowAdminModal(false);
+                      setAdminMatch(null);
+                      setError("");
+                    }}
+                  >
+                    Mégse
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleAdminMatchFinish}
+                    disabled={adminLoading || player1Legs === player2Legs}
+                  >
+                    {adminLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
+                        Mentés...
+                      </>
+                    ) : (
+                      "Meccs befejezése"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
         </div>
       </div>
@@ -594,190 +779,171 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   // Match setup screen
   if (showMatchSetup && selectedMatch) {
+    const startingPlayerName = startingPlayer === 1 
+      ? selectedMatch.player1.playerId.name 
+      : selectedMatch.player2.playerId.name;
+    
     return (
-      <div className="h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="w-full max-w-md">
-          <div className="bg-base-100 rounded-2xl p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <button className="btn btn-accent btn-sm" onClick={handleBackToMatches}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Vissza
-              </button>
-              <h2 className="text-lg font-bold text-primary">
-                {selectedBoard?.name ? `${selectedBoard?.name}` : `Tábla ${selectedBoard?.boardNumber}`}
-              </h2>
-            </div>
-            
-            <div className="text-center mb-4">
-              <h3 className="text-xl font-bold mb-2">
-                {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
-              </h3>
-              <p className="text-base-content/70 text-sm">Író: {selectedMatch.scorer.name}</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-bold">Hány nyert legig? || Legs to win:</span>
-                </label>
-                <select 
-                  className="select select-bordered select-lg w-full"
-                  value={legsToWin}
-                  onChange={(e) => setLegsToWin(parseInt(e.target.value))}
-                >
-                  <option value={1}>1 leg</option>
-                  <option value={2}>2 leg</option>
-                  <option value={3}>3 leg</option>
-                  <option value={4}>4 leg</option>
-                  <option value={5}>5 leg</option>
-                  <option value={6}>6 leg</option>
-                  <option value={7}>7 leg</option>
-                  <option value={8}>8 leg</option>
-                </select>
-              </div>
-              
-              <div className="form-control">
-                <label className="label flex flex-col items-start">
-                  <span className="label-text font-bold">Ki kezdi? || To throw first:</span>
-                  <i className="text-sm flex mb-2 ml-2">A bull-t a bal oldali ember kezdi <br/> The left player to start the bull</i>
-                  </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    className={`btn btn-lg ${startingPlayer === 1 ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => setStartingPlayer(1)}
+      <>
+        <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">
+              <CardHeader>
+                <div className="flex items-center justify-between mb-4">
+                  <Button variant="ghost" size="sm" onClick={handleBackToMatches} className="gap-2">
+                    <IconArrowLeft size={18} />
+                    Vissza
+                  </Button>
+                  <h2 className="text-lg font-bold">
+                    {selectedBoard?.name || `Tábla ${selectedBoard?.boardNumber}`}
+                  </h2>
+                </div>
+                <div className="text-center space-y-2">
+                  <CardTitle className="text-xl">
+                    {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
+                  </CardTitle>
+                  <CardDescription>Író: {selectedMatch.scorer.name}</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Hány nyert legig?</Label>
+                  <select
+                    value={legsToWin}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                      setLegsToWin(value);
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value === '') {
+                        setLegsToWin(0);
+                      }
+                    }}
+                    className="select select-bordered w-full h-14 rounded-xl bg-muted/20 border border-border/40 shadow-sm text-foreground font-medium focus:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    {selectedMatch.player1.playerId.name}
-                  </button>
-                  <button
-                    className={`btn btn-lg ${startingPlayer === 2 ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => setStartingPlayer(2)}
+                    <option value="" disabled>Válassz számot</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                      <option key={num} value={num}>
+                        {num} leg
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold">Ki kezdi?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    A bull-t a bal oldali játékos kezdi
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      size="lg"
+                      variant={startingPlayer === 1 ? "default" : "outline"}
+                      onClick={() => setStartingPlayer(1)}
+                      className="h-14"
+                    >
+                      {selectedMatch.player1.playerId.name}
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant={startingPlayer === 2 ? "default" : "outline"}
+                      onClick={() => setStartingPlayer(2)}
+                      className="h-14"
+                    >
+                      {selectedMatch.player2.playerId.name}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={handleBackToMatches}
                   >
+                    Mégse
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => setShowConfirmDialog(true)}
+                    disabled={setupLoading}
+                  >
+                    Meccs indítása
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Confirm Dialog */}
+        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Meccs indítása</DialogTitle>
+              <DialogDescription>
+                Ellenőrizd a beállításokat a meccs indítása előtt
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Kezdő játékos:</span>
+                  <span className="text-sm font-semibold text-foreground">{startingPlayerName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Nyert legek:</span>
+                  <span className="text-sm font-semibold text-foreground">{legsToWin} leg</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Tábla:</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {selectedBoard?.name || `Tábla ${selectedBoard?.boardNumber}`}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between pt-2 border-t border-border/40">
+                  <span className="text-sm font-medium text-muted-foreground">Játékosok:</span>
+                  <span className="text-sm font-semibold text-foreground text-right">
+                    {selectedMatch.player1.playerId.name}<br />
+                    vs<br />
                     {selectedMatch.player2.playerId.name}
-                  </button>
+                  </span>
                 </div>
               </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  className="btn btn-error flex-1"
-                  onClick={handleBackToMatches}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-success flex-1"
-                  onClick={() => {
-                    const confirmMessage = `Start match with these settings?\n\nStarting Player: ${startingPlayer === 1 ? 'Player 1' : 'Player 2'}\nLegs to Win: ${legsToWin}\nBoard: ${selectedBoard?.name ? selectedBoard.name : `Board ${selectedBoard?.boardNumber}`}`;
-                    
-                    if (confirm(confirmMessage)) {
-                      handleStartMatch();
-                    }
-                  }}
-                  disabled={setupLoading}
-                >
-                  {setupLoading ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Starting...
-                    </>
-                  ) : (
-                    "Start match"
-                  )}
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-      </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowConfirmDialog(false)}
+              >
+                Mégse
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  handleStartMatch();
+                }}
+                disabled={setupLoading}
+              >
+                {setupLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
+                    Indítás...
+                  </>
+                ) : (
+                  "Meccs indítása"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
-
-  // Admin Modal
-  if (showAdminModal && adminMatch) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-md w-full">
-          <h3 className="text-2xl font-bold text-center mb-6">Admin - Meccs Beállítás</h3>
-          
-          <div className="text-center mb-6">
-            <h4 className="text-lg font-bold mb-2">
-              {adminMatch.player1.playerId.name} vs {adminMatch.player2.playerId.name}
-            </h4>
-            <p className="text-base-content/70">Állítsd be a nyert legek számát</p>
-          </div>
-          
-          {error && (
-            <div className="alert alert-error mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-          
-          <div className="space-y-4 mb-6">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-bold">{adminMatch.player1.playerId.name} nyert legek:</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="10"
-                className="input input-bordered input-lg w-full"
-                value={player1Legs ?? ''}
-                onChange={(e) => setPlayer1Legs(e.target.value === '' ? '' : parseInt(e.target.value))}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-bold">{adminMatch.player2.playerId.name} nyert legek:</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="10"
-                className="input input-bordered input-lg w-full"
-                value={player2Legs ?? ''}
-                onChange={(e) => setPlayer2Legs(e.target.value === '' ? '' : parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              className="btn btn-error flex-1"
-              onClick={() => {
-                setShowAdminModal(false);
-                setAdminMatch(null);
-                setError("");
-              }}
-            >
-              Mégse
-            </button>
-            <button
-              className="btn btn-success flex-1"
-              onClick={handleAdminMatchFinish}
-              disabled={adminLoading || player1Legs === player2Legs}
-            >
-              {adminLoading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Mentés...
-                </>
-              ) : (
-                "Meccs befejezése"
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
 
   // Game interface
   if (selectedMatch) {

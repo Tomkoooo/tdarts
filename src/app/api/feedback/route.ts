@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
                            userAgentHeader.includes('Safari') ? 'Safari' :
                            userAgentHeader.includes('Edge') ? 'Edge' : 'Unknown';
 
-    // Hibabejelentés létrehozása
+    // Visszajelzéslétrehozása
     const feedback = await FeedbackService.createFeedback({
       category,
       title,
@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     try {
       await sendEmail({
         to: [email],
-        subject: `Hibabejelentés fogadva: ${title}`,
-        text: `Hibabejelentés fogadva: ${title}`,
+        subject: `Visszajelzésfogadva: ${title}`,
+        text: `Visszajelzésfogadva: ${title}`,
         html: `
           <h2>Köszönjük a hibabejelentést!</h2>
           <p><strong>Kategória:</strong> ${category}</p>
@@ -67,19 +67,19 @@ export async function POST(request: NextRequest) {
       });
     } catch (emailError) {
       console.error('Error sending confirmation email:', emailError);
-      // Email hiba nem akadályozza a hibabejelentés mentését
+      // Email hiba nem akadályozza a Visszajelzésmentését
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Hibabejelentés sikeresen elküldve',
+      message: 'Visszajelzéssikeresen elküldve',
       feedbackId: feedback._id
     });
 
   } catch (error) {
     console.error('Error creating feedback:', error);
     return NextResponse.json(
-      { error: 'Hiba történt a hibabejelentés létrehozása során' },
+      { error: 'Hiba történt a Visszajelzéslétrehozása során' },
       { status: 500 }
     );
   }

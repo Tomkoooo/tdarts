@@ -74,8 +74,8 @@ export default function TournamentShareModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="w-[95vw] sm:max-w-md overflow-hidden border border-border/40 bg-card/95 p-0 shadow-2xl shadow-black/45">
-        <div className="max-h-[80vh] overflow-y-auto px-6 py-6 space-y-5">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 shadow-2xl shadow-black/45">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         <DialogHeader className="space-y-2">
           <DialogTitle>Torna megosztása</DialogTitle>
           <DialogDescription>

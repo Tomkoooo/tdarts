@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+import { showErrorToast } from "@/lib/toastUtils"
 import axios from "axios"
 import { useUserContext } from "@/hooks/useUser"
 import { useLogout } from "@/hooks/useLogout"
@@ -179,9 +180,13 @@ export default function ProfilePage() {
     try {
       await logout()
       toast.success("Sikeresen kijelentkeztél")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Logout error:", error)
-      toast.error("Hiba történt a kijelentkezés során")
+      showErrorToast("Hiba történt a kijelentkezés során", {
+        error: error?.message,
+        context: "Profil kijelentkezés",
+        errorName: "Kijelentkezés sikertelen",
+      })
     } finally {
       setIsLoading(false)
     }

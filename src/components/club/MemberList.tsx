@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { showErrorToast } from '@/lib/toastUtils'
 
 interface MemberListProps {
   members: {
@@ -60,7 +61,12 @@ export default function MemberList({
       onClubUpdated(response.data)
       toast.success(`${memberName} törölve!`, { id: toastId })
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Tag törlése sikertelen', { id: toastId })
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Tag törlése sikertelen', {
+        error: err?.response?.data?.error,
+        context: 'Tag törlése',
+        errorName: 'Tag törlése sikertelen',
+      })
     }
   }
 
@@ -75,7 +81,12 @@ export default function MemberList({
       onClubUpdated(response.data)
       toast.success(`${memberName} moderátorrá nevezve!`, { id: toastId })
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Moderátor hozzáadása sikertelen', { id: toastId })
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Moderátor hozzáadása sikertelen', {
+        error: err?.response?.data?.error,
+        context: 'Moderátor hozzáadása',
+        errorName: 'Moderátor hozzáadása sikertelen',
+      })
     }
   }
 
@@ -90,7 +101,12 @@ export default function MemberList({
       onClubUpdated(response.data)
       toast.success(`${memberName} moderátori jogai visszavonva!`, { id: toastId })
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Moderátor törlése sikertelen', { id: toastId })
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Moderátor törlése sikertelen', {
+        error: err?.response?.data?.error,
+        context: 'Moderátor törlése',
+        errorName: 'Moderátor törlése sikertelen',
+      })
     }
   }
 

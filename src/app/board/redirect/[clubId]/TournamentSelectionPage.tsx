@@ -2,6 +2,14 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { cn } from '@/lib/utils';
+import { IconTrophy, IconUsers, IconCalendar } from '@tabler/icons-react';
 
 interface Tournament {
   _id: string;
@@ -81,13 +89,13 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "outline" | "secondary" | "destructive" => {
     switch (status) {
-      case 'pending': return 'badge-warning';
-      case 'group-stage': return 'badge-info';
-      case 'knockout': return 'badge-primary';
-      case 'finished': return 'badge-success';
-      default: return 'badge-base-300';
+      case 'pending': return 'secondary';
+      case 'group-stage': return 'default';
+      case 'knockout': return 'default';
+      case 'finished': return 'outline';
+      default: return 'outline';
     }
   };
 
@@ -101,101 +109,120 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h1 className="card-title text-2xl mb-6">Torna Kiválasztása</h1>
-            
-            <p className="text-base-content/70 mb-6">
-              Több aktív torna található ebben a klubban. Kérjük válaszd ki, melyik tornához szeretnél csatlakozni.
-            </p>
-
+    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">
+          <CardHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <IconTrophy className="text-primary" size={24} />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Torna Kiválasztása</CardTitle>
+                <CardDescription>
+                  Több aktív torna található ebben a klubban. Válaszd ki, melyik tornához szeretnél csatlakozni.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Tournament Selection */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-bold">Válassz tornát:</span>
-                </label>
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Válassz tornát:</Label>
                 <div className="space-y-3">
                   {tournaments.map((tournament) => (
-                    <div
+                    <button
                       key={tournament._id}
-                      className={`card bg-base-200 cursor-pointer transition-all hover:shadow-md ${
-                        selectedTournament === tournament.tournamentId ? 'ring-2 ring-primary' : ''
-                      }`}
+                      type="button"
                       onClick={() => setSelectedTournament(tournament.tournamentId)}
+                      className={cn(
+                        "w-full text-left p-4 rounded-xl transition-all",
+                        "bg-muted/20 hover:bg-muted/40",
+                        selectedTournament === tournament.tournamentId && "ring-2 ring-primary bg-primary/10"
+                      )}
                     >
-                      <div className="card-body p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-bold text-lg">{tournament.tournamentSettings.name}</h3>
-                            <div className="flex gap-2 mt-2">
-                              <span className={`badge ${getStatusColor(tournament.tournamentSettings.status)}`}>
-                                {getStatusText(tournament.tournamentSettings.status)}
-                              </span>
-                              <span className="badge badge-outline">
-                                {getFormatText(tournament.tournamentSettings.format)}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg">{tournament.tournamentSettings.name}</h3>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant={getStatusVariant(tournament.tournamentSettings.status)}>
+                              {getStatusText(tournament.tournamentSettings.status)}
+                            </Badge>
+                            <Badge variant="outline">
+                              {getFormatText(tournament.tournamentSettings.format)}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <IconUsers size={16} />
+                              <span>
+                                {tournament.tournamentPlayers.length}/{tournament.tournamentSettings.maxPlayers} játékos
                               </span>
                             </div>
-                            <div className="text-sm text-base-content/60 mt-2">
-                              <p>Játékosok: {tournament.tournamentPlayers.length}/{tournament.tournamentSettings.maxPlayers}</p>
-                              <p>Létrehozva: {new Date(tournament.createdAt).toLocaleDateString('hu-HU')}</p>
+                            <div className="flex items-center gap-1.5">
+                              <IconCalendar size={16} />
+                              <span>
+                                {new Date(tournament.createdAt).toLocaleDateString('hu-HU')}
+                              </span>
                             </div>
                           </div>
-                          <input
-                            type="radio"
-                            name="tournament"
-                            value={tournament.tournamentId}
-                            checked={selectedTournament === tournament.tournamentId}
-                            onChange={() => setSelectedTournament(tournament.tournamentId)}
-                            className="radio radio-primary"
-                          />
+                        </div>
+                        <div className={cn(
+                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+                          selectedTournament === tournament.tournamentId
+                            ? "border-primary bg-primary"
+                            : "border-muted-foreground/40"
+                        )}>
+                          {selectedTournament === tournament.tournamentId && (
+                            <div className="h-2.5 w-2.5 rounded-full bg-primary-foreground" />
+                          )}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Password Input */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-bold">Torna jelszó:</span>
-                </label>
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-semibold">
+                  Torna jelszó
+                </Label>
+                <Input
+                  id="password"
                   type="password"
                   placeholder="Add meg a torna jelszavát"
-                  className="input input-bordered w-full"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
 
-              {/* Error Message */}
               {error && (
-                <div className="alert alert-error">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
-              {/* Submit Button */}
-              <div className="form-control">
-                <button
-                  type="submit"
-                  className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
-                  disabled={loading || !selectedTournament || !password}
-                >
-                  {loading ? 'Kapcsolódás...' : 'Csatlakozás a tornához'}
-                </button>
-              </div>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={loading || !selectedTournament || !password}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
+                    Kapcsolódás...
+                  </>
+                ) : (
+                  'Csatlakozás a tornához'
+                )}
+              </Button>
             </form>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

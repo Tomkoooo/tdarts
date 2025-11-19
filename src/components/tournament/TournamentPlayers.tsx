@@ -8,6 +8,9 @@ import {
   IconMail,
   IconTrash,
   IconUsers,
+  IconBell,
+  IconBellOff,
+  IconPlus,
 } from "@tabler/icons-react"
 import { toast } from "react-hot-toast"
 
@@ -29,6 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { showErrorToast } from "@/lib/toastUtils"
 
 interface TournamentPlayersProps {
   tournament: any
@@ -71,6 +75,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     playerId: undefined,
     playerName: undefined,
   })
+  const [isSubscribedToNotifications, setIsSubscribedToNotifications] = useState(
+    tournament?.notificationSubscribers?.some((sub: any) => sub.userRef?.toString() === user?._id?.toString()) || false
+  )
+  const [isOnWaitingList, setIsOnWaitingList] = useState(
+    waitingList.some((p: any) => p.playerReference?.userRef?.toString() === user?._id?.toString())
+  )
 
   const code = tournament?.tournamentId
 
@@ -79,7 +89,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     setLocalUserPlayerStatus(userPlayerStatus)
     setLocalUserPlayerId(userPlayerId)
     setWaitingList(tournament?.waitingList || [])
-  }, [players, userPlayerStatus, userPlayerId, tournament?.waitingList])
+    setIsSubscribedToNotifications(
+      tournament?.notificationSubscribers?.some((sub: any) => sub.userRef?.toString() === user?._id?.toString()) || false
+    )
+    setIsOnWaitingList(
+      (tournament?.waitingList || []).some((p: any) => p.playerReference?.userRef?.toString() === user?._id?.toString())
+    )
+  }, [players, userPlayerStatus, userPlayerId, tournament?.waitingList, tournament?.notificationSubscribers, user?._id])
 
   React.useEffect(() => {
     // Notification subscription check removed - feature not used
@@ -114,12 +130,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalPlayers((prev) => [...prev, newPlayer])
         toast.success(`${player.name || 'Játékos'} sikeresen hozzáadva!`)
       } else {
-        setError('Nem sikerült hozzáadni a játékost.')
-        toast.error('Nem sikerült hozzáadni a játékost.')
+        
+        showErrorToast('Nem sikerült hozzáadni a játékost.', {
+          error: response.data?.error,
+          context: 'Torna játékos hozzáadása',
+          errorName: 'Játékos hozzáadása sikertelen',
+        })
       }
-    } catch {
-      setError('Nem sikerült hozzáadni a játékost.')
-      toast.error('Nem sikerült hozzáadni a játékost.')
+    } catch (error: any) {
+      
+      showErrorToast('Nem sikerült hozzáadni a játékost.', {
+        error: error?.response?.data?.error,
+        context: 'Torna játékos hozzáadása',
+        errorName: 'Játékos hozzáadása sikertelen',
+      })
     }
   }
 
@@ -132,11 +156,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         toast.success('Játékos sikeresen eltávolítva!')
       } else {
         setError('Nem sikerült eltávolítani a játékost.')
-        toast.error('Nem sikerült eltávolítani a játékost.')
+        showErrorToast('Nem sikerült eltávolítani a játékost.', {
+          error: response.data?.error,
+          context: 'Játékos eltávolítása',
+          errorName: 'Játékos eltávolítása sikertelen',
+        })
       }
-    } catch {
+    } catch (error: any) {
       setError('Nem sikerült eltávolítani a játékost.')
-      toast.error('Nem sikerült eltávolítani a játékost.')
+      showErrorToast('Nem sikerült eltávolítani a játékost.', {
+        error: error?.response?.data?.error,
+        context: 'Játékos eltávolítása',
+        errorName: 'Játékos eltávolítása sikertelen',
+      })
     }
   }
 
@@ -154,11 +186,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         toast.success('Játékos sikeresen check-inelve!')
       } else {
         setError('Nem sikerült check-inelni a játékost.')
-        toast.error('Nem sikerült check-inelni a játékost.')
+        showErrorToast('Nem sikerült check-inelni a játékost.', {
+          error: response.data?.error,
+          context: 'Játékos check-in',
+          errorName: 'Check-in sikertelen',
+        })
       }
-    } catch {
+    } catch (error: any) {
       setError('Nem sikerült check-inelni a játékost.')
-      toast.error('Nem sikerült check-inelni a játékost.')
+      showErrorToast('Nem sikerült check-inelni a játékost.', {
+        error: error?.response?.data?.error,
+        context: 'Játékos check-in',
+        errorName: 'Check-in sikertelen',
+      })
     }
   }
 
@@ -185,11 +225,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         toast.success('Sikeresen jelentkeztél a tornára!')
       } else {
         setError('Nem sikerült jelentkezni a tornára.')
-        toast.error('Nem sikerült jelentkezni a tornára.')
+        showErrorToast('Nem sikerült jelentkezni a tornára.', {
+          error: response.data?.error,
+          context: 'Saját jelentkezés',
+          errorName: 'Jelentkezés sikertelen',
+        })
       }
-    } catch {
+    } catch (error: any) {
       setError('Nem sikerült jelentkezni a tornára.')
-      toast.error('Nem sikerült jelentkezni a tornára.')
+      showErrorToast('Nem sikerült jelentkezni a tornára.', {
+        error: error?.response?.data?.error,
+        context: 'Saját jelentkezés',
+        errorName: 'Jelentkezés sikertelen',
+      })
     }
   }
 
@@ -206,11 +254,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         toast.success('Jelentkezés sikeresen visszavonva!')
       } else {
         setError('Nem sikerült visszavonni a jelentkezést.')
-        toast.error('Nem sikerült visszavonni a jelentkezést.')
+        showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
+          error: response.data?.error,
+          context: 'Jelentkezés visszavonása',
+          errorName: 'Visszavonás sikertelen',
+        })
       }
-    } catch {
+    } catch (error: any) {
       setError('Nem sikerült visszavonni a jelentkezést.')
-      toast.error('Nem sikerült visszavonni a jelentkezést.')
+      showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
+        error: error?.response?.data?.error,
+        context: 'Jelentkezés visszavonása',
+        errorName: 'Visszavonás sikertelen',
+      })
     }
   }
 
@@ -225,7 +281,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       setSelectedPlayerForMatches({ id: playerId, name: playerName })
       setShowPlayerMatchesModal(true)
     } else {
-      toast.error('Nem sikerült megnyitni a meccseket: hiányzó játékos azonosító')
+      showErrorToast('Nem sikerült megnyitni a meccseket: hiányzó játékos azonosító', {
+        context: 'Játékos meccs megnyitása',
+        errorName: 'Meccsek megnyitása sikertelen',
+      })
     }
   }
 
@@ -238,10 +297,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       })
       if (response.data.success) {
         setWaitingList((prev: any[]) => prev.filter((p: any) => p.playerReference._id !== playerId))
+        // Check if current user was removed
+        if (user && (playerId === localUserPlayerId?.toString() || waitingList.some((p: any) => p.playerReference?._id?.toString() === playerId && p.playerReference?.userRef?.toString() === user._id?.toString()))) {
+          setIsOnWaitingList(false)
+        }
         toast.success('Sikeresen lekerültél a várólistáról!')
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Nem sikerült lekerülni a várólistáról.')
+      showErrorToast(err.response?.data?.error || 'Nem sikerült lekerülni a várólistáról.', {
+        error: err?.response?.data?.error,
+        context: 'Várólista kezelés',
+        errorName: 'Várólistáról lekerülés sikertelen',
+      })
     }
   }
 
@@ -259,11 +326,21 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           }
           setLocalPlayers((prev: any[]) => [...prev, newPlayer])
           setWaitingList((prev: any[]) => prev.filter((p: any) => p.playerReference._id !== playerId))
+          // Check if current user was promoted
+          if (user && (playerId === localUserPlayerId?.toString() || waitingPlayer.playerReference?.userRef?.toString() === user._id?.toString())) {
+            setIsOnWaitingList(false)
+            setLocalUserPlayerStatus('applied')
+            setLocalUserPlayerId(playerId)
+          }
           toast.success('Játékos sikeresen áthelyezve a tornára!')
         }
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Nem sikerült áthelyezni a játékost.')
+      showErrorToast(err.response?.data?.error || 'Nem sikerült áthelyezni a játékost.', {
+        error: err?.response?.data?.error,
+        context: 'Várólista áthelyezés',
+        errorName: 'Áthelyezés sikertelen',
+      })
     }
   }
 
@@ -286,6 +363,69 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     const playerId = waitingPlayer?.playerReference?._id
     if (playerId) {
       void handleRemoveFromWaitingList(playerId)
+    }
+  }
+
+  const handleSubscribeToWaitlist = async () => {
+    if (!user || !code) return
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/waitlist`, {
+        userRef: user._id,
+        name: user.name,
+      })
+      if (response.data.success) {
+        const newWaitingPlayer = {
+          playerReference: {
+            _id: response.data.playerId,
+            name: user.name,
+            userRef: user._id,
+          },
+          addedAt: new Date(),
+        }
+        setWaitingList((prev: any[]) => [...prev, newWaitingPlayer])
+        setIsOnWaitingList(true)
+        toast.success('Sikeresen feliratkoztál a várólistára!')
+      }
+    } catch (error: any) {
+      showErrorToast('Nem sikerült feliratkozni a várólistára.', {
+        error: error?.response?.data?.error,
+        context: 'Várólista feliratkozás',
+        errorName: 'Várólista feliratkozás sikertelen',
+      })
+    }
+  }
+
+  const handleSubscribeToNotifications = async () => {
+    if (!user || !code) return
+    try {
+      const response = await axios.post(`/api/tournaments/${code}/notifications`)
+      if (response.data.success) {
+        setIsSubscribedToNotifications(true)
+        toast.success('Sikeresen feliratkoztál az értesítésekre!')
+      }
+    } catch (error: any) {
+      showErrorToast('Nem sikerült feliratkozni az értesítésekre.', {
+        error: error?.response?.data?.error,
+        context: 'Értesítés feliratkozás',
+        errorName: 'Értesítés feliratkozás sikertelen',
+      })
+    }
+  }
+
+  const handleUnsubscribeFromNotifications = async () => {
+    if (!user || !code) return
+    try {
+      const response = await axios.delete(`/api/tournaments/${code}/notifications`)
+      if (response.data.success) {
+        setIsSubscribedToNotifications(false)
+        toast.success('Sikeresen leiratkoztál az értesítésekről!')
+      }
+    } catch (error: any) {
+      showErrorToast('Nem sikerült leiratkozni az értesítésekről.', {
+        error: error?.response?.data?.error,
+        context: 'Értesítés leiratkozás',
+        errorName: 'Értesítés leiratkozás sikertelen',
+      })
     }
   }
 
@@ -332,7 +472,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           allowAdminActions && canManagePlayers && (
             <Button
               size="sm"
-              variant="secondary"
+              variant="success"
               className="gap-1"
               onClick={() => handleCheckInPlayer(playerId)}
             >
@@ -349,7 +489,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </Button>
             <Button
               size="sm"
-              variant="destructive"
+              variant="error"
               onClick={() =>
                 setRemoveConfirm({
                   isOpen: true,
@@ -381,9 +521,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               onPlayerSelected={handleAddPlayer}
               clubId={tournament?.clubId?._id || tournament?.clubId}
               isForTournament
-              excludePlayerIds={localPlayers
-                .map((p) => p.playerReference?._id?.toString() || p._id?.toString())
-                .filter(Boolean)}
+              excludedPlayers={localPlayers}
             />
           </CardContent>
         </Card>
@@ -397,23 +535,48 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
 
       {user && localUserPlayerId && localUserPlayerStatus !== 'none' && (
         <Alert className="border-primary/40 bg-primary/15 text-white/90 shadow-sm shadow-black/30">
-          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
+          <AlertDescription className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
+                <p className="text-xs text-white/70">
+                  Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.
+                </p>
+              </div>
+              {isPending ? (
+                <Button size="sm" variant="warning" onClick={handleSelfWithdraw}>
+                  Jelentkezés visszavonása
+                </Button>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-2 pt-2 border-t border-primary/20">
+              <Button
+                size="sm"
+                variant={isSubscribedToNotifications ? "secondary" : "info"}
+                onClick={isSubscribedToNotifications ? handleUnsubscribeFromNotifications : handleSubscribeToNotifications}
+                className="gap-2"
+              >
+                {isSubscribedToNotifications ? (
+                  <>
+                    <IconBellOff className="h-4 w-4" />
+                    Értesítések kikapcsolása
+                  </>
+                ) : (
+                  <>
+                    <IconBell className="h-4 w-4" />
+                    Értesítések bekapcsolása
+                  </>
+                )}
+              </Button>
               <p className="text-xs text-white/70">
-                Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.
+                Kapj email értesítést a torna fontosabb eseményeiről.
               </p>
             </div>
-            {isPending ? (
-              <Button size="sm" variant="outline" onClick={handleSelfWithdraw}>
-                Jelentkezés visszavonása
-              </Button>
-            ) : null}
           </AlertDescription>
         </Alert>
       )}
 
-      {allowPlayerRegistration && localUserPlayerStatus === 'none' && (
+      {allowPlayerRegistration && localUserPlayerStatus === 'none' && !isOnWaitingList && (
         <div className="flex flex-wrap items-center gap-3">
           {user ? (
             <Button onClick={handleSelfSignUp} disabled={!hasFreeSpots}>
@@ -516,10 +679,33 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   )
 
   const waitingContent = (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {user && localUserPlayerStatus === 'none' && !isOnWaitingList && isPending && (
+        <Card className="border-dashed border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-base">Várólistára feliratkozás</CardTitle>
+            <CardDescription>
+              {hasFreeSpots
+                ? "Jelentkezhetsz közvetlenül a tornára, de ha szeretnéd, feliratkozhatsz a várólistára is. Ha betelik a torna, automatikusan értesítünk, ha szabad hely születik."
+                : "A torna betelt. Feliratkozhatsz a várólistára, és automatikusan értesítünk, ha szabad hely születik."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleSubscribeToWaitlist} className="gap-2">
+              <IconPlus className="h-4 w-4" />
+              Feliratkozás a várólistára
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {waitingList.length === 0 ? (
         <Card className="bg-card/90 text-muted-foreground shadow-md shadow-black/25">
-          <CardContent className="py-10 text-center text-sm">A várólista üres.</CardContent>
+          <CardContent className="py-10 text-center text-sm">
+            {user && localUserPlayerStatus === 'none' && !isOnWaitingList && isPending
+              ? "Még nincs senki a várólistán."
+              : "A várólista üres."}
+          </CardContent>
         </Card>
       ) : (
         <Card className="bg-card/88 shadow-md shadow-black/25">
@@ -633,9 +819,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   setShowPlayerMatchesModal(false)
                 }
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error('Error fetching match details:', err)
-              toast.error('Nem sikerült betölteni a meccs részleteit')
+              showErrorToast('Nem sikerült betölteni a meccs részleteit', {
+                error: err?.response?.data?.error,
+                context: 'Meccs részletek',
+                errorName: 'Meccs részletei sikertelenek',
+              })
             }
           }}
         />

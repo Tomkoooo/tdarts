@@ -5,6 +5,7 @@ import { z } from 'zod'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Club } from '@/interface/club.interface'
+import { IconPencil } from '@tabler/icons-react'
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { showErrorToast } from '@/lib/toastUtils'
 
 const editClubSchema = z.object({
   name: z.string().min(1, 'A klub neve kötelező'),
@@ -89,7 +91,12 @@ export default function EditClubModal({ isOpen, onClose, club, onClubUpdated, us
       onClose()
       toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Klub frissítése sikertelen', { id: toastId })
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Klub frissítése sikertelen', {
+        error: err?.response?.data?.error,
+        context: 'Klub szerkesztése',
+        errorName: 'Klub frissítése sikertelen',
+      })
     }
   }
 
@@ -127,7 +134,10 @@ export default function EditClubModal({ isOpen, onClose, club, onClubUpdated, us
                 <FormItem>
                   <FormLabel>Leírás</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Írj néhány szót a klubról" rows={4} {...field} />
+                    <div className="relative">
+                      <IconPencil size={16} className="absolute left-3 top-3 text-muted-foreground pointer-events-none" />
+                      <Textarea placeholder="Írj néhány szót a klubról" rows={4} className="pl-10" {...field} />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

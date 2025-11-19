@@ -1,8 +1,9 @@
 "use client"
-import { IconArrowLeft, IconSettings } from '@tabler/icons-react';
+import {  IconSettings } from '@tabler/icons-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import toast from 'react-hot-toast';
+import { showErrorToast } from '@/lib/toastUtils';
 
 interface PlayerData {
   playerId: {
@@ -61,6 +62,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const [legsToWin, setLegsToWin] = useState(match.legsToWin || 3);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [tempLegsToWin, setTempLegsToWin] = useState(legsToWin);
+  const [tempStartingPlayer, setTempStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
 
   const [player1, setPlayer1] = useState<Player>({
     name: match.player1.playerId.name,
@@ -105,12 +107,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   // Loading states
   const [isSavingLeg, setIsSavingLeg] = useState<boolean>(false);
   const [isSavingMatch, setIsSavingMatch] = useState<boolean>(false);
+  const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
   
   // Arrow count for checkout
   const [arrowCount, setArrowCount] = useState<number>(3);
 
   const chalkboardRef = useRef<HTMLDivElement>(null);
-  const quickAccessScores = [180, 140, 100, 95, 81, 80, 60, 45, 41, 26, 25, 20];
+  const quickAccessScores = [180, 140, 100, 95, 85, 81, 80, 60, 45, 41, 40, 26];
 
   // Socket hook
   const { socket, isConnected } = useSocket({ 
@@ -584,11 +587,19 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error saving leg:', errorData);
-        toast.error('Hiba történt a leg mentése során!');
+        showErrorToast('Hiba történt a leg mentése során!', {
+          error: errorData?.error,
+          context: 'Leg mentése',
+          errorName: 'Leg mentése sikertelen',
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving leg:', error);
-      toast.error('Hiba történt a leg mentése során!');
+      showErrorToast('Hiba történt a leg mentése során!', {
+        error: error?.message,
+        context: 'Leg mentése',
+        errorName: 'Leg mentése sikertelen',
+      });
     } finally {
       setIsSavingLeg(false);
     }
@@ -666,13 +677,21 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error finishing match:', errorData);
-        toast.error('Hiba történt a meccs befejezése során!');
+        showErrorToast('Hiba történt a meccs befejezése során!', {
+          error: errorData?.error,
+          context: 'Meccs lezárása',
+          errorName: 'Meccs lezárása sikertelen',
+        });
         setIsSavingMatch(false);
         return;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error finishing match:', error);
-      toast.error('Hiba történt a meccs befejezése során!');
+      showErrorToast('Hiba történt a meccs befejezése során!', {
+        error: error?.message,
+        context: 'Meccs lezárása',
+        errorName: 'Meccs lezárása sikertelen',
+      });
       setIsSavingMatch(false);
       return;
     } finally {
@@ -833,11 +852,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         });
 
         if (!response.ok) {
-          toast.error('Hiba történt a beállítások mentése során!');
+          showErrorToast('Hiba történt a beállítások mentése során!', {
+            context: 'Meccs beállítások',
+            errorName: 'Beállítás mentése sikertelen',
+          });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error updating legsToWin:', error);
-        toast.error('Hiba történt a beállítások mentése során!');
+        showErrorToast('Hiba történt a beállítások mentése során!', {
+          error: error?.message,
+          context: 'Meccs beállítások',
+          errorName: 'Beállítás mentése sikertelen',
+        });
       }
       
       return;
@@ -855,11 +881,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         setShowSettingsModal(false);
         toast.success('Beállítások mentve!');
       } else {
-        toast.error('Hiba történt a mentés során!');
+        showErrorToast('Hiba történt a mentés során!', {
+          context: 'Meccs beállítások',
+          errorName: 'Beállítás mentése sikertelen',
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating legsToWin:', error);
-      toast.error('Hiba történt a mentés során!');
+      showErrorToast('Hiba történt a mentés során!', {
+        error: error?.message,
+        context: 'Meccs beállítások',
+        errorName: 'Beállítás mentése sikertelen',
+      });
     }
   };
 
@@ -869,27 +902,9 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       <div className="flex flex-col landscape:w-1/2 landscape:h-full">
         {/* Header - Score Display */}
         <header className="flex h-[28dvh] landscape:h-[35dvh] w-full bg-gradient-to-b from-gray-900 to-black relative">
-          {/* Settings Button - Top Left */}
-          <button
-            onClick={() => {
-              setTempLegsToWin(legsToWin);
-              setShowSettingsModal(true);
-            }}
-            className="absolute top-1 left-1 z-[100] btn btn-xs btn-ghost text-gray-400 hover:text-white p-1"
-          >
-            <IconSettings className="w-3 h-3" />
-          </button>
-
-          {/* Back Button - Top Right */}
-          <button
-            onClick={onBack}
-            className="absolute top-1 right-1 z-[100] flex items-center justify-center rounded-full bg-background/70 p-1 text-muted-foreground shadow-sm transition hover:bg-background hover:text-foreground"
-          >
-            <IconArrowLeft className="h-3 w-3" />
-          </button>
 
           {/* Player 1 */}
-          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? '    bg-primary/10' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player1.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
@@ -910,7 +925,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
           
           {/* Player 2 */}
-          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 z-50 ${currentPlayer === 2 ? '    bg-primary/10' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 z-50 ${currentPlayer === 2 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player2.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
@@ -1037,7 +1052,16 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               {editingThrow ? (editScoreInput || '0') : (scoreInput || '0')}
           </div>
           </div>
-          <div className="w-[80px] sm:w-[120px]"></div>
+          <button
+            onClick={() => {
+              setTempLegsToWin(legsToWin);
+              setTempStartingPlayer(currentPlayer);
+              setShowSettingsModal(true);
+            }}
+            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border flex items-center justify-center w-[80px] sm:w-[120px]"
+          >
+            <IconSettings className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
         </section>
 
         {/* Number Pad */}
@@ -1052,7 +1076,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                     handleThrow(score);
                     setScoreInput('');
                   }}
-                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors border"
+                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors "
                 >
                   {score}
                 </button>
@@ -1066,7 +1090,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               <button
                     key={number}
                     onClick={() => handleNumberInput(number)}
-                    className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl md:text-4xl rounded-lg transition-colors border"
+                    className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl md:text-4xl rounded-lg transition-colors"
                   >
                     {number}
                   </button>
@@ -1081,13 +1105,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                       setScoreInput(scoreInput.slice(0, -1));
                     }
                   }}
-                  className="bg-base-300 hover:bg-base-100 text-base-content font-bold text-xl portrait:sm:text-2xl portrait:md:text-3xl sm:text-lg md:text-xl rounded-lg transition-colors border"
+                  className="bg-base-300 hover:bg-base-100 text-base-content font-bold text-xl portrait:sm:text-2xl portrait:md:text-3xl sm:text-lg md:text-xl rounded-lg transition-colors "
               >
                 ⌫
               </button>
               <button
                 onClick={() => handleNumberInput(0)}
-                  className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl sm:text-3xl md:text-4xl rounded-lg transition-colors border"
+                  className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl sm:text-3xl md:text-4xl rounded-lg transition-colors "
               >
                 0
               </button>
@@ -1120,7 +1144,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                     handleThrow(score);
                     setScoreInput('');
                   }}
-                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors border"
+                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors "
                 >
                   {score}
               </button>
@@ -1134,32 +1158,98 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       {showSettingsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-4">Meccs beállítások</h3>
+            <div className="flex w-full justify-between items-center mb-4">
+              <h3 className="text-lg font-bold ">Meccs beállítások</h3>
+              <button
+                  onClick={() => {
+                    if (window.confirm('Biztosan ki szeretnél lépni a meccsből? A jelenlegi állás nem kerül mentésre.')) {
+                      onBack();
+                    }
+                  }}
+                  className="btn btn-error btn-outline btn-sm"
+                >
+                  Kilépés a meccsből
+                </button>
+            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Nyert legek száma</label>
-              <input
-                type="number"
-                min="1"
-                max="20"
-                value={tempLegsToWin}
-                onChange={(e) => setTempLegsToWin(parseInt(e.target.value))}
-                className="input input-bordered w-full"
-              />
+              <select name="" id="" onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} defaultValue={tempLegsToWin} className="select select-bordered w-full">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
               <p className="text-xs text-gray-400 mt-1">Best of {tempLegsToWin * 2 - 1}</p>
+            </div>
+
+            {/* Starting Player - only if no throws have been made */}
+            {player1.allThrows.length === 0 && player2.allThrows.length === 0 && player1.score === initialScore && player2.score === initialScore && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Kezdő játékos</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setTempStartingPlayer(1)}
+                    className={`btn flex-1 ${tempStartingPlayer === 1 ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    {player1.name}
+                  </button>
+                  <button
+                    onClick={() => setTempStartingPlayer(2)}
+                    className={`btn flex-1 ${tempStartingPlayer === 2 ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    {player2.name}
+                  </button>
                 </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
-            <button 
-                className="btn btn-ghost flex-1" 
+              <button 
+                className="btn btn-ghost  flex-1" 
                 onClick={() => setShowSettingsModal(false)}
               >
                 Mégse
               </button>
               <button 
-                className="btn btn-primary flex-1" 
-                onClick={handleSaveLegsToWin}
+                className="btn btn-success flex-1" 
+                onClick={async () => {
+                  setIsSavingSettings(true);
+                  try {
+                    // Save starting player if changed and no throws made
+                    if (player1.allThrows.length === 0 && player2.allThrows.length === 0 && 
+                        player1.score === initialScore && player2.score === initialScore &&
+                        tempStartingPlayer !== currentPlayer) {
+                      setCurrentPlayer(tempStartingPlayer);
+                      setLegStartingPlayer(tempStartingPlayer);
+                      
+                      // Update match starting player via API
+                      try {
+                        await fetch(`/api/matches/${match._id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ startingPlayer: tempStartingPlayer })
+                        });
+                      } catch (error) {
+                        console.error('Error updating starting player:', error);
+                      }
+                    }
+                    
+                    // Save legs to win
+                    await handleSaveLegsToWin();
+                  } finally {
+                    setIsSavingSettings(false);
+                  }
+                }}
+                disabled={isSavingSettings}
               >
-                Mentés
-            </button>
+                {isSavingSettings ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Mentés...
+                  </>
+                ) : (
+                  "Mentés"
+                )}
+              </button>
             </div>
           </div>
         </div>

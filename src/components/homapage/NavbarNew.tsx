@@ -27,6 +27,9 @@ const NavbarNew = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
+    
+    //set initial scroll position
+    setIsScrolled(window.scrollY > 20);
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -168,7 +171,7 @@ const NavbarNew = () => {
                   )}
                 >
                   <IconBug className="w-4 h-4" />
-                  <span className="hidden xl:inline">Hibabejelentés</span>
+                  <span className="hidden xl:inline">Visszajelzés</span>
                 </Link>
                 <div className="relative" ref={userMenuRef}>
                   <button
@@ -191,15 +194,14 @@ const NavbarNew = () => {
                   <div
                     id="user-menu"
                     className={cn(
-                      "absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/35 backdrop-blur-md transition-all duration-200",
-                      "bg-card/95",
+                      "absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/35 transition-all duration-200",
+                      "bg-background/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/40 bg-gray-300/15",
                       "before:absolute before:left-0 before:top-2 before:h-[calc(100%-1rem)] before:w-[2px] before:rounded-full before:bg-gradient-to-b before:from-primary/60 before:via-primary/30 before:to-transparent",
                       isUserMenuOpen
                         ? "pointer-events-auto opacity-100 translate-y-0"
                         : "pointer-events-none opacity-0 -translate-y-2"
                     )}
                     aria-hidden={!isUserMenuOpen}
-                    style={{ backdropFilter: "blur(14px)" }}
                   >
                     <div
                       className={cn(
@@ -394,7 +396,7 @@ const NavbarNew = () => {
                         )}
                       >
                         <IconBug className="w-5 h-5" />
-                        Hibabejelentés
+                        Visszajelzés
                       </Link>
                       {user.isAdmin && (
                         <Button 

@@ -13,6 +13,8 @@ export interface SearchFilters {
     maxPlayers?: number;
     location?: string;
     tournamentType?: 'amateur' | 'open';
+    page?: number;
+    limit?: number;
 }
 
 export interface SearchResult {
@@ -20,6 +22,8 @@ export interface SearchResult {
     tournaments?: any[];
     clubs?: any[];
     totalResults: number;
+    totalPages?: number;
+    currentPage?: number;
 }
 
 export class SearchService {
@@ -28,8 +32,14 @@ export class SearchService {
         
         console.log('SearchService.search called with:', { query, filters });
         
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+
         const results: SearchResult = {
-            totalResults: 0
+            totalResults: 0,
+            totalPages: 0,
+            currentPage: page
         };
 
         // If no query is provided but filters are set, search without text filter
@@ -37,14 +47,11 @@ export class SearchService {
 
         // Search players
         if (filters.type === 'players' || filters.type === 'all') {
-            let playerQuery: any = {};
+            const playerQuery: any = {};
             
             if (searchRegex) {
                 // Search for players whose name matches the query (registered or not)
                 playerQuery.name = searchRegex;
-            } else {
-                // If no search query, return all players
-                playerQuery = {};
             }
 
             console.log('Player search query:', playerQuery);
@@ -66,10 +73,22 @@ export class SearchService {
                 return a.name.localeCompare(b.name);
             });
 
+            // Calculate total for pagination
+            const totalPlayers = sortedPlayers.length;
+            if (filters.type === 'players') {
+                results.totalResults = totalPlayers;
+                results.totalPages = Math.ceil(totalPlayers / limit);
+            }
+
             // Get global ranking position for each player
             const globalRanking = await this.getGlobalPlayerRanking();
             
-            results.players = sortedPlayers.slice(0, 20).map(player => {
+            // Apply pagination or limit based on type
+            const playersToReturn = filters.type === 'players' 
+                ? sortedPlayers.slice(skip, skip + limit)
+                : sortedPlayers.slice(0, 5);
+
+            results.players = playersToReturn.map(player => {
                 const mmr = player.stats?.mmr ?? 800;
                 const stats = player.stats || {};
                 // Ensure stats has mmr field
@@ -108,7 +127,11 @@ export class SearchService {
 
             // Apply tournament filters
             if (filters.status) {
-                tournamentQuery['tournamentSettings.status'] = filters.status;
+                if (filters.status === 'active') {
+                    tournamentQuery['tournamentSettings.status'] = { $in: ['group-stage', 'knockout'] };
+                } else {
+                    tournamentQuery['tournamentSettings.status'] = filters.status;
+                }
                 hasFilters = true;
             }
             if (filters.format) {
@@ -118,20 +141,23 @@ export class SearchService {
             if (filters.dateFrom || filters.dateTo) {
                 tournamentQuery['tournamentSettings.startDate'] = {};
                 if (filters.dateFrom) {
-                    tournamentQuery['tournamentSettings.startDate'].$gte = filters.dateFrom;
+                    tournamentQuery['tournamentSettings.startDate'].$gte = new Date(filters.dateFrom);
                 }
                 if (filters.dateTo) {
-                    tournamentQuery['tournamentSettings.startDate'].$lte = filters.dateTo;
+                    // Set to end of day
+                    const endDate = new Date(filters.dateTo);
+                    endDate.setHours(23, 59, 59, 999);
+                    tournamentQuery['tournamentSettings.startDate'].$lte = endDate;
                 }
                 hasFilters = true;
             }
             if (filters.minPlayers || filters.maxPlayers) {
                 tournamentQuery['tournamentSettings.maxPlayers'] = {};
                 if (filters.minPlayers) {
-                    tournamentQuery['tournamentSettings.maxPlayers'].$gte = filters.minPlayers;
+                    tournamentQuery['tournamentSettings.maxPlayers'].$gte = Number(filters.minPlayers);
                 }
                 if (filters.maxPlayers) {
-                    tournamentQuery['tournamentSettings.maxPlayers'].$lte = filters.maxPlayers;
+                    tournamentQuery['tournamentSettings.maxPlayers'].$lte = Number(filters.maxPlayers);
                 }
                 hasFilters = true;
             }
@@ -140,12 +166,23 @@ export class SearchService {
                 hasFilters = true;
             }
 
-            // Only search if we have a query OR filters OR type is 'all'
-            if (searchRegex || hasFilters || filters.type === 'all') {
+            // Only search if we have a query OR filters OR type is 'all' OR 'tournaments'
+            if (searchRegex || hasFilters || filters.type === 'all' || filters.type === 'tournaments') {
+                // Calculate pagination if in tournaments mode
+                if (filters.type === 'tournaments') {
+                    const totalTournaments = await TournamentModel.countDocuments(tournamentQuery);
+                    results.totalResults = totalTournaments;
+                    results.totalPages = Math.ceil(totalTournaments / limit);
+                }
+
+                const queryLimit = filters.type === 'tournaments' ? limit : 5;
+                const querySkip = filters.type === 'tournaments' ? skip : 0;
+
                 const tournaments = await TournamentModel.find(tournamentQuery)
                     .populate('clubId', 'name location')
                     .populate('tournamentPlayers.playerReference', 'name')
-                    .limit(20)
+                    .limit(queryLimit)
+                    .skip(querySkip)
                     .sort({ 'tournamentSettings.startDate': -1 });
 
                 results.tournaments = tournaments.map(tournament => {
@@ -191,12 +228,23 @@ export class SearchService {
                 hasFilters = true;
             }
 
-            // Only search if we have a query OR filters OR type is 'all'
-            if (searchRegex || hasFilters || filters.type === 'all') {
+            // Only search if we have a query OR filters OR type is 'all' OR 'clubs'
+            if (searchRegex || hasFilters || filters.type === 'all' || filters.type === 'clubs') {
+                // Calculate pagination if in clubs mode
+                if (filters.type === 'clubs') {
+                    const totalClubs = await ClubModel.countDocuments(clubQuery);
+                    results.totalResults = totalClubs;
+                    results.totalPages = Math.ceil(totalClubs / limit);
+                }
+
+                const queryLimit = filters.type === 'clubs' ? limit : 5;
+                const querySkip = filters.type === 'clubs' ? skip : 0;
+
                 const clubs = await ClubModel.find(clubQuery)
                     .populate('members', 'name email')
                     .populate('moderators', 'name email')
-                    .limit(20)
+                    .limit(queryLimit)
+                    .skip(querySkip)
                     .sort({ name: 1 });
 
                 results.clubs = clubs.map(club => ({
@@ -271,6 +319,69 @@ export class SearchService {
         return await TournamentModel.find()
             .populate('clubId', 'name location')
             .sort({ 'tournamentSettings.startDate': -1 })
+            .limit(limit);
+    }
+
+    static async getAllTournaments(limit: number = 100): Promise<any[]> {
+        await connectMongo();
+        
+        return await TournamentModel.find()
+            .populate('clubId', 'name location')
+            .populate('tournamentPlayers.playerReference', 'name')
+            .sort({ 'tournamentSettings.startDate': -1 })
+            .limit(limit);
+    }
+
+    static async getTodaysTournaments(): Promise<any[]> {
+        await connectMongo();
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        return await TournamentModel.find({
+            'tournamentSettings.startDate': {
+                $gte: today,
+                $lt: tomorrow
+            }
+        })
+            .populate('clubId', 'name location')
+            .populate('tournamentPlayers.playerReference', 'name')
+            .sort({ 'tournamentSettings.startDate': 1 });
+    }
+
+    static async getActiveTournaments(): Promise<any[]> {
+        await connectMongo();
+        
+        return await TournamentModel.find({
+            'tournamentSettings.status': { $in: ['group-stage', 'knockout'] }
+        })
+            .populate('clubId', 'name location')
+            .populate('tournamentPlayers.playerReference', 'name')
+            .sort({ 'tournamentSettings.startDate': -1 })
+            .limit(50);
+    }
+
+    static async getFinishedTournaments(limit: number = 50): Promise<any[]> {
+        await connectMongo();
+        
+        return await TournamentModel.find({
+            'tournamentSettings.status': 'finished'
+        })
+            .populate('clubId', 'name location')
+            .populate('tournamentPlayers.playerReference', 'name')
+            .sort({ 'tournamentSettings.startDate': -1 })
+            .limit(limit);
+    }
+
+    static async getAllClubs(limit: number = 100): Promise<any[]> {
+        await connectMongo();
+        
+        return await ClubModel.find()
+            .populate('members', 'name email')
+            .populate('moderators', 'name email')
+            .sort({ name: 1 })
             .limit(limit);
     }
 

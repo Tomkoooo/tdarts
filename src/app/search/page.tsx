@@ -14,6 +14,7 @@ import PlayerStatsModal from '@/components/player/PlayerStatsModal'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import Link from 'next/link'
 import { IconMoodSad, IconMapPin, IconUsers } from '@tabler/icons-react'
+import Pagination from "@/components/common/Pagination"
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 // Interfaces
@@ -27,6 +28,8 @@ interface SearchFilters {
   maxPlayers?: number
   location?: string
   tournamentType?: 'amateur' | 'open'
+  page?: number
+  limit?: number
 }
 
 interface SearchResult {
@@ -34,6 +37,8 @@ interface SearchResult {
   tournaments?: any[]
   clubs?: any[]
   totalResults: number
+  totalPages?: number
+  currentPage?: number
 }
 
 // Debounce utility
@@ -56,6 +61,9 @@ export default function SearchPage() {
   const [query, setQuery] = React.useState(searchParams.get('q') || '')
   const [filters, setFilters] = React.useState<SearchFilters>({
     type: (searchParams.get('type') as any) || 'all',
+    status: 'pending', // Default status for tournaments
+    page: 1,
+    limit: 12
   })
   const [results, setResults] = React.useState<SearchResult>({ totalResults: 0 })
   const [loading, setLoading] = React.useState(false)
@@ -64,10 +72,20 @@ export default function SearchPage() {
   const [showFilters, setShowFilters] = React.useState(false)
   const [selectedPlayer, setSelectedPlayer] = React.useState<any>(null)
   
-  // Pagination
+  // Pagination for initial view
   const [playersPage, setPlayersPage] = React.useState(1)
   const [clubsPage, setClubsPage] = React.useState(1)
   const itemsPerPage = 6
+  
+  // Helper handlers
+  const handleQueryChange = (newQuery: string) => {
+    setQuery(newQuery)
+    setFilters(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleFiltersChange = (newFilters: SearchFilters) => {
+    setFilters({ ...newFilters, page: 1 })
+  }
   
   // Initial data
   const [recentTournaments, setRecentTournaments] = React.useState<any[]>([])
@@ -85,27 +103,79 @@ export default function SearchPage() {
     return tournament.tournamentSettings?.status === 'pending' && startDate >= now
   }
 
+  // Handle quick actions
+  const handleQuickAction = (action: 'all-tournaments' | 'todays-tournaments' | 'active-tournaments' | 'finished-tournaments' | 'all-clubs') => {
+    // Reset query when using quick actions
+    setQuery('')
+    
+    switch (action) {
+      case 'all-tournaments':
+        setFilters({ type: 'tournaments', page: 1 })
+        break
+      case 'todays-tournaments':
+        const today = new Date().toISOString().split('T')[0]
+        setFilters({ type: 'tournaments', dateFrom: today, dateTo: today, page: 1 })
+        break
+      case 'active-tournaments':
+        setFilters({ type: 'tournaments', status: 'active', page: 1 })
+        break
+      case 'finished-tournaments':
+        setFilters({ type: 'tournaments', status: 'finished', page: 1 })
+        break
+      case 'all-clubs':
+        setFilters({ type: 'clubs', page: 1 })
+        break
+    }
+  }
+
   // Load initial data
   React.useEffect(() => {
     const loadInitialData = async () => {
       setIsLoadingInitial(true)
       try {
-        const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
-          axios.get('/api/search/recent-tournaments?limit=50'),
-          axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
-          axios.get('/api/search/popular-clubs?limit=50')
-        ])
+        // Check if any search params are present
+        const hasParams = [
+          'q', 'type', 'status', 'format', 'dateFrom', 'dateTo', 'minPlayers', 'maxPlayers', 'location', 'tournamentType'
+        ].some((key) => !!searchParams.get(key))
 
-        if (tournamentsRes.data.success) {
-          const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
-          setRecentTournaments(futureTournaments)
-        }
-        if (playersRes.data.success) {
-          setTopPlayers(playersRes.data.players)
-          setTopPlayersTotal(playersRes.data.total)
-        }
-        if (clubsRes.data.success) {
-          setPopularClubs(clubsRes.data.clubs)
+        if (!hasParams) {
+          // No params - load all data
+          const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
+            axios.get('/api/search/recent-tournaments?limit=50'),
+            axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
+            axios.get('/api/search/popular-clubs?limit=50')
+          ])
+
+          if (tournamentsRes.data.success) {
+            const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
+            setRecentTournaments(futureTournaments)
+          }
+          if (playersRes.data.success) {
+            setTopPlayers(playersRes.data.players)
+            setTopPlayersTotal(playersRes.data.total)
+          }
+          if (clubsRes.data.success) {
+            setPopularClubs(clubsRes.data.clubs)
+          }
+        } else {
+          // If any param set, fetch filtered data from /api/search
+          const response = await axios.get('/api/search', {
+            params: {
+              q: searchParams.get('q'),
+              type: searchParams.get('type'),
+              status: searchParams.get('status'),
+              format: searchParams.get('format'),
+              dateFrom: searchParams.get('dateFrom'),
+              dateTo: searchParams.get('dateTo'),
+              minPlayers: searchParams.get('minPlayers'),
+              maxPlayers: searchParams.get('maxPlayers'),
+              location: searchParams.get('location'),
+              tournamentType: searchParams.get('tournamentType'),
+            }
+          })
+          if (response.data.success) {
+            setResults(response.data.results)
+          }
         }
       } catch (error) {
         console.error('Failed to load initial data:', error)
@@ -115,7 +185,7 @@ export default function SearchPage() {
     }
 
     loadInitialData()
-  }, [playersPage])
+  }, [playersPage, searchParams])
 
   // Debounced search
   const debouncedSearch = React.useCallback(
@@ -129,7 +199,8 @@ export default function SearchPage() {
         searchFilters.minPlayers || 
         searchFilters.maxPlayers || 
         searchFilters.location || 
-        searchFilters.tournamentType
+        searchFilters.tournamentType ||
+        (searchFilters.type !== 'all') // Treat type change as filter too
 
       // Only search if we have a query OR active filters
       if (!searchQuery.trim() && !hasActiveFilters) {
@@ -152,7 +223,7 @@ export default function SearchPage() {
       } finally {
         setLoading(false)
       }
-    }, 300),
+    }, 500),
     []
   )
 
@@ -172,18 +243,37 @@ export default function SearchPage() {
       } catch (error) {
         console.error('Suggestions error:', error)
       }
-    }, 200),
+    }, 300),
     []
   )
 
   // Handle search
   React.useEffect(() => {
-    if (query.trim()) {
+    // Check if we have any active filters
+    const hasActiveFilters = 
+      filters.status || 
+      filters.format || 
+      filters.dateFrom || 
+      filters.dateTo || 
+      filters.minPlayers || 
+      filters.maxPlayers || 
+      filters.location || 
+      filters.tournamentType ||
+      (filters.type !== 'all') // Treat type change as filter too
+
+    // Search if we have query OR active filters
+    if (query.trim() || hasActiveFilters) {
       debouncedSearch(query, filters)
     } else {
       setResults({ totalResults: 0 })
     }
-    debouncedSuggestions(query)
+    
+    // Only show suggestions if there's a query
+    if (query.trim()) {
+      debouncedSuggestions(query)
+    } else {
+      setSuggestions([])
+    }
   }, [query, filters])
 
   // Update URL
@@ -191,6 +281,14 @@ export default function SearchPage() {
     const params = new URLSearchParams()
     if (query) params.set('q', query)
     if (filters.type !== 'all') params.set('type', filters.type)
+    if (filters.status) params.set('status', filters.status)
+    if (filters.format) params.set('format', filters.format)
+    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom)
+    if (filters.dateTo) params.set('dateTo', filters.dateTo)
+    if (filters.minPlayers) params.set('minPlayers', filters.minPlayers.toString())
+    if (filters.maxPlayers) params.set('maxPlayers', filters.maxPlayers.toString())
+    if (filters.location) params.set('location', filters.location)
+    if (filters.tournamentType) params.set('tournamentType', filters.tournamentType)
     
     const newUrl = params.toString() ? `/search?${params.toString()}` : '/search'
     router.replace(newUrl, { scroll: false })
@@ -215,13 +313,18 @@ export default function SearchPage() {
     if (filters.type !== 'all') count++
     if (filters.status) count++
     if (filters.format) count++
+    if (filters.dateFrom) count++
+    if (filters.dateTo) count++
+    if (filters.minPlayers) count++
+    if (filters.maxPlayers) count++
     if (filters.location) count++
+    if (filters.tournamentType) count++
     return count
   }, [filters])
 
   // Clear filters
   const clearFilters = () => {
-    setFilters({ type: 'all' })
+    setFilters({ type: 'all', page: 1 })
   }
 
   // Render search results
@@ -316,6 +419,18 @@ export default function SearchPage() {
             </div>
           </section>
         )}
+
+        {/* Pagination */}
+        {filters.type !== 'all' && results.totalPages && results.totalPages > 1 && (
+          <Pagination
+            currentPage={filters.page || 1}
+            totalPages={results.totalPages}
+            onPageChange={(page) => {
+              setFilters(prev => ({ ...prev, page }))
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -327,10 +442,10 @@ export default function SearchPage() {
         <div className="max-w-4xl mx-auto mb-8 space-y-6">
           <SearchHeader
             query={query}
-            onQueryChange={setQuery}
+            onQueryChange={handleQueryChange}
             suggestions={suggestions}
             showSuggestions={showSuggestions}
-            onSuggestionClick={setQuery}
+            onSuggestionClick={handleQueryChange}
             onSuggestionsToggle={setShowSuggestions}
             showFilters={showFilters}
             onFiltersToggle={() => setShowFilters(!showFilters)}
@@ -341,7 +456,7 @@ export default function SearchPage() {
           {query && (
             <SearchTabs
               activeTab={filters.type}
-              onTabChange={(type) => setFilters({ ...filters, type })}
+              onTabChange={(type) => setFilters({ ...filters, type, page: 1 })}
             />
           )}
         </div>
@@ -351,7 +466,7 @@ export default function SearchPage() {
           <div className="max-w-4xl mx-auto mb-8">
             <SearchFiltersPanel
               filters={filters}
-              onFiltersChange={setFilters}
+              onFiltersChange={handleFiltersChange}
               onClear={clearFilters}
             />
           </div>
@@ -374,6 +489,7 @@ export default function SearchPage() {
               onPlayersPageChange={setPlayersPage}
               onClubsPageChange={setClubsPage}
               onPlayerClick={setSelectedPlayer}
+              onQuickAction={handleQuickAction}
             />
           )}
         </div>

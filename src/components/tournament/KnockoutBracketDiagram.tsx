@@ -173,13 +173,13 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
             {round.canAdd && onAddMatchToRound ? (
               <Button
                 type="button"
-                size="icon"
+                
                 variant="ghost"
-                className="pointer-events-auto h-7 w-7 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                className="pointer-events-auto rounded-full bg-primary/10 text-primary hover:bg-primary/20"
                 onClick={() => onAddMatchToRound(round.roundNumber)}
                 aria-label={`${round.label} - meccs hozzáadása`}
               >
-                <IconPlus className="h-4 w-4" />
+                <IconPlus color="white" size={16}/>
               </Button>
             ) : null}
           </div>

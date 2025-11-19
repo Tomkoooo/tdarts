@@ -17,11 +17,9 @@ const buttonVariants = cva(
         default: [
           "btn btn-primary",
           "text-primary-foreground",
-          "shadow-lg shadow-primary/40",
+
           "backdrop-blur-sm",
-          "before:absolute before:inset-0 before:bg-white/10 before:rounded-lg before:opacity-0 before:transition-opacity before:duration-300",
-          "hover:before:opacity-100",
-          "hover:shadow-xl hover:shadow-primary/50",
+
         ],
         // Glass Ghost - Transparent with glass effect
         ghost: [
@@ -55,19 +53,24 @@ const buttonVariants = cva(
         ],
         // Info with glass
         info: [
-          "bg-gradient-to-r from-[oklch(70%_0.16_233)] to-[oklch(60%_0.16_233)]",
+          "btn-info",
           "text-white",
-          "shadow-lg shadow-[oklch(70%_0.16_233)]/40",
-          "backdrop-blur-sm",
-          "hover:shadow-xl hover:shadow-[oklch(70%_0.16_233)]/50",
+
         ],
         // Success with glass
         success: [
-          "bg-gradient-to-r from-[oklch(64%_0.2_132)] to-[oklch(54%_0.2_132)]",
-          "text-white",
-          "shadow-lg shadow-[oklch(64%_0.2_132)]/40",
-          "backdrop-blur-sm",
-          "hover:shadow-xl hover:shadow-[oklch(64%_0.2_132)]/50",
+          "btn-success"
+        ],
+        error: [
+          "btn-error",
+          "text-error-foreground",
+
+
+        ],
+        warning: [
+          "btn-warning",
+          "text-warning-foreground",
+
         ],
         // Link variant (no glass)
         link: "text-primary underline-offset-4 hover:underline bg-transparent",
