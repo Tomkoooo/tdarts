@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/tomkoooo/tdarts:main
+    image: ghcr.io/tomkoooo/tdarts:new_ui
     container_name: tdarts
     restart: unless-stopped
     env_file:
