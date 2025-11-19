@@ -1,5 +1,9 @@
 import React from 'react';
-import { IconCheck, IconX, IconCrown, IconStar, IconTrophy, IconInfinity } from '@tabler/icons-react';
+import { IconCheck, IconX, IconCrown, IconStar, IconTrophy, IconInfinity, IconSparkles } from '@tabler/icons-react';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from '@/components/ui/Badge';
+import { cn } from '@/lib/utils';
 
 const PricingSection = () => {
   const packages = [
@@ -11,13 +15,13 @@ const PricingSection = () => {
       features: [
         { text: 'Havi 1 verseny/klub', included: true },
         { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Elő meccs követés', included: false },
+        { text: 'Élő meccs követés', included: false },
         { text: 'Liga indítási lehetőség', included: false },
         { text: 'Részletes leg statisztikák', included: false },
       ],
-      gradient: 'from-gray-500 to-gray-700',
       popular: false,
-      icon: IconStar
+      icon: IconStar,
+      variant: 'outline' as const
     },
     {
       name: 'Alap',
@@ -27,13 +31,13 @@ const PricingSection = () => {
       features: [
         { text: 'Havi 2 verseny/klub', included: true },
         { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Elő meccs követés', included: false },
+        { text: 'Élő meccs követés', included: false },
         { text: 'Liga indítási lehetőség', included: true },
         { text: 'Részletes leg statisztikák', included: false },
       ],
-      gradient: 'from-blue-500 to-blue-700',
       popular: false,
-      icon: IconTrophy
+      icon: IconTrophy,
+      variant: 'outline' as const
     },
     {
       name: 'Pro',
@@ -43,13 +47,13 @@ const PricingSection = () => {
       features: [
         { text: 'Havi 4 verseny/klub', included: true },
         { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Elő meccs követés', included: false },
+        { text: 'Élő meccs követés', included: false },
         { text: 'Liga indítási lehetőség', included: true },
         { text: 'Részletes leg statisztikák', included: true },
       ],
-      gradient: 'from-purple-500 to-purple-700',
       popular: true,
-      icon: IconCrown
+      icon: IconCrown,
+      variant: 'default' as const
     },
     {
       name: 'Enterprise',
@@ -59,97 +63,127 @@ const PricingSection = () => {
       features: [
         { text: 'Korlátlan havi verseny', included: true },
         { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Elő meccs követés', included: true },
+        { text: 'Élő meccs követés', included: true },
         { text: 'Liga indítási lehetőség', included: true },
         { text: 'Részletes leg statisztikák', included: true },
       ],
-      gradient: 'from-red-500 to-red-700',
       popular: false,
-      icon: IconInfinity
+      icon: IconInfinity,
+      variant: 'outline' as const
     }
   ];
 
   return (
-    <section id="pricing" className="py-32 px-6 relative">
-      <div className="max-w-7xl mx-auto">
+    <section id="pricing" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 relative">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+      
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-20">
-          <h2 className="text-5xl font-bold text-gradient-red mb-6">
-            Válaszd ki a Tökéletes Csomagot
+        <div className="text-center mb-16 sm:mb-20 space-y-4">
+          <Badge variant="secondary" className="mb-4">
+            <IconSparkles className="w-4 h-4 mr-2" />
+            Árazás
+          </Badge>
+          
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold">
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Válaszd ki a Tökéletes Csomagot
+            </span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Minden méretű klub és verseny szervezőnek megfelelő árazás
           </p>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {packages.map((pkg, index) => (
-            <div 
-              key={index}
-              className={`relative depth-card group hover:scale-105 transition-all duration-500 ${
-                pkg.popular ? 'ring-2 ring-red-500 scale-105' : ''
-              }`}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              {/* Popular Badge */}
-              {pkg.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-red-500 to-red-700 text-white px-4 py-2 rounded-full text-sm font-bold">
-                    Legnépszerűbb
-                  </span>
-                </div>
-              )}
-
-              {/* Package Icon */}
-              <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${pkg.gradient} mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                <pkg.icon className="w-8 h-8 text-white" />
-              </div>
-
-              {/* Package Info */}
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">{pkg.name}</h3>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold text-white">{pkg.price}</span>
-                  <span className="text-gray-400">{pkg.period}</span>
-                </div>
-                <p className="text-gray-400 text-sm">{pkg.description}</p>
-              </div>
-
-              {/* Features */}
-              <div className="space-y-4 mb-8">
-                {pkg.features.map((feature, featureIndex) => (
-                  <div key={featureIndex} className="flex items-center">
-                    {feature.included ? (
-                      <IconCheck className="w-5 h-5 text-green-500 mr-3" />
-                    ) : (
-                      <IconX className="w-5 h-5 text-red-500 mr-3" />
-                    )}
-                    <span className={`text-sm ${feature.included ? 'text-white' : 'text-gray-500'}`}>
-                      {feature.text}
-                    </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          {packages.map((pkg, index) => {
+            const Icon = pkg.icon;
+            
+            return (
+              <Card 
+                key={index} 
+                className={cn(
+                  "group relative transition-all duration-300",
+                  "hover:shadow-lg hover:shadow-black/30",
+                  "border-primary/20 bg-card/50 backdrop-blur-sm",
+                  pkg.popular && "ring-2 ring-primary shadow-primary/20"
+                )}
+              >
+                {/* Popular Badge */}
+                {pkg.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="bg-primary text-primary-foreground shadow-lg">
+                      Legnépszerűbb
+                    </Badge>
                   </div>
-                ))}
-              </div>
+                )}
 
-              {/* CTA Button */}
-              <button className="w-full glass-button push-button py-3 text-center">
-                {pkg.name === 'Ingyenes' ? 'Kezdés Most' : 'Teszt Üzem'}
-              </button>
+                <CardHeader className="text-center space-y-4 pt-8">
+                  {/* Package Icon */}
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
+                    <Icon className="w-8 h-8 text-primary" />
+                  </div>
 
-              {/* Hover Effect Overlay */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-red-500/5 to-red-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </div>
-          ))}
+                  {/* Package Info */}
+                  <div>
+                    <CardTitle className="text-2xl mb-2">{pkg.name}</CardTitle>
+                    <div className="mb-3">
+                      <span className="text-4xl font-bold text-foreground">{pkg.price}</span>
+                      <span className="text-muted-foreground">{pkg.period}</span>
+                    </div>
+                    <CardDescription className="text-sm">
+                      {pkg.description}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  {/* Features */}
+                  {pkg.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-start gap-3">
+                      {feature.included ? (
+                        <IconCheck className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <IconX className="w-5 h-5 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+                      )}
+                      <span className={cn(
+                        "text-sm",
+                        feature.included ? "text-foreground" : "text-muted-foreground/70"
+                      )}>
+                        {feature.text}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+
+                <CardFooter>
+                  <Button 
+                    variant={pkg.variant}
+                    size="lg" 
+                    className="w-full"
+                  >
+                    {pkg.name === 'Ingyenes' ? 'Kezdés Most' : 'Teszt Üzem'}
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Bottom Note */}
-        <div className="text-center mt-12">
-          <p className="text-gray-400 text-sm">
+        <div className="text-center mt-12 space-y-2">
+          <p className="text-sm text-muted-foreground">
             * Egyelőre teszt üzemben működik az oldal. Az előfizetői model hamarosan elérhető lesz.
           </p>
         </div>
       </div>
+      
+      {/* Decorative Elements */}
+      <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
     </section>
   );
 };

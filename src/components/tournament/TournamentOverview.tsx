@@ -38,11 +38,11 @@ const statusConfig: Record<
 > = {
   pending: {
     label: "Előkészítés alatt",
-    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    badgeClass: "bg-warning/10 text-warning border-warning/20",
   },
   "group-stage": {
     label: "Csoportkör",
-    badgeClass: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    badgeClass: "bg-info/10 text-info border-info/20",
   },
   knockout: {
     label: "Egyenes kiesés",
@@ -50,7 +50,7 @@ const statusConfig: Record<
   },
   finished: {
     label: "Befejezett",
-    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    badgeClass: "bg-success/10 text-success border-success/20",
   },
 }
 

@@ -325,7 +325,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     return (
       <div className="flex items-center gap-2">
         {isCheckedIn ? (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-success/15 text-success">
             <IconCheck className="h-3.5 w-3.5" />
           </span>
         ) : (
@@ -439,7 +439,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             variant="outline"
             className={cn(
               "rounded-full border-none px-3 py-1 text-xs font-semibold",
-              hasFreeSpots ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400",
+              hasFreeSpots ? "bg-success/15 text-success" : "bg-warning/15 text-warning",
             )}
           >
             {hasFreeSpots ? "Van szabad hely" : "Megtelt"}
@@ -551,7 +551,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="rounded-full border-none bg-amber-500/15 px-3 py-0 text-amber-500">
+                    <Badge variant="outline" className="rounded-full border-none bg-warning/15 px-3 py-0 text-warning">
                       Várólista #{index + 1}
                     </Badge>
                     {isCurrentUser && (

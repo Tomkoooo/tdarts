@@ -136,10 +136,10 @@ export default function AdminClubsPage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {[
             { label: "Összes klub", value: stats.total, icon: IconBuilding, tone: "text-primary" },
-            { label: "Aktív klubok", value: stats.active, icon: IconShield, tone: "text-emerald-400" },
-            { label: "Archivált klubok", value: stats.deleted, icon: IconStar, tone: "text-amber-300" },
-            { label: "Tagok száma", value: stats.totalMembers, icon: IconUsers, tone: "text-sky-300" },
-            { label: "Összes verseny", value: stats.totalTournaments, icon: IconTrophy, tone: "text-rose-300" },
+            { label: "Aktív klubok", value: stats.active, icon: IconShield, tone: "text-success" },
+            { label: "Archivált klubok", value: stats.deleted, icon: IconStar, tone: "text-warning" },
+            { label: "Tagok száma", value: stats.totalMembers, icon: IconUsers, tone: "text-info" },
+            { label: "Összes verseny", value: stats.totalTournaments, icon: IconTrophy, tone: "text-accent" },
           ].map((stat) => (
             <Card key={stat.label} className={cn("bg-card/90 p-6 text-left", PANEL_SHADOW)}>
               <CardHeader className="p-0">

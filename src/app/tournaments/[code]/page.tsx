@@ -38,12 +38,12 @@ const statusMeta: Record<
 > = {
   pending: {
     label: "Előkészítés alatt",
-    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    badgeClass: "bg-warning/10 text-warning border-warning/20",
     description: "A torna előkészítés alatt áll, a játékosok még jelentkezhetnek.",
   },
   "group-stage": {
     label: "Csoportkör",
-    badgeClass: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    badgeClass: "bg-info/10 text-info border-info/20",
     description: "A csoportkör zajlik, a meccsek eredményei frissülnek.",
   },
   knockout: {
@@ -53,7 +53,7 @@ const statusMeta: Record<
   },
   finished: {
     label: "Befejezett",
-    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    badgeClass: "bg-success/10 text-success border-success/20",
     description: "A torna lezárult, az eredmények archiválva vannak.",
   },
 }

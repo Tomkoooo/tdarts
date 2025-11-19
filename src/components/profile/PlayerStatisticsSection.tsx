@@ -79,19 +79,19 @@ export function PlayerStatisticsSection({
           </Card>
 
           {/* Global Rank */}
-          <Card className="border-blue-500/20 bg-blue-500/5">
+          <Card className="border-info/20 bg-info/5">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Globális rang</p>
-                  <p className="text-3xl font-bold text-blue-500">
+                  <p className="text-3xl font-bold text-info">
                     #{playerStats.player.globalRank}
                   </p>
                   <p className="text-xs mt-1 text-muted-foreground">
                     Összes játékosból
                   </p>
                 </div>
-                <IconTrendingUp className="w-10 h-10 text-blue-500/20" />
+                <IconTrendingUp className="w-10 h-10 text-info/20" />
               </div>
             </CardContent>
           </Card>
@@ -115,19 +115,19 @@ export function PlayerStatisticsSection({
           </Card>
 
           {/* Win Rate */}
-          <Card className="border-green-500/20 bg-green-500/5">
+          <Card className="border-success/20 bg-success/5">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Győzelem %</p>
-                  <p className="text-3xl font-bold text-green-500">
+                  <p className="text-3xl font-bold text-success">
                     {playerStats.summary.winRate}%
                   </p>
                   <p className="text-xs mt-1 text-muted-foreground">
                     {playerStats.summary.wins}W/{playerStats.summary.losses}L
                   </p>
                 </div>
-                <IconSword className="w-10 h-10 text-green-500/20" />
+                <IconSword className="w-10 h-10 text-success/20" />
               </div>
             </CardContent>
           </Card>
@@ -206,7 +206,7 @@ export function PlayerStatisticsSection({
                           {new Date(tournament.startDate).toLocaleDateString('hu-HU')}
                         </span>
                         <span className={`font-semibold ${
-                          tournament.status === 'finished' ? 'text-primary' : 'text-amber-500'
+                          tournament.status === 'finished' ? 'text-primary' : 'text-warning'
                         }`}>
                           {tournament.status === 'finished' ? 'Befejezve' : 'Folyamatban'}
                         </span>
@@ -265,8 +265,8 @@ export function PlayerStatisticsSection({
                   key={index}
                   className={`${
                     match.won
-                      ? 'border-green-500/20 bg-green-500/5'
-                      : 'border-red-500/20 bg-red-500/5'
+                      ? 'border-success/20 bg-success/5'
+                      : 'border-destructive/20 bg-destructive/5'
                   }`}
                 >
                   <CardContent className="p-4">
@@ -282,7 +282,7 @@ export function PlayerStatisticsSection({
                       </div>
                       <div className="text-right space-y-1">
                         <div className={`text-lg font-bold ${
-                          match.won ? 'text-green-500' : 'text-red-500'
+                          match.won ? 'text-success' : 'text-destructive'
                         }`}>
                           {match.player1Score} - {match.player2Score}
                         </div>

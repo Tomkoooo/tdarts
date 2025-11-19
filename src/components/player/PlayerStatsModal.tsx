@@ -9,7 +9,10 @@ import {
   IconTrophy,
   IconTrendingUp,
   IconChevronDown,
+  IconLoader2,
 } from "@tabler/icons-react"
+import axios from "axios"
+import toast from "react-hot-toast"
 
 import { Player } from "@/interface/player.interface"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -26,13 +29,38 @@ interface PlayerStatsModalProps {
 }
 
 const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) => {
-  const [expandedTournament, setExpandedTournament] = React.useState<number | null>(
-    player?.tournamentHistory && player.tournamentHistory.length > 0 ? 0 : null,
-  )
+  const [playerStats, setPlayerStats] = React.useState<Player | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [expandedTournament, setExpandedTournament] = React.useState<number | null>(null)
+
+  React.useEffect(() => {
+    const fetchPlayerStats = async () => {
+      if (!player?._id) return
+      
+      setIsLoading(true)
+      try {
+        const response = await axios.get(`/api/players/${player._id}/stats`)
+        setPlayerStats(response.data)
+        if (response.data.tournamentHistory && response.data.tournamentHistory.length > 0) {
+          setExpandedTournament(0)
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch player stats:', error)
+        toast.error('Nem sikerült betölteni a játékos statisztikáit')
+        // Fallback to the player object passed as prop
+        setPlayerStats(player)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPlayerStats()
+  }, [player])
 
   if (!player) return null
 
-  const stats = player.stats ?? {}
+  const displayPlayer = playerStats || player
+  const stats = displayPlayer.stats ?? {}
   const highlightCards = [
     {
       label: "Összes torna",
@@ -63,8 +91,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
     { label: "Lejátszott meccsek", value: stats.matchesPlayed ?? 0 },
     { label: "Győzelmek", value: stats.totalMatchesWon ?? 0 },
     { label: "Vereségek", value: stats.totalMatchesLost ?? 0 },
-    { label: "Megnyert legek", value: stats.legsWon ?? 0 },
-    { label: "180-ak", value: stats.total180s ?? 0 },
+    { label: "Megnyert legek", value: stats.totalLegsWon ?? stats.legsWon ?? 0 },
+    { label: "180-ak", value: stats.oneEightiesCount ?? stats.total180s ?? 0 },
     { label: "Legmagasabb kiszálló", value: stats.highestCheckout ?? "—" },
     { label: "Átlag", value: stats.avg ? stats.avg.toFixed(1) : "—" },
   ]
@@ -72,30 +100,38 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
   return (
     <Dialog open={Boolean(player)} onOpenChange={(open) => (!open ? onClose() : null)}>
       <DialogContent
-        className="flex h-[90vh] max-w-4xl flex-col overflow-hidden border-0 bg-card/95 p-0 shadow-2xl shadow-black/45"
+        className="flex h-[90vh] max-w-4xl flex-col overflow-hidden bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl p-0 shadow-2xl shadow-primary/20"
       >
-        <header className="flex flex-col gap-4 border-b border-border/40 bg-card/90 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-4 bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-4 md:py-5 sm:flex-row sm:items-end sm:justify-between shadow-sm shadow-primary/10">
           <div className="space-y-1">
             <DialogHeader className="p-0 text-left">
-              <DialogTitle className="text-2xl font-semibold text-foreground sm:text-3xl">{player.name}</DialogTitle>
+              <DialogTitle className="text-2xl font-semibold text-foreground sm:text-3xl">{displayPlayer.name}</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground">
-              {player.stats?.tournamentsPlayed ?? 0} torna • {player.stats?.matchesPlayed ?? 0} meccs • {" "}
-              {player.stats?.avg ? `${player.stats.avg.toFixed(1)} átlag` : "nincs átlag adat"}
+              {displayPlayer.stats?.tournamentsPlayed ?? 0} torna • {displayPlayer.stats?.matchesPlayed ?? 0} meccs • {" "}
+              {displayPlayer.stats?.avg ? `${displayPlayer.stats.avg.toFixed(1)} átlag` : "nincs átlag adat"}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="rounded-full border-none bg-primary/10 px-3 py-1 text-xs text-primary">
-              <IconTarget className="mr-1 h-3.5 w-3.5" />
-              MMR: {(player as any).mmr ?? player.stats?.mmr ?? 800}
+              <IconTarget size={14} className="mr-1" />
+              MMR: {(displayPlayer as any).mmr ?? displayPlayer.stats?.mmr ?? 800}
             </Badge>
-            <Button variant="ghost" size="sm" onClick={onClose} className="gap-2">
-              Bezárás
-            </Button>
+            <div className="w-12">
+
+            </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto space-y-6 px-6 pb-6 pt-6">
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center py-12">
+            <div className="text-center space-y-3">
+              <IconLoader2 size={40} className="animate-spin text-primary mx-auto" />
+              <p className="text-sm text-muted-foreground">Statisztikák betöltése...</p>
+            </div>
+          </div>
+        ) : (
+        <div className="flex-1 overflow-y-auto space-y-6 px-4 md:px-6 pb-6 pt-6">
           <section>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Főbb mutatók</h3>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -107,7 +143,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                   <CardContent className="flex flex-col gap-3 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="rounded-full bg-primary/15 p-2 text-primary">
-                        <Icon className="h-4 w-4" />
+                        <Icon size={16} />
                       </div>
                       <span className="text-2xl font-bold text-foreground">{value}</span>
                     </div>
@@ -122,7 +158,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
             <Card className="bg-muted/20 shadow-md shadow-black/20">
               <CardContent className="flex flex-col gap-4 p-5">
                 <div className="flex items-center gap-2">
-                  <IconCalendarStats className="h-4 w-4 text-primary" />
+                  <IconCalendarStats size={16} className="text-primary" />
                   <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Összesített statisztikák</h4>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -142,7 +178,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
             <Card className="bg-muted/20 shadow-md shadow-black/20">
               <CardContent className="flex h-full flex-col gap-4 p-5">
                 <div className="flex items-center gap-2">
-                  <IconPlayerPlay className="h-4 w-4 text-primary" />
+                  <IconPlayerPlay size={16} className="text-primary" />
                   <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Gyors kimutatások</h4>
                 </div>
                 <div className="space-y-3 text-sm text-muted-foreground">
@@ -155,7 +191,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                   <QuickFact
                     icon={IconTrendingUp}
                     label="180-ak összesen"
-                    highlight={stats.total180s ?? 0}
+                    highlight={stats.oneEightiesCount ?? stats.total180s ?? 0}
                     helper="Villámgyors szériák száma"
                   />
                   <QuickFact
@@ -174,17 +210,17 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
           <section>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <IconTrophy className="h-4 w-4 text-primary" />
+                <IconTrophy size={16} className="text-primary" />
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Torna eredmények</h3>
               </div>
               <span className="text-xs text-muted-foreground">
-                {player.tournamentHistory?.length ?? 0} befejezett torna
+                {displayPlayer.tournamentHistory?.length ?? 0} befejezett torna
               </span>
             </div>
 
             <div className="mt-4 space-y-3">
-              {player.tournamentHistory && player.tournamentHistory.length > 0 ? (
-                player.tournamentHistory.map((history, index) => {
+              {displayPlayer.tournamentHistory && displayPlayer.tournamentHistory.length > 0 ? (
+                displayPlayer.tournamentHistory.map((history, index) => {
                   const isOpen = expandedTournament === index
                   return (
                     <Card
@@ -248,6 +284,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
             </div>
           </section>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -266,7 +303,7 @@ const QuickFact = ({
 }) => (
   <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-primary/15 via-primary/10 to-accent/10 p-3 shadow-sm shadow-black/15">
     <div className="rounded-md bg-primary/20 p-2 text-primary">
-      <Icon className="h-4 w-4" />
+      <Icon size={16} />
     </div>
     <div>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>

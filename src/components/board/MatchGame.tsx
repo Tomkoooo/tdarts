@@ -903,7 +903,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
 
           {/* Center Info */}
           <div className="flex w-12 flex-col items-center justify-center bg-gray-800 sm:w-16 md:w-24">
-            <div className="text-xs sm:text-sm font-bold text-yellow-400 mb-1">tDarts</div>
+            <div className="text-xs sm:text-sm font-bold text-warning mb-1">tDarts</div>
             <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1">{currentLeg}</div>
             <div className="text-xs text-gray-400">Leg</div>
             <div className="text-xs text-gray-400 mt-1">BO{legsToWin * 2 - 1}</div>

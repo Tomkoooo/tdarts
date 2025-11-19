@@ -51,11 +51,6 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         variants={liquidIn}
         initial="initial"
         animate="animate"
-        whileHover={{
-          scale: 1.01,
-          y: -2,
-          transition: { type: "spring", stiffness: 300, damping: 30 },
-        }}
         {...(props as HTMLMotionProps<"div">)}
       />
     )

@@ -191,7 +191,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     <div className="live-matches-list bg-base-100 p-6 rounded-lg">
       {/* Connection Status */}
       <div className="flex items-center gap-2 mb-4">
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-success' : 'bg-destructive'}`}></div>
         <span className="text-sm">{isConnected ? 'Connected' : 'Disconnected'}</span>
       </div>
 

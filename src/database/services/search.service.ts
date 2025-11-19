@@ -95,6 +95,7 @@ export class SearchService {
         // Search tournaments
         if (filters.type === 'tournaments' || filters.type === 'all') {
             const tournamentQuery: any = {};
+            let hasFilters = false;
             
             if (searchRegex) {
                 tournamentQuery.$or = [
@@ -103,19 +104,16 @@ export class SearchService {
                     { 'tournamentSettings.location': searchRegex },
                     { tournamentId: searchRegex }
                 ];
-            } else {
-                // If no search query and type is 'tournaments', don't return any tournaments
-                if (filters.type === 'tournaments') {
-                    // Don't add any query, so no tournaments will be returned
-                }
             }
 
             // Apply tournament filters
             if (filters.status) {
                 tournamentQuery['tournamentSettings.status'] = filters.status;
+                hasFilters = true;
             }
             if (filters.format) {
                 tournamentQuery['tournamentSettings.format'] = filters.format;
+                hasFilters = true;
             }
             if (filters.dateFrom || filters.dateTo) {
                 tournamentQuery['tournamentSettings.startDate'] = {};
@@ -125,6 +123,7 @@ export class SearchService {
                 if (filters.dateTo) {
                     tournamentQuery['tournamentSettings.startDate'].$lte = filters.dateTo;
                 }
+                hasFilters = true;
             }
             if (filters.minPlayers || filters.maxPlayers) {
                 tournamentQuery['tournamentSettings.maxPlayers'] = {};
@@ -134,18 +133,22 @@ export class SearchService {
                 if (filters.maxPlayers) {
                     tournamentQuery['tournamentSettings.maxPlayers'].$lte = filters.maxPlayers;
                 }
+                hasFilters = true;
             }
             if (filters.tournamentType) {
                 tournamentQuery['tournamentSettings.type'] = filters.tournamentType;
+                hasFilters = true;
             }
 
-            const tournaments = await TournamentModel.find(tournamentQuery)
-                .populate('clubId', 'name location')
-                .populate('tournamentPlayers.playerReference', 'name')
-                .limit(20)
-                .sort({ 'tournamentSettings.startDate': -1 });
+            // Only search if we have a query OR filters OR type is 'all'
+            if (searchRegex || hasFilters || filters.type === 'all') {
+                const tournaments = await TournamentModel.find(tournamentQuery)
+                    .populate('clubId', 'name location')
+                    .populate('tournamentPlayers.playerReference', 'name')
+                    .limit(20)
+                    .sort({ 'tournamentSettings.startDate': -1 });
 
-            results.tournaments = tournaments.map(tournament => {
+                results.tournaments = tournaments.map(tournament => {
                 const startDate = tournament.tournamentSettings?.startDate;
                 const registrationDeadline = tournament.tournamentSettings?.registrationDeadline;
                 const now = new Date();
@@ -163,12 +166,16 @@ export class SearchService {
                     registrationOpen: registrationOpen,
                     tournament: tournament,
                 };
-            });
+                });
+            } else {
+                results.tournaments = [];
+            }
         }
 
         // Search clubs
         if (filters.type === 'clubs' || filters.type === 'all') {
             const clubQuery: any = {};
+            let hasFilters = false;
             
             if (searchRegex) {
                 clubQuery.$or = [
@@ -176,34 +183,35 @@ export class SearchService {
                     { description: searchRegex },
                     { location: searchRegex }
                 ];
-            } else {
-                // If no search query and type is 'clubs', don't return any clubs
-                if (filters.type === 'clubs') {
-                    // Don't add any query, so no clubs will be returned
-                }
             }
 
             // Apply club filters
             if (filters.location) {
                 clubQuery.location = new RegExp(filters.location, 'i');
+                hasFilters = true;
             }
 
-            const clubs = await ClubModel.find(clubQuery)
-                .populate('members', 'name email')
-                .populate('moderators', 'name email')
-                .limit(20)
-                .sort({ name: 1 });
+            // Only search if we have a query OR filters OR type is 'all'
+            if (searchRegex || hasFilters || filters.type === 'all') {
+                const clubs = await ClubModel.find(clubQuery)
+                    .populate('members', 'name email')
+                    .populate('moderators', 'name email')
+                    .limit(20)
+                    .sort({ name: 1 });
 
-            results.clubs = clubs.map(club => ({
-                _id: club._id,
-                name: club.name,
-                description: club.description,
-                location: club.location,
-                memberCount: club.members?.length || 0,
-                moderatorCount: club.moderators?.length || 0,
-                boardCount: 0, // Boards are now managed at tournament level
-                type: 'club'
-            }));
+                results.clubs = clubs.map(club => ({
+                    _id: club._id,
+                    name: club.name,
+                    description: club.description,
+                    location: club.location,
+                    memberCount: club.members?.length || 0,
+                    moderatorCount: club.moderators?.length || 0,
+                    boardCount: 0, // Boards are now managed at tournament level
+                    type: 'club'
+                }));
+            } else {
+                results.clubs = [];
+            }
         }
 
         // Calculate total results

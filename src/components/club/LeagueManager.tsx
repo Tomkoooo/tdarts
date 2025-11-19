@@ -382,8 +382,8 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
           Részletek
         </Button>
         {canManage && (
-          <Button variant="destructive" size="icon" onClick={onDelete}>
-            <IconTrash className="h-4 w-4" />
+          <Button variant="destructive" size={"icon"} onClick={onDelete}>
+            <IconTrash />
           </Button>
         )}
       </CardFooter>

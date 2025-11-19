@@ -211,27 +211,5 @@ const FeaturesSectionNew = () => {
   );
 };
 
-// Add keyframe animation
-const styles = `
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`;
-
-// Inject styles
-if (typeof document !== 'undefined' && !document.getElementById('features-animation')) {
-  const styleSheet = document.createElement('style');
-  styleSheet.id = 'features-animation';
-  styleSheet.textContent = styles;
-  document.head.appendChild(styleSheet);
-}
-
 export default FeaturesSectionNew;
 

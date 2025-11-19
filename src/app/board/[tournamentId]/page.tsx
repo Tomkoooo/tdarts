@@ -233,8 +233,12 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const handleAdminMatchFinish = async () => {
     if (!adminMatch) return;
     
+    // Convert empty strings to 0
+    const cleanedPlayer1Legs = player1Legs === '' ? 0 : player1Legs;
+    const cleanedPlayer2Legs = player2Legs === '' ? 0 : player2Legs;
+    
     // Ensure no tie
-    if (player1Legs === player2Legs) {
+    if (cleanedPlayer1Legs === cleanedPlayer2Legs) {
       setError("Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.");
       return;
     }
@@ -244,8 +248,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     
     try {
       await axios.post(`/api/matches/${adminMatch._id}/finish`, {
-        player1LegsWon: player1Legs,
-        player2LegsWon: player2Legs,
+        player1LegsWon: cleanedPlayer1Legs,
+        player2LegsWon: cleanedPlayer2Legs,
         player1Stats: {
           highestCheckout: adminMatch.player1.highestCheckout || 0,
           oneEightiesCount: adminMatch.player1.oneEightiesCount || 0,
@@ -723,11 +727,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 min="0"
                 max="10"
                 className="input input-bordered input-lg w-full"
-                value={player1Legs}
-                onChange={(e) => setPlayer1Legs(parseInt(e.target.value) || 0)}
+                value={player1Legs ?? ''}
+                onChange={(e) => setPlayer1Legs(e.target.value === '' ? '' : parseInt(e.target.value))}
               />
             </div>
-            
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-bold">{adminMatch.player2.playerId.name} nyert legek:</span>
@@ -737,8 +741,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 min="0"
                 max="10"
                 className="input input-bordered input-lg w-full"
-                value={player2Legs}
-                onChange={(e) => setPlayer2Legs(parseInt(e.target.value) || 0)}
+                value={player2Legs ?? ''}
+                onChange={(e) => setPlayer2Legs(e.target.value === '' ? '' : parseInt(e.target.value))}
               />
             </div>
           </div>

@@ -179,10 +179,10 @@ export default function CreateTournamentModal({
         name: settings.name,
         description: settings.description,
         startDate: settings.startDate,
-        entryFee: settings.entryFee,
-        maxPlayers: settings.maxPlayers,
+        entryFee: settings.entryFee === '' as unknown as number ? 0 : settings.entryFee,
+        maxPlayers: settings.maxPlayers === '' as unknown as number ? 0 : settings.maxPlayers,
         format: settings.format,
-        startingScore: settings.startingScore,
+        startingScore: settings.startingScore === '' as unknown as number ? 0 : settings.startingScore,
         tournamentPassword: settings.tournamentPassword,
         boardCount: boards.length,
         boards: boards.map((b, idx) => ({
@@ -234,15 +234,15 @@ export default function CreateTournamentModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden border-0 bg-card/95 p-0 shadow-2xl shadow-black/40"
+        className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl p-0 shadow-2xl shadow-primary/20"
       >
-        <DialogHeader className="border-b border-border/40 px-6 py-5">
-          <DialogTitle className="text-2xl">Új torna létrehozása</DialogTitle>
-          <DialogDescription>Hozz létre egy új tornát a klubodban</DialogDescription>
+        <DialogHeader className="bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
+          <DialogTitle className="text-xl md:text-2xl text-foreground">Új torna létrehozása</DialogTitle>
+          <DialogDescription className="text-sm">Hozz létre egy új tornát a klubodban</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="mb-4 md:mb-6 flex items-center justify-between gap-2">
             {steps.map((step, idx) => {
               const StepIcon = step.icon
               const isActive = currentStep === step.id
@@ -254,25 +254,30 @@ export default function CreateTournamentModal({
                     key={step.id}
                     onClick={() => setCurrentStep(step.id as Step)}
                     className={cn(
-                      "flex items-center gap-2 text-sm transition-colors",
-                      isActive ? "text-primary" : isCompleted ? "text-emerald-500" : "text-muted-foreground",
+                      "flex items-center gap-1.5 md:gap-2 text-xs md:text-sm transition-all duration-200",
+                      isActive ? "text-primary scale-105" : isCompleted ? "text-success" : "text-muted-foreground",
                     )}
                   >
                     <div
                       className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-white/10",
-                        isActive && "ring-primary/40 bg-primary text-primary-foreground",
+                        "flex items-center justify-center rounded-full transition-all duration-200",
+                        "size-9 md:size-11",
+                        isActive && "bg-primary shadow-lg shadow-primary/40",
                         !isActive && !isCompleted && "bg-muted/60",
-                        isCompleted && "ring-emerald-500/40 bg-emerald-500 text-white",
+                        isCompleted && "bg-success shadow-lg shadow-success/40",
                       )}
                     >
-                      {isCompleted ? <IconCheck className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
+                      {isCompleted ? (
+                        <IconCheck size={20} className="text-white" />
+                      ) : (
+                        <StepIcon size={20} className={isActive ? "text-white" : "text-current"} />
+                      )}
                     </div>
-                    <span className="hidden text-sm font-medium sm:inline">{step.label}</span>
+                    <span className="hidden text-xs md:text-sm font-medium sm:inline">{step.label}</span>
                   </button>
                   {idx < steps.length - 1 && (
-                    <div className="mx-2 flex-1">
-                      <Separator className={cn("transition-all", isCompleted ? "bg-emerald-500" : "bg-muted")} />
+                    <div className="mx-1 md:mx-2 flex-1">
+                      <Separator className={cn("transition-all h-0.5", isCompleted ? "bg-success" : "bg-muted")} />
                     </div>
                   )}
                 </React.Fragment>
@@ -309,7 +314,7 @@ export default function CreateTournamentModal({
             </Alert>
           )}
 
-          <Card className="bg-card/90 shadow-lg shadow-black/30">
+          <Card className="bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-primary/10">
             <CardContent className="pt-6">
               {currentStep === "details" && (
                 <div className="space-y-4">
@@ -354,8 +359,9 @@ export default function CreateTournamentModal({
                       type="number"
                       label="Nevezési díj (Ft)"
                       placeholder="0"
-                      value={settings.entryFee}
-                      onChange={(event) => handleSettingsChange("entryFee", Number(event.target.value))}
+                      min={0}
+                      value={settings.entryFee ?? ''}
+                      onChange={(event) => handleSettingsChange("entryFee", event.target.value === '' ? '' : Number(event.target.value))}
                     />
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Típus</label>
@@ -424,8 +430,9 @@ export default function CreateTournamentModal({
                       type="number"
                       label="Maximális létszám"
                       placeholder="16"
-                      value={settings.maxPlayers}
-                      onChange={(event) => handleSettingsChange("maxPlayers", Number(event.target.value))}
+                      min={0}
+                      value={settings.maxPlayers ?? ''}
+                      onChange={(event) => handleSettingsChange("maxPlayers", event.target.value === '' ? '' : Number(event.target.value))}
                       icon={<IconUsers className="h-5 w-5" />}
                       required
                     />
@@ -433,8 +440,9 @@ export default function CreateTournamentModal({
                       type="number"
                       label="Kezdő pontszám"
                       placeholder="501"
-                      value={settings.startingScore}
-                      onChange={(event) => handleSettingsChange("startingScore", Number(event.target.value))}
+                      min={0}
+                      value={settings.startingScore ?? ''}
+                      onChange={(event) => handleSettingsChange("startingScore", event.target.value === '' ? '' : Number(event.target.value))}
                       icon={<IconTarget className="h-5 w-5" />}
                       required
                     />
@@ -452,7 +460,7 @@ export default function CreateTournamentModal({
                       <select
                         value={selectedLeagueId}
                         onChange={(event) => setSelectedLeagueId(event.target.value)}
-                        className="flex h-11 w-full rounded-lg bg-white/8 backdrop-blur-md border border-white/15 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-white/12 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Válassz ligát</option>
                         {availableLeagues.map((league) => (
@@ -480,31 +488,31 @@ export default function CreateTournamentModal({
           </Card>
         </div>
 
-        <DialogFooter className="flex flex-col gap-3 border-t border-border/40 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+        <DialogFooter className="flex flex-col gap-2 bg-gradient-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 sm:flex-row sm:items-center sm:justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="md:size-default">
             Mégse
           </Button>
           <div className="flex items-center gap-2">
             {getCurrentStepIndex() > 0 && (
-              <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>
+              <Button variant="outline" size="sm" onClick={handleBack} disabled={isSubmitting} className="md:size-default">
                 Vissza
               </Button>
             )}
             {currentStep !== "settings" ? (
-              <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} className="gap-2">
+              <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
                 Tovább
-                <IconChevronRight className="h-4 w-4" />
+                <IconChevronRight size={16} />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} className="gap-2">
+              <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1.5 shadow-lg shadow-primary/30">
                 {isSubmitting ? (
                   <>
-                    <span className="animate-spin">⏳</span>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                     Létrehozás...
                   </>
                 ) : (
                   <>
-                    <IconCheck className="h-4 w-4" />
+                    <IconCheck size={16} />
                     Torna létrehozása
                   </>
                 )}

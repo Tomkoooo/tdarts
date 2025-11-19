@@ -83,7 +83,7 @@ const HeroSectionNew = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '400ms' }}>
-            <Button size="xl" className="gap-2 group" asChild>
+            <Button size="xl" className="gap-2 group btn btn-primary" asChild>
               <Link href="/search">
                 <IconPlayerPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 Kezdés Most

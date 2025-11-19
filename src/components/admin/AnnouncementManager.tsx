@@ -245,9 +245,9 @@ const AnnouncementManager: React.FC = () => {
                 <input
                   type="number"
                   className="admin-input w-full"
-                  value={Math.round(formData.duration / 1000)}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) * 1000 })}
-                  min={3}
+                  value={formData.duration ? Math.round(formData.duration / 1000) : ''}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value === '' ? 0 : parseInt(e.target.value) * 1000 })}
+                  min={0}
                   max={60}
                   step={1}
                   placeholder="10"

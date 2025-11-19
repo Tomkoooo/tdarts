@@ -981,7 +981,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                   ))}
                 </select>
                 {availableTournaments.length === 0 && (
-                  <p className="text-xs text-amber-500">Nincs elérhető befejezett verseny.</p>
+                  <p className="text-xs text-warning">Nincs elérhető befejezett verseny.</p>
                 )}
               </div>
 
@@ -1138,10 +1138,21 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
   const handleSave = async () => {
     try {
       setLoading(true);
+      // Convert empty strings to 0 in pointsConfig
+      const cleanedPointsConfig = Object.entries(formData.pointsConfig || {}).reduce((acc, [key, val]) => {
+        acc[key] = val === '' ? 0 : val;
+        return acc;
+      }, {} as any);
+
+      const dataToSubmit = {
+        ...formData,
+        pointsConfig: cleanedPointsConfig,
+      };
+
       const response = await fetch(`/api/clubs/${clubId}/leagues/${league._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSubmit),
       });
 
       if (response.ok) {
@@ -1366,19 +1377,19 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                   <Label>{config.label}</Label>
                   <Input
                     type="number"
+                    min={0}
                     step={config.step ?? 1}
-                    value={(formData.pointsConfig as any)[config.key] ?? 0}
-                    onChange={(event) =>
+                    value={(formData.pointsConfig as any)[config.key] ?? ''}
+                    onChange={(event) => {
+                      const val = event.target.value;
                       setFormData({
                         ...formData,
                         pointsConfig: {
                           ...formData.pointsConfig,
-                          [config.key]: config.step
-                            ? parseFloat(event.target.value) || 0
-                            : parseInt(event.target.value, 10) || 0,
+                          [config.key]: val === '' ? '' : (config.step ? parseFloat(val) : parseInt(val, 10)),
                         },
-                      })
-                    }
+                      });
+                    }}
                   />
                 </div>
               ))}

@@ -90,6 +90,14 @@ export default function EditTournamentModal({
     setSubscriptionError(null);
 
     try {
+      // Convert empty strings to 0 for number fields
+      const cleanedSettings = {
+        ...settings,
+        maxPlayers: settings.maxPlayers === '' ? 0 : settings.maxPlayers,
+        startingScore: settings.startingScore === '' ? 0 : settings.startingScore,
+        entryFee: settings.entryFee === '' ? 0 : settings.entryFee,
+      };
+
       const response = await fetch(`/api/tournaments/${tournament.tournamentId}`, {
         method: 'PUT',
         headers: {
@@ -97,7 +105,7 @@ export default function EditTournamentModal({
         },
         body: JSON.stringify({
           userId,
-          settings,
+          settings: cleanedSettings,
           boards: boards.map((b, idx) => ({
             boardNumber: idx + 1,
             name: b.name,
@@ -282,10 +290,10 @@ export default function EditTournamentModal({
                 <label className="block text-sm font-medium mb-1">Max. létszám *</label>
                 <input
                   type="number"
-                  value={settings.maxPlayers}
-                  onChange={(e) => handleSettingsChange('maxPlayers', parseInt(e.target.value))}
+                  value={settings.maxPlayers ?? ''}
+                  onChange={(e) => handleSettingsChange('maxPlayers', e.target.value === '' ? '' : parseInt(e.target.value))}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                  min="2"
+                  min="0"
                   disabled={isTournamentStarted}
                   required
                 />
@@ -298,10 +306,10 @@ export default function EditTournamentModal({
                 <label className="block text-sm font-medium mb-1">Kezdő pontszám *</label>
                 <input
                   type="number"
-                  value={settings.startingScore}
-                  onChange={(e) => handleSettingsChange('startingScore', parseInt(e.target.value))}
+                  value={settings.startingScore ?? ''}
+                  onChange={(e) => handleSettingsChange('startingScore', e.target.value === '' ? '' : parseInt(e.target.value))}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                  min="1"
+                  min="0"
                   disabled={isTournamentStarted}
                   required
                 />
@@ -324,8 +332,8 @@ export default function EditTournamentModal({
                 <label className="block text-sm font-medium mb-1">Nevezési díj (Ft)</label>
                 <input
                   type="number"
-                  value={settings.entryFee}
-                  onChange={(e) => handleSettingsChange('entryFee', parseInt(e.target.value))}
+                  value={settings.entryFee ?? ''}
+                  onChange={(e) => handleSettingsChange('entryFee', e.target.value === '' ? '' : parseInt(e.target.value))}
                   className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
                   min="0"
                 />

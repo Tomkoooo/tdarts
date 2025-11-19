@@ -146,23 +146,36 @@ const NavbarNew = () => {
               </>
             ) : user ? (
               <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/myclub">
-                    <IconDart className="w-4 h-4" />
-                    <span className="hidden xl:inline">Saját klub</span>
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/feedback">
-                    <IconBug className="w-4 h-4" />
-                    <span className="hidden xl:inline">Hibabejelentés</span>
-                  </Link>
-                </Button>
+                <Link 
+                  href="/myclub"
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
+                    pathname === "/myclub"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                  )}
+                >
+                  <IconDart className="w-4 h-4" />
+                  <span className="hidden xl:inline">Saját klub</span>
+                </Link>
+                <Link 
+                  href="/feedback"
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
+                    pathname === "/feedback"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                  )}
+                >
+                  <IconBug className="w-4 h-4" />
+                  <span className="hidden xl:inline">Hibabejelentés</span>
+                </Link>
                 <div className="relative" ref={userMenuRef}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2 px-2 lg:px-3"
+                  <button
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
+                      "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                    )}
                     onClick={() => setIsUserMenuOpen((prev) => !prev)}
                     aria-expanded={isUserMenuOpen}
                     aria-haspopup="true"
@@ -174,7 +187,7 @@ const NavbarNew = () => {
                       </AvatarFallback>
                     </Avatar>
                     <span className="hidden xl:inline">{user.username}</span>
-                  </Button>
+                  </button>
                   <div
                     id="user-menu"
                     className={cn(
@@ -266,8 +279,8 @@ const NavbarNew = () => {
           <div className="lg:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <IconMenu2 className="w-6 h-6" />
+                <Button variant="ghost" size="lg" className="relative">
+                  <IconMenu2 size={28} />
                   {!user && (
                     <Badge className="absolute -top-1 -right-1 w-2 h-2 p-0 bg-destructive" />
                   )}
@@ -348,7 +361,7 @@ const NavbarNew = () => {
                   ) : user ? (
                     <div className="space-y-2 pb-4">
                       <Button 
-                        variant="outline" 
+                        variant="ghost" 
                         className="w-full justify-start gap-2"
                         asChild
                       >
@@ -357,29 +370,35 @@ const NavbarNew = () => {
                           Profil
                         </Link>
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start gap-2"
-                        asChild
+                      <Link 
+                        href="/myclub" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium",
+                          pathname === "/myclub"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-foreground hover:bg-accent/10"
+                        )}
                       >
-                        <Link href="/myclub" onClick={() => setIsMobileMenuOpen(false)}>
-                          <IconDart className="w-5 h-5" />
-                          Saját klub
-                        </Link>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start gap-2"
-                        asChild
+                        <IconDart className="w-5 h-5" />
+                        Saját klub
+                      </Link>
+                      <Link 
+                        href="/feedback" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium",
+                          pathname === "/feedback"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-foreground hover:bg-accent/10"
+                        )}
                       >
-                        <Link href="/feedback" onClick={() => setIsMobileMenuOpen(false)}>
-                          <IconBug className="w-5 h-5" />
-                          Hibabejelentés
-                        </Link>
-                      </Button>
+                        <IconBug className="w-5 h-5" />
+                        Hibabejelentés
+                      </Link>
                       {user.isAdmin && (
                         <Button 
-                          variant="outline" 
+                          variant="ghost" 
                           className="w-full justify-start gap-2"
                           asChild
                         >

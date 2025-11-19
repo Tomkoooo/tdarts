@@ -227,7 +227,7 @@ export default function MemberList({
                           {canDemote && (
                             <DropdownMenuItem
                               onClick={() => handleRemoveModerator(member._id, member.name)}
-                              className="gap-2 text-amber-500 focus:text-amber-500"
+                              className="gap-2 text-warning focus:text-warning"
                             >
                               <IconShield className="w-4 h-4" />
                               Moderátor jog elvétel

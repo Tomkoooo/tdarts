@@ -47,10 +47,10 @@ interface TournamentCardProps {
 }
 
 const statusStyles: Record<string, string> = {
-  pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  'group-stage': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  pending: 'bg-warning/10 text-warning border-warning/20',
+  'group-stage': 'bg-info/10 text-info border-info/20',
   knockout: 'bg-primary/10 text-primary border-primary/20',
-  finished: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  finished: 'bg-success/10 text-success border-success/20',
 }
 
 const statusLabels: Record<string, string> = {
@@ -80,13 +80,13 @@ export default function TournamentCard({
   const tournamentId = tournament.tournamentId || tournament._id
 
   return (
-    <Link href={`/tournaments/${tournamentId}`} className="block">
-      <Card className="border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col transition-all hover:shadow-2xl hover:bg-card/70 cursor-pointer">
+    <Link href={`/tournaments/${tournamentId}`} className="block h-full">
+      <Card className="h-full border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col transition-all hover:shadow-2xl hover:bg-card/70 hover:scale-[1.02] cursor-pointer">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <IconTrophy className="w-4 h-4" />
+              <IconTrophy className="w-4 h-4 text-primary" />
               <span className="truncate">
                 {typeof tournament.clubId === 'object' && tournament.clubId?.name 
                   ? tournament.clubId.name 
@@ -143,7 +143,7 @@ export default function TournamentCard({
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         {tournament.tournamentSettings?.startDate && (
           <div className="flex items-center gap-2">
-            <IconCalendar className="w-4 h-4" />
+            <IconCalendar className="w-4 h-4 text-info" />
             <span>
               {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU', {
                 year: 'numeric',
@@ -156,22 +156,22 @@ export default function TournamentCard({
 
         {tournament.tournamentSettings?.location && (
           <div className="flex items-center gap-2">
-            <IconMapPin className="w-4 h-4" />
+            <IconMapPin className="w-4 h-4 text-accent" />
             <span className="truncate">{tournament.tournamentSettings.location}</span>
           </div>
         )}
 
         <div className="flex items-center gap-2">
-          <IconUsers className="w-4 h-4" />
+          <IconUsers className="w-4 h-4 text-success" />
           <span>
             {playerCount} / {maxPlayers || '∞'} játékos
-            {isFull && <span className="ml-1 text-xs text-amber-500">(Betelt)</span>}
+            {isFull && <span className="ml-1 text-xs text-warning">(Betelt)</span>}
           </span>
         </div>
 
         {entryFee > 0 && (
           <div className="flex items-center gap-2">
-            <IconCoin className="w-4 h-4" />
+            <IconCoin className="w-4 h-4 text-warning" />
             <span>Nevezési díj: {entryFee} Ft</span>
           </div>
         )}

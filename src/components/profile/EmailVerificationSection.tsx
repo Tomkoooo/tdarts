@@ -39,7 +39,7 @@ export function EmailVerificationSection({
   })
 
   return (
-    <Card className="border-amber-500/20">
+    <Card className="border-warning/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconKey className="w-5 h-5" />
@@ -47,9 +47,9 @@ export function EmailVerificationSection({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert className="bg-amber-500/10 border-amber-500/20">
-          <IconAlertCircle className="w-4 h-4 text-amber-500" />
-          <AlertDescription className="text-amber-500/90">
+        <Alert className="bg-warning/10 border-warning/20">
+          <IconAlertCircle className="w-4 h-4 text-warning" />
+          <AlertDescription className="text-warning/90">
             Az email címed ellenőrzésre szorul. Kérlek add meg az emailben kapott ellenőrző kódot.
           </AlertDescription>
         </Alert>

@@ -304,7 +304,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, h
       className={cn(
         "flex items-start justify-between rounded-xl border border-transparent px-3 py-1.5",
         isWinner
-          ? "bg-emerald-500/15 text-emerald-400 shadow-inner shadow-emerald-500/10"
+          ? "bg-success/15 text-success shadow-inner shadow-success/10"
           : "bg-muted/18 text-muted-foreground"
       )}
     >
@@ -313,13 +313,13 @@ const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, h
         {hasStats ? (
           <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70">
             {Number.isFinite(oneEighties ?? NaN) ? (
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-[2px] text-amber-200">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/15 px-1.5 py-[2px] text-warning">
                 <IconFlame className="h-3 w-3" />
                 {oneEighties ?? 0}
               </span>
             ) : null}
             {Number.isFinite(highestCheckout ?? NaN) ? (
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 px-1.5 py-[2px] text-sky-200">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-info/15 px-1.5 py-[2px] text-info">
                 <IconTargetArrow className="h-3 w-3" />
                 {highestCheckout ?? "–"}
               </span>
@@ -330,7 +330,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, h
       <span
         className={cn(
           "ml-2 flex-shrink-0 text-lg font-semibold tabular-nums",
-          isWinner ? "text-emerald-300" : "text-muted-foreground"
+          isWinner ? "text-success" : "text-muted-foreground"
         )}
       >
         {scoreValue}
@@ -356,11 +356,11 @@ const labelStatus = (status?: string | null) => {
 const toneForStatus = (status?: string | null) => {
   switch (status) {
     case "finished":
-      return { badge: "bg-emerald-500/20 text-emerald-200" }
+      return { badge: "bg-success/20 text-success" }
     case "ongoing":
-      return { badge: "bg-sky-500/20 text-sky-200" }
+      return { badge: "bg-info/20 text-info" }
     case "pending":
-      return { badge: "bg-amber-500/20 text-amber-200" }
+      return { badge: "bg-warning/20 text-warning" }
     default:
       return { badge: "bg-muted/40 text-muted-foreground" }
   }

@@ -120,7 +120,19 @@ export default function SearchPage() {
   // Debounced search
   const debouncedSearch = React.useCallback(
     debounce(async (searchQuery: string, searchFilters: SearchFilters) => {
-      if (!searchQuery.trim()) {
+      // Check if we have any active filters
+      const hasActiveFilters = 
+        searchFilters.status || 
+        searchFilters.format || 
+        searchFilters.dateFrom || 
+        searchFilters.dateTo || 
+        searchFilters.minPlayers || 
+        searchFilters.maxPlayers || 
+        searchFilters.location || 
+        searchFilters.tournamentType
+
+      // Only search if we have a query OR active filters
+      if (!searchQuery.trim() && !hasActiveFilters) {
         setResults({ totalResults: 0 })
         return
       }

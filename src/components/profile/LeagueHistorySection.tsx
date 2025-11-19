@@ -61,7 +61,7 @@ export function LeagueHistorySection({
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <IconTrophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <IconTrophy className="w-4 h-4 text-warning flex-shrink-0" />
                         <span className="font-semibold text-sm truncate">
                           {league.leagueName}
                         </span>
@@ -89,7 +89,7 @@ export function LeagueHistorySection({
                         </span>
                         <span>
                           Pozíció:{' '}
-                          <strong className="text-amber-500">
+                          <strong className="text-warning">
                             #{league.position}
                           </strong>
                         </span>

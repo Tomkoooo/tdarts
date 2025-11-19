@@ -418,11 +418,27 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     }
 
     try {
+      // Convert empty strings to 0
+      const cleanedForm = {
+        player1LegsWon: editForm.player1LegsWon === '' ? 0 : editForm.player1LegsWon,
+        player2LegsWon: editForm.player2LegsWon === '' ? 0 : editForm.player2LegsWon,
+        player1Stats: {
+          ...editForm.player1Stats,
+          oneEightiesCount: editForm.player1Stats.oneEightiesCount === '' ? 0 : editForm.player1Stats.oneEightiesCount,
+          highestCheckout: editForm.player1Stats.highestCheckout === '' ? 0 : editForm.player1Stats.highestCheckout,
+        },
+        player2Stats: {
+          ...editForm.player2Stats,
+          oneEightiesCount: editForm.player2Stats.oneEightiesCount === '' ? 0 : editForm.player2Stats.oneEightiesCount,
+          highestCheckout: editForm.player2Stats.highestCheckout === '' ? 0 : editForm.player2Stats.highestCheckout,
+        },
+      };
+
       const matchId =
         typeof selectedMatch.matchReference === "object"
           ? selectedMatch.matchReference._id
           : selectedMatch.matchReference
-      const response = await axios.post(`/api/matches/${matchId}/finish`, editForm)
+      const response = await axios.post(`/api/matches/${matchId}/finish`, cleanedForm)
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowMatchEditModal(false)
@@ -1091,33 +1107,33 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <div className="flex items-center gap-2 rounded-full bg-muted/20 px-3 py-1 font-mono text-xs text-muted-foreground">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => setZoomLevel((prev) => Math.max(0.6, +(prev - 0.1).toFixed(2)))}
                     title="Kicsinyítés"
                   >
-                    <IconMinus className="h-4 w-4" />
+                    <IconMinus size={16} className="text-foreground" />
                   </Button>
-                  <span className="w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                  <span className="w-12 text-center text-foreground">{Math.round(zoomLevel * 100)}%</span>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => setZoomLevel((prev) => Math.min(1.6, +(prev + 0.1).toFixed(2)))}
                     title="Nagyítás"
                   >
-                    <IconPlus className="h-4 w-4" />
+                    <IconPlus size={16} className="text-foreground" />
                   </Button>
                   <Separator orientation="vertical" className="h-6 bg-border/60" />
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => setZoomLevel(1)}
                     title="Alaphelyzet"
                   >
-                    <IconRefresh className="h-4 w-4" />
+                    <IconRefresh size={16} className="text-foreground" />
                   </Button>
                 </div>
 
@@ -1262,10 +1278,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <Input
                 id="roundsToGenerate"
                 type="number"
-                min={1}
+                min={0}
                 max={10}
-                value={roundsToGenerate}
-                onChange={(event) => setRoundsToGenerate(Number(event.target.value) || 1)}
+                value={roundsToGenerate ?? ''}
+                onChange={(event) => setRoundsToGenerate(event.target.value === '' ? '' : Number(event.target.value))}
               />
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -1549,10 +1565,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             type="number"
                             min={0}
                             max={15}
-                            value={editForm.player1LegsWon}
+                            value={editForm.player1LegsWon ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
-                              player1LegsWon: Number(event.target.value) || 0,
+                              player1LegsWon: event.target.value === '' ? '' : Number(event.target.value),
                             }))}
                           />
                         </div>
@@ -1562,12 +1578,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             type="number"
                             min={0}
                             max={60}
-                            value={editForm.player1Stats.oneEightiesCount}
+                            value={editForm.player1Stats.oneEightiesCount ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                oneEightiesCount: Number(event.target.value) || 0,
+                                oneEightiesCount: event.target.value === '' ? '' : Number(event.target.value),
                               },
                             }))}
                           />
@@ -1578,12 +1594,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             type="number"
                             min={0}
                             max={170}
-                            value={editForm.player1Stats.highestCheckout}
+                            value={editForm.player1Stats.highestCheckout ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                highestCheckout: Number(event.target.value) || 0,
+                                highestCheckout: event.target.value === '' ? '' : Number(event.target.value),
                               },
                             }))}
                           />
@@ -1600,10 +1616,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             type="number"
                             min={0}
                             max={15}
-                            value={editForm.player2LegsWon}
+                            value={editForm.player2LegsWon ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
-                              player2LegsWon: Number(event.target.value) || 0,
+                              player2LegsWon: event.target.value === '' ? '' : Number(event.target.value),
                             }))}
                           />
                         </div>
@@ -1613,12 +1629,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             type="number"
                             min={0}
                             max={60}
-                            value={editForm.player2Stats.oneEightiesCount}
+                            value={editForm.player2Stats.oneEightiesCount ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                oneEightiesCount: Number(event.target.value) || 0,
+                                oneEightiesCount: event.target.value === '' ? '' : Number(event.target.value),
                               },
                             }))}
                           />
@@ -1629,12 +1645,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             type="number"
                             min={0}
                             max={170}
-                            value={editForm.player2Stats.highestCheckout}
+                            value={editForm.player2Stats.highestCheckout ?? ''}
                             onChange={(event) => setEditForm((prev) => ({
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                highestCheckout: Number(event.target.value) || 0,
+                                highestCheckout: event.target.value === '' ? '' : Number(event.target.value),
                               },
                             }))}
                           />

@@ -40,8 +40,8 @@ const FALLBACK_DATA: ErrorOverview = {
 
 const severityMeta: Record<Severity, { label: string; badge: "destructive" | "default" | "secondary"; tone: string }> = {
   critical: { label: "Kritikus", badge: "destructive", tone: "text-destructive" },
-  warning: { label: "Figyelmeztetés", badge: "secondary", tone: "text-amber-400" },
-  info: { label: "Információ", badge: "default", tone: "text-sky-300" },
+  warning: { label: "Figyelmeztetés", badge: "secondary", tone: "text-warning" },
+  info: { label: "Információ", badge: "default", tone: "text-info" },
   debug: { label: "Debug", badge: "default", tone: "text-muted-foreground" },
 }
 

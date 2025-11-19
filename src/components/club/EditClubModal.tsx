@@ -95,16 +95,17 @@ export default function EditClubModal({ isOpen, onClose, club, onClubUpdated, us
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Klub szerkesztése</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl shadow-primary/20">
+        <DialogHeader className="flex-shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
+          <DialogTitle className="text-xl md:text-2xl">Klub szerkesztése</DialogTitle>
+          <DialogDescription className="text-sm">
             Frissítsd a klubod alapadatait, hogy a tagok naprakész információkat lássanak.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col overflow-hidden flex-1">
+            <div className="space-y-4 overflow-y-auto px-4 md:px-6 py-4 flex-1">
             <FormField
               control={form.control}
               name="name"
@@ -189,12 +190,13 @@ export default function EditClubModal({ isOpen, onClose, club, onClubUpdated, us
                 </FormItem>
               )}
             />
+            </div>
 
-            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 pt-4">
-              <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 flex-shrink-0 bg-gradient-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+              <Button type="button" variant="ghost" size="sm" onClick={onClose} className="w-full sm:w-auto md:size-default">
                 Mégse
               </Button>
-              <Button type="submit" className="w-full sm:w-auto">
+              <Button type="submit" size="sm" className="w-full sm:w-auto md:size-default shadow-lg shadow-primary/30">
                 Mentés
               </Button>
             </DialogFooter>

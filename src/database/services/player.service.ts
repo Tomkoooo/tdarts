@@ -168,4 +168,12 @@ export class PlayerService {
     }
     return player || null;
   }
+
+  static async findPlayerById(playerId: string): Promise<import('@/interface/player.interface').PlayerDocument | null> {
+    let player = await PlayerModel.findById(playerId);
+    if (!player) {
+      player = await PlayerModel.findOne({ userRef: playerId });
+    }
+    return player;
+  }
 } 

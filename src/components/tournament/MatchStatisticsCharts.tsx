@@ -314,19 +314,19 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                           </CardTitle>
                           <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
                             {leg.checkoutScore ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-emerald-200">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success">
                                 <IconTargetArrow className="h-3.5 w-3.5" />
                                 Checkout {leg.checkoutScore}
                               </span>
                             ) : null}
                             {typeof leg.winnerArrowCount === "number" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-1 text-sky-200">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-info/10 px-2 py-1 text-info">
                                 <IconTarget className="h-3.5 w-3.5" />
                                 {leg.winnerArrowCount} nyíl
                               </span>
                             ) : null}
                             {typeof leg.loserRemainingScore === "number" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-amber-200">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-1 text-warning">
                                 <IconTrendingDown className="h-3.5 w-3.5" />
                                 Vesztes: {leg.loserRemainingScore} pont
                               </span>
@@ -583,7 +583,7 @@ const ThrowsTimeline: React.FC<ThrowsTimelineProps> = ({ title, throws, runningA
         <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-white">
           {runningAverages.map((avg, idx) => (
             <span key={idx} className="inline-flex items-center gap-1 rounded-full bg-[#29101b]/80 px-2 py-1 backdrop-blur">
-              <IconSparkles className="h-3 w-3 text-amber-200" />
+              <IconSparkles className="h-3 w-3 text-warning" />
               {avg.toFixed(1)}
             </span>
           ))}

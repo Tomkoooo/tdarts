@@ -30,19 +30,19 @@ const statusMap: Record<
   },
   waiting: {
     label: "Várakozik",
-    badgeClass: "bg-amber-500/15 text-amber-400",
+    badgeClass: "bg-warning/15 text-warning",
     description: "A következő mérkőzés előkészítés alatt.",
-    cardClass: "bg-gradient-to-br from-amber-500/10 via-card/90 to-card/95 ring-1 ring-amber-500/20",
-    accentClass: "text-amber-400",
-    scoreClass: "text-amber-400 font-semibold",
+    cardClass: "bg-gradient-to-br from-warning/10 via-card/90 to-card/95 ring-1 ring-warning/20",
+    accentClass: "text-warning",
+    scoreClass: "text-warning font-semibold",
   },
   playing: {
     label: "Játékban",
-    badgeClass: "bg-emerald-500/15 text-emerald-300",
+    badgeClass: "bg-success/15 text-success",
     description: "Aktív mérkőzés folyik ezen a táblán.",
-    cardClass: "bg-gradient-to-br from-emerald-500/10 via-card/92 to-card ring-1 ring-emerald-500/25",
-    accentClass: "text-emerald-300",
-    scoreClass: "text-emerald-300 font-bold",
+    cardClass: "bg-gradient-to-br from-success/10 via-card/92 to-card ring-1 ring-success/25",
+    accentClass: "text-success",
+    scoreClass: "text-success font-bold",
   },
 }
 

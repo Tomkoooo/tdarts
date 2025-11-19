@@ -120,10 +120,20 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
     try {
       setError(null);
       
+      // Convert NaN or empty values to 0 for number fields
+      const cleanedData = {
+        ...data,
+        pointRules: {
+          groupDropout: isNaN(data.pointRules?.groupDropout) ? 0 : data.pointRules?.groupDropout,
+          firstPlace: isNaN(data.pointRules?.firstPlace) ? 0 : data.pointRules?.firstPlace,
+          multiplier: isNaN(data.pointRules?.multiplier) ? 0 : data.pointRules?.multiplier,
+        }
+      };
+      
       if (editingLeague) {
         // Szerkesztés
         const response = await axios.put(`/api/leagues/${editingLeague._id}`, {
-          ...data,
+          ...cleanedData,
           tournaments: editingLeague.tournaments
         });
         if (response.data.success) {
@@ -135,7 +145,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       } else {
         // Új létrehozás
         const response = await axios.post('/api/leagues', {
-          ...data,
+          ...cleanedData,
           clubId
         });
         if (response.data.success) {
@@ -404,10 +414,10 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                             <input
                               type="number"
                               className="input input-bordered input-sm w-24"
-                              value={player.totalPoints}
+                              value={player.totalPoints ?? ''}
                               min={0}
                               onChange={async (e) => {
-                                const newPoints = Number(e.target.value);
+                                const newPoints = e.target.value === '' ? 0 : Number(e.target.value);
                                 await axios.put(`/api/leagues/${openAddPlayerModal}/players/${player.playerId}`, {
                                   totalPoints: newPoints,
                                 });

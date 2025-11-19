@@ -33,8 +33,8 @@ const FALLBACK_SUMMARY: DashboardSummary = {
 
 const summaryMeta = [
   { label: "Felhasználók", icon: IconUsers, tone: "text-primary", key: "totalUsers" as const },
-  { label: "Klubok", icon: IconBuilding, tone: "text-emerald-300", key: "totalClubs" as const },
-  { label: "Versenyek", icon: IconTrophy, tone: "text-amber-300", key: "totalTournaments" as const },
+  { label: "Klubok", icon: IconBuilding, tone: "text-success", key: "totalClubs" as const },
+  { label: "Versenyek", icon: IconTrophy, tone: "text-warning", key: "totalTournaments" as const },
   { label: "Hibák", icon: IconAlertTriangle, tone: "text-destructive", key: "totalErrors" as const },
 ]
 
@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
   const fetchSummary = async () => {
     try {
       setIsRefreshing(true)
-      const response = await axios.get("/api/admin/stats/summary")
+      const response = await axios.get("/api/admin/stats")
       const payload: DashboardSummary = response.data?.data ?? response.data ?? FALLBACK_SUMMARY
       setSummary({
         totalUsers: payload.totalUsers ?? 0,

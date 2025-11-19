@@ -132,9 +132,9 @@ export function ClubSummarySection({
           </CardContent>
         </Card>
 
-        <Card className="border-green-500/20 bg-green-500/5">
+        <Card className="border-success/20 bg-success/5">
           <CardContent className="pt-6 flex flex-col items-center">
-            <span className="text-4xl md:text-5xl font-bold text-green-500">
+            <span className="text-4xl md:text-5xl font-bold text-success">
               {ongoingTournaments + upcomingTournaments}
             </span>
             <span className="text-sm md:text-base text-muted-foreground mt-2">
@@ -143,9 +143,9 @@ export function ClubSummarySection({
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/20 bg-amber-500/5">
+        <Card className="border-warning/20 bg-warning/5">
           <CardContent className="pt-6 flex flex-col items-center">
-            <span className="text-4xl md:text-5xl font-bold text-amber-500">
+            <span className="text-4xl md:text-5xl font-bold text-warning">
               {totalTournamentPlayers}
             </span>
             <span className="text-sm md:text-base text-muted-foreground mt-2">

@@ -60,13 +60,24 @@ export default function CreateLeagueModal({
     setError('');
     setLoading(true);
 
+    // Convert empty strings to 0 in pointsConfig
+    const cleanedPointsConfig = Object.entries(formData.pointsConfig || {}).reduce((acc, [key, val]) => {
+      acc[key] = val === '' ? 0 : val;
+      return acc;
+    }, {} as any);
+
+    const dataToSubmit = {
+      ...formData,
+      pointsConfig: cleanedPointsConfig,
+    };
+
     try {
       const response = await fetch(`/api/clubs/${clubId}/leagues`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSubmit),
       });
 
       if (response.ok) {
@@ -95,7 +106,7 @@ export default function CreateLeagueModal({
     }
   };
 
-  const updatePointsConfig = (field: string, value: number | boolean) => {
+  const updatePointsConfig = (field: string, value: number | boolean | string) => {
     setFormData((prev) => ({
       ...prev,
       pointsConfig: {
@@ -107,10 +118,10 @@ export default function CreateLeagueModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="space-y-2 flex-shrink-0">
-          <DialogTitle>Új liga létrehozása</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl shadow-primary/20">
+        <DialogHeader className="space-y-2 flex-shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
+          <DialogTitle className="text-xl md:text-2xl">Új liga létrehozása</DialogTitle>
+          <DialogDescription className="text-sm">
             Adj meg minden szükséges információt, és alakítsd ki a pontszámítási rendszert a klub ligájához.
           </DialogDescription>
         </DialogHeader>
@@ -144,8 +155,8 @@ export default function CreateLeagueModal({
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <h4 className="text-lg font-semibold">Pontszámítás beállításai</h4>
-              <span className="text-muted-foreground" title="Ezek a beállítások határozzák meg a pontszámítás logikáját.">
-                <IconInfoCircle className="h-4 w-4" />
+              <span className="text-info" title="Ezek a beállítások határozzák meg a pontszámítás logikáját.">
+                <IconInfoCircle size={18} />
               </span>
             </div>
 
@@ -192,23 +203,24 @@ export default function CreateLeagueModal({
                   <Label className="text-sm font-medium">{config.label}</Label>
                   <Input
                     type="number"
-                    min={config.min}
+                    min={0}
                     max={config.max}
                     step={config.step ?? 1}
                     value={(formData.pointsConfig as any)?.[config.field] ?? ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value;
                       updatePointsConfig(
                         config.field,
-                        config.step ? parseFloat(e.target.value) || 0 : parseInt(e.target.value) || 0,
-                      )
-                    }
+                        val === '' ? '' : (config.step ? parseFloat(val) : parseInt(val))
+                      );
+                    }}
                   />
                   <p className="text-xs text-muted-foreground">{config.helper}</p>
                 </div>
               ))}
             </div>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-primary/5 to-transparent shadow-md shadow-primary/10">
               <CardContent className="pt-6 space-y-2 text-sm text-muted-foreground">
                 <h5 className="font-medium text-foreground">Pontszámítás előnézet</h5>
                 <p>Csoportkör kiesés: <span className="font-mono">{formData.pointsConfig?.groupDropoutPoints || 0} pont</span></p>
@@ -244,12 +256,19 @@ export default function CreateLeagueModal({
             </Alert>
           )}
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 flex-shrink-0 mt-4">
-            <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto" disabled={loading}>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 flex-shrink-0 mt-4 bg-gradient-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} className="w-full sm:w-auto md:size-default" disabled={loading}>
               Mégse
             </Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={loading || !formData.name.trim()}>
-              {loading ? 'Létrehozás...' : 'Liga létrehozása'}
+            <Button type="submit" size="sm" className="w-full sm:w-auto md:size-default shadow-lg shadow-primary/30" disabled={loading || !formData.name.trim()}>
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2" />
+                  Létrehozás...
+                </>
+              ) : (
+                'Liga létrehozása'
+              )}
             </Button>
           </DialogFooter>
         </form>

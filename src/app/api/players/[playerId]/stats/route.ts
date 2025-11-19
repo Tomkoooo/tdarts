@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
-import { PlayerModel } from '@/database/models/player.model';
+import { PlayerService } from '@/database/services/player.service';
 
 export async function GET(
   request: NextRequest,
@@ -10,7 +10,7 @@ export async function GET(
     await connectMongo();
     const { playerId } = await params;
 
-    const player = await PlayerModel.findById(playerId);
+    const player = await PlayerService.findPlayerById(playerId);
 
     if (!player) {
       return NextResponse.json(

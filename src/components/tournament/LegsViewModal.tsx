@@ -303,7 +303,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
             ) : null}
 
             {!loading && error ? (
-              <Alert variant="destructive" className="border border-red-500/40 bg-red-500/10 text-red-200">
+              <Alert variant="destructive" className="border border-destructive/40 bg-destructive/10 text-destructive">
                 <IconAlertTriangle className="h-5 w-5" />
                 <AlertTitle>Hiba történt</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>

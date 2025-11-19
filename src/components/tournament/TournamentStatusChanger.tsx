@@ -407,29 +407,25 @@ export default function TournamentStatusChanger({
             </Alert>
           )}
 
-          <Card>
-            <CardContent className="flex flex-col gap-3 pt-4">
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={groupsMode === "automatic" ? "default" : "outline"}
-                    onClick={() => setGroupsMode("automatic")}
-                  >
-                    Automatikus
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={groupsMode === "manual" ? "default" : "outline"}
-                    onClick={() => setGroupsMode("manual")}
-                  >
-                    Manuális
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={groupsMode === "automatic" ? "default" : "outline"}
+                onClick={() => setGroupsMode("automatic")}
+              >
+                Automatikus
+              </Button>
+              <Button
+                type="button"
+                variant={groupsMode === "manual" ? "default" : "outline"}
+                onClick={() => setGroupsMode("manual")}
+              >
+                Manuális
+              </Button>
+            </div>
+          </div>
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button variant="ghost" onClick={() => setIsGroupsDialogOpen(false)}>
@@ -629,37 +625,36 @@ export default function TournamentStatusChanger({
             </DialogDescription>
           </DialogHeader>
 
-          <Card>
-            <CardContent className="flex flex-col gap-4 pt-4">
-              <div className="space-y-2">
-                <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={knockoutMode === "automatic" ? "default" : "outline"}
-                    onClick={() => setKnockoutMode("automatic")}
-                  >
-                    Automatikus
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={knockoutMode === "manual" ? "default" : "outline"}
-                    onClick={() => setKnockoutMode("manual")}
-                  >
-                    Manuális
-                  </Button>
-                </div>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={knockoutMode === "automatic" ? "default" : "outline"}
+                  onClick={() => setKnockoutMode("automatic")}
+                >
+                  Automatikus
+                </Button>
+                <Button
+                  type="button"
+                  variant={knockoutMode === "manual" ? "default" : "outline"}
+                  onClick={() => setKnockoutMode("manual")}
+                >
+                  Manuális
+                </Button>
               </div>
+            </div>
 
-              {knockoutMode === "automatic" && !isAutomaticKnockoutAllowed && (
-                <Alert variant="destructive">
-                  <AlertTitle>Páratlan számú csoport</AlertTitle>
-                  <AlertDescription>
-                    Automatikus generáláshoz páros számú csoport szükséges. Válts manuális módra vagy állítsd be a csoportokat
-                    megfelelően.
-                  </AlertDescription>
-                </Alert>
-              )}
+            {knockoutMode === "automatic" && !isAutomaticKnockoutAllowed && (
+              <Alert variant="destructive">
+                <AlertTitle>Páratlan számú csoport</AlertTitle>
+                <AlertDescription>
+                  Automatikus generáláshoz páros számú csoport szükséges. Válts manuális módra vagy állítsd be a csoportokat
+                  megfelelően.
+                </AlertDescription>
+              </Alert>
+            )}
 
               {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
                 <div className="space-y-2">
@@ -682,17 +677,16 @@ export default function TournamentStatusChanger({
                 </div>
               )}
 
-              {knockoutMode === "manual" && (
-                <Alert>
-                  <AlertTitle>Manuális kiosztás</AlertTitle>
-                  <AlertDescription>
-                    Üres köröket hozunk létre, amelyeket később tetszőlegesen kitölthetsz a játékosokkal. Ez a mód javasolt, ha
-                    kiemelt játékosokat szeretnél elhelyezni.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+            {knockoutMode === "manual" && (
+              <Alert>
+                <AlertTitle>Manuális kiosztás</AlertTitle>
+                <AlertDescription>
+                  Üres köröket hozunk létre, amelyeket később tetszőlegesen kitölthetsz a játékosokkal. Ez a mód javasolt, ha
+                  kiemelt játékosokat szeretnél elhelyezni.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button variant="ghost" onClick={() => setIsKnockoutDialogOpen(false)}>

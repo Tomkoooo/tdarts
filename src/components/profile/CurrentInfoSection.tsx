@@ -41,7 +41,7 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 {user.isVerified ? (
-                  <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">
+                  <Badge variant="default" className="bg-success/10 text-success border-success/20">
                     <IconCircleCheck className="w-3 h-3 mr-1" />
                     Ellenőrzött
                   </Badge>

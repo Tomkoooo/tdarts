@@ -793,13 +793,13 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                 <div className="flex items-center gap-1">
                   {/* Kezdő játékos indikátor (zöld ikon) - match adatokból */}
                   {getCurrentLegStarter() === 1 && (
-                    <IconPencil size={16} className="text-green-500 flex-shrink-0" />
+                    <IconPencil size={16} className="text-success flex-shrink-0" />
                   )}
                   <span className="text-sm sm:text-base font-bold text-base-content truncate">{getPlayer1Name()}</span>
                 </div>
                 {/* Jelenlegi dobó (piros pont) */}
                 {matchState.currentLegData.currentPlayer === 1 && (
-                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse flex-shrink-0"></div>
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-destructive rounded-full animate-pulse flex-shrink-0"></div>
                 )}
               </div>
               <div className="flex items-center justify-between">
@@ -816,13 +816,13 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                 <div className="flex items-center gap-1">
                   {/* Kezdő játékos indikátor (zöld ikon) - match adatokból */}
                   {getCurrentLegStarter() === 2 && (
-                    <IconTarget size={16} className="text-green-500 flex-shrink-0" />
+                    <IconTarget size={16} className="text-success flex-shrink-0" />
                   )}
                   <span className="text-sm sm:text-base font-bold text-base-content truncate">{getPlayer2Name()}</span>
                 </div>
                 {/* Jelenlegi dobó (piros pont) */}
                 {matchState.currentLegData.currentPlayer === 2 && (
-                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse flex-shrink-0"></div>
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-destructive rounded-full animate-pulse flex-shrink-0"></div>
                 )}
               </div>
               <div className="flex items-center justify-between">
@@ -924,10 +924,10 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                 
                 // Helper to get score highlight class
                 const getCompletedLegScoreClass = (score: number, isCheckout: boolean) => {
-                  if (isCheckout) return 'text-green-500 font-bold';
-                  if (score === 180) return 'text-yellow-500 font-bold';
-                  if (score >= 140) return 'text-orange-500 font-bold';
-                  if (score >= 100) return 'text-blue-500 font-semibold';
+                  if (isCheckout) return 'text-success font-bold';
+                  if (score === 180) return 'text-warning font-bold';
+                  if (score >= 140) return 'text-accent font-bold';
+                  if (score >= 100) return 'text-info font-semibold';
                   return 'text-base-content';
                 };
                 
@@ -940,10 +940,10 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                         <div className="flex items-center gap-2 text-xs sm:text-sm">
                           <span className="text-base-content/70">Kezdte:</span>
                           <span className="font-semibold text-base-content">{getPlayerName(startingPlayer)}</span>
-                          <IconDart size={16} className="text-green-500" />
+                          <IconDart size={16} className="text-success" />
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className={`text-sm sm:text-base font-bold ${winner === 1 ? 'text-green-500' : 'text-base-content'}`}>
+                          <div className={`text-sm sm:text-base font-bold ${winner === 1 ? 'text-success' : 'text-base-content'}`}>
                             {getPlayerName(winner)} ✓
                           </div>
                           <div className="text-xs sm:text-sm text-base-content/70">

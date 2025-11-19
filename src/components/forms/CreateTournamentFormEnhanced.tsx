@@ -56,7 +56,19 @@ export function CreateTournamentFormEnhanced({
     try {
       setIsSubmitting(true)
       setSubmitSuccess(false)
-      await onSubmit(data)
+      
+      // Convert empty strings to 0 for number fields
+      const cleanedData = {
+        ...data,
+        maxPlayers: data.maxPlayers === '' ? 0 : data.maxPlayers,
+        legsToWin: data.legsToWin === '' ? 0 : data.legsToWin,
+        boards: data.boards?.map((board: any) => ({
+          ...board,
+          number: board.number === '' ? 0 : board.number,
+        })) || [],
+      };
+      
+      await onSubmit(cleanedData as CreateTournamentFormData)
       setSubmitSuccess(true)
       form.reset()
     } catch (error) {
@@ -187,10 +199,10 @@ export function CreateTournamentFormEnhanced({
                     <div className="relative">
                       <Input
                         type="number"
-                        min={4}
+                        min={0}
                         max={128}
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value))}
                       />
                       <IconUsers className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
@@ -281,10 +293,10 @@ export function CreateTournamentFormEnhanced({
                   <FormControl>
                     <Input
                       type="number"
-                      min={1}
+                      min={0}
                       max={11}
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value))}
                     />
                   </FormControl>
                   <FormDescription>
@@ -319,9 +331,10 @@ export function CreateTournamentFormEnhanced({
                       <FormControl>
                         <Input
                           type="number"
+                          min={0}
                           placeholder="Tábla szám"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />

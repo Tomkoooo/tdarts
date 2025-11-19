@@ -161,7 +161,11 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const handleSaveMatch = async () => {
     if (!selectedMatch) return
 
-    if (player1Legs === player2Legs) {
+    // Convert empty strings to 0
+    const cleanedPlayer1Legs = player1Legs === '' ? 0 : player1Legs;
+    const cleanedPlayer2Legs = player2Legs === '' ? 0 : player2Legs;
+
+    if (cleanedPlayer1Legs === cleanedPlayer2Legs) {
       setError('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.')
       return
     }
@@ -169,15 +173,27 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setLoading(true)
     setError('')
 
+    const cleanedPlayer1Stats = {
+      ...player1Stats,
+      oneEightiesCount: player1Stats.oneEightiesCount === '' ? 0 : player1Stats.oneEightiesCount,
+      highestCheckout: player1Stats.highestCheckout === '' ? 0 : player1Stats.highestCheckout,
+    };
+
+    const cleanedPlayer2Stats = {
+      ...player2Stats,
+      oneEightiesCount: player2Stats.oneEightiesCount === '' ? 0 : player2Stats.oneEightiesCount,
+      highestCheckout: player2Stats.highestCheckout === '' ? 0 : player2Stats.highestCheckout,
+    };
+
     try {
       const response = await fetch(`/api/matches/${selectedMatch._id}/finish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          player1LegsWon: player1Legs,
-          player2LegsWon: player2Legs,
-          player1Stats,
-          player2Stats
+          player1LegsWon: cleanedPlayer1Legs,
+          player2LegsWon: cleanedPlayer2Legs,
+          player1Stats: cleanedPlayer1Stats,
+          player2Stats: cleanedPlayer2Stats
         })
       })
 
@@ -536,9 +552,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     <Input
                       id="player1-legs"
                       type="number"
+                      min={0}
                       max={10}
-                      value={player1Legs}
-                      onChange={(e) => setPlayer1Legs(parseInt(e.target.value) || 0)}
+                      value={player1Legs ?? ''}
+                      onChange={(e) => setPlayer1Legs(e.target.value === '' ? '' : parseInt(e.target.value))}
                     />
                   </div>
                   
@@ -547,11 +564,12 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     <Input
                       id="player1-180s"
                       type="number"
+                      min={0}
                       max={50}
-                      value={player1Stats.oneEightiesCount || 0}
+                      value={player1Stats.oneEightiesCount ?? ''}
                       onChange={(e) => setPlayer1Stats(prev => ({
                         ...prev,
-                        oneEightiesCount: parseInt(e.target.value) || 0
+                        oneEightiesCount: e.target.value === '' ? '' : parseInt(e.target.value)
                       }))}
                     />
                   </div>
@@ -561,11 +579,12 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     <Input
                       id="player1-hc"
                       type="number"
+                      min={0}
                       max={170}
-                      value={player1Stats.highestCheckout || 0}
+                      value={player1Stats.highestCheckout ?? ''}
                       onChange={(e) => setPlayer1Stats(prev => ({
                         ...prev,
-                        highestCheckout: parseInt(e.target.value) || 0
+                        highestCheckout: e.target.value === '' ? '' : parseInt(e.target.value)
                       }))}
                     />
                   </div>
@@ -580,9 +599,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     <Input
                       id="player2-legs"
                       type="number"
+                      min={0}
                       max={10}
-                      value={player2Legs}
-                      onChange={(e) => setPlayer2Legs(parseInt(e.target.value) || 0)}
+                      value={player2Legs ?? ''}
+                      onChange={(e) => setPlayer2Legs(e.target.value === '' ? '' : parseInt(e.target.value))}
                     />
                   </div>
                   
@@ -591,11 +611,12 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     <Input
                       id="player2-180s"
                       type="number"
+                      min={0}
                       max={50}
-                      value={player2Stats.oneEightiesCount || 0}
+                      value={player2Stats.oneEightiesCount ?? ''}
                       onChange={(e) => setPlayer2Stats(prev => ({
                         ...prev,
-                        oneEightiesCount: parseInt(e.target.value) || 0
+                        oneEightiesCount: e.target.value === '' ? '' : parseInt(e.target.value)
                       }))}
                     />
                   </div>
@@ -605,11 +626,12 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     <Input
                       id="player2-hc"
                       type="number"
+                      min={0}
                       max={170}
-                      value={player2Stats.highestCheckout || 0}
+                      value={player2Stats.highestCheckout ?? ''}
                       onChange={(e) => setPlayer2Stats(prev => ({
                         ...prev,
-                        highestCheckout: parseInt(e.target.value) || 0
+                        highestCheckout: e.target.value === '' ? '' : parseInt(e.target.value)
                       }))}
                     />
                   </div>

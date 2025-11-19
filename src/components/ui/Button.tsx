@@ -9,13 +9,13 @@ import { hoverLift } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "relative inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "btn",
   {
     variants: {
       variant: {
         // Liquid Primary - Gradient fill with inner glow
         default: [
-          "bg-gradient-to-r from-primary to-primary-dark",
+          "btn btn-primary",
           "text-primary-foreground",
           "shadow-lg shadow-primary/40",
           "backdrop-blur-sm",
@@ -25,19 +25,16 @@ const buttonVariants = cva(
         ],
         // Glass Ghost - Transparent with glass effect
         ghost: [
-          "bg-white/8 backdrop-blur-md",
-          "border border-white/10",
+          "btn-ghost",
           "text-foreground",
-          "hover:bg-white/12 hover:backdrop-blur-xl",
-          "hover:border-white/15",
+          "hover:bg-accent/10 hover:text-accent-foreground",
         ],
         // Glass Outline - Border with glass fill
         outline: [
-          "bg-white/5 backdrop-blur-sm",
+          " backdrop-blur-xl",
           "border border-primary/30",
-          "text-primary",
-          "hover:bg-white/10 hover:border-primary/50",
-          "hover:backdrop-blur-md",
+          "text-white",
+          " hover:border-primary/50",
         ],
         // Glass Secondary - Muted glass
         secondary: [
@@ -80,7 +77,7 @@ const buttonVariants = cva(
         sm: "h-9 rounded-md px-4 text-xs",
         lg: "h-12 rounded-lg px-8 text-base",
         xl: "h-14 rounded-xl px-10 text-lg",
-        icon: "h-10 w-10",
+        icon: "h-12 w-12",
       },
     },
     defaultVariants: {

@@ -51,35 +51,35 @@ export function ClubSettingsSection({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-          <IconSettings className="w-5 h-5 text-primary" />
+        <div className="flex items-center justify-center size-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 shadow-lg shadow-primary/20">
+          <IconSettings size={24} className="text-primary" />
         </div>
         <h2 className="text-2xl md:text-3xl font-bold">Beállítások</h2>
       </div>
 
       {/* Club Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconEdit className="w-5 h-5" />
+      <Card className="bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-primary/10">
+        <CardHeader className="shadow-sm shadow-primary/5">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <IconEdit size={20} className="text-primary" />
             Klub adatok szerkesztése
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 pt-6">
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 gap-2"
               onClick={onEditClub}
             >
-              <IconEdit className="w-4 h-4 mr-2" />
+              <IconEdit size={16} />
               Klub szerkesztése
             </Button>
             <Button
-              className="flex-1"
+              className="flex-1 gap-2 shadow-lg shadow-primary/30"
               onClick={onCreateTournament}
             >
-              <IconPlus className="w-4 h-4 mr-2" />
+              <IconPlus size={16} />
               Új verseny indítása
             </Button>
           </div>
@@ -87,14 +87,14 @@ export function ClubSettingsSection({
       </Card>
 
       {/* Member Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconUsers className="w-5 h-5" />
+      <Card className="bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-success/10">
+        <CardHeader className="shadow-sm shadow-success/5">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <IconUsers size={20} className="text-success" />
             Tagok kezelése
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <PlayerSearch
             onPlayerSelected={onPlayerSelected}
             placeholder="Játékos keresése vagy hozzáadása..."
@@ -130,28 +130,31 @@ export function ClubSettingsSection({
       />
 
       {/* Danger Zone */}
-      <Card className="border-destructive/20">
-        <CardHeader>
-          <CardTitle className="text-destructive">Veszélyes műveletek</CardTitle>
+      <Card className="bg-gradient-to-br from-destructive/5 to-card/80 backdrop-blur-sm shadow-lg shadow-destructive/20">
+        <CardHeader className="shadow-sm shadow-destructive/10">
+          <CardTitle className="text-destructive flex items-center gap-2">
+            <IconTrash size={20} />
+            Veszélyes műveletek
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 pt-6">
           <div className="flex flex-col sm:flex-row gap-3">
             {userRole === 'admin' && (
               <Button
                 variant="destructive"
-                className="flex-1"
+                className="flex-1 gap-2 shadow-lg shadow-destructive/30"
                 onClick={onDeactivateClub}
               >
-                <IconTrash className="w-4 h-4 mr-2" />
+                <IconTrash size={16} />
                 Klub deaktiválása
               </Button>
             )}
             <Button
               variant="outline"
-              className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              className="flex-1 gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               onClick={onLeaveClub}
             >
-              <IconDoorExit className="w-4 h-4 mr-2" />
+              <IconDoorExit size={16} />
               Kilépés a klubból
             </Button>
           </div>
