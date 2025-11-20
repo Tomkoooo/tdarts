@@ -514,7 +514,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
             <DialogDescription>
               {selectedMatch && (
                 <>
-                  {selectedMatch.player1?.playerId?.name} vs {selectedMatch.player2?.playerId?.name}
+                {selectedMatch.player1?.playerId?.name} vs {selectedMatch.player2?.playerId?.name}
                 </>
               )}
             </DialogDescription>
@@ -623,23 +623,23 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
               </div>
             </div>
           )}
-
+            
           <DialogFooter>
-            <button
+              <button
               type="button"
               className="btn btn-success"
-              onClick={handleSaveMatch}
-              disabled={loading || player1Legs === player2Legs}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Mentés...
-                </>
-              ) : (
-                "Mentés"
-              )}
-            </button>
+                onClick={handleSaveMatch}
+                disabled={loading || player1Legs === player2Legs}
+              >
+                {loading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Mentés...
+                  </>
+                ) : (
+                  "Mentés"
+                )}
+              </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

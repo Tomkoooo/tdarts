@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react"
 import axios from "axios"
-import {
-  IconSettings,
-  IconDatabase,
-  IconServer,
-  IconRefresh,
-  IconClock,
-  IconSection,
-  IconCheck,
+import { 
+  IconSettings, 
+  IconDatabase, 
+  IconServer, 
+  IconRefresh, 
+  IconClock, 
+  IconSection, 
+  IconCheck, 
   IconX,
   IconActivity,
   IconDeviceFloppy,
@@ -124,10 +124,10 @@ export default function AdminSettingsPage() {
             <div className="flex items-center gap-3 text-primary">
               <IconSettings className="size-10" />
               <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Rendszer Beállítások</h1>
-            </div>
+        </div>
             <p className="max-w-xl text-sm text-muted-foreground">Rendszer információk és konfiguráció</p>
           </div>
-
+          
           <Button onClick={fetchSystemInfo} disabled={loading} variant="outline" className="gap-2">
             <IconRefresh className={cn("size-5", loading && "animate-spin")} />
             Frissítés
@@ -139,38 +139,38 @@ export default function AdminSettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-success/20 rounded-full flex items-center justify-center">
                 <IconActivity className="size-6 text-success" />
               </div>
               <Badge className="backdrop-blur-md bg-success/20 text-success">ONLINE</Badge>
             </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Rendszer Állapot</h3>
-            <p className="text-2xl font-bold text-success">Működik</p>
+          <p className="text-2xl font-bold text-success">Működik</p>
           </CardContent>
         </Card>
 
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-info/20 rounded-full flex items-center justify-center">
                 <IconClock className="size-6 text-info" />
               </div>
             </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Üzemidő</h3>
-            <p className="text-2xl font-bold text-info">{systemInfo.uptime}</p>
+          <p className="text-2xl font-bold text-info">{systemInfo.uptime}</p>
           </CardContent>
         </Card>
 
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-warning/20 rounded-full flex items-center justify-center">
                 <IconDeviceFloppy className="size-6 text-warning" />
               </div>
             </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Memória</h3>
-            <p className="text-2xl font-bold text-warning">{systemInfo.memory.percentage}%</p>
+          <p className="text-2xl font-bold text-warning">{systemInfo.memory.percentage}%</p>
             <p className="text-xs text-muted-foreground mt-1">
               {systemInfo.memory.used} / {systemInfo.memory.total}
             </p>
@@ -179,14 +179,14 @@ export default function AdminSettingsPage() {
 
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-primary/20 rounded-full flex items-center justify-center">
                 <IconDatabase className="size-6 text-primary" />
               </div>
               <StatusBadge active={systemInfo.database.status === "connected"} />
             </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Adatbázis</h3>
-            <p className="text-2xl font-bold text-primary capitalize">{systemInfo.database.status}</p>
+          <p className="text-2xl font-bold text-primary capitalize">{systemInfo.database.status}</p>
           </CardContent>
         </Card>
       </div>
@@ -202,16 +202,16 @@ export default function AdminSettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card elevation="base" className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
-                <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.collections}</div>
+            <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.collections}</div>
                 <div className="text-sm text-muted-foreground font-medium">Kollekciók</div>
               </CardContent>
             </Card>
             <Card elevation="base" className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
-                <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.documents.toLocaleString()}</div>
+            <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.documents.toLocaleString()}</div>
                 <div className="text-sm text-muted-foreground font-medium">Dokumentumok</div>
               </CardContent>
             </Card>
@@ -219,7 +219,7 @@ export default function AdminSettingsPage() {
               <CardContent className="p-6 text-center">
                 <div className="text-4xl font-bold text-primary mb-2">
                   {systemInfo.database.status === "connected" ? "✓" : "✗"}
-                </div>
+          </div>
                 <div className="text-sm text-muted-foreground font-medium">Kapcsolat</div>
               </CardContent>
             </Card>
@@ -238,36 +238,36 @@ export default function AdminSettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
                 <IconShield className="size-5 text-primary" />
-                <span className="font-medium">Előfizetés rendszer</span>
-              </div>
-              <StatusBadge active={systemInfo.features.subscriptionEnabled} />
+              <span className="font-medium">Előfizetés rendszer</span>
             </div>
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <IconActivity className="size-5 text-primary" />
-                <span className="font-medium">Socket kapcsolat</span>
-              </div>
-              <StatusBadge active={systemInfo.features.socketEnabled} />
-            </div>
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <IconSection className="size-5 text-primary" />
-                <span className="font-medium">Ligák</span>
-              </div>
-              <StatusBadge active={systemInfo.features.leaguesEnabled} />
-            </div>
-            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <IconChartBar className="size-5 text-primary" />
-                <span className="font-medium">Részletes statisztikák</span>
-              </div>
-              <StatusBadge active={systemInfo.features.detailedStatisticsEnabled} />
-            </div>
+            <StatusBadge active={systemInfo.features.subscriptionEnabled} />
           </div>
+            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
+            <div className="flex items-center gap-3">
+                <IconActivity className="size-5 text-primary" />
+              <span className="font-medium">Socket kapcsolat</span>
+            </div>
+            <StatusBadge active={systemInfo.features.socketEnabled} />
+          </div>
+            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
+            <div className="flex items-center gap-3">
+                <IconSection className="size-5 text-primary" />
+              <span className="font-medium">Ligák</span>
+            </div>
+            <StatusBadge active={systemInfo.features.leaguesEnabled} />
+          </div>
+            <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
+            <div className="flex items-center gap-3">
+                <IconChartBar className="size-5 text-primary" />
+              <span className="font-medium">Részletes statisztikák</span>
+            </div>
+            <StatusBadge active={systemInfo.features.detailedStatisticsEnabled} />
+          </div>
+        </div>
         </CardContent>
       </Card>
 
@@ -282,22 +282,22 @@ export default function AdminSettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+        <div className="overflow-x-auto">
             <table className="w-full">
-              <thead>
+            <thead>
                 <tr>
                   <th className="backdrop-blur-md bg-muted/20 px-4 py-4 text-left font-semibold">Változó</th>
                   <th className="backdrop-blur-md bg-muted/20 px-4 py-4 text-left font-semibold">Érték</th>
-                </tr>
-              </thead>
-              <tbody>
+              </tr>
+            </thead>
+            <tbody>
                 <tr className="hover:backdrop-blur-md hover:bg-muted/20 transition-colors">
                   <td className="font-mono text-sm px-4 py-5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                       <IconServer className="size-4 text-primary" />
-                      NODE_ENV
-                    </div>
-                  </td>
+                    NODE_ENV
+                  </div>
+                </td>
                   <td className="px-4 py-5">
                     <Badge
                       variant={systemInfo.environment.nodeEnv === "production" ? "default" : "secondary"}
@@ -307,70 +307,70 @@ export default function AdminSettingsPage() {
                           : "backdrop-blur-md bg-warning/20 text-warning"
                       }
                     >
-                      {systemInfo.environment.nodeEnv}
+                    {systemInfo.environment.nodeEnv}
                     </Badge>
-                  </td>
-                </tr>
+                </td>
+              </tr>
                 <tr className="hover:backdrop-blur-md hover:bg-muted/20 transition-colors">
                   <td className="font-mono text-sm px-4 py-5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                       <IconShield className="size-4 text-primary" />
-                      SUBSCRIPTION_ENABLED
-                    </div>
-                  </td>
+                    SUBSCRIPTION_ENABLED
+                  </div>
+                </td>
                   <td className="px-4 py-5">
                     <Badge variant="outline" className="backdrop-blur-md bg-info/20 text-info">
-                      {systemInfo.environment.subscriptionEnabled}
+                    {systemInfo.environment.subscriptionEnabled}
                     </Badge>
-                  </td>
-                </tr>
+                </td>
+              </tr>
                 <tr className="hover:backdrop-blur-md hover:bg-muted/20 transition-colors">
                   <td className="font-mono text-sm px-4 py-5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                       <IconActivity className="size-4 text-primary" />
-                      SOCKET_SERVER_URL
-                    </div>
-                  </td>
+                    SOCKET_SERVER_URL
+                  </div>
+                </td>
                   <td className="px-4 py-5">
                     <code className="text-xs backdrop-blur-md bg-muted/30 px-2 py-1 rounded">
                       {systemInfo.environment.socketServerUrl || "Not set"}
-                    </code>
-                  </td>
-                </tr>
+                  </code>
+                </td>
+              </tr>
                 <tr className="hover:backdrop-blur-md hover:bg-muted/20 transition-colors">
                   <td className="font-mono text-sm px-4 py-5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                       <IconMail className="size-4 text-primary" />
-                      EMAIL_USERNAME
-                    </div>
-                  </td>
+                    EMAIL_USERNAME
+                  </div>
+                </td>
                   <td className="px-4 py-5">
                     <code className="text-xs backdrop-blur-md bg-muted/30 px-2 py-1 rounded">
                       {systemInfo.environment.emailUsername || "Not set"}
-                    </code>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  </code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         </CardContent>
       </Card>
 
       {/* System Version */}
       <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
               <div className="size-14 backdrop-blur-md bg-primary/20 rounded-full flex items-center justify-center">
                 <IconCode className="size-7 text-primary" />
-              </div>
-              <div>
+            </div>
+            <div>
                 <h3 className="text-lg font-bold text-foreground">Rendszer Verzió</h3>
                 <p className="text-sm text-muted-foreground">Aktuális verzió információk</p>
-              </div>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-primary">{systemInfo.version}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-primary">{systemInfo.version}</div>
               <div className="text-sm text-muted-foreground">v{systemInfo.version}</div>
             </div>
           </div>

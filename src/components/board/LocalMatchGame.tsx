@@ -1,41 +1,10 @@
 "use client"
-import {  IconSettings } from '@tabler/icons-react';
+import { IconSettings, IconPlayerPlay } from '@tabler/icons-react';
 import React, { useState, useEffect, useRef } from 'react';
-import { useSocket } from '@/hooks/useSocket';
 import toast from 'react-hot-toast';
-import { showErrorToast } from '@/lib/toastUtils';
-
-interface PlayerData {
-  playerId: {
-    _id: string;
-    name: string;
-  };
-  legsWon?: number;
-  legsLost?: number;
-  average?: number;
-  highestCheckout?: number;
-  oneEightiesCount?: number;
-}
-
-interface Scorer {
-  playerId: string;
-  name: string;
-}
-
-interface Match {
-  _id: string;
-  boardReference: number;
-  type: string;
-  round: number;
-  player1: PlayerData;
-  player2: PlayerData;
-  scorer: Scorer;
-  status: string;
-  startingScore: number;
-  legsToWin?: number;
-  startingPlayer?: 1 | 2;
-  winnerId?: string;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 interface Player {
   name: string;
@@ -50,53 +19,90 @@ interface Player {
   };
 }
 
-interface MatchGameProps {
-  match: Match;
-  onBack: () => void;
-  onMatchFinished?: () => void;
-  clubId?: string;
+interface Leg {
+  legNumber: number;
+  player1Throws: number[];
+  player2Throws: number[];
+  player1Score: number;
+  player2Score: number;
+  winner: 1 | 2;
+  checkoutScore?: number;
+  checkoutDarts?: number;
+  createdAt: Date;
 }
 
-const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId }) => {
-  const initialScore = match.startingScore;
-  const [legsToWin, setLegsToWin] = useState(match.legsToWin || 3);
+interface MatchStats {
+  player1: {
+    legsWon: number;
+    legsLost: number;
+    totalScore: number;
+    totalDarts: number;
+    average: number;
+    highestCheckout: number;
+    oneEightiesCount: number;
+  };
+  player2: {
+    legsWon: number;
+    legsLost: number;
+    totalScore: number;
+    totalDarts: number;
+    average: number;
+    highestCheckout: number;
+    oneEightiesCount: number;
+  };
+  legs: Leg[];
+  finishedAt: Date;
+  winner: 1 | 2;
+}
+
+interface LocalMatchGameProps {
+  legsToWin: number;
+  startingScore: number;
+  onBack: () => void;
+  onRematch?: () => void;
+  matchId: string;
+}
+
+const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsToWin, startingScore, onBack, onRematch, matchId }) => {
+  const initialScore = startingScore;
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [tempLegsToWin, setTempLegsToWin] = useState(legsToWin);
-  const [tempStartingPlayer, setTempStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
+  const [legsToWin, setLegsToWin] = useState(initialLegsToWin);
+  const [tempLegsToWin, setTempLegsToWin] = useState(initialLegsToWin);
 
   const [player1, setPlayer1] = useState<Player>({
-    name: match.player1.playerId.name,
+    name: "1",
     score: initialScore,
-    legsWon: match.player1.legsWon || 0,
+    legsWon: 0,
     allThrows: [],
     stats: {
-      highestCheckout: match.player1.highestCheckout || 0,
-      oneEightiesCount: match.player1.oneEightiesCount || 0,
-    totalThrows: 0,
-      average: match.player1.average || 0
+      highestCheckout: 0,
+      oneEightiesCount: 0,
+      totalThrows: 0,
+      average: 0
     }
   });
 
   const [player2, setPlayer2] = useState<Player>({
-    name: match.player2.playerId.name,
+    name: "2",
     score: initialScore,
-    legsWon: match.player2.legsWon || 0,
+    legsWon: 0,
     allThrows: [],
     stats: {
-      highestCheckout: match.player2.highestCheckout || 0,
-      oneEightiesCount: match.player2.oneEightiesCount || 0,
-    totalThrows: 0,
-      average: match.player2.average || 0
+      highestCheckout: 0,
+      oneEightiesCount: 0,
+      totalThrows: 0,
+      average: 0
     }
   });
 
-  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(match.startingPlayer || 1);
+  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
   const [currentLeg, setCurrentLeg] = useState(1);
   const [scoreInput, setScoreInput] = useState<string>('');
   const [editingThrow, setEditingThrow] = useState<{player: 1 | 2, throwIndex: number} | null>(null);
   const [editScoreInput, setEditScoreInput] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  const [legStartingPlayer, setLegStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
+  const [legStartingPlayer, setLegStartingPlayer] = useState<1 | 2>(1);
+  const [legs, setLegs] = useState<Leg[]>([]);
   
   // Confirmation dialogs
   const [showLegConfirmation, setShowLegConfirmation] = useState<boolean>(false);
@@ -104,109 +110,84 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const [pendingLegWinner, setPendingLegWinner] = useState<1 | 2 | null>(null);
   const [pendingMatchWinner, setPendingMatchWinner] = useState<1 | 2 | null>(null);
   
-  // Loading states
-  const [isSavingLeg, setIsSavingLeg] = useState<boolean>(false);
-  const [isSavingMatch, setIsSavingMatch] = useState<boolean>(false);
-  const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
-  
   // Arrow count for checkout
   const [arrowCount, setArrowCount] = useState<number>(3);
+  
+  // Match finished state
+  const [matchFinished, setMatchFinished] = useState<boolean>(false);
+  const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
 
   const chalkboardRef = useRef<HTMLDivElement>(null);
   const quickAccessScores = [180, 140, 100, 95, 85, 81, 80, 60, 45, 41, 40, 26];
 
-  // Socket hook
-  const { socket, isConnected } = useSocket({ 
-    matchId: match._id, 
-    clubId 
-  });
-
-  // Calculate the correct starting player for the next leg
-  const calculateNextLegStartingPlayer = (totalLegsPlayed: number, originalStartingPlayer: number): number => {
-    return totalLegsPlayed % 2 === 1 ? (originalStartingPlayer === 1 ? 2 : 1) : originalStartingPlayer;
-  };
-
-  // Socket.IO initialization
+  // Initialize from localStorage
   useEffect(() => {
-    if (!isConnected) return;
-    
-    socket.emit('init-match', {
-      matchId: match._id,
-      startingScore: initialScore,
-      legsToWin: legsToWin,
-      startingPlayer: match.startingPlayer || 1
-    });
-    
-    socket.emit('set-match-players', {
-      matchId: match._id,
-      player1Id: match.player1.playerId._id,
-      player2Id: match.player2.playerId._id,
-      player1Name: match.player1.playerId.name,
-      player2Name: match.player2.playerId.name
-    });
-    
-    const tournamentCode = window.location.pathname.split('/')[2];
-    socket.emit('match-started', {
-      matchId: match._id,
-      tournamentCode: tournamentCode,
-      matchData: {
-        player1: match.player1,
-        player2: match.player2,
-        startingScore: initialScore,
-        legsToWin: legsToWin
+    // Check for finished match stats first
+    const savedStats = localStorage.getItem(`local_match_stats_${matchId}`);
+    if (savedStats) {
+      try {
+        const stats = JSON.parse(savedStats);
+        const savedDate = new Date(stats.finishedAt);
+        const daysSinceSaved = (Date.now() - savedDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Clear if older than 5 days
+        if (daysSinceSaved > 5) {
+          localStorage.removeItem(`local_match_stats_${matchId}`);
+        } else {
+          // Restore finished match stats
+          setMatchStats({
+            ...stats,
+            finishedAt: new Date(stats.finishedAt),
+            legs: stats.legs.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt) }))
+          });
+          setMatchFinished(true);
+          setIsInitialized(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing saved stats:', error);
+        localStorage.removeItem(`local_match_stats_${matchId}`);
       }
-    });
-  }, [isConnected, match._id]);
-
-  // Initialize game state from localStorage or database
-  useEffect(() => {
-    setIsInitialized(false);
+    }
     
-    const savedState = localStorage.getItem(`match_game_${match._id}`);
+    // Check for ongoing match
+    const savedState = localStorage.getItem(`local_match_${matchId}`);
     if (savedState) {
       try {
         const state = JSON.parse(savedState);
+        const savedDate = new Date(state.savedAt);
+        const daysSinceSaved = (Date.now() - savedDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Clear if older than 5 days
+        if (daysSinceSaved > 5) {
+          localStorage.removeItem(`local_match_${matchId}`);
+          setIsInitialized(true);
+          return;
+        }
+        
+        // Restore state
         setPlayer1(state.player1 || player1);
         setPlayer2(state.player2 || player2);
-        setCurrentPlayer(state.currentPlayer || (match.startingPlayer || 1));
-        setLegStartingPlayer(state.legStartingPlayer || (match.startingPlayer || 1));
+        setCurrentPlayer(state.currentPlayer || 1);
+        setLegStartingPlayer(state.legStartingPlayer || 1);
         setCurrentLeg(state.currentLeg || 1);
-        setLegsToWin(state.legsToWin || legsToWin);
+        setLegs(state.legs || []);
+        setLegsToWin(state.legsToWin || initialLegsToWin);
+        setTempLegsToWin(state.legsToWin || initialLegsToWin);
         setIsInitialized(true);
         return;
       } catch (error) {
         console.error('Error parsing saved state:', error);
-        localStorage.removeItem(`match_game_${match._id}`);
+        localStorage.removeItem(`local_match_${matchId}`);
       }
     }
     
-    // Initialize with database values
-    const totalLegsPlayed = (match.player1.legsWon || 0) + (match.player2.legsWon || 0);
-    const nextLegStartingPlayer = calculateNextLegStartingPlayer(totalLegsPlayed, match.startingPlayer || 1);
-    
-    setPlayer1(prev => ({
-      ...prev,
-      score: initialScore,
-      legsWon: match.player1.legsWon || 0,
-      allThrows: []
-    }));
-    
-    setPlayer2(prev => ({
-      ...prev,
-      score: initialScore,
-      legsWon: match.player2.legsWon || 0,
-      allThrows: []
-    }));
-    
-    setCurrentPlayer(nextLegStartingPlayer as 1 | 2);
-    setLegStartingPlayer(nextLegStartingPlayer as 1 | 2);
-    setCurrentLeg(totalLegsPlayed + 1);
     setIsInitialized(true);
-  }, [match._id]);
+  }, [matchId, initialLegsToWin]);
 
   // Save game state to localStorage
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || matchFinished) return;
     
     const hasOngoingGame = player1.allThrows.length > 0 || player2.allThrows.length > 0 || 
                           (player1.score !== initialScore) || (player2.score !== initialScore) ||
@@ -220,11 +201,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       currentPlayer,
       legStartingPlayer,
       currentLeg,
-      legsToWin
+      legsToWin,
+      legs,
+      savedAt: new Date().toISOString()
     };
     
-    localStorage.setItem(`match_game_${match._id}`, JSON.stringify(gameState));
-  }, [player1, player2, currentPlayer, legStartingPlayer, currentLeg, legsToWin, match._id, isInitialized]);
+    localStorage.setItem(`local_match_${matchId}`, JSON.stringify(gameState));
+  }, [player1, player2, currentPlayer, legStartingPlayer, currentLeg, legsToWin, legs, matchId, isInitialized, matchFinished]);
 
   // Auto-scroll chalkboard
   useEffect(() => {
@@ -238,7 +221,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     // Check for bust
     if (currentPlayerData.score - score < 0) {
-      // Add bust (0 score) to throws
       const newAllThrows = [...currentPlayerData.allThrows, 0];
       
       if (currentPlayer === 1) {
@@ -273,9 +255,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     const newScore = currentPlayerData.score - score;
     const newAllThrows = [...currentPlayerData.allThrows, score];
 
-    // Check for win condition (any finish, not just double-out)
+    // Check for win condition
     if (newScore === 0) {
-      // Update player with the throw
       if (currentPlayer === 1) {
         setPlayer1(prev => ({ 
           ...prev, 
@@ -306,7 +287,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         }));
       }
       
-      // Show leg confirmation modal with arrow count
       setPendingLegWinner(currentPlayer);
       setShowLegConfirmation(true);
       setScoreInput('');
@@ -325,18 +305,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
         }));
-
-        // Send throw event to socket
-        if (isConnected) {
-          socket.emit('throw', {
-            matchId: match._id,
-            playerId: match.player1.playerId._id,
-            score: score,
-            remainingScore: newScore,
-            legNumber: currentLeg,
-            tournamentCode: window.location.pathname.split('/')[2]
-          });
-        }
       } else {
         setPlayer2(prev => ({ 
           ...prev, 
@@ -350,18 +318,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
         }));
-
-        // Send throw event to socket
-        if (isConnected) {
-          socket.emit('throw', {
-            matchId: match._id,
-            playerId: match.player2.playerId._id,
-            score: score,
-            remainingScore: newScore,
-            legNumber: currentLeg,
-            tournamentCode: window.location.pathname.split('/')[2]
-          });
-        }
       }
       
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
@@ -380,7 +336,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       
       if (playerWhoJustThrew === 1) {
         setPlayer1(prev => ({ 
-        ...prev,
+          ...prev,
           score: newScore,
           allThrows: newAllThrows,
           stats: {
@@ -393,7 +349,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         }));
       } else {
         setPlayer2(prev => ({ 
-        ...prev,
+          ...prev,
           score: newScore,
           allThrows: newAllThrows,
           stats: {
@@ -403,20 +359,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             average: (prev.stats.totalThrows - 1) > 0 ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
-      }));
-    }
-    
+        }));
+      }
+      
       setCurrentPlayer(playerWhoJustThrew);
       setScoreInput('');
-
-      // Notify socket
-    if (isConnected) {
-      socket.emit('undo-throw', {
-        matchId: match._id,
-        playerId: playerWhoJustThrew === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        tournamentCode: window.location.pathname.split('/')[2]
-      });
-      }
     }
   };
 
@@ -448,24 +395,22 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     const playerData = editingThrow.player === 1 ? player1 : player2;
     const oldThrows = [...playerData.allThrows];
     
-    // Calculate what the score would be if we recalculate from scratch
     let recalculatedScore = initialScore;
     for (let i = 0; i <= editingThrow.throwIndex; i++) {
       if (i === editingThrow.throwIndex) {
         recalculatedScore -= newScore;
-        } else {
+      } else {
         recalculatedScore -= oldThrows[i];
       }
     }
     
     if (recalculatedScore < 0) {
       toast.error('Érvénytelen pontszám!');
-          return;
-        }
+      return;
+    }
         
     oldThrows[editingThrow.throwIndex] = newScore;
 
-    // Recalculate player score from all throws
     let newPlayerScore = initialScore;
     for (const throwValue of oldThrows) {
       newPlayerScore -= throwValue;
@@ -510,129 +455,125 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setEditScoreInput('');
   };
 
-  // Calculate possible arrow counts based on checkout score
   const getPossibleArrowCounts = (checkoutScore: number): number[] => {
     if (checkoutScore <= 40) {
-      return [1, 2, 3]; // 1-40: 1-3 nyíl lehetséges
+      return [1, 2, 3];
     } else if (checkoutScore <= 98) {
-      return [2, 3]; // 41-98: 2-3 nyíl lehetséges
+      return [2, 3];
     } else {
-      return [3]; // 99-180: csak 3 nyíl lehetséges
+      return [3];
     }
   };
 
-  const confirmLegEnd = async () => {
-    if (!pendingLegWinner || isSavingLeg) return;
+  const calculateMatchStats = (allLegs: Leg[]): MatchStats => {
+    let player1TotalScore = 0;
+    let player1TotalDarts = 0;
+    let player1OneEighties = 0;
+    let player1HighestCheckout = 0;
+
+    let player2TotalScore = 0;
+    let player2TotalDarts = 0;
+    let player2OneEighties = 0;
+    let player2HighestCheckout = 0;
+
+    // Process all legs (including final leg)
+    for (const leg of allLegs) {
+      // Player 1 stats
+      player1TotalScore += leg.player1Score;
+      leg.player1Throws.forEach((score, index) => {
+        // Last throw of winner uses checkoutDarts, others use 3
+        const isLastThrow = index === leg.player1Throws.length - 1;
+        const darts = (leg.winner === 1 && isLastThrow && leg.checkoutDarts) ? leg.checkoutDarts : 3;
+        player1TotalDarts += darts;
+        if (score === 180) player1OneEighties++;
+      });
+      if (leg.winner === 1 && leg.checkoutScore) {
+        player1HighestCheckout = Math.max(player1HighestCheckout, leg.checkoutScore);
+      }
+
+      // Player 2 stats
+      player2TotalScore += leg.player2Score;
+      leg.player2Throws.forEach((score, index) => {
+        // Last throw of winner uses checkoutDarts, others use 3
+        const isLastThrow = index === leg.player2Throws.length - 1;
+        const darts = (leg.winner === 2 && isLastThrow && leg.checkoutDarts) ? leg.checkoutDarts : 3;
+        player2TotalDarts += darts;
+        if (score === 180) player2OneEighties++;
+      });
+      if (leg.winner === 2 && leg.checkoutScore) {
+        player2HighestCheckout = Math.max(player2HighestCheckout, leg.checkoutScore);
+      }
+    }
+
+    return {
+      player1: {
+        legsWon: player1.legsWon,
+        legsLost: player2.legsWon,
+        totalScore: player1TotalScore,
+        totalDarts: player1TotalDarts,
+        average: player1TotalDarts > 0 ? Math.round((player1TotalScore / player1TotalDarts) * 3 * 100) / 100 : 0,
+        highestCheckout: player1HighestCheckout,
+        oneEightiesCount: player1OneEighties
+      },
+      player2: {
+        legsWon: player2.legsWon,
+        legsLost: player1.legsWon,
+        totalScore: player2TotalScore,
+        totalDarts: player2TotalDarts,
+        average: player2TotalDarts > 0 ? Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0,
+        highestCheckout: player2HighestCheckout,
+        oneEightiesCount: player2OneEighties
+      },
+      legs: allLegs,
+      finishedAt: new Date(),
+      winner: pendingMatchWinner || 1
+    };
+  };
+
+  const confirmLegEnd = () => {
+    if (!pendingLegWinner) return;
     
-    // Auto-set arrow count if only one option is possible
     const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
     const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
     if (possibleArrowCounts.length === 1) {
       setArrowCount(possibleArrowCounts[0]);
     }
     
-    setIsSavingLeg(true);
-    
     const newPlayer1Legs = pendingLegWinner === 1 ? player1.legsWon + 1 : player1.legsWon;
     const newPlayer2Legs = pendingLegWinner === 2 ? player2.legsWon + 1 : player2.legsWon;
     
-    // Update legs won
     if (pendingLegWinner === 1) {
       setPlayer1(prev => ({ ...prev, legsWon: newPlayer1Legs }));
     } else {
       setPlayer2(prev => ({ ...prev, legsWon: newPlayer2Legs }));
     }
     
+    // Save leg
+    const leg: Leg = {
+      legNumber: currentLeg,
+      player1Throws: [...player1.allThrows],
+      player2Throws: [...player2.allThrows],
+      player1Score: player1.allThrows.reduce((a, b) => a + b, 0),
+      player2Score: player2.allThrows.reduce((a, b) => a + b, 0),
+      winner: pendingLegWinner,
+      checkoutScore: lastThrow,
+      checkoutDarts: arrowCount,
+      createdAt: new Date()
+    };
+    setLegs(prev => [...prev, leg]);
+    
     // Check if match is won
     if (newPlayer1Legs >= legsToWin || newPlayer2Legs >= legsToWin) {
       setPendingMatchWinner(pendingLegWinner);
       setShowMatchConfirmation(true);
       setShowLegConfirmation(false);
-      setIsSavingLeg(false);
       return;
-    }
-
-    // Send checkout throw to socket
-    if (isConnected) {
-      const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-      socket.emit('throw', {
-        matchId: match._id,
-        playerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        score: lastThrow,
-        isCheckout: true,
-        remainingScore: 0,
-        legNumber: currentLeg,
-        tournamentCode: window.location.pathname.split('/')[2],
-        arrowCount: arrowCount
-      });
-    }
-
-    // Save leg to API
-    // Count 180s only for this leg (not cumulative)
-    const player1LegOneEighties = player1.allThrows.filter(t => t === 180).length;
-    const player2LegOneEighties = player2.allThrows.filter(t => t === 180).length;
-    
-    try {
-      const response = await fetch(`/api/matches/${match._id}/finish-leg`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          winner: pendingLegWinner,
-          player1Throws: player1.allThrows,
-          player2Throws: player2.allThrows,
-          winnerArrowCount: arrowCount,
-          player1Stats: {
-            highestCheckout: player1.stats.highestCheckout,
-            oneEightiesCount: player1LegOneEighties, // Only this leg's 180s
-            totalThrows: player1.allThrows.length,
-            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player1.allThrows.length * 3 + (pendingLegWinner === 1 ? arrowCount : 0)
-          },
-          player2Stats: {
-            highestCheckout: player2.stats.highestCheckout,
-            oneEightiesCount: player2LegOneEighties, // Only this leg's 180s
-            totalThrows: player2.allThrows.length,
-            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player2.allThrows.length * 3 + (pendingLegWinner === 2 ? arrowCount : 0)
-          }
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error saving leg:', errorData);
-        showErrorToast('Hiba történt a leg mentése során!', {
-          error: errorData?.error,
-          context: 'Leg mentése',
-          errorName: 'Leg mentése sikertelen',
-        });
-      }
-    } catch (error: any) {
-      console.error('Error saving leg:', error);
-      showErrorToast('Hiba történt a leg mentése során!', {
-        error: error?.message,
-        context: 'Leg mentése',
-        errorName: 'Leg mentése sikertelen',
-      });
-    } finally {
-      setIsSavingLeg(false);
-    }
-
-    // Send leg completion to socket
-    if (isConnected) {
-      socket.emit('leg-complete', {
-        matchId: match._id,
-        legNumber: currentLeg,
-        winnerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        tournamentCode: window.location.pathname.split('/')[2]
-      });
     }
 
     // Reset for next leg
     setPlayer1(prev => ({ ...prev, score: initialScore, allThrows: [] }));
     setPlayer2(prev => ({ ...prev, score: initialScore, allThrows: [] }));
     
-    // Switch starting player for next leg
     const nextLegStartingPlayer = legStartingPlayer === 1 ? 2 : 1;
     setLegStartingPlayer(nextLegStartingPlayer);
     setCurrentPlayer(nextLegStartingPlayer);
@@ -643,111 +584,46 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setPendingLegWinner(null);
   };
 
-  const confirmMatchEnd = async () => {
-    if (!pendingMatchWinner || isSavingMatch) return;
+  const confirmMatchEnd = () => {
+    if (!pendingMatchWinner) return;
     
-    setIsSavingMatch(true);
+    // Save final leg
+    const finalLeg: Leg = {
+      legNumber: currentLeg,
+      player1Throws: [...player1.allThrows],
+      player2Throws: [...player2.allThrows],
+      player1Score: player1.allThrows.reduce((a, b) => a + b, 0),
+      player2Score: player2.allThrows.reduce((a, b) => a + b, 0),
+      winner: pendingMatchWinner,
+      checkoutScore: pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1],
+      checkoutDarts: arrowCount,
+      createdAt: new Date()
+    };
+    const allLegs = [...legs, finalLeg];
+    setLegs(allLegs);
     
-    // Send final checkout throw to socket
-    if (isConnected) {
-      const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-      socket.emit('throw', {
-        matchId: match._id,
-        playerId: pendingMatchWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        score: lastThrow,
-        isCheckout: true,
-        remainingScore: 0,
-        legNumber: currentLeg,
-        tournamentCode: window.location.pathname.split('/')[2],
-        arrowCount: arrowCount
-      });
-    }
+    // Calculate and save match stats from all legs (including final)
+    const stats = calculateMatchStats(allLegs);
+    setMatchStats(stats);
+    setMatchFinished(true);
     
-    // Count 180s only for the final leg (not cumulative)
-    // The backend will recalculate from all saved legs, so we only need this leg's count
-    const player1FinalLegOneEighties = player1.allThrows.filter(t => t === 180).length;
-    const player2FinalLegOneEighties = player2.allThrows.filter(t => t === 180).length;
+    // Save finished match stats to localStorage
+    localStorage.setItem(`local_match_stats_${matchId}`, JSON.stringify({
+      ...stats,
+      finishedAt: stats.finishedAt.toISOString(),
+      legs: stats.legs.map(l => ({ ...l, createdAt: l.createdAt.toISOString() }))
+    }));
     
-    try {
-      const response = await fetch(`/api/matches/${match._id}/finish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player1LegsWon: player1.legsWon,
-          player2LegsWon: player2.legsWon,
-          winnerArrowCount: arrowCount,
-          player1Stats: {
-            highestCheckout: player1.stats.highestCheckout,
-            oneEightiesCount: player1FinalLegOneEighties, // Only final leg's 180s (backend recalculates from all legs)
-            totalThrows: player1.allThrows.length,
-            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
-          },
-          player2Stats: {
-            highestCheckout: player2.stats.highestCheckout,
-            oneEightiesCount: player2FinalLegOneEighties, // Only final leg's 180s (backend recalculates from all legs)
-            totalThrows: player2.allThrows.length,
-            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
-          },
-          finalLegData: {
-            player1Throws: player1.allThrows,
-            player2Throws: player2.allThrows
-          }
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error finishing match:', errorData);
-        showErrorToast('Hiba történt a meccs befejezése során!', {
-          error: errorData?.error,
-          context: 'Meccs lezárása',
-          errorName: 'Meccs lezárása sikertelen',
-        });
-        setIsSavingMatch(false);
-        return;
-      }
-    } catch (error: any) {
-      console.error('Error finishing match:', error);
-      showErrorToast('Hiba történt a meccs befejezése során!', {
-        error: error?.message,
-        context: 'Meccs lezárása',
-        errorName: 'Meccs lezárása sikertelen',
-      });
-      setIsSavingMatch(false);
-      return;
-    } finally {
-      setIsSavingMatch(false);
-    }
-
-    // Inform server to cleanup
-    if (isConnected) {
-      socket.emit('match-complete', { 
-        matchId: match._id,
-        tournamentCode: window.location.pathname.split('/')[2]
-      });
-    }
-
-    localStorage.removeItem(`match_game_${match._id}`);
+    // Clear ongoing match from localStorage
+    localStorage.removeItem(`local_match_${matchId}`);
+    
     toast.success(`Meccs vége! ${pendingMatchWinner === 1 ? player1.name : player2.name} nyert!`);
-    
-    // Call onMatchFinished callback if provided to refresh matches
-    if (onMatchFinished) {
-      await onMatchFinished();
-    }
-    
-    onBack();
+    setShowMatchConfirmation(false);
   };
 
-
-
   const cancelLegEnd = () => {
-    if (isSavingLeg) return;
-    
     const playerWhoJustThrew = pendingLegWinner;
     
-    // Undo the last throw and keep the same player
     if (playerWhoJustThrew === 1 && player1.allThrows.length > 0) {
       const lastThrow = player1.allThrows[player1.allThrows.length - 1];
       setPlayer1(prev => ({
@@ -758,12 +634,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
           oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
+          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
       }));
-      // Keep player 1 as current player
       setCurrentPlayer(1);
     } else if (playerWhoJustThrew === 2 && player2.allThrows.length > 0) {
       const lastThrow = player2.allThrows[player2.allThrows.length - 1];
@@ -775,12 +650,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
           oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
+          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
       }));
-      // Keep player 2 as current player
       setCurrentPlayer(2);
     }
     
@@ -790,46 +664,41 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   };
 
   const cancelMatchEnd = () => {
-    if (isSavingMatch) return;
-    
     const playerWhoJustThrew = pendingMatchWinner;
     
-    // Undo the last throw, revert leg count, and keep the same player
     if (playerWhoJustThrew === 1 && player1.allThrows.length > 0) {
       const lastThrow = player1.allThrows[player1.allThrows.length - 1];
       setPlayer1(prev => ({
         ...prev,
         score: prev.score + lastThrow,
-        legsWon: Math.max(0, prev.legsWon - 1), // Revert leg count
+        legsWon: Math.max(0, prev.legsWon - 1),
         allThrows: prev.allThrows.slice(0, -1),
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
           oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
+          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
       }));
-      // Keep player 1 as current player
       setCurrentPlayer(1);
     } else if (playerWhoJustThrew === 2 && player2.allThrows.length > 0) {
       const lastThrow = player2.allThrows[player2.allThrows.length - 1];
       setPlayer2(prev => ({
         ...prev,
         score: prev.score + lastThrow,
-        legsWon: Math.max(0, prev.legsWon - 1), // Revert leg count
+        legsWon: Math.max(0, prev.legsWon - 1),
         allThrows: prev.allThrows.slice(0, -1),
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
           oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
+          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
       }));
-      // Keep player 2 as current player
       setCurrentPlayer(2);
     }
     
@@ -838,103 +707,209 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setArrowCount(3);
   };
 
-  const handleSaveLegsToWin = async () => {
+  const handleSaveLegsToWin = () => {
     if (tempLegsToWin < 1 || tempLegsToWin > 20) {
       toast.error('A nyert legek száma 1 és 20 között kell legyen!');
       return;
     }
 
-    // Check if any player has already reached the new legsToWin value
     const player1HasWon = player1.legsWon >= tempLegsToWin;
     const player2HasWon = player2.legsWon >= tempLegsToWin;
     
     if (player1HasWon || player2HasWon) {
-      // Determine winner (player who reached the target first or has more legs)
       let winner: 1 | 2;
       if (player1HasWon && player2HasWon) {
-        // Both reached it, winner is the one who reached it first (has more legs)
         winner = player1.legsWon >= player2.legsWon ? 1 : 2;
       } else {
-        // Only one reached it
         winner = player1HasWon ? 1 : 2;
       }
       
-      // Ask for match confirmation
       setPendingMatchWinner(winner);
       setShowMatchConfirmation(true);
       setShowSettingsModal(false);
-      
-      // Update legsToWin without closing modal yet
       setLegsToWin(tempLegsToWin);
-      
-      try {
-        const response = await fetch(`/api/matches/${match._id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ legsToWin: tempLegsToWin })
-        });
-
-        if (!response.ok) {
-          showErrorToast('Hiba történt a beállítások mentése során!', {
-            context: 'Meccs beállítások',
-            errorName: 'Beállítás mentése sikertelen',
-          });
-        }
-      } catch (error: any) {
-        console.error('Error updating legsToWin:', error);
-        showErrorToast('Hiba történt a beállítások mentése során!', {
-          error: error?.message,
-          context: 'Meccs beállítások',
-          errorName: 'Beállítás mentése sikertelen',
-        });
-      }
-      
       return;
     }
 
-    try {
-      const response = await fetch(`/api/matches/${match._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ legsToWin: tempLegsToWin })
-      });
-
-      if (response.ok) {
-        setLegsToWin(tempLegsToWin);
-        setShowSettingsModal(false);
-        toast.success('Beállítások mentve!');
-      } else {
-        showErrorToast('Hiba történt a mentés során!', {
-          context: 'Meccs beállítások',
-          errorName: 'Beállítás mentése sikertelen',
-        });
-      }
-    } catch (error: any) {
-      console.error('Error updating legsToWin:', error);
-      showErrorToast('Hiba történt a mentés során!', {
-        error: error?.message,
-        context: 'Meccs beállítások',
-        errorName: 'Beállítás mentése sikertelen',
-      });
-    }
+    setLegsToWin(tempLegsToWin);
+    setShowSettingsModal(false);
+    toast.success('Beállítások mentve!');
   };
+
+  const handleRestartWithNewSettings = () => {
+    if (tempLegsToWin < 1 || tempLegsToWin > 20) {
+      toast.error('A nyert legek száma 1 és 20 között kell legyen!');
+      return;
+    }
+
+    // Reset all game state
+    setPlayer1({
+      name: "1",
+      score: initialScore,
+      legsWon: 0,
+      allThrows: [],
+      stats: {
+        highestCheckout: 0,
+        oneEightiesCount: 0,
+        totalThrows: 0,
+        average: 0
+      }
+    });
+
+    setPlayer2({
+      name: "2",
+      score: initialScore,
+      legsWon: 0,
+      allThrows: [],
+      stats: {
+        highestCheckout: 0,
+        oneEightiesCount: 0,
+        totalThrows: 0,
+        average: 0
+      }
+    });
+
+    setCurrentPlayer(1);
+    setCurrentLeg(1);
+    setLegStartingPlayer(1);
+    setLegs([]);
+    setLegsToWin(tempLegsToWin);
+    setScoreInput('');
+    setEditingThrow(null);
+    setEditScoreInput('');
+    setShowLegConfirmation(false);
+    setShowMatchConfirmation(false);
+    setPendingLegWinner(null);
+    setPendingMatchWinner(null);
+    setMatchFinished(false);
+    setMatchStats(null);
+    setArrowCount(3);
+
+    // Clear localStorage
+    localStorage.removeItem(`local_match_${matchId}`);
+    localStorage.removeItem(`local_match_stats_${matchId}`);
+
+    setShowSettingsModal(false);
+    toast.success('Meccs újraindítva új beállításokkal!');
+  };
+
+  if (!isInitialized) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Betöltés...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (matchFinished && matchStats) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <Card className="max-w-4xl w-full mx-auto">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl">Meccs Statisztikák</CardTitle>
+              <div className="flex gap-2">
+                {onRematch && (
+                  <Button onClick={onRematch} className="gap-2">
+                    <IconPlayerPlay size={18} />
+                    Rematch
+                  </Button>
+                )}
+                <Button onClick={onBack} variant="outline">Vissza</Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-2">
+                Győztes: {matchStats.winner === 1 ? player1.name : player2.name}
+              </h3>
+              <p className="text-muted-foreground">
+                {matchStats.player1.legsWon} - {matchStats.player2.legsWon}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{player1.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Átlag:</span>
+                    <span className="font-bold">{matchStats.player1.average.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Leg nyert:</span>
+                    <span className="font-bold">{matchStats.player1.legsWon}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Leg vesztett:</span>
+                    <span className="font-bold">{matchStats.player1.legsLost}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>180:</span>
+                    <span className="font-bold">{matchStats.player1.oneEightiesCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Legnagyobb kiszálló:</span>
+                    <span className="font-bold">{matchStats.player1.highestCheckout}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{player2.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Átlag:</span>
+                    <span className="font-bold">{matchStats.player2.average.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Leg nyert:</span>
+                    <span className="font-bold">{matchStats.player2.legsWon}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Leg vesztett:</span>
+                    <span className="font-bold">{matchStats.player2.legsLost}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>180:</span>
+                    <span className="font-bold">{matchStats.player2.oneEightiesCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Legnagyobb kiszálló:</span>
+                    <span className="font-bold">{matchStats.player2.highestCheckout}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] overflow-hidden flex flex-col landscape:flex-row bg-black text-white">
-      {/* Left Side - Players & Chalkboard (Landscape) / Top (Portrait) */}
+      {/* Left Side - Players & Chalkboard */}
       <div className="flex flex-col landscape:w-1/2 landscape:h-full">
         {/* Header - Score Display */}
         <header className="flex h-[28dvh] landscape:h-[35dvh] w-full bg-gradient-to-b from-gray-900 to-black relative">
-
           {/* Player 1 */}
-          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center transition-all duration-300 ${currentPlayer === 1 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player1.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
             </div>
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
-              <span className="text-gray-400">Avg: {player1.stats.average}</span>
+              <span className="text-gray-400">Avg: {player1.stats.average.toFixed(2)}</span>
               <span className="text-gray-400">180: {player1.stats.oneEightiesCount}</span>
             </div>
           </div>
@@ -948,21 +923,21 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
           
           {/* Player 2 */}
-          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 z-50 ${currentPlayer === 2 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center transition-all duration-300 z-50 ${currentPlayer === 2 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player2.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
             </div>
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
-              <span className="text-gray-400">Avg: {player2.stats.average}</span>
+              <span className="text-gray-400">Avg: {player2.stats.average.toFixed(2)}</span>
               <span className="text-gray-400">180: {player2.stats.oneEightiesCount}</span>
             </div>
           </div>
         </header>
 
         {/* Throw History - Chalkboard Style */}
-        <section className="h-[10dvh] landscape:flex-1 bg-base-200 flex  landscape:  overflow-hidden">
+        <section className="h-[10dvh] landscape:flex-1 bg-base-200 flex overflow-hidden">
           <div ref={chalkboardRef} className="flex w-full overflow-y-auto">
             {/* Player 1 All Throws */}
             <div className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4">
@@ -986,7 +961,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                             ✓
                           </button>
                         )}
-                </div>
+                      </div>
                       {editingThrow?.player === 1 && editingThrow?.throwIndex === index && (
                         <button 
                           onClick={handleCancelEdit}
@@ -995,14 +970,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                           ✗
                         </button>
                       )}
-              </div>
+                    </div>
                   ))}
+                </div>
               </div>
             </div>
-          </div>
 
             {/* Round Numbers */}
-            <div className="w-14 sm:w-16 lg:w-20 flex flex-col items-center   bg-base-100 p-2">
+            <div className="w-14 sm:w-16 lg:w-20 flex flex-col items-center bg-base-100 p-2">
               <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-100 z-10 pb-1">Nyilak</div>
               <div className="flex-1">
                 <div className="space-y-1">
@@ -1037,7 +1012,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                             ✓
                           </button>
                         )}
-                </div>
+                      </div>
                       {editingThrow?.player === 2 && editingThrow?.throwIndex === index && (
                         <button 
                           onClick={handleCancelEdit}
@@ -1046,21 +1021,21 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                           ✗
                         </button>
                       )}
-              </div>
+                    </div>
                   ))}
+                </div>
               </div>
             </div>
           </div>
-          </div>
         </section>
-        </div>
+      </div>
 
-      {/* Right Side - Input & Numpad (Landscape) / Bottom (Portrait) */}
+      {/* Right Side - Input & Numpad */}
       <div className="flex flex-col landscape:w-1/2 landscape:h-full">
         {/* Score Display with BACK button */}
-        <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between   px-2 sm:px-4">
+        <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between px-2 sm:px-4">
           <button
-            onClick={handleBack}
+            onClick={() => handleBack()}
             className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border"
           >
             BACK
@@ -1069,16 +1044,15 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             {editingThrow && (
               <div className="text-xs sm:text-sm text-primary mb-1">
                 Szerkesztés: {editingThrow.player === 1 ? player1.name : player2.name} - Dobás #{editingThrow.throwIndex + 1}
-            </div>
+              </div>
             )}
             <div className={`text-5xl sm:text-6xl md:text-7xl font-bold ${editingThrow ? 'text-primary' : 'text-base-content'}`}>
               {editingThrow ? (editScoreInput || '0') : (scoreInput || '0')}
-          </div>
+            </div>
           </div>
           <button
             onClick={() => {
               setTempLegsToWin(legsToWin);
-              setTempStartingPlayer(currentPlayer);
               setShowSettingsModal(true);
             }}
             className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border flex items-center justify-center w-[80px] sm:w-[120px]"
@@ -1099,7 +1073,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                     handleThrow(score);
                     setScoreInput('');
                   }}
-                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors "
+                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors"
                 >
                   {score}
                 </button>
@@ -1110,7 +1084,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             <div className="flex-1 flex flex-col gap-1 sm:gap-2 md:gap-3">
               <div className="flex-1 grid grid-cols-3 gap-1 sm:gap-2 md:gap-3">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
-              <button
+                  <button
                     key={number}
                     onClick={() => handleNumberInput(number)}
                     className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl md:text-4xl rounded-lg transition-colors"
@@ -1128,17 +1102,17 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                       setScoreInput(scoreInput.slice(0, -1));
                     }
                   }}
-                  className="bg-base-300 hover:bg-base-100 text-base-content font-bold text-xl portrait:sm:text-2xl portrait:md:text-3xl sm:text-lg md:text-xl rounded-lg transition-colors "
-              >
-                ⌫
-              </button>
-              <button
-                onClick={() => handleNumberInput(0)}
-                  className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl sm:text-3xl md:text-4xl rounded-lg transition-colors "
-              >
-                0
-              </button>
-              <button
+                  className="bg-base-300 hover:bg-base-100 text-base-content font-bold text-xl portrait:sm:text-2xl portrait:md:text-3xl sm:text-lg md:text-xl rounded-lg transition-colors"
+                >
+                  ⌫
+                </button>
+                <button
+                  onClick={() => handleNumberInput(0)}
+                  className="bg-base-200 hover:bg-base-300 text-base-content font-bold text-3xl portrait:sm:text-4xl portrait:md:text-5xl sm:text-3xl md:text-4xl rounded-lg transition-colors"
+                >
+                  0
+                </button>
+                <button
                   onClick={() => {
                     if (editingThrow) {
                       handleSaveEdit();
@@ -1154,264 +1128,207 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                   className="bg-primary hover:bg-primary-dark text-primary-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl sm:text-lg md:text-xl rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingThrow ? 'SAVE' : 'SEND'}
-              </button>
+                </button>
+              </div>
             </div>
-          </div>
-          
+            
             {/* Quick Access Scores - Right */}
             <div className="w-1/5 sm:w-1/4 flex flex-col gap-1 sm:gap-2">
               {quickAccessScores.slice(6, 12).map((score) => (
-              <button
+                <button
                   key={score}
                   onClick={() => {
                     handleThrow(score);
                     setScoreInput('');
                   }}
-                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors "
+                  className="flex-1 bg-base-300 hover:bg-base-100 text-base-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl md:text-xl rounded-lg transition-colors"
                 >
                   {score}
-              </button>
+                </button>
               ))}
             </div>
           </div>
         </main>
-        </div>
+      </div>
 
       {/* Settings Modal */}
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <div className="flex w-full justify-between items-center mb-4">
-              <h3 className="text-lg font-bold ">Meccs beállítások</h3>
-              <button
-                  onClick={() => {
-                    if (window.confirm('Biztosan ki szeretnél lépni a meccsből? A jelenlegi állás nem kerül mentésre.')) {
-                      onBack();
-                    }
-                  }}
-                  className="btn btn-error btn-outline btn-sm"
+        <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Meccs beállítások</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Nyert legek száma</label>
+                <select 
+                  onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
+                  value={tempLegsToWin} 
+                  className="select select-bordered w-full"
                 >
-                  Kilépés a meccsből
-                </button>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Nyert legek száma</label>
-              <select name="" id="" onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} defaultValue={tempLegsToWin} className="select select-bordered w-full">
-                {Array.from({ length: 20 }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">Best of {tempLegsToWin * 2 - 1}</p>
-            </div>
-
-            {/* Starting Player - only if no throws have been made */}
-            {player1.allThrows.length === 0 && player2.allThrows.length === 0 && player1.score === initialScore && player2.score === initialScore && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Kezdő játékos</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setTempStartingPlayer(1)}
-                    className={`btn flex-1 ${tempStartingPlayer === 1 ? 'btn-primary' : 'btn-outline'}`}
-                  >
-                    {player1.name}
-                  </button>
-                  <button
-                    onClick={() => setTempStartingPlayer(2)}
-                    className={`btn flex-1 ${tempStartingPlayer === 2 ? 'btn-primary' : 'btn-outline'}`}
-                  >
-                    {player2.name}
-                  </button>
-                </div>
+                  {Array.from({ length: 20 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">Best of {tempLegsToWin * 2 - 1}</p>
               </div>
-            )}
-
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-ghost  flex-1" 
-                onClick={() => setShowSettingsModal(false)}
-              >
-                Mégse
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
-                onClick={async () => {
-                  setIsSavingSettings(true);
-                  try {
-                    // Save starting player if changed and no throws made
-                    if (player1.allThrows.length === 0 && player2.allThrows.length === 0 && 
-                        player1.score === initialScore && player2.score === initialScore &&
-                        tempStartingPlayer !== currentPlayer) {
-                      setCurrentPlayer(tempStartingPlayer);
-                      setLegStartingPlayer(tempStartingPlayer);
-                      
-                      // Update match starting player via API
-                      try {
-                        await fetch(`/api/matches/${match._id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ startingPlayer: tempStartingPlayer })
-                        });
-                      } catch (error) {
-                        console.error('Error updating starting player:', error);
-                      }
-                    }
-                    
-                    // Save legs to win
-                    await handleSaveLegsToWin();
-                  } finally {
-                    setIsSavingSettings(false);
-                  }
-                }}
-                disabled={isSavingSettings}
-              >
-                {isSavingSettings ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Mentés"
+              
+              <div className="space-y-2 pt-2 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleSaveLegsToWin}
+                >
+                  Beállítások mentése
+                </Button>
+                
+                <Button 
+                  variant="default" 
+                  className="w-full" 
+                  onClick={handleRestartWithNewSettings}
+                >
+                  Újraindítás új beállításokkal
+                </Button>
+                
+                {onRematch && (
+                  <Button 
+                    variant="secondary" 
+                    className="w-full" 
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      onRematch();
+                    }}
+                  >
+                    Újraindítás (ugyanazokkal a beállításokkal)
+                  </Button>
                 )}
-              </button>
+                
+                <Button 
+                  variant="destructive" 
+                  className="w-full" 
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    onBack();
+                  }}
+                >
+                  Kilépés
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
-
-      {/* Leg Confirmation Dialog with Arrow Count */}
+      {/* Leg Confirmation Dialog */}
       {showLegConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-3">Leg vége?</h3>
-            <p className="mb-4">
-              {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et!
-            </p>
-            
-            {/* Arrow count selection */}
-            {(() => {
-              const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-              const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+        <Dialog open={showLegConfirmation} onOpenChange={() => {}}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Leg vége?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p>
+                {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et!
+              </p>
               
-              return (
-                <div className="mb-4">
-                  <p className="text-sm mb-2">
-                    Kiszálló: {lastThrow} - Hány nyílból?
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    {possibleArrowCounts.map((count) => (
-                      <button
-                        key={count}
-                        onClick={() => setArrowCount(count)}
-                        className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
-                      >
-                        {count} nyíl
-                      </button>
-                    ))}
-                  </div>
-                  {possibleArrowCounts.length === 1 && (
-                    <p className="text-xs text-gray-500 mt-1 text-center">
-                      Csak {possibleArrowCounts[0]} nyíl lehetséges
+              {(() => {
+                const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+                const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+                
+                return (
+                  <div>
+                    <p className="text-sm mb-2">
+                      Kiszálló: {lastThrow} - Hány nyílból?
                     </p>
-                  )}
-                </div>
-              );
-            })()}
-            
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-error flex-1" 
-                onClick={cancelLegEnd}
-                disabled={isSavingLeg}
-              >
-                Visszavonás
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
-                onClick={confirmLegEnd}
-                disabled={isSavingLeg}
-              >
-                {isSavingLeg ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Igen"
-                )}
-              </button>
+                    <div className="flex gap-2 justify-center">
+                      {possibleArrowCounts.map((count) => (
+                        <button
+                          key={count}
+                          onClick={() => setArrowCount(count)}
+                          className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                        >
+                          {count} nyíl
+                        </button>
+                      ))}
+                    </div>
+                    {possibleArrowCounts.length === 1 && (
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Csak {possibleArrowCounts[0]} nyíl lehetséges
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+              
+              <div className="flex gap-2">
+                <Button variant="destructive" className="flex-1" onClick={cancelLegEnd}>
+                  Visszavonás
+                </Button>
+                <Button className="flex-1" onClick={confirmLegEnd}>
+                  Igen
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Match Confirmation Dialog */}
       {showMatchConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-3">Meccs vége?</h3>
-            <p className="mb-4">
-              {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset!
-            </p>
-            
-            {/* Arrow count selection for final leg */}
-            {(() => {
-              const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-              const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+        <Dialog open={showMatchConfirmation} onOpenChange={() => {}}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Meccs vége?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p>
+                {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset!
+              </p>
               
-              return (
-                <div className="mb-4">
-                  <p className="text-sm mb-2">
-                    Utolsó kiszálló: {lastThrow} - Hány nyílból?
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    {possibleArrowCounts.map((count) => (
-                      <button
-                        key={count}
-                        onClick={() => setArrowCount(count)}
-                        className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
-                      >
-                        {count} nyíl
-                      </button>
-                    ))}
-                  </div>
-                  {possibleArrowCounts.length === 1 && (
-                    <p className="text-xs text-gray-500 mt-1 text-center">
-                      Csak {possibleArrowCounts[0]} nyíl lehetséges
+              {(() => {
+                const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+                const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
+                
+                return (
+                  <div>
+                    <p className="text-sm mb-2">
+                      Utolsó kiszálló: {lastThrow} - Hány nyílból?
                     </p>
-                  )}
-                </div>
-              );
-            })()}
-            
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-error flex-1" 
-                onClick={cancelMatchEnd}
-                disabled={isSavingMatch}
-              >
-                Visszavonás
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
-                onClick={confirmMatchEnd}
-                disabled={isSavingMatch}
-              >
-                {isSavingMatch ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Igen"
-                )}
-              </button>
+                    <div className="flex gap-2 justify-center">
+                      {possibleArrowCounts.map((count) => (
+                        <button
+                          key={count}
+                          onClick={() => setArrowCount(count)}
+                          className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                        >
+                          {count} nyíl
+                        </button>
+                      ))}
+                    </div>
+                    {possibleArrowCounts.length === 1 && (
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Csak {possibleArrowCounts[0]} nyíl lehetséges
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+              
+              <div className="flex gap-2">
+                <Button variant="destructive" className="flex-1" onClick={cancelMatchEnd}>
+                  Visszavonás
+                </Button>
+                <Button className="flex-1" onClick={confirmMatchEnd}>
+                  Igen
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
 };
 
-export default MatchGame; 
+export default LocalMatchGame;
+

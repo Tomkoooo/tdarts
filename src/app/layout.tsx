@@ -3,7 +3,7 @@ import "./globals.css";
 import { cookies, headers } from "next/headers";
 import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
-import NavbarNew from "@/components/homapage/NavbarNew";
+import { NavbarProvider } from "@/components/providers/NavbarProvider";
 import SessionProvider from "@/components/providers/SessionProvider";
 import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
@@ -96,12 +96,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Get pathname from headers for conditional rendering
+  // Get pathname from headers for initial body padding (server-side)
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || '';
   
   // Define paths where you don't want to render certain elements
-  const hideNavbarPaths = ['/board/', '/test']; // Add your specific paths
+  const hideNavbarPaths = ['/board', '/test'];
   const shouldHideNavbar = hideNavbarPaths.some(path => pathname.startsWith(path));
   
   const cookieStore = cookies();
@@ -230,8 +230,9 @@ export default async function RootLayout({
           <UserProvider initialUser={initialUser}>
             <AuthSync />
             <PWAProvider />
-            {!shouldHideNavbar && <NavbarNew />}
-            {children}
+            <NavbarProvider>
+              {children}
+            </NavbarProvider>
           </UserProvider>
         </SessionProvider>
       </body>

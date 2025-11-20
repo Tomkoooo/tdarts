@@ -93,8 +93,9 @@ const NavbarNew = () => {
           ? "bg-card/85 backdrop-blur-xl shadow-lg shadow-black/40"
           : "bg-transparent"
       )}
+      style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}
     >
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8" style={{ width: '100%', maxWidth: '100%' }}>
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href={isAdminPage ? "/admin" : "/"} className="flex items-center gap-2 flex-shrink-0 group">

@@ -16,7 +16,7 @@ export default function AdminAnnouncementsPage() {
           <div className="flex items-center gap-3 text-primary">
             <IconSpeakerphone className="size-10" />
             <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Announcement Kezelő</h1>
-          </div>
+        </div>
           <p className="max-w-xl text-sm text-muted-foreground">Rendszerüzenetek létrehozása és kezelése</p>
         </div>
       </Card>

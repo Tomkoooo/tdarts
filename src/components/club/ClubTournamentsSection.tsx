@@ -9,12 +9,14 @@ interface ClubTournamentsSectionProps {
   tournaments: any[]
   userRole: 'admin' | 'moderator' | 'member' | 'none'
   onCreateTournament: () => void
+  onDeleteTournament?: (tournamentId: string) => void
 }
 
 export function ClubTournamentsSection({
   tournaments,
   userRole,
   onCreateTournament,
+  onDeleteTournament,
 }: ClubTournamentsSectionProps) {
   return (
     <div className="space-y-6">
@@ -38,6 +40,7 @@ export function ClubTournamentsSection({
       <TournamentList
         tournaments={tournaments}
         userRole={userRole}
+        onDeleteTournament={onDeleteTournament}
       />
     </div>
   )

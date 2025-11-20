@@ -301,13 +301,13 @@ const TournamentPage = () => {
               }
               
               return (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:bg-primary data-[state=active]:hover:text-primary-foreground hover:bg-muted/20 hover:text-foreground"
-                >
-                  {tab.label}
-                </TabsTrigger>
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:bg-primary data-[state=active]:hover:text-primary-foreground hover:bg-muted/20 hover:text-foreground"
+              >
+                {tab.label}
+              </TabsTrigger>
               )
             })}
           </TabsList>

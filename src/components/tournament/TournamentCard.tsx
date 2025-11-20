@@ -79,8 +79,23 @@ export default function TournamentCard({
   const entryFee = tournament.tournamentSettings?.entryFee || 0
   const tournamentId = tournament.tournamentId || tournament._id
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on dropdown or its trigger
+    const target = e.target as HTMLElement
+    if (target.closest('[role="menu"]') || target.closest('[data-radix-popper-content-wrapper]')) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.preventDefault()
+    e.stopPropagation()
+    action()
+  }
+
   return (
-    <Link href={`/tournaments/${tournamentId}`} className="block h-full">
+    <Link href={`/tournaments/${tournamentId}`} className="block h-full" onClick={handleCardClick}>
       <Card className="h-full border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col transition-all hover:shadow-2xl hover:bg-card/70 hover:scale-[1.02] cursor-pointer">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-start justify-between gap-3">
@@ -98,7 +113,7 @@ export default function TournamentCard({
             </h3>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Badge
               variant="outline"
               className={cn('border px-2 py-1 text-xs font-medium', statusStyles[status])}
@@ -109,19 +124,27 @@ export default function TournamentCard({
             {showActions && (userRole === 'admin' || userRole === 'moderator') && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <IconDotsVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuContent align="end" className="w-40" onClick={(e) => e.stopPropagation()}>
                   {onEdit && (
-                    <DropdownMenuItem onClick={onEdit} className="gap-2">
+                    <DropdownMenuItem 
+                      onClick={(e) => handleActionClick(e, onEdit)} 
+                      className="gap-2"
+                    >
                       Szerkesztés
                     </DropdownMenuItem>
                   )}
                   {onDelete && (
                     <DropdownMenuItem
-                      onClick={onDelete}
+                      onClick={(e) => handleActionClick(e, onDelete)}
                       className="gap-2 text-destructive focus:text-destructive"
                     >
                       Törlés

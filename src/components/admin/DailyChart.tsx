@@ -154,10 +154,10 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
     return (
       <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
         <CardContent className="p-6">
-          <div className="text-center">
+        <div className="text-center">
             <Skeleton className="h-8 w-48 mx-auto mb-4" />
             <Skeleton className="h-64 w-full" />
-          </div>
+        </div>
         </CardContent>
       </Card>
     )
@@ -167,32 +167,32 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
     return (
       <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
         <CardContent className="p-6">
-          <div className="text-center">
+        <div className="text-center">
             <div className="text-destructive text-6xl mb-4">⚠️</div>
             <h3 className="text-lg font-semibold text-destructive mb-2">Hiba történt</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={fetchData} variant="outline" className="gap-2">
               <IconRefresh className="size-4" />
-              Újrapróbálás
+            Újrapróbálás
             </Button>
-          </div>
+        </div>
         </CardContent>
       </Card>
     )
   }
 
-  const chartData = data?.labels?.map((label, index) => ({
-    date: label,
-    count: data.datasets[0].data[index] || 0,
-    formattedDate: label
+    const chartData = data?.labels?.map((label, index) => ({
+      date: label,
+      count: data.datasets[0].data[index] || 0,
+      formattedDate: label
   })) || []
 
   return (
     <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {icon && <div className="text-2xl">{icon}</div>}
+        <div className="flex items-center gap-3">
+          {icon && <div className="text-2xl">{icon}</div>}
             <CardTitle>{title}</CardTitle>
           </div>
           <Button onClick={fetchData} variant="ghost" size="icon">
@@ -201,86 +201,86 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
         </div>
       </CardHeader>
       <CardContent>
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="text-center">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="text-center">
             <p className="text-sm text-muted-foreground">Összesen (30 nap)</p>
-            <p className="text-2xl font-bold text-primary">{totalCount}</p>
-          </div>
-          <div className="text-center">
+          <p className="text-2xl font-bold text-primary">{totalCount}</p>
+        </div>
+        <div className="text-center">
             <p className="text-sm text-muted-foreground">Átlagos/nap</p>
-            <p className="text-2xl font-bold text-info">{averageCount}</p>
-          </div>
-          <div className="text-center">
+          <p className="text-2xl font-bold text-info">{averageCount}</p>
+        </div>
+        <div className="text-center">
             <p className="text-sm text-muted-foreground">Trend</p>
-            <div className="flex items-center justify-center gap-1">
-              {trend > 0 ? (
+          <div className="flex items-center justify-center gap-1">
+            {trend > 0 ? (
                 <IconTrendingUp className="size-5 text-success" />
-              ) : trend < 0 ? (
+            ) : trend < 0 ? (
                 <IconTrendingDown className="size-5 text-destructive" />
-              ) : (
+            ) : (
                 <span className="text-muted-foreground/40">-</span>
-              )}
+            )}
               <span className={cn("font-bold", trend > 0 ? 'text-success' : trend < 0 ? 'text-destructive' : 'text-muted-foreground/40')}>
-                {Math.abs(trend)}%
-              </span>
-            </div>
+              {Math.abs(trend)}%
+            </span>
           </div>
         </div>
+      </div>
 
         {/* Chart */}
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-              <defs>
-                <linearGradient id={`color-${color}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColors.stroke} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={chartColors.stroke} stopOpacity={0.05}/>
-                </linearGradient>
-              </defs>
-              
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="rgba(156, 163, 175, 0.2)" 
-                vertical={false}
-              />
-              
-              <XAxis 
-                dataKey="formattedDate" 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
-                tickFormatter={(value, index) => index % 5 === 0 ? value : ''}
-              />
-              
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
-                tickFormatter={(value) => value}
-              />
-              
-              <Tooltip content={<CustomTooltip />} />
-              
-              <Area
-                type="monotone"
-                dataKey="count"
-                stroke={chartColors.stroke}
-                strokeWidth={2}
-                fill={`url(#color-${color})`}
-                dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: chartColors.stroke, strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+            <defs>
+              <linearGradient id={`color-${color}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.stroke} stopOpacity={0.3}/>
+                <stop offset="95%" stopColor={chartColors.stroke} stopOpacity={0.05}/>
+              </linearGradient>
+            </defs>
+            
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="rgba(156, 163, 175, 0.2)" 
+              vertical={false}
+            />
+            
+            <XAxis 
+              dataKey="formattedDate" 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
+              tickFormatter={(value, index) => index % 5 === 0 ? value : ''}
+            />
+            
+            <YAxis 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'rgba(156, 163, 175, 0.8)' }}
+              tickFormatter={(value) => value}
+            />
+            
+            <Tooltip content={<CustomTooltip />} />
+            
+            <Area
+              type="monotone"
+              dataKey="count"
+              stroke={chartColors.stroke}
+              strokeWidth={2}
+              fill={`url(#color-${color})`}
+              dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: chartColors.stroke, strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
 
-        {/* Legend */}
-        <div className="mt-4 text-center">
+      {/* Legend */}
+      <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Az előző 30 nap napi lebontású statisztikája
-          </p>
-        </div>
+          Az előző 30 nap napi lebontású statisztikája
+        </p>
+      </div>
       </CardContent>
     </Card>
   )

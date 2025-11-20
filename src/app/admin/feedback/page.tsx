@@ -19,15 +19,15 @@ export default function AdminFeedbackPage() {
             <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Hibabejelentések Kezelése</h1>
           </div>
           <p className="max-w-xl text-sm text-muted-foreground">Felhasználói visszajelzések és javaslatok kezelése</p>
-        </div>
+      </div>
       </Card>
-
-      <DailyChart
-        title="Visszajelzések napi beérkezése"
-        apiEndpoint="/api/admin/charts/feedback/daily"
-        color="warning"
+      
+      <DailyChart 
+        title="Visszajelzések napi beérkezése" 
+        apiEndpoint="/api/admin/charts/feedback/daily" 
+        color="warning" 
       />
-
+      
       <FeedbackManager />
     </div>
   )

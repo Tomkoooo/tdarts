@@ -18,7 +18,7 @@ export default function AdminTodosPage() {
             <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Todo Kezelés</h1>
           </div>
           <p className="max-w-xl text-sm text-muted-foreground">Feladatok és észrevételek követése</p>
-        </div>
+      </div>
       </Card>
 
       <TodoManager />

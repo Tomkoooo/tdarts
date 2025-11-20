@@ -217,6 +217,14 @@ export class MatchService {
             player2TotalDarts = player2TotalDarts - (3 - checkoutDarts);
         }
 
+        // Count 180s from this leg's throws (not from frontend stats to avoid duplication)
+        const player1LegOneEighties = legData.player1Throws.filter(score => score === 180).length;
+        const player2LegOneEighties = legData.player2Throws.filter(score => score === 180).length;
+        
+        // Accumulate 180 counts (only count from throws, not from frontend stats)
+        match.player1.oneEightiesCount = (match.player1.oneEightiesCount || 0) + player1LegOneEighties;
+        match.player2.oneEightiesCount = (match.player2.oneEightiesCount || 0) + player2LegOneEighties;
+
         // Update player statistics (Average = TotalScore / TotalDarts * 3)
         match.player1.highestCheckout = Math.max(match.player1.highestCheckout || 0, legData.player1Stats.highestCheckout);
         match.player1.average = player1TotalDarts > 0 ? 
@@ -379,6 +387,7 @@ export class MatchService {
         };
 
         // Recalculate match-wide statistics from ALL legs (history + current)
+        // IMPORTANT: Only count 180s from leg throws, NOT from frontend stats to avoid duplication
         let player1TotalScore = 0;
         let player1TotalDarts = 0;
         let player1OneEighties = 0;
@@ -389,7 +398,7 @@ export class MatchService {
         let player2OneEighties = 0;
         let player2HighestCheckout = 0;
 
-        // 1. Process existing legs from DB
+        // 1. Process existing legs from DB - count 180s from throws only
         if (match.legs && match.legs.length > 0) {
             for (const leg of match.legs) {
                 // P1 Stats from leg
@@ -397,6 +406,7 @@ export class MatchService {
                 if (leg.player1Throws) {
                     leg.player1Throws.forEach((t: any) => {
                         player1TotalDarts += (t.darts || 3);
+                        // Count 180s from throws only, not from any stored count
                         if (t.score === 180) player1OneEighties++;
                     });
                 }
@@ -409,6 +419,7 @@ export class MatchService {
                 if (leg.player2Throws) {
                     leg.player2Throws.forEach((t: any) => {
                         player2TotalDarts += (t.darts || 3);
+                        // Count 180s from throws only, not from any stored count
                         if (t.score === 180) player2OneEighties++;
                     });
                 }
@@ -430,23 +441,25 @@ export class MatchService {
         if (savedLegsCount < totalLegsDeclared && matchData.finalLegData) {
             const checkoutDarts = matchData.winnerArrowCount || 3;
             
-            // P1 Final Leg
+            // P1 Final Leg - count 180s from throws only, NOT from matchData.player1Stats.oneEightiesCount
             player1TotalScore += matchData.player1Stats.totalScore; // This is passed for the leg
             player1HighestCheckout = Math.max(player1HighestCheckout, matchData.player1Stats.highestCheckout);
             
             if (matchData.finalLegData.player1Throws) {
                 const p1Throws = matchData.finalLegData.player1Throws;
                 player1TotalDarts += calculateDartsForThrows(p1Throws, winner === 1, checkoutDarts);
+                // Count 180s from throws only, not from frontend stats
                 player1OneEighties += p1Throws.filter(s => s === 180).length;
             }
 
-            // P2 Final Leg
+            // P2 Final Leg - count 180s from throws only, NOT from matchData.player2Stats.oneEightiesCount
             player2TotalScore += matchData.player2Stats.totalScore;
             player2HighestCheckout = Math.max(player2HighestCheckout, matchData.player2Stats.highestCheckout);
 
             if (matchData.finalLegData.player2Throws) {
                 const p2Throws = matchData.finalLegData.player2Throws;
                 player2TotalDarts += calculateDartsForThrows(p2Throws, winner === 2, checkoutDarts);
+                // Count 180s from throws only, not from frontend stats
                 player2OneEighties += p2Throws.filter(s => s === 180).length;
             }
 

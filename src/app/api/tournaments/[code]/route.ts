@@ -77,3 +77,34 @@ export async function PUT(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  try {
+    const { code } = await params;
+    
+    // Get user from JWT token
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const user = await AuthService.verifyToken(token);
+    const requesterId = user._id.toString();
+    
+    const body = await request.json().catch(() => ({}));
+    const { emailData } = body;
+
+    // Delete tournament (authorization is checked in the service)
+    await TournamentService.deleteTournament(code, requesterId, emailData);
+    
+    return NextResponse.json({ success: true, message: "Tournament deleted successfully" });
+  } catch (error) {
+    if (error instanceof BadRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error('Error deleting tournament:', error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

@@ -522,7 +522,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                           <IconTargetArrow className="h-4 w-4 text-primary" />
                           <span className="text-sm font-semibold">Dobásonkénti átlagok</span>
                         </div>
-                      </div>
+                  </div>
                       <div className="h-64">
                         <Line
                           options={{
@@ -571,7 +571,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                         </div>
                       </div>
                     </div>
-                  </CardContent>
+                </CardContent>
                 )}
               </Card>
             )

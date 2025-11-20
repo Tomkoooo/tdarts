@@ -181,6 +181,21 @@
           },
           {
             "type": "subsection",
+            "title": "Torna törlése",
+            "content": [
+              "A klub adminok, moderátorok és super adminok törölhetnek még el nem indult (pending) tornákat.",
+              "A torna oldalán vagy a klub versenyei között a törlés gombra kattintva megnyílik a törlés megerősítő ablak.",
+              "Ha a tornán vannak már jelentkezők, akkor opcionálisan küldhetsz e-mail értesítést az összes regisztrált résztvevőnek.",
+              "Az e-mail értesítésben megadhatod a tárgyat és az üzenetet, amit minden résztvevő megkap (ha van érvényes e-mail címe).",
+              "A törlés után a torna soft delete módon törlődik, így a statisztikák megmaradnak, de a torna már nem jelenik meg a listában."
+            ],
+            "note": {
+              "type": "warning",
+              "content": "Csak pending (még el nem indult) tornákat lehet törölni. Aktív vagy befejezett tornákat nem lehet törölni."
+            }
+          },
+          {
+            "type": "subsection",
             "title": "Játékosok értesítése",
             "content": [
               "A moderátorok és adminok értesítést küldhetnek a regisztrált játékosoknak a &ldquo;Értesítés&rdquo; gomb segítségével.",
@@ -351,7 +366,24 @@
                       "Zoom kontrollok: Nagyítás/kicsinyítés a bracket jobb láthatóságához.",
                       "Vízszintes görgetés: Nagy bracketek esetén görgethetsz jobbra-balra.",
                       "Kompakt nézet: Optimalizált megjelenítés sok meccs esetén.",
-                      "Színkódok: Zöld = győztes, Sárga = bye meccs, Szürke = üres pár."
+                      "Színkódok: Zöld = győztes, Sárga = bye meccs, Szürke = üres pár.",
+                      "Teljes képernyős mód: TV-n vagy nagy kijelzőn való megjelenítéshez.",
+                      "Kompakt mód kapcsoló: Kisebb kártyákat és kevesebb információt jelenít meg a jobb áttekinthetőségért.",
+                      "Meccs gombok elrejtése: A kompakt módban elrejthetők a meccs szerkesztési gombok a helymegtakarítás érdekében."
+                    ],
+                    "subsections": [
+                      {
+                        "title": "Teljes képernyős mód",
+                        "content": [
+                          "A teljes képernyős mód ideális TV-n vagy nagy kijelzőn való megjelenítéshez.",
+                          "A teljes képernyős mód bekapcsolásával:",
+                          "• Csökkentett távolság a meccsek között (térhatékonyság)",
+                          "• Kompakt mód kapcsoló a kisebb kártyákhoz",
+                          "• Meccs gombok elrejtése/kijelzése opció",
+                          "• Bal oldali padding a TV felbontásokhoz",
+                          "• A &ldquo;Következő kör generálása&rdquo; gomb a header mellett jelenik meg"
+                        ]
+                      }
                     ]
                   },
                   {
@@ -398,9 +430,10 @@
             "type": "subsection",
             "title": "Telefonon keresztül",
             "content": [
-              "Olvasd be a tábla melletti QR-kódot, vagy a torna oldalán kattints a &ldquo;Táblák megnyitása&rdquo; gombra.",
-              "Add meg a torna jelszavát (csak az első belépésnél szükséges).",
-              "A jelszó automatikusan mentésre kerül a böngésződben, így következő alkalommal nem kell újra megadni."
+              "Olvasd be a tábla melletti QR-kódot, vagy a torna oldalán a &ldquo;Táblák&rdquo; fülön kattints a &ldquo;Megnyitás&rdquo; gombra a kívánt tábla mellett.",
+              "A &ldquo;Megnyitás&rdquo; gomb közvetlenül a tábla oldalára visz, ahol megadhatod a torna jelszavát (csak az első belépésnél szükséges).",
+              "A jelszó automatikusan mentésre kerül a böngésződben, így következő alkalommal nem kell újra megadni.",
+              "A tábla oldalán választhatod ki a meccset, amit rögzíteni szeretnél."
             ]
           },
           {
@@ -430,7 +463,12 @@
             "content": [
               "A meccs közben bármikor módosíthatod a nyert legek számát a beállítások gombbal (fogaskerék ikon) a bal felső sarokban.",
               "A nyert legek száma 1-20 között állítható be.",
-              "A módosítás azonnal érvénybe lép, és visszamenőleg is hatással lehet a meccsre."
+              "A módosítás azonnal érvénybe lép, és visszamenőleg is hatással lehet a meccsre.",
+              "A beállítások modal-ban további opciók is elérhetők:",
+              "• Beállítások mentése: Csak az új nyert legek számát menti el",
+              "• Újraindítás új beállításokkal: Újraindítja a meccset az új beállításokkal",
+              "• Újraindítás (ugyanazokkal a beállításokkal): Újraindítja a meccset a jelenlegi beállításokkal",
+              "• Kilépés: Kilép a meccsből és visszatér a tábla választó oldalra"
             ],
             "subsections": [
               {
@@ -663,6 +701,136 @@
     },
     {
       "id": 7,
+      "title": "Helyi meccs - Offline játék",
+      "icon": "IconPlayerPlay",
+      "description": "Helyi meccs indítása adatbázis kapcsolat nélkül",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Mi az a helyi meccs?",
+            "content": [
+              "A helyi meccs funkció lehetővé teszi, hogy offline, adatbázis kapcsolat nélkül játszhass darts meccset.",
+              "Ideális gyakorláshoz, baráti meccsekhez vagy olyan helyzetekhez, ahol nincs internetkapcsolat.",
+              "A meccs adatai a böngésző helyi tárolójában (localStorage) kerülnek mentésre.",
+              "A meccs statisztikái 5 napig elérhetők maradnak, vagy amíg manuálisan nem törlöd őket."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Helyi meccs indítása",
+            "content": [
+              "A helyi meccs indítása több helyen is elérhető:",
+              "• A fő &ldquo;Tábla&rdquo; oldalon (/board) - globális gomb",
+              "• A torna tábla oldalán (/board/[tournamentId]) - header gomb",
+              "• A tábla választó képernyőn - header gomb"
+            ],
+            "subsections": [
+              {
+                "title": "Beállítások",
+                "content": [
+                  "A helyi meccs indításakor megjelenik egy beállítási ablak:",
+                  "• Nyert legek száma: 1-20 között választható (Best of X formátum)",
+                  "• Kezdő pontszám: 170, 201, 301, 401, 501, 601, 701 közül választható",
+                  "A játékosok neve automatikusan &ldquo;1&rdquo; és &ldquo;2&rdquo; lesz.",
+                  "A játékos 1 mindig kezd minden legben."
+                ]
+              },
+              {
+                "title": "Meccs indítása",
+                "content": [
+                  "A beállítások megadása után kattints a &ldquo;Meccs indítása&rdquo; gombra.",
+                  "A meccs azonnal elindul, és hasonló a verseny meccsekhez, de nincs adatbázis kapcsolat.",
+                  "A meccs állapota automatikusan mentésre kerül, így ha bezárod a böngészőt, folytathatod később."
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Helyi meccs játékmenet",
+            "content": [
+              "A helyi meccs ugyanúgy működik, mint a verseny meccsek:",
+              "• Pontszám rögzítés számbillentyűzettel vagy gombokkal",
+              "• Chalkboard szerkesztés (visszavonás, módosítás)",
+              "• Leg befejezés megerősítés",
+              "• Meccs befejezés megerősítés",
+              "• Statisztikák számítása (átlag, 180-asok, legnagyobb kiszálló)"
+            ],
+            "subsections": [
+              {
+                "title": "Chalkboard szerkesztés",
+                "content": [
+                  "A chalkboard-on bármelyik dobást szerkesztheted:",
+                  "1. Kattints a módosítani kívánt dobás értékére",
+                  "2. Add meg az új értéket (0-180 között)",
+                  "3. Kattints a &ldquo;SAVE&rdquo; gombra vagy a ✓ gombra",
+                  "4. Ha a szerkesztés után a játékos pontszáma 0-ra csökken, automatikusan megjelenik a leg befejezés megerősítő ablak"
+                ]
+              },
+              {
+                "title": "Meccs beállítások módosítása",
+                "content": [
+                  "A meccs közben bármikor módosíthatod a beállításokat a fogaskerék ikonra kattintva:",
+                  "• Nyert legek száma módosítása",
+                  "• Újraindítás új beállításokkal",
+                  "• Újraindítás ugyanazokkal a beállításokkal (rematch)",
+                  "• Kilépés a meccsből"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Meccs befejezése és statisztikák",
+            "content": [
+              "A meccs befejezése után megjelennek a részletes statisztikák:",
+              "• Győztes játékos",
+              "• Leg nyert/vesztett",
+              "• Átlag",
+              "• 180-asok száma",
+              "• Legnagyobb kiszálló",
+              "A statisztikák 5 napig elérhetők maradnak, vagy amíg manuálisan nem törlöd őket."
+            ],
+            "subsections": [
+              {
+                "title": "Rematch",
+                "content": [
+                  "A meccs befejezése után a &ldquo;Rematch&rdquo; gombra kattintva azonnal elindíthatod egy új meccset ugyanazokkal a beállításokkal.",
+                  "A rematch automatikusan visszaállítja mindkét játékos pontszámát és statisztikáit."
+                ]
+              },
+              {
+                "title": "Statisztikák megtekintése",
+                "content": [
+                  "A befejezett meccs statisztikái középre igazítva jelennek meg.",
+                  "A statisztikák tartalmaznak minden fontos információt a meccsről.",
+                  "A &ldquo;Vissza&rdquo; gombbal kiléphetsz a statisztikák nézetből."
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Offline működés",
+            "content": [
+              "A helyi meccs funkció teljesen offline működik:",
+              "• Nincs szükség internetkapcsolatra",
+              "• Nincs adatbázis kapcsolat",
+              "• Minden adat a böngésző helyi tárolójában van",
+              "• PWA telepítés után offline is elérhető",
+              "A /board oldal és a helyi meccs funkciók offline is működnek, ha PWA-ként van telepítve."
+            ],
+            "note": {
+              "type": "info",
+              "content": "A helyi meccs adatai csak a böngészőben maradnak. Ha törlöd a böngésző adatait vagy másik eszközt használsz, a meccs adatai elvesznek."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
       "title": "PWA - Alkalmazás Telepítése",
       "icon": "IconDeviceMobile",
       "description": "Mobilalkalmazásként való használat",
@@ -719,7 +887,8 @@
               "Gyors hozzáférés: Egy koppintással nyithatod meg az alkalmazást a kezdőképernyőről.",
               "Verseny követés: Játékosként kövesd a verseny állását offline is.",
               "Moderátori feladatok: Gyors hozzáférés a verseny kezeléséhez.",
-              "Landscape mód: Tableten fekvő módban optimalizált megjelenítés az eredményrögzítéshez."
+              "Landscape mód: Tableten fekvő módban optimalizált megjelenítés az eredményrögzítéshez.",
+              "Helyi meccs offline: A /board oldal és a helyi meccs funkciók offline is működnek PWA telepítés után."
             ]
           },
           {
@@ -741,7 +910,7 @@
       }
     },
     {
-      "id": 8,
+      "id": 9,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",

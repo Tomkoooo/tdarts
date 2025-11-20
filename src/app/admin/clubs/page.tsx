@@ -148,7 +148,7 @@ export default function AdminClubsPage() {
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconBuilding className="size-7 text-destructive" />
-            </div>
+                  </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Törölt</h3>
             <p className="text-4xl font-bold text-destructive">{stats.deleted}</p>
           </CardContent>
@@ -157,20 +157,20 @@ export default function AdminClubsPage() {
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-info/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconUsers className="size-7 text-info" />
-            </div>
+                </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Tagok</h3>
             <p className="text-4xl font-bold text-info">{stats.totalMembers}</p>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconTrophy className="size-7 text-warning" />
-            </div>
+        </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Versenyek</h3>
             <p className="text-4xl font-bold text-warning">{stats.totalTournaments}</p>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       </div>
 
       {/* Daily Chart */}
@@ -196,7 +196,7 @@ export default function AdminClubsPage() {
       </Card>
 
       {/* Clubs Grid */}
-      {filteredClubs.length === 0 ? (
+        {filteredClubs.length === 0 ? (
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-12 text-center">
             <div className="size-20 backdrop-blur-md bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -207,12 +207,12 @@ export default function AdminClubsPage() {
               {searchTerm ? "Nincsenek klubok a megadott feltételekkel." : "Még nincsenek regisztrált klubok."}
             </p>
           </CardContent>
-        </Card>
-      ) : (
+          </Card>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClubs.map((club) => {
+            {filteredClubs.map((club) => {
             const subBadge = subscriptionMeta[club.subscriptionModel || "free"]
-            return (
+              return (
               <Card key={club._id} elevation="elevated" className="backdrop-blur-xl bg-card/30 hover:shadow-xl transition-all duration-300 group">
                 <CardHeader>
                   <div className="flex items-start justify-between mb-4">
@@ -227,10 +227,10 @@ export default function AdminClubsPage() {
                       <Badge variant="destructive" className="flex-shrink-0">Törölve</Badge>
                     )}
                   </div>
-                  {club.description && (
+                    {club.description && (
                     <CardDescription className="line-clamp-2 leading-relaxed">{club.description}</CardDescription>
-                  )}
-                </CardHeader>
+                    )}
+                  </CardHeader>
                 <CardContent>
                     <div className="flex items-center gap-4 mb-4">
                       <div className="flex items-center gap-2 text-sm">
@@ -251,13 +251,13 @@ export default function AdminClubsPage() {
                     <Badge className={cn("gap-1 backdrop-blur-md", subBadge.tone)}>
                       <subBadge.icon size={14} />
                       {subBadge.label}
-                    </Badge>
+                      </Badge>
                     <Link href={`/clubs/${club._id}`} target="_blank">
                       <Button variant="default" size="sm" className="gap-2">
                         <IconExternalLink size={16} />
                         Megnyitás
                       </Button>
-                    </Link>
+                      </Link>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -265,11 +265,11 @@ export default function AdminClubsPage() {
                     <span>{new Date(club.createdAt).toLocaleDateString("hu-HU")}</span>
                   </div>
                 </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
+                </Card>
+              )
+            })}
+          </div>
+        )}
     </div>
   )
 }

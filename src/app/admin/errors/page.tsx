@@ -191,11 +191,11 @@ export default function AdminErrorsPage() {
                 <CardContent className="p-6 text-center">
                   <div className="size-14 backdrop-blur-md bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <config.icon className="size-7 text-primary" />
-                  </div>
+              </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-2 capitalize">{level}</h3>
                   <p className="text-4xl font-bold text-primary">{count}</p>
-                </CardContent>
-              </Card>
+            </CardContent>
+          </Card>
             )
           })}
       </div>
@@ -297,8 +297,8 @@ export default function AdminErrorsPage() {
                 .sort(([, a], [, b]) => b - a)
                 .map(([category, count]) => {
                   const config = getCategoryConfig(category)
-                  return (
-                    <div
+                return (
+                  <div
                       key={category}
                       className={cn(
                         "flex items-center justify-between p-4 rounded-xl hover:scale-[1.02] transition-transform duration-200",
@@ -342,14 +342,14 @@ export default function AdminErrorsPage() {
                           <config.icon className="size-5" />
                         </div>
                         <span className="capitalize font-bold">{level}</span>
-                      </div>
-                      <span className="text-2xl font-bold">{count}</span>
                     </div>
-                  )
-                })}
+                      <span className="text-2xl font-bold">{count}</span>
+                  </div>
+                )
+              })}
             </div>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       </div>
 
       {/* Recent Errors */}

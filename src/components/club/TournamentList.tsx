@@ -56,7 +56,11 @@ export default function TournamentList({
           tournament={tournament}
           userRole={userRole}
           showActions={Boolean(onDeleteTournament || onEditTournament)}
-          onDelete={onDeleteTournament ? () => onDeleteTournament(tournament.tournamentId) : undefined}
+          onDelete={
+            onDeleteTournament && tournament.tournamentSettings?.status === 'pending'
+              ? () => onDeleteTournament(tournament.tournamentId)
+              : undefined
+          }
           onEdit={onEditTournament ? () => onEditTournament(tournament.tournamentId) : undefined}
         />
       ))}

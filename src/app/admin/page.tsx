@@ -394,7 +394,7 @@ export default function AdminDashboardPage() {
             <Button onClick={fetchDashboardData} disabled={isRefreshing} variant="outline" className="gap-2 min-w-[140px]">
               <IconRefresh className={cn("size-5", isRefreshing && "animate-spin")} />
               {isRefreshing ? "Frissítés…" : "Frissítés"}
-            </Button>
+          </Button>
           </div>
         </div>
       </Card>
@@ -454,7 +454,7 @@ export default function AdminDashboardPage() {
         <ModernChartCard title="Klub Létrehozások" data={clubChartData} color="info" type="area" />
         <ModernChartCard title="Verseny Indítások" data={tournamentChartData} color="success" type="bar" />
         <ModernChartCard title="Hibák Időbeli Alakulása" data={errorChartData} color="error" type="area" />
-      </div>
+              </div>
 
       {/* Quick Actions Section */}
       <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
@@ -463,8 +463,8 @@ export default function AdminDashboardPage() {
             <IconActivity className="size-7 text-primary" />
             Gyors Műveletek
           </CardTitle>
-        </CardHeader>
-        <CardContent>
+            </CardHeader>
+            <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <QuickActionCard
               title="Announcement Kezelő"
@@ -515,8 +515,8 @@ export default function AdminDashboardPage() {
               href="/admin/settings"
             />
           </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
     </div>
   )
 }

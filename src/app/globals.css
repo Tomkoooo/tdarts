@@ -82,6 +82,9 @@ html, body{
   background: #42010b;
   background: linear-gradient(131deg,rgba(66, 1, 11, 1) 0%, rgba(20, 0, 0, 1) 65%);
   background-repeat: no-repeat;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
   background-attachment: fixed;
   background-size: cover;
   color: #ffffff;
@@ -93,6 +96,9 @@ html, body{
     background: #42010b;
     background: linear-gradient(131deg,rgba(66, 1, 11, 1) 0%, rgba(20, 0, 0, 1) 65%);
     color: #ffffff;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 }
 
@@ -990,6 +996,9 @@ html, body{
 /* Smooth Scrolling */
 html {
   scroll-behavior: smooth;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Custom Scrollbar */

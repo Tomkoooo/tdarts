@@ -4581,6 +4581,229 @@ export class TournamentService {
     }
 
     /**
+     * Get tournament deletion info (players with emails count)
+     * Used to show email modal before deletion
+     */
+    static async getTournamentDeletionInfo(tournamentCode: string): Promise<{
+        hasPlayers: boolean;
+        playersWithEmailCount: number;
+    }> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode })
+                .populate('tournamentPlayers.playerReference');
+            
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            const hasPlayers = tournament.tournamentPlayers && tournament.tournamentPlayers.length > 0;
+            let playersWithEmailCount = 0;
+
+            if (hasPlayers && tournament.tournamentPlayers) {
+                for (const tp of tournament.tournamentPlayers) {
+                    const playerRef: any = tp.playerReference;
+                    if (playerRef && playerRef.userRef) {
+                        // Player has a user account - check if user has email
+                        const { UserModel } = await import('../models/user.model');
+                        const user = await UserModel.findById(playerRef.userRef).select('email');
+                        if (user && user.email) {
+                            playersWithEmailCount++;
+                        }
+                    }
+                }
+            }
+
+            return {
+                hasPlayers: hasPlayers || false,
+                playersWithEmailCount
+            };
+        } catch (error) {
+            console.error('Get tournament deletion info error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a tournament (only if not started - status must be 'pending')
+     * Admin/Moderator/Super Admin only
+     * If tournament has registered players, emails can be sent to notify them
+     */
+    static async deleteTournament(tournamentCode: string, requesterId: string, emailData?: {
+        subject: string;
+        message: string;
+    }): Promise<boolean> {
+        try {
+            await connectMongo();
+            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode })
+                .populate('tournamentPlayers.playerReference')
+                .populate('clubId');
+            
+            if (!tournament) {
+                throw new BadRequestError('Tournament not found');
+            }
+
+            // Check authorization
+            const clubId = tournament.clubId._id?.toString() || tournament.clubId.toString();
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
+            if (!isAuthorized) {
+                throw new BadRequestError('Only club admins or moderators can delete tournaments');
+            }
+
+            // Check if tournament has not started (only pending tournaments can be deleted)
+            if (tournament.tournamentSettings?.status !== 'pending') {
+                throw new BadRequestError('Only pending tournaments can be deleted');
+            }
+
+            // Get all registered players with email addresses
+            const playersWithEmails: Array<{ email: string; name: string }> = [];
+            
+            if (tournament.tournamentPlayers && tournament.tournamentPlayers.length > 0) {
+                for (const tp of tournament.tournamentPlayers) {
+                    const playerRef: any = tp.playerReference;
+                    if (playerRef && playerRef.userRef) {
+                        // Player has a user account - get email from user
+                        const { UserModel } = await import('../models/user.model');
+                        const user = await UserModel.findById(playerRef.userRef).select('email name username');
+                        if (user && user.email) {
+                            playersWithEmails.push({
+                                email: user.email,
+                                name: user.name || user.username || playerRef.name || 'Játékos'
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Send emails if email data is provided and there are players with emails
+            if (emailData && playersWithEmails.length > 0) {
+                const { sendEmail } = await import('@/lib/mailer');
+                const tournamentName = tournament.tournamentSettings?.name || 'Torna';
+                
+                const emailContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .content {
+            font-size: 16px;
+            color: #4b5563;
+            margin-bottom: 30px;
+        }
+        .highlight {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #9ca3af;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎯 tDarts</div>
+            <div class="title">Torna törölve</div>
+        </div>
+        
+        <div class="content">
+            <p>Kedves Játékos!</p>
+            
+            <p>Sajnálattal értesítünk, hogy a <strong>${tournamentName}</strong> torna törölve lett.</p>
+            
+            <div class="highlight">
+                <strong>${emailData.subject}</strong>
+                <p style="margin: 10px 0 0 0; white-space: pre-line;">${emailData.message}</p>
+            </div>
+            
+            <p>Ha bármilyen kérdése van, kérjük, lépjen kapcsolatba a szervezőkkel.</p>
+            
+            <p>Üdvözlettel,<br>A tDarts csapat</p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 tDarts. Minden jog fenntartva.</p>
+        </div>
+    </div>
+</body>
+</html>
+                `;
+
+                // Send email to all players with email addresses
+                const emailPromises = playersWithEmails.map(player => 
+                    sendEmail({
+                        to: [player.email],
+                        subject: `[${tournamentName}] ${emailData.subject}`,
+                        text: emailData.message,
+                        html: emailContent,
+                    }).catch(err => {
+                        console.error(`Failed to send email to ${player.email}:`, err);
+                        return false;
+                    })
+                );
+
+                await Promise.all(emailPromises);
+                console.log(`Sent deletion notification emails to ${playersWithEmails.length} players`);
+            }
+
+            // Soft delete the tournament
+            tournament.isDeleted = true;
+            tournament.isActive = false;
+            await tournament.save();
+
+            console.log(`Tournament ${tournamentCode} deleted by ${requesterId}`);
+            return true;
+        } catch (error) {
+            console.error('Delete tournament error:', error);
+            if (error instanceof BadRequestError) {
+                throw error;
+            }
+            throw new BadRequestError('Failed to delete tournament: ' + (error as Error).message);
+        }
+    }
+
+    /**
      * Reopen a finished tournament (Super Admin only)
      * This will:
      * - Change tournament status from 'finished' back to 'active' or 'group-stage' or 'knockout'

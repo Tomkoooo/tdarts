@@ -81,19 +81,19 @@ export function LeagueHistorySection({
                           <span className="text-muted-foreground mb-1">Pontszám</span>
                           <span className="font-semibold text-foreground">
                             {league.totalPoints}
-                          </span>
+                        </span>
                         </div>
                         <div className="flex flex-col">
                           <span className="text-muted-foreground mb-1">Versenyek</span>
                           <span className="font-semibold text-foreground">
                             {league.tournamentsPlayed}
-                          </span>
+                        </span>
                         </div>
                         <div className="flex flex-col">
                           <span className="text-muted-foreground mb-1">Pozíció</span>
                           <span className="font-semibold text-warning">
                             #{league.position}
-                          </span>
+                        </span>
                         </div>
                       </div>
                     </div>

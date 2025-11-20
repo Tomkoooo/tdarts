@@ -235,7 +235,7 @@ export default function AdminUsersPage() {
               <Label className="font-semibold">Keresés</Label>
               <div className="relative">
                 <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-                <Input
+            <Input
                   type="text"
                   placeholder="Keresés név, email vagy felhasználónév alapján..."
                   className="pl-10"
@@ -283,10 +283,10 @@ export default function AdminUsersPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="backdrop-blur-md bg-muted/20">
-                  <tr>
+                <tr>
                     <th className="px-4 py-4 text-left font-semibold text-sm">Felhasználó</th>
                     <th className="px-4 py-4 text-left font-semibold text-sm">Email</th>
                     <th className="px-4 py-4 text-left font-semibold text-sm">Felhasználónév</th>
@@ -334,7 +334,7 @@ export default function AdminUsersPage() {
                             <Badge variant="outline" className="gap-1 backdrop-blur-md bg-destructive/20 text-destructive">
                               <IconUser size={14} />
                               Nem regisztrált
-                            </Badge>
+                        </Badge>
                           )}
                         </div>
                       </td>
@@ -378,9 +378,9 @@ export default function AdminUsersPage() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+              </tbody>
+            </table>
+          </div>
           )}
         </CardContent>
       </Card>

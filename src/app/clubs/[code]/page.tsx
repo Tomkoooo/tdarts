@@ -16,6 +16,7 @@ import ClubSettingsSection from "@/components/club/ClubSettingsSection"
 import CreateTournamentModal from "@/components/club/CreateTournamentModal"
 import EditClubModal from "@/components/club/EditClubModal"
 import ClubShareModal from "@/components/club/ClubShareModal"
+import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 
 export default function ClubDetailPage() {
   const { user } = useUserContext()
@@ -30,6 +31,19 @@ export default function ClubDetailPage() {
   const [isCreateTournamentModalOpen, setIsCreateTournamentModalOpen] = React.useState(false)
   const [isEditClubModalOpen, setIsEditClubModalOpen] = React.useState(false)
   const [clubShareModal, setClubShareModal] = React.useState(false)
+  const [deleteTournamentModal, setDeleteTournamentModal] = React.useState<{
+    isOpen: boolean
+    tournamentId: string | null
+    tournamentName: string
+    hasPlayers: boolean
+    playersWithEmailCount: number
+  }>({
+    isOpen: false,
+    tournamentId: null,
+    tournamentName: '',
+    hasPlayers: false,
+    playersWithEmailCount: 0,
+  })
 
   // Helper to fetch club data
   const fetchClub = async () => {
@@ -142,6 +156,70 @@ export default function ClubDetailPage() {
     }
   }
 
+  const handleDeleteTournament = async (tournamentId: string) => {
+    if (!club || !user?._id) return
+    
+    // Find tournament to get details
+    const tournament = club.tournaments?.find((t: any) => t.tournamentId === tournamentId)
+    if (!tournament) return
+
+    // Check if tournament is pending
+    if (tournament.tournamentSettings?.status !== 'pending') {
+      showErrorToast('Csak el nem indult tornák törölhetők', {
+        error: 'Csak el nem indult tornák törölhetők',
+        context: "Torna törlése",
+        errorName: "Törlés sikertelen",
+      })
+      return
+    }
+
+    // Get tournament deletion info (players with emails count)
+    try {
+      const deletionInfo = await axios.get(`/api/tournaments/${tournamentId}/deletion-info`)
+      
+      setDeleteTournamentModal({
+        isOpen: true,
+        tournamentId,
+        tournamentName: tournament.tournamentSettings?.name || 'Torna',
+        hasPlayers: deletionInfo.data.hasPlayers,
+        playersWithEmailCount: deletionInfo.data.playersWithEmailCount,
+      })
+    } catch (err: any) {
+      showErrorToast(err.response?.data?.error || 'Torna információk betöltése sikertelen', {
+        error: err?.response?.data?.error,
+        context: "Torna törlése",
+        errorName: "Torna információk betöltése sikertelen",
+      })
+    }
+  }
+
+  const handleConfirmDeleteTournament = async (emailData?: { subject: string; message: string }) => {
+    if (!deleteTournamentModal.tournamentId || !user?._id) return
+
+    const toastId = toast.loading('Torna törlése...')
+    try {
+      await axios.delete(`/api/tournaments/${deleteTournamentModal.tournamentId}`, {
+        data: { emailData }
+      })
+      await fetchClub()
+      toast.success('Torna sikeresen törölve!', { id: toastId })
+      setDeleteTournamentModal({
+        isOpen: false,
+        tournamentId: null,
+        tournamentName: '',
+        hasPlayers: false,
+        playersWithEmailCount: 0,
+      })
+    } catch (err: any) {
+      toast.dismiss(toastId)
+      showErrorToast(err.response?.data?.error || 'Torna törlése sikertelen', {
+        error: err?.response?.data?.error,
+        context: "Torna törlése",
+        errorName: "Törlés sikertelen",
+      })
+    }
+  }
+
   // Get default page and league ID from URL
   const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' => {
     const page = searchParams.get('page')
@@ -191,6 +269,7 @@ export default function ClubDetailPage() {
             tournaments={club.tournaments || []}
             userRole={userRole}
             onCreateTournament={() => setIsCreateTournamentModalOpen(true)}
+            onDeleteTournament={handleDeleteTournament}
           />
         }
         leagues={
@@ -239,6 +318,20 @@ export default function ClubDetailPage() {
         onClose={() => setClubShareModal(false)}
         clubCode={code}
         clubName={club.name}
+      />
+      <DeleteTournamentModal
+        isOpen={deleteTournamentModal.isOpen}
+        onClose={() => setDeleteTournamentModal({
+          isOpen: false,
+          tournamentId: null,
+          tournamentName: '',
+          hasPlayers: false,
+          playersWithEmailCount: 0,
+        })}
+        onConfirm={handleConfirmDeleteTournament}
+        tournamentName={deleteTournamentModal.tournamentName}
+        hasPlayers={deleteTournamentModal.hasPlayers}
+        playersWithEmailCount={deleteTournamentModal.playersWithEmailCount}
       />
     </>
   )

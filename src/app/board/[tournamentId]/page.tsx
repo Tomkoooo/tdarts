@@ -2,6 +2,7 @@
 import React, { useState, useEffect, use } from "react";
 import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
+import LocalMatchGame from "@/components/board/LocalMatchGame";
 import Link from "next/link";
 import '../board.css'
 import { useUserContext } from "@/hooks/useUser";
@@ -103,6 +104,15 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [player1Legs, setPlayer1Legs] = useState<number | ''>(0);
   const [player2Legs, setPlayer2Legs] = useState<number | ''>(0);
   const [adminLoading, setAdminLoading] = useState<boolean>(false);
+
+  // Local match state
+  const [showLocalMatchSetup, setShowLocalMatchSetup] = useState<boolean>(false);
+  const [localMatchLegsToWin, setLocalMatchLegsToWin] = useState<number>(3);
+  const [localMatchStartingScore, setLocalMatchStartingScore] = useState<number>(501);
+  const [localMatchActive, setLocalMatchActive] = useState<boolean>(false);
+  const [localMatchId, setLocalMatchId] = useState<string>("");
+  
+  const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
 
   // Check URL parameters for QR code authentication
   useEffect(() => {
@@ -396,6 +406,33 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   const isAdminOrModerator = userRole?.clubRole === 'admin' || userRole?.clubRole === 'moderator';
 
+  const handleStartLocalMatch = () => {
+    const matchId = `local_${Date.now()}`;
+    setLocalMatchId(matchId);
+    setLocalMatchActive(true);
+    setShowLocalMatchSetup(false);
+  };
+
+  const handleRematch = () => {
+    const matchId = `local_${Date.now()}`;
+    setLocalMatchId(matchId);
+    setLocalMatchActive(true);
+  };
+
+  // If local match is active, show LocalMatchGame
+  if (localMatchActive) {
+    return (
+      <LocalMatchGame
+        key={localMatchId}
+        legsToWin={localMatchLegsToWin}
+        startingScore={localMatchStartingScore}
+        onBack={() => setLocalMatchActive(false)}
+        onRematch={handleRematch}
+        matchId={localMatchId}
+      />
+    );
+  }
+
 
   // Password authentication screen
   if (!isAuthenticated) {
@@ -481,23 +518,32 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         <div className="container mx-auto max-w-6xl py-8">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <IconDeviceDesktop className="text-primary" size={24} />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight">Válassz Táblát</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Válassz Táblát</h1>
                 <p className="text-muted-foreground mt-1">Válaszd ki a táblát, amin játszani szeretnél</p>
               </div>
             </div>
-            <div className="flex gap-2 justify-center">
-              <Button variant="ghost" size="sm" asChild>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
+              <Button variant="ghost" size="sm" asChild className="w-full sm:w-auto">
                 <Link href="/board">
                   <IconArrowLeft size={18} />
                   Vissza
                 </Link>
               </Button>
-              <Button size="sm" asChild>
+              <Button size="sm" asChild className="w-full sm:w-auto">
                 <Link href={`/tournaments/${tournamentId}`}>Torna oldal</Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowLocalMatchSetup(true)}
+                className="w-full sm:w-auto gap-2"
+              >
+                <IconPlayerPlay size={18} />
+                Helyi meccs indítása
               </Button>
             </div>
           </div>
@@ -550,6 +596,68 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               })}
             </div>
           )}
+
+          {/* Local Match Setup Dialog */}
+          <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Helyi meccs beállítása</DialogTitle>
+                <DialogDescription>
+                  Állítsd be a helyi meccs beállításait
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="local-legsToWin-board" className="text-sm font-medium mb-2 block">
+                    Nyert legek száma
+                  </Label>
+                  <select 
+                    id="local-legsToWin-board"
+                    onChange={(e) => setLocalMatchLegsToWin(parseInt(e.target.value))} 
+                    value={localMatchLegsToWin} 
+                    className="select select-bordered w-full h-12"
+                  >
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">Best of {localMatchLegsToWin * 2 - 1}</p>
+                </div>
+                <div>
+                  <Label htmlFor="local-startingScore-board" className="text-sm font-medium mb-2 block">
+                    Kezdő pontszám
+                  </Label>
+                  <select 
+                    id="local-startingScore-board"
+                    onChange={(e) => setLocalMatchStartingScore(parseInt(e.target.value))} 
+                    value={localMatchStartingScore} 
+                    className="select select-bordered w-full h-12"
+                  >
+                    {startingScoreOptions.map((score) => (
+                      <option key={score} value={score}>{score}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">Ebből a pontszámból indulnak minden legben</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Játékosok: <span className="font-semibold">1</span> és <span className="font-semibold">2</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    A játékos 1 mindig kezd.
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowLocalMatchSetup(false)}>
+                    Mégse
+                  </Button>
+                  <Button className="flex-1" onClick={handleStartLocalMatch}>
+                    Meccs indítása
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     );
@@ -560,25 +668,40 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 p-4">
         <div className="container mx-auto max-w-6xl py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-            <Button variant="outline" size="sm" onClick={handleBackToBoards} className="gap-2">
-              <IconArrowLeft size={18} />
-              Vissza a táblákhoz
-            </Button>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">
-                {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
-              </h1>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefetchMatches}
-                disabled={loading}
-                className="gap-2"
-              >
-                <IconRefresh size={18} />
-                Frissítés
+          <div className="flex flex-col gap-4 mb-6">
+            {/* Top row: Back button and title */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <Button variant="outline" size="sm" onClick={handleBackToBoards} className="gap-2 w-full sm:w-auto">
+                <IconArrowLeft size={18} />
+                Vissza a táblákhoz
               </Button>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+                <h1 className="text-xl sm:text-2xl font-bold">
+                  {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefetchMatches}
+                    disabled={loading}
+                    className="gap-2"
+                  >
+                    <IconRefresh size={18} />
+                    <span className="hidden sm:inline">Frissítés</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLocalMatchSetup(true)}
+                    className="gap-2"
+                  >
+                    <IconPlayerPlay size={18} />
+                    <span className="hidden sm:inline">Helyi meccs</span>
+                    <span className="sm:hidden">Helyi</span>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -668,6 +791,68 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             </div>
           )}
           
+          {/* Local Match Setup Dialog */}
+          <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Helyi meccs beállítása</DialogTitle>
+                <DialogDescription>
+                  Állítsd be a helyi meccs beállításait
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="local-legsToWin" className="text-sm font-medium mb-2 block">
+                    Nyert legek száma
+                  </Label>
+                  <select 
+                    id="local-legsToWin"
+                    onChange={(e) => setLocalMatchLegsToWin(parseInt(e.target.value))} 
+                    value={localMatchLegsToWin} 
+                    className="select select-bordered w-full h-12"
+                  >
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">Best of {localMatchLegsToWin * 2 - 1}</p>
+                </div>
+                <div>
+                  <Label htmlFor="local-startingScore" className="text-sm font-medium mb-2 block">
+                    Kezdő pontszám
+                  </Label>
+                  <select 
+                    id="local-startingScore"
+                    onChange={(e) => setLocalMatchStartingScore(parseInt(e.target.value))} 
+                    value={localMatchStartingScore} 
+                    className="select select-bordered w-full h-12"
+                  >
+                    {startingScoreOptions.map((score) => (
+                      <option key={score} value={score}>{score}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">Ebből a pontszámból indulnak minden legben</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Játékosok: <span className="font-semibold">1</span> és <span className="font-semibold">2</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    A játékos 1 mindig kezd.
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowLocalMatchSetup(false)}>
+                    Mégse
+                  </Button>
+                  <Button className="flex-1" onClick={handleStartLocalMatch}>
+                    Meccs indítása
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Admin Modal */}
           {showAdminModal && adminMatch && (
             <Dialog open={showAdminModal} onOpenChange={(open) => {

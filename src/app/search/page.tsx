@@ -175,22 +175,22 @@ export default function SearchPage() {
       setIsLoadingInitial(true)
       try {
         // No params - load all data for initial view
-        const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
-          axios.get('/api/search/recent-tournaments?limit=50'),
-          axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
-          axios.get('/api/search/popular-clubs?limit=50')
-        ])
+          const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
+            axios.get('/api/search/recent-tournaments?limit=50'),
+            axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
+            axios.get('/api/search/popular-clubs?limit=50')
+          ])
 
-        if (tournamentsRes.data.success) {
-          const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
-          setRecentTournaments(futureTournaments)
-        }
-        if (playersRes.data.success) {
-          setTopPlayers(playersRes.data.players)
-          setTopPlayersTotal(playersRes.data.total)
-        }
-        if (clubsRes.data.success) {
-          setPopularClubs(clubsRes.data.clubs)
+          if (tournamentsRes.data.success) {
+            const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
+            setRecentTournaments(futureTournaments)
+          }
+          if (playersRes.data.success) {
+            setTopPlayers(playersRes.data.players)
+            setTopPlayersTotal(playersRes.data.total)
+          }
+          if (clubsRes.data.success) {
+            setPopularClubs(clubsRes.data.clubs)
         }
       } catch (error) {
         console.error('Failed to load initial data:', error)

@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react"
 import axios from "axios"
-import {
-  IconTrophy,
-  IconUsers,
-  IconCalendar,
-  IconExternalLink,
-  IconSearch,
-  IconRefresh,
-  IconFilter,
+import { 
+  IconTrophy, 
+  IconUsers, 
+  IconCalendar, 
+  IconExternalLink, 
+  IconSearch, 
+  IconRefresh, 
+  IconFilter, 
   IconBuilding,
   IconClock,
   IconTarget,
@@ -70,11 +70,11 @@ export default function AdminTournamentsPage() {
   const filteredTournaments = tournaments.filter((tournament) => {
     const matchesSearch =
       tournament.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (tournament.description && tournament.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (tournament.description && tournament.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       tournament.clubId.name.toLowerCase().includes(searchTerm.toLowerCase())
-
+    
     const matchesStatus = statusFilter === "all" || tournament.status === statusFilter
-
+    
     return matchesSearch && matchesStatus
   })
 
@@ -129,10 +129,10 @@ export default function AdminTournamentsPage() {
             <div className="flex items-center gap-3 text-warning">
               <IconTrophy className="size-10" />
               <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Verseny Kezelés</h1>
-            </div>
+        </div>
             <p className="max-w-xl text-sm text-muted-foreground">Versenyek áttekintése és kezelése</p>
           </div>
-
+          
           <Button onClick={fetchTournaments} disabled={loading} variant="outline" className="gap-2">
             <IconRefresh className={cn("size-5", loading && "animate-spin")} />
             Frissítés
@@ -146,43 +146,43 @@ export default function AdminTournamentsPage() {
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconTrophy className="size-7 text-primary" />
-            </div>
+          </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Összes</h3>
-            <p className="text-4xl font-bold text-primary">{stats.total}</p>
+          <p className="text-4xl font-bold text-primary">{stats.total}</p>
           </CardContent>
         </Card>
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-info/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconClock className="size-7 text-info" />
-            </div>
+        </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Aktív</h3>
-            <p className="text-4xl font-bold text-info">{stats.active}</p>
+          <p className="text-4xl font-bold text-info">{stats.active}</p>
           </CardContent>
         </Card>
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconTrophy className="size-7 text-success" />
-            </div>
+        </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Befejezett</h3>
-            <p className="text-4xl font-bold text-success">{stats.finished}</p>
+          <p className="text-4xl font-bold text-success">{stats.finished}</p>
           </CardContent>
         </Card>
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconClock className="size-7 text-warning" />
-            </div>
+        </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Függőben</h3>
-            <p className="text-4xl font-bold text-warning">{stats.pending}</p>
+          <p className="text-4xl font-bold text-warning">{stats.pending}</p>
           </CardContent>
         </Card>
         <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconUsers className="size-7 text-destructive" />
-            </div>
+        </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Játékosok</h3>
             <p className="text-4xl font-bold text-destructive">{stats.totalPlayers}</p>
           </CardContent>
@@ -201,18 +201,18 @@ export default function AdminTournamentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="font-semibold">Keresés</Label>
-              <div className="relative">
+            <div className="relative">
                 <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
                 <Input
-                  type="text"
-                  placeholder="Keresés név, leírás vagy klub alapján..."
+                type="text"
+                placeholder="Keresés név, leírás vagy klub alapján..."
                   className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               </div>
             </div>
             <div className="space-y-2">
@@ -241,13 +241,13 @@ export default function AdminTournamentsPage() {
           <CardContent className="p-12 text-center">
             <div className="size-20 backdrop-blur-md bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconTrophy className="size-10 text-muted-foreground/30" />
-            </div>
+          </div>
             <h3 className="text-xl font-bold text-foreground mb-2">Nincsenek versenyek</h3>
             <p className="text-muted-foreground">
               {searchTerm || statusFilter !== "all"
                 ? "Nincsenek versenyek a megadott feltételekkel."
                 : "Még nincsenek versenyek."}
-            </p>
+          </p>
           </CardContent>
         </Card>
       ) : (
@@ -258,53 +258,53 @@ export default function AdminTournamentsPage() {
             return (
               <Card key={tournament._id} elevation="elevated" className="backdrop-blur-xl bg-card/30 hover:shadow-xl transition-all duration-300">
                 <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-3 mb-3">
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3 mb-3">
                         <div className="size-12 backdrop-blur-md bg-warning/20 rounded-lg flex items-center justify-center flex-shrink-0">
                           <IconTrophy className="size-6 text-warning" />
-                        </div>
-                        <div className="flex-1 min-w-0">
+                      </div>
+                      <div className="flex-1 min-w-0">
                           <h3 className="text-xl font-bold text-foreground mb-2 break-words">{tournament.name}</h3>
-                          <div className="flex flex-wrap gap-2 mb-2">
+                        <div className="flex flex-wrap gap-2 mb-2">
                             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
                             <Badge variant="outline" className="gap-1">
-                              <typeConfig.icon size={14} />
-                              {typeConfig.label}
+                            <typeConfig.icon size={14} />
+                            {typeConfig.label}
                             </Badge>
-                            {tournament.isDeleted && (
+                          {tournament.isDeleted && (
                               <Badge variant="destructive">Törölve</Badge>
-                            )}
-                          </div>
-                          {tournament.description && (
-                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{tournament.description}</p>
                           )}
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <IconBuilding size={16} className="text-primary" />
-                          <span className="truncate">{tournament.clubId.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <IconUsers size={16} className="text-info" />
-                          <span>{tournament.playerCount} játékos</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <IconCalendar size={16} className="text-warning" />
-                          <span>{new Date(tournament.startDate).toLocaleDateString("hu-HU")}</span>
-                        </div>
+                        {tournament.description && (
+                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{tournament.description}</p>
+                        )}
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                        <IconBuilding size={16} className="text-primary" />
+                        <span className="truncate">{tournament.clubId.name}</span>
+                      </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                        <IconUsers size={16} className="text-info" />
+                        <span>{tournament.playerCount} játékos</span>
+                      </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                        <IconCalendar size={16} className="text-warning" />
+                          <span>{new Date(tournament.startDate).toLocaleDateString("hu-HU")}</span>
+                      </div>
+                    </div>
+                  </div>
+
                     <Link href={`/tournaments/${tournament.tournamentId}`} target="_blank">
                       <Button variant="default" className="gap-2 flex-shrink-0">
-                        <IconExternalLink size={18} />
-                        Megnyitás
+                    <IconExternalLink size={18} />
+                    Megnyitás
                       </Button>
-                    </Link>
-                  </div>
+                  </Link>
+                </div>
                 </CardContent>
               </Card>
             )
