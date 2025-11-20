@@ -3594,7 +3594,7 @@ export class TournamentService {
             }
 
             // Calculate group stage averages
-            for (const [playerId, stats] of groupStageStats) {
+            for (const [, stats] of groupStageStats) {
                 if (stats.tournamentMatches > 0) {
                     stats.average = stats.tournamentTotal / stats.tournamentMatches;
                 } else {

@@ -18,7 +18,6 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconChartLine,
-  IconInfoCircle,
   IconTarget,
   IconTargetArrow,
   IconTrendingDown,
@@ -28,7 +27,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
-import { cn } from "@/lib/utils"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 

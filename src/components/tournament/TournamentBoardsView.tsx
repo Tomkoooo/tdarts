@@ -52,7 +52,7 @@ const statusMap: Record<
 
 const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
 
-export function TournamentBoardsView({ tournament, userClubRole }: TournamentBoardsViewProps) {
+export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) {
   const boards = tournament?.boards || []
   const tournamentId = tournament?.tournamentId
   const tournamentPassword = tournament?.tournamentSettings?.password

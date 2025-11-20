@@ -2,8 +2,6 @@
 
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { motion } from "framer-motion"
-import { fadeInScale } from "@/lib/motion"
 
 import { cn } from "@/lib/utils"
 

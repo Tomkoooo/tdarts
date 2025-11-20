@@ -21,7 +21,7 @@ import {
 } from "@tabler/icons-react"
 import toast from "react-hot-toast"
 import DailyChart from "@/components/admin/DailyChart"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"

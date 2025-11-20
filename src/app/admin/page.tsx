@@ -21,7 +21,7 @@ import {
 } from "@tabler/icons-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -338,13 +338,11 @@ export default function AdminDashboardPage() {
     description,
     icon: Icon,
     href,
-    color = "primary",
   }: {
     title: string
     description: string
     icon: any
     href: string
-    color?: "primary" | "success" | "warning" | "error" | "info"
   }) => {
     return (
       <Link href={href} className="group">
@@ -473,56 +471,48 @@ export default function AdminDashboardPage() {
               description="Rendszerüzenetek kezelése"
               icon={IconSpeakerphone}
               href="/admin/announcements"
-              color="primary"
             />
             <QuickActionCard
               title="Todo Kezelő"
               description="Feladatok és észrevételek"
               icon={IconCheck}
               href="/admin/todos"
-              color="info"
             />
             <QuickActionCard
               title="Hibabejelentések"
               description="Felhasználói visszajelzések"
               icon={IconBug}
               href="/admin/feedback"
-              color="warning"
             />
             <QuickActionCard
               title="Felhasználók"
               description="Felhasználók kezelése"
               icon={IconUsers}
               href="/admin/users"
-              color="success"
             />
             <QuickActionCard
               title="Klubok"
               description="Klubok áttekintése"
               icon={IconBuilding}
               href="/admin/clubs"
-              color="info"
             />
             <QuickActionCard
               title="Versenyek"
               description="Versenyek kezelése"
               icon={IconTrophy}
               href="/admin/tournaments"
-              color="success"
             />
             <QuickActionCard
               title="Hibák"
               description="Rendszerhibák áttekintése"
               icon={IconAlertTriangle}
               href="/admin/errors"
-              color="error"
             />
             <QuickActionCard
               title="Beállítások"
               description="Rendszer konfiguráció"
               icon={IconServer}
               href="/admin/settings"
-              color="primary"
             />
           </div>
         </CardContent>

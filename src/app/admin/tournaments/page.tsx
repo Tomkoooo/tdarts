@@ -17,7 +17,7 @@ import {
 import Link from "next/link"
 import toast from "react-hot-toast"
 import DailyChart from "@/components/admin/DailyChart"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Badge } from "@/components/ui/Badge"
