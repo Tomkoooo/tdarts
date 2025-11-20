@@ -3,10 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/Button"
+import { IconDeviceDesktop } from "@tabler/icons-react"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 interface TournamentBoardsViewProps {
   tournament: any
+  userClubRole?: 'admin' | 'moderator' | 'member' | 'none'
 }
 
 const statusMap: Record<
@@ -48,8 +52,10 @@ const statusMap: Record<
 
 const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
 
-export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) {
+export function TournamentBoardsView({ tournament, userClubRole }: TournamentBoardsViewProps) {
   const boards = tournament?.boards || []
+  const tournamentId = tournament?.tournamentId
+  const tournamentPassword = tournament?.tournamentSettings?.password
 
   if (boards.length === 0) {
     return (
@@ -152,6 +158,26 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
                   <p>{board.matchesInQueue ?? 0}</p>
                 </div>
               </div>
+
+              {tournamentId && board.boardNumber && (
+                <div className="mt-3 pt-3 border-t border-border/40">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    asChild
+                  >
+                    <Link
+                      href={`/board/${tournamentId}?board=${board.boardNumber}${tournamentPassword ? `&password=${encodeURIComponent(tournamentPassword)}` : ''}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <IconDeviceDesktop className="h-4 w-4" />
+                      Tábla megnyitása
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )

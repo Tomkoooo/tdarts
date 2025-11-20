@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Show loading while checking admin status
   if (adminLoading || isAdmin === null || !user) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="loading loading-spinner loading-lg"></div>
           <p className="mt-4 text-base-content/60">Admin jogosultság ellenőrzése...</p>
@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-base-100">
+    <div className="min-h-screen">
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 pt-24">
         {children}

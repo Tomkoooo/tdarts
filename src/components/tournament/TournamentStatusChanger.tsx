@@ -428,9 +428,6 @@ export default function TournamentStatusChanger({
           </div>
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button variant="ghost" onClick={() => setIsGroupsDialogOpen(false)}>
-              Mégse
-            </Button>
             {groupsMode === "automatic" ? (
               <Button onClick={handleAutomaticGroups} disabled={!isGroupGenerationAllowed || action === "generate-groups"}>
                 {action === "generate-groups" ? (
@@ -604,9 +601,6 @@ export default function TournamentStatusChanger({
           )}
 
           <DialogFooter className="flex-shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button variant="ghost" onClick={() => setIsManualGroupsDialogOpen(false)}>
-              Mégse
-            </Button>
             <Button
               onClick={handleCreateManualGroups}
               disabled={
@@ -699,9 +693,6 @@ export default function TournamentStatusChanger({
           </div>
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button variant="ghost" onClick={() => setIsKnockoutDialogOpen(false)}>
-              Mégse
-            </Button>
             <Button onClick={handleGenerateKnockout} disabled={action === "generate-knockout" || (!isAutomaticKnockoutAllowed && knockoutMode === "automatic")}
             >
               {action === "generate-knockout" ? (
@@ -727,9 +718,6 @@ export default function TournamentStatusChanger({
           </DialogHeader>
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button variant="ghost" onClick={() => setIsCancelKnockoutDialogOpen(false)}>
-              Mégse
-            </Button>
             <Button variant="destructive" onClick={handleCancelKnockout} disabled={action === "cancel-knockout"}>
               {action === "cancel-knockout" ? (
                 <span className="flex items-center gap-2">

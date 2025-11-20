@@ -177,9 +177,6 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
           </div>
 
           <DialogFooter className="flex-shrink-0 flex flex-col items-stretch gap-3 px-6 py-4 sm:flex-row sm:justify-end shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-              Mégse
-            </Button>
             <Button type="submit" disabled={isLoading} className="gap-2">
               <IconSend className="h-4 w-4" />
               Értesítés küldése

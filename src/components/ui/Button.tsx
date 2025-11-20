@@ -29,10 +29,7 @@ const buttonVariants = cva(
         ],
         // Glass Outline - Border with glass fill
         outline: [
-          " backdrop-blur-xl",
-          "border border-primary/30",
-          "text-white",
-          " hover:border-primary/50",
+         "btn-outline"
         ],
         // Glass Secondary - Muted glass
         secondary: [

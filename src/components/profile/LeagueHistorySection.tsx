@@ -56,52 +56,54 @@ export function LeagueHistorySection({
               href={`/clubs/${league.clubId}?page=leagues&league=${league.leagueId}`}
               className="block"
             >
-              <Card className="transition-all hover:shadow-lg hover:-translate-y-0.5 border-primary/20 bg-card/50 backdrop-blur-sm">
+              <Card className="bg-card hover:bg-muted/50 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <IconTrophy className="w-4 h-4 text-warning flex-shrink-0" />
-                        <span className="font-semibold text-sm truncate">
+                        <span className="font-semibold text-sm text-foreground truncate">
                           {league.leagueName}
                         </span>
-                        <Badge variant="default" className="text-xs">
+                        <Badge variant="secondary" className="text-xs">
                           {league.clubName}
                         </Badge>
                       </div>
 
                       {league.description && (
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
                           {league.description}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                        <span>
-                          Pontszám:{' '}
-                          <strong className="text-primary">
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground mb-1">Pontszám</span>
+                          <span className="font-semibold text-foreground">
                             {league.totalPoints}
-                          </strong>
-                        </span>
-                        <span>
-                          Versenyek:{' '}
-                          <strong>{league.tournamentsPlayed}</strong>
-                        </span>
-                        <span>
-                          Pozíció:{' '}
-                          <strong className="text-warning">
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground mb-1">Versenyek</span>
+                          <span className="font-semibold text-foreground">
+                            {league.tournamentsPlayed}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground mb-1">Pozíció</span>
+                          <span className="font-semibold text-warning">
                             #{league.position}
-                          </strong>
-                        </span>
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-right text-xs text-muted-foreground flex-shrink-0">
-                      <div>
+                    <div className="text-right text-xs text-muted-foreground flex-shrink-0 ml-4">
+                      <div className="mb-1">
                         {new Date(league.joinedAt).toLocaleDateString('hu-HU')}
                       </div>
                       {league.lastActivity && (
-                        <div className="text-muted-foreground/60">
+                        <div className="text-muted-foreground/70">
                           Utolsó: {new Date(league.lastActivity).toLocaleDateString('hu-HU')}
                         </div>
                       )}

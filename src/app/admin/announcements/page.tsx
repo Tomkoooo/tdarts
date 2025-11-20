@@ -1,30 +1,28 @@
-"use client";
-import AnnouncementManager from '@/components/admin/AnnouncementManager';
-import { IconSpeakerphone } from '@tabler/icons-react';
+"use client"
+
+import AnnouncementManager from "@/components/admin/AnnouncementManager"
+import { IconSpeakerphone } from "@tabler/icons-react"
+import { Card } from "@/components/ui/Card"
 
 export default function AdminAnnouncementsPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border  p-8">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
-            backgroundSize: '32px 32px'
-          }}></div>
+      <Card
+        elevation="elevated"
+        className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
+      >
+        <div className="relative z-10 space-y-3">
+          <div className="flex items-center gap-3 text-primary">
+            <IconSpeakerphone className="size-10" />
+            <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Announcement Kezelő</h1>
+          </div>
+          <p className="max-w-xl text-sm text-muted-foreground">Rendszerüzenetek létrehozása és kezelése</p>
         </div>
-        
-        <div className="relative z-10 space-y-2">
-          <h1 className="text-4xl lg:text-5xl font-bold text-base-content flex items-center gap-3">
-            <IconSpeakerphone className="w-10 h-10 text-primary" />
-            Announcement Kezelő
-          </h1>
-          <p className="text-base-content/70 text-lg">Rendszerüzenetek létrehozása és kezelése</p>
-        </div>
-      </div>
+      </Card>
 
       {/* Announcement Manager Component */}
       <AnnouncementManager />
     </div>
-  );
+  )
 }

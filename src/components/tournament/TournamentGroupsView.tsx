@@ -5,6 +5,8 @@ import LegsViewModal from './LegsViewModal';
 import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { showErrorToast } from '@/lib/toastUtils';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Player {
   playerId: {
@@ -64,7 +66,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     totalScore: 0
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set());
   const [matchFilter, setMatchFilter] = useState<'all' | 'pending' | 'ongoing' | 'finished'>('all');
@@ -111,7 +112,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       totalScore: 0
     });
     setShowAdminModal(true);
-    setError('');
   };
 
   const handleViewLegs = (match: Match) => {
@@ -158,12 +158,11 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
     // Validate no tie
     if (player1Legs === player2Legs) {
-      setError('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.');
+      toast.error('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.');
       return;
     }
 
     setLoading(true);
-    setError('');
 
     try {
       const response = await fetch(`/api/matches/${selectedMatch._id}/finish`, {
@@ -178,15 +177,21 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       });
 
       if (!response.ok) {
-        throw new Error('Hiba történt a mentés során');
+        const data = await response.json();
+        throw new Error(data?.error || 'Hiba történt a mentés során');
       }
 
       setShowAdminModal(false);
       setSelectedMatch(null);
+      toast.success('Meccs sikeresen frissítve!');
       // Optionally trigger a refetch of tournament data
       window.location.reload();
-    } catch (err) {
-      setError('Hiba történt a mentés során!');
+    } catch (err: any) {
+      showErrorToast(err?.message || 'Hiba történt a mentés során!', {
+        error: err?.message,
+        context: 'Meccs mentése',
+        errorName: 'Mentés sikertelen',
+      });
       console.error('Save match error:', err);
     } finally {
       setLoading(false);
@@ -502,28 +507,21 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       </div>
 
       {/* Admin Modal */}
-      {showAdminModal && selectedMatch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-center mb-6">Meccs Szerkesztése</h3>
-            
-            <div className="text-center mb-6">
-              <h4 className="text-lg font-bold mb-2">
-                {selectedMatch.player1?.playerId?.name} vs {selectedMatch.player2?.playerId?.name}
-              </h4>
-              <p className="text-base-content/70">Állítsd be a meccs eredményét és statisztikáit</p>
-            </div>
-            
-            {error && (
-              <div className="alert alert-error mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <Dialog open={showAdminModal} onOpenChange={setShowAdminModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Meccs Szerkesztése</DialogTitle>
+            <DialogDescription>
+              {selectedMatch && (
+                <>
+                  {selectedMatch.player1?.playerId?.name} vs {selectedMatch.player2?.playerId?.name}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedMatch && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Player 1 Stats */}
               <div className="space-y-4">
                 <h5 className="font-bold text-lg text-primary">{selectedMatch.player1?.playerId?.name}</h5>
@@ -624,36 +622,27 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 </div>
               </div>
             </div>
-            
-            <div className="flex gap-3">
-              <button
-                className="btn btn-error flex-1"
-                onClick={() => {
-                  setShowAdminModal(false);
-                  setSelectedMatch(null);
-                  setError('');
-                }}
-              >
-                Mégse
-              </button>
-              <button
-                className="btn btn-success flex-1"
-                onClick={handleSaveMatch}
-                disabled={loading || player1Legs === player2Legs}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Mentés"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          <DialogFooter>
+            <button
+              type="button"
+              className="btn btn-success"
+              onClick={handleSaveMatch}
+              disabled={loading || player1Legs === player2Legs}
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Mentés...
+                </>
+              ) : (
+                "Mentés"
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Legs View Modal */}
       <LegsViewModal

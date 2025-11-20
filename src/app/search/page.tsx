@@ -57,14 +57,34 @@ export default function SearchPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
+  // Helper to get initial filters based on URL params
+  const getInitialFilters = (): SearchFilters => {
+    const type = (searchParams.get('type') as any) || 'all'
+    const filters: SearchFilters = {
+      type,
+      page: 1,
+      limit: 12
+    }
+    
+    // If navigating to tournaments from navbar (type=tournaments without other params), show all tournaments from today
+    if (type === 'tournaments' && !searchParams.get('q') && !searchParams.get('status') && !searchParams.get('dateFrom')) {
+      const today = new Date().toISOString().split('T')[0]
+      const endDate = new Date("2225-12-31").toISOString().split('T')[0]
+      filters.dateFrom = today
+      filters.dateTo = endDate
+    } else {
+      // Use URL params if they exist
+      if (searchParams.get('status')) filters.status = searchParams.get('status') || undefined
+      if (searchParams.get('dateFrom')) filters.dateFrom = searchParams.get('dateFrom') || undefined
+      if (searchParams.get('dateTo')) filters.dateTo = searchParams.get('dateTo') || undefined
+    }
+    
+    return filters
+  }
+
   // State
   const [query, setQuery] = React.useState(searchParams.get('q') || '')
-  const [filters, setFilters] = React.useState<SearchFilters>({
-    type: (searchParams.get('type') as any) || 'all',
-    status: 'pending', // Default status for tournaments
-    page: 1,
-    limit: 12
-  })
+  const [filters, setFilters] = React.useState<SearchFilters>(getInitialFilters())
   const [results, setResults] = React.useState<SearchResult>({ totalResults: 0 })
   const [loading, setLoading] = React.useState(false)
   const [suggestions, setSuggestions] = React.useState<string[]>([])
@@ -110,11 +130,14 @@ export default function SearchPage() {
     
     switch (action) {
       case 'all-tournaments':
-        setFilters({ type: 'tournaments', page: 1 })
+        const todayAll = new Date().toISOString().split('T')[0]
+        const endDateAll = new Date("2225-12-31").toISOString().split('T')[0]
+        setFilters({ type: 'tournaments', dateFrom: todayAll, dateTo: endDateAll, page: 1 })
         break
       case 'todays-tournaments':
-        const today = new Date().toISOString().split('T')[0]
-        setFilters({ type: 'tournaments', dateFrom: today, dateTo: today, page: 1 })
+        const todayTodays = new Date().toISOString().split('T')[0]
+        const endDateTodays = new Date("2225-12-31").toISOString().split('T')[0]
+        setFilters({ type: 'tournaments', dateFrom: todayTodays, dateTo: endDateTodays, page: 1 })
         break
       case 'active-tournaments':
         setFilters({ type: 'tournaments', status: 'active', page: 1 })
@@ -128,54 +151,46 @@ export default function SearchPage() {
     }
   }
 
-  // Load initial data
+  // Load initial data (only for initial view when no filters/query)
   React.useEffect(() => {
     const loadInitialData = async () => {
+      // Only load initial view data if there are no active filters or query
+      const hasActiveFilters = 
+        filters.type !== 'all' ||
+        filters.status || 
+        filters.format || 
+        filters.dateFrom || 
+        filters.dateTo || 
+        filters.minPlayers || 
+        filters.maxPlayers || 
+        filters.location || 
+        filters.tournamentType ||
+        query.trim()
+
+      if (hasActiveFilters) {
+        setIsLoadingInitial(false)
+        return
+      }
+
       setIsLoadingInitial(true)
       try {
-        // Check if any search params are present
-        const hasParams = [
-          'q', 'type', 'status', 'format', 'dateFrom', 'dateTo', 'minPlayers', 'maxPlayers', 'location', 'tournamentType'
-        ].some((key) => !!searchParams.get(key))
+        // No params - load all data for initial view
+        const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
+          axios.get('/api/search/recent-tournaments?limit=50'),
+          axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
+          axios.get('/api/search/popular-clubs?limit=50')
+        ])
 
-        if (!hasParams) {
-          // No params - load all data
-          const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
-            axios.get('/api/search/recent-tournaments?limit=50'),
-            axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
-            axios.get('/api/search/popular-clubs?limit=50')
-          ])
-
-          if (tournamentsRes.data.success) {
-            const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
-            setRecentTournaments(futureTournaments)
-          }
-          if (playersRes.data.success) {
-            setTopPlayers(playersRes.data.players)
-            setTopPlayersTotal(playersRes.data.total)
-          }
-          if (clubsRes.data.success) {
-            setPopularClubs(clubsRes.data.clubs)
-          }
-        } else {
-          // If any param set, fetch filtered data from /api/search
-          const response = await axios.get('/api/search', {
-            params: {
-              q: searchParams.get('q'),
-              type: searchParams.get('type'),
-              status: searchParams.get('status'),
-              format: searchParams.get('format'),
-              dateFrom: searchParams.get('dateFrom'),
-              dateTo: searchParams.get('dateTo'),
-              minPlayers: searchParams.get('minPlayers'),
-              maxPlayers: searchParams.get('maxPlayers'),
-              location: searchParams.get('location'),
-              tournamentType: searchParams.get('tournamentType'),
-            }
-          })
-          if (response.data.success) {
-            setResults(response.data.results)
-          }
+        if (tournamentsRes.data.success) {
+          const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
+          setRecentTournaments(futureTournaments)
+        }
+        if (playersRes.data.success) {
+          setTopPlayers(playersRes.data.players)
+          setTopPlayersTotal(playersRes.data.total)
+        }
+        if (clubsRes.data.success) {
+          setPopularClubs(clubsRes.data.clubs)
         }
       } catch (error) {
         console.error('Failed to load initial data:', error)
@@ -185,7 +200,7 @@ export default function SearchPage() {
     }
 
     loadInitialData()
-  }, [playersPage, searchParams])
+  }, [playersPage, filters.type, filters.status, filters.dateFrom, filters.dateTo, query])
 
   // Debounced search
   const debouncedSearch = React.useCallback(

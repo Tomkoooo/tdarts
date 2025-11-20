@@ -133,9 +133,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const fullscreenContainerRef = useRef<HTMLDivElement>(null)
   const [knockoutData, setKnockoutData] = useState<KnockoutRound[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
   const [showGenerateNextRound, setShowGenerateNextRound] = useState(false)
-  const [generatingNextRound, setGeneratingNextRound] = useState(false)
   const [showMatchEditModal, setShowMatchEditModal] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState<KnockoutMatch | null>(null)
   const [showAddMatchModal, setShowAddMatchModal] = useState(false)
@@ -144,7 +142,6 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [selectedPlayer2, setSelectedPlayer2] = useState<string>("")
   const [selectedScorer, setSelectedScorer] = useState<string>("")
   const [selectedBoard, setSelectedBoard] = useState<string>("")
-  const [addingMatch, setAddingMatch] = useState(false)
   const [editForm, setEditForm] = useState({
     player1LegsWon: 0,
     player2LegsWon: 0,
@@ -156,10 +153,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [currentKnockoutMethod, setCurrentKnockoutMethod] = useState<"automatic" | "manual" | undefined>(knockoutMethod)
   const [showGenerateEmptyRoundsModal, setShowGenerateEmptyRoundsModal] = useState(false)
   const [roundsToGenerate, setRoundsToGenerate] = useState(2)
-  const [generatingEmptyRounds, setGeneratingEmptyRounds] = useState(false)
   const [showRandomPairingModal, setShowRandomPairingModal] = useState(false)
   const [selectedPlayersForPairing, setSelectedPlayersForPairing] = useState<string[]>([])
-  const [generatingPairings, setGeneratingPairings] = useState(false)
   const [playerSearchTerm, setPlayerSearchTerm] = useState("")
   const [player1SearchTerm, setPlayer1SearchTerm] = useState("")
   const [player2SearchTerm, setPlayer2SearchTerm] = useState("")
@@ -169,7 +164,6 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [showScorerDropdown, setShowScorerDropdown] = useState(false)
   const [showMatchPlayerEditModal, setShowMatchPlayerEditModal] = useState(false)
   const [editingMatch, setEditingMatch] = useState<KnockoutMatch | null>(null)
-  const [updatingMatchPlayer, setUpdatingMatchPlayer] = useState(false)
   const [editPairPlayer1, setEditPairPlayer1] = useState<string>("")
   const [editPairPlayer2, setEditPairPlayer2] = useState<string>("")
   const [editPairScorer, setEditPairScorer] = useState<string>("")
@@ -184,14 +178,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<KnockoutMatch | null>(null)
   const [showMatchSettingsModal, setShowMatchSettingsModal] = useState(false)
   const [editingMatchSettings, setEditingMatchSettings] = useState<KnockoutMatch | null>(null)
-  const [editSettingsLoading, setEditSettingsLoading] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
   const [showDeleteMatchModal, setShowDeleteMatchModal] = useState(false)
   const [matchToDelete, setMatchToDelete] = useState<{ match: KnockoutMatch; round: number; index: number } | null>(null)
-  const [deletingMatch, setDeletingMatch] = useState(false)
   const [showDeleteLastRoundModal, setShowDeleteLastRoundModal] = useState(false)
-  const [deletingLastRound, setDeletingLastRound] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showActionsInFullscreen, setShowActionsInFullscreen] = useState(true)
   const [tournamentStatus, setTournamentStatus] = useState<string | null>(null)
 
   useEffect(() => {
@@ -335,7 +327,6 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const fetchKnockoutData = async () => {
     setLoading(true)
-    setError("")
     try {
       const response = await axios.get(`/api/tournaments/${tournamentCode}/knockout`)
       if (response.data?.success) {
@@ -352,11 +343,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           setTournamentStatus(statusFromKnockout as string)
         }
       } else {
-        setError(response.data?.error || "Nem sikerült betölteni a knockout adatokat.")
+        showErrorToast(response.data?.error || "Nem sikerült betölteni a knockout adatokat.", {
+          context: "Knockout adatok betöltése",
+          errorName: "Betöltés sikertelen",
+        })
       }
     } catch (err: any) {
       console.error("Error fetching knockout data", err)
-      setError(err.response?.data?.error || "Nem sikerült betölteni a knockout adatokat.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült betölteni a knockout adatokat.", {
+        error: err?.response?.data?.error,
+        context: "Knockout adatok betöltése",
+        errorName: "Betöltés sikertelen",
+      })
     } finally {
       setLoading(false)
     }
@@ -368,27 +366,38 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     if (rounds.length === 0) return
 
     const currentRound = rounds[rounds.length - 1].round
-    setGeneratingNextRound(true)
-    setError("")
+    setLoading(true)
 
     try {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/generateNextRound`, { currentRound })
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowGenerateNextRound(false)
+        toast.success("Következő kör sikeresen generálva!")
       } else {
-        setError(response.data?.error || "Nem sikerült generálni a következő kört.")
+        showErrorToast(response.data?.error || "Nem sikerült generálni a következő kört.", {
+          error: response.data?.error,
+          context: "Következő kör generálása",
+          errorName: "Generálás sikertelen",
+        })
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Nem sikerült generálni a következő kört.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült generálni a következő kört.", {
+        error: err?.response?.data?.error,
+        context: "Következő kör generálása",
+        errorName: "Generálás sikertelen",
+      })
     } finally {
-      setGeneratingNextRound(false)
+      setLoading(false)
     }
   }
 
   const handleMatchEdit = (match: KnockoutMatch) => {
     if (!match.matchReference || !match.player1 || !match.player2) {
-      setError("Bye meccseket nem lehet szerkeszteni - automatikusan befejeződnek.")
+      showErrorToast("Bye meccseket nem lehet szerkeszteni - automatikusan befejeződnek.", {
+        context: "Meccs szerkesztése",
+        errorName: "Szerkesztés sikertelen",
+      })
       return
     }
 
@@ -414,10 +423,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleSaveMatch = async () => {
     if (!selectedMatch || !selectedMatch.matchReference) {
-      setError("Nem lehet menteni a meccset.")
+      showErrorToast("Nem lehet menteni a meccset.", {
+        context: "Meccs mentése",
+        errorName: "Mentés sikertelen",
+      })
       return
     }
 
+    setLoading(true)
     try {
       // Convert empty strings to 0
       const cleanedForm = {
@@ -444,27 +457,37 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         await fetchKnockoutData()
         setShowMatchEditModal(false)
         setSelectedMatch(null)
+        toast.success("Meccs sikeresen frissítve!")
       } else {
-        setError(response.data?.error || "Nem sikerült frissíteni a meccset.")
+        showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
+          error: response.data?.error,
+          context: "Meccs frissítése",
+          errorName: "Frissítés sikertelen",
+        })
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Nem sikerült frissíteni a meccset.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült frissíteni a meccset.", {
+        error: err?.response?.data?.error,
+        context: "Meccs frissítése",
+        errorName: "Frissítés sikertelen",
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleAddMatch = async () => {
     if (selectedPlayer1 && selectedPlayer2 && selectedPlayer1 === selectedPlayer2) {
-      setError("Kérjük válassz ki két különböző játékost.")
+      toast.error("Kérjük válassz ki két különböző játékost.")
       return
     }
 
     if ((selectedPlayer1 || selectedPlayer2) && !selectedBoard) {
-      setError("Kérjük válassz ki egy táblát ha játékosokat adsz hozzá.")
+      toast.error("Kérjük válassz ki egy táblát ha játékosokat adsz hozzá.")
       return
     }
 
-    setAddingMatch(true)
-    setError("")
+    setLoading(true)
 
     try {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/addManualMatch`, {
@@ -488,19 +511,27 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowPlayer1Dropdown(false)
         setShowPlayer2Dropdown(false)
         setShowScorerDropdown(false)
+        toast.success("Meccs sikeresen hozzáadva!")
       } else {
-        setError(response.data?.error || "Nem sikerült hozzáadni a meccset.")
+        showErrorToast(response.data?.error || "Nem sikerült hozzáadni a meccset.", {
+          error: response.data?.error,
+          context: "Meccs hozzáadása",
+          errorName: "Hozzáadás sikertelen",
+        })
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Nem sikerült hozzáadni a meccset.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült hozzáadni a meccset.", {
+        error: err?.response?.data?.error,
+        context: "Meccs hozzáadása",
+        errorName: "Hozzáadás sikertelen",
+      })
     } finally {
-      setAddingMatch(false)
+      setLoading(false)
     }
   }
 
   const handleGenerateEmptyRounds = async () => {
-    setGeneratingEmptyRounds(true)
-    setError("")
+    setLoading(true)
     try {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/generateEmptyRounds`, {
         roundsCount: roundsToGenerate,
@@ -508,24 +539,32 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowGenerateEmptyRoundsModal(false)
+        toast.success("Üres körök sikeresen generálva!")
       } else {
-        setError(response.data?.error || "Nem sikerült generálni az üres köröket.")
+        showErrorToast(response.data?.error || "Nem sikerült generálni az üres köröket.", {
+          error: response.data?.error,
+          context: "Üres körök generálása",
+          errorName: "Generálás sikertelen",
+        })
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Nem sikerült generálni az üres köröket.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült generálni az üres köröket.", {
+        error: err?.response?.data?.error,
+        context: "Üres körök generálása",
+        errorName: "Generálás sikertelen",
+      })
     } finally {
-      setGeneratingEmptyRounds(false)
+      setLoading(false)
     }
   }
 
   const handleGenerateRandomPairings = async () => {
     if (selectedPlayersForPairing.length < 2) {
-      setError("Kérjük válassz ki legalább 2 játékost.")
+      toast.error("Kérjük válassz ki legalább 2 játékost.")
       return
     }
 
-    setGeneratingPairings(true)
-    setError("")
+    setLoading(true)
 
     try {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/generateRandomPairings`, {
@@ -536,13 +575,22 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         await fetchKnockoutData()
         setShowRandomPairingModal(false)
         setSelectedPlayersForPairing([])
+        toast.success("Párosítások sikeresen generálva!")
       } else {
-        setError(response.data?.error || "Nem sikerült generálni a párosításokat.")
+        showErrorToast(response.data?.error || "Nem sikerült generálni a párosításokat.", {
+          error: response.data?.error,
+          context: "Párosítások generálása",
+          errorName: "Generálás sikertelen",
+        })
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Nem sikerült generálni a párosításokat.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült generálni a párosításokat.", {
+        error: err?.response?.data?.error,
+        context: "Párosítások generálása",
+        errorName: "Generálás sikertelen",
+      })
     } finally {
-      setGeneratingPairings(false)
+      setLoading(false)
     }
   }
 
@@ -555,8 +603,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const handleSaveMatchSettings = async () => {
     if (!editingMatchSettings || !editingMatchSettings.matchReference) return
 
-    setEditSettingsLoading(true)
-    setError("")
+    setLoading(true)
 
     try {
       const matchId =
@@ -585,13 +632,22 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowPlayer1Dropdown(false)
         setShowPlayer2Dropdown(false)
         setShowScorerDropdown(false)
+        toast.success("Meccs beállítások sikeresen frissítve!")
       } else {
-        setError(response.data?.error || "Nem sikerült frissíteni a meccs beállításait.")
+        showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccs beállításait.", {
+          error: response.data?.error,
+          context: "Meccs beállítások frissítése",
+          errorName: "Frissítés sikertelen",
+        })
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Nem sikerült frissíteni a meccs beállításait.")
+      showErrorToast(err.response?.data?.error || "Nem sikerült frissíteni a meccs beállításait.", {
+        error: err?.response?.data?.error,
+        context: "Meccs beállítások frissítése",
+        errorName: "Frissítés sikertelen",
+      })
     } finally {
-      setEditSettingsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -615,7 +671,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       return
     }
 
-    setUpdatingMatchPlayer(true)
+    setLoading(true)
     try {
       if (!editingMatch.matchReference) {
         let matchRound = 1
@@ -683,13 +739,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         errorName: "Meccs frissítése sikertelen",
       })
     } finally {
-      setUpdatingMatchPlayer(false)
+      setLoading(false)
     }
   }
 
   const handleViewLegs = (match: KnockoutMatch) => {
     if (!match.matchReference) {
-      setError("Bye meccsekhez nincsenek legek.")
+      toast.error("Bye meccsekhez nincsenek legek.")
       return
     }
     setSelectedMatchForLegs(match)
@@ -698,7 +754,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleDeleteMatch = async () => {
     if (!matchToDelete) return
-    setDeletingMatch(true)
+    setLoading(true)
     try {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteMatch`, {
         round: matchToDelete.round,
@@ -723,12 +779,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         errorName: "Meccs törlése sikertelen",
       })
     } finally {
-      setDeletingMatch(false)
+      setLoading(false)
     }
   }
 
   const handleDeleteLastRound = async () => {
-    setDeletingLastRound(true)
+    setLoading(true)
     try {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteLastRound`)
       if (response.data?.success) {
@@ -749,7 +805,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         errorName: "Utolsó kör törlése sikertelen",
       })
     } finally {
-      setDeletingLastRound(false)
+      setLoading(false)
     }
   }
 
@@ -994,17 +1050,6 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     )
   }
 
-  if (error) {
-    return (
-      <Alert variant="destructive" className="bg-destructive/10 text-destructive">
-        <AlertTitle className="flex items-center gap-2">
-          <IconAlertTriangle className="h-5 w-5" />
-          Hiba történt
-        </AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    )
-  }
 
   if (!knockoutData || knockoutData.length === 0) {
     return (
@@ -1042,15 +1087,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         {status !== "pending" && hasPlayers ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/15 hover:text-primary"
+              <button
+                type="button"
+                className="btn btn-ghost btn-md"
                 onClick={() => handleViewLegs(rawMatch)}
                 aria-label="Legek megtekintése"
               >
-                <IconChartHistogram className="h-4 w-4" />
-              </Button>
+                <IconChartHistogram size={16} />
+              </button>
             </TooltipTrigger>
             <TooltipContent side="top">Legek</TooltipContent>
           </Tooltip>
@@ -1060,15 +1104,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           <>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted/20"
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-md"
                   onClick={() => openMatchPlayerEditor(rawMatch, rawRound)}
                   aria-label="Meccs beállítások"
                 >
-                  <IconSettings className="h-4 w-4" />
-                </Button>
+                  <IconSettings size={16} />
+                </button>
               </TooltipTrigger>
               <TooltipContent side="top">Beállítások</TooltipContent>
             </Tooltip>
@@ -1076,15 +1119,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             {rawMatch.matchReference && hasPlayers && allowResultEdit ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted/20"
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-md"
                     onClick={() => handleMatchEdit(rawMatch)}
                     aria-label="Eredmény rögzítése"
                   >
-                    <IconClipboardList className="h-4 w-4" />
-                  </Button>
+                    <IconClipboardList size={16} />
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">Eredmény</TooltipContent>
               </Tooltip>
@@ -1093,18 +1135,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             {allowDelete ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/15"
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-md"
                     onClick={() => {
                       setMatchToDelete({ match: rawMatch, round: rawRound.round, index: diagramMatch.meta?.matchIndex ?? 0 })
                       setShowDeleteMatchModal(true)
                     }}
                     aria-label="Meccs törlése"
                   >
-                    <IconTrash className="h-4 w-4" />
-                  </Button>
+                    <IconTrash size={16} />
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">Meccs törlése</TooltipContent>
               </Tooltip>
@@ -1126,10 +1167,21 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <div ref={fullscreenContainerRef} className={fullscreenWrapperClasses}>
           <div className="flex flex-col gap-4 border-b border-border/40 p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1">
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <IconHierarchy className="h-6 w-6 text-primary" />
                   Egyenes kiesés
+                  {isAdmin && roundsWithMatches.length > 0 && !isTournamentLocked && (
+                    <Button
+                      className="gap-2 ml-4"
+                      size="sm"
+                      onClick={() => setShowGenerateNextRound(true)}
+                      disabled={loading || roundsWithMatches.some((round) => round.matches?.some((match) => match.matchReference?.status !== "finished"))}
+                    >
+                      <IconChevronRight className="h-4 w-4" />
+                      Következő kör generálása
+                    </Button>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   Kövesd a kieséses ág párosításait, eredményeit és adminisztráld a meccseket.
@@ -1169,6 +1221,26 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   
                 </div>
 
+                {isFullscreen && (
+                  <div className="flex items-center gap-2 rounded-full bg-muted/20 px-3 py-1">
+                    <span className="text-xs text-muted-foreground">Gombok:</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowActionsInFullscreen(!showActionsInFullscreen)}
+                      className={cn(
+                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                        showActionsInFullscreen ? "bg-primary" : "bg-muted"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                          showActionsInFullscreen ? "translate-x-5" : "translate-x-1"
+                        )}
+                      />
+                    </button>
+                  </div>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -1204,7 +1276,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                         variant="outline"
                         className="gap-2"
                         onClick={() => setShowGenerateEmptyRoundsModal(true)}
-                        disabled={generatingEmptyRounds}
+                        disabled={loading}
                       >
                         <IconPlus className="h-4 w-4" />
                         Üres kör generálása
@@ -1217,23 +1289,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             setSelectedRound(roundsWithMatches[0]?.round || 1)
                             setShowRandomPairingModal(true)
                           }}
-                          disabled={generatingPairings}
+                          disabled={loading}
                         >
                           <IconHierarchy className="h-4 w-4" />
                           Random párosítás
                         </Button>
                       )}
                     </>
-                  )}
-                  {roundsWithMatches.length > 0 && !isTournamentLocked && (
-                    <Button
-                      className="gap-2"
-                      onClick={() => setShowGenerateNextRound(true)}
-                      disabled={generatingNextRound || roundsWithMatches.some((round) => round.matches?.some((match) => match.matchReference?.status !== "finished"))}
-                    >
-                      <IconChevronRight className="h-4 w-4" />
-                      Következő kör generálása
-                    </Button>
                   )}
                   {currentKnockoutMethod === "manual" && roundsWithMatches.length > 0 && !isTournamentLocked && (
                     <Button
@@ -1246,24 +1308,22 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Módszer: {currentKnockoutMethod === "manual" ? "manuális párosítás" : "automatikus"}
-                </p>
               </div>
             )}
           </div>
 
           <ScrollArea className={cn("relative w-full", isFullscreen ? "flex-1" : "")}>
-            <div className="relative min-w-max px-6 pt-20 pb-6">
+            <div className={cn("relative min-w-max pt-20 pb-6", isFullscreen ? "pl-12 pr-6" : "px-6")}>
               <div
                 className="origin-top-left"
                 style={{ transform: `scale(${zoomLevel})`, transformOrigin: "top left" }}
               >
                 <KnockoutBracketDiagram
                   rounds={bracketRounds}
-                  renderMatchActions={renderDiagramMatchActions}
+                  renderMatchActions={showActionsInFullscreen ? renderDiagramMatchActions : undefined}
                   roundSummaries={roundSummaries}
                   onAddMatchToRound={currentKnockoutMethod === "manual" ? handleAddMatchForRound : undefined}
+                  compactMode={isFullscreen && !showActionsInFullscreen}
                 />
               </div>
             </div>
@@ -1289,11 +1349,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </Alert>
             )}
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setShowGenerateNextRound(false)} disabled={generatingNextRound}>
-                Mégse
-              </Button>
-              <Button onClick={handleGenerateNextRound} disabled={generatingNextRound}>
-                {generatingNextRound ? "Generálás..." : "Generálás"}
+
+              <Button onClick={handleGenerateNextRound} disabled={loading}>
+                {loading ? "Generálás..." : "Generálás"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1317,11 +1375,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               />
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setShowGenerateEmptyRoundsModal(false)} disabled={generatingEmptyRounds}>
-                Mégse
-              </Button>
-              <Button onClick={handleGenerateEmptyRounds} disabled={generatingEmptyRounds}>
-                {generatingEmptyRounds ? "Generálás..." : "Generálás"}
+
+              <Button onClick={handleGenerateEmptyRounds} disabled={loading}>
+                {loading ? "Generálás..." : "Generálás"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1374,19 +1430,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </ScrollArea>
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowRandomPairingModal(false)
-                  setSelectedPlayersForPairing([])
-                  setPlayerSearchTerm("")
-                }}
-                disabled={generatingPairings}
-              >
-                Mégse
-              </Button>
-              <Button onClick={handleGenerateRandomPairings} disabled={generatingPairings || selectedPlayersForPairing.length < 2}>
-                {generatingPairings ? "Párosítás..." : `Párosítás (${selectedPlayersForPairing.length})`}
+              <Button onClick={handleGenerateRandomPairings} disabled={loading || selectedPlayersForPairing.length < 2}>
+                {loading ? "Párosítás..." : `Párosítás (${selectedPlayersForPairing.length})`}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1540,30 +1585,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddMatchModal(false)
-                  setSelectedPlayer1("")
-                  setSelectedPlayer2("")
-                  setSelectedScorer("")
-                  setSelectedBoard("")
-                  setPlayer1SearchTerm("")
-                  setPlayer2SearchTerm("")
-                  setScorerSearchTerm("")
-                }}
-                disabled={addingMatch}
-              >
-                Mégse
-              </Button>
-              <Button
                 onClick={handleAddMatch}
                 disabled={
-                  addingMatch ||
+                  loading ||
                   (!!selectedPlayer1 && !!selectedPlayer2 && selectedPlayer1 === selectedPlayer2) ||
                   ((!!selectedPlayer1 || !!selectedPlayer2) && !selectedBoard)
                 }
               >
-                {addingMatch ? "Hozzáadás..." : "Hozzáadás"}
+                {loading ? "Hozzáadás..." : "Hozzáadás"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1695,9 +1724,6 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             )}
 
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setShowMatchEditModal(false)}>
-                Mégse
-              </Button>
               <Button onClick={handleSaveMatch} disabled={editForm.player1LegsWon === editForm.player2LegsWon}>
                 Mentés
               </Button>
@@ -1853,18 +1879,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             </div>
 
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowMatchPlayerEditModal(false)
-                  resetEditPairState()
-                }}
-                disabled={updatingMatchPlayer}
-              >
-                Mégse
-              </Button>
-              <Button onClick={handleUpdateMatchPlayer} disabled={updatingMatchPlayer}>
-                {updatingMatchPlayer ? "Mentés..." : "Mentés"}
+              <Button onClick={handleUpdateMatchPlayer} disabled={loading}>
+                {loading ? "Mentés..." : "Mentés"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2018,25 +2034,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             )}
 
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowMatchSettingsModal(false)
-                  setEditingMatchSettings(null)
-                  setSelectedPlayer1("")
-                  setSelectedPlayer2("")
-                  setSelectedScorer("")
-                  setSelectedBoard("")
-                  setPlayer1SearchTerm("")
-                  setPlayer2SearchTerm("")
-                  setScorerSearchTerm("")
-                }}
-                disabled={editSettingsLoading}
-              >
-                Mégse
-              </Button>
-              <Button onClick={handleSaveMatchSettings} disabled={editSettingsLoading}>
-                {editSettingsLoading ? "Mentés..." : "Mentés"}
+              <Button onClick={handleSaveMatchSettings} disabled={loading}>
+                {loading ? "Mentés..." : "Mentés"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2055,11 +2054,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </Alert>
             )}
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setShowDeleteMatchModal(false)} disabled={deletingMatch}>
-                Mégse
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteMatch} disabled={deletingMatch}>
-                {deletingMatch ? "Törlés..." : "Törlés"}
+              <Button variant="destructive" onClick={handleDeleteMatch} disabled={loading}>
+                {loading ? "Törlés..." : "Törlés"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2076,11 +2072,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <AlertDescription>Ez a művelet nem visszavonható.</AlertDescription>
             </Alert>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setShowDeleteLastRoundModal(false)} disabled={deletingLastRound}>
-                Mégse
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteLastRound} disabled={deletingLastRound}>
-                {deletingLastRound ? "Törlés..." : "Törlés"}
+              <Button variant="destructive" onClick={handleDeleteLastRound} disabled={loading}>
+                {loading ? "Törlés..." : "Törlés"}
               </Button>
             </DialogFooter>
           </DialogContent>

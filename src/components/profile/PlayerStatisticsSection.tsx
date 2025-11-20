@@ -61,76 +61,78 @@ export function PlayerStatisticsSection({
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* MMR */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">MMR</p>
-                  <p className="text-3xl font-bold text-primary">
-                    {playerStats.player.mmr}
-                  </p>
-                  <p className={`text-xs mt-1 ${playerStats.player.mmrTier.color}`}>
-                    {playerStats.player.mmrTier.name}
-                  </p>
-                </div>
-                <IconTarget className="w-10 h-10 text-primary/20" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-primary to-primary/80 rounded-lg p-4 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <IconTarget className="w-5 h-5 text-primary-foreground/80" />
+              <p className="text-xs text-primary-foreground/80">MMR</p>
+            </div>
+           
+            <p className="text-3xl font-bold text-primary-foreground">
+              {playerStats.player.mmr}
+            </p>
+            <p className={`text-xs mt-1 text-primary-foreground/90 font-medium`}>
+              {playerStats.player.mmrTier.name}
+            </p>
+          </div>
 
           {/* Global Rank */}
-          <Card className="border-info/20 bg-info/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Globális rang</p>
-                  <p className="text-3xl font-bold text-info">
-                    #{playerStats.player.globalRank}
-                  </p>
-                  <p className="text-xs mt-1 text-muted-foreground">
-                    Összes játékosból
-                  </p>
-                </div>
-                <IconTrendingUp className="w-10 h-10 text-info/20" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-info to-info/80 rounded-lg p-4 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <IconTrendingUp className="w-5 h-5 text-info-foreground/80" />
+              <p className="text-xs text-info-foreground/80">Globális rang</p>
+            </div>
+            
+            <p className="text-3xl font-bold text-info-foreground">
+              #{playerStats.player.globalRank}
+            </p>
+            <p className="text-xs mt-1 text-info-foreground/90">
+              Összes játékosból
+            </p>
+          </div>
 
           {/* Tournaments */}
-          <Card className="border-accent/20 bg-accent/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Tornák</p>
-                  <p className="text-3xl font-bold text-accent">
-                    {playerStats.summary.totalTournaments}
-                  </p>
-                  <p className="text-xs mt-1 text-muted-foreground">
-                    Összesen
-                  </p>
-                </div>
-                <IconCalendar className="w-10 h-10 text-accent/20" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-accent to-accent/80 rounded-lg p-4 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <IconCalendar className="w-5 h-5 text-accent-foreground/80" />
+              <p className="text-xs text-accent-foreground/80">Tornák</p>
+            </div>
+            
+            <p className="text-3xl font-bold text-accent-foreground">
+              {playerStats.summary.totalTournaments}
+            </p>
+            <p className="text-xs mt-1 text-accent-foreground/90">
+              Összesen
+            </p>
+          </div>
 
           {/* Win Rate */}
-          <Card className="border-success/20 bg-success/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Győzelem %</p>
-                  <p className="text-3xl font-bold text-success">
-                    {playerStats.summary.winRate}%
-                  </p>
-                  <p className="text-xs mt-1 text-muted-foreground">
-                    {playerStats.summary.wins}W/{playerStats.summary.losses}L
-                  </p>
-                </div>
-                <IconSword className="w-10 h-10 text-success/20" />
+          <div className="bg-gradient-to-br from-success to-success/80 rounded-lg p-4 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <IconSword className="w-5 h-5 text-success-foreground/80" />
+              <p className="text-xs text-success-foreground/80">Győzelem %</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-success-foreground/80 mb-1">Meccs</p>
+                <p className="text-2xl font-bold text-success-foreground">
+                  {playerStats.summary.winRate}%
+                </p>
+                <p className="text-xs mt-1 text-success-foreground/90">
+                  {playerStats.summary.wins}W/{playerStats.summary.losses}L
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-xs text-success-foreground/80 mb-1">Leg</p>
+                <p className="text-2xl font-bold text-success-foreground">
+                  {playerStats.summary.legWinRate}%
+                </p>
+                <p className="text-xs mt-1 text-success-foreground/90">
+                  {playerStats.summary.totalLegsWon}W/{playerStats.summary.totalLegsLost}L
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Detailed Stats & Tournament History */}
@@ -141,35 +143,35 @@ export function PlayerStatisticsSection({
               <IconChartBar className="w-5 h-5" />
               Részletes statisztikák
             </h3>
-            <Card className="bg-muted/50">
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex justify-between items-center">
+            <Card className="bg-card">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Átlag:</span>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-foreground">
                     {playerStats.player.stats.avg?.toFixed(1) || 'N/A'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">180s:</span>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-foreground">
                     {playerStats.player.stats.total180s || 0}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Legjobb helyezés:</span>
-                  <span className="font-semibold">
-                    {playerStats.player.stats.bestPosition || 'N/A'}
+                  <span className="font-semibold text-foreground">
+                    {playerStats.player.stats.bestPosition !== 999 ? `#${playerStats.player.stats.bestPosition}` : 'N/A'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="text-sm text-muted-foreground">Átlagos helyezés:</span>
-                  <span className="font-semibold">
-                    {playerStats.player.stats.averagePosition?.toFixed(1) || 'N/A'}
+                  <span className="font-semibold text-foreground">
+                    {playerStats.player.stats.averagePosition ? `#${playerStats.player.stats.averagePosition.toFixed(1)}` : 'N/A'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-muted-foreground">Max kiszálló:</span>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-foreground">
                     {playerStats.player.stats.highestCheckout || 'N/A'}
                   </span>
                 </div>
@@ -183,68 +185,63 @@ export function PlayerStatisticsSection({
               <IconCalendar className="w-5 h-5" />
               Legutóbbi tornák
             </h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {playerStats.tournamentHistory.map((tournament: any, index: number) => (
-                <Card key={index} className="bg-muted/50">
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {[...playerStats.tournamentHistory].reverse().map((tournament: any, index: number) => (
+                <Card key={index} className="bg-card hover:bg-muted/50 transition-colors">
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-semibold text-sm line-clamp-1 flex-1">
-                        {tournament.name}
-                      </span>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm block truncate">
+                          {tournament.name}
+                        </span>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(tournament.startDate).toLocaleDateString('hu-HU')}
+                          </span>
+                          {tournament.finalPosition && (
+                            <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded">
+                              #{tournament.finalPosition}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <Link
                         href={`/tournaments/${tournament.tournamentId}`}
-                        className="ml-2"
+                        className="ml-2 flex-shrink-0"
                       >
                         <Button size="sm" variant="outline">
                           Megnyitás
                         </Button>
                       </Link>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span>
-                          {new Date(tournament.startDate).toLocaleDateString('hu-HU')}
-                        </span>
-                        <span className={`font-semibold ${
-                          tournament.status === 'finished' ? 'text-primary' : 'text-warning'
-                        }`}>
-                          {tournament.status === 'finished' ? 'Befejezve' : 'Folyamatban'}
-                        </span>
-                        {tournament.finalPosition && (
-                          <span className="text-primary font-semibold">
-                            #{tournament.finalPosition}
+                    {tournament.status === 'finished' && tournament.stats && (
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 pt-3 border-t border-border/50">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Meccsek:</span>
+                          <span className="text-xs font-semibold text-foreground">
+                            {tournament.stats.matchesWon || 0}W/{tournament.stats.matchesLost || 0}L
                           </span>
-                        )}
-                      </div>
-                      {tournament.status === 'finished' && tournament.stats && (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-border">
-                          <div className="flex justify-between">
-                            <span>Meccsek:</span>
-                            <span className="font-semibold">
-                              {tournament.stats.matchesWon || 0}W/{tournament.stats.matchesLost || 0}L
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Legek:</span>
-                            <span className="font-semibold">
-                              {tournament.stats.legsWon || 0}W/{tournament.stats.legsLost || 0}L
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Átlag:</span>
-                            <span className="font-semibold">
-                              {tournament.stats.average?.toFixed(1) || 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>180-ak:</span>
-                            <span className="font-semibold">
-                              {tournament.stats.oneEightiesCount || 0}
-                            </span>
-                          </div>
                         </div>
-                      )}
-                    </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Legek:</span>
+                          <span className="text-xs font-semibold text-foreground">
+                            {tournament.stats.legsWon || 0}W/{tournament.stats.legsLost || 0}L
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Átlag:</span>
+                          <span className="text-xs font-semibold text-foreground">
+                            {tournament.stats.average?.toFixed(1) || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">180-ak:</span>
+                          <span className="text-xs font-semibold text-foreground">
+                            {tournament.stats.oneEightiesCount || 0}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -259,40 +256,43 @@ export function PlayerStatisticsSection({
               <IconSword className="w-5 h-5" />
               Legutóbbi meccsek
             </h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-3 max-h-64 overflow-y-auto">
               {playerStats.matchHistory.map((match: any, index: number) => (
                 <Card
                   key={index}
                   className={`${
                     match.won
-                      ? 'border-success/20 bg-success/5'
-                      : 'border-destructive/20 bg-destructive/5'
-                  }`}
+                      ? 'bg-success/10 border-success/30'
+                      : 'bg-error/15 '
+                  } hover:opacity-90 transition-opacity`}
                 >
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="font-medium">vs {match.opponent}</div>
-                        <div className="text-sm text-muted-foreground">
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-foreground mb-1">vs {match.opponent}</div>
+                        <div className="text-xs text-muted-foreground mb-1">
                           {new Date(match.date).toLocaleDateString('hu-HU')}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {match.legs} legek
                         </div>
                       </div>
-                      <div className="text-right space-y-1">
-                        <div className={`text-lg font-bold ${
+                      <div className="text-right space-y-2 flex-shrink-0">
+                        <div className={`text-xl font-bold ${
                           match.won ? 'text-success' : 'text-destructive'
                         }`}>
                           {match.player1Score} - {match.player2Score}
                         </div>
-                        <div className="text-sm">
+                        <div className={`text-xs font-medium ${
+                          match.won ? 'text-success' : 'text-destructive'
+                        }`}>
                           {match.won ? 'Győzelem' : 'Vereség'}
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => onViewLegs(match)}
+                          className="w-full"
                         >
                           Legek
                         </Button>

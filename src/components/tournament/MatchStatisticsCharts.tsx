@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useMemo, useState } from "react"
-
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,11 +16,9 @@ import {
 import { Line } from "react-chartjs-2"
 import {
   IconArrowDown,
-  IconArrowRight,
   IconArrowUp,
   IconChartLine,
   IconInfoCircle,
-  IconSparkles,
   IconTarget,
   IconTargetArrow,
   IconTrendingDown,
@@ -30,15 +27,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
-import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils"
-import {
-  Tooltip as UiTooltip,
-  TooltipContent as UiTooltipContent,
-  TooltipProvider as UiTooltipProvider,
-  TooltipTrigger as UiTooltipTrigger,
-} from "@/components/ui/tooltip"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
@@ -79,30 +69,71 @@ const chartOptions: ChartOptions<"line"> = {
     legend: {
       position: "top",
       labels: {
-        color: "rgba(255,255,255,0.75)",
-        font: { size: 11 },
-        boxWidth: 10,
-        boxHeight: 10,
+        boxWidth: 12,
+        padding: 8,
+        font: {
+          size: 11,
+        },
+        color: "rgba(255, 255, 255, 0.7)",
       },
     },
-    title: { display: false },
+    title: {
+      display: false,
+    },
     tooltip: {
-      backgroundColor: "rgba(12,12,15,0.92)",
-      borderColor: "rgba(255,255,255,0.08)",
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      borderColor: "rgba(255, 255, 255, 0.1)",
       borderWidth: 1,
-      titleFont: { size: 12, weight: 600 },
-      bodyFont: { size: 11 },
-      padding: 10,
+      titleFont: {
+        size: 12,
+      },
+      bodyFont: {
+        size: 11,
+      },
+      padding: 8,
     },
   },
   scales: {
-    x: {
-      ticks: { color: "rgba(255,255,255,0.55)", font: { size: 10 } },
-      grid: { color: "rgba(255,255,255,0.08)" },
-    },
     y: {
-      ticks: { color: "rgba(255,255,255,0.55)", font: { size: 10 } },
-      grid: { color: "rgba(255,255,255,0.08)" },
+      beginAtZero: false,
+      title: {
+        display: true,
+        text: "Átlag",
+        font: {
+          size: 11,
+        },
+        color: "rgba(255, 255, 255, 0.7)",
+      },
+      grid: {
+        color: "rgba(255, 255, 255, 0.1)",
+      },
+      ticks: {
+        font: {
+          size: 10,
+        },
+        color: "rgba(255, 255, 255, 0.6)",
+      },
+    },
+    x: {
+      title: {
+        display: true,
+        text: "Leg",
+        font: {
+          size: 11,
+        },
+        color: "rgba(255, 255, 255, 0.7)",
+      },
+      grid: {
+        color: "rgba(255, 255, 255, 0.1)",
+      },
+      ticks: {
+        font: {
+          size: 10,
+        },
+        color: "rgba(255, 255, 255, 0.6)",
+        maxRotation: 45,
+        minRotation: 0,
+      },
     },
   },
   elements: {
@@ -112,7 +143,7 @@ const chartOptions: ChartOptions<"line"> = {
     },
     line: {
       borderWidth: 2,
-      tension: 0.3,
+      tension: 0.1,
     },
   },
 }
@@ -121,226 +152,354 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
   const [activeTab, setActiveTab] = useState<"overview" | "legs">("overview")
   const [expandedLegs, setExpandedLegs] = useState<Set<number>>(new Set())
 
+  // Calculate 3-dart average for each leg
+  const calculateLegAverages = (throws: Throw[]) => {
+    if (throws.length === 0) return 0
+    const totalScore = throws.reduce((sum, t) => sum + t.score, 0)
+    return throws.length > 0 ? Math.round((totalScore / throws.length) * 100) / 100 : 0
+  }
+
+  // Calculate throw-by-throw 3-dart averages within each leg
+  const calculateThrowByThrowAverages = (throws: Throw[]) => {
+    const averages: number[] = []
+    let totalScore = 0
+
+    throws.forEach((throwData, index) => {
+      totalScore += throwData.score
+      const average = (index + 1) > 0 ? Math.round((totalScore / (index + 1)) * 100) / 100 : 0
+      averages.push(average)
+    })
+
+    return averages
+  }
+
+  // Calculate cumulative 3-dart averages across the match
+  const calculateCumulativeAverages = () => {
+    const player1Cumulative: number[] = []
+    const player2Cumulative: number[] = []
+
+    let player1TotalScore = 0
+    let player1TotalThrows = 0
+    let player2TotalScore = 0
+    let player2TotalThrows = 0
+
+    legs.forEach((leg) => {
+      leg.player1Throws.forEach((throwData) => {
+        player1TotalScore += throwData.score
+        player1TotalThrows += 1
+      })
+      const player1Avg = player1TotalThrows > 0 ? Math.round((player1TotalScore / player1TotalThrows) * 100) / 100 : 0
+      player1Cumulative.push(player1Avg)
+
+      leg.player2Throws.forEach((throwData) => {
+        player2TotalScore += throwData.score
+        player2TotalThrows += 1
+      })
+      const player2Avg = player2TotalThrows > 0 ? Math.round((player2TotalScore / player2TotalThrows) * 100) / 100 : 0
+      player2Cumulative.push(player2Avg)
+    })
+
+    return { player1Cumulative, player2Cumulative }
+  }
+
   const legAverages = useMemo(
     () =>
       legs.map((leg) => ({
-        player1Average: calculateLegAverage(leg.player1Throws),
-        player2Average: calculateLegAverage(leg.player2Throws),
+        player1Average: calculateLegAverages(leg.player1Throws),
+        player2Average: calculateLegAverages(leg.player2Throws),
       })),
     [legs]
   )
 
-  const cumulative = useMemo(() => calculateCumulativeAverages(legs), [legs])
+  const { player1Cumulative, player2Cumulative } = useMemo(() => calculateCumulativeAverages(), [legs])
 
-  const overviewChartData = useMemo(
+  // Leg-by-leg averages chart data
+  const legByLegData = useMemo(
     () => ({
-      labels: legs.map((_, index) => `${index + 1}. leg`),
+      labels: legAverages.map((_, index) => `${index + 1}. Leg`),
       datasets: [
         {
           label: player1Name,
           data: legAverages.map((leg) => leg.player1Average),
-          borderColor: "rgb(245,99,99)",
-          backgroundColor: "rgba(245,99,99,0.25)",
-          fill: "origin",
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.2)",
+          tension: 0.1,
+          fill: false,
         },
         {
           label: player2Name,
           data: legAverages.map((leg) => leg.player2Average),
-          borderColor: "rgb(93,160,255)",
-          backgroundColor: "rgba(93,160,255,0.25)",
-          fill: "origin",
+          borderColor: "rgb(239, 68, 68)",
+          backgroundColor: "rgba(239, 68, 68, 0.2)",
+          tension: 0.1,
+          fill: false,
         },
       ],
     }),
-    [legAverages, legs, player1Name, player2Name]
+    [legAverages, player1Name, player2Name]
   )
 
-  const cumulativeChartData = useMemo(
+  // Cumulative averages chart data
+  const cumulativeData = useMemo(
     () => ({
-      labels: legs.map((_, index) => `${index + 1}. leg`),
+      labels: legs.map((_, index) => `${index + 1}. Leg`),
       datasets: [
         {
           label: `${player1Name} (futó átlag)`,
-          data: cumulative.player1,
-          borderColor: "rgb(247,147,30)",
-          backgroundColor: "rgba(247,147,30,0.2)",
+          data: player1Cumulative,
+          borderColor: "rgb(139, 92, 246)",
+          backgroundColor: "rgba(139, 92, 246, 0.2)",
+          tension: 0.1,
           fill: false,
         },
         {
           label: `${player2Name} (futó átlag)`,
-          data: cumulative.player2,
-          borderColor: "rgb(112,255,195)",
-          backgroundColor: "rgba(112,255,195,0.2)",
+          data: player2Cumulative,
+          borderColor: "rgb(236, 72, 153)",
+          backgroundColor: "rgba(236, 72, 153, 0.2)",
+          tension: 0.1,
           fill: false,
         },
       ],
     }),
-    [cumulative, legs, player1Name, player2Name]
+    [player1Cumulative, player2Cumulative, legs, player1Name, player2Name]
   )
 
-  const latestPlayer1Average = cumulative.player1.at(-1) ?? 0
-  const latestPlayer2Average = cumulative.player2.at(-1) ?? 0
-  const bestLegPlayer1 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
-  const bestLegPlayer2 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
+  // Create throw-by-throw data for a leg
+  const createThrowByThrowData = (legIndex: number) => {
+    const leg = legs[legIndex]
+    if (!leg) return null
 
-  const player1Trend = legAverages.length
-    ? legAverages[legAverages.length - 1].player1Average - (legAverages[legAverages.length - 2]?.player1Average ?? 0)
-    : 0
-  const player2Trend = legAverages.length
-    ? legAverages[legAverages.length - 1].player2Average - (legAverages[legAverages.length - 2]?.player2Average ?? 0)
-    : 0
+    const player1ThrowAverages = calculateThrowByThrowAverages(leg.player1Throws)
+    const player2ThrowAverages = calculateThrowByThrowAverages(leg.player2Throws)
 
-  const toggleLeg = (index: number) => {
+    const throwLabels = Array.from(
+      { length: Math.max(player1ThrowAverages.length, player2ThrowAverages.length) },
+      (_, i) => `${i + 1}. dobás`
+    )
+
+    return {
+      labels: throwLabels,
+      datasets: [
+        {
+          label: player1Name,
+          data: player1ThrowAverages,
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.2)",
+          tension: 0.1,
+          fill: false,
+        },
+        {
+          label: player2Name,
+          data: player2ThrowAverages,
+          borderColor: "rgb(239, 68, 68)",
+          backgroundColor: "rgba(239, 68, 68, 0.2)",
+          tension: 0.1,
+          fill: false,
+        },
+      ],
+    }
+  }
+
+  const toggleLeg = (legIndex: number) => {
     setExpandedLegs((prev) => {
       const clone = new Set(prev)
-      if (clone.has(index)) {
-        clone.delete(index)
+      if (clone.has(legIndex)) {
+        clone.delete(legIndex)
       } else {
-        clone.add(index)
+        clone.add(legIndex)
       }
       return clone
     })
   }
 
+  const latestPlayer1Average = player1Cumulative[player1Cumulative.length - 1] ?? 0
+  const latestPlayer2Average = player2Cumulative[player2Cumulative.length - 1] ?? 0
+  const bestLegPlayer1 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
+  const bestLegPlayer2 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
+
   return (
-    <UiTooltipProvider>
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "overview" | "legs")} className="space-y-4">
-        <TabsList className="flex w-full items-center justify-start gap-2 overflow-x-auto rounded-full bg-muted/15 p-1 backdrop-blur">
-          <TabsTrigger value="overview" className="flex items-center gap-2 rounded-full px-5 py-1.5 text-sm font-semibold">
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "overview" | "legs")} className="flex flex-col h-full">
+        <TabsList className="mb-4 flex-shrink-0">
+          <TabsTrigger value="overview" className="gap-2">
             <IconChartLine className="h-4 w-4" />
             Összesítő
           </TabsTrigger>
-          <TabsTrigger value="legs" className="flex items-center gap-2 rounded-full px-5 py-1.5 text-sm font-semibold">
+          <TabsTrigger value="legs" className="gap-2">
             <IconTarget className="h-4 w-4" />
-            Legek
+            Leg részletek
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <PlayerSummaryCard
-              label={player1Name}
-              role="P1"
-              average={latestPlayer1Average}
-              bestLeg={bestLegPlayer1}
-              trend={player1Trend}
-              surfaceClass="bg-[#3d0c16] border border-[#611827] shadow-[8px_10px_0px_-6px_rgba(15,0,0,0.5)]"
-              metricBgClass="bg-[#57101c]"
-            />
-            <PlayerSummaryCard
-              label={player2Name}
-              role="P2"
-              average={latestPlayer2Average}
-              bestLeg={bestLegPlayer2}
-              trend={player2Trend}
-              surfaceClass="bg-[#3d0c16] border border-[#611827] shadow-[8px_10px_0px_-6px_rgba(15,0,0,0.5)]"
-              metricBgClass="bg-[#57101c]"
-            />
+        <TabsContent value="overview" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
+          <div className="space-y-4 pb-4">
+          {/* Statistics summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-0">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg text-primary truncate" title={player1Name}>
+                    {player1Name}
+                  </CardTitle>
+                  <Badge variant="default" className="text-xs">P1</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-card rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">Végső átlag</div>
+                    <div className="text-2xl font-bold text-primary">
+                      {latestPlayer1Average.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="bg-card rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">Max leg átlag</div>
+                    <div className="text-2xl font-bold text-info">
+                      {bestLegPlayer1.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-destructive/10 to-destructive/5 border-0">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg text-destructive truncate" title={player2Name}>
+                    {player2Name}
+                  </CardTitle>
+                  <Badge variant="destructive" className="text-xs">P2</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-card rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">Végső átlag</div>
+                    <div className="text-2xl font-bold text-destructive">
+                      {latestPlayer2Average.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="bg-card rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">Max leg átlag</div>
+                    <div className="text-2xl font-bold text-info">
+                      {bestLegPlayer2.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <Card className="border-0 bg-card/90 shadow-[8px_9px_0px_-4px_rgba(0,0,0,0.45)]">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <IconSparkles className="h-5 w-5 text-[oklch(76%_0.18_25)]" />
-                Legenkénti átlagok
+          {/* Leg-by-leg averages chart */}
+          <Card className="border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IconChartLine className="h-5 w-5 text-primary" />
+                Teljesítmény alakulása
               </CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                Hasonlítsd össze a játékosok teljesítményét minden legben.
+              <CardDescription>
+                Legenkénti átlagok összehasonlítása leg-ről leg-re
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="h-64 w-full rounded-2xl border border-white/5 bg-gradient-to-br from-white/4 to-transparent p-4">
-                <Line options={chartOptions} data={overviewChartData} />
+              <div className="h-64">
+                <Line options={chartOptions} data={legByLegData} />
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <IconInfoCircle className="h-4 w-4" />
-                A színezett területek a stabil, magas átlagokat mutatják — ha egy játékos görbéje felfelé ível, az erős formát jelent.
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-semibold">📊 Legenkénti átlagok:</span> Az egyes legekben elért 3 nyilas átlagok összehasonlítása leg-ről leg-re.
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-card/90 shadow-[8px_9px_0px_-4px_rgba(0,0,0,0.45)]">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <IconTrendingDown className="h-5 w-5 text-[oklch(70%_0.12_250)]" />
+          {/* Cumulative averages chart */}
+          <Card className="border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IconTrendingDown className="h-5 w-5 text-info" />
                 Futó meccsátlag alakulása
               </CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                A meccs előrehaladtával hogyan változott a játékosok összesített 3-nyilas átlaga.
+              <CardDescription>
+                A meccs előrehaladtával hogyan változott a játékosok összesített 3-nyilas átlaga
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="h-64 w-full rounded-2xl border border-white/5 bg-gradient-to-br from-white/4 to-transparent p-4">
-                <Line options={chartOptions} data={cumulativeChartData} />
+              <div className="h-64">
+                <Line options={chartOptions} data={cumulativeData} />
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <IconInfoCircle className="h-4 w-4" />
-                Az 50 feletti átlag folyamatos tartása kiemelkedő teljesítményt jelent — figyeld, hol indult el a trend meredekebben.
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-semibold">💡 Futó átlag:</span> Az összes dobás átlaga a meccs elejétől az adott legig.
+                </p>
               </div>
             </CardContent>
           </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="legs" className="space-y-4">
-          {legs.length === 0 ? (
-            <Card className="border border-dashed border-white/10 bg-card/80 text-center shadow-inner shadow-black/20">
-              <CardContent className="py-12 text-sm text-muted-foreground">Még nincs rögzített statisztika ehhez a meccshez.</CardContent>
-            </Card>
-          ) : null}
+        <TabsContent value="legs" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
+          <div className="space-y-3 pb-4">
+          {legs.map((leg, legIndex) => {
+            const throwData = createThrowByThrowData(legIndex)
+            if (!throwData || (leg.player1Throws.length === 0 && leg.player2Throws.length === 0)) return null
 
-          {legs.map((leg, index) => {
-            const isExpanded = expandedLegs.has(index)
-            const player1Stats = calculateLegStats(leg.player1Throws)
-            const player2Stats = calculateLegStats(leg.player2Throws)
-            const player1Running = calculateThrowAverages(leg.player1Throws)
-            const player2Running = calculateThrowAverages(leg.player2Throws)
+            const isExpanded = expandedLegs.has(legIndex)
+            const player1LegAvg = calculateLegAverages(leg.player1Throws)
+            const player2LegAvg = calculateLegAverages(leg.player2Throws)
 
             return (
-              <Card
-                key={`${leg.createdAt}-${index}`}
-                className="overflow-hidden border-0 bg-card/92 shadow-[10px_11px_0px_-5px_rgba(0,0,0,0.45)] transition hover:shadow-[12px_14px_0px_-5px_rgba(0,0,0,0.45)]"
-              >
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[oklch(70%_0.17_23)] via-[oklch(64%_0.2_40)] to-[oklch(72%_0.09_300)]" />
-                <CardHeader className="pb-3 pt-6">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/30 via-primary/10 to-transparent text-base font-semibold text-primary backdrop-blur">
-                          {index + 1}
-                        </span>
-                        <div className="flex flex-col gap-1">
-                          <CardTitle className="text-base font-semibold text-foreground">
-                            {leg.winnerId?.name ? `${leg.winnerId.name} nyert` : `${index + 1}. leg`}
-                          </CardTitle>
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
-                            {leg.checkoutScore ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success">
-                                <IconTargetArrow className="h-3.5 w-3.5" />
-                                Checkout {leg.checkoutScore}
-                              </span>
-                            ) : null}
-                            {typeof leg.winnerArrowCount === "number" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-info/10 px-2 py-1 text-info">
-                                <IconTarget className="h-3.5 w-3.5" />
-                                {leg.winnerArrowCount} nyíl
-                              </span>
-                            ) : null}
-                            {typeof leg.loserRemainingScore === "number" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-1 text-warning">
-                                <IconTrendingDown className="h-3.5 w-3.5" />
-                                Vesztes: {leg.loserRemainingScore} pont
-                              </span>
-                            ) : null}
+              <Card key={legIndex} className="overflow-hidden border-0">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
+                        <span className="text-base font-bold text-primary">{legIndex + 1}</span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground mb-1">Leg átlagok</div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-bold text-primary">{player1LegAvg.toFixed(1)}</span>
+                            {leg.winnerId?._id && leg.winnerId.name === player1Name && (
+                              <span className="text-xs">🏆</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">vs</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-bold text-destructive">{player2LegAvg.toFixed(1)}</span>
+                            {leg.winnerId?._id && leg.winnerId.name === player2Name && (
+                              <span className="text-xs">🏆</span>
+                            )}
                           </div>
                         </div>
+
+                        {leg.winnerId?._id && (
+                          <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-2">
+                            {leg.winnerArrowCount && (
+                              <div className="flex items-center gap-1">
+                                <IconTarget className="h-3 w-3" />
+                                <span>{leg.winnerArrowCount} nyíl</span>
+                              </div>
+                            )}
+                            {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
+                              <div className="flex items-center gap-1">
+                                <IconTrendingDown className="h-3 w-3" />
+                                <span>{leg.loserRemainingScore} pont</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-2 rounded-full border border-white/10 px-4 py-1 text-xs font-semibold"
-                      onClick={() => toggleLeg(index)}
+                      className="gap-2"
+                      onClick={() => toggleLeg(legIndex)}
                     >
                       {isExpanded ? (
                         <>
@@ -357,304 +516,81 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <LegSummaryCard
-                      name={player1Name}
-                      average={player1Stats.average}
-                      highest={player1Stats.highest}
-                      oneEighties={player1Stats.oneEighties}
-                      variant="primary"
-                    />
-                    <LegSummaryCard
-                      name={player2Name}
-                      average={player2Stats.average}
-                      highest={player2Stats.highest}
-                      oneEighties={player2Stats.oneEighties}
-                      variant="secondary"
-                    />
-                  </div>
-
-                  {isExpanded ? (
-                    <div className="space-y-4 rounded-2xl border border-white/5 bg-black/10 p-4 backdrop-blur">
-                      <div className="grid gap-4 lg:grid-cols-2">
-                        <ThrowsTimeline
-                          title={`${player1Name} dobásai`}
-                          throws={leg.player1Throws}
-                          runningAverages={player1Running}
-                          gradient="from-[oklch(58%_0.2_23)/0.18] to-transparent"
-                        />
-                        <ThrowsTimeline
-                          title={`${player2Name} dobásai`}
-                          throws={leg.player2Throws}
-                          runningAverages={leg.player2Throws.length ? player2Running : []}
-                          gradient="from-[oklch(56%_0.19_305)/0.2] to-transparent"
+                {isExpanded && (
+                  <CardContent className="pt-0">
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <IconTargetArrow className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-semibold">Dobásonkénti átlagok</span>
+                        </div>
+                      </div>
+                      <div className="h-64">
+                        <Line
+                          options={{
+                            ...chartOptions,
+                            scales: {
+                              ...chartOptions.scales,
+                              x: {
+                                ...chartOptions.scales?.x,
+                                title: {
+                                  display: true,
+                                  text: "Dobás",
+                                  font: {
+                                    size: 10,
+                                  },
+                                  color: "rgba(255, 255, 255, 0.7)",
+                                },
+                              },
+                            },
+                          }}
+                          data={throwData}
                         />
                       </div>
+                      <div className="mt-3 rounded-lg bg-info/10 p-3">
+                        <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
+                          <p>
+                            💡 <span className="font-semibold">Tipp:</span> A grafikon mutatja, hogyan változott a játékosok teljesítménye a leg során.
+                          </p>
+                          {leg.winnerId?._id && (
+                            <div className="flex items-center gap-4 pt-1">
+                              {leg.winnerArrowCount && (
+                                <div className="flex items-center gap-1">
+                                  <IconTarget className="h-3 w-3" />
+                                  <span className="font-medium">
+                                    {leg.winnerId.name} kiszállt: {leg.winnerArrowCount} nyíl
+                                  </span>
+                                </div>
+                              )}
+                              {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <IconTrendingDown className="h-3 w-3" />
+                                  <span className="font-medium">Maradt: {leg.loserRemainingScore} pont</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  ) : null}
-                </CardContent>
+                  </CardContent>
+                )}
               </Card>
             )
           })}
+
+          {legs.filter((leg) => leg.player1Throws.length > 0 || leg.player2Throws.length > 0).length === 0 && (
+            <Card className="border-0">
+              <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                Még nincsenek részletes leg adatok.
+              </CardContent>
+            </Card>
+          )}
+          </div>
         </TabsContent>
       </Tabs>
-    </UiTooltipProvider>
-  )
-}
-
-interface PlayerSummaryCardProps {
-  label: string
-  role: string
-  average: number
-  bestLeg: number
-  trend: number
-  surfaceClass: string
-  metricBgClass: string
-}
-
-const PlayerSummaryCard: React.FC<PlayerSummaryCardProps> = ({ label, role, average, bestLeg, trend, surfaceClass, metricBgClass }) => {
-  const trendPositive = trend >= 0
-  const trendMagnitude = Math.abs(trend)
-  const trendIcon = trendPositive ? IconArrowUp : IconArrowDown
-
-  const stability = (() => {
-    if (trendMagnitude < 1) {
-      return { label: "Stabil forma", tone: "text-[#fcd7a1]" }
-    }
-    if (trendPositive) {
-      return { label: "Erősödő forma", tone: "text-[#39b778]" }
-    }
-    return { label: "Gyengülő forma", tone: "text-[#f59f3a]" }
-  })()
-
-  return (
-    <div className={cn("relative overflow-hidden rounded-3xl text-white", surfaceClass)}>
-      <div className="relative flex flex-col gap-5 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#57101c] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f9d7de]">
-              <span>{role}</span>
-              <span className="inline-flex h-1.5 w-1.5 items-center justify-center rounded-full bg-[#f64c6b]" />
-              <span className="tracking-tight text-white">{label}</span>
-            </div>
-            <p className={cn("text-sm font-medium", stability.tone)}>{stability.label}</p>
-          </div>
-          <Badge variant="outline" className="rounded-full border-[#f64c6b]/40 bg-[#611827] px-3 py-1 text-[11px] text-[#f8b4c0]">
-            Átlag
-          </Badge>
-        </div>
-
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-[#f5a3b1]">Futó meccsátlag</p>
-            <p className="text-3xl font-black text-white">{average.toFixed(1)}</p>
-          </div>
-          <UiTooltip>
-            <UiTooltipTrigger asChild>
-              <div className="flex items-center gap-2 rounded-full bg-[#611827] px-3 py-1.5 text-xs text-[#f9d7de]">
-                {React.createElement(trendIcon, { className: cn("h-4 w-4", trendPositive ? "text-[#39b778]" : "text-[#f59f3a]") })}
-                <span>{trendMagnitude.toFixed(1)} pont</span>
-              </div>
-            </UiTooltipTrigger>
-            <UiTooltipContent side="top">Az utolsó leg átlagának eltérése az előző leghez képest.</UiTooltipContent>
-          </UiTooltip>
-        </div>
-
-        <Separator className="bg-[#7a1f30]" />
-
-        <div className="grid grid-cols-2 gap-3 text-xs font-medium">
-          <div className={cn("relative overflow-hidden rounded-2xl px-3 py-3 shadow-inner shadow-black/40", metricBgClass)}>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5a3b1]">Leg legjobb átlag</p>
-            <p className="mt-1 text-lg font-semibold text-white">{bestLeg.toFixed(1)}</p>
-          </div>
-          <div className={cn("relative overflow-hidden rounded-2xl px-3 py-3 shadow-inner shadow-black/40", metricBgClass)}>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5a3b1]">Stabilitás</p>
-            <div className="mt-1 flex items-center gap-1 text-sm text-[#f8b4c0]">
-              <IconSparkles className="h-4 w-4 text-[#f59f3a]" />
-              <span className={stability.tone}>{stability.label}</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
-}
-
-interface LegSummaryCardProps {
-  name: string
-  average: number
-  highest: number
-  oneEighties: number
-  variant: "primary" | "secondary"
-}
-
-const LegSummaryCard: React.FC<LegSummaryCardProps> = ({ name, average, highest, oneEighties, variant }) => {
-  const palette =
-    variant === "primary"
-      ? {
-          baseBg: "bg-[#3d0c16] border border-[#611827]",
-          accent: "text-[#f8b4c0]",
-        }
-      : {
-          baseBg: "bg-[#440d1a] border border-[#611827]",
-          accent: "text-[#fbd1d9]",
-        }
-
-  return (
-    <div className={cn("relative overflow-hidden rounded-2xl shadow-[8px_10px_0px_-6px_rgba(15,0,0,0.45)] backdrop-blur", palette.baseBg)}>
-      <CardContent className="relative space-y-3 p-4 text-white">
-        <div className="flex items-center justify-between">
-          <span className={cn("text-sm font-semibold", palette.accent)}>{name}</span>
-          <Badge variant="outline" className="rounded-full border-[#f64c6b]/30 bg-[#57101c] px-2 py-0.5 text-[10px] uppercase text-[#f8b4c0]">
-            Leg stat
-          </Badge>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <SummaryBubble label="Átlag" value={average.toFixed(1)} tone="bg-[#57101c]" valueTone="text-[#f9d7de]" labelTone="text-[#f5a3b1]" />
-          <SummaryBubble label="Max dobás" value={highest} tone="bg-[#611827]" valueTone="text-[#fbd1d9]" labelTone="text-[#f5a3b1]" />
-          <SummaryBubble label="180-ak" value={oneEighties} tone="bg-[#7a1f2d]" valueTone="text-[#fcd7a1]" labelTone="text-[#f5a3b1]" />
-        </div>
-      </CardContent>
-    </div>
-  )
-}
-
-interface ThrowsTimelineProps {
-  title: string
-  throws: Throw[]
-  runningAverages: number[]
-  gradient: string
-}
-
-const ThrowsTimeline: React.FC<ThrowsTimelineProps> = ({ title, throws, runningAverages, gradient }) => {
-  if (!throws.length) {
-    return (
-      <Card className="border border-dashed border-white/10 bg-card/70">
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">Nem érkezett dobás adat ennél a legnél.</CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-card/95 shadow-inner shadow-black/30">
-      <div className={cn("absolute inset-0 opacity-90", `bg-gradient-to-br ${gradient}`)} />
-      <div className="relative p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">{title}</p>
-            <p className="text-[11px] text-white/50">Dobásonkénti 3-nyilas átlag</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-white">
-          {throws.map((throwData, idx) => {
-            const runningAverage = runningAverages[idx]
-            return (
-              <React.Fragment key={`${title}-throw-${idx}`}>
-                <div className="flex flex-col items-center gap-1">
-                  <span
-                    className={cn(
-                      "inline-flex min-w-[48px] items-center justify-center rounded-lg px-2 py-1 backdrop-blur",
-                      throwData.score === 180
-                        ? "bg-[#f59f3a]/30 text-[#fcd7a1]"
-                        : throwData.isCheckout
-                          ? "bg-[#39b778]/25 text-[#c3f0d6]"
-                          : throwData.score === 0
-                            ? "bg-[#ab1f3b]/35 text-[#ffd9e0]"
-                            : "bg-[#57101c] text-[#f9d7de]"
-                    )}
-                    title={`${throwData.score} pont (${throwData.darts} nyíl)`}
-                  >
-                    {throwData.score}
-                  </span>
-                  {typeof runningAverage === "number" ? (
-                    <span className="text-[10px] font-medium text-white/65">({runningAverage.toFixed(1)})</span>
-                  ) : null}
-                </div>
-                {idx < throws.length - 1 && <IconArrowRight className="h-3.5 w-3.5 text-white/45" />}
-              </React.Fragment>
-            )
-          })}
-        </div>
-
-        <Separator className="my-3 bg-white/10" />
-
-        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-white">
-          {runningAverages.map((avg, idx) => (
-            <span key={idx} className="inline-flex items-center gap-1 rounded-full bg-[#29101b]/80 px-2 py-1 backdrop-blur">
-              <IconSparkles className="h-3 w-3 text-warning" />
-              {avg.toFixed(1)}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface SummaryBubbleProps {
-  label: string
-  value: string | number
-  tone: string
-  valueTone?: string
-  labelTone?: string
-}
-
-const SummaryBubble: React.FC<SummaryBubbleProps> = ({ label, value, tone, valueTone = "text-white", labelTone = "text-[#f5a3b1]" }) => {
-  return (
-    <div className={cn("rounded-xl px-3 py-3 shadow-inner shadow-black/30", tone)}>
-      <p className={cn("text-sm font-semibold", valueTone)}>{value}</p>
-      <p className={cn("text-[11px] uppercase tracking-[0.2em]", labelTone)}>{label}</p>
-    </div>
-  )
-}
-
-const calculateLegAverage = (throws: Throw[]) => {
-  if (!throws.length) return 0
-  const totalScore = throws.reduce((sum, item) => sum + item.score, 0)
-  return Math.round((totalScore / throws.length) * 100) / 100
-}
-
-const calculateThrowAverages = (throws: Throw[]) => {
-  let running = 0
-  return throws.map((item, index) => {
-    running += item.score
-    return Math.round((running / (index + 1)) * 100) / 100
-  })
-}
-
-const calculateLegStats = (throws: Throw[]) => {
-  if (!throws.length) return { average: 0, highest: 0, oneEighties: 0 }
-  const average = calculateLegAverage(throws)
-  const highest = Math.max(...throws.map((t) => t.score))
-  const oneEighties = throws.filter((t) => t.score === 180).length
-  return { average, highest, oneEighties }
-}
-
-const calculateCumulativeAverages = (legs: Leg[]) => {
-  let player1Score = 0
-  let player1Throws = 0
-  let player2Score = 0
-  let player2Throws = 0
-
-  const player1 = legs.map((leg) => {
-    leg.player1Throws.forEach((throwData) => {
-      player1Score += throwData.score
-      player1Throws += 1
-    })
-    return player1Throws > 0 ? Math.round((player1Score / player1Throws) * 100) / 100 : 0
-  })
-
-  const player2 = legs.map((leg) => {
-    leg.player2Throws.forEach((throwData) => {
-      player2Score += throwData.score
-      player2Throws += 1
-    })
-    return player2Throws > 0 ? Math.round((player2Score / player2Throws) * 100) / 100 : 0
-  })
-
-  return { player1, player2 }
 }
 
 export default MatchStatisticsCharts

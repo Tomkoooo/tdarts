@@ -38,12 +38,17 @@ interface KnockoutBracketDiagramProps {
   className?: string
   roundSummaries?: RoundSummary[]
   onAddMatchToRound?: (roundNumber: number) => void
+  compactMode?: boolean
 }
 
 const CARD_WIDTH = 286
 const CARD_HEIGHT = 205
+const COMPACT_CARD_WIDTH = 220
+const COMPACT_CARD_HEIGHT = 160
 const COLUMN_GAP = 120
+const COMPACT_COLUMN_GAP = 90
 const ROW_GAP = 48
+const COMPACT_ROW_GAP = 32
 const CONNECTOR_COLOR = "rgba(255, 255, 255, 0.28)"
 
 type PositionedMatch = {
@@ -72,7 +77,12 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
   className,
   roundSummaries,
   onAddMatchToRound,
+  compactMode = false,
 }) => {
+  const cardWidth = compactMode ? COMPACT_CARD_WIDTH : CARD_WIDTH
+  const cardHeight = compactMode ? COMPACT_CARD_HEIGHT : CARD_HEIGHT
+  const columnGap = compactMode ? COMPACT_COLUMN_GAP : COLUMN_GAP
+  const rowGap = compactMode ? COMPACT_ROW_GAP : ROW_GAP
   const layout = useMemo<LayoutResult | null>(() => {
     if (!rounds || rounds.length === 0) {
       return null
@@ -85,7 +95,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
       round.forEach((match, matchIndex) => {
         let y: number
         if (roundIndex === 0) {
-          y = matchIndex * (CARD_HEIGHT + ROW_GAP)
+          y = matchIndex * (cardHeight + rowGap)
         } else {
           const parentRound = positioned[roundIndex - 1]
           const parent1 = parentRound[matchIndex * 2]
@@ -93,11 +103,11 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
           const centreAverage = parent2
             ? (parent1.center + parent2.center) / 2
             : parent1.center
-          y = centreAverage - CARD_HEIGHT / 2
+          y = centreAverage - cardHeight / 2
         }
 
-        const x = roundIndex * (CARD_WIDTH + COLUMN_GAP)
-        const center = y + CARD_HEIGHT / 2
+        const x = roundIndex * (cardWidth + columnGap)
+        const center = y + cardHeight / 2
 
         positioned[roundIndex].push({
           match,
@@ -112,8 +122,8 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
 
     const flatMatches = positioned.flat()
 
-    const height = flatMatches.reduce((max, item) => Math.max(max, item.y + CARD_HEIGHT), CARD_HEIGHT)
-    const width = rounds.length * CARD_WIDTH + (rounds.length - 1) * COLUMN_GAP
+    const height = flatMatches.reduce((max, item) => Math.max(max, item.y + cardHeight), cardHeight)
+    const width = rounds.length * cardWidth + (rounds.length - 1) * columnGap
 
     const connectors: LayoutResult["connectors"] = []
 
@@ -125,19 +135,19 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
         const parent2 = previousRound[matchIndex * 2 + 1]
         const targetX = child.x
         const targetY = child.center
-        const midX = parent1 ? parent1.x + CARD_WIDTH + COLUMN_GAP / 2 : targetX - COLUMN_GAP / 2
+        const midX = parent1 ? parent1.x + cardWidth + columnGap / 2 : targetX - columnGap / 2
 
         if (parent1) {
           connectors.push({
             id: `${roundIndex}-${matchIndex}-p1`,
-            path: buildConnectorPath(parent1.x + CARD_WIDTH, parent1.center, midX, targetX, targetY),
+            path: buildConnectorPath(parent1.x + cardWidth, parent1.center, midX, targetX, targetY),
           })
         }
 
         if (parent2) {
           connectors.push({
             id: `${roundIndex}-${matchIndex}-p2`,
-            path: buildConnectorPath(parent2.x + CARD_WIDTH, parent2.center, midX, targetX, targetY),
+            path: buildConnectorPath(parent2.x + cardWidth, parent2.center, midX, targetX, targetY),
           })
         }
       })
@@ -149,7 +159,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
       matches: flatMatches,
       connectors,
     }
-  }, [rounds])
+  }, [rounds, cardWidth, cardHeight, columnGap, rowGap])
 
   if (!layout) {
     return (
@@ -162,7 +172,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
   return (
     <div className={cn("relative min-w-[720px] overflow-visible", className)} style={{ width: layout.width, height: layout.height }}>
       {roundSummaries?.map((round, roundIndex) => {
-        const left = roundIndex * (CARD_WIDTH + COLUMN_GAP)
+        const left = roundIndex * (cardWidth + columnGap)
         return (
           <div
             key={round.roundNumber}
@@ -212,6 +222,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
           y={item.y}
           onClick={onMatchClick}
           actions={renderMatchActions?.(item.match)}
+          compactMode={compactMode}
         />
       ))}
     </div>
@@ -224,9 +235,12 @@ interface MatchCardProps {
   y: number
   onClick?: (match: DiagramMatch) => void
   actions?: React.ReactNode
+  compactMode?: boolean
 }
 
-const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions }) => {
+const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions, compactMode = false }) => {
+  const cardWidth = compactMode ? COMPACT_CARD_WIDTH : CARD_WIDTH
+  const cardHeight = compactMode ? COMPACT_CARD_HEIGHT : CARD_HEIGHT
   const team1Winner = match.winner === "team1"
   const team2Winner = match.winner === "team2"
   const rawMatch = (match.meta?.match ?? null) as any
@@ -237,13 +251,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions }) 
 
   return (
     <Card
-      style={{ width: CARD_WIDTH, height: CARD_HEIGHT, left: x, top: y }}
+      style={{ width: cardWidth, height: cardHeight, left: x, top: y }}
       className="absolute z-10 overflow-hidden border-0 bg-card/96 shadow-[8px_9px_0px_-4px_rgba(0,0,0,0.45)] transition hover:shadow-[10px_12px_0px_-4px_rgba(0,0,0,0.45)]"
       onClick={() => onClick?.(match)}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : -1}
     >
-      <CardContent className="flex h-full flex-col justify-between p-3.5">
+      <CardContent className={cn("flex h-full flex-col justify-between", compactMode ? "p-2.5" : "p-3.5")}>
         <div className="space-y-2">
           {(boardLabel || match.status) ? (
             <div className="flex items-center justify-between gap-2">
@@ -271,6 +285,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions }) 
             isWinner={team1Winner}
             oneEighties={player1Stats?.oneEightiesCount}
             highestCheckout={player1Stats?.highestCheckout}
+            compactMode={compactMode}
           />
           <TeamRow
             name={match.team2}
@@ -278,6 +293,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions }) 
             isWinner={team2Winner}
             oneEighties={player2Stats?.oneEightiesCount}
             highestCheckout={player2Stats?.highestCheckout}
+            compactMode={compactMode}
           />
         </div>
         {actions ? <div className="pt-2.5">{actions}</div> : null}
@@ -292,9 +308,10 @@ interface TeamRowProps {
   isWinner: boolean
   oneEighties?: number | null
   highestCheckout?: number | null
+  compactMode?: boolean
 }
 
-const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, highestCheckout }) => {
+const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, highestCheckout, compactMode = false }) => {
   const displayName = name || "TBD"
   const scoreValue = Number.isFinite(score ?? NaN) ? score : "–"
   const hasStats = Number.isFinite(oneEighties ?? NaN) || Number.isFinite(highestCheckout ?? NaN)
@@ -302,15 +319,20 @@ const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, h
   return (
     <div
       className={cn(
-        "flex items-start justify-between rounded-xl border border-transparent px-3 py-1.5",
+        "flex items-start justify-between rounded-xl border border-transparent",
+        compactMode ? "px-2 py-1" : "px-3 py-1.5",
         isWinner
           ? "bg-success/15 text-success shadow-inner shadow-success/10"
           : "bg-muted/18 text-muted-foreground"
       )}
     >
       <div className="flex min-w-0 flex-col gap-1">
-        <span className={cn("truncate text-sm font-medium", isWinner && "font-semibold text-foreground")}>{displayName}</span>
-        {hasStats ? (
+        <span className={cn(
+          "truncate font-medium",
+          compactMode ? "text-xs" : "text-sm",
+          isWinner && "font-semibold text-foreground"
+        )}>{displayName}</span>
+        {hasStats && !compactMode ? (
           <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70">
             {Number.isFinite(oneEighties ?? NaN) ? (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/15 px-1.5 py-[2px] text-warning">
@@ -329,7 +351,8 @@ const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, h
       </div>
       <span
         className={cn(
-          "ml-2 flex-shrink-0 text-lg font-semibold tabular-nums",
+          "ml-2 flex-shrink-0 font-semibold tabular-nums",
+          compactMode ? "text-base" : "text-lg",
           isWinner ? "text-success" : "text-muted-foreground"
         )}
       >

@@ -292,21 +292,36 @@ const TournamentPage = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-6 pb-24 md:pb-0">
           <TabsList className="hidden w-full gap-2 rounded-xl bg-card/90 p-1 md:flex">
-            {tabs.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:bg-primary data-[state=active]:hover:text-primary-foreground hover:bg-muted/20 hover:text-foreground"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
+            {tabs.map((tab) => {
+              const isAdminTab = tab.value === 'admin'
+              const canSeeAdminTab = userClubRole === 'admin' || userClubRole === 'moderator'
+              
+              if (isAdminTab && !canSeeAdminTab) {
+                return null
+              }
+              
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex-1 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:hover:bg-primary data-[state=active]:hover:text-primary-foreground hover:bg-muted/20 hover:text-foreground"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
           <div className="md:hidden">
             <div className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-1rem)] max-w-[380px] -translate-x-1/2 items-center gap-0.5 rounded-2xl bg-card/85 backdrop-blur-xl p-1 shadow-lg shadow-black/30">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.value
                 const isAdmin = tab.value === 'admin'
+                const canSeeAdminTab = userClubRole === 'admin' || userClubRole === 'moderator'
+                
+                if (isAdmin && !canSeeAdminTab) {
+                  return null
+                }
+                
                 return (
                   <button
                     key={tab.value}
@@ -343,7 +358,7 @@ const TournamentPage = () => {
 
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground">Táblák állapota</h3>
-              <TournamentBoardsView tournament={tournament} />
+              <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
             </div>
 
             {tournament.groups && tournament.groups.length > 0 && (
@@ -365,7 +380,7 @@ const TournamentPage = () => {
           </TabsContent>
 
           <TabsContent value="boards" className="mt-0 space-y-4">
-            <TournamentBoardsView tournament={tournament} />
+            <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
           </TabsContent>
 
           <TabsContent value="groups" className="mt-0 space-y-4">
@@ -383,7 +398,7 @@ const TournamentPage = () => {
           </TabsContent>
 
           <TabsContent value="admin" className="mt-0 space-y-6">
-            {(userClubRole === 'admin' || userClubRole === 'moderator') && (
+            {userClubRole === 'admin' || userClubRole === 'moderator' ? (
               <Card className="bg-card/90 shadow-lg shadow-black/30">
                 <CardContent className="p-4">
                   <TournamentGroupsGenerator
@@ -391,6 +406,12 @@ const TournamentPage = () => {
                     userClubRole={userClubRole}
                     onRefetch={handleRefetch}
                   />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-card/90 shadow-lg shadow-black/30">
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Nincs jogosultságod az admin funkciókhoz.
                 </CardContent>
               </Card>
             )}

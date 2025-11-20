@@ -129,11 +129,12 @@ export async function GET(request: NextRequest) {
       summary: {
         totalTournaments: tournamentHistory.length,
         totalMatches: matchHistory.length,
-        wins: matchHistory.filter(m => m.won).length,
-        losses: matchHistory.filter(m => !m.won).length,
-        winRate: matchHistory.length > 0 
-          ? Math.round((matchHistory.filter(m => m.won).length / matchHistory.length) * 100)
-          : 0
+        wins: player.stats.totalMatchesWon,
+        losses: player.stats.totalMatchesLost,
+        winRate: player.stats.totalMatchesWon > 0 ? Math.round((player.stats.totalMatchesWon / (player.stats.totalMatchesWon + player.stats.totalMatchesLost)) * 100) : 0,
+        totalLegsWon: player.stats.totalLegsWon,
+        totalLegsLost: player.stats.totalLegsLost,
+        legWinRate: player.stats.totalLegsWon > 0 ? Math.round((player.stats.totalLegsWon / (player.stats.totalLegsWon + player.stats.totalLegsLost)) * 100) : 0,
       }
     };
 

@@ -415,15 +415,6 @@ export default function EditTournamentModal({
           {/* Action Buttons */}
           <div className="flex flex-col justify-end gap-3 pt-4 sm:flex-row">
             <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="order-2 sm:order-1"
-            >
-              Mégse
-            </Button>
-            <Button
               type="submit"
               disabled={loading || (boards.length === 0 && !isTournamentStarted)}
               className="order-1 sm:order-2"

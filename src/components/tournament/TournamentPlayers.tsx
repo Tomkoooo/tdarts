@@ -57,7 +57,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
 }) => {
   const { user } = useUserContext()
 
-  const [error, setError] = useState("")
   const [localPlayers, setLocalPlayers] = useState(players)
   const [localUserPlayerStatus, setLocalUserPlayerStatus] = useState(userPlayerStatus)
   const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId)
@@ -155,7 +154,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== playerId))
         toast.success('Játékos sikeresen eltávolítva!')
       } else {
-        setError('Nem sikerült eltávolítani a játékost.')
         showErrorToast('Nem sikerült eltávolítani a játékost.', {
           error: response.data?.error,
           context: 'Játékos eltávolítása',
@@ -163,7 +161,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         })
       }
     } catch (error: any) {
-      setError('Nem sikerült eltávolítani a játékost.')
       showErrorToast('Nem sikerült eltávolítani a játékost.', {
         error: error?.response?.data?.error,
         context: 'Játékos eltávolítása',
@@ -185,7 +182,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         )
         toast.success('Játékos sikeresen check-inelve!')
       } else {
-        setError('Nem sikerült check-inelni a játékost.')
         showErrorToast('Nem sikerült check-inelni a játékost.', {
           error: response.data?.error,
           context: 'Játékos check-in',
@@ -193,7 +189,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         })
       }
     } catch (error: any) {
-      setError('Nem sikerült check-inelni a játékost.')
       showErrorToast('Nem sikerült check-inelni a játékost.', {
         error: error?.response?.data?.error,
         context: 'Játékos check-in',
@@ -224,7 +219,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalUserPlayerId(response.data.playerId)
         toast.success('Sikeresen jelentkeztél a tornára!')
       } else {
-        setError('Nem sikerült jelentkezni a tornára.')
         showErrorToast('Nem sikerült jelentkezni a tornára.', {
           error: response.data?.error,
           context: 'Saját jelentkezés',
@@ -232,7 +226,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         })
       }
     } catch (error: any) {
-      setError('Nem sikerült jelentkezni a tornára.')
       showErrorToast('Nem sikerült jelentkezni a tornára.', {
         error: error?.response?.data?.error,
         context: 'Saját jelentkezés',
@@ -253,7 +246,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalUserPlayerId(null)
         toast.success('Jelentkezés sikeresen visszavonva!')
       } else {
-        setError('Nem sikerült visszavonni a jelentkezést.')
         showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
           error: response.data?.error,
           context: 'Jelentkezés visszavonása',
@@ -261,7 +253,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         })
       }
     } catch (error: any) {
-      setError('Nem sikerült visszavonni a jelentkezést.')
       showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
         error: error?.response?.data?.error,
         context: 'Jelentkezés visszavonása',
@@ -527,11 +518,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         </Card>
       )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {user && localUserPlayerId && localUserPlayerStatus !== 'none' && (
         <Alert className="border-primary/40 bg-primary/15 text-white/90 shadow-sm shadow-black/30">
@@ -816,7 +802,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 const data = await response.json()
                 if (data.success && data.match) {
                   setLegsModal({ isOpen: true, match: data.match })
-                  setShowPlayerMatchesModal(false)
                 }
               }
             } catch (err: any) {
@@ -835,6 +820,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         isOpen={legsModal.isOpen}
         onClose={() => setLegsModal({ isOpen: false, match: null })}
         match={legsModal.match}
+        onBackToMatches={() => setLegsModal({ isOpen: false, match: null })}
       />
 
       <Dialog
@@ -855,12 +841,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setRemoveConfirm({ isOpen: false })}
-            >
-              Mégse
-            </Button>
             <Button
               variant="destructive"
               onClick={async () => {
