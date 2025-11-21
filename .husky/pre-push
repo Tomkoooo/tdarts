@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 echo "🚀 Running pre-push checks..."
 echo "⏳ This may take a few minutes..."
@@ -9,7 +8,26 @@ PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 cd "$PROJECT_ROOT" || exit 1
 
 # Ensure we're using the correct Node.js version and PATH
-export PATH="/usr/local/bin:$PATH"
+# Get the node path from the current environment
+NODE_BIN="$(command -v node)"
+NPM_BIN="$(command -v npm)"
+
+if [ -z "$NODE_BIN" ]; then
+  # Fallback to common locations
+  if [ -f "/usr/local/bin/node" ]; then
+    NODE_BIN="/usr/local/bin/node"
+  elif [ -f "/opt/homebrew/bin/node" ]; then
+    NODE_BIN="/opt/homebrew/bin/node"
+  fi
+fi
+
+if [ -n "$NODE_BIN" ]; then
+  export PATH="$(dirname "$NODE_BIN"):$PATH"
+  export NODE_PATH="$NODE_BIN"
+fi
+
+# Set NODE_OPTIONS to avoid module resolution issues
+export NODE_OPTIONS="--no-warnings"
 
 # Check if node_modules exists and is complete
 if [ ! -d "node_modules" ] || [ ! -d "node_modules/lightningcss" ]; then
@@ -21,7 +39,10 @@ fi
 # Rebuild native modules to ensure they're available
 echo ""
 echo "🔧 Rebuilding native modules..."
-npm rebuild lightningcss 2>/dev/null || true
+npm rebuild @tailwindcss/node lightningcss 2>/dev/null || {
+  echo "⚠️  Native module rebuild failed, trying full reinstall..."
+  npm install --force @tailwindcss/node lightningcss 2>/dev/null || true
+}
 
 # Run lint
 echo ""
