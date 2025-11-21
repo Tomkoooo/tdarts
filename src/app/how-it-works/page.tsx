@@ -10,6 +10,7 @@ import {
   IconShare,
   IconChartLine,
   IconDeviceMobile,
+  IconPlayerPlay,
   IconQuestionMark,
   IconChevronRight,
   IconChevronLeft
@@ -30,7 +31,8 @@ const iconMap: { [key: string]: any } = {
   IconFlagCheck,
   IconShare,
   IconChartLine,
-  IconDeviceMobile
+  IconDeviceMobile,
+  IconPlayerPlay
 };
 
 // Color palette for each step (vibrant, non-red colors)
