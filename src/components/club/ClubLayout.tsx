@@ -86,7 +86,7 @@ export default function ClubLayout({
                 <TabsTrigger
                   key={tab.key}
                   value={tab.key}
-                  className="flex min-w-[60px] items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/15 data-[state=active]:bg-primary/20 data-[state=active]:text-primary sm:min-w-[80px] sm:px-2.5 sm:text-sm"
+                  className="flex min-w-[60px] items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/15 data-[state=active]:bg-primary/20 data-[state=active]:text-primary sm:min-w-[80px] sm:px-2.5 sm:text-sm"
                 >
                   <tab.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="hidden xs:inline sm:inline">{tab.label}</span>

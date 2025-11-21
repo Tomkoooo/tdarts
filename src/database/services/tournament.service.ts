@@ -291,37 +291,63 @@ export class TournamentService {
         return results;
     }
 
-    static async getTournament(tournamentId: string, populate: boolean = false): Promise<TournamentDocument> {
+    static async getTournament(tournamentId: string): Promise<TournamentDocument> {
         await connectMongo();
-        
-        // Check if tournamentId is a valid ObjectId (24 hex characters) or a 4-character code
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(tournamentId);
-        
-        let query;
-        if (isObjectId) {
-            // If it's an ObjectId, search by _id
-            query = TournamentModel.findById(tournamentId);
-        } else {
-            // If it's a 4-character code, search by tournamentId
-            query = TournamentModel.findOne({ tournamentId: tournamentId });
-        }
-        
-        // Only populate if explicitly requested (for cases where we need names/stats)
-        if (populate) {
-            query = query
-                .populate('clubId')
-                .populate('tournamentPlayers.playerReference')
-                .populate('groups.matches');
-        }
-        
-        const tournament = await query;
-        
+        const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
+            .populate('clubId')
+            .populate('tournamentPlayers.playerReference')
+            .populate('waitingList.playerReference')
+            .populate('waitingList.addedBy', 'name username')
+            .populate('notificationSubscribers.userRef', 'name username email')
+            .populate('groups.matches')
+            .populate('knockout.matches.player1')
+            .populate('knockout.matches.player2')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                            model: 'Match',
+                            populate: [
+                                { path: 'player1.playerId', model: 'Player' },
+                                { path: 'player2.playerId', model: 'Player' },
+                                { path: 'scorer', model: 'Player' }
+                            ]
+            })
+            .populate({
+                path: 'boards.currentMatch',
+                            model: 'Match',
+                            populate: [
+                                { path: 'player1.playerId', model: 'Player' },
+                                { path: 'player2.playerId', model: 'Player' },
+                                { path: 'scorer', model: 'Player' }
+                            ]
+            })
+            .populate({
+                path: 'boards.nextMatch',
+                model: 'Match',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player' },
+                    { path: 'player2.playerId', model: 'Player' },
+                    { path: 'scorer', model: 'Player' }
+                ]
+            });
         if (!tournament) {
-            throw new BadRequestError('Tournament not found');
+            throw new BadRequestError('Tournament not found - TournamentService');
         }
-
+        // Deep populate matches' player fields
+        for (const group of tournament.groups) {
+            if (group.matches && Array.isArray(group.matches)) {
+                for (let i = 0; i < group.matches.length; i++) {
+                    const match = group.matches[i];
+                    if (match && match.populate) {
+                        await match.populate('player1.playerId');
+                        await match.populate('player2.playerId');
+                        await match.populate('scorer');
+                    }
+                }
+            }
+        }
         return tournament;
     }
+
 
     static async getPlayerStatusInTournament(tournamentId: string, userId: string): Promise<string> {
         await connectMongo();

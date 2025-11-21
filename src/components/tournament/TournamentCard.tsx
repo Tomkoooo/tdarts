@@ -70,7 +70,6 @@ const typeLabels: Record<string, string> = {
 export default function TournamentCard({
   tournament,
   userRole = 'none',
-  showActions = false,
   onDelete,
   onEdit,
 }: TournamentCardProps) {

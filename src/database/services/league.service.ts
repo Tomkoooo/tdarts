@@ -180,7 +180,7 @@ export class LeagueService {
     const tournament = await TournamentService.getTournament(tournamentId);
     console.log(tournamentId);
     if (!tournament) {
-      throw new BadRequestError('Tournament not found');
+      throw new BadRequestError('Tournament not found - League Service');
     }
 
     // Verify tournament belongs to the same club
@@ -240,7 +240,7 @@ export class LeagueService {
 
     const tournament = await TournamentService.getTournament(tournamentId);
     if (!tournament) {
-      throw new BadRequestError('Tournament not found');
+      throw new BadRequestError('Tournament not found - League Service');
     }
 
     // Check if tournament is actually attached to this league
