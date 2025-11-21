@@ -4,6 +4,25 @@
 echo "🚀 Running pre-push checks..."
 echo "⏳ This may take a few minutes..."
 
+# Get the project root directory (where package.json is)
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT" || exit 1
+
+# Ensure we're using the correct Node.js version and PATH
+export PATH="/usr/local/bin:$PATH"
+
+# Check if node_modules exists and is complete
+if [ ! -d "node_modules" ] || [ ! -d "node_modules/lightningcss" ]; then
+  echo ""
+  echo "⚠️  node_modules seems incomplete. Reinstalling dependencies..."
+  npm install
+fi
+
+# Rebuild native modules to ensure they're available
+echo ""
+echo "🔧 Rebuilding native modules..."
+npm rebuild lightningcss 2>/dev/null || true
+
 # Run lint
 echo ""
 echo "📝 Running ESLint..."
@@ -13,7 +32,6 @@ npm run lint || {
   echo "Run 'npm run lint' to see the errors."
   exit 1
 }
-
 
 # Run build
 echo ""
