@@ -40,6 +40,7 @@ interface TournamentPlayersProps {
   userClubRole: 'admin' | 'moderator' | 'member' | 'none'
   userPlayerStatus: 'applied' | 'checked-in' | 'none'
   userPlayerId: string | null
+  status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout'
 }
 
 const playerStatusBadge: Record<string, { label?: string; variant: "default" | "outline" | "secondary" | "destructive" }> = {
@@ -54,6 +55,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   userClubRole,
   userPlayerStatus,
   userPlayerId,
+  status,
 }) => {
   const { user } = useUserContext()
 
@@ -454,7 +456,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     const isCheckedIn = player.status === 'checked-in'
 
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col items-center gap-2">
         {isCheckedIn ? (
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-success/15 text-success">
             <IconCheck className="h-3.5 w-3.5" />
@@ -472,7 +474,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </Button>
           )
         )}
-        {canManagePlayers && (
+        {canManagePlayers && status === "pending" && (
           <div className="flex items-center gap-1">
             <Button size="sm" variant="info" onClick={() => handleNotifyPlayer(player)} className="gap-1">
               <IconMail className="h-3 w-3" />
@@ -570,7 +572,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </Button>
           ) : (
             <Button asChild>
-              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}`)}`}>
+              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}?tab=players`)}`}>
                 Jelentkezéshez lépj be
               </Link>
             </Button>

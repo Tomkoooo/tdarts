@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { IconRefresh, IconShare2 } from "@tabler/icons-react"
 import { useUserContext } from "@/hooks/useUser"
 import { useTournamentAutoRefresh } from "@/hooks/useAutoRefresh"
@@ -69,6 +69,7 @@ const tabs = [
 
 const TournamentPage = () => {
   const { code } = useParams()
+  const searchParams = useSearchParams()
   const { user } = useUserContext()
 
   const [tournament, setTournament] = useState<any | null>(null)
@@ -84,14 +85,13 @@ const TournamentPage = () => {
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("overview")
 
-  // Handle tab from URL
+  // Handle tab from URL - reacts to URL changes
   React.useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search)
     const tabParam = searchParams.get('tab')
     if (tabParam && tabs.some(t => t.value === tabParam)) {
       setActiveTab(tabParam)
     }
-  }, [])
+  }, [searchParams])
 
   // Feature flag for auto refresh
   const { isEnabled: isProFeature, isLoading: isFeatureLoading } = useFeatureFlag(
@@ -376,6 +376,7 @@ const TournamentPage = () => {
               userClubRole={userClubRole}
               userPlayerStatus={userPlayerStatus}
               userPlayerId={userPlayerId}
+              status={tournament.tournamentSettings?.status}
             />
           </TabsContent>
 

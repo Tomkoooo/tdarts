@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FormField } from '@/components/ui/form-field';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
 
 type LoginFormData = {
   email: string;
@@ -39,10 +39,8 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
   onSubmit,
   isLoading = false,
   redirectPath,
-  error: externalError,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(externalError || null);
 
   const {
     register,
@@ -58,12 +56,10 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
 
   const onFormSubmit = async (data: LoginFormData) => {
     try {
-      setError(null);
       if (onSubmit) {
         await onSubmit(data);
       }
     } catch (error: any) {
-      setError(error.message || 'Hiba történt a bejelentkezés során');
       console.error('Login error:', error);
     }
   };
@@ -76,7 +72,6 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
       });
     } catch (error) {
       console.error('Google login error:', error);
-      setError('Hiba történt a Google bejelentkezés során');
     }
   };
 
@@ -95,12 +90,6 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           <FormField
             {...register('email')}
