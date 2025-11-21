@@ -6,7 +6,9 @@ import {
   IconUsers,
   IconCoin,
   IconDotsVertical,
-  IconChevronRight
+  IconChevronRight,
+  IconEdit,
+  IconTrash
 } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
@@ -121,33 +123,35 @@ export default function TournamentCard({
               {statusLabels[status]}
             </Badge>
 
-            {showActions && (userRole === 'admin' || userRole === 'moderator') && (
+            {(userRole === 'admin' || userRole === 'moderator') && (onDelete || onEdit) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-8 w-8"
+                    className="h-8 w-8 sm:h-8 sm:w-8 md:h-9 md:w-9"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <IconDotsVertical className="w-4 h-4" />
+                    <IconDotsVertical className="w-5 h-5 sm:w-4 sm:h-4 md:w-4 md:h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40" onClick={(e) => e.stopPropagation()}>
                   {onEdit && (
                     <DropdownMenuItem 
                       onClick={(e) => handleActionClick(e, onEdit)} 
-                      className="gap-2"
+                      className="flex items-center gap-2"
                     >
-                      Szerkesztés
+                      <IconEdit className="w-4 h-4 flex-shrink-0" />
+                      <span>Szerkesztés</span>
                     </DropdownMenuItem>
                   )}
                   {onDelete && (
                     <DropdownMenuItem
                       onClick={(e) => handleActionClick(e, onDelete)}
-                      className="gap-2 text-destructive focus:text-destructive"
+                      className="flex items-center gap-2 text-destructive focus:text-destructive"
                     >
-                      Törlés
+                      <IconTrash className="w-4 h-4 flex-shrink-0" />
+                      <span>Törlés</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

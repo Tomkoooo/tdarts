@@ -69,7 +69,13 @@ const DropdownMenuContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (
   <DropdownMenuPrimitive.Portal>
-    <DropdownMenuPrimitive.Content ref={ref} sideOffset={sideOffset} asChild {...props}>
+    <DropdownMenuPrimitive.Content 
+      ref={ref} 
+      sideOffset={sideOffset} 
+      asChild 
+      onCloseAutoFocus={(e) => e.preventDefault()}
+      {...props}
+    >
       <motion.div
         variants={fadeInScale}
         initial="initial"

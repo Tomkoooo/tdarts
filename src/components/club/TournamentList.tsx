@@ -1,5 +1,5 @@
 import { IconTrophy } from '@tabler/icons-react'
-import TournamentCard from '@/components/tournament/TournamentCard'
+import ClubTournamentCard from '@/components/club/ClubTournamentCard'
 import { Card, CardContent } from "@/components/ui/Card"
 
 interface TournamentListProps {
@@ -51,13 +51,12 @@ export default function TournamentList({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {tournaments.map((tournament) => (
-        <TournamentCard
+        <ClubTournamentCard
           key={tournament._id}
           tournament={tournament}
           userRole={userRole}
-          showActions={Boolean(onDeleteTournament || onEditTournament)}
           onDelete={
-            onDeleteTournament && tournament.tournamentSettings?.status === 'pending'
+            onDeleteTournament
               ? () => onDeleteTournament(tournament.tournamentId)
               : undefined
           }

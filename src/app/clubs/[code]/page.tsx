@@ -163,16 +163,6 @@ export default function ClubDetailPage() {
     const tournament = club.tournaments?.find((t: any) => t.tournamentId === tournamentId)
     if (!tournament) return
 
-    // Check if tournament is pending
-    if (tournament.tournamentSettings?.status !== 'pending') {
-      showErrorToast('Csak el nem indult tornák törölhetők', {
-        error: 'Csak el nem indult tornák törölhetők',
-        context: "Torna törlése",
-        errorName: "Törlés sikertelen",
-      })
-      return
-    }
-
     // Get tournament deletion info (players with emails count)
     try {
       const deletionInfo = await axios.get(`/api/tournaments/${tournamentId}/deletion-info`)
