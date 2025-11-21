@@ -29,21 +29,6 @@ fi
 # Set NODE_OPTIONS to avoid module resolution issues
 export NODE_OPTIONS="--no-warnings"
 
-# Check if node_modules exists and is complete
-if [ ! -d "node_modules" ] || [ ! -d "node_modules/lightningcss" ]; then
-  echo ""
-  echo "⚠️  node_modules seems incomplete. Reinstalling dependencies..."
-  npm install
-fi
-
-# Rebuild native modules to ensure they're available
-echo ""
-echo "🔧 Rebuilding native modules..."
-npm rebuild @tailwindcss/node lightningcss 2>/dev/null || {
-  echo "⚠️  Native module rebuild failed, trying full reinstall..."
-  npm install --force @tailwindcss/node lightningcss 2>/dev/null || true
-}
-
 # Run lint
 echo ""
 echo "📝 Running ESLint..."
