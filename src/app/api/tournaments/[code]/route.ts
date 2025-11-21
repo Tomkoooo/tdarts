@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params;
-  const tournament: any = await TournamentService.getTournament(code, true) // Populate players for frontend display
+  const tournament: any = await TournamentService.getTournament(code) // Populate players for frontend display
   if (!tournament) {
     return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
   }
