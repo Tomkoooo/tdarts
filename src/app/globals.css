@@ -122,6 +122,22 @@ html, body{
 
 /* tDarts Tournament Theme - shadcn/ui + Tailwind CSS v4 */
 @layer base {
+  /* Prevent iOS zoom on input focus - all inputs must be at least 16px */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
   :root {
     /* ===== shadcn/ui Core Variables ===== */
     
@@ -506,6 +522,7 @@ html, body{
     border: 1px solid oklch(20% 0.03 12 / 0.5);
     border-radius: 0.75rem;
     transition: all 0.2s ease;
+    font-size: 16px; /* Prevent iOS zoom on focus - minimum 16px */
   }
 
   .form-input:focus {
@@ -1242,6 +1259,7 @@ html {
     color: oklch(95% 0.005 0);
     transition: all 0.3s ease;
     font-weight: 500;
+    font-size: 16px; /* Prevent iOS zoom on focus - minimum 16px */
   }
 
   .admin-input:focus {
@@ -1259,6 +1277,7 @@ html {
     color: oklch(95% 0.005 0);
     transition: all 0.3s ease;
     font-weight: 500;
+    font-size: 16px; /* Prevent iOS zoom on focus - minimum 16px */
   }
 
   .admin-select:focus {

@@ -197,12 +197,12 @@ const BoardPage: React.FC = () => {
               </div>
               
               <div className="space-y-2 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Nincs torna kódod? Kérdezd meg a szervezőt!
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  A jelszó mentésre kerül a böngésződben a könnyebb használat érdekében.
-                </p>
+              <p className="text-sm text-muted-foreground">
+                Nincs torna kódod? Kérdezd meg a szervezőt!
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                A jelszó mentésre kerül a böngésződben a könnyebb használat érdekében.
+              </p>
               </div>
             </div>
           </CardContent>

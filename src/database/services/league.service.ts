@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { LeagueModel } from '@/database/models/league.model';
-import { TournamentModel } from '@/database/models/tournament.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { ClubModel } from '@/database/models/club.model';
 import { 
@@ -13,14 +12,41 @@ import {
   LeagueLeaderboard,
   LeagueStatsResponse,
   LeaguePointsConfig,
-  DEFAULT_LEAGUE_POINTS_CONFIG 
+  DEFAULT_LEAGUE_POINTS_CONFIG,
 } from '@/interface/league.interface';
 import { TournamentDocument } from '@/interface/tournament.interface';
 import { connectMongo } from '@/lib/mongoose';
 import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { AuthorizationService } from './authorization.service';
+import { TournamentService } from './tournament.service';
 
 export class LeagueService {
+
+  /**
+   * Helper function to get player ID from either ObjectId or populated object
+   */
+  private static getPlayerId(player: any): string {
+    if (!player) return '';
+    // If it's a populated object, use _id
+    if (typeof player === 'object' && player._id) {
+      return player._id.toString();
+    }
+    // If it's already a string or ObjectId, convert to string
+    return player.toString();
+  }
+
+  /**
+   * Helper function to get ObjectId from either ObjectId or populated object
+   */
+  private static getObjectId(obj: any): string {
+    if (!obj) return '';
+    // If it's a populated object, use _id
+    if (typeof obj === 'object' && obj._id) {
+      return obj._id.toString();
+    }
+    // If it's already a string or ObjectId, convert to string
+    return obj.toString();
+  }
 
   /**
    * Create a new league within a club
@@ -65,6 +91,7 @@ export class LeagueService {
       description: leagueData.description,
       club: clubId,
       pointsConfig,
+      pointSystemType: leagueData.pointSystemType || 'platform',
       createdBy: creatorId,
       startDate: leagueData.startDate,
       endDate: leagueData.endDate,
@@ -115,6 +142,7 @@ export class LeagueService {
     if (updates.isActive !== undefined) league.isActive = updates.isActive;
     if (updates.startDate !== undefined) league.startDate = updates.startDate;
     if (updates.endDate !== undefined) league.endDate = updates.endDate;
+    if (updates.pointSystemType !== undefined) league.pointSystemType = updates.pointSystemType;
     
     if (updates.pointsConfig) {
       league.pointsConfig = {
@@ -149,13 +177,16 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can attach tournaments to leagues');
     }
 
-    const tournament = await TournamentModel.findById(tournamentId);
+    const tournament = await TournamentService.getTournament(tournamentId);
+    console.log(tournamentId);
     if (!tournament) {
       throw new BadRequestError('Tournament not found');
     }
 
     // Verify tournament belongs to the same club
-    if (tournament.clubId.toString() !== league.club.toString()) {
+    const tournamentClubId = this.getObjectId(tournament.clubId);
+    const leagueClubId = this.getObjectId(league.club);
+    if (tournamentClubId !== leagueClubId) {
       throw new BadRequestError('Tournament must belong to the same club as the league');
     }
 
@@ -207,7 +238,7 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can detach tournaments from leagues');
     }
 
-    const tournament = await TournamentModel.findById(tournamentId);
+    const tournament = await TournamentService.getTournament(tournamentId);
     if (!tournament) {
       throw new BadRequestError('Tournament not found');
     }
@@ -276,7 +307,7 @@ export class LeagueService {
     }
 
     // Check if player is already in the league
-    const existingPlayer = league.players.find((p: any) => p.player.toString() === playerData.playerId);
+    const existingPlayer = league.players.find((p: any) => this.getPlayerId(p.player) === playerData.playerId);
     if (existingPlayer) {
       throw new BadRequestError('Player is already in this league');
     }
@@ -313,7 +344,7 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can adjust player points');
     }
 
-    const playerIndex = league.players.findIndex((p: any) => p.player.toString() === adjustment.playerId);
+    const playerIndex = league.players.findIndex((p: any) => this.getPlayerId(p.player) === adjustment.playerId);
     if (playerIndex === -1) {
       throw new BadRequestError('Player not found in this league');
     }
@@ -354,7 +385,7 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can undo adjustments');
     }
 
-    const playerIndex = league.players.findIndex((p: any) => p.player.toString() === playerId);
+    const playerIndex = league.players.findIndex((p: any) => this.getPlayerId(p.player) === playerId);
     if (playerIndex === -1) {
       throw new BadRequestError('Player not found in this league');
     }
@@ -397,19 +428,28 @@ export class LeagueService {
 
     // Calculate points for each player
     for (const tournamentPlayer of checkedInPlayers) {
-      const playerId = tournamentPlayer.playerReference.toString();
+      const playerId = this.getPlayerId(tournamentPlayer.playerReference);
       const position = tournamentPlayer.tournamentStanding || tournamentPlayer.finalPosition || 999;
       const eliminatedIn = tournamentPlayer.eliminatedIn || 'unknown';
 
-      const points = this.calculatePlayerPointsForTournament(
-        position,
-        eliminatedIn,
-        checkedInPlayers.length,
-        league.pointsConfig
-      );
+      let points: number;
+      if (league.pointSystemType === 'remiz_christmas') {
+        points = await this.calculateRemizChristmasPoints(
+          tournamentPlayer,
+          tournament,
+          position,
+        );
+      } else {
+        points = this.calculatePlayerPointsForTournament(
+          position,
+          eliminatedIn,
+          checkedInPlayers.length,
+          league.pointsConfig
+        );
+      }
 
       // Find or create player in league
-      let leaguePlayer = league.players.find((p: any) => p.player.toString() === playerId);
+      let leaguePlayer = league.players.find((p: any) => this.getPlayerId(p.player) === playerId);
       if (!leaguePlayer) {
         // Auto-add player to league if not already present
         league.players.push({
@@ -438,6 +478,15 @@ export class LeagueService {
       leaguePlayer.totalPoints = this.calculatePlayerTotalPointsForLeague(leaguePlayer);
     }
 
+    // Normalize player references to ensure only ObjectIds are stored (not populated objects)
+    league.players = league.players.map((p: any) => {
+      const playerId = this.getPlayerId(p.player);
+      return {
+        ...p,
+        player: new mongoose.Types.ObjectId(playerId) // Ensure it's an ObjectId, not a populated object
+      };
+    });
+
     await league.save();
   }
 
@@ -448,6 +497,144 @@ export class LeagueService {
     const tournamentPoints = leaguePlayer.tournamentPoints.reduce((sum: number, tp: any) => sum + tp.points, 0);
     const adjustmentPoints = leaguePlayer.manualAdjustments.reduce((sum: number, adj: any) => sum + adj.points, 0);
     return tournamentPoints + adjustmentPoints;
+  }
+
+  /**
+   * Calculate points using Remiz Christmas Series system
+   */
+  private static async calculateRemizChristmasPoints(
+    tournamentPlayer: any,
+    tournament: TournamentDocument,
+    position: number,
+  ): Promise<number> {
+    let totalPoints = 20; // Fixed 20 points for participation
+
+    // Calculate group points based on group size and wins
+    if (tournamentPlayer.groupId) {
+      // Find all players in the same group
+      const groupPlayers = tournament.tournamentPlayers.filter(
+        (p: any) => p.groupId?.toString() === tournamentPlayer.groupId?.toString()
+      );
+      const groupSize = groupPlayers.length;
+      
+      // Count only group matches won (not knockout matches)
+      const playerRefId = this.getPlayerId(tournamentPlayer.playerReference);
+      const groupMatchesWon = await this.countGroupMatchesWon(
+        tournament,
+        playerRefId,
+        tournamentPlayer.groupId.toString()
+      );
+      
+      // Calculate group points based on group size and wins
+      const groupPoints = this.getRemizGroupPoints(groupSize, groupMatchesWon);
+      totalPoints += groupPoints;
+    }
+
+    // Calculate placement points
+    const placementPoints = this.getRemizPlacementPoints(position);
+    totalPoints += placementPoints;
+
+    return totalPoints;
+  }
+
+  /**
+   * Count group matches won by a player (excluding knockout matches)
+   */
+  private static async countGroupMatchesWon(
+    tournament: TournamentDocument,
+    playerId: string,
+    groupId: string
+  ): Promise<number> {
+    const { MatchModel } = await import('@/database/models/match.model');
+    
+    // Find the group
+    const group = tournament.groups?.find((g: any) => g._id?.toString() === groupId);
+    if (!group || !group.matches || group.matches.length === 0) {
+      return 0;
+    }
+
+    // Get all matches for this group
+    const matchDocs = await MatchModel.find({ 
+      _id: { $in: group.matches },
+      type: 'group' // Ensure we only count group matches
+    });
+
+    // Count wins for this player
+    let wins = 0;
+    for (const match of matchDocs) {
+      if (match.winnerId && match.winnerId.toString() === playerId) {
+        wins++;
+      }
+    }
+
+    return wins;
+  }
+
+  /**
+   * Get group points for Remiz Christmas Series based on group size and wins
+   * Table header "0p, 2p, 4p, 6p, 8p, 10p" represents wins (0, 1, 2, 3, 4, 5 wins)
+   * where "p" means points in tournament (each win = 2 points)
+   */
+  private static getRemizGroupPoints(groupSize: number, wins: number): number {
+    // Map wins to points based on group size
+    // Table: 0p=0 wins, 2p=1 win, 4p=2 wins, 6p=3 wins, 8p=4 wins, 10p=5 wins
+    const pointsMap: Record<number, Record<number, number>> = {
+      3: { 0: 0, 1: 30, 2: 60 }, // 3 players: 0 wins = 0p, 1 win = 30p, 2 wins = 60p
+      4: { 0: 0, 1: 20, 2: 40, 3: 60 }, // 4 players: 0 wins = 0p, 1 win = 20p, 2 wins = 40p, 3 wins = 60p
+      5: { 0: 0, 1: 15, 2: 30, 3: 45, 4: 60 }, // 5 players: 0 wins = 0p, 1 win = 15p, 2 wins = 30p, 3 wins = 45p, 4 wins = 60p
+      6: { 0: 0, 1: 12, 2: 24, 3: 36, 4: 48, 5: 60 }, // 6 players: 0 wins = 0p, 1 win = 12p, 2 wins = 24p, 3 wins = 36p, 4 wins = 48p, 5 wins = 60p
+    };
+
+    const groupMap = pointsMap[groupSize];
+    if (!groupMap) {
+      // Default to 0 if group size not in table
+      return 0;
+    }
+
+    // Find the exact match or closest lower value
+    if (groupMap[wins] !== undefined) {
+      return groupMap[wins];
+    }
+
+    // If wins exceed table, return max points
+    const maxWins = Math.max(...Object.keys(groupMap).map(Number));
+    if (wins > maxWins) {
+      return groupMap[maxWins];
+    }
+
+    // If wins are between values, return the lower one
+    const winKeys = Object.keys(groupMap).map(Number).sort((a, b) => b - a);
+    for (const winKey of winKeys) {
+      if (wins >= winKey) {
+        return groupMap[winKey];
+      }
+    }
+
+    return 0;
+  }
+
+  /**
+   * Get placement points for Remiz Christmas Series
+   * Mapping: 1st = 100, 2nd = 60, 3rd = 40, 5th (position 4) = 30, 11th (position 8) = 20, 17th (position 16) = 10
+   */
+  private static getRemizPlacementPoints(position: number): number {
+    // Placement mapping:
+    // 1st place (position 1) = 100 points
+    // 2nd place (position 2) = 60 points
+    // 3rd place (position 3) = 40 points
+    // 5th place (position 4) = 30 points
+    // 11th place (position 8) = 20 points
+    // 17th place (position 16) = 10 points
+
+    if (position === 1) return 100;
+    if (position === 2) return 60;
+    if (position === 4) return 40;
+    if (position === 8) return 30; // 5th placement
+    if (position === 16) return 20; // 11th placement
+    if (position === 32) return 10; // 17th placement
+
+    // For other positions, return 0 (no placement points)
+    return 0;
   }
 
   /**
@@ -517,7 +704,7 @@ export class LeagueService {
         const positionsFromPoints = player.tournamentPoints.map((tp: any) => tp.position).filter((p: number) => p > 0);
         
         // Also get positions and averages from all attached tournaments for this player
-        const playerIdStr = player.player._id?.toString() || player.player.toString();
+        const playerIdStr = this.getPlayerId(player.player);
         const allPositions: number[] = [...positionsFromPoints];
         const allAverages: number[] = [];
         
@@ -685,6 +872,7 @@ export class LeagueService {
       endDate: league.endDate,
       createdAt: league.createdAt,
       updatedAt: league.updatedAt,
+      pointSystemType: league.pointSystemType,
       // Include populated tournaments
       attachedTournaments: league.attachedTournaments.map((tournament: any) => ({
         _id: tournament._id,
@@ -824,7 +1012,7 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can remove players from leagues');
     }
 
-    const playerIndex = league.players.findIndex((p: any) => p.player.toString() === playerId);
+    const playerIndex = league.players.findIndex((p: any) => this.getPlayerId(p.player) === playerId);
     if (playerIndex === -1) {
       throw new BadRequestError('Player not found in this league');
     }
@@ -888,7 +1076,7 @@ export class LeagueService {
     const removal = league.removedPlayers[removalIndex];
 
     // Check if player is already back in the league
-    const existingPlayer = league.players.find((p: any) => p.player.toString() === playerId);
+    const existingPlayer = league.players.find((p: any) => this.getPlayerId(p.player) === playerId);
     if (existingPlayer) {
       throw new BadRequestError('Player is already in the league');
     }

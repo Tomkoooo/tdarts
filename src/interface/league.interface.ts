@@ -2,6 +2,9 @@ import { Document, Types } from 'mongoose';
 import { PlayerDocument } from './player.interface';
 import { TournamentDocument } from './tournament.interface';
 
+// Point System Type
+export type PointSystemType = 'platform' | 'remiz_christmas';
+
 // League Points Configuration Interface
 export interface LeaguePointsConfig {
   // Fixed points for players eliminated in group stage
@@ -72,6 +75,7 @@ export interface League {
     removedAt: Date;
   }>;
   pointsConfig: LeaguePointsConfig; // Point calculation configuration
+  pointSystemType: PointSystemType; // Type of point system to use
   createdBy: string; // User ID of creator (must be moderator)
   isActive: boolean; // Whether league is currently active
   startDate?: Date; // Optional league start date
@@ -85,6 +89,7 @@ export interface LeagueDocument extends Document, Omit<League, '_id' | 'club' | 
   _id: Types.ObjectId;
   club: Types.ObjectId;
   attachedTournaments: Types.ObjectId[];
+  pointSystemType: PointSystemType;
   players: Array<{
     player: Types.ObjectId;
     totalPoints: number;
@@ -138,6 +143,7 @@ export interface CreateLeagueRequest {
   name: string;
   description?: string;
   pointsConfig?: Partial<LeaguePointsConfig>;
+  pointSystemType?: PointSystemType;
   startDate?: Date;
   endDate?: Date;
 }
@@ -146,6 +152,7 @@ export interface UpdateLeagueRequest {
   name?: string;
   description?: string;
   pointsConfig?: Partial<LeaguePointsConfig>;
+  pointSystemType?: PointSystemType;
   isActive?: boolean;
   startDate?: Date;
   endDate?: Date;

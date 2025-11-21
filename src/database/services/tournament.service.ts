@@ -291,60 +291,35 @@ export class TournamentService {
         return results;
     }
 
-    static async getTournament(tournamentId: string): Promise<TournamentDocument> {
+    static async getTournament(tournamentId: string, populate: boolean = false): Promise<TournamentDocument> {
         await connectMongo();
-        const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
-            .populate('clubId')
-            .populate('tournamentPlayers.playerReference')
-            .populate('waitingList.playerReference')
-            .populate('waitingList.addedBy', 'name username')
-            .populate('notificationSubscribers.userRef', 'name username email')
-            .populate('groups.matches')
-            .populate('knockout.matches.player1')
-            .populate('knockout.matches.player2')
-            .populate({
-                path: 'knockout.matches.matchReference',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
-            })
-            .populate({
-                path: 'boards.currentMatch',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
-            })
-            .populate({
-                path: 'boards.nextMatch',
-                model: 'Match',
-                populate: [
-                    { path: 'player1.playerId', model: 'Player' },
-                    { path: 'player2.playerId', model: 'Player' },
-                    { path: 'scorer', model: 'Player' }
-                ]
-            });
+        
+        // Check if tournamentId is a valid ObjectId (24 hex characters) or a 4-character code
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(tournamentId);
+        
+        let query;
+        if (isObjectId) {
+            // If it's an ObjectId, search by _id
+            query = TournamentModel.findById(tournamentId);
+        } else {
+            // If it's a 4-character code, search by tournamentId
+            query = TournamentModel.findOne({ tournamentId: tournamentId });
+        }
+        
+        // Only populate if explicitly requested (for cases where we need names/stats)
+        if (populate) {
+            query = query
+                .populate('clubId')
+                .populate('tournamentPlayers.playerReference')
+                .populate('groups.matches');
+        }
+        
+        const tournament = await query;
+        
         if (!tournament) {
             throw new BadRequestError('Tournament not found');
         }
-        // Deep populate matches' player fields
-        for (const group of tournament.groups) {
-            if (group.matches && Array.isArray(group.matches)) {
-                for (let i = 0; i < group.matches.length; i++) {
-                    const match = group.matches[i];
-                    if (match && match.populate) {
-                        await match.populate('player1.playerId');
-                        await match.populate('player2.playerId');
-                        await match.populate('scorer');
-                    }
-                }
-            }
-        }
+
         return tournament;
     }
 
@@ -808,7 +783,7 @@ export class TournamentService {
         playersCount?: number;
     }): Promise<boolean> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
             }
@@ -1122,8 +1097,17 @@ export class TournamentService {
         // 2. Each group has enough players to make the constraints meaningful
         const groupCount = groupPairs.length * 2;
         const isPowerOfTwo = (groupCount & (groupCount - 1)) === 0 && groupCount > 0;
-        const playersPerGroup = pairingsByGroupPair[0]?.length || 0;
+        const playersPerGroup = Math.min(...pairingsByGroupPair.map(gp => gp.length)); // Use minimum, not first
+        const maxPlayersPerGroup = Math.max(...pairingsByGroupPair.map(gp => gp.length));
         const useConstraintBasedOrdering = isPowerOfTwo && playersPerGroup >= 2 && groupCount >= 4;
+        
+        console.log(`=== CONSTRAINT-BASED ORDERING DEBUG ===`);
+        console.log(`groupCount: ${groupCount}, isPowerOfTwo: ${isPowerOfTwo}`);
+        console.log(`playersPerGroup (min): ${playersPerGroup}, maxPlayersPerGroup: ${maxPlayersPerGroup}`);
+        console.log(`pairingsByGroupPair.length: ${pairingsByGroupPair.length}`);
+        pairingsByGroupPair.forEach((gp, idx) => {
+            console.log(`  Group pair ${idx}: ${gp.length} pairings`);
+        });
         
         if (useConstraintBasedOrdering && groupCount === 4 && playersPerGroup >= 2) {
             // NEW ALGORITHM for 4 groups with constraint-based ordering
@@ -1134,6 +1118,18 @@ export class TournamentService {
             const matches0 = pairingsByGroupPair[0]; // e.g., A/D pairings: a1-d4, a2-d3, a3-d2, a4-d1
             const matches1 = pairingsByGroupPair[1]; // e.g., B/C pairings: b1-c4, b2-c3, b3-c2, b4-c1
             
+            console.log(`matches0.length: ${matches0?.length || 0}, matches1.length: ${matches1?.length || 0}`);
+            
+            // Use the minimum length to avoid index errors
+            const actualPlayersPerGroup = Math.min(matches0.length, matches1.length, playersPerGroup);
+            
+            if (!matches0 || !matches1 || matches0.length === 0 || matches1.length === 0) {
+                console.error(`ERROR: No pairings! matches0: ${matches0?.length || 0}, matches1: ${matches1?.length || 0}`);
+                throw new Error(`No pairings generated. matches0: ${matches0?.length || 0}, matches1: ${matches1?.length || 0}`);
+            }
+            
+            console.log(`Using actualPlayersPerGroup: ${actualPlayersPerGroup} (matches0: ${matches0.length}, matches1: ${matches1.length})`);
+            
             // Pattern for 4 groups: a1/d4 - b2/c3 - d1/a4 - c2/b3 - b1/c4 - a2/d3 - c1/b4 - d2/a3
             // Breakdown:
             // Pair 0 (matches 0-1): A/D[0] as-is,     B/C[1] as-is
@@ -1141,31 +1137,61 @@ export class TournamentService {
             // Pair 2 (matches 4-5): B/C[0] as-is,     A/D[1] as-is
             // Pair 3 (matches 6-7): B/C[3] flipped,   A/D[2] flipped
             
-            const numPairs = playersPerGroup; // Number of consecutive match pairs
+            const numPairs = actualPlayersPerGroup; // Use the minimum length we calculated
+            
+            console.log(`numPairs: ${numPairs} (matches0: ${matches0.length}, matches1: ${matches1.length})`);
             
             for (let pairIdx = 0; pairIdx < numPairs; pairIdx++) {
                 let match1, match2;
                 
                 if (pairIdx === 0) {
                     // Pair 0: A/D[0] as-is, B/C[1] as-is
-                    match1 = matches0[0].pairing;
-                    match2 = matches1[1].pairing;
+                    if (matches0.length > 0 && matches1.length > 1) {
+                        match1 = matches0[0].pairing;
+                        match2 = matches1[1].pairing;
+                    }
                 } else if (pairIdx === 1) {
                     // Pair 1: A/D[3] flipped, B/C[2] flipped
-                    const m1 = matches0[3].pairing;
-                    match1 = { player1: m1.player2, player2: m1.player1 };
-                    const m2 = matches1[2].pairing;
-                    match2 = { player1: m2.player2, player2: m2.player1 };
+                    if (matches0.length > 3 && matches1.length > 2) {
+                        const m1 = matches0[3].pairing;
+                        match1 = { player1: m1.player2, player2: m1.player1 };
+                        const m2 = matches1[2].pairing;
+                        match2 = { player1: m2.player2, player2: m2.player1 };
+                    } else {
+                        // Fallback: use available matches
+                        const idx0 = Math.min(3, matches0.length - 1);
+                        const idx1 = Math.min(2, matches1.length - 1);
+                        if (idx0 >= 0 && idx1 >= 0) {
+                            const m1 = matches0[idx0].pairing;
+                            match1 = { player1: m1.player2, player2: m1.player1 };
+                            const m2 = matches1[idx1].pairing;
+                            match2 = { player1: m2.player2, player2: m2.player1 };
+                        }
+                    }
                 } else if (pairIdx === 2) {
                     // Pair 2: B/C[0] as-is, A/D[1] as-is
-                    match1 = matches1[0].pairing;
-                    match2 = matches0[1].pairing;
+                    if (matches1.length > 0 && matches0.length > 1) {
+                        match1 = matches1[0].pairing;
+                        match2 = matches0[1].pairing;
+                    }
                 } else if (pairIdx === 3) {
                     // Pair 3: B/C[3] flipped, A/D[2] flipped
-                    const m1 = matches1[3].pairing;
-                    match1 = { player1: m1.player2, player2: m1.player1 };
-                    const m2 = matches0[2].pairing;
-                    match2 = { player1: m2.player2, player2: m2.player1 };
+                    if (matches1.length > 3 && matches0.length > 2) {
+                        const m1 = matches1[3].pairing;
+                        match1 = { player1: m1.player2, player2: m1.player1 };
+                        const m2 = matches0[2].pairing;
+                        match2 = { player1: m2.player2, player2: m2.player1 };
+                    } else {
+                        // Fallback: use available matches
+                        const idx1 = Math.min(3, matches1.length - 1);
+                        const idx0 = Math.min(2, matches0.length - 1);
+                        if (idx1 >= 0 && idx0 >= 0) {
+                            const m1 = matches1[idx1].pairing;
+                            match1 = { player1: m1.player2, player2: m1.player1 };
+                            const m2 = matches0[idx0].pairing;
+                            match2 = { player1: m2.player2, player2: m2.player1 };
+                        }
+                    }
                 } else {
                     // For more than 4 players per group, extend the pattern
                     // This is a simplified extension - may need refinement for specific cases
@@ -1831,7 +1857,7 @@ export class TournamentService {
 
     static async generateManualKnockout(tournamentCode: string, requesterId: string): Promise<boolean> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
             }
@@ -1884,7 +1910,7 @@ export class TournamentService {
         seededPlayersCount: number;
     }): Promise<boolean> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
             }
@@ -1987,7 +2013,7 @@ export class TournamentService {
 
     static async generateEmptyKnockoutRounds(tournamentCode: string, requesterId: string, roundsCount: number = 2): Promise<boolean> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new Error('Tournament not found');
             }
@@ -3027,7 +3053,7 @@ export class TournamentService {
 
     static async getPlayerMatches(tournamentCode: string, playerId: string): Promise<any[]> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -3126,7 +3152,7 @@ export class TournamentService {
 
     static async movePlayerInGroup(tournamentCode: string, groupId: string, playerId: string, direction: 'up' | 'down'): Promise<boolean> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -3207,7 +3233,7 @@ export class TournamentService {
 
     static async finishTournament(tournamentCode: string, requesterId: string): Promise<boolean> {
         try {
-            const tournament = await this.getTournament(tournamentCode);
+            const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -4193,7 +4219,7 @@ export class TournamentService {
             await tournament.save();
             
             // Return updated tournament
-            return await this.getTournament(tournamentId);
+            return await TournamentService.getTournament(tournamentId);
         } catch (err) {
             console.error('updateTournamentSettings error:', err);
             throw err;

@@ -482,7 +482,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
-    } else {
+        } else {
       setPlayer2(prev => ({
         ...prev,
         score: newPlayerScore,

@@ -672,22 +672,22 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             {/* Top row: Back button and title */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <Button variant="outline" size="sm" onClick={handleBackToBoards} className="gap-2 w-full sm:w-auto">
-                <IconArrowLeft size={18} />
-                Vissza a táblákhoz
-              </Button>
+              <IconArrowLeft size={18} />
+              Vissza a táblákhoz
+            </Button>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                 <h1 className="text-xl sm:text-2xl font-bold">
-                  {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
-                </h1>
+                {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
+              </h1>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRefetchMatches}
-                    disabled={loading}
-                    className="gap-2"
-                  >
-                    <IconRefresh size={18} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefetchMatches}
+                disabled={loading}
+                className="gap-2"
+              >
+                <IconRefresh size={18} />
                     <span className="hidden sm:inline">Frissítés</span>
                   </Button>
                   <Button
@@ -699,7 +699,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     <IconPlayerPlay size={18} />
                     <span className="hidden sm:inline">Helyi meccs</span>
                     <span className="sm:hidden">Helyi</span>
-                  </Button>
+              </Button>
                 </div>
               </div>
             </div>
@@ -852,7 +852,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               </div>
             </DialogContent>
           </Dialog>
-
+          
           {/* Admin Modal */}
           {showAdminModal && adminMatch && (
             <Dialog open={showAdminModal} onOpenChange={(open) => {

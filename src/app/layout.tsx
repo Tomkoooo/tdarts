@@ -231,7 +231,7 @@ export default async function RootLayout({
             <AuthSync />
             <PWAProvider />
             <NavbarProvider>
-              {children}
+            {children}
             </NavbarProvider>
           </UserProvider>
         </SessionProvider>

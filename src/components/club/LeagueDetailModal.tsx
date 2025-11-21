@@ -287,6 +287,7 @@ export default function LeagueDetailModal({
                   clubId={clubId}
                   leagueId={league._id!}
                   onTournamentAttached={fetchLeagueStats}
+                  pointSystemType={league.pointSystemType || 'platform'}
                 />
               </TabsContent>
 
@@ -746,9 +747,10 @@ interface TournamentsTabProps {
   clubId: string;
   leagueId: string;
   onTournamentAttached: () => void;
+  pointSystemType?: 'platform' | 'remiz_christmas';
 }
 
-function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournamentAttached }: TournamentsTabProps) {
+function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournamentAttached, pointSystemType = 'platform' }: TournamentsTabProps) {
   const [showAttachModal, setShowAttachModal] = useState(false);
   const [showDetachModal, setShowDetachModal] = useState(false);
   const [availableTournaments, setAvailableTournaments] = useState<any[]>([]);
@@ -982,19 +984,29 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                 )}
               </div>
 
-              <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
-                <label className="text-sm font-medium text-foreground">
-                  Pontszámítás engedélyezése
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Nem javasolt már befejezett versenyeknél.
-                  </span>
-                </label>
-                <input
-                  type="checkbox"
-                  checked={calculatePoints}
-                  onChange={(event) => setCalculatePoints(event.target.checked)}
-                  className="h-4 w-4 rounded accent-primary"
-                />
+              <div className="space-y-2">
+                <div className="rounded-md bg-primary/5 px-3 py-2 text-sm">
+                  <p className="font-medium text-foreground">Pontszámítási rendszer:</p>
+                  <p className="text-xs text-muted-foreground">
+                    {pointSystemType === 'remiz_christmas' 
+                      ? 'Remiz Christmas Series pontszámítás (20 pont részvétel + csoport pontok + helyezési pontok)'
+                      : 'Platform pontszámítás (geometrikus progresszió)'}
+                  </p>
+                </div>
+                <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
+                  <label className="text-sm font-medium text-foreground">
+                    Pontszámítás engedélyezése
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Nem javasolt már befejezett versenyeknél.
+                    </span>
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={calculatePoints}
+                    onChange={(event) => setCalculatePoints(event.target.checked)}
+                    className="h-4 w-4 rounded accent-primary"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -1066,6 +1078,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
     name: league.name,
     description: league.description || '',
     pointsConfig: { ...league.pointsConfig },
+    pointSystemType: league.pointSystemType || 'platform',
   });
 
   useEffect(() => {
@@ -1073,6 +1086,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
       name: league.name,
       description: league.description || '',
       pointsConfig: { ...league.pointsConfig },
+      pointSystemType: league.pointSystemType || 'platform',
     });
   }, [league]);
 
@@ -1174,6 +1188,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
       name: league.name,
       description: league.description || '',
       pointsConfig: { ...league.pointsConfig },
+      pointSystemType: league.pointSystemType || 'platform',
     });
     setIsEditing(false);
   };
@@ -1367,6 +1382,25 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="point-system-type">Pontszámítási rendszer</Label>
+            <select
+              id="point-system-type"
+              value={formData.pointSystemType || 'platform'}
+              onChange={(e) => setFormData({ ...formData, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' })}
+              className="w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
+            >
+              <option value="platform">Platform pontszámítás</option>
+              <option value="remiz_christmas">Remiz Christmas Series pontszámítás</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {formData.pointSystemType === 'remiz_christmas' 
+                ? 'Fix pontrendszer: 20 pont részvétel, csoport pontok a csoport mérete és győzelmek alapján, helyezési pontok a végső helyezés alapján.'
+                : 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
+            </p>
+          </div>
+
+          {formData.pointSystemType === 'platform' && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <IconInfoCircle className="h-4 w-4" /> Pontszámítás beállítások
@@ -1401,12 +1435,15 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
               ))}
             </div>
           </div>
+          )}
 
+          {formData.pointSystemType === 'platform' && (
           <Alert className="border-primary/30 bg-primary/5">
             <AlertDescription>
               Tippek: tartsd alacsonyan a szorzót, hogy a pontszámítás kiegyensúlyozott maradjon.
             </AlertDescription>
           </Alert>
+          )}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="ghost" onClick={handleCancel} disabled={loading}>
@@ -1431,6 +1468,20 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
               <p className="text-base text-foreground">{league.description}</p>
             </div>
           )}
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Pontszámítási rendszer</p>
+            <p className="text-base text-foreground">
+              {league.pointSystemType === 'remiz_christmas' 
+                ? 'Remiz Christmas Series pontszámítás'
+                : 'Platform pontszámítás'}
+            </p>
+            {league.pointSystemType === 'remiz_christmas' && (
+              <p className="text-xs text-muted-foreground mt-1">
+                20 pont részvétel + csoport pontok + helyezési pontok
+              </p>
+            )}
+          </div>
+          {league.pointSystemType === 'platform' && (
           <div className="grid gap-3 md:grid-cols-2">
             <InfoRow label="Csoportkör kiesés pontjai" value={league.pointsConfig.groupDropoutPoints} />
             <InfoRow label="Egyenes kiesés alappont" value={league.pointsConfig.knockoutBasePoints} />
@@ -1441,6 +1492,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             <InfoRow label="Győztes bónusz" value={league.pointsConfig.winnerBonus} />
             <InfoRow label="Max. kiesős körök" value={league.pointsConfig.maxKnockoutRounds} />
           </div>
+          )}
         </div>
       )}
     </div>
