@@ -35,7 +35,8 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
 
 clubSchema.pre('save', async function (next) {
   if (this.contact?.email) {
-    const emailRegex = /^[^\s@]+@[^ s@]+\.[^\s@]+$/;
+    // Allow all valid email formats (not just gmail or .com)
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(this.contact.email)) {
       return next(new Error('Invalid contact email format'));
     }

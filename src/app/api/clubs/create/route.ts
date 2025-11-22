@@ -1,22 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ClubModel } from '@/database/models/club.model';
 import { ClubService } from '@/database/services/club.service';
+import { BadRequestError } from '@/middleware/errorHandle';
 
 export async function POST(req: NextRequest) {
   try {
     const { creatorId, clubData } = await req.json();
-    // clubData: { name, description, location, contact, boards, players }
-    const club = new ClubModel({
-      ...clubData,
-      admin: [creatorId],
-      members: [creatorId],
-      boards: clubData.boards,
-      players: clubData.players.map((p: any) => p._id),
+    
+    // Validate required fields
+    if (!creatorId) {
+      return NextResponse.json({ error: 'creatorId is required' }, { status: 400 });
+    }
+    if (!clubData || !clubData.name || !clubData.description || !clubData.location) {
+      return NextResponse.json({ error: 'name, description, and location are required' }, { status: 400 });
+    }
+    
+    // Use ClubService.createClub - boards and players are handled at tournament level
+    const club = await ClubService.createClub(creatorId, {
+      name: clubData.name,
+      description: clubData.description,
+      location: clubData.location,
+      contact: clubData.contact || {},
     });
-    await club.save();
+    
     return NextResponse.json(club, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error instanceof BadRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error('Club creation error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
 

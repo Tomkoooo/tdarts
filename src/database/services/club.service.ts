@@ -26,8 +26,6 @@ export class ClubService {
         phone?: string;
         website?: string;
       };
-      boardCount: number;
-      players?: any[]; // Player objects (optional)
     }
   ): Promise<ClubDocument> {
     await connectMongo();
@@ -53,22 +51,14 @@ export class ClubService {
       throw new BadRequestError('Club name already exists');
     }
 
-    // Player collectionből referált tagok (ha vannak)
-    const memberIds: Types.ObjectId[] = [];
-    if (clubData.players && clubData.players.length > 0) {
-      for (const player of clubData.players) {
-        let playerDoc = await PlayerModel.findOne({ name: player.name });
-        if (!playerDoc) {
-          playerDoc = await PlayerModel.create({ name: player.name });
-        }
-        memberIds.push(playerDoc._id);
-      }
-    }
-
+    // Create club with empty members array (players are added later through other flows)
     const club = new ClubModel({
-      ...clubData,
-      admin: [creatorId], // csak admin, NEM member
-      members: memberIds,
+      name: clubData.name,
+      description: clubData.description,
+      location: clubData.location,
+      contact: clubData.contact || {},
+      admin: [creatorId], // creator is admin
+      members: [], // No initial members, they are added through other flows
       moderators: [],
       isActive: true,
     });
@@ -76,7 +66,7 @@ export class ClubService {
     await club.save();
 
     // Note: Boards are now created at tournament level, not club level
-    // No need to create boards here anymore
+    // Players are added through other flows (tournament registration, manual addition, etc.)
 
     return club;
   }
