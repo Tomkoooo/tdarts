@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { SubscriptionService } from "@/database/services/subscription.service";
 import { BadRequestError } from "@/middleware/errorHandle";
-import { AuthService } from "@/database/services/auth.service";
 
 export async function GET(
   request: NextRequest,
@@ -23,13 +22,13 @@ export async function PUT(
   try {
     const { code } = await params;
     
-    // Get user from JWT token
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
+    // Get user ID from request
+    const { AuthorizationService } = await import('@/database/services/authorization.service');
+    const requesterId = await AuthorizationService.getUserIdFromRequest(request);
+    
+    if (!requesterId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const user = await AuthService.verifyToken(token);
-    const requesterId = user._id.toString();
     
     const body = await request.json();
     const { settings, boards } = body;
@@ -85,13 +84,13 @@ export async function DELETE(
   try {
     const { code } = await params;
     
-    // Get user from JWT token
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
+    // Get user ID from request
+    const { AuthorizationService } = await import('@/database/services/authorization.service');
+    const requesterId = await AuthorizationService.getUserIdFromRequest(request);
+    
+    if (!requesterId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const user = await AuthService.verifyToken(token);
-    const requesterId = user._id.toString();
     
     const body = await request.json().catch(() => ({}));
     const { emailData } = body;

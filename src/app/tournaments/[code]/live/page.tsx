@@ -1,15 +1,73 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LiveMatchViewer from '@/components/tournament/LiveMatchViewer';
 import LiveMatchesList from '@/components/tournament/LiveMatchesList';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 const LiveStreamingPage = () => {
   const { code } = useParams();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showMatchList, setShowMatchList] = useState<boolean>(true);
+  const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const checkPermission = async () => {
+      try {
+        const response = await fetch(`/api/tournaments/${code}`);
+        const data = await response.json();
+        
+        if (data && data.clubId) {
+          // Check feature flag or subscription
+          // Assuming featureFlags are populated on clubId
+          const hasAccess = data.clubId.featureFlags?.liveMatchFollowing || 
+                           ['pro', 'enterprise'].includes(data.clubId.subscriptionModel);
+          setIsAllowed(!!hasAccess);
+        } else {
+          setIsAllowed(false);
+        }
+      } catch (error) {
+        console.error('Error checking permission:', error);
+        setIsAllowed(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (code) {
+      checkPermission();
+    }
+  }, [code]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-base-100 via-base-200 to-base-300 flex items-center justify-center">
+        <div className="loading loading-spinner loading-lg text-primary"></div>
+      </div>
+    );
+  }
+
+  if (isAllowed === false) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-base-100 via-base-200 to-base-300 flex items-center justify-center p-4">
+        <div className="glass-card max-w-md text-center p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-error/20 flex items-center justify-center">
+            <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-base-content">Hozzáférés Megtagadva</h2>
+          <p className="text-base-content/70 mb-6">
+            Ez a funkció csak a Pro és Enterprise csomagokban érhető el. Kérjük, lépj kapcsolatba a klub adminisztrátorával.
+          </p>
+          <Link href="/" className="btn btn-primary">Vissza a főoldalra</Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedMatchId) {
     console.log("No match selected");

@@ -1079,7 +1079,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
     const finishedMatch = status === "finished" && hasPlayers
     const allowSettings = !isTournamentLocked && (!finishedMatch || !hasPlayers)
-    const allowResultEdit = !isTournamentLocked && status !== "finished"
+    const allowResultEdit = !isTournamentLocked && hasPlayers && tournamentStatus !== "finished"
     const allowDelete = allowSettings && currentKnockoutMethod === "manual"
 
     return (
@@ -1116,19 +1116,19 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <TooltipContent side="top">Beállítások</TooltipContent>
             </Tooltip>
 
-            {rawMatch.matchReference && hasPlayers && allowResultEdit ? (
+            {rawMatch.matchReference && allowResultEdit ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     className="btn btn-ghost btn-md"
                     onClick={() => handleMatchEdit(rawMatch)}
-                    aria-label="Eredmény rögzítése"
+                    aria-label="Eredmény módosítása"
                   >
                     <IconClipboardList size={16} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Eredmény</TooltipContent>
+                <TooltipContent side="top">Eredmény módosítása</TooltipContent>
               </Tooltip>
             ) : null}
 

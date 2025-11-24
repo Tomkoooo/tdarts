@@ -177,8 +177,12 @@ export class LeagueService {
       throw new AuthorizationError('Only club moderators can attach tournaments to leagues');
     }
 
+    if(!tournamentId){
+      throw new BadRequestError('Tournament ID is required - League Service');
+    }
+
     const tournament = await TournamentService.getTournament(tournamentId);
-    console.log(tournamentId);
+
     if (!tournament) {
       throw new BadRequestError('Tournament not found - League Service');
     }
@@ -191,13 +195,13 @@ export class LeagueService {
     }
 
     // Check if tournament is already attached to this or another league
-    const tournamentObjectId = new mongoose.Types.ObjectId(tournamentId);
+    const tournamentObjectId = tournament._id;
     if (league.attachedTournaments.some((id: mongoose.Types.ObjectId) => id.equals(tournamentObjectId))) {
       throw new BadRequestError('Tournament is already attached to this league');
     }
 
     const existingLeague = await LeagueModel.findOne({
-      attachedTournaments: tournamentId,
+      attachedTournaments: tournamentObjectId,
       _id: { $ne: leagueId }
     });
     if (existingLeague) {

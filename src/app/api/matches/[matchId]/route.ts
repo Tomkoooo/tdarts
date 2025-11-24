@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MatchModel } from '@/database/models/match.model';
 import { connectMongo } from '@/lib/mongoose';
+import { eventEmitter, EVENTS } from '@/lib/events';
 
 export async function GET(
   request: NextRequest,
@@ -57,7 +58,7 @@ export async function PATCH(
     const { matchId } = await params;
     const body = await request.json();
 
-    const match = await MatchModel.findById(matchId);
+    const match = await MatchModel.findById(matchId).populate('tournamentRef');
     if (!match) {
       return NextResponse.json({ success: false, error: 'Match not found' }, { status: 404 });
     }
@@ -75,6 +76,17 @@ export async function PATCH(
     }
 
     await match.save();
+
+    // Emit match update event
+    const tournament = match.tournamentRef as any;
+    if (tournament?.tournamentId) {
+      eventEmitter.emit(EVENTS.MATCH_UPDATE, {
+        tournamentId: tournament.tournamentId,
+        matchId,
+        match: match.toObject(),
+        type: 'updated'
+      });
+    }
 
     return NextResponse.json({ success: true, match });
   } catch (error) {

@@ -272,6 +272,7 @@ export default function MemberList({
       {showStatsModal && selectedPlayer && (
         <PlayerStatsModal
           player={selectedPlayer}
+          clubId={clubId}
           onClose={() => {
             setShowStatsModal(false)
             setSelectedPlayer(null)

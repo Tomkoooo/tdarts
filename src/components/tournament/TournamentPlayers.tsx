@@ -19,6 +19,7 @@ import PlayerNotificationModal from "@/components/tournament/PlayerNotificationM
 import PlayerMatchesModal from "@/components/tournament/PlayerMatchesModal"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
 import { useUserContext } from "@/hooks/useUser"
+import { useFeatureFlag } from "@/hooks/useFeatureFlag"
 import {
   Card,
   CardContent,
@@ -84,6 +85,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   )
 
   const code = tournament?.tournamentId
+  const { isEnabled: showDetailedStats } = useFeatureFlag("detailedStatistics", tournament?.clubId?._id || tournament?.clubId)
 
   React.useEffect(() => {
     setLocalPlayers(players)
@@ -797,6 +799,14 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           playerName={selectedPlayerForMatches.name}
           tournamentCode={code}
           onShowDetailedStats={async (matchId) => {
+            if (!showDetailedStats) {
+              showErrorToast('A részletes statisztikák csak Pro csomagban érhetők el.', {
+                context: 'Részletes statisztika',
+                errorName: 'Hozzáférés megtagadva',
+              })
+              return
+            }
+
             try {
               // Fetch match with legs from API
               const response = await fetch(`/api/matches/${matchId}`)

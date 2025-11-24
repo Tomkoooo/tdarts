@@ -31,6 +31,19 @@ export async function POST(
         return NextResponse.json({ error: 'At least one board is required' }, { status: 400 });
     }
 
+    // Authorization check
+    const { AuthorizationService } = await import('@/database/services/authorization.service');
+    const userId = await AuthorizationService.getUserIdFromRequest(request);
+    
+    if (!userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const isAuthorized = await AuthorizationService.checkAdminOrModerator(userId, clubId);
+    if (!isAuthorized) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Check subscription limits
     const tournamentStartDate = payload.startDate ? new Date(payload.startDate) : new Date();
     const subscriptionCheck = await SubscriptionService.canCreateTournament(clubId, tournamentStartDate);

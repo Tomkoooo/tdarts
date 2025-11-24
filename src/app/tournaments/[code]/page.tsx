@@ -4,10 +4,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
-import { IconRefresh, IconShare2 } from "@tabler/icons-react"
+import { IconDeviceTv, IconRefresh, IconShare2 } from "@tabler/icons-react"
 import { useUserContext } from "@/hooks/useUser"
-import { useTournamentAutoRefresh } from "@/hooks/useAutoRefresh"
-import { useFeatureFlag } from "@/hooks/useFeatureFlag"
+import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
 import TournamentOverview from "@/components/tournament/TournamentOverview"
 import TournamentPlayers from "@/components/tournament/TournamentPlayers"
 import TournamentGroupsGenerator from "@/components/tournament/TournamentStatusChanger"
@@ -80,7 +79,6 @@ const TournamentPage = () => {
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null)
   const [players, setPlayers] = useState<any[]>([])
   const [tournamentShareModal, setTournamentShareModal] = useState(false)
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false)
   const [isReopening, setIsReopening] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("overview")
@@ -93,11 +91,7 @@ const TournamentPage = () => {
     }
   }, [searchParams])
 
-  // Feature flag for auto refresh
-  const { isEnabled: isProFeature, isLoading: isFeatureLoading } = useFeatureFlag(
-    "detailedStatistics",
-    tournament?.clubId?._id || tournament?.clubId,
-  )
+
 
   const fetchAll = useCallback(async () => {
     if (!code) return
@@ -147,16 +141,74 @@ const TournamentPage = () => {
     }
   }, [code, user])
 
+  // Silent refresh for live updates - no loading state, no error handling
+  const silentRefresh = useCallback(async () => {
+    if (!code) return
+
+    try {
+      const requests: Promise<any>[] = [axios.get(`/api/tournaments/${code}`)]
+      if (user?._id) {
+        requests.push(
+          axios.get(`/api/tournaments/${code}/getUserRole`, {
+            headers: { "x-user-id": user._id },
+          }),
+        )
+        requests.push(
+          axios.get(`/api/tournaments/${code}/players`, {
+            headers: { "x-user-id": user._id },
+          }),
+        )
+      }
+
+      const [tournamentRes, userRoleRes] = await Promise.all(requests)
+      const tournamentData = tournamentRes.data
+
+      setTournament(tournamentData)
+      setPlayers(Array.isArray(tournamentData.tournamentPlayers) ? tournamentData.tournamentPlayers : [])
+
+      if (user?._id && userRoleRes) {
+        const roleData = userRoleRes.data
+        setUserClubRole(roleData.userClubRole || 'none')
+        setUserPlayerStatus(roleData.userPlayerStatus || 'none')
+
+        const userPlayer = tournamentData.tournamentPlayers?.find((p: any) =>
+          p.playerReference?.userRef === user._id || p.playerReference?._id?.toString() === user._id,
+        )
+        setUserPlayerId(userPlayer ? userPlayer.playerReference?._id || userPlayer.playerReference : null)
+      } else {
+        setUserClubRole('none')
+        setUserPlayerStatus('none')
+        setUserPlayerId(null)
+      }
+    } catch (err: any) {
+      // Silent failure - just log to console
+      console.error('Silent refresh error:', err)
+    }
+  }, [code, user])
+
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
 
-  const { isRefreshing, lastRefresh } = useTournamentAutoRefresh(
-    code as string,
-    fetchAll,
-    tournament?.clubId?._id || tournament?.clubId,
-    autoRefreshEnabled,
-  )
+
+
+  // Real-time updates - use silent refresh to avoid disrupting user
+  const { lastEvent } = useRealTimeUpdates()
+  useEffect(() => {
+    if (lastEvent) {
+        // Handle different event types
+        if (lastEvent.type === 'tournament-update' || 
+            lastEvent.type === 'match-update' || 
+            lastEvent.type === 'group-update') {
+            // Optional: Check if update is for this tournament
+            const eventTournamentId = lastEvent.data?.tournamentId;
+            if (!eventTournamentId || eventTournamentId === code) {
+                console.log('Received real-time update:', lastEvent.type, 'refreshing silently...')
+                silentRefresh()
+            }
+        }
+    }
+  }, [lastEvent, silentRefresh, code])
 
   const handleRefetch = useCallback(() => {
     fetchAll()
@@ -256,33 +308,27 @@ const TournamentPage = () => {
               <span>
                 Torna kód: <span className="font-mono text-foreground">{tournament.tournamentId}</span>
               </span>
-              {lastRefresh && (
-                <span>Utolsó frissítés: {lastRefresh.toLocaleTimeString('hu-HU')}</span>
-              )}
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-            {user && !isFeatureLoading && isProFeature && (
-              <Button
-                variant={autoRefreshEnabled ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setAutoRefreshEnabled((prev) => !prev)}
-                className={cn("gap-2", !autoRefreshEnabled && "bg-card/80 hover:bg-card")}
-              >
-                <IconRefresh className={cn('h-4 w-4', autoRefreshEnabled && isRefreshing && 'animate-spin')} />
-                Auto-frissítés {autoRefreshEnabled ? 'BE' : 'KI'}
-              </Button>
-            )}
             <Button variant="outline" size="sm" onClick={handleRefetch} className="gap-2 bg-card/80 hover:bg-card">
               <IconRefresh className="h-4 w-4" /> Frissítés
             </Button>
             {tournament && (
-              <Button asChild variant="outline" size="sm" className="gap-2">
-                <Link href={`/board/${tournament.tournamentId}`} target="_blank" rel="noopener noreferrer">
-                  Táblák / Író program
-                </Link>
-              </Button>
+              <>
+                <Button asChild variant="outline" size="sm" className="gap-2">
+                  <Link href={`/board/${tournament.tournamentId}`} target="_blank" rel="noopener noreferrer">
+                    Táblák / Író program
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="gap-2 bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30">
+                  <Link href={`/tournaments/${code}/tv`} target="_blank" rel="noopener noreferrer">
+                  <IconDeviceTv/>
+                     TV
+                  </Link>
+                </Button>
+              </>
             )}
             <Button variant="default" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
               <IconShare2 className="h-4 w-4" /> Megosztás

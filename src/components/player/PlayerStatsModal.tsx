@@ -22,16 +22,20 @@ import { Card, CardContent } from "@/components/ui/Card"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
+import { useFeatureFlag } from "@/hooks/useFeatureFlag"
 
 interface PlayerStatsModalProps {
   player: Player | null
+  clubId?: string
   onClose: () => void
 }
 
-const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) => {
+const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, clubId, onClose }) => {
   const [playerStats, setPlayerStats] = React.useState<Player | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [expandedTournament, setExpandedTournament] = React.useState<number | null>(null)
+
+  const { isEnabled: showDetailedStats } = useFeatureFlag("detailedStatistics", clubId)
 
   React.useEffect(() => {
     const fetchPlayerStats = async () => {
@@ -160,25 +164,36 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
           </section>
 
           <section className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
-            <Card className="bg-muted/20 shadow-md shadow-black/20">
-              <CardContent className="flex flex-col gap-4 p-5">
-                <div className="flex items-center gap-2">
-                  <IconCalendarStats size={16} className="text-primary" />
-                  <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Összesített statisztikák</h4>
+            {showDetailedStats ? (
+              <Card className="bg-muted/20 shadow-md shadow-black/20">
+                <CardContent className="flex flex-col gap-4 p-5">
+                  <div className="flex items-center gap-2">
+                    <IconCalendarStats size={16} className="text-primary" />
+                    <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Összesített statisztikák</h4>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {detailedStats.map(({ label, value }) => (
+                      <div
+                        key={label}
+                        className="rounded-lg bg-card/75 px-3 py-2 text-sm text-muted-foreground"
+                      >
+                        <p className="font-medium text-foreground">{label}</p>
+                        <p className="font-semibold text-primary">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-muted/20 shadow-md shadow-black/20 flex items-center justify-center p-6">
+                <div className="text-center space-y-2">
+                  <IconCalendarStats size={32} className="text-muted-foreground/50 mx-auto" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    A részletes statisztikák csak Pro csomagban érhetők el.
+                  </p>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {detailedStats.map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="rounded-lg bg-card/75 px-3 py-2 text-sm text-muted-foreground"
-                    >
-                      <p className="font-medium text-foreground">{label}</p>
-                      <p className="font-semibold text-primary">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              </Card>
+            )}
 
             <Card className="bg-muted/20 shadow-md shadow-black/20">
               <CardContent className="flex h-full flex-col gap-4 p-5">

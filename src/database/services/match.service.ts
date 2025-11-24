@@ -5,6 +5,7 @@ import { TournamentService } from "./tournament.service";
 import { TournamentModel } from "../models/tournament.model";
 import { AuthorizationService } from "./authorization.service";
 import { connectMongo } from "@/lib/mongoose";
+import { eventEmitter, EVENTS } from "@/lib/events";
 
 export class MatchService {
     // Get all matches for a board that haven't finished yet
@@ -160,12 +161,22 @@ export class MatchService {
         const tournament = await TournamentService.getTournament(tournamentId);
         const startingScore = tournament?.tournamentSettings.startingScore;
         
-        return {
+        const result = {
             ...populatedMatch.toObject(),
             startingScore: startingScore,
             startingPlayer: populatedMatch.startingPlayer || 1,
             winnerId: populatedMatch.winnerId || null,
         };
+
+        // Emit match update event
+        eventEmitter.emit(EVENTS.MATCH_UPDATE, {
+            tournamentId,
+            matchId,
+            match: result,
+            type: 'started'
+        });
+        
+        return result;
     }
 
     static async finishLeg(matchId: string, legData: {
@@ -202,20 +213,6 @@ export class MatchService {
 
         // Calculate accurate darts count for average
         const checkoutDarts = legData.winnerArrowCount || 3;
-        
-        // Player 1 Darts Calculation
-        let player1TotalDarts = legData.player1Stats.totalThrows * 3;
-        if (legData.winner === 1) {
-            // If winner, subtract unused darts from last visit
-            player1TotalDarts = player1TotalDarts - (3 - checkoutDarts);
-        }
-        
-        // Player 2 Darts Calculation
-        let player2TotalDarts = legData.player2Stats.totalThrows * 3;
-        if (legData.winner === 2) {
-            // If winner, subtract unused darts from last visit
-            player2TotalDarts = player2TotalDarts - (3 - checkoutDarts);
-        }
 
         // Count 180s from this leg's throws (not from frontend stats to avoid duplication)
         const player1LegOneEighties = legData.player1Throws.filter(score => score === 180).length;
@@ -225,14 +222,9 @@ export class MatchService {
         match.player1.oneEightiesCount = (match.player1.oneEightiesCount || 0) + player1LegOneEighties;
         match.player2.oneEightiesCount = (match.player2.oneEightiesCount || 0) + player2LegOneEighties;
 
-        // Update player statistics (Average = TotalScore / TotalDarts * 3)
+        // Update highest checkout (accumulate max across all legs)
         match.player1.highestCheckout = Math.max(match.player1.highestCheckout || 0, legData.player1Stats.highestCheckout);
-        match.player1.average = player1TotalDarts > 0 ? 
-            Math.round((legData.player1Stats.totalScore / player1TotalDarts) * 3 * 100) / 100 : 0;
-
         match.player2.highestCheckout = Math.max(match.player2.highestCheckout || 0, legData.player2Stats.highestCheckout);
-        match.player2.average = player2TotalDarts > 0 ? 
-            Math.round((legData.player2Stats.totalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
 
         // Save leg data to the match's legs array
         const winnerId = legData.winner === 1 ? match.player1.playerId : match.player2.playerId;
@@ -290,7 +282,48 @@ export class MatchService {
         }
         match.legs.push(leg);
 
+        // Recalculate average from ALL legs (including the one we just added)
+        let player1TotalScore = 0;
+        let player1TotalDarts = 0;
+        let player2TotalScore = 0;
+        let player2TotalDarts = 0;
+
+        for (const savedLeg of match.legs) {
+            // Player 1
+            if (savedLeg.player1Score) player1TotalScore += savedLeg.player1Score;
+            if (savedLeg.player1Throws) {
+                savedLeg.player1Throws.forEach((t: any) => {
+                    player1TotalDarts += (t.darts || 3);
+                });
+            }
+
+            // Player 2
+            if (savedLeg.player2Score) player2TotalScore += savedLeg.player2Score;
+            if (savedLeg.player2Throws) {
+                savedLeg.player2Throws.forEach((t: any) => {
+                    player2TotalDarts += (t.darts || 3);
+                });
+            }
+        }
+
+        // Update averages based on cumulative data
+        match.player1.average = player1TotalDarts > 0 ? 
+            Math.round((player1TotalScore / player1TotalDarts) * 3 * 100) / 100 : 0;
+        match.player2.average = player2TotalDarts > 0 ? 
+            Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
+
         await match.save();
+
+        // Emit match update event
+        const tournament = await TournamentModel.findById(match.tournamentRef);
+        if (tournament) {
+            eventEmitter.emit(EVENTS.MATCH_UPDATE, {
+                tournamentId: tournament.tournamentId,
+                matchId: matchId,
+                match: match.toObject(),
+                type: 'leg-finished'
+            });
+        }
 
         return match;
     }
@@ -570,7 +603,24 @@ export class MatchService {
             const tournament = await TournamentModel.findById(match.tournamentRef);
             if (tournament) {
                 await TournamentService.updateGroupStanding(tournament.tournamentId);
+                
+                // Emit group update event
+                eventEmitter.emit(EVENTS.GROUP_UPDATE, {
+                    tournamentId: tournament.tournamentId,
+                    type: 'standings-updated'
+                });
             }
+        }
+
+        // Emit match update event
+        const tournament = await TournamentModel.findById(match.tournamentRef);
+        if (tournament) {
+            eventEmitter.emit(EVENTS.MATCH_UPDATE, {
+                tournamentId: tournament.tournamentId,
+                matchId: matchId,
+                match: match.toObject(),
+                type: 'finished'
+            });
         }
 
         return match;

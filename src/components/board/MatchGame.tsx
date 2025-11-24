@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface PlayerData {
   playerId: {
@@ -58,6 +59,14 @@ interface MatchGameProps {
 }
 
 const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId }) => {
+  // Helper to format full names as initials + last name (e.g., "d. s. Erika")
+  const formatName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 0) return '';
+    const last = parts.pop() as string;
+    const initials = parts.map(p => p.charAt(0).toLowerCase() + '.');
+    return [...initials, last].join(' ');
+  };
   const initialScore = match.startingScore;
   const [legsToWin, setLegsToWin] = useState(match.legsToWin || 3);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -65,29 +74,29 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const [tempStartingPlayer, setTempStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
 
   const [player1, setPlayer1] = useState<Player>({
-    name: match.player1.playerId.name,
+    name: formatName(match.player1.playerId.name),
     score: initialScore,
     legsWon: match.player1.legsWon || 0,
     allThrows: [],
     stats: {
       highestCheckout: match.player1.highestCheckout || 0,
       oneEightiesCount: match.player1.oneEightiesCount || 0,
-    totalThrows: 0,
-      average: match.player1.average || 0
-    }
+      totalThrows: 0,
+      average: match.player1.average || 0,
+    },
   });
 
   const [player2, setPlayer2] = useState<Player>({
-    name: match.player2.playerId.name,
+    name: formatName(match.player2.playerId.name),
     score: initialScore,
     legsWon: match.player2.legsWon || 0,
     allThrows: [],
     stats: {
       highestCheckout: match.player2.highestCheckout || 0,
       oneEightiesCount: match.player2.oneEightiesCount || 0,
-    totalThrows: 0,
-      average: match.player2.average || 0
-    }
+      totalThrows: 0,
+      average: match.player2.average || 0,
+    },
   });
 
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(match.startingPlayer || 1);
@@ -204,27 +213,30 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setIsInitialized(true);
   }, [match._id]);
 
+  // Prepare game state object for debouncing
+  const gameState = {
+    player1,
+    player2,
+    currentPlayer,
+    legStartingPlayer,
+    currentLeg,
+    legsToWin
+  };
+
+  const debouncedGameState = useDebounce(gameState, 1000);
+
   // Save game state to localStorage
   useEffect(() => {
     if (!isInitialized) return;
     
-    const hasOngoingGame = player1.allThrows.length > 0 || player2.allThrows.length > 0 || 
-                          (player1.score !== initialScore) || (player2.score !== initialScore) ||
-                          player1.legsWon > 0 || player2.legsWon > 0;
+    const hasOngoingGame = debouncedGameState.player1.allThrows.length > 0 || debouncedGameState.player2.allThrows.length > 0 || 
+                          (debouncedGameState.player1.score !== initialScore) || (debouncedGameState.player2.score !== initialScore) ||
+                          debouncedGameState.player1.legsWon > 0 || debouncedGameState.player2.legsWon > 0;
     
     if (!hasOngoingGame) return;
     
-    const gameState = {
-      player1,
-      player2,
-      currentPlayer,
-      legStartingPlayer,
-      currentLeg,
-      legsToWin
-    };
-    
-    localStorage.setItem(`match_game_${match._id}`, JSON.stringify(gameState));
-  }, [player1, player2, currentPlayer, legStartingPlayer, currentLeg, legsToWin, match._id, isInitialized]);
+    localStorage.setItem(`match_game_${match._id}`, JSON.stringify(debouncedGameState));
+  }, [debouncedGameState, match._id, isInitialized, initialScore]);
 
   // Auto-scroll chalkboard
   useEffect(() => {

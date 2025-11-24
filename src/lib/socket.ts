@@ -70,7 +70,11 @@ export const initializeSocket = async () => {
 export const socket = io(socketServerUrl, {
   autoConnect: false, // Manuális kapcsolat minden módban
   transports: ['websocket', 'polling'],
-  reconnection: false, // Disable automatic reconnection
+  reconnection: true, // Enable automatic reconnection
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
   auth: {
     token: null // Will be set during initialization
   },
@@ -130,4 +134,21 @@ socket.on('connect_error', (error) => {
     socket.disconnect();
     return;
   }
+});
+
+socket.io.on("reconnect_attempt", (attempt) => {
+  console.log(`🔌 Socket reconnection attempt ${attempt}`);
+  // Refresh token on reconnection attempt if needed
+  // Note: socket.auth is used in handshake, so updating it here might help next attempt
+  if (socketToken) {
+    socket.auth = { token: socketToken };
+  }
+});
+
+socket.io.on("reconnect", (attempt) => {
+  console.log(`🔌 Socket reconnected after ${attempt} attempts`);
+});
+
+socket.io.on("reconnect_failed", () => {
+  console.error('🔌 Socket reconnection failed');
 }); 

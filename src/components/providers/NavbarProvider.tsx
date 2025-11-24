@@ -10,7 +10,7 @@ export function NavbarProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const hideNavbarPaths = ['/board', '/test']
-    const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path))
+    const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path) || pathname.includes('/tv'))
     setShouldHideNavbar(shouldHide)
     
     // Update body padding dynamically

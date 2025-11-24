@@ -56,16 +56,18 @@ const DialogContent = React.forwardRef<
         exit="exit"
       className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4",
-          "border border-white/10 bg-glass-bg-modal backdrop-blur-2xl rounded-xl p-6",
+          "max-h-[90vh] overflow-y-auto",
+          "border border-white/10 bg-glass-bg-modal backdrop-blur-md rounded-xl p-6",
           "shadow-glass-xl",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
         className
       )}
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
         <DialogPrimitive.Close
           className={cn(
-            "absolute right-4 top-4 rounded-md p-1",
+            "absolute right-4 top-4 rounded-md p-1 z-10",
             "opacity-70 transition-all duration-200",
             "hover:opacity-100 hover:bg-white/10",
             "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2",

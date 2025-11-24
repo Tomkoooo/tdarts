@@ -51,6 +51,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         variants={liquidIn}
         initial="initial"
         animate="animate"
+        style={{ willChange: "transform, opacity" }}
         {...(props as HTMLMotionProps<"div">)}
       />
     )
