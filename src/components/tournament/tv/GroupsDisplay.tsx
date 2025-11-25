@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { IconTarget, IconTrophy, IconClock } from "@tabler/icons-react"
-import { useState } from "react"
 
 interface GroupsDisplayProps {
   tournament: any
@@ -37,18 +36,9 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
   const knockout = tournament.knockout || []
   const tournamentStatus = tournament.tournamentSettings?.status || tournament.status
   const isKnockoutPhase = tournamentStatus === 'knockout'
-    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
-  const [pinnedGroupId, setPinnedGroupId] = useState<string | null>(null)
-
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
-  }
-
-  const handlePinGroup = (groupId: string) => {
-    setPinnedGroupId(prev => (prev === groupId ? null : groupId))
-  }
 
   console.log('GroupsDisplay - Status:', tournamentStatus, 'Knockout length:', knockout.length, 'Groups length:', groups.length)
+
 
   if (isKnockoutPhase && knockout.length > 0) {
     // Display only the latest round matches
@@ -62,7 +52,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-y-auto h-[calc(100%-4.5rem)] p-4">
-          <div className="flex flex-wrap gap-2 justify-between">
+          <div className="flex flex-wrap gap-2 justify-around">{/* Changed from justify-between to justify-around */}
             {latestRound.matches?.map((match: any, matchIndex: number) => {
               const player1 = match.player1?.playerId || match.player1
               const player2 = match.player2?.playerId || match.player2
@@ -133,9 +123,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
     )
   }
 
-  // Display groups - enhanced layout with collapse/pin and leg counts
-
-
+  // Display groups - clean, non-interactive design with better spacing
   return (
     <Card className="h-full bg-card/80 overflow-hidden shadow-none">
       <CardHeader className="pb-3 bg-muted/5">
@@ -145,87 +133,62 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
         {groups.length === 0 ? (
           <p className="text-muted-foreground text-center py-8 text-xl">No groups created yet</p>
         ) : (
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 justify-around">{/* Added justify-around for better spacing */}
             {groups.map((group: any, groupIndex: number) => {
               const groupPlayers = tournament.tournamentPlayers
                 ?.filter((player: any) => player.groupId === group._id)
                 .sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0)) || []
 
-              const isExpanded = expandedGroups[group._id] ?? true
-
               return (
                 <div
                   key={group._id}
-                  className="p-2 rounded-lg bg-muted/10 min-w-[12rem] max-w-[12rem] min-h-[16rem] flex flex-col"
+                  className="p-3 rounded-lg bg-muted/10 border border-muted/20 min-w-[14rem] max-w-[16rem] flex flex-col shadow-sm"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base font-bold text-primary flex items-center">
+                  {/* Header - simplified, no buttons */}
+                  <div className="mb-3 pb-2 border-b border-muted/30">
+                    <h3 className="text-lg font-bold text-primary">
                       Csoport {groupIndex + 1}
-                      <span className="text-xs text-muted-foreground font-normal ml-2">
-                        (Tábla {group.board || groupIndex + 1})
-                      </span>
-                      {pinnedGroupId === group._id && (
-                        <span className="ml-2 text-yellow-500">📍</span>
-                      )}
                     </h3>
-                    <div className="flex gap-2">
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handlePinGroup(group._id)}
-                        title={pinnedGroupId === group._id ? "Kitűzés megszüntetése" : "Csoport kitűzése"}
-                      >
-                        {pinnedGroupId === group._id ? "🧷" : "📌"}
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => toggleGroup(group._id)}
-                      >
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Tábla {group.board || groupIndex + 1}
+                    </span>
                   </div>
 
-                  {isExpanded && (
-                     <div className="flex-1 overflow-y-auto max-h-[10rem]">
-                      {groupPlayers.map((player: any, index: number) => {
-                        const stats = player.stats || {}
-                        const points = (stats.matchesWon || 0) * 2
-                        const legs = stats.legsWon || 0
-                        return (
-                          <div key={player._id} className="flex items-center justify-between text-sm mb-1">
-                            <div className="flex items-center gap-1.5">
-                               <span
-                                 className={`font-bold text-sm ${
-                                  index === 0
-                                    ? "text-primary"
-                                    : index === 1
-                                    ? "text-muted-foreground"
-                                    : "text-muted-foreground/60"
-                                }`}
-                              >
-                                {player.groupStanding || index + 1}.
-                              </span>
-                              <span className="text-foreground font-medium truncate">
-                                {player.playerReference?.name || "Unknown"}
-                              </span>
-                              {legs > 0 && (
-                                <span className="ml-1 text-xs text-muted-foreground">({legs})</span>
-                              )}
-                            </div>
-                            <span className="text-muted-foreground font-semibold text-xs">{points}p</span>
+                  {/* Players - always visible, better spacing */}
+                  <div className="flex-1 space-y-2">{/* Increased spacing from mb-1 to space-y-2 */}
+                    {groupPlayers.map((player: any, index: number) => {
+                      const stats = player.stats || {}
+                      const points = (stats.matchesWon || 0) * 2
+                      const legs = stats.legsWon || 0
+                      return (
+                        <div 
+                          key={player._id} 
+                          className="flex items-center justify-between text-sm py-1.5 border-b border-muted/10 last:border-0"
+                        >{/* Added border-b for better row separation */}
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-bold text-sm min-w-[1.5rem] ${
+                                index === 0
+                                  ? "text-primary"
+                                  : index === 1
+                                  ? "text-muted-foreground"
+                                  : "text-muted-foreground/60"
+                              }`}
+                            >
+                              {player.groupStanding || index + 1}.
+                            </span>
+                            <span className="text-foreground font-medium truncate">
+                              {player.playerReference?.name || "Unknown"}
+                            </span>
+                            {legs > 0 && (
+                              <span className="text-xs text-muted-foreground">({legs})</span>
+                            )}
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                          <span className="text-muted-foreground font-semibold text-xs">{points}p</span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}

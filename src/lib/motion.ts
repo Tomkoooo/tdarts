@@ -53,12 +53,13 @@ export const liquidIn: Variants = {
 /**
  * Live Update Animation
  * For scores, counts, and real-time data changes
+ * Optimized for mobile performance
  */
 export const liveUpdate: Variants = {
   animate: {
-    scale: [1, 1.15, 1],
+    scale: [1, 1.08, 1], // Reduced from 1.15 for better performance
     transition: {
-      duration: 0.4,
+      duration: 0.3, // Reduced from 0.4 for snappier feel
       ease: [0.16, 1, 0.3, 1],
     },
   },

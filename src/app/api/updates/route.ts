@@ -13,14 +13,14 @@ export async function GET(req: NextRequest) {
       // Send initial connection message
       controller.enqueue(encoder.encode(formatMessage('connected', { message: 'SSE Connected' })));
 
-      // Keep connection alive
+      // Keep connection alive with longer interval for Cloudflare compatibility
       const keepAlive = setInterval(() => {
         try {
             controller.enqueue(encoder.encode(formatMessage('ping', { time: new Date().toISOString() })));
         } catch {
             clearInterval(keepAlive);
         }
-      }, 15000);
+      }, 30000); // Increased from 15s to 30s to reduce load
 
       // Event Listeners
       const onTournamentUpdate = (data: any) => {
@@ -65,8 +65,9 @@ export async function GET(req: NextRequest) {
   return new NextResponse(customReadable, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no', // Disable nginx/Cloudflare buffering
     },
   });
 }

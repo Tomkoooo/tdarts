@@ -1,15 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export const useRealTimeUpdates = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<{ type: string; data: any } | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectDelay = 30000; // Max 30 seconds
+  const baseDelay = 1000; // Start with 1 second
 
-  useEffect(() => {
+  const connect = () => {
+    // Clean up existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    console.log('SSE: Attempting to connect...');
     const eventSource = new EventSource('/api/updates');
+    eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
       console.log('SSE Connected');
       setIsConnected(true);
+      reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
     };
 
     eventSource.onmessage = (event) => {
@@ -57,12 +70,33 @@ export const useRealTimeUpdates = () => {
       console.error('SSE Error:', error);
       setIsConnected(false);
       eventSource.close();
-      // Reconnect logic is handled by browser for EventSource, but we can add custom backoff if needed
+      
+      // Implement exponential backoff for reconnection
+      reconnectAttemptsRef.current += 1;
+      const delay = Math.min(
+        baseDelay * Math.pow(2, reconnectAttemptsRef.current - 1),
+        maxReconnectDelay
+      );
+      
+      console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})...`);
+      
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connect();
+      }, delay);
     };
+  };
+
+  useEffect(() => {
+    connect();
 
     return () => {
-      eventSource.close();
-      setIsConnected(false);
+      // Cleanup on unmount
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
   }, []);
 

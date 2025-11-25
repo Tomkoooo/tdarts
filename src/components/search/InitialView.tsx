@@ -169,7 +169,7 @@ export function InitialView({
         {/* Popular Clubs */}
         <section>
           <CardHeader className="px-0">
-            <CardTitle className="text-2xl font-bold">Népszerű Klubbok</CardTitle>
+            <CardTitle className="text-2xl font-bold">Népszerű klubok</CardTitle>
           </CardHeader>
           <div className="space-y-4 flex flex-col">
             {popularClubs

@@ -48,27 +48,43 @@ const SheetOverlay = React.forwardRef<
 ))
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
-// Framer Motion slide variants for different sides
+// Framer Motion slide variants for different sides - optimized for mobile performance
 const slideVariants: Record<string, Variants> = {
   top: {
     initial: { y: "-100%", opacity: 0 },
-    animate: { y: 0, opacity: 1, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
-    exit: { y: "-100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn" as const } },
+    animate: { 
+      y: 0, 
+      opacity: 1, 
+      transition: { duration: 0.2, ease: "easeOut" as const } // Faster, no spring
+    },
+    exit: { y: "-100%", opacity: 0, transition: { duration: 0.15, ease: "easeIn" as const } },
   },
   bottom: {
     initial: { y: "100%", opacity: 0 },
-    animate: { y: 0, opacity: 1, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
-    exit: { y: "100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn" as const } },
+    animate: { 
+      y: 0, 
+      opacity: 1, 
+      transition: { duration: 0.2, ease: "easeOut" as const } // Faster, no spring
+    },
+    exit: { y: "100%", opacity: 0, transition: { duration: 0.15, ease: "easeIn" as const } },
   },
   left: {
     initial: { x: "-100%", opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
-    exit: { x: "-100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn" as const } },
+    animate: { 
+      x: 0, 
+      opacity: 1, 
+      transition: { duration: 0.2, ease: "easeOut" as const } // Faster, no spring
+    },
+    exit: { x: "-100%", opacity: 0, transition: { duration: 0.15, ease: "easeIn" as const } },
   },
   right: {
     initial: { x: "100%", opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
-    exit: { x: "100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn" as const } },
+    animate: { 
+      x: 0, 
+      opacity: 1, 
+      transition: { duration: 0.2, ease: "easeOut" as const } // Faster, no spring
+    },
+    exit: { x: "100%", opacity: 0, transition: { duration: 0.15, ease: "easeIn" as const } },
   },
 }
 

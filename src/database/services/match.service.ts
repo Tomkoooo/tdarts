@@ -186,14 +186,14 @@ export class MatchService {
         winnerArrowCount?: number;
         player1Stats: {
             highestCheckout: number;
-            oneEightiesCount: number;
+            oneEightiesCount?: number; // Optional - backend counts from throws
             totalThrows: number; // This is number of visits
             totalScore: number;
             totalArrows?: number;
         };
         player2Stats: {
             highestCheckout: number;
-            oneEightiesCount: number;
+            oneEightiesCount?: number; // Optional - backend counts from throws
             totalThrows: number; // This is number of visits
             totalScore: number;
             totalArrows?: number;
@@ -334,14 +334,14 @@ export class MatchService {
         winnerArrowCount?: number;
         player1Stats: {
             highestCheckout: number;
-            oneEightiesCount: number;
+            oneEightiesCount?: number; // Optional - backend recalculates from all legs
             totalThrows: number;
             totalScore: number;
             totalArrows?: number;
         };
         player2Stats: {
             highestCheckout: number;
-            oneEightiesCount: number;
+            oneEightiesCount?: number; // Optional - backend recalculates from all legs
             totalThrows: number;
             totalScore: number;
             totalArrows?: number;
@@ -629,7 +629,7 @@ export class MatchService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private static async updateTournamentPlayerStats(tournamentId: string, playerId: string, stats: {
         highestCheckout: number;
-        oneEightiesCount: number;
+        oneEightiesCount?: number; // Optional - recalculated from matches
         totalThrows: number;
         totalScore: number;
     }) {

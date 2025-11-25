@@ -21,7 +21,7 @@ export interface AnimatedCounterProps {
 export function AnimatedCounter({
   value,
   className,
-  duration = 0.4,
+  duration = 0.3, // Reduced from 0.4 for better mobile performance
   decimals = 0,
   prefix = "",
   suffix = "",
@@ -77,9 +77,10 @@ export function SimpleCounter({
   return (
     <motion.span
       key={value}
-      animate={{ scale: [1, 1.15, 1] }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      animate={{ scale: [1, 1.08, 1] }} // Reduced from 1.15 for better performance
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} // Reduced from 0.4
       className={cn("inline-block", className)}
+      style={{ willChange: "transform" }} // GPU acceleration hint
     >
       {prefix}
       {value}

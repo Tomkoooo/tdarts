@@ -287,7 +287,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
 
     // Check for win condition (any finish, not just double-out)
     if (newScore === 0) {
-      // Update player with the throw
+      // Update player with the throw - this is a checkout!
       if (currentPlayer === 1) {
         setPlayer1(prev => ({ 
           ...prev, 
@@ -297,7 +297,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
             oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
-            highestCheckout: Math.max(prev.stats.highestCheckout, score),
+            highestCheckout: score, // Set to exact checkout score (this is the winning throw)
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -311,7 +311,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
             oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
-            highestCheckout: Math.max(prev.stats.highestCheckout, score),
+            highestCheckout: score, // Set to exact checkout score (this is the winning throw)
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -580,9 +580,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     }
 
     // Save leg to API
-    // Count 180s only for this leg (not cumulative)
-    const player1LegOneEighties = player1.allThrows.filter(t => t === 180).length;
-    const player2LegOneEighties = player2.allThrows.filter(t => t === 180).length;
     
     try {
       const response = await fetch(`/api/matches/${match._id}/finish-leg`, {
@@ -595,14 +592,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           winnerArrowCount: arrowCount,
           player1Stats: {
             highestCheckout: player1.stats.highestCheckout,
-            oneEightiesCount: player1LegOneEighties, // Only this leg's 180s
+            // oneEightiesCount removed - backend counts from throws to avoid duplication
             totalThrows: player1.allThrows.length,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingLegWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
             highestCheckout: player2.stats.highestCheckout,
-            oneEightiesCount: player2LegOneEighties, // Only this leg's 180s
+            // oneEightiesCount removed - backend counts from throws to avoid duplication
             totalThrows: player2.allThrows.length,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingLegWinner === 2 ? arrowCount : 0)
@@ -675,11 +672,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       });
     }
     
-    // Count 180s only for the final leg (not cumulative)
-    // The backend will recalculate from all saved legs, so we only need this leg's count
-    const player1FinalLegOneEighties = player1.allThrows.filter(t => t === 180).length;
-    const player2FinalLegOneEighties = player2.allThrows.filter(t => t === 180).length;
-    
     try {
       const response = await fetch(`/api/matches/${match._id}/finish`, {
         method: 'POST',
@@ -690,14 +682,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           winnerArrowCount: arrowCount,
           player1Stats: {
             highestCheckout: player1.stats.highestCheckout,
-            oneEightiesCount: player1FinalLegOneEighties, // Only final leg's 180s (backend recalculates from all legs)
+            // oneEightiesCount removed - backend recalculates from all legs to avoid duplication
             totalThrows: player1.allThrows.length,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
             highestCheckout: player2.stats.highestCheckout,
-            oneEightiesCount: player2FinalLegOneEighties, // Only final leg's 180s (backend recalculates from all legs)
+            // oneEightiesCount removed - backend recalculates from all legs to avoid duplication
             totalThrows: player2.allThrows.length,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
