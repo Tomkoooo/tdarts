@@ -74,7 +74,7 @@ const NavbarNew = () => {
     { name: "Jelzések", icon: IconBell, href: "/admin/announcements" },
   ] : [
     { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
-    { name: "klubok", icon: IconUsers, href: "/search?type=clubs" },
+    { name: "Klubok", icon: IconUsers, href: "/search?type=clubs" },
     { name: "Tábla", icon: IconDeviceDesktop, href: "/board" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },

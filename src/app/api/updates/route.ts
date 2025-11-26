@@ -13,14 +13,14 @@ export async function GET(req: NextRequest) {
       // Send initial connection message
       controller.enqueue(encoder.encode(formatMessage('connected', { message: 'SSE Connected' })));
 
-      // Keep connection alive with longer interval for Cloudflare compatibility
+      // Keep connection alive with heartbeat
       const keepAlive = setInterval(() => {
         try {
-            controller.enqueue(encoder.encode(formatMessage('ping', { time: new Date().toISOString() })));
+            controller.enqueue(encoder.encode(formatMessage('heartbeat', { time: new Date().toISOString() })));
         } catch {
             clearInterval(keepAlive);
         }
-      }, 30000); // Increased from 15s to 30s to reduce load
+      }, 20000); // 20s heartbeat to prevent timeout
 
       // Event Listeners
       const onTournamentUpdate = (data: any) => {

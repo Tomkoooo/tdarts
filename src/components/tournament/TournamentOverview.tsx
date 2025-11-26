@@ -173,7 +173,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
             <Button asChild size="sm" className="bg-card/80 hover:bg-card">
               <Link href={`/board/${tournament.tournamentId}`} target="_blank" className="flex items-center gap-2">
                 <IconTarget className="h-4 w-4" />
-                Táblák
+                Író program
               </Link>
             </Button>
             {(status === 'group-stage' || status === 'knockout') && (

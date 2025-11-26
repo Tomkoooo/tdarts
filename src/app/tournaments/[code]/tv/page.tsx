@@ -133,7 +133,7 @@ export default function TVModePage() {
     )
   }
 
-  const tournamentUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://tdarts.sironic.hu'}/tournaments/${code}`
+  const tournamentUrl = process.env.NEXT_PUBLIC_NODE_ENV === 'development' ? 'http://localhost:3000/tournaments/${code}' : `https://tdarts.sironic.hu/tournaments/${code}` 
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background text-foreground relative">

@@ -66,6 +66,14 @@ export const useRealTimeUpdates = () => {
         }
     });
 
+    //eslint-disable-next-line
+    eventSource.addEventListener('heartbeat', (event: any) => {
+        // Just to keep the connection alive, we can log it if needed
+        // console.log('Heartbeat received');
+        console.log('Heartbeat received');
+        
+    });
+
     eventSource.onerror = (error) => {
       console.error('SSE Error:', error);
       setIsConnected(false);
