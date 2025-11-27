@@ -57,6 +57,9 @@ export default function BoardStatus({ tournament }: BoardStatusProps) {
                   {nextMatch ? (
                     <div className="text-base font-medium text-foreground">
                       Waiting for: {player1Name} vs {player2Name}
+                      {nextMatch.scorer?.name && (
+                        <span className="text-muted-foreground ml-2">({nextMatch.scorer.name})</span>
+                      )}
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground">No match assigned</div>
