@@ -276,6 +276,7 @@ export class TournamentService {
 
     static async generateKnockout(tournamentCode: string, requesterId: string, options: {
         playersCount?: number;
+        qualifiersPerGroup?: number;
     }): Promise<boolean> {
         try {
             const tournament = await TournamentService.getTournament(tournamentCode);
@@ -325,7 +326,7 @@ export class TournamentService {
                 // Use players from groups for group_knockout tournaments
                 groupPlayers = checkedInPlayers.filter((player) => player.groupId);
                 
-                if (groupPlayers.length < (options.playersCount || 0)) {
+                if (!options.qualifiersPerGroup && groupPlayers.length < (options.playersCount || 0)) {
                     throw new Error(`Not enough players from groups. Need ${options.playersCount}, have ${groupPlayers.length}`);
                 }
             }
@@ -345,16 +346,22 @@ export class TournamentService {
                 // For knockout format, use all players
                 advancingPlayers = allPlayers;
             } else {
-                // For group_knockout format, use specified count
-                advancingPlayers = allPlayers.slice(0, options.playersCount);
-                
-                if (advancingPlayers.length !== (options.playersCount || 0)) {
-                    throw new Error(`Expected ${options.playersCount} players but got ${advancingPlayers.length}`);
+                // For group_knockout format
+                if (options.qualifiersPerGroup) {
+                    // MDL Path: Use all players, filtering happens in generateMDLKnockoutRounds
+                    advancingPlayers = allPlayers;
+                } else {
+                    // Legacy Path: Use specified count
+                    advancingPlayers = allPlayers.slice(0, options.playersCount);
+                    
+                    if (advancingPlayers.length !== (options.playersCount || 0)) {
+                        throw new Error(`Expected ${options.playersCount} players but got ${advancingPlayers.length}`);
+                    }
                 }
             }
 
             // Generate knockout rounds with proper cross-group pairings
-            const knockoutRounds = await this.generateKnockoutRounds(advancingPlayers, format, tournament);
+            const knockoutRounds = await this.generateKnockoutRounds(advancingPlayers, format, tournament, options.qualifiersPerGroup);
 
             // Create matches for the first round - combine all matches from all rounds
             // NEW: Only create matches if at least one player is present
@@ -453,7 +460,7 @@ export class TournamentService {
         }
     }
 
-    private static async generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout', tournament?: any): Promise<any[]> {
+    private static async generateKnockoutRounds(advancingPlayers: any[], format: string = 'group_knockout', tournament?: any, qualifiersPerGroup?: number): Promise<any[]> {
  
         if (format === 'group_knockout') {
             const groups = new Map<string, TournamentPlayerDocument[]>();
@@ -470,6 +477,12 @@ export class TournamentService {
             }
             const groupIds = Array.from(groups.keys());
             const groupCount = groupIds.length;
+            
+            // NEW: Use MDL logic if qualifiersPerGroup is provided
+            if (qualifiersPerGroup) {
+                return this.generateMDLKnockoutRounds(groups, groupIds, qualifiersPerGroup, tournament);
+            }
+
             if (groupCount % 2 !== 0) {
                 throw new Error('Group count must be even');
             }
@@ -478,6 +491,75 @@ export class TournamentService {
             // For knockout-only format, create simple random pairings
             return this.generateSimpleKnockoutRounds(advancingPlayers);
         }
+    }
+
+    private static generateMDLKnockoutRounds(groups: Map<string, TournamentPlayerDocument[]>, groupIds: string[], qualifiersPerGroup: number, tournament?: any): any[] {
+        // 1. Sort groupIds based on tournament.groups order
+        let orderedGroupIds = groupIds;
+        if (tournament && tournament.groups && Array.isArray(tournament.groups)) {
+             orderedGroupIds = tournament.groups
+                .map((group: any) => group._id.toString())
+                .filter((id: string) => groupIds.includes(id));
+        }
+
+        const numGroups = orderedGroupIds.length;
+        
+        // 2. Define Pairings
+        const pairingsKey = `${numGroups}_${qualifiersPerGroup}`;
+        const rules: Record<string, string[]> = {
+            '2_2': ['1/1-2/2', '2/1-1/2'],
+            '2_3': ['1/1-X', '2/2-1/3', '2/1-X', '1/2-2/3'],
+            '2_4': ['1/1-2/4', '2/2-1/3', '2/1-1/4', '1/2-2/3'],
+            '4_2': ['1/1-2/2', '4/1-3/2', '2/1-1/2', '3/1-4/2'],
+            '4_3': ['1/1-X', '2/2-3/3', '4/1-X', '3/2-2/3', '2/1-X', '1/2-4/3', '3/1-X', '4/2-1/3'],
+            '4_4': ['1/1-4/4', '2/2-3/3', '4/1-1/4', '3/2-2/3', '2/1-3/4', '1/2-4/3', '3/1-2/4', '4/2-1/3'],
+            '8_2': ['1/1-2/2', '8/1-7/2', '4/1-3/2', '5/1-6/2', '2/1-1/2', '7/1-8/2', '3/1-4/2', '6/1-5/2'],
+            '8_3': ['1/1-X', '2/2-3/3', '8/1-X', '7/2-6/3', '4/1-X', '3/2-2/3', '5/1-X', '6/2-7/3', '2/1-X', '1/2-4/3', '7/1-X', '8/2-5/3', '3/1-X', '4/2-1/3', '6/1-X', '5/2-8/3'],
+            '8_4': ['1/1-4/4', '2/2-3/3', '8/1-5/4', '7/2-6/3', '4/1-1/4', '3/2-2/3', '5/1-8/4', '6/2-7/3', '2/1-3/4', '1/2-4/3', '7/1-6/4', '8/2-5/3', '3/1-2/4', '4/2-1/3', '6/1-7/4', '5/2-8/3'],
+            '16_2': ['1/1-2/2', '16/1-15/2', '8/1-7/2', '9/1-10/2', '4/1-3/2', '13/1-14/2', '5/1-6/2', '12/1-11/2', '2/1-1/2', '15/1-16/2', '7/1-8/2', '10/1-9/2', '3/1-4/2', '14/1-13/2', '6/1-5/2', '11/1-12/2'],
+            '16_3': ['1/1-X', '2/2-3/3', '16/1-X', '15/2-14/3', '8/1-X', '7/2-6/3', '9/1-X', '10/2-11/3', '4/1-X', '3/2-2/3', '13/1-X', '14/2-15/3', '5/1-X', '6/2-7/3', '12/1-X', '11/2-10/3', '2/1-X', '1/2-4/3', '15/1-X', '16/2-13/3', '7/1-X', '8/2-12/3', '10/1-X', '9/2-5/3', '3/1-X', '4/2-1/3', '14/1-X', '13/2-16/3', '6/1-X', '5/2-9/3', '11/1-X', '12/2-8/3']
+        };
+
+        const matchRules = rules[pairingsKey];
+        if (!matchRules) {
+            throw new Error(`No MDL rules found for ${numGroups} groups and ${qualifiersPerGroup} qualifiers.`);
+        }
+
+        // 3. Resolve Matches
+        const matches: any[] = [];
+        
+        // Helper to get player
+        const getPlayer = (groupNum: number, position: number) => {
+            if (groupNum > orderedGroupIds.length) return null;
+            const groupId = orderedGroupIds[groupNum - 1];
+            const groupPlayers = groups.get(groupId) || [];
+            // Sort by standing
+            groupPlayers.sort((a, b) => (a.groupStanding || 1) - (b.groupStanding || 1));
+            return groupPlayers[position - 1] || null;
+        };
+
+        for (const rule of matchRules) {
+            const [p1Str, p2Str] = rule.split('-');
+            
+            const resolve = (str: string) => {
+                if (str === 'X') return null;
+                const [g, p] = str.split('/').map(Number);
+                return getPlayer(g, p);
+            };
+
+            const player1 = resolve(p1Str);
+            const player2 = resolve(p2Str);
+            
+            matches.push({
+                player1: player1?.playerReference,
+                player2: player2?.playerReference
+            });
+        }
+
+        return [{
+            round: 1,
+            matches
+        }];
     }
 
     private static async generateStandardKnockoutRounds( groups: Map<string, TournamentPlayerDocument[]>, groupIds: string[], tournament?: any) {

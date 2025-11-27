@@ -13,7 +13,7 @@ interface Player {
   allThrows: number[];
   stats: {
     highestCheckout: number;
-    oneEightiesCount: number;
+    // oneEightiesCount removed - calculated dynamically from allThrows
     totalThrows: number;
     average: number;
   };
@@ -69,6 +69,11 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   const [legsToWin, setLegsToWin] = useState(initialLegsToWin);
   const [tempLegsToWin, setTempLegsToWin] = useState(initialLegsToWin);
 
+  // Helper function to count 180s dynamically from throws
+  const count180s = (throws: number[]): number => {
+    return throws.filter(t => t === 180).length;
+  };
+
   const [player1, setPlayer1] = useState<Player>({
     name: "1",
     score: initialScore,
@@ -76,7 +81,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     allThrows: [],
     stats: {
       highestCheckout: 0,
-      oneEightiesCount: 0,
       totalThrows: 0,
       average: 0
     }
@@ -89,7 +93,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     allThrows: [],
     stats: {
       highestCheckout: 0,
-      oneEightiesCount: 0,
       totalThrows: 0,
       average: 0
     }
@@ -217,11 +220,19 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   }, [player1.allThrows.length, player2.allThrows.length]);
 
   const handleThrow = (score: number) => {
+    console.log("handleThrow - Input Score:", score, "Current Player:", currentPlayer);
+    
+    if (matchFinished) return;
+
     const currentPlayerData = currentPlayer === 1 ? player1 : player2;
     
     // Check for bust
     if (currentPlayerData.score - score < 0) {
-      const newAllThrows = [...currentPlayerData.allThrows, 0];
+      console.log("handleThrow - BUST");
+      const newAllThrows = [...currentPlayerData.allThrows, 0]; // Record 0 for bust? Or just keep throws? Usually bust records the throws but score resets. 
+      // Actually, standard bust means no score change, but throws are recorded? 
+      // The original code recorded 0? Let's check what it did.
+      // It seems it added 0 to allThrows.
       
       if (currentPlayer === 1) {
         setPlayer1(prev => ({ 
@@ -247,6 +258,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         }));
       }
       
+      toast.error('Túl sok pont!');
       setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
       setScoreInput('');
       return;
@@ -254,9 +266,13 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
 
     const newScore = currentPlayerData.score - score;
     const newAllThrows = [...currentPlayerData.allThrows, score];
+    console.log("handleThrow - New Score:", newScore, "New Throws:", newAllThrows);
 
     // Check for win condition
     if (newScore === 0) {
+      // Validate checkout (must be double) - simplified for now as per original code which didn't seem to strictly enforce double out logic here, or maybe it did?
+      // The original code just checked newScore === 0.
+      
       if (currentPlayer === 1) {
         setPlayer1(prev => ({ 
           ...prev, 
@@ -265,8 +281,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
-            highestCheckout: Math.max(prev.stats.highestCheckout, score),
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -279,8 +293,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
-            highestCheckout: Math.max(prev.stats.highestCheckout, score),
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -300,7 +312,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -313,7 +324,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -342,7 +352,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           stats: {
             ...prev.stats,
             totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-            oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
             average: (prev.stats.totalThrows - 1) > 0 ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
@@ -355,7 +364,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           stats: {
             ...prev.stats,
             totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-            oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
             average: (prev.stats.totalThrows - 1) > 0 ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
@@ -423,7 +431,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         allThrows: oldThrows,
         stats: {
           ...prev.stats,
-          oneEightiesCount: oldThrows.filter(t => t === 180).length,
           average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
@@ -434,7 +441,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         allThrows: oldThrows,
         stats: {
           ...prev.stats,
-          oneEightiesCount: oldThrows.filter(t => t === 180).length,
           average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
@@ -477,33 +483,56 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     let player2HighestCheckout = 0;
 
     // Process all legs (including final leg)
+    console.log("calculateMatchStats - Processing legs:", allLegs.length);
+    
     for (const leg of allLegs) {
+      console.log(`calculateMatchStats - Leg ${leg.legNumber || '?'}:`, leg);
+      
       // Player 1 stats
       player1TotalScore += leg.player1Score;
+      let legP1OneEighties = 0;
+      
       leg.player1Throws.forEach((score, index) => {
         // Last throw of winner uses checkoutDarts, others use 3
         const isLastThrow = index === leg.player1Throws.length - 1;
         const darts = (leg.winner === 1 && isLastThrow && leg.checkoutDarts) ? leg.checkoutDarts : 3;
         player1TotalDarts += darts;
-        if (score === 180) player1OneEighties++;
+        if (score === 180) {
+           player1OneEighties++;
+           legP1OneEighties++;
+        }
       });
+      console.log(`calculateMatchStats - Leg ${leg.legNumber} P1 180s:`, legP1OneEighties);
+      
       if (leg.winner === 1 && leg.checkoutScore) {
         player1HighestCheckout = Math.max(player1HighestCheckout, leg.checkoutScore);
       }
 
       // Player 2 stats
       player2TotalScore += leg.player2Score;
+      let legP2OneEighties = 0;
+      
       leg.player2Throws.forEach((score, index) => {
         // Last throw of winner uses checkoutDarts, others use 3
         const isLastThrow = index === leg.player2Throws.length - 1;
         const darts = (leg.winner === 2 && isLastThrow && leg.checkoutDarts) ? leg.checkoutDarts : 3;
         player2TotalDarts += darts;
-        if (score === 180) player2OneEighties++;
+        if (score === 180) {
+           player2OneEighties++;
+           legP2OneEighties++;
+        }
       });
+      console.log(`calculateMatchStats - Leg ${leg.legNumber} P2 180s:`, legP2OneEighties);
+
       if (leg.winner === 2 && leg.checkoutScore) {
         player2HighestCheckout = Math.max(player2HighestCheckout, leg.checkoutScore);
       }
     }
+    
+    console.log("calculateMatchStats - Final Totals:", {
+       p1OneEighties: player1OneEighties,
+       p2OneEighties: player2OneEighties
+    });
 
     return {
       player1: {
@@ -587,23 +616,33 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   const confirmMatchEnd = () => {
     if (!pendingMatchWinner) return;
     
-    // Save final leg
-    const finalLeg: Leg = {
-      legNumber: currentLeg,
-      player1Throws: [...player1.allThrows],
-      player2Throws: [...player2.allThrows],
-      player1Score: player1.allThrows.reduce((a, b) => a + b, 0),
-      player2Score: player2.allThrows.reduce((a, b) => a + b, 0),
-      winner: pendingMatchWinner,
-      checkoutScore: pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1],
-      checkoutDarts: arrowCount,
-      createdAt: new Date()
-    };
-    const allLegs = [...legs, finalLeg];
-    setLegs(allLegs);
+    const allLegs = [...legs];
+    const lastLeg = legs[legs.length - 1];
+    
+    // Only add final leg if it's not already in the legs array
+    // confirmLegEnd adds the leg before showing the match confirmation, so it should be there.
+    if (!lastLeg || lastLeg.legNumber !== currentLeg) {
+      const finalLeg: Leg = {
+        legNumber: currentLeg,
+        player1Throws: [...player1.allThrows],
+        player2Throws: [...player2.allThrows],
+        player1Score: player1.allThrows.reduce((a, b) => a + b, 0),
+        player2Score: player2.allThrows.reduce((a, b) => a + b, 0),
+        winner: pendingMatchWinner,
+        checkoutScore: pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1],
+        checkoutDarts: arrowCount,
+        createdAt: new Date()
+      };
+      allLegs.push(finalLeg);
+    }
+    
+    // Do NOT update legs state here to prevent double counting if cancelled/retried
+    // setLegs(allLegs);
     
     // Calculate and save match stats from all legs (including final)
+    console.log("confirmMatchEnd - Calculating stats from legs:", allLegs);
     const stats = calculateMatchStats(allLegs);
+    console.log("confirmMatchEnd - Calculated Stats:", stats);
     setMatchStats(stats);
     setMatchFinished(true);
     
@@ -633,8 +672,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
@@ -649,8 +686,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
@@ -676,8 +711,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
@@ -693,8 +726,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0,
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
@@ -750,7 +781,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       allThrows: [],
       stats: {
         highestCheckout: 0,
-        oneEightiesCount: 0,
         totalThrows: 0,
         average: 0
       }
@@ -763,7 +793,6 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       allThrows: [],
       stats: {
         highestCheckout: 0,
-        oneEightiesCount: 0,
         totalThrows: 0,
         average: 0
       }
@@ -910,7 +939,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">Avg: {player1.stats.average.toFixed(2)}</span>
-              <span className="text-gray-400">180: {player1.stats.oneEightiesCount}</span>
+              <span className="text-gray-400">180: {count180s(player1.allThrows)}</span>
             </div>
           </div>
 
@@ -931,7 +960,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">Avg: {player2.stats.average.toFixed(2)}</span>
-              <span className="text-gray-400">180: {player2.stats.oneEightiesCount}</span>
+              <span className="text-gray-400">180: {count180s(player2.allThrows)}</span>
             </div>
           </div>
         </header>

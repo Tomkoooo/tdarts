@@ -62,6 +62,11 @@ export const useSocketFeature = (clubId?: string) => {
 
 // Client-side feature flag ellenőrzés
 async function checkFeatureFlagClient(featureName: string, clubId?: string): Promise<boolean> {
+  // Ha NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED false, akkor nincs paywall, minden feature elérhető
+  if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
+    return true;
+  }
+
   // Ha NEXT_PUBLIC_ENABLE_ALL true, akkor minden feature elérhető
   if (process.env.NEXT_PUBLIC_ENABLE_ALL === 'true') {
     return true;

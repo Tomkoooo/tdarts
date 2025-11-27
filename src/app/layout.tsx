@@ -226,12 +226,12 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={`flex flex-col ${shouldHideNavbar ? '' : 'pt-16 md:pt-20'}`}>
+      <body className="flex flex-col">
         <SessionProvider>
           <UserProvider initialUser={initialUser}>
             <AuthSync />
             <PWAProvider />
-            <NavbarProvider>
+            <NavbarProvider initialShouldHide={shouldHideNavbar}>
             {children}
             </NavbarProvider>
           </UserProvider>

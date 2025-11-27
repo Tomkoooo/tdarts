@@ -45,7 +45,7 @@ interface Player {
   allThrows: number[];
   stats: {
     highestCheckout: number;
-    oneEightiesCount: number;
+    // oneEightiesCount removed - calculated dynamically from allThrows
     totalThrows: number;
     average: number;
   };
@@ -73,6 +73,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const [tempLegsToWin, setTempLegsToWin] = useState(legsToWin);
   const [tempStartingPlayer, setTempStartingPlayer] = useState<1 | 2>(match.startingPlayer || 1);
 
+  // Helper function to count 180s dynamically from throws
+  const count180s = (throws: number[]): number => {
+    return throws.filter(t => t === 180).length;
+  };
+
   const [player1, setPlayer1] = useState<Player>({
     name: formatName(match.player1.playerId.name),
     score: initialScore,
@@ -80,7 +85,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     allThrows: [],
     stats: {
       highestCheckout: match.player1.highestCheckout || 0,
-      oneEightiesCount: match.player1.oneEightiesCount || 0,
       totalThrows: 0,
       average: match.player1.average || 0,
     },
@@ -93,7 +97,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     allThrows: [],
     stats: {
       highestCheckout: match.player2.highestCheckout || 0,
-      oneEightiesCount: match.player2.oneEightiesCount || 0,
       totalThrows: 0,
       average: match.player2.average || 0,
     },
@@ -246,10 +249,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   }, [player1.allThrows.length, player2.allThrows.length]);
 
   const handleThrow = (score: number) => {
+    console.log("handleThrow - Input Score:", score, "Current Player:", currentPlayer);
+    
     const currentPlayerData = currentPlayer === 1 ? player1 : player2;
     
     // Check for bust
     if (currentPlayerData.score - score < 0) {
+      console.log("handleThrow - BUST");
       // Add bust (0 score) to throws
       const newAllThrows = [...currentPlayerData.allThrows, 0];
       
@@ -284,6 +290,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
 
     const newScore = currentPlayerData.score - score;
     const newAllThrows = [...currentPlayerData.allThrows, score];
+    console.log("handleThrow - New Score:", newScore, "New Throws:", newAllThrows);
 
     // Check for win condition (any finish, not just double-out)
     if (newScore === 0) {
@@ -296,8 +303,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
-            highestCheckout: score, // Set to exact checkout score (this is the winning throw)
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -310,8 +315,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
-            highestCheckout: score, // Set to exact checkout score (this is the winning throw)
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -332,7 +335,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -357,7 +359,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           stats: {
             ...prev.stats,
             totalThrows: prev.stats.totalThrows + 1,
-            oneEightiesCount: score === 180 ? prev.stats.oneEightiesCount + 1 : prev.stats.oneEightiesCount,
             average: ((prev.stats.totalThrows + 1) > 0) ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) + score) / (prev.stats.totalThrows + 1)) * 100) / 100 : 0
           }
@@ -398,7 +399,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           stats: {
             ...prev.stats,
             totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-            oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
             average: (prev.stats.totalThrows - 1) > 0 ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
@@ -411,7 +411,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           stats: {
             ...prev.stats,
             totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-            oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
             average: (prev.stats.totalThrows - 1) > 0 ? 
               Math.round((((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) * 100) / 100 : 0
           }
@@ -490,7 +489,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         allThrows: oldThrows,
         stats: {
           ...prev.stats,
-          oneEightiesCount: oldThrows.filter(t => t === 180).length,
           average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
@@ -501,7 +499,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         allThrows: oldThrows,
         stats: {
           ...prev.stats,
-          oneEightiesCount: oldThrows.filter(t => t === 180).length,
           average: oldThrows.length > 0 ? Math.round((oldThrows.reduce((a, b) => a + b, 0) / oldThrows.length) * 100) / 100 : 0
         }
       }));
@@ -536,6 +533,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const confirmLegEnd = async () => {
     if (!pendingLegWinner || isSavingLeg) return;
     
+    console.log("confirmLegEnd - Winner:", pendingLegWinner);
+
     // Auto-set arrow count if only one option is possible
     const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
     const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
@@ -591,15 +590,13 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           player2Throws: player2.allThrows,
           winnerArrowCount: arrowCount,
           player1Stats: {
-            highestCheckout: player1.stats.highestCheckout,
-            // oneEightiesCount removed - backend counts from throws to avoid duplication
+            highestCheckout: pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : 0,
             totalThrows: player1.allThrows.length,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingLegWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
-            highestCheckout: player2.stats.highestCheckout,
-            // oneEightiesCount removed - backend counts from throws to avoid duplication
+            highestCheckout: pendingLegWinner === 2 ? player2.allThrows[player2.allThrows.length - 1] : 0,
             totalThrows: player2.allThrows.length,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingLegWinner === 2 ? arrowCount : 0)
@@ -655,6 +652,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const confirmMatchEnd = async () => {
     if (!pendingMatchWinner || isSavingMatch) return;
     
+    console.log("confirmMatchEnd - Winner:", pendingMatchWinner);
+    
     setIsSavingMatch(true);
     
     // Send final checkout throw to socket
@@ -673,28 +672,33 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     }
     
     try {
+      // Calculate final legs won
+      const finalPlayer1LegsWon = pendingMatchWinner === 1 ? player1.legsWon + 1 : player1.legsWon;
+      const finalPlayer2LegsWon = pendingMatchWinner === 2 ? player2.legsWon + 1 : player2.legsWon;
+      
+      console.log("confirmMatchEnd - Final Legs Won:", { p1: finalPlayer1LegsWon, p2: finalPlayer2LegsWon });
+
       const response = await fetch(`/api/matches/${match._id}/finish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          player1LegsWon: player1.legsWon,
-          player2LegsWon: player2.legsWon,
+          player1LegsWon: finalPlayer1LegsWon,
+          player2LegsWon: finalPlayer2LegsWon,
           winnerArrowCount: arrowCount,
           player1Stats: {
-            highestCheckout: player1.stats.highestCheckout,
-            // oneEightiesCount removed - backend recalculates from all legs to avoid duplication
+            highestCheckout: pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : 0,
             totalThrows: player1.allThrows.length,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
-            highestCheckout: player2.stats.highestCheckout,
-            // oneEightiesCount removed - backend recalculates from all legs to avoid duplication
+            highestCheckout: pendingMatchWinner === 2 ? player2.allThrows[player2.allThrows.length - 1] : 0,
             totalThrows: player2.allThrows.length,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
           },
           finalLegData: {
+            legNumber: currentLeg,
             player1Throws: player1.allThrows,
             player2Throws: player2.allThrows
           }
@@ -761,8 +765,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
@@ -778,8 +780,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         stats: {
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
           average: (prev.stats.totalThrows - 1) > 0 ? 
             Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
         }
@@ -806,14 +806,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         score: prev.score + lastThrow,
         legsWon: Math.max(0, prev.legsWon - 1), // Revert leg count
         allThrows: prev.allThrows.slice(0, -1),
-        stats: {
-          ...prev.stats,
-          totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
-          average: (prev.stats.totalThrows - 1) > 0 ? 
-            Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
-        }
       }));
       // Keep player 1 as current player
       setCurrentPlayer(1);
@@ -824,14 +816,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         score: prev.score + lastThrow,
         legsWon: Math.max(0, prev.legsWon - 1), // Revert leg count
         allThrows: prev.allThrows.slice(0, -1),
-        stats: {
-          ...prev.stats,
-          totalThrows: Math.max(0, prev.stats.totalThrows - 1),
-          oneEightiesCount: lastThrow === 180 ? Math.max(0, prev.stats.oneEightiesCount - 1) : prev.stats.oneEightiesCount,
-          highestCheckout: 0, // Reset checkout since it was rejected
-          average: (prev.stats.totalThrows - 1) > 0 ? 
-            Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
-        }
       }));
       // Keep player 2 as current player
       setCurrentPlayer(2);
@@ -939,7 +923,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">Avg: {player1.stats.average}</span>
-              <span className="text-gray-400">180: {player1.stats.oneEightiesCount}</span>
+              <span className="text-gray-400">180: {count180s(player1.allThrows)}</span>
             </div>
           </div>
 
@@ -960,7 +944,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
               <span className="text-gray-400">Avg: {player2.stats.average}</span>
-              <span className="text-gray-400">180: {player2.stats.oneEightiesCount}</span>
+              <span className="text-gray-400">180: {count180s(player2.allThrows)}</span>
             </div>
           </div>
         </header>

@@ -1078,9 +1078,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     const status = rawMatch.matchReference?.status
 
     const finishedMatch = status === "finished" && hasPlayers
-    const allowSettings = !isTournamentLocked && (!finishedMatch || !hasPlayers)
-    const allowResultEdit = !isTournamentLocked && hasPlayers && tournamentStatus !== "finished"
-    const allowDelete = allowSettings && currentKnockoutMethod === "manual"
+    const isPendingOrFinished = tournamentStatus === "pending" || tournamentStatus === "finished"
+    
+    const allowSettings = !isTournamentLocked && (!finishedMatch || !hasPlayers) && !isPendingOrFinished
+    const allowResultEdit = !isTournamentLocked && hasPlayers && !isPendingOrFinished
+    const allowDelete = allowSettings && currentKnockoutMethod === "manual" && !isPendingOrFinished
 
     return (
       <div className="flex flex-wrap gap-1.5">
@@ -1100,21 +1102,23 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           </Tooltip>
         ) : null}
 
-        {isAdmin && allowSettings ? (
+        {isAdmin ? (
           <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-md"
-                  onClick={() => openMatchPlayerEditor(rawMatch, rawRound)}
-                  aria-label="Meccs beállítások"
-                >
-                  <IconSettings size={16} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Beállítások</TooltipContent>
-            </Tooltip>
+            {allowSettings && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-md"
+                    onClick={() => openMatchPlayerEditor(rawMatch, rawRound)}
+                    aria-label="Meccs beállítások"
+                  >
+                    <IconSettings size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Beállítások</TooltipContent>
+              </Tooltip>
+            )}
 
             {rawMatch.matchReference && allowResultEdit ? (
               <Tooltip>

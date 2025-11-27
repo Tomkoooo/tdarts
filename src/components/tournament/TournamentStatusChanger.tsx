@@ -34,7 +34,6 @@ type PendingAction =
 
 const MIN_PLAYERS_PER_GROUP = 3
 const MAX_PLAYERS_PER_GROUP = 6
-const MAX_KNOCKOUT_PLAYERS = 32
 
 export default function TournamentStatusChanger({
   tournament,
@@ -78,19 +77,7 @@ export default function TournamentStatusChanger({
   const isAutomaticKnockoutAllowed =
     boardCount === 0 ||
     tournamentFormat === "knockout" ||
-    (tournamentFormat === "group_knockout" && boardCount % 2 === 0)
-
-  const availableKnockoutPlayerCounts = useMemo(() => {
-    const counts: number[] = []
-    let size = 2
-
-    while (size <= totalPlayers && size <= MAX_KNOCKOUT_PLAYERS) {
-      counts.push(size)
-      size *= 2
-    }
-
-    return counts
-  }, [totalPlayers])
+    (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(boardCount))
 
   const resetError = () => setError(null)
 
@@ -191,7 +178,7 @@ export default function TournamentStatusChanger({
       } else {
         if (knockoutMode === "automatic") {
           response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
-            playersCount: selectedPlayers,
+            qualifiersPerGroup: selectedPlayers,
             useSeededPlayers: false,
             seededPlayersCount: 0,
           })
@@ -652,22 +639,21 @@ export default function TournamentStatusChanger({
 
             {knockoutMode === "automatic" && !isAutomaticKnockoutAllowed && (
               <Alert variant="destructive">
-                <AlertTitle>Páratlan számú csoport</AlertTitle>
+                <AlertTitle>Nem támogatott csoportszám</AlertTitle>
                 <AlertDescription>
-                  Automatikus generáláshoz páros számú csoport szükséges. Válts manuális módra vagy állítsd be a csoportokat
-                  megfelelően.
+                  Automatikus generálás csak 2, 4, 8 vagy 16 csoport esetén lehetséges (MDL szabályok). Válts manuális módra.
                 </AlertDescription>
               </Alert>
             )}
 
               {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
                 <div className="space-y-2">
-                  <span className="text-sm font-semibold text-muted-foreground">Továbbjutók száma</span>
+                  <span className="text-sm font-semibold text-muted-foreground">Továbbjutók száma csoportonként</span>
                   <p className="text-xs text-muted-foreground">
-                    Csak 2 hatványai választhatók (2, 4, 8, 16, 32). Összesen {totalPlayers} játékos van a tornán.
+                    Válaszd ki, hány játékos jusson tovább csoportonként. Ez határozza meg a főtábla méretét.
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {availableKnockoutPlayerCounts.map((count) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[2, 3, 4].filter(count => !(boardCount >= 16 && count === 4)).map((count) => (
                       <Button
                         key={count}
                         type="button"
@@ -677,6 +663,16 @@ export default function TournamentStatusChanger({
                         {count} játékos
                       </Button>
                     ))}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-2">
+                     Várható főtábla méret: <strong>{boardCount * selectedPlayers} fős</strong> ({boardCount} csoport esetén)
+                  </div>
+                  
+                  <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
+                    <p>
+                      <strong>Megjegyzés:</strong> Az egyeneság az MDL egyeneság szabályai alapján generálódik automatikus módban. 
+                      Ha más megközelítést szeretne, válassza a <em>Manuális</em> módot és vegye fel kézzel a meccseket.
+                    </p>
                   </div>
                 </div>
               )}

@@ -4,7 +4,6 @@ import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
 import Link from "next/link";
-import '../board.css'
 import { useUserContext } from "@/hooks/useUser";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";

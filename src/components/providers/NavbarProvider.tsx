@@ -4,27 +4,37 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import NavbarNew from '@/components/homapage/NavbarNew'
 
-export function NavbarProvider({ children }: { children: React.ReactNode }) {
+export function NavbarProvider({ 
+  children, 
+  initialShouldHide = false 
+}: { 
+  children: React.ReactNode
+  initialShouldHide?: boolean 
+}) {
   const pathname = usePathname()
-  const [shouldHideNavbar, setShouldHideNavbar] = useState(false)
+  const [shouldHideNavbar, setShouldHideNavbar] = useState(initialShouldHide)
 
   useEffect(() => {
+    if (!pathname) return;
+
     const hideNavbarPaths = ['/board', '/test']
-    const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path) || pathname.includes('/tv'))
-    setShouldHideNavbar(shouldHide)
+    const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path)) || pathname.includes('/tv')
     
-    // Update body padding dynamically
-    const body = document.body
-    if (shouldHide) {
-      body.classList.remove('pt-16', 'md:pt-20')
-    } else {
-      body.classList.add('pt-16', 'md:pt-20')
-    }
+    console.log("NavbarProvider - Pathname:", pathname, "Should Hide:", shouldHide);
+    
+    setShouldHideNavbar(shouldHide)
+    // Removed body class manipulation to avoid conflicts with React hydration
   }, [pathname])
 
   return (
     <>
-      {!shouldHideNavbar && <NavbarNew />}
+      {!shouldHideNavbar && (
+        <>
+          <NavbarNew />
+          {/* Spacer to prevent content from being hidden behind fixed navbar */}
+          <div className="h-16 md:h-20" />
+        </>
+      )}
       {children}
     </>
   )

@@ -25,22 +25,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const format = tournament.tournamentSettings?.format || 'group_knockout';
 
-        // Validate playersCount only for group_knockout format
+        // Validate parameters for group_knockout format
         if (format === 'group_knockout') {
-            if (body.playersCount === undefined || body.playersCount === null) {
-                throw new BadRequestError('Missing required field: playersCount for group_knockout format');
+            // Accept either qualifiersPerGroup (new MDL system) or playersCount (legacy)
+            if (body.qualifiersPerGroup !== undefined) {
+                // Validate qualifiersPerGroup is 2, 3, or 4
+                if (![2, 3, 4].includes(body.qualifiersPerGroup)) {
+                    throw new BadRequestError('qualifiersPerGroup must be 2, 3, or 4');
+                }
+            } else if (body.playersCount === undefined || body.playersCount === null) {
+                throw new BadRequestError('Missing required field: qualifiersPerGroup or playersCount');
             }
-
-            // Validate playersCount is a power of 2
-            if (!Number.isInteger(Math.log2(body.playersCount))) {
-                throw new BadRequestError('playersCount must be a power of 2 (2, 4, 8, 16, 32)');
-            }
-
         }
 
         // Call the service method to generate knockout
         const result = await TournamentService.generateKnockout(code, requesterId, {
-            playersCount: body.playersCount
+            playersCount: body.playersCount,
+            qualifiersPerGroup: body.qualifiersPerGroup
         });
 
         if (!result) {

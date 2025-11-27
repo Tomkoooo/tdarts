@@ -214,7 +214,9 @@
           {
             "type": "subsection",
             "title": "Torna indítása",
-            "content": ["Az &ldquo;Admin műveletek&rdquo; szekcióban indíthatod el a tornát."],
+            "content": [
+              "Az &ldquo;Admin műveletek&rdquo; szekcióban indíthatod el a tornát."
+            ],
             "subsections": [
               {
                 "title": "Csoportkör",
@@ -278,8 +280,8 @@
                   {
                     "title": "Automatikus mód",
                     "content": [
-                      "A rendszer automatikusan párosítja a továbbjutókat.",
-                      "A csoportbeli helyezések figyelembevételével történik a párosítás.",
+                      "A rendszer automatikusan párosítja a továbbjutókat hogyha 2, 4, 8, 16 csoport van tornán - a tábla szám = csoport számmal -.",
+                      "A csoportbeli helyezések figyelembevételével történik a párosítás az MDL szabályai szerint.",
                       "A &ldquo;Következő kör generálása&rdquo; gomb csak akkor aktív, ha az aktuális kör összes meccse befejeződött.",
                       "A győztesek automatikusan továbbjutnak a következő körbe.",
                       "Egyszerű és gyors megoldás kisebb versenyekhez."
@@ -923,7 +925,6 @@
         ]
       }
     }
-
   ],
   "cta": {
     "title": "Készen állsz a kezdésre?",

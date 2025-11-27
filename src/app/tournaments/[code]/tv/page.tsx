@@ -57,14 +57,12 @@ export default function TVModePage() {
       if (lastEvent.type === 'tournament-update' || 
           lastEvent.type === 'match-update' || 
           lastEvent.type === 'group-update') {
-        const eventTournamentId = lastEvent.data?.tournamentId
-        if (!eventTournamentId || eventTournamentId === code) {
-          console.log('TV Mode - Triggering silent refresh')
-          silentRefresh()
-        }
+        // Always refresh on these events to catch knockout rounds and other updates
+        console.log('TV Mode - Triggering silent refresh')
+        silentRefresh()
       }
     }
-  }, [lastEvent, silentRefresh, code])
+  }, [lastEvent, silentRefresh])
 
   // Calculate dynamic height for boards section
   const boardSectionHeight = useMemo(() => {

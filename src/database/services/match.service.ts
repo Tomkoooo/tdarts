@@ -463,15 +463,14 @@ export class MatchService {
         }
 
         // 2. Process final leg data (if provided and NOT already saved)
-        // Check if the legs count implies the final leg is already saved (rare but possible if retry)
-        // But logic says we should check matchData vs existing legs. 
-        // If `finalLegData` is present, it means the last leg wasn't saved via finishLeg endpoint but passed here.
+        // We check if a leg with the same legNumber already exists in match.legs
+        // This is more robust than checking legs count
         
-        const totalLegsDeclared = matchData.player1LegsWon + matchData.player2LegsWon;
-        const savedLegsCount = match.legs ? match.legs.length : 0;
+        const finalLegNumber = (matchData.finalLegData as any)?.legNumber;
+        const isFinalLegAlreadySaved = finalLegNumber && match.legs?.some((l: any) => l.legNumber === finalLegNumber);
 
-        // Only process finalLegData if it represents a NEW leg
-        if (savedLegsCount < totalLegsDeclared && matchData.finalLegData) {
+        // Only process finalLegData if it represents a NEW leg (not already saved)
+        if (matchData.finalLegData && !isFinalLegAlreadySaved) {
             const checkoutDarts = matchData.winnerArrowCount || 3;
             
             // P1 Final Leg - count 180s from throws only, NOT from matchData.player1Stats.oneEightiesCount
@@ -496,7 +495,21 @@ export class MatchService {
                 player2OneEighties += p2Throws.filter(s => s === 180).length;
             }
 
-            // ... (Save final leg logic follows below) ...
+            // Create and push the new leg to match.legs so it's saved
+            const newLeg = {
+                legNumber: finalLegNumber || (match.legs ? match.legs.length + 1 : 1),
+                player1Throws: matchData.finalLegData.player1Throws.map(score => ({ score, darts: 3 })), // Refine darts if needed
+                player2Throws: matchData.finalLegData.player2Throws.map(score => ({ score, darts: 3 })),
+                player1Score: matchData.player1Stats.totalScore,
+                player2Score: matchData.player2Stats.totalScore,
+                winnerId: winner === 1 ? match.player1.playerId : match.player2.playerId,
+                checkoutScore: winner === 1 ? matchData.player1Stats.highestCheckout : matchData.player2Stats.highestCheckout,
+                checkoutDarts: checkoutDarts,
+                createdAt: new Date()
+            };
+            
+            if (!match.legs) match.legs = [];
+            match.legs.push(newLeg);
         }
 
         // Update aggregated stats on match object
@@ -510,54 +523,9 @@ export class MatchService {
         match.player2.average = player2TotalDarts > 0 ? 
             Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
 
-        // Save the final leg data if it hasn't been saved yet
-        if (savedLegsCount < totalLegsDeclared) {
-            // The final leg hasn't been saved yet, so save it now
-            const winnerId = winner === 1 ? match.player1.playerId : match.player2.playerId;
-            const legCheckoutScore = Math.max(matchData.player1Stats.highestCheckout, matchData.player2Stats.highestCheckout);
-            const checkoutArrowCount = matchData.winnerArrowCount || 3;
-            
-            // Calculate remaining score for the loser
-            const startingScore = 501;
-            const loserRemainingScore = winner === 1 ? 
-                startingScore - matchData.player2Stats.totalScore : 
-                startingScore - matchData.player1Stats.totalScore;
-
-            const finalLeg = {
-                player1Score: matchData.player1Stats.totalScore,
-                player2Score: matchData.player2Stats.totalScore,
-                player1Throws: matchData.finalLegData?.player1Throws?.map((score, index) => {
-                    const isLast = index === (matchData.finalLegData?.player1Throws?.length || 0) - 1;
-                    return {
-                        score: score,
-                        darts: (winner === 1 && isLast) ? checkoutArrowCount : 3,
-                        isDouble: false,
-                        isCheckout: isLast && winner === 1
-                    };
-                }) || [],
-                player2Throws: matchData.finalLegData?.player2Throws?.map((score, index) => {
-                    const isLast = index === (matchData.finalLegData?.player2Throws?.length || 0) - 1;
-                    return {
-                        score: score,
-                        darts: (winner === 2 && isLast) ? checkoutArrowCount : 3,
-                        isDouble: false,
-                        isCheckout: isLast && winner === 2
-                    };
-                }) || [],
-                winnerId: winnerId,
-                checkoutScore: legCheckoutScore > 0 ? legCheckoutScore : undefined,
-                checkoutDarts: legCheckoutScore > 0 ? checkoutArrowCount : undefined,
-                winnerArrowCount: checkoutArrowCount,
-                loserRemainingScore: loserRemainingScore,
-                doubleAttempts: 0,
-                createdAt: new Date()
-            };
-
-            if (!match.legs) {
-                match.legs = [];
-            }
-            match.legs.push(finalLeg);
-        }
+        match.status = 'finished';
+        match.winner = winner;
+        match.endTime = new Date();
 
         await match.save();
 

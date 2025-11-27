@@ -88,7 +88,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const { isEnabled: showDetailedStats } = useFeatureFlag("detailedStatistics", tournament?.clubId?._id || tournament?.clubId)
 
   React.useEffect(() => {
-    setLocalPlayers(players)
+    console.log(tournament)
+    if(tournament.tournamentSettings.status === 'finished') {
+      //if the tournament is finished sort by tournament position
+      setLocalPlayers(players.sort((a: any, b: any) => a.tournamentStanding - b.tournamentStanding))
+    } else {
+      // Sort alphabetically by player name when tournament is not finished
+      setLocalPlayers([...players].sort((a: any, b: any) => {
+        const nameA = (a.playerReference?.name || a.name || '').toLowerCase()
+        const nameB = (b.playerReference?.name || b.name || '').toLowerCase()
+        return nameA.localeCompare(nameB)
+      }))
+    }
     setLocalUserPlayerStatus(userPlayerStatus)
     setLocalUserPlayerId(userPlayerId)
     setWaitingList(tournament?.waitingList || [])
@@ -605,15 +616,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </div>
           ) : (
             localPlayers
+              .map((player, index) => ({ player, index })) // Preserve the sorted order
               .sort((a, b) => {
-                const aId = a.playerReference?._id?.toString() || a._id?.toString()
-                const bId = b.playerReference?._id?.toString() || b._id?.toString()
+                // Only reorder to put current user on top, preserve original order otherwise
+                const aId = a.player.playerReference?._id?.toString() || a.player._id?.toString()
+                const bId = b.player.playerReference?._id?.toString() || b.player._id?.toString()
                 const currentUserId = localUserPlayerId?.toString()
                 if (aId === currentUserId) return -1
                 if (bId === currentUserId) return 1
-                return 0
+                return a.index - b.index // Preserve original sorted order
               })
-              .map((player) => {
+              .map(({ player }) => {
               const name = player.playerReference?.name || player.name || player._id
               const status = player.status || "applied"
               const statusMeta = playerStatusBadge[status]
