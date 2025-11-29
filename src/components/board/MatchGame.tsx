@@ -656,9 +656,14 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     setIsSavingMatch(true);
     
-    // Send final checkout throw to socket
-    if (isConnected) {
-      const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+    const hasThrows = player1.allThrows.length > 0 || player2.allThrows.length > 0;
+    
+    // Send final checkout throw to socket only if there are throws
+    if (isConnected && hasThrows) {
+      const lastThrow = pendingMatchWinner === 1 
+        ? (player1.allThrows.length > 0 ? player1.allThrows[player1.allThrows.length - 1] : 0)
+        : (player2.allThrows.length > 0 ? player2.allThrows[player2.allThrows.length - 1] : 0);
+        
       socket.emit('throw', {
         matchId: match._id,
         playerId: pendingMatchWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
@@ -672,11 +677,19 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     }
     
     try {
-      // Calculate final legs won
-      const finalPlayer1LegsWon = pendingMatchWinner === 1 ? player1.legsWon + 1 : player1.legsWon;
-      const finalPlayer2LegsWon = pendingMatchWinner === 2 ? player2.legsWon + 1 : player2.legsWon;
+      // Use current legs won from state - it was already updated in confirmLegEnd or handleSaveLegsToWin
+      const finalPlayer1LegsWon = player1.legsWon;
+      const finalPlayer2LegsWon = player2.legsWon;
       
       console.log("confirmMatchEnd - Final Legs Won:", { p1: finalPlayer1LegsWon, p2: finalPlayer2LegsWon });
+
+      // Only send finalLegData if there are actual throws (normal finish)
+      // If finishing via settings change (empty leg), send null
+      const finalLegData = hasThrows ? {
+        legNumber: currentLeg,
+        player1Throws: player1.allThrows,
+        player2Throws: player2.allThrows
+      } : null;
 
       const response = await fetch(`/api/matches/${match._id}/finish`, {
         method: 'POST',
@@ -686,22 +699,18 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           player2LegsWon: finalPlayer2LegsWon,
           winnerArrowCount: arrowCount,
           player1Stats: {
-            highestCheckout: pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : 0,
+            highestCheckout: pendingMatchWinner === 1 && player1.allThrows.length > 0 ? player1.allThrows[player1.allThrows.length - 1] : 0,
             totalThrows: player1.allThrows.length,
             totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
           },
           player2Stats: {
-            highestCheckout: pendingMatchWinner === 2 ? player2.allThrows[player2.allThrows.length - 1] : 0,
+            highestCheckout: pendingMatchWinner === 2 && player2.allThrows.length > 0 ? player2.allThrows[player2.allThrows.length - 1] : 0,
             totalThrows: player2.allThrows.length,
             totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
             totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
           },
-          finalLegData: {
-            legNumber: currentLeg,
-            player1Throws: player1.allThrows,
-            player2Throws: player2.allThrows
-          }
+          finalLegData: finalLegData
         })
       });
       

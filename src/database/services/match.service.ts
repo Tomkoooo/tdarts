@@ -245,6 +245,7 @@ export class MatchService {
 
         // Create leg object
         const leg = {
+            legNumber: match.legs ? match.legs.length + 1 : 1,
             player1Score: legData.player1Stats.totalScore,
             player2Score: legData.player2Stats.totalScore,
             player1Throws: legData.player1Throws.map((score, index) => {

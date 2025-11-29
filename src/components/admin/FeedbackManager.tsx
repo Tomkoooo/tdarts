@@ -229,23 +229,23 @@ export default function FeedbackManager() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
             <div className="text-sm text-base-content/70 font-medium">Összes</div>
           </div>
-          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-warning/20 to-warning/5 rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
             <div className="text-sm text-base-content/70 font-medium">Függőben</div>
           </div>
-          <div className="bg-gradient-to-br from-info/20 to-info/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-info/20 to-info/5 rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
             <div className="text-sm text-base-content/70 font-medium">Folyamatban</div>
           </div>
-          <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-success/20 to-success/5 rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-success mb-2">{stats.resolved}</div>
             <div className="text-sm text-base-content/70 font-medium">Megoldva</div>
           </div>
-          <div className="bg-gradient-to-br from-error/20 to-error/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-error/20 to-error/5 rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-error mb-2">{stats.rejected}</div>
             <div className="text-sm text-base-content/70 font-medium">Elutasítva</div>
           </div>
@@ -253,7 +253,7 @@ export default function FeedbackManager() {
       )}
 
       {/* Category Tabs */}
-      <div className="bg-base-100 border  rounded-xl p-4">
+      <div className="bg-base-100 rounded-xl p-4">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory('')}
@@ -279,7 +279,7 @@ export default function FeedbackManager() {
       </div>
 
       {/* Filters */}
-      <div className="bg-base-100 border  rounded-xl p-6">
+      <div className="bg-base-100 rounded-xl p-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select
@@ -332,7 +332,7 @@ export default function FeedbackManager() {
       {/* Feedback List */}
       <div className="space-y-4">
         {filteredByCategory.length === 0 ? (
-          <div className="bg-base-100 border  rounded-xl p-12 text-center">
+          <div className="bg-base-100 rounded-xl p-12 text-center">
             <IconBug size={64} className="mx-auto mb-4 text-base-content/20" />
             <p className="text-lg text-base-content/60">Nincsenek visszajelzések</p>
           </div>
@@ -344,12 +344,12 @@ export default function FeedbackManager() {
             const DeviceIcon = getDeviceIcon(item.device);
 
             return (
-              <div key={item._id} className="bg-base-100 border  rounded-xl p-6 hover:shadow-xl transition-all duration-300 group">
+              <div key={item._id} className="bg-base-100 rounded-xl p-6 hover:shadow-xl transition-all duration-300 group">
                 {/* Header */}
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-3 mb-2">
-                      <div className={`p-2 rounded-lg ${categoryConfig.color} border flex-shrink-0`}>
+                      <div className={`p-2 rounded-lg ${categoryConfig.color} flex-shrink-0`}>
                         <categoryConfig.icon size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -358,7 +358,7 @@ export default function FeedbackManager() {
                           <span className={`${priorityConfig.color} px-2 py-1 rounded-lg text-xs font-bold`}>
                             {priorityConfig.label}
                           </span>
-                          <span className={`${statusConfig.color} border px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1`}>
+                          <span className={`${statusConfig.color} px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1`}>
                             <statusConfig.icon size={14} />
                             {statusConfig.label}
                           </span>
@@ -413,7 +413,7 @@ export default function FeedbackManager() {
                 
                 {/* Admin Notes */}
                 {item.adminNotes && (
-                  <div className="mt-4 p-4 bg-info/10 border  rounded-lg">
+                  <div className="mt-4 p-4 bg-info/10 rounded-lg">
                     <p className="text-sm font-bold text-info mb-2 flex items-center gap-2">
                       <IconUser size={16} />
                       Admin megjegyzés:
@@ -424,7 +424,7 @@ export default function FeedbackManager() {
                 
                 {/* Resolution */}
                 {item.resolution && (
-                  <div className="mt-4 p-4 bg-success/10 border  rounded-lg">
+                  <div className="mt-4 p-4 bg-success/10 rounded-lg">
                     <p className="text-sm font-bold text-success mb-2 flex items-center gap-2">
                       <IconCircleCheck size={16} />
                       Megoldás:
