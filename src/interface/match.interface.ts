@@ -17,6 +17,7 @@ export interface Throw {
 }
 
 export interface Leg {
+  legNumber: number;
   player1Score: number;
   player2Score: number;
   player1Throws: Throw[];

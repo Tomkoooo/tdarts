@@ -9,6 +9,7 @@ const throwSchema = new mongoose.Schema({
 }, { _id: false });
 
 const legSchema = new mongoose.Schema({
+  legNumber: { type: Number, required: true },
   player1Score: { type: Number, required: true },
   player2Score: { type: Number, required: true },
   player1Throws: [throwSchema],
