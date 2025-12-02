@@ -59,12 +59,12 @@ interface MatchGameProps {
 }
 
 const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId }) => {
-  // Helper to format full names as initials + last name (e.g., "d. s. Erika")
+  // Helper to format full names as initials + last name (e.g., "D. S. Erika")
   const formatName = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
     if (parts.length === 0) return '';
     const last = parts.pop() as string;
-    const initials = parts.map(p => p.charAt(0).toLowerCase() + '.');
+    const initials = parts.map(p => p.charAt(0).toUpperCase() + '.');
     return [...initials, last].join(' ');
   };
   const initialScore = match.startingScore;
@@ -578,8 +578,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       });
     }
 
-    // Save leg to API
-    
+    // Save leg to API - simplified, only send throws and arrow count
     try {
       const response = await fetch(`/api/matches/${match._id}/finish-leg`, {
         method: 'POST',
@@ -588,19 +587,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           winner: pendingLegWinner,
           player1Throws: player1.allThrows,
           player2Throws: player2.allThrows,
-          winnerArrowCount: arrowCount,
-          player1Stats: {
-            highestCheckout: pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : 0,
-            totalThrows: player1.allThrows.length,
-            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player1.allThrows.length * 3 + (pendingLegWinner === 1 ? arrowCount : 0)
-          },
-          player2Stats: {
-            highestCheckout: pendingLegWinner === 2 ? player2.allThrows[player2.allThrows.length - 1] : 0,
-            totalThrows: player2.allThrows.length,
-            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player2.allThrows.length * 3 + (pendingLegWinner === 2 ? arrowCount : 0)
-          }
+          winnerArrowCount: arrowCount
         })
       });
       
@@ -658,59 +645,78 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     const hasThrows = player1.allThrows.length > 0 || player2.allThrows.length > 0;
     
-    // Send final checkout throw to socket only if there are throws
-    if (isConnected && hasThrows) {
-      const lastThrow = pendingMatchWinner === 1 
-        ? (player1.allThrows.length > 0 ? player1.allThrows[player1.allThrows.length - 1] : 0)
-        : (player2.allThrows.length > 0 ? player2.allThrows[player2.allThrows.length - 1] : 0);
+    // If there are throws, save the final leg first
+    if (hasThrows) {
+      console.log('Saving final leg before finishing match...');
+      
+      // Send final checkout throw to socket
+      if (isConnected) {
+        const lastThrow = pendingMatchWinner === 1 
+          ? (player1.allThrows.length > 0 ? player1.allThrows[player1.allThrows.length - 1] : 0)
+          : (player2.allThrows.length > 0 ? player2.allThrows[player2.allThrows.length - 1] : 0);
+          
+        socket.emit('throw', {
+          matchId: match._id,
+          playerId: pendingMatchWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+          score: lastThrow,
+          isCheckout: true,
+          remainingScore: 0,
+          legNumber: currentLeg,
+          tournamentCode: window.location.pathname.split('/')[2],
+          arrowCount: arrowCount
+        });
+      }
+      
+      // Save final leg
+      try {
+        const legResponse = await fetch(`/api/matches/${match._id}/finish-leg`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            winner: pendingMatchWinner,
+            player1Throws: player1.allThrows,
+            player2Throws: player2.allThrows,
+            winnerArrowCount: arrowCount
+          })
+        });
         
-      socket.emit('throw', {
-        matchId: match._id,
-        playerId: pendingMatchWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        score: lastThrow,
-        isCheckout: true,
-        remainingScore: 0,
-        legNumber: currentLeg,
-        tournamentCode: window.location.pathname.split('/')[2],
-        arrowCount: arrowCount
-      });
+        if (!legResponse.ok) {
+          const errorData = await legResponse.json();
+          console.error('Error saving final leg:', errorData);
+          showErrorToast('Hiba történt az utolsó leg mentése során!', {
+            error: errorData?.error,
+            context: 'Meccs lezárása',
+            errorName: 'Leg mentése sikertelen',
+          });
+          setIsSavingMatch(false);
+          return;
+        }
+      } catch (error: any) {
+        console.error('Error saving final leg:', error);
+        showErrorToast('Hiba történt az utolsó leg mentése során!', {
+          error: error?.message,
+          context: 'Meccs lezárása',
+          errorName: 'Leg mentése sikertelen',
+        });
+        setIsSavingMatch(false);
+        return;
+      }
     }
     
     try {
-      // Use current legs won from state - it was already updated in confirmLegEnd or handleSaveLegsToWin
+      // Use current legs won from state
       const finalPlayer1LegsWon = player1.legsWon;
       const finalPlayer2LegsWon = player2.legsWon;
       
       console.log("confirmMatchEnd - Final Legs Won:", { p1: finalPlayer1LegsWon, p2: finalPlayer2LegsWon });
 
-      // Only send finalLegData if there are actual throws (normal finish)
-      // If finishing via settings change (empty leg), send null
-      const finalLegData = hasThrows ? {
-        legNumber: currentLeg,
-        player1Throws: player1.allThrows,
-        player2Throws: player2.allThrows
-      } : null;
-
+      // Finish match - simplified, only send leg counts
       const response = await fetch(`/api/matches/${match._id}/finish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           player1LegsWon: finalPlayer1LegsWon,
-          player2LegsWon: finalPlayer2LegsWon,
-          winnerArrowCount: arrowCount,
-          player1Stats: {
-            highestCheckout: pendingMatchWinner === 1 && player1.allThrows.length > 0 ? player1.allThrows[player1.allThrows.length - 1] : 0,
-            totalThrows: player1.allThrows.length,
-            totalScore: player1.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player1.allThrows.length * 3 + (pendingMatchWinner === 1 ? arrowCount : 0)
-          },
-          player2Stats: {
-            highestCheckout: pendingMatchWinner === 2 && player2.allThrows.length > 0 ? player2.allThrows[player2.allThrows.length - 1] : 0,
-            totalThrows: player2.allThrows.length,
-            totalScore: player2.allThrows.reduce((sum, score) => sum + score, 0),
-            totalArrows: player2.allThrows.length * 3 + (pendingMatchWinner === 2 ? arrowCount : 0)
-          },
-          finalLegData: finalLegData
+          player2LegsWon: finalPlayer2LegsWon
         })
       });
       

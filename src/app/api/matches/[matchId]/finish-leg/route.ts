@@ -15,20 +15,21 @@ export async function POST(
     console.log('Received data:', JSON.stringify(body, null, 2));
     console.log('==========================');
     
-    // Validate required fields
-    if (body.winner === undefined || body.winner === null ||
-        !body.player1Stats || !body.player2Stats) {
-      throw new BadRequestError('Missing required fields: winner, player1Stats, player2Stats');
+    // Validate required fields (simplified - no stats needed)
+    if (body.winner === undefined || body.winner === null) {
+      throw new BadRequestError('Missing required field: winner');
+    }
+    
+    if (!Array.isArray(body.player1Throws) || !Array.isArray(body.player2Throws)) {
+      throw new BadRequestError('Missing required fields: player1Throws, player2Throws must be arrays');
     }
     
     // Call the service method to finish the leg
     const result = await MatchService.finishLeg(matchId, {
       winner: body.winner,
-      player1Throws: body.player1Throws || [],
-      player2Throws: body.player2Throws || [],
-      winnerArrowCount: body.winnerArrowCount,
-      player1Stats: body.player1Stats,
-      player2Stats: body.player2Stats
+      player1Throws: body.player1Throws,
+      player2Throws: body.player2Throws,
+      winnerArrowCount: body.winnerArrowCount
     });
     
     return NextResponse.json({ 

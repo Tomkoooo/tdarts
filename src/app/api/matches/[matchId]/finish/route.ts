@@ -13,11 +13,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         console.log('Received data:', JSON.stringify(body, null, 2));
         console.log('============================');
 
-        // Validate required fields
+        // Validate required fields (simplified - only legs won counts needed)
         if (body.player1LegsWon === undefined || body.player1LegsWon === null ||
-            body.player2LegsWon === undefined || body.player2LegsWon === null ||
-            !body.player1Stats || !body.player2Stats) {
-            throw new BadRequestError('Missing required fields: player1LegsWon, player2LegsWon, player1Stats, player2Stats');
+            body.player2LegsWon === undefined || body.player2LegsWon === null) {
+            throw new BadRequestError('Missing required fields: player1LegsWon, player2LegsWon');
         }
 
         // Validate no tie
@@ -25,28 +24,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             throw new BadRequestError('Match cannot end in a tie');
         }
 
-        // If final leg data is provided, save it first
-        if (body.finalLegData) {
-            console.log('Saving final leg data before finishing match...');
-            const winner = body.player1LegsWon > body.player2LegsWon ? 1 : 2;
-            await MatchService.finishLeg(matchId, {
-                winner: winner,
-                player1Throws: body.finalLegData.player1Throws || [],
-                player2Throws: body.finalLegData.player2Throws || [],
-                winnerArrowCount: body.winnerArrowCount,
-                player1Stats: body.player1Stats,
-                player2Stats: body.player2Stats
-            });
-        }
-
         // Call the service method to finish the match
+        // Backend will calculate all stats from saved legs
         const result = await MatchService.finishMatch(matchId, {
             player1LegsWon: body.player1LegsWon,
-            player2LegsWon: body.player2LegsWon,
-            winnerArrowCount: body.winnerArrowCount,
-            player1Stats: body.player1Stats,
-            player2Stats: body.player2Stats,
-            finalLegData: body.finalLegData
+            player2LegsWon: body.player2LegsWon
         });
 
         if (!result) {

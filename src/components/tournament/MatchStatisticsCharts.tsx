@@ -150,11 +150,19 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
   const [activeTab, setActiveTab] = useState<"overview" | "legs">("overview")
   const [expandedLegs, setExpandedLegs] = useState<Set<number>>(new Set())
 
-  // Calculate 3-dart average for each leg
-  const calculateLegAverages = (throws: Throw[]) => {
+  // Calculate 3-dart average for each leg - uses totalDarts if available
+  const calculateLegAverages = (throws: Throw[], totalDarts?: number) => {
     if (throws.length === 0) return 0
     const totalScore = throws.reduce((sum, t) => sum + t.score, 0)
-    return throws.length > 0 ? Math.round((totalScore / throws.length) * 100) / 100 : 0
+    
+    // Use stored totalDarts if available (new matches)
+    if (totalDarts !== undefined && totalDarts !== null && totalDarts > 0) {
+      return Math.round(((totalScore / totalDarts) * 3) * 100) / 100
+    }
+    
+    // Fallback for older matches: sum up darts from each throw
+    const calculatedDarts = throws.reduce((sum, t) => sum + (t.darts || 3), 0)
+    return calculatedDarts > 0 ? Math.round(((totalScore / calculatedDarts) * 3) * 100) / 100 : 0
   }
 
   // Calculate throw-by-throw 3-dart averages within each leg
@@ -177,23 +185,43 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
     const player2Cumulative: number[] = []
 
     let player1TotalScore = 0
-    let player1TotalThrows = 0
+    let player1TotalDarts = 0
     let player2TotalScore = 0
-    let player2TotalThrows = 0
+    let player2TotalDarts = 0
 
     legs.forEach((leg) => {
-      leg.player1Throws.forEach((throwData) => {
-        player1TotalScore += throwData.score
-        player1TotalThrows += 1
-      })
-      const player1Avg = player1TotalThrows > 0 ? Math.round((player1TotalScore / player1TotalThrows) * 100) / 100 : 0
+      // Player 1 - use stored totalDarts if available
+      const p1LegTotalScore = leg.player1Throws.reduce((sum, t) => sum + t.score, 0)
+      player1TotalScore += p1LegTotalScore
+      
+      if ((leg as any).player1TotalDarts !== undefined && (leg as any).player1TotalDarts !== null) {
+        // New match with totalDarts field
+        player1TotalDarts += (leg as any).player1TotalDarts
+      } else {
+        // Fallback for older matches
+        player1TotalDarts += leg.player1Throws.reduce((sum, t) => sum + (t.darts || 3), 0)
+      }
+      
+      const player1Avg = player1TotalDarts > 0 
+        ? Math.round(((player1TotalScore / player1TotalDarts) * 3) * 100) / 100 
+        : 0
       player1Cumulative.push(player1Avg)
 
-      leg.player2Throws.forEach((throwData) => {
-        player2TotalScore += throwData.score
-        player2TotalThrows += 1
-      })
-      const player2Avg = player2TotalThrows > 0 ? Math.round((player2TotalScore / player2TotalThrows) * 100) / 100 : 0
+      // Player 2 - use stored totalDarts if available
+      const p2LegTotalScore = leg.player2Throws.reduce((sum, t) => sum + t.score, 0)
+      player2TotalScore += p2LegTotalScore
+      
+      if ((leg as any).player2TotalDarts !== undefined && (leg as any).player2TotalDarts !== null) {
+        // New match with totalDarts field
+        player2TotalDarts += (leg as any).player2TotalDarts
+      } else {
+        // Fallback for older matches
+        player2TotalDarts += leg.player2Throws.reduce((sum, t) => sum + (t.darts || 3), 0)
+      }
+      
+      const player2Avg = player2TotalDarts > 0 
+        ? Math.round(((player2TotalScore / player2TotalDarts) * 3) * 100) / 100 
+        : 0
       player2Cumulative.push(player2Avg)
     })
 
@@ -202,10 +230,13 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
 
   const legAverages = useMemo(
     () =>
-      legs.map((leg) => ({
-        player1Average: calculateLegAverages(leg.player1Throws),
-        player2Average: calculateLegAverages(leg.player2Throws),
-      })),
+      legs.map((leg) => {
+        return {
+          legNumber: leg.legNumber,
+          player1Average: calculateLegAverages(leg.player1Throws, (leg as any).player1TotalDarts),
+          player2Average: calculateLegAverages(leg.player2Throws, (leg as any).player2TotalDarts),
+        }
+      }),
     [legs]
   )
 
@@ -444,8 +475,8 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
             if (!throwData || (leg.player1Throws.length === 0 && leg.player2Throws.length === 0)) return null
 
             const isExpanded = expandedLegs.has(legIndex)
-            const player1LegAvg = calculateLegAverages(leg.player1Throws)
-            const player2LegAvg = calculateLegAverages(leg.player2Throws)
+            const player1LegAvg = calculateLegAverages(leg.player1Throws, (leg as any).player1TotalDarts)
+            const player2LegAvg = calculateLegAverages(leg.player2Throws, (leg as any).player2TotalDarts)
 
             return (
               <Card key={legIndex} className="overflow-hidden border-0">

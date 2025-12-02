@@ -20,6 +20,8 @@ const legSchema = new mongoose.Schema({
   winnerArrowCount: Number, // Hány nyílból szállt ki a győztes
   loserRemainingScore: Number, // A vesztes játékos maradék pontjai
   doubleAttempts: Number,
+  player1TotalDarts: Number, // Total darts thrown by player 1 (accounts for checkout)
+  player2TotalDarts: Number, // Total darts thrown by player 2 (accounts for checkout)
   createdAt: { type: Date, default: Date.now },
 }, { _id: false });
 

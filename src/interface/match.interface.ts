@@ -28,6 +28,8 @@ export interface Leg {
   winnerArrowCount?: number; // Hány nyílból szállt ki a győztes
   loserRemainingScore?: number; // A vesztes játékos maradék pontjai
   doubleAttempts?: number;
+  player1TotalDarts?: number; // Total darts thrown by player 1 (accounts for checkout)
+  player2TotalDarts?: number; // Total darts thrown by player 2 (accounts for checkout)
   createdAt: Date;
 }
 

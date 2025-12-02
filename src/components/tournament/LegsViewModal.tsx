@@ -190,7 +190,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   const isPlayer1Winner = winningPlayerId === playerOneId
   const isPlayer2Winner = winningPlayerId === playerTwoId
 
-  const calculatePlayerArrows = (throws: Throw[], isWinner: boolean, winnerArrowCount?: number) => {
+  const calculatePlayerArrows = (throws: Throw[], storedTotalDarts?: number, isWinner?: boolean, winnerArrowCount?: number) => {
+    // Use stored totalDarts if available (new matches)
+    if (storedTotalDarts !== undefined && storedTotalDarts !== null) {
+      return storedTotalDarts
+    }
+    
+    // Fallback calculation for older matches
     if (!throws.length) return 0
     if (isWinner && typeof winnerArrowCount === "number") {
       return (throws.length - 1) * 3 + winnerArrowCount
@@ -377,7 +383,12 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                 <span className="font-semibold text-primary">{playerOneName}</span>
                                 {isPlayer1Winner && <IconTrophy className="h-4 w-4 text-warning" />}
                                 <span className="text-xs text-muted-foreground">
-                                  {calculatePlayerArrows(leg.player1Throws, isPlayer1Winner, leg.winnerArrowCount)} nyíl
+                                  {calculatePlayerArrows(
+                                    leg.player1Throws,
+                                    (leg as any).player1TotalDarts,
+                                    isPlayer1Winner,
+                                    leg.winnerArrowCount
+                                  )} nyíl
                                 </span>
                               </div>
                               {showDetailedStats && player1LegStats && (
@@ -422,7 +433,12 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                 <span className="font-semibold text-destructive">{playerTwoName}</span>
                                 {isPlayer2Winner && <IconTrophy className="h-4 w-4 text-warning" />}
                                 <span className="text-xs text-muted-foreground">
-                                  {calculatePlayerArrows(leg.player2Throws, isPlayer2Winner, leg.winnerArrowCount)} nyíl
+                                  {calculatePlayerArrows(
+                                    leg.player2Throws,
+                                    (leg as any).player2TotalDarts,
+                                    isPlayer2Winner,
+                                    leg.winnerArrowCount
+                                  )} nyíl
                                 </span>
                               </div>
                               {showDetailedStats && player2LegStats && (
