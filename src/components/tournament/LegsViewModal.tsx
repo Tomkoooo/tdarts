@@ -496,7 +496,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                 <TabsContent value="stats" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
                   <div className="pb-4">
                     <MatchStatisticsCharts
-                      legs={legs}
+                      legs={legs.map((leg, index) => ({ ...leg, legNumber: index + 1 }))}
                       player1Name={playerOneName}
                       player2Name={playerTwoName}
                     />
