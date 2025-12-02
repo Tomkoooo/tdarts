@@ -172,7 +172,8 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           player1LegsWon: player1Legs,
           player2LegsWon: player2Legs,
           player1Stats,
-          player2Stats
+          player2Stats,
+          allowManualFinish: true // Allow finishing without legs (admin manual entry)
         })
       });
 

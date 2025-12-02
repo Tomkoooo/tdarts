@@ -11,6 +11,7 @@ import {
   IconBell,
   IconBellOff,
   IconPlus,
+  IconCopyCheck,
 } from "@tabler/icons-react"
 import { toast } from "react-hot-toast"
 
@@ -458,7 +459,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const allowAdminActions = isPending
   const allowPlayerRegistration = registrationOpen
 
+  const handleCopyPlayers = () => {
+    try{
+      navigator.clipboard.writeText(localPlayers.map((player) => player.playerReference?.name).join('\n'))
+      toast.success('Játékosok sikeresen másolva.')
+    }catch(err){
+      console.error(err)
+      toast.error('Nem sikerült másolni a játékosokat.')
+    }
+    
 
+  }
 
   const canManagePlayers = userClubRole === 'admin' || userClubRole === 'moderator'
 
@@ -598,6 +609,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <IconUsers className="h-4 w-4" />
             {localPlayers.length} / {maxPlayers || "∞"} játékos
+            <button onClick={handleCopyPlayers} className="btn btn-sm btn-ghost">
+              <IconCopyCheck/>
+            </button>
           </div>
           <Badge
             variant="outline"

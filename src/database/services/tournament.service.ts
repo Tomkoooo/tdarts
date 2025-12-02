@@ -274,6 +274,319 @@ export class TournamentService {
         return tournament.boards || [];
     }
 
+    /**
+     * Automatically advance winner to next round after knockout match finishes
+     * Creates or updates next round match with the winner
+     */
+    static async autoAdvanceKnockoutWinner(matchId: string): Promise<void> {
+        try {
+            await connectMongo();
+            
+            const match = await MatchModel.findById(matchId);
+            if (!match || match.type !== 'knockout' || match.status !== 'finished') {
+                return;
+            }
+
+            const tournament = await TournamentModel.findById(match.tournamentRef);
+            if (!tournament) {
+                return;
+            }
+
+            // Only auto-advance if knockout method is automatic
+            if (tournament.tournamentSettings?.knockoutMethod !== 'automatic') {
+                return;
+            }
+
+            const winnerId = match.winnerId;
+            if (!winnerId) {
+                console.log(`No winner ID found for match ${matchId}`);
+                return;
+            }
+
+            // Check if this is a bye match
+            const isByeMatch = !match.player1?.playerId || !match.player2?.playerId;
+            
+            // Get loser ID (only for non-bye matches)
+            let loserId = null;
+            if (!isByeMatch) {
+                loserId = match.player1?.playerId?.toString() === winnerId?.toString() 
+                    ? match.player2.playerId 
+                    : match.player1.playerId;
+            }
+
+            const currentRound = match.round || 1;
+            const currentPosition = match.bracketPosition || 0;
+
+            // Calculate next round position using bracket pairing formula
+            // Positions 2i and 2i+1 in current round → position i in next round
+            const nextRound = currentRound + 1;
+            const nextPosition = Math.floor(currentPosition / 2);
+
+            console.log(`Auto-advance: Match ${matchId} winner ${winnerId} from round ${currentRound} pos ${currentPosition} to round ${nextRound} pos ${nextPosition} (bye: ${isByeMatch})`);
+
+            // Find next round match (should already exist in pre-generated bracket)
+            // Sort by createdAt desc to get the newest match (in case old matches exist)
+            const nextMatch = await MatchModel.findOne({
+                tournamentRef: tournament._id,
+                type: 'knockout',
+                round: nextRound,
+                bracketPosition: nextPosition
+            }).sort({ createdAt: -1 });
+
+            console.log(`Looking for next match: tournamentRef=${tournament._id}, round=${nextRound}, pos=${nextPosition}`);
+            console.log(`Found match: ${nextMatch?._id} with players: p1=${nextMatch?.player1?.playerId}, p2=${nextMatch?.player2?.playerId}`);
+
+            if (!nextMatch) {
+                // This means we've reached the final (no next round)
+                console.log(`No next match found - tournament complete`);
+                return;
+            }
+
+            // Update the existing match with winner
+            const updated = await this.assignPlayerToNextMatch(nextMatch, winnerId);
+            
+            if (!updated) {
+                console.log(`Match ${nextMatch._id} already has both players assigned`);
+            }
+
+            // Update tournament knockout structure
+            const roundObj = tournament.knockout.find((r: any) => r.round === nextRound);
+            if (roundObj) {
+                const knockoutMatch = roundObj.matches.find((m: any) => 
+                    m.matchReference?.toString() === nextMatch._id.toString()
+                );
+                if (knockoutMatch) {
+                    if (!knockoutMatch.player1) {
+                        knockoutMatch.player1 = winnerId;
+                    } else if (!knockoutMatch.player2) {
+                        knockoutMatch.player2 = winnerId;
+                    }
+                }
+            }
+
+            // Assign loser as scorer to appropriate match in next round (only for non-bye matches)
+            if (loserId) {
+                await this.assignLoserAsScorer(tournament, loserId, nextRound);
+            }
+
+            await tournament.save();
+            
+            // Emit SSE event to notify frontend of knockout bracket update
+            const { eventEmitter, EVENTS } = await import('@/lib/events');
+            eventEmitter.emit(EVENTS.TOURNAMENT_UPDATE, {
+                tournamentId: tournament.tournamentId,
+                type: 'knockout-update'
+            });
+        } catch (error) {
+            console.error('Auto-advance knockout winner error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Assign player to next match's empty slot
+     * Returns true if updated, false if both slots already filled
+     */
+    private static async assignPlayerToNextMatch(match: any, playerId: any): Promise<boolean> {
+        if (!match.player1 || !match.player1.playerId) {
+            // Assign to player1 slot
+            match.player1 = {
+                playerId: playerId,
+                legsWon: 0,
+                legsLost: 0,
+                average: 0,
+            };
+            await match.save();
+            console.log(`Assigned winner ${playerId} to player1 of match ${match._id}`);
+            return true;
+        } else if (!match.player2 || !match.player2.playerId) {
+            // Assign to player2 slot
+            match.player2 = {
+                playerId: playerId,
+                legsWon: 0,
+                legsLost: 0,
+                average: 0,
+            };
+            // Both players now assigned - match ready to play
+            match.status = 'pending';
+            await match.save();
+            console.log(`Assigned winner ${playerId} to player2 of match ${match._id} - match now ready`);
+            
+            // IMPORTANT: Dynamically assign boards by match order when match becomes playable
+            await this.assignMatchToBoardByOrder(match._id.toString());
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Dynamically assign all playable matches to boards by order (round + bracketPosition)
+     * Lower-order matches take priority. Skips bye matches entirely.
+     */
+    private static async assignMatchToBoardByOrder(matchId: string): Promise<void> {
+        try {
+            const match = await MatchModel.findById(matchId);
+            if (!match || match.type !== 'knockout') return;
+
+            const tournament = await TournamentModel.findById(match.tournamentRef);
+            if (!tournament) return;
+
+            // Get all pending knockout matches with 2 players (playable), sorted by order
+            const playableMatches = await MatchModel.find({
+                tournamentRef: tournament._id,
+                type: 'knockout',
+                status: 'pending',
+                'player1.playerId': { $exists: true, $ne: null },
+                'player2.playerId': { $exists: true, $ne: null }
+            }).sort({ round: 1, bracketPosition: 1 });
+
+            console.log(`Reassigning ${playableMatches.length} playable matches to boards by order`);
+
+            // Get active boards
+            const activeBoards = tournament.boards.filter((b: any) => b.isActive);
+            if (activeBoards.length === 0) return;
+            
+            // Clear nextMatch for idle boards
+            for (const board of tournament.boards) {
+                if (board.status !== 'playing') {
+                    board.nextMatch = undefined;
+                    board.status = 'idle';
+                }
+            }
+
+            // Assign playable matches to boards in round-robin order
+            let boardIndex = 0;
+            for (const playableMatch of playableMatches) {
+                // Skip if currently being played
+                const isPlaying = tournament.boards.some((b: any) => 
+                    b.currentMatch?.toString() === playableMatch._id.toString()
+                );
+                if (isPlaying) continue;
+
+                // Assign to next available board
+                const targetBoard = activeBoards[boardIndex % activeBoards.length];
+                const tBoardIndex = tournament.boards.findIndex((b: any) => 
+                    b.boardNumber === targetBoard.boardNumber
+                );
+                
+                if (tBoardIndex !== -1 && !tournament.boards[tBoardIndex].currentMatch) {
+                    tournament.boards[tBoardIndex].nextMatch = playableMatch._id as any;
+                    tournament.boards[tBoardIndex].status = 'waiting';
+                }
+                
+                boardIndex++;
+            }
+
+            await tournament.save();
+            console.log('Board assignments updated by match order');
+        } catch (error) {
+            console.error('Error assigning boards by order:', error);
+        }
+    }
+
+
+    /**
+     * Assign match loser as scorer for a match in the next round
+     */
+    private static async assignLoserAsScorer(
+        tournament: any,
+        loserId: any,
+        targetRound: number
+    ): Promise<void> {
+        // Find matches in target round that need scorers
+        const targetRoundMatches = await MatchModel.find({
+            tournamentRef: tournament._id,
+            type: 'knockout',
+            round: targetRound,
+            scorer: null
+        }).sort({ bracketPosition: 1 });
+
+        if (targetRoundMatches.length > 0) {
+            // Assign to first match without a scorer
+            const matchToScore = targetRoundMatches[0];
+            matchToScore.scorer = loserId;
+            matchToScore.scorerSource = {
+                type: 'match_loser',
+                playerId: loserId
+            };
+            await matchToScore.save();
+            console.log(`Assigned loser ${loserId} as scorer for match ${matchToScore._id}`);
+        }
+    }
+
+    /**
+     * Recalculate knockout bracket when a match winner changes
+     * This clears all subsequent rounds and rebuilds from the changed match
+     */
+    static async recalculateKnockoutBracket(matchId: string,  oldWinnerId: string, newWinnerId: string): Promise<void> {
+        try {
+            await connectMongo();
+            
+            const match = await MatchModel.findById(matchId);
+            if (!match || match.type !== 'knockout') {
+                return;
+            }
+
+            const tournament = await TournamentModel.findById(match.tournamentRef);
+            if (!tournament) {
+                return;
+            }
+
+            const currentRound = match.round || 1;
+            const currentPosition = match.bracketPosition || 0;
+
+            console.log(`Recalculating bracket from match ${matchId}, round ${currentRound}, position ${currentPosition}`);
+            console.log(`Winner changed from ${oldWinnerId} to ${newWinnerId}`);
+
+            // Find and delete all subsequent round matches that contain the old winner
+            const subsequentMatches = await MatchModel.find({
+                tournamentRef: tournament._id,
+                type: 'knockout',
+                round: { $gt: currentRound }
+            });
+
+            for (const futureMatch of subsequentMatches) {
+                const hasOldWinner = 
+                    futureMatch.player1?.playerId?.toString() === oldWinnerId?.toString() ||
+                    futureMatch.player2?.playerId?.toString() === oldWinnerId?.toString();
+
+                if (hasOldWinner) {
+                    // Replace old winner with new winner
+                    if (futureMatch.player1?.playerId?.toString() === oldWinnerId?.toString()) {
+                        futureMatch.player1.playerId = newWinnerId;
+                    }
+                    if (futureMatch.player2?.playerId?.toString() === oldWinnerId?.toString()) {
+                        futureMatch.player2.playerId = newWinnerId;
+                    }
+                    await futureMatch.save();
+                    console.log(`Updated match ${futureMatch._id} with new winner ${newWinnerId}`);
+                }
+            }
+
+            // Update tournament knockout structure
+            for (const round of tournament.knockout) {
+                if (round.round > currentRound) {
+                    for (const knockoutMatch of round.matches) {
+                        if (knockoutMatch.player1?.toString() === oldWinnerId) {
+                            knockoutMatch.player1 = newWinnerId;
+                        }
+                        if (knockoutMatch.player2?.toString() === oldWinnerId) {
+                            knockoutMatch.player2 = newWinnerId;
+                        }
+                    }
+                }
+            }
+
+            await tournament.save();
+            console.log('Knockout bracket recalculated successfully');
+        } catch (error) {
+            console.error('Recalculate knockout bracket error:', error);
+            throw error;
+        }
+    }
+
     static async generateKnockout(tournamentCode: string, requesterId: string, options: {
         playersCount?: number;
         qualifiersPerGroup?: number;
@@ -360,103 +673,255 @@ export class TournamentService {
                 }
             }
 
-            // Generate knockout rounds with proper cross-group pairings
+            // Generate knockout rounds with proper cross-group pairings (for round 1 only)
             const knockoutRounds = await this.generateKnockoutRounds(advancingPlayers, format, tournament, options.qualifiersPerGroup);
 
-            // Create matches for the first round - combine all matches from all rounds
-            // NEW: Only create matches if at least one player is present
-            const allFirstRoundMatches = knockoutRounds.flatMap(round => round.matches);
-            const createdMatches: any[] = [];
-            const boardFirstMatches = new Map<number, mongoose.Types.ObjectId>(); // Track first match for each board
-
-            // Get available boards for this tournament
+            // Get available boards
             const availableBoards = tournament.boards.filter((board: any) => board.isActive);
             if (availableBoards.length === 0) {
                 throw new Error('No active boards available for this tournament');
             }
 
-            // Assign matches to boards in round-robin fashion
-            // NEW: Create match only if at least one player exists
-            let matchesCreated = 0;
-            for (let i = 0; i < allFirstRoundMatches.length; i++) {
-                const matchData = allFirstRoundMatches[i];
-                
-                // NEW: Check if at least one player exists
-                if (matchData.player1 || matchData.player2) {
-                    const boardIndex: number = matchesCreated % availableBoards.length;
-                    const assignedBoard: any = availableBoards[boardIndex];
+            // Calculate total rounds needed
+            const totalRoundsNeeded = Math.ceil(Math.log2(advancingPlayers.length));
+            console.log(`Generating knockout: ${advancingPlayers.length} players, ${totalRoundsNeeded} rounds needed`);
 
+            // Pre-generate ALL rounds for automatic mode
+            const allRoundsStructure: any[] = [];
+            const createdMatches: any[] = [];
+            const boardFirstMatches = new Map<number, mongoose.Types.ObjectId>();
+            
+            // Track playable match counter for proper board distribution
+            let playableMatchCounter = 0;
+            
+            for (let roundNum = 1; roundNum <= totalRoundsNeeded; roundNum++) {
+                const matchesInRound = Math.pow(2, totalRoundsNeeded - roundNum);
+                const roundMatches: any[] = [];
+
+                console.log(`Round ${roundNum}: ${matchesInRound} matches`);
+
+                for (let matchPos = 0; matchPos < matchesInRound; matchPos++) {
+                    // For round 1, get actual players from knockoutRounds
+                    let player1Id = null;
+                    let player2Id = null;
+
+                    if (roundNum === 1 && knockoutRounds[0] && knockoutRounds[0].matches[matchPos]) {
+                        player1Id = knockoutRounds[0].matches[matchPos].player1 || null;
+                        player2Id = knockoutRounds[0].matches[matchPos].player2 || null;
+                    }
+
+                    // Determine if this will be a playable match (both players present)
+                    const isPlayable = player1Id && player2Id;
+                    
+                    // Assign board: for round 1 playable matches, use playable counter to distribute evenly
+                    // For bye matches or later rounds, use simple round-robin
+                    let assignedBoard;
+                    if (roundNum === 1 && isPlayable) {
+                        const boardIndex = playableMatchCounter % availableBoards.length;
+                        assignedBoard = availableBoards[boardIndex];
+                        playableMatchCounter++;
+                        console.log(`Playable match ${matchPos}: assigned to board ${assignedBoard.boardNumber} (playable #${playableMatchCounter})`);
+                    } else {
+                        const boardIndex = matchPos % availableBoards.length;
+                        assignedBoard = availableBoards[boardIndex];
+                        if (roundNum === 1) {
+                            console.log(`Bye match ${matchPos}: assigned to board ${assignedBoard.boardNumber}`);
+                        }
+                    }
+
+                    // Create match
                     const match = await MatchModel.create({
                         boardReference: assignedBoard.boardNumber,
                         tournamentRef: tournament._id,
                         type: 'knockout',
-                        round: 1,
-                        player1: matchData.player1 ? {
-                            playerId: matchData.player1,
+                        round: roundNum,
+                        bracketPosition: matchPos,
+                        player1: player1Id ? {
+                            playerId: player1Id,
                             legsWon: 0,
                             legsLost: 0,
                             average: 0,
                         } : null,
-                        player2: matchData.player2 ? {
-                            playerId: matchData.player2,
+                        player2: player2Id ? {
+                            playerId: player2Id,
                             legsWon: 0,
                             legsLost: 0,
                             average: 0,
                         } : null,
-                        scorer: matchData.player1 || matchData.player2, // Default scorer to first available player
+                        scorer: player1Id || player2Id || null,
                         status: 'pending',
                         legs: [],
                     });
-                    createdMatches.push(match);
-                    matchesCreated++;
 
-                    // Track the first match for each board
-                    if (!boardFirstMatches.has(assignedBoard.boardNumber)) {
-                        boardFirstMatches.set(assignedBoard.boardNumber, match._id);
-                    }
+                    roundMatches.push({
+                        player1: player1Id,
+                        player2: player2Id,
+                        matchReference: match._id
+                    });
 
-                    // Update the knockout structure with match reference
-                    // Find the round that contains this match
-                    for (const round of knockoutRounds) {
-                        const matchIndex = round.matches.findIndex((m: any) => {
-                            const p1Match = m.player1?.toString() === matchData.player1?.toString();
-                            const p2Match = m.player2?.toString() === matchData.player2?.toString();
-                            // Match if both players match (or both are null/undefined)
-                            return (p1Match || (!m.player1 && !matchData.player1)) && 
-                                   (p2Match || (!m.player2 && !matchData.player2));
-                        });
-                        if (matchIndex !== -1) {
-                            round.matches[matchIndex].matchReference = match._id;
-                            break;
+                    if (roundNum === 1) {
+                        createdMatches.push(match);
+                        
+                        // Track first PLAYABLE match for each board (skip bye matches)
+                        if (isPlayable && !boardFirstMatches.has(assignedBoard.boardNumber)) {
+                            boardFirstMatches.set(assignedBoard.boardNumber, match._id);
                         }
                     }
-                } else {
-                    // NEW: Empty pair - no match created yet, will be created when players are added
-                    console.log(`Empty pair at index ${i} - no match created`);
                 }
+
+                allRoundsStructure.push({
+                    round: roundNum,
+                    matches: roundMatches
+                });
             }
 
-            // Update board status only with the first match for each board
+            // Update board status - only assign matches with BOTH players (skip bye matches)
+            // Bye matches will be dynamically assigned when they get a 2nd player
             for (const [boardNumber, firstMatchId] of boardFirstMatches) {
-                const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === boardNumber);
-                if (boardIndex !== -1) {
-                    tournament.boards[boardIndex].status = 'waiting';
-                    tournament.boards[boardIndex].nextMatch = firstMatchId as any;
-                    tournament.boards[boardIndex].currentMatch = undefined;
+                // Check if this match is playable (has both players)
+                const matchToCheck = createdMatches.find(m => m._id.toString() === firstMatchId.toString());
+                const isPlayable = matchToCheck && 
+                                  matchToCheck.player1 && matchToCheck.player1.playerId &&
+                                  matchToCheck.player2 && matchToCheck.player2.playerId;
+                
+                if (isPlayable) {
+                    const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === boardNumber);
+                    if (boardIndex !== -1) {
+                        tournament.boards[boardIndex].status = 'waiting';
+                        tournament.boards[boardIndex].nextMatch = firstMatchId as any;
+                        tournament.boards[boardIndex].currentMatch = undefined;
+                    }
+                } else {
+                    console.log(`Skipping bye match ${firstMatchId} for board ${boardNumber} - will assign when match becomes playable`);
                 }
             }
 
-            // Update tournament
-            tournament.knockout = knockoutRounds;
+            // Assign scorers dynamically for knockout round 1
+            await this.assignKnockoutScorers(tournament, createdMatches, format);
+
+            // IMPORTANT: Save the initial knockout structure BEFORE processing bye matches
+            // This allows autoAdvanceKnockoutWinner to find and update the structure
+            tournament.knockout = allRoundsStructure;
             tournament.tournamentSettings.status = 'knockout';
             tournament.tournamentSettings.knockoutMethod = 'automatic';
-
             await tournament.save();
+            console.log('Saved initial knockout structure to database');
+
+            // Automatically finish bye matches so players advance to round 2
+            console.log(`Checking ${createdMatches.length} round 1 matches for byes...`);
+            for (const match of createdMatches) {
+                // Check if either player is null (bye match)
+                // Note: match.player1/player2 contain { playerId, legsWon, ... } structure
+                const hasPlayer1 = match.player1 && match.player1.playerId;
+                const hasPlayer2 = match.player2 && match.player2.playerId;
+                const isByeMatch = !hasPlayer1 || !hasPlayer2;
+                
+                console.log(`Match ${match._id}: hasPlayer1=${!!hasPlayer1}, hasPlayer2=${!!hasPlayer2}, isBye=${isByeMatch}`);
+                
+                if (isByeMatch) {
+                    // Get the existing player
+                    const existingPlayerId = hasPlayer1 ? match.player1.playerId : match.player2.playerId;
+                    
+                    if (existingPlayerId) {
+                        match.winnerId = existingPlayerId;
+                        match.status = 'finished';
+                        
+                        // Set legs won
+                        if (hasPlayer1) {
+                            match.player1.legsWon = 1;
+                            if (match.player2) match.player2.legsWon = 0;
+                        } else {
+                            if (match.player1) match.player1.legsWon = 0;
+                            match.player2.legsWon = 1;
+                        }
+                        
+                        await match.save();
+                        console.log(`Auto-finished bye match ${match._id} - winner: ${existingPlayerId}`);
+                        
+                        // Auto-advance to next round
+                        try {
+                            await this.autoAdvanceKnockoutWinner(match._id.toString());
+                        } catch (error) {
+                            console.error(`Error auto-advancing bye match ${match._id}:`, error);
+                        }
+                    }
+                }
+            }
+
+            // Tournament structure should now be updated by bye auto-advances
+            console.log('Bye match processing complete');
 
             return true;
         } catch (error) {
             console.error('Generate knockout error:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Assign scorers dynamically for knockout round 1
+     * - Group losers score for first N matches
+     * - Remaining matches use losers from earlier matches
+     */
+    private static async assignKnockoutScorers(
+        tournament: any,
+        createdMatches: any[],
+        format: string
+    ): Promise<void> {
+        // Only apply dynamic scorer assignment for group_knockout format
+        if (format !== 'group_knockout') {
+            return;
+        }
+
+        // Get all tournament players
+        const allPlayers = tournament.tournamentPlayers || [];
+        
+        // Identify group losers (players who participated in groups but didn't advance)
+        const groupLosers = allPlayers.filter((player: any) => {
+            // Has a group but not in knockout matches
+            if (!player.groupId) return false;
+            
+            const isInKnockout = createdMatches.some(match => {
+                const p1Id = match.player1?.playerId?.toString();
+                const p2Id = match.player2?.playerId?.toString();
+                const playerId = player.playerReference?.toString();
+                return p1Id === playerId || p2Id === playerId;
+            });
+            
+            return !isInKnockout;
+        });
+
+        console.log(`Found ${groupLosers.length} group losers for ${createdMatches.length} matches`);
+
+        // Sort matches by bracketPosition
+        const sortedMatches = [...createdMatches].sort((a, b) => 
+            (a.bracketPosition || 0) - (b.bracketPosition || 0)
+        );
+
+        // Assign scorers
+        for (let i = 0; i < sortedMatches.length; i++) {
+            const match = sortedMatches[i];
+            
+            if (i < groupLosers.length) {
+                // Assign group loser as scorer
+                match.scorer = groupLosers[i].playerReference;
+                match.scorerSource = {
+                    type: 'group_loser',
+                    playerId: groupLosers[i].playerReference
+                };
+            } else {
+                // Use loser from previous match
+                const sourceMatchIndex = i - groupLosers.length;
+                const sourceMatch = sortedMatches[sourceMatchIndex];
+                
+                match.scorer = null; // Will be determined after source match finishes
+                match.scorerSource = {
+                    type: 'match_loser',
+                    sourceMatchId: sourceMatch._id
+                };
+            }
+            
+            await match.save();
         }
     }
 

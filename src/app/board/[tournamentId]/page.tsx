@@ -5,6 +5,7 @@ import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
+import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -78,6 +79,8 @@ interface BoardPageProps {
 const BoardPage: React.FC<BoardPageProps> = (props) => {
   const { tournamentId } = use(props.params);
   const { user } = useUserContext();
+  const { lastEvent } = useRealTimeUpdates();
+  
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
@@ -170,6 +173,26 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       loadUserRole();
     }
   }, [isAuthenticated, tournamentId]);
+
+  // Real-time updates via SSE
+  useEffect(() => {
+    if (lastEvent && isAuthenticated) {
+      console.log('Board - Received SSE event:', lastEvent.type, lastEvent.data);
+      
+      // Auto-refresh on relevant events
+      if (lastEvent.type === 'tournament-update' || lastEvent.type === 'match-update') {
+        // If viewing matches, reload them
+        if (selectedBoard) {
+          console.log('Board - Auto-refreshing matches due to SSE event');
+          loadMatches();
+        } else {
+          // If on board selection, reload boards
+          console.log('Board - Auto-refreshing boards due to SSE event');
+          loadBoards();
+        }
+      }
+    }
+  }, [lastEvent, isAuthenticated, selectedBoard]);
 
   const handlePasswordSubmit = async (pwd?: string) => {
     setLoading(true);
@@ -741,7 +764,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                             {match.player1.playerId.name} vs {match.player2.playerId.name}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Író: {match.scorer.name}
+                            Író: {match.scorer?.name ? match.scorer.name : 'Előző kör vesztese'}
                           </p>
                         </div>
                         <div className="text-sm text-muted-foreground">

@@ -38,6 +38,7 @@ type Throw = {
 }
 
 type Leg = {
+  legNumber: number
   player1Score: number
   player2Score: number
   player1Throws: Throw[]

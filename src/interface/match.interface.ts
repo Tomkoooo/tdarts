@@ -39,6 +39,12 @@ export interface Match {
   tournamentRef: Types.ObjectId;
   type: 'group' | 'knockout';
   round: number;
+  bracketPosition?: number; // Position within round for bracket display
+  scorerSource?: {
+    type: 'group_loser' | 'match_loser' | 'manual';
+    sourceMatchId?: Types.ObjectId;
+    playerId?: Types.ObjectId;
+  };
   player1?: MatchPlayer;
   player2?: MatchPlayer;
   scorer?: Types.ObjectId;

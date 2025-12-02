@@ -26,9 +26,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         // Call the service method to finish the match
         // Backend will calculate all stats from saved legs
+        // If allowManualFinish is true, skip leg validation (for admin manual entry)
         const result = await MatchService.finishMatch(matchId, {
             player1LegsWon: body.player1LegsWon,
-            player2LegsWon: body.player2LegsWon
+            player2LegsWon: body.player2LegsWon,
+            allowManualFinish: body.allowManualFinish || false
         });
 
         if (!result) {

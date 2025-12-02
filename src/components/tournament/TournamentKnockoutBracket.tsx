@@ -446,6 +446,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           oneEightiesCount: editForm.player2Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player2Stats.oneEightiesCount,
           highestCheckout: editForm.player2Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player2Stats.highestCheckout,
         },
+        allowManualFinish: true, // Allow finishing without legs (admin manual entry)
       };
 
       const matchId =
@@ -1085,7 +1086,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     const allowDelete = allowSettings && currentKnockoutMethod === "manual" && !isPendingOrFinished
 
     return (
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5 items-center">
         {status !== "pending" && hasPlayers ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1156,6 +1157,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             ) : null}
           </>
         ) : null}
+        {status !=="finished" && (
+        <span className="text-xs text-muted-foreground italic flex ml-auto">
+          Író: {rawMatch.matchReference?.scorer?.name || "Előző vesztes"}
+        </span>
+        )}
       </div>
     )
   }

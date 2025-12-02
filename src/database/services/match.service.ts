@@ -295,16 +295,18 @@ export class MatchService {
     static async finishMatch(matchId: string, matchData: {
         player1LegsWon: number;
         player2LegsWon: number;
+        allowManualFinish?: boolean; // Allow finishing without legs (for admin manual entry)
     }) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found');
 
         // Check if this is a bye match (one or both players are null)
-        const isByeMatch = !match.player1?.playerId || !match.player2?.playerId;
+        const isByeMatch = !match.player1?.playerId || !match.player2?.playerId || !match.player1 || !match.player2;
+        console.log(`Match ${matchId}: isBye=${isByeMatch} player1=${match.player1?.playerId} player2=${match.player2?.playerId} player1=${match.player1} player2=${match.player2}`);
         
         if (isByeMatch) {
             // Handle bye match - automatically set the existing player as winner
-            if (!match.player1?.playerId && !match.player2?.playerId) {
+            if (!match.player1?.playerId && !match.player2?.playerId && !match.player1 && !match.player2) {
                 throw new BadRequestError('Cannot finish a match with no players');
             }
             
@@ -331,17 +333,26 @@ export class MatchService {
         }
 
         // Regular match - both players exist
-        // Validate that legs have been saved
-        if (!match.legs || match.legs.length === 0) {
+        // Validate that legs have been saved (unless manual finish is allowed)
+        if (!matchData.allowManualFinish && (!match.legs || match.legs.length === 0)) {
             throw new BadRequestError('Cannot finish match - no legs have been played. Please save legs using finishLeg first.');
         }
 
         // Determine winner based on legs won
-        const winner = matchData.player1LegsWon > matchData.player2LegsWon ? 1 : 2;
+        const newWinner = matchData.player1LegsWon > matchData.player2LegsWon ? 1 : 2;
+        const newWinnerId = newWinner === 1 ? match.player1.playerId : match.player2.playerId;
+
+        // Check if this is a winner change for a knockout match
+        const isWinnerChange = match.type === 'knockout' && 
+                               match.status === 'finished' && 
+                               match.winnerId && 
+                               match.winnerId.toString() !== newWinnerId.toString();
+        
+        const oldWinnerId = match.winnerId;
 
         // Update match status and winner
         match.status = 'finished';
-        match.winnerId = winner === 1 ? match.player1.playerId : match.player2.playerId;
+        match.winnerId = newWinnerId;
         match.player1.legsWon = matchData.player1LegsWon;
         match.player2.legsWon = matchData.player2LegsWon;
 
@@ -503,6 +514,31 @@ export class MatchService {
                 match: match.toObject(),
                 type: 'finished'
             });
+
+            // Handle knockout match advancement
+            if (match.type === 'knockout') {
+                // If winner changed, recalculate bracket first
+                if (isWinnerChange) {
+                    console.log(`Winner changed from ${oldWinnerId} to ${newWinnerId} - recalculating bracket`);
+                    try {
+                        await TournamentService.recalculateKnockoutBracket(
+                            matchId, 
+                            oldWinnerId.toString(), 
+                            newWinnerId.toString()
+                        );
+                    } catch (error) {
+                        console.error('Bracket recalculation error:', error);
+                    }
+                } else {
+                    // Normal finish - auto-advance winner
+                    try {
+                        await TournamentService.autoAdvanceKnockoutWinner(matchId);
+                    } catch (error) {
+                        console.error('Auto-advance error:', error);
+                        // Don't throw - match is already finished
+                    }
+                }
+            }
         }
 
         return match;
