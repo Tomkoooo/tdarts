@@ -1009,7 +1009,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   <CardTitle className="text-xl">
                     {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
                   </CardTitle>
-                  <CardDescription>Író: {selectedMatch.scorer.name}</CardDescription>
+                  <CardDescription>Író: {selectedMatch.scorer ? selectedMatch.scorer.name : "Előző kör vesztese"}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">

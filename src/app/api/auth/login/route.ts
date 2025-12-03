@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     // Create the response with the user object and token
     const response = NextResponse.json({
       message: 'Login successful',
+      token, // Return token in body for cross-origin usage
       user: {
         _id: user._id.toString(),
         username: user.username,
@@ -28,11 +29,14 @@ export async function POST(request: Request) {
     });
 
     // Set the token as an HTTP-only cookie
+    // Note: For cross-origin (3rd party site), SameSite=None and Secure=true is required.
+    // However, this requires HTTPS. For localhost development, this might be tricky.
+    // We return the token in the body so the client can store it in localStorage/memory if needed.
     response.cookies.set('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production', 
       maxAge: 60 * 60 * 24 * 180, // 180 days
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from strict to lax to allow some cross-site navigation, but for API calls token in body is safer
       path: '/',
     });
 

@@ -452,6 +452,11 @@ export class LeagueService {
         );
       }
 
+      // National League Constraint: If league is verified and less than 16 players, points are 0
+      if (league.verified && checkedInPlayers.length < 16) {
+        points = 0;
+      }
+
       // Find or create player in league
       let leaguePlayer = league.players.find((p: any) => this.getPlayerId(p.player) === playerId);
       if (!leaguePlayer) {
@@ -876,6 +881,7 @@ export class LeagueService {
       endDate: league.endDate,
       createdAt: league.createdAt,
       updatedAt: league.updatedAt,
+      verified: league.verified,
       pointSystemType: league.pointSystemType,
       // Include populated tournaments
       attachedTournaments: league.attachedTournaments.map((tournament: any) => ({

@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     // Create response with user data
     const response = NextResponse.json({ 
       message: 'Email verified successfully',
+      token, // Return token in body
       user: {
         _id: user._id.toString(),
         username: user.username,
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 180, // 180 days
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
     });
 

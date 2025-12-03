@@ -78,6 +78,7 @@ export interface League {
   pointSystemType: PointSystemType; // Type of point system to use
   createdBy: string; // User ID of creator (must be moderator)
   isActive: boolean; // Whether league is currently active
+  verified: boolean; // Whether league is verified
   startDate?: Date; // Optional league start date
   endDate?: Date; // Optional league end date
   createdAt?: Date;

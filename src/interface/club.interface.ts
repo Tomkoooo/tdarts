@@ -26,6 +26,7 @@ export interface Club {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  verified: boolean;
   // Tournaments (minimal info for list)
   tournaments?: { 
     _id: string; 

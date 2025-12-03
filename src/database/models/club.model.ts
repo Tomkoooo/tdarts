@@ -29,6 +29,7 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
+    verified: { type: Boolean, default: false },
   },
   { collection: 'clubs', timestamps: true }
 );

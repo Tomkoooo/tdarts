@@ -63,6 +63,29 @@ export async function PUT(
       }
     }
 
+    // Check Verified League restrictions
+    if (tournament.league) {
+      const { LeagueModel } = await import('@/database/models/league.model');
+      const { UserModel } = await import('@/database/models/user.model');
+      
+      const league = await LeagueModel.findById(tournament.league);
+      if (league && league.verified) {
+        // Check if restricted fields are being modified
+        const isLeagueChanged = settings.leagueId && settings.leagueId !== tournament.league.toString();
+        const isDateChanged = settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime();
+
+        if (isLeagueChanged || isDateChanged) {
+          // Check if user is Global Admin
+          const user = await UserModel.findById(requesterId);
+          if (!user || !user.isAdmin) {
+             return NextResponse.json({ 
+              error: "Only Global Admins can modify the league or date of a Verified League tournament." 
+            }, { status: 403 });
+          }
+        }
+      }
+    }
+
     const updatedTournament = await TournamentService.updateTournamentSettings(code, requesterId, {
       ...settings,
       boards

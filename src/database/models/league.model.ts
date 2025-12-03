@@ -59,6 +59,7 @@ const leagueSchema = new mongoose.Schema({
   pointSystemType: { type: String, enum: ['platform', 'remiz_christmas'], required: true, default: 'platform' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   isActive: { type: Boolean, default: true },
+  verified: { type: Boolean, default: false },
   startDate: { type: Date },
   endDate: { type: Date },
 }, { 

@@ -59,6 +59,43 @@ export async function POST(
         }, { status: 403 });
     }
 
+    // Check Verified League constraints
+    if (payload.leagueId) {
+        const { LeagueModel } = await import('@/database/models/league.model');
+        const { TournamentModel } = await import('@/database/models/tournament.model');
+        
+        const league = await LeagueModel.findById(payload.leagueId);
+        if (league && league.verified) {
+            // Calculate start and end of the ISO week for the tournament start date
+            const date = new Date(tournamentStartDate);
+            const day = date.getDay() || 7; // Get current day number, converting Sun (0) to 7
+            if (day !== 1) date.setHours(-24 * (day - 1)); // Set to Monday of this week
+            date.setHours(0, 0, 0, 0);
+            
+            const weekStart = new Date(date);
+            const weekEnd = new Date(date);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+
+            // Check for existing tournaments in this league within the same week
+            const existingTournament = await TournamentModel.findOne({
+                league: payload.leagueId,
+                'tournamentSettings.startDate': {
+                    $gte: weekStart,
+                    $lte: weekEnd
+                },
+                isDeleted: false,
+                isCancelled: false
+            });
+
+            if (existingTournament) {
+                return NextResponse.json({ 
+                    error: 'Verified leagues can only host one tournament per week.' 
+                }, { status: 400 });
+            }
+        }
+    }
+
     // Tournament alapértelmezett értékek
     const now = new Date();
     const tournament = {
