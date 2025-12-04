@@ -17,9 +17,12 @@ export default function TVModePage() {
   const [tournament, setTournament] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [qrExpanded, setQrExpanded] = useState(true)
-  const [qrPosition, setQrPosition] = useState({ x: 0, y: 0 })
+  const [qrPosition, setQrPosition] = useState<{ x: number; y: number } | null>(null)
+  const [qrSize, setQrSize] = useState(160)
   const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [resizeStart, setResizeStart] = useState({ size: 160, x: 0, y: 0 })
 
   // Fetch tournament data
   const fetchTournament = useCallback(async () => {
@@ -84,10 +87,21 @@ export default function TVModePage() {
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
     setIsDragging(true)
     setDragStart({
-      x: e.clientX - qrPosition.x,
-      y: e.clientY - qrPosition.y
+      x: e.clientX - (qrPosition?.x ?? 0),
+      y: e.clientY - (qrPosition?.y ?? 0)
+    })
+  }
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsResizing(true)
+    setResizeStart({
+      size: qrSize,
+      x: e.clientX,
+      y: e.clientY
     })
   }
 
@@ -98,14 +112,22 @@ export default function TVModePage() {
         y: e.clientY - dragStart.y
       })
     }
-  }, [isDragging, dragStart])
+    if (isResizing) {
+      const deltaX = e.clientX - resizeStart.x
+      const deltaY = e.clientY - resizeStart.y
+      const delta = Math.max(deltaX, deltaY)
+      const newSize = Math.max(100, Math.min(400, resizeStart.size + delta))
+      setQrSize(newSize)
+    }
+  }, [isDragging, dragStart, isResizing, resizeStart])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
+    setIsResizing(false)
   }, [])
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
       return () => {
@@ -113,7 +135,7 @@ export default function TVModePage() {
         window.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp])
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
 
   if (loading) {
     return (
@@ -171,15 +193,15 @@ export default function TVModePage() {
       <div
         className="fixed z-50 select-none"
         style={{
-          left: qrPosition.x || 'auto',
-          right: qrPosition.x ? 'auto' : '24px',
-          top: qrPosition.y || 'auto',
-          bottom: qrPosition.y ? 'auto' : '24px',
+          left: qrPosition !== null ? qrPosition.x : 'auto',
+          right: qrPosition !== null ? 'auto' : '24px',
+          top: qrPosition !== null ? qrPosition.y : 'auto',
+          bottom: qrPosition !== null ? 'auto' : '24px',
           cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
         {qrExpanded ? (
-          <div className="bg-white p-4 rounded-xl shadow-2xl border-4 border-primary">
+          <div className="bg-white p-4 rounded-xl shadow-2xl border-4 border-primary relative">
             <div
               className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
               onMouseDown={handleMouseDown}
@@ -192,9 +214,17 @@ export default function TVModePage() {
                 <IconX className="h-4 w-4" />
               </button>
             </div>
-            <QRCode value={tournamentUrl} size={160} level="H" />
+            <QRCode value={tournamentUrl} size={qrSize} level="H" />
             <div className="text-center mt-2 text-xs font-semibold text-gray-800">
               Scan to join
+            </div>
+            {/* Resize handle */}
+            <div
+              onMouseDown={handleResizeMouseDown}
+              className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full cursor-nwse-resize hover:bg-primary/80 transition-colors shadow-lg flex items-center justify-center"
+              style={{ touchAction: 'none' }}
+            >
+              <div className="w-2 h-2 border-r-2 border-b-2 border-white" />
             </div>
           </div>
         ) : (

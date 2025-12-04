@@ -193,7 +193,7 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
                               {/* Match Score */}
                               {match.status === 'finished' && (
                                 <div className="badge badge-outline font-bold">
-                                  {isPlayer1 ? `${match.player1.legsWon} - ${match.player2.legsWon}` : `${match.player2.legsWon} - ${match.player1.legsWon}`}
+                                  {isPlayer1 ? `${match.player1?.legsWon} - ${match.player2?.legsWon}` : `${match.player2?.legsWon} - ${match.player1?.legsWon}`}
                                 </div>
                               )}
                             </div>

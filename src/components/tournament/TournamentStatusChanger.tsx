@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Input } from "@/components/ui/Input"
 import { Separator } from "@/components/ui/separator"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { showErrorToast } from "@/lib/toastUtils"
 
 interface TournamentStatusManagerProps {
   tournament: Tournament
@@ -92,6 +93,11 @@ export default function TournamentStatusChanger({
       } catch (err: any) {
         const message = err?.response?.data?.error || err?.message || "Ismeretlen hiba történt."
         setError(message)
+        showErrorToast(message, {
+          error: err?.response?.data?.details || err?.message,
+          context: `Action: ${pendingAction}`,
+          errorName: "Tournament Status Change Error"
+        })
       } finally {
         setAction(null)
       }

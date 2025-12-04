@@ -366,7 +366,7 @@ export class TournamentService {
 
             // Assign loser as scorer to appropriate match in next round (only for non-bye matches)
             if (loserId) {
-                await this.assignLoserAsScorer(tournament, loserId, nextRound);
+                await this.assignLoserAsScorer(tournament, loserId);
             }
 
             await tournament.save();
@@ -488,31 +488,37 @@ export class TournamentService {
 
 
     /**
-     * Assign match loser as scorer for a match in the next round
+     * Assign match loser as scorer for the next available match
      */
     private static async assignLoserAsScorer(
         tournament: any,
         loserId: any,
-        targetRound: number
     ): Promise<void> {
-        // Find matches in target round that need scorers
-        const targetRoundMatches = await MatchModel.find({
+        // Find ANY match that needs a scorer, prioritizing earliest rounds and positions
+        // User request: "assign them to the next match as scorer where ther isnt a scorer - no matter if the match is in the first or second round"
+        const matchesNeedingScorer = await MatchModel.find({
             tournamentRef: tournament._id,
             type: 'knockout',
-            round: targetRound,
-            scorer: null
-        }).sort({ bracketPosition: 1 });
+            scorer: null,
+            status: { $ne: 'finished' }
+        }).sort({ round: 1, bracketPosition: 1 });
 
-        if (targetRoundMatches.length > 0) {
-            // Assign to first match without a scorer
-            const matchToScore = targetRoundMatches[0];
-            matchToScore.scorer = loserId;
-            matchToScore.scorerSource = {
-                type: 'match_loser',
-                playerId: loserId
-            };
-            await matchToScore.save();
-            console.log(`Assigned loser ${loserId} as scorer for match ${matchToScore._id}`);
+        if (matchesNeedingScorer.length > 0) {
+            // Find the first valid match where the loser is not a player
+            const matchToScore = matchesNeedingScorer.find(m => 
+                m.player1?.playerId?.toString() !== loserId.toString() && 
+                m.player2?.playerId?.toString() !== loserId.toString()
+            );
+
+            if (matchToScore) {
+                matchToScore.scorer = loserId;
+                matchToScore.scorerSource = {
+                    type: 'match_loser',
+                    playerId: loserId
+                };
+                await matchToScore.save();
+                console.log(`Assigned loser ${loserId} as scorer for match ${matchToScore._id} (Round ${matchToScore.round})`);
+            }
         }
     }
 
@@ -682,9 +688,18 @@ export class TournamentService {
                 throw new Error('No active boards available for this tournament');
             }
 
-            // Calculate total rounds needed
-            const totalRoundsNeeded = Math.ceil(Math.log2(advancingPlayers.length));
-            console.log(`Generating knockout: ${advancingPlayers.length} players, ${totalRoundsNeeded} rounds needed`);
+            // Calculate total rounds needed based on ADVANCING players
+            let effectivePlayerCount = advancingPlayers.length;
+            
+            if (format === 'group_knockout' && options.qualifiersPerGroup) {
+                // For MDL, we need to calculate the actual number of qualifiers
+                // IMPORTANT: Convert ObjectIds to strings before Set to ensure uniqueness by value
+                const uniqueGroups = new Set(allPlayers.map(p => p.groupId?.toString()).filter(Boolean)).size;
+                effectivePlayerCount = uniqueGroups * options.qualifiersPerGroup;
+            }
+
+            const totalRoundsNeeded = Math.ceil(Math.log2(effectivePlayerCount));
+            console.log(`Generating knockout: ${advancingPlayers.length} total players, ${effectivePlayerCount} effective qualifiers, ${totalRoundsNeeded} rounds needed`);
 
             // Pre-generate ALL rounds for automatic mode
             const allRoundsStructure: any[] = [];
@@ -820,6 +835,7 @@ export class TournamentService {
                 
                 if (isByeMatch) {
                     // Get the existing player
+                    console.log(`Match ${match._id}: hasPlayer1=${!!hasPlayer1}, hasPlayer2=${!!hasPlayer2}, match.player1=${match.player1}, match.player2=${match.player2}`);
                     const existingPlayerId = hasPlayer1 ? match.player1.playerId : match.player2.playerId;
                     
                     if (existingPlayerId) {
@@ -899,29 +915,78 @@ export class TournamentService {
         );
 
         // Assign scorers
-        for (let i = 0; i < sortedMatches.length; i++) {
-            const match = sortedMatches[i];
-            
-            if (i < groupLosers.length) {
-                // Assign group loser as scorer
-                match.scorer = groupLosers[i].playerReference;
-                match.scorerSource = {
-                    type: 'group_loser',
-                    playerId: groupLosers[i].playerReference
-                };
-            } else {
-                // Use loser from previous match
-                const sourceMatchIndex = i - groupLosers.length;
-                const sourceMatch = sortedMatches[sourceMatchIndex];
-                
-                match.scorer = null; // Will be determined after source match finishes
-                match.scorerSource = {
-                    type: 'match_loser',
-                    sourceMatchId: sourceMatch._id
-                };
+        // Assign scorers
+        // IMPROVED LOGIC: Try to keep scorers on the same board where possible
+        
+        // 1. Map matches to boards
+        const matchesByBoard = new Map<number, any[]>();
+        for (const match of sortedMatches) {
+            const boardNum = match.boardReference;
+            if (!matchesByBoard.has(boardNum)) {
+                matchesByBoard.set(boardNum, []);
             }
-            
-            await match.save();
+            matchesByBoard.get(boardNum)!.push(match);
+        }
+        
+        // 2. Map group losers to their original boards (if possible) or just list them
+        // Since we don't easily know which board a group played on without more queries, 
+        // we'll stick to the simple list but try to distribute them intelligently.
+        
+        let loserIndex = 0;
+        
+        // Iterate through matches board by board to assign scorers
+        // IMPROVED: Distribute group losers across boards round-robin style
+        
+        // Flatten matches back to a list, but grouped by board for processing
+        // Actually, we want to assign: Loser 1 -> Board 1 Match 1, Loser 2 -> Board 2 Match 1, etc.
+        
+        const maxMatchesPerBoard = Math.max(...Array.from(matchesByBoard.values()).map(m => m.length));
+        const boardNumbers = Array.from(matchesByBoard.keys());
+        
+        for (let matchIndex = 0; matchIndex < maxMatchesPerBoard; matchIndex++) {
+            for (const boardNum of boardNumbers) {
+                const matches = matchesByBoard.get(boardNum);
+                if (!matches || matchIndex >= matches.length) continue;
+                
+                const match = matches[matchIndex];
+                
+                if (loserIndex < groupLosers.length) {
+                    // Assign group loser as scorer
+                    match.scorer = groupLosers[loserIndex].playerReference;
+                    match.scorerSource = {
+                        type: 'group_loser',
+                        playerId: groupLosers[loserIndex].playerReference
+                    };
+                    loserIndex++;
+                } else {
+                    // Use loser from previous match ON THE SAME BOARD if available
+                    if (matchIndex > 0) {
+                        const previousMatchOnBoard = matches[matchIndex - 1];
+                        match.scorer = null; // Will be determined after source match finishes
+                        match.scorerSource = {
+                            type: 'match_loser',
+                            sourceMatchId: previousMatchOnBoard._id
+                        };
+                    } else {
+                        // Fallback: use loser from a previous match in the sorted list (might be different board)
+                        // Try to find a match from the previous "round" of matches across boards
+                        // This is a best-effort fallback
+                        const currentMatchGlobalIndex = sortedMatches.findIndex(m => m._id === match._id);
+                        if (currentMatchGlobalIndex > 0) {
+                            const sourceMatch = sortedMatches[currentMatchGlobalIndex - 1];
+                            match.scorer = null;
+                            match.scorerSource = {
+                                type: 'match_loser',
+                                sourceMatchId: sourceMatch._id
+                            };
+                        } else {
+                            console.warn(`Could not find a scorer source for match ${match._id}`);
+                        }
+                    }
+                }
+                
+                await match.save();
+            }
         }
     }
 

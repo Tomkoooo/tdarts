@@ -587,7 +587,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           winner: pendingLegWinner,
           player1Throws: player1.allThrows,
           player2Throws: player2.allThrows,
-          winnerArrowCount: arrowCount
+          winnerArrowCount: arrowCount,
+          legNumber: currentLeg
         })
       });
       

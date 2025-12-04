@@ -184,9 +184,19 @@ export class MatchService {
         player1Throws: number[];
         player2Throws: number[];
         winnerArrowCount?: number;
+        legNumber?: number;
     }) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found');
+
+        // Idempotency check: if legNumber is provided, check if it already exists
+        if (legData.legNumber) {
+            const existingLeg = match.legs?.find((l: any) => l.legNumber === legData.legNumber);
+            if (existingLeg) {
+                console.log(`Leg ${legData.legNumber} already exists for match ${matchId} - skipping duplicate save`);
+                return match;
+            }
+        }
 
         // Update match player leg counts only
         if (legData.winner === 1) {
@@ -201,12 +211,12 @@ export class MatchService {
         const checkoutDarts = legData.winnerArrowCount || 3;
         
         // Player 1 total darts for this leg
-        const player1TotalDarts = legData.winner === 1
+        const p1TotalDarts = legData.winner === 1
             ? (legData.player1Throws.length - 1) * 3 + checkoutDarts  // Winner: last throw uses actual checkout darts
             : legData.player1Throws.length * 3;  // Loser: all throws are 3 darts
         
         // Player 2 total darts for this leg
-        const player2TotalDarts = legData.winner === 2
+        const p2TotalDarts = legData.winner === 2
             ? (legData.player2Throws.length - 1) * 3 + checkoutDarts  // Winner: last throw uses actual checkout darts
             : legData.player2Throws.length * 3;  // Loser: all throws are 3 darts
 
@@ -235,7 +245,7 @@ export class MatchService {
 
         // Create leg object with detailed throw information
         const leg = {
-            legNumber: match.legs ? match.legs.length + 1 : 1,
+            legNumber: legData.legNumber || (match.legs ? match.legs.length + 1 : 1),
             player1Score: player1LegScore,
             player2Score: player2LegScore,
             player1Throws: legData.player1Throws.map((score, index) => {
@@ -262,8 +272,8 @@ export class MatchService {
             winnerArrowCount: checkoutDarts,
             loserRemainingScore: loserRemainingScore,
             doubleAttempts: totalDoubleAttempts,
-            player1TotalDarts: player1TotalDarts,
-            player2TotalDarts: player2TotalDarts,
+            player1TotalDarts: p1TotalDarts,
+            player2TotalDarts: p2TotalDarts,
             createdAt: new Date()
         };
 
@@ -273,10 +283,89 @@ export class MatchService {
         }
         match.legs.push(leg);
 
-        // DO NOT update match-level stats (average, oneEightiesCount, highestCheckout)
-        // These will be calculated when the match finishes
+        // Calculate match-level stats (average, 180s, highest checkout) from ALL legs
+        let player1TotalScore = 0;
+        let player1TotalDarts = 0;
+        let player1OneEighties = 0;
+        let player1HighestCheckout = 0;
+
+        let player2TotalScore = 0;
+        let player2TotalDarts = 0;
+        let player2OneEighties = 0;
+        let player2HighestCheckout = 0;
+
+        // Helper function to calculate darts
+        const calculateLegDarts = (throws: any[], playerNum: 1 | 2, leg: any): number => {
+            if (!throws || throws.length === 0) return 0;
+            const storedDarts = playerNum === 1 ? leg.player1TotalDarts : leg.player2TotalDarts;
+            if (storedDarts !== undefined && storedDarts !== null) return storedDarts;
+            if (throws[0] && typeof throws[0] === 'object' && 'darts' in throws[0]) {
+                return throws.reduce((sum: number, t: any) => sum + (t.darts || 3), 0);
+            }
+            return throws.length * 3;
+        };
+
+        // Process all legs including the new one
+        const allLegs = [...(match.legs || [])];
+        
+        for (const leg of allLegs) {
+            // Player 1 stats
+            if (leg.player1Score) player1TotalScore += leg.player1Score;
+            if (leg.player1Throws) {
+                player1TotalDarts += calculateLegDarts(leg.player1Throws, 1, leg);
+                leg.player1Throws.forEach((t: any) => {
+                    if (t.score === 180) player1OneEighties++;
+                });
+            }
+            if (leg.winnerId?.toString() === match.player1.playerId.toString() && leg.checkoutScore) {
+                player1HighestCheckout = Math.max(player1HighestCheckout, leg.checkoutScore);
+            }
+
+            // Player 2 stats
+            if (leg.player2Score) player2TotalScore += leg.player2Score;
+            if (leg.player2Throws) {
+                player2TotalDarts += calculateLegDarts(leg.player2Throws, 2, leg);
+                leg.player2Throws.forEach((t: any) => {
+                    if (t.score === 180) player2OneEighties++;
+                });
+            }
+            if (leg.winnerId?.toString() === match.player2.playerId.toString() && leg.checkoutScore) {
+                player2HighestCheckout = Math.max(player2HighestCheckout, leg.checkoutScore);
+            }
+        }
+
+        // Update match stats
+        match.player1.highestCheckout = player1HighestCheckout;
+        match.player1.oneEightiesCount = player1OneEighties;
+        match.player1.average = player1TotalDarts > 0 ? 
+            Math.round((player1TotalScore / player1TotalDarts) * 3 * 100) / 100 : 0;
+
+        match.player2.highestCheckout = player2HighestCheckout;
+        match.player2.oneEightiesCount = player2OneEighties;
+        match.player2.average = player2TotalDarts > 0 ? 
+            Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
 
         await match.save();
+
+        // Update tournament player statistics immediately
+        await this.updateTournamentPlayerStats(
+            match.tournamentRef.toString(),
+            match.player1.playerId.toString(),
+            {
+                highestCheckout: player1HighestCheckout,
+                oneEightiesCount: player1OneEighties,
+                average: match.player1.average
+            }
+        );
+        await this.updateTournamentPlayerStats(
+            match.tournamentRef.toString(),
+            match.player2.playerId.toString(),
+            {
+                highestCheckout: player2HighestCheckout,
+                oneEightiesCount: player2OneEighties,
+                average: match.player2.average
+            }
+        );
 
         // Emit match update event
         const tournament = await TournamentModel.findById(match.tournamentRef);

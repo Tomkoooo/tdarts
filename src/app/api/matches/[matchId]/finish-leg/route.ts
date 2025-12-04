@@ -29,7 +29,8 @@ export async function POST(
       winner: body.winner,
       player1Throws: body.player1Throws,
       player2Throws: body.player2Throws,
-      winnerArrowCount: body.winnerArrowCount
+      winnerArrowCount: body.winnerArrowCount,
+      legNumber: body.legNumber
     });
     
     return NextResponse.json({ 

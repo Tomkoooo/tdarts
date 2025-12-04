@@ -11,7 +11,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
   const groups = tournament.groups || []
   const knockout = tournament.knockout || []
   const tournamentStatus = tournament.tournamentSettings?.status || tournament.status
-  const isKnockoutPhase = tournamentStatus === 'knockout'
+  const isKnockoutPhase = tournamentStatus === 'knockout' || tournamentStatus === 'finished'
 
   console.log('GroupsDisplay - Status:', tournamentStatus, 'Knockout length:', knockout.length, 'Groups length:', groups.length)
 
@@ -32,7 +32,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
       // Use matchReference if available (populated match doc), otherwise fall back to wrapper
       const match = matchWrapper.matchReference || matchWrapper
       
-      if (!match) return <div className={`invisible ${isFinal ? 'w-72 h-36' : 'w-56 h-24'}`} />
+      if (!match) return <div className={`invisible ${isFinal ? 'w-64 h-36' : 'w-44 h-24'}`} />
 
       // Access player data from the match document structure
       // match.player1 is { playerId: PlayerDoc, legsWon: number }
@@ -93,7 +93,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
       const p2Won = match.winnerId && (match.winnerId === player2?._id || match.winnerId === player2)
 
       return (
-        <div className={`flex flex-col justify-center ${isFinal ? 'w-72 h-36 text-base' : 'w-56 h-24 text-sm'} ${bgClass} ${statusClass} rounded-md shadow-sm overflow-hidden transition-all hover:scale-105 relative`}>
+        <div className={`flex flex-col justify-center ${isFinal ? 'w-64 h-36 text-base' : 'w-44 h-24 text-sm'} ${bgClass} ${statusClass} rounded-md shadow-sm overflow-hidden transition-all hover:scale-105 relative`}>
            {/* Header / Status */}
            <div className={`flex justify-between px-3 py-1 text-[10px] font-bold tracking-wider ${headerClass}`}>
               <span>{match.boardReference ? `TÁBLA ${match.boardReference}` : `#${match.matchNumber || ''}`}</span>
@@ -125,8 +125,8 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
 
     return (
       <Card className="h-full bg-card/95 overflow-hidden shadow-none border-none">
-        <CardContent className="h-full p-6">
-          <div className="flex w-full h-full">
+        <CardContent className="h-full p-6 overflow-x-auto overflow-y-auto">
+          <div className="flex w-full h-full min-w-max">
              
              {/* LEFT BRACKET (Upper Half) */}
              <div className="flex-1 flex justify-end items-center">
@@ -136,7 +136,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
                    const leftMatches = matches.slice(0, half)
                    
                    return (
-                      <div key={`left-${rIndex}`} className="flex flex-col justify-around h-full px-2">
+                      <div key={`left-${rIndex}`} className="flex flex-col gap-3 justify-around h-full px-2">
                          {leftMatches.map((match: any, mIndex: number) => (
                             <CompactMatchCard key={mIndex} match={match} />
                          ))}
@@ -165,7 +165,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
                     const rightMatches = matches.slice(half)
                     
                     return (
-                       <div key={`right-${rIndex}`} className="flex flex-col justify-around h-full px-2">
+                       <div key={`right-${rIndex}`} className="flex flex-col gap-3 justify-around h-full px-2">
                           {rightMatches.map((match: any, mIndex: number) => (
                              <CompactMatchCard key={mIndex} match={match} />
                           ))}
