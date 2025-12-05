@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/Label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import Pagination from "@/components/common/Pagination"
 
 interface AdminUser {
   _id: string
@@ -47,16 +48,20 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filter, setFilter] = useState<"all" | "admin" | "user">("all")
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [emailModal, setEmailModal] = useState<{
     isOpen: boolean
     user: AdminUser | null
   }>({ isOpen: false, user: null })
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageToFetch = 1) => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/users")
-      setUsers(response.data.users || response.data.data?.users || [])
+      const response = await axios.get(`/api/admin/users?page=${pageToFetch}&limit=10`)
+      setUsers(response.data.users || [])
+      setTotalPages(response.data.totalPages || 1)
+      setPage(response.data.page || 1)
     } catch (error: any) {
       console.error("Error fetching users:", error)
       toast.error(error.response?.data?.error || "Hiba történt a felhasználók betöltése során")
@@ -66,8 +71,8 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers(page)
+  }, [page])
 
   const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
     try {
@@ -167,7 +172,7 @@ export default function AdminUsersPage() {
             <p className="max-w-xl text-sm text-muted-foreground">Felhasználói fiókok kezelése és admin jogosultságok</p>
           </div>
 
-          <Button onClick={fetchUsers} disabled={loading} variant="outline" className="gap-2">
+          <Button onClick={() => fetchUsers(page)} disabled={loading} variant="outline" className="gap-2">
             <IconRefresh className={cn("size-5", loading && "animate-spin")} />
             Frissítés
           </Button>
@@ -384,6 +389,15 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
 
       {/* Email Modal */}
       {emailModal.isOpen && emailModal.user && (

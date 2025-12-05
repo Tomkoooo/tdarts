@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconMessageCircle, IconHelp, IconDashboard, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconMessageCircle, IconMedal, IconHelp, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -63,15 +63,15 @@ const NavbarNew = () => {
   const isAdminPage = pathname?.startsWith('/admin');
 
   const navItems = isAdminPage ? [
-    { name: "Dashboard", icon: IconDashboard, href: "/admin" },
     { name: "Felhasználók", icon: IconUsers, href: "/admin/users" },
     { name: "Klubok", icon: IconBuilding, href: "/admin/clubs" },
     { name: "Versenyek", icon: IconTrophy, href: "/admin/tournaments" },
-    { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
-    { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
+   {name: "Ligák", icon: IconMedal, href: "/admin/leagues"},
     { name: "Visszajelzés", icon: IconMessageCircle, href: "/admin/feedback" },
     { name: "Todos", icon: IconSettingsCheck, href: "/admin/todos" },
     { name: "Jelzések", icon: IconBell, href: "/admin/announcements" },
+     { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
+    { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
   ] : [
     { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
     { name: "Klubok", icon: IconUsers, href: "/search?type=clubs" },

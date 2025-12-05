@@ -61,6 +61,7 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [userChartData, setUserChartData] = useState<ChartData | null>(null)
   const [clubChartData, setClubChartData] = useState<ChartData | null>(null)
+  const [leagueChartData, setLeagueChartData] = useState<ChartData | null>(null)
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null)
   const [errorChartData, setErrorChartData] = useState<ChartData | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
@@ -68,10 +69,11 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsRefreshing(true)
-      const [statsResponse, userChartResponse, clubChartResponse, tournamentChartResponse, errorChartResponse] = await Promise.all([
+      const [statsResponse, userChartResponse, clubChartResponse, leagueChartResponse, tournamentChartResponse, errorChartResponse] = await Promise.all([
         axios.get("/api/admin/stats"),
         axios.get("/api/admin/charts/users"),
         axios.get("/api/admin/charts/clubs"),
+        axios.get("/api/admin/charts/leagues"),
         axios.get("/api/admin/charts/tournaments"),
         axios.get("/api/admin/charts/errors"),
       ])
@@ -90,6 +92,7 @@ export default function AdminDashboardPage() {
 
       setUserChartData(extractChartData(userChartResponse))
       setClubChartData(extractChartData(clubChartResponse))
+      setLeagueChartData(extractChartData(leagueChartResponse))
       setTournamentChartData(extractChartData(tournamentChartResponse))
       setErrorChartData(extractChartData(errorChartResponse))
 
@@ -201,6 +204,7 @@ export default function AdminDashboardPage() {
   const ModernChartCard = ({
     title,
     data,
+    //eslint-disable-next-line
     color = "primary",
     type = "area",
   }: {
@@ -212,9 +216,15 @@ export default function AdminDashboardPage() {
     const CustomTooltip = ({ active, payload, label }: any) => {
       if (active && payload && payload.length) {
         return (
-          <div className="backdrop-blur-xl bg-card/40 rounded-lg p-3 shadow-xl">
-            <p className="text-sm font-medium text-foreground mb-1">{label}</p>
-            <p className="text-lg font-bold text-primary">{payload[0].value}</p>
+          <div className="backdrop-blur-xl bg-card/90 rounded-lg p-3 shadow-xl border border-border/50">
+            <p className="text-sm font-medium text-foreground mb-2">{label}</p>
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center gap-2 mb-1 last:mb-0">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-xs text-muted-foreground">{entry.name}:</span>
+                <span className="text-sm font-bold text-foreground">{entry.value}</span>
+              </div>
+            ))}
           </div>
         )
       }
@@ -222,29 +232,15 @@ export default function AdminDashboardPage() {
     }
 
     const chartData =
-      data && data.datasets && data.datasets[0] && data.datasets[0].data
-        ? data.labels.map((label, index) => ({
-            month: label,
-            count: data.datasets[0].data[index] || 0,
-          }))
+      data && data.datasets
+        ? data.labels.map((label, index) => {
+            const point: any = { month: label };
+            data.datasets.forEach(dataset => {
+              point[dataset.label] = dataset.data[index] || 0;
+            });
+            return point;
+          })
         : []
-
-    const getChartColors = () => {
-      switch (color) {
-        case "error":
-          return { stroke: "#ef4444", gradient: "rgba(239, 68, 68, 0.3)", fill: "rgba(239, 68, 68, 0.1)" }
-        case "warning":
-          return { stroke: "#f59e0b", gradient: "rgba(245, 158, 11, 0.3)", fill: "rgba(245, 158, 11, 0.1)" }
-        case "success":
-          return { stroke: "#10b981", gradient: "rgba(16, 185, 129, 0.3)", fill: "rgba(16, 185, 129, 0.1)" }
-        case "info":
-          return { stroke: "#3b82f6", gradient: "rgba(59, 130, 246, 0.3)", fill: "rgba(59, 130, 246, 0.1)" }
-        default:
-          return { stroke: "hsl(var(--primary))", gradient: "rgba(59, 130, 246, 0.3)", fill: "rgba(59, 130, 246, 0.1)" }
-      }
-    }
-
-    const chartColors = getChartColors()
 
     return (
       <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
@@ -261,10 +257,12 @@ export default function AdminDashboardPage() {
                 {type === "area" ? (
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
-                      <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartColors.gradient} stopOpacity={0.8} />
-                        <stop offset="95%" stopColor={chartColors.fill} stopOpacity={0.1} />
-                      </linearGradient>
+                      {data?.datasets.map((dataset, index) => (
+                        <linearGradient key={dataset.label} id={`gradient-${title}-${index}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={dataset.borderColor} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={dataset.borderColor} stopOpacity={0.05} />
+                        </linearGradient>
+                      ))}
                     </defs>
 
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" vertical={false} />
@@ -284,15 +282,18 @@ export default function AdminDashboardPage() {
 
                     <Tooltip content={<CustomTooltip />} />
 
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      stroke={chartColors.stroke}
-                      strokeWidth={3}
-                      fill={`url(#gradient-${title})`}
-                      dot={{ fill: chartColors.stroke, strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: chartColors.stroke, strokeWidth: 2 }}
-                    />
+                    {data?.datasets.map((dataset, index) => (
+                      <Area
+                        key={dataset.label}
+                        type="monotone"
+                        dataKey={dataset.label}
+                        stroke={dataset.borderColor}
+                        strokeWidth={2}
+                        fill={`url(#gradient-${title}-${index})`}
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                      />
+                    ))}
                   </AreaChart>
                 ) : (
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -311,9 +312,17 @@ export default function AdminDashboardPage() {
                       tick={{ fontSize: 12, fill: "rgba(156, 163, 175, 0.8)" }}
                     />
 
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }} />
 
-                    <Bar dataKey="count" fill={chartColors.stroke} radius={[8, 8, 0, 0]} />
+                    {data?.datasets.map((dataset) => (
+                      <Bar 
+                        key={dataset.label} 
+                        dataKey={dataset.label} 
+                        fill={dataset.borderColor} 
+                        radius={[4, 4, 0, 0]} 
+                        maxBarSize={50}
+                      />
+                    ))}
                   </BarChart>
                 )}
               </ResponsiveContainer>
@@ -452,6 +461,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ModernChartCard title="Felhasználó Regisztrációk" data={userChartData} color="warning" type="area" />
         <ModernChartCard title="Klub Létrehozások" data={clubChartData} color="info" type="area" />
+        <ModernChartCard title="Liga Létrehozások" data={leagueChartData} color="warning" type="area" />
         <ModernChartCard title="Verseny Indítások" data={tournamentChartData} color="success" type="bar" />
         <ModernChartCard title="Hibák Időbeli Alakulása" data={errorChartData} color="error" type="area" />
               </div>
@@ -467,7 +477,7 @@ export default function AdminDashboardPage() {
             <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <QuickActionCard
-              title="Announcement Kezelő"
+              title="Üzenetek"
               description="Rendszerüzenetek kezelése"
               icon={IconSpeakerphone}
               href="/admin/announcements"
@@ -479,7 +489,7 @@ export default function AdminDashboardPage() {
               href="/admin/todos"
             />
             <QuickActionCard
-              title="Hibabejelentések"
+              title="Visszajelzések"
               description="Felhasználói visszajelzések"
               icon={IconBug}
               href="/admin/feedback"
@@ -495,6 +505,12 @@ export default function AdminDashboardPage() {
               description="Klubok áttekintése"
               icon={IconBuilding}
               href="/admin/clubs"
+            />
+            <QuickActionCard
+              title="Ligák"
+              description="Ligák áttekintése"
+              icon={IconTrophy}
+              href="/admin/leagues"
             />
             <QuickActionCard
               title="Versenyek"

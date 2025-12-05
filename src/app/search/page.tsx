@@ -111,6 +111,7 @@ export default function SearchPage() {
   const [recentTournaments, setRecentTournaments] = React.useState<any[]>([])
   const [topPlayers, setTopPlayers] = React.useState<any[]>([])
   const [popularClubs, setPopularClubs] = React.useState<any[]>([])
+  const [activeLeagues, setActiveLeagues] = React.useState<any[]>([])
   const [topPlayersTotal, setTopPlayersTotal] = React.useState(0)
   const [isLoadingInitial, setIsLoadingInitial] = React.useState(true)
 
@@ -175,10 +176,11 @@ export default function SearchPage() {
       setIsLoadingInitial(true)
       try {
         // No params - load all data for initial view
-          const [tournamentsRes, playersRes, clubsRes] = await Promise.all([
+          const [tournamentsRes, playersRes, clubsRes, leaguesRes] = await Promise.all([
             axios.get('/api/search/recent-tournaments?limit=50'),
             axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
-            axios.get('/api/search/popular-clubs?limit=50')
+            axios.get('/api/search/popular-clubs?limit=50'),
+            axios.get('/api/search/leagues?limit=50')
           ])
 
           if (tournamentsRes.data.success) {
@@ -191,7 +193,10 @@ export default function SearchPage() {
           }
           if (clubsRes.data.success) {
             setPopularClubs(clubsRes.data.clubs)
-        }
+          }
+          if (leaguesRes.data.success) {
+            setActiveLeagues(leaguesRes.data.leagues)
+          }
       } catch (error) {
         console.error('Failed to load initial data:', error)
       } finally {
@@ -496,6 +501,7 @@ export default function SearchPage() {
               recentTournaments={recentTournaments}
               topPlayers={topPlayers}
               popularClubs={popularClubs}
+              activeLeagues={activeLeagues}
               loading={isLoadingInitial}
               playersPage={playersPage}
               topPlayersTotal={topPlayersTotal}

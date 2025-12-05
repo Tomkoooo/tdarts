@@ -42,6 +42,12 @@ interface AdminTournament {
   }
   createdAt: string
   isDeleted: boolean
+  verified: boolean  // Verified if attached to a verified league
+  league?: {
+    _id: string
+    name: string
+    verified: boolean
+  }
 }
 
 export default function AdminTournamentsPage() {
@@ -49,6 +55,7 @@ export default function AdminTournamentsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [verifiedFilter, setVerifiedFilter] = useState<string>("all") // all, verified, unverified
 
   const fetchTournaments = async () => {
     try {
@@ -74,8 +81,11 @@ export default function AdminTournamentsPage() {
       tournament.clubId.name.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesStatus = statusFilter === "all" || tournament.status === statusFilter
+    const matchesVerified = verifiedFilter === "all" || 
+                            (verifiedFilter === "verified" && tournament.verified === true) ||
+                            (verifiedFilter === "unverified" && tournament.verified !== true)
     
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesVerified
   })
 
   const getStatusConfig = (status: string) => {
@@ -103,7 +113,9 @@ export default function AdminTournamentsPage() {
     active: tournaments.filter((t) => t.status === "active" || t.status === "group-stage" || t.status === "knockout").length,
     finished: tournaments.filter((t) => t.status === "finished").length,
     pending: tournaments.filter((t) => t.status === "pending").length,
-    totalPlayers: tournaments.reduce((total, t) => total + t.playerCount, 0),
+   totalPlayers: tournaments.reduce((total, t) => total + t.playerCount, 0),
+    verified: tournaments.filter((t) => t.verified === true).length,
+    unverified: tournaments.filter((t) => t.verified !== true).length,
   }
 
   if (loading) {
@@ -201,7 +213,7 @@ export default function AdminTournamentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="font-semibold">Keresés</Label>
             <div className="relative">
@@ -228,6 +240,19 @@ export default function AdminTournamentsPage() {
                   <SelectItem value="group-stage">Csoportkör</SelectItem>
                   <SelectItem value="knockout">Kieséses</SelectItem>
                   <SelectItem value="finished">Befejezett</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Versenyek típusa</Label>
+              <Select value={verifiedFilter} onValueChange={setVerifiedFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Minden verseny ({stats.total})</SelectItem>
+                  <SelectItem value="verified">OAC Versenyek ({stats.verified})</SelectItem>
+                  <SelectItem value="unverified">Platform Versenyek ({stats.unverified})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -274,6 +299,12 @@ export default function AdminTournamentsPage() {
                             </Badge>
                           {tournament.isDeleted && (
                               <Badge variant="destructive">Törölve</Badge>
+                          )}
+                          {tournament.verified && (
+                              <Badge variant="default" className="bg-success text-success-foreground">
+                                <IconTrophy size={14} className="mr-1" />
+                                OAC Verseny
+                              </Badge>
                           )}
                         </div>
                         {tournament.description && (

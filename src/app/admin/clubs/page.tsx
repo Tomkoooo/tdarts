@@ -36,6 +36,7 @@ interface AdminClub {
   isDeleted: boolean
   memberCount: number
   tournamentCount: number
+  verified: boolean
 }
 
 const subscriptionMeta: Record<
@@ -52,12 +53,15 @@ export default function AdminClubsPage() {
   const [clubs, setClubs] = useState<AdminClub[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [verifiedFilter, setVerifiedFilter] = useState<'all' | 'verified' | 'unverified'>('all')
+  const [apiStats, setApiStats] = useState({ total: 0, verified: 0, unverified: 0 })
 
   const fetchClubs = async () => {
     try {
       setLoading(true)
       const response = await axios.get("/api/admin/clubs")
       setClubs(response.data.clubs || [])
+      setApiStats(response.data.stats || { total: 0, verified: 0, unverified: 0 })
     } catch (error: any) {
       console.error("Error fetching clubs:", error)
       toast.error(error.response?.data?.error || "Hiba történt a klubok betöltése során")
@@ -72,22 +76,37 @@ export default function AdminClubsPage() {
 
   const filteredClubs = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
-    if (!term) return clubs
-    return clubs.filter((club) => {
-      const haystack = [club.name, club.location, club.description ?? ""].map((value) => value.toLowerCase())
-      return haystack.some((value) => value.includes(term))
-    })
-  }, [clubs, searchTerm])
+    let filtered = clubs
+    
+    // Apply verified filter
+    if (verifiedFilter === 'verified') {
+      filtered = filtered.filter(club => club.verified === true)
+    } else if (verifiedFilter === 'unverified') {
+      filtered = filtered.filter(club => club.verified !== true)
+    }
+    
+    // Apply search filter
+    if (term) {
+      filtered = filtered.filter((club) => {
+        const haystack = [club.name, club.location, club.description ?? ""].map((value) => value.toLowerCase())
+        return haystack.some((value) => value.includes(term))
+      })
+    }
+    
+    return filtered
+  }, [clubs, searchTerm, verifiedFilter])
 
-  const stats = useMemo(
+ const stats = useMemo(
     () => ({
       total: clubs.length,
       active: clubs.filter((club) => !club.isDeleted).length,
       deleted: clubs.filter((club) => club.isDeleted).length,
       totalMembers: clubs.reduce((total, club) => total + club.memberCount, 0),
       totalTournaments: clubs.reduce((total, club) => total + club.tournamentCount, 0),
+      verified: apiStats.verified,
+      unverified: apiStats.unverified,
     }),
-    [clubs]
+    [clubs, apiStats]
   )
 
   if (loading) {
@@ -175,6 +194,38 @@ export default function AdminClubsPage() {
 
       {/* Daily Chart */}
       <DailyChart title="Klubok napi létrehozása" apiEndpoint="/api/admin/charts/clubs/daily" color="secondary" />
+
+      {/* Verification Filter Tabs */}
+      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <CardHeader>
+          <CardTitle>Szűrés hitelesítés szerint</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button
+              variant={verifiedFilter === 'all' ? 'default' : 'outline'}
+              onClick={() => setVerifiedFilter('all')}
+              className="gap-2"
+            >
+              Összes ({stats.total})
+            </Button>
+            <Button
+              variant={verifiedFilter === 'verified' ? 'default' : 'outline'}
+              onClick={() => setVerifiedFilter('verified')}
+              className="gap-2 bg-success/20 hover:bg-success/30 text-success"
+            >
+              OAC Klubok ({stats.verified})
+            </Button>
+            <Button
+              variant={verifiedFilter === 'unverified' ? 'default' : 'outline'}
+              onClick={() => setVerifiedFilter('unverified')}
+              className="gap-2"
+            >
+              Platform Klubok ({stats.unverified})
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Search */}
       <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">

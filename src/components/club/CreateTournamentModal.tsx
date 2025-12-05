@@ -13,6 +13,8 @@ import {
   IconUsers,
   IconTrash,
   IconInfoCircle,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -34,6 +36,8 @@ interface CreateTournamentModalProps {
   userRole?: "admin" | "moderator" | "member" | "none"
   boardCount?: number
   onTournamentCreated: () => void
+  preSelectedLeagueId?: string  // Optional pre-selected league
+  lockLeagueSelection?: boolean  // If true, league selection is locked
 }
 
 type Step = "details" | "boards" | "settings"
@@ -52,7 +56,7 @@ const defaultSettings: TournamentSettings = {
   startDate: new Date(),
   entryFee: 0,
   maxPlayers: 16,
-  format: "group",
+  format: "group_knockout",  // Changed default to group_knockout
   startingScore: 501,
   tournamentPassword: "",
   type: "amateur",
@@ -79,6 +83,8 @@ export default function CreateTournamentModal({
   clubId,
   boardCount,
   onTournamentCreated,
+  preSelectedLeagueId,
+  lockLeagueSelection = false,
 }: CreateTournamentModalProps) {
   const router = useRouter()
 
@@ -94,6 +100,7 @@ export default function CreateTournamentModal({
     maxAllowed: number
     planName: string
   } | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -103,15 +110,21 @@ export default function CreateTournamentModal({
       setSubscriptionError(null)
       setBoards(initializeBoards(boardCount))
       setSettings(() => ({ ...defaultSettings, boardCount: initializeBoards(boardCount).length }))
+      // Set pre-selected league if provided
+      if (preSelectedLeagueId) {
+        setSelectedLeagueId(preSelectedLeagueId)
+      }
     }
-  }, [isOpen, clubId, boardCount])
+  }, [isOpen, clubId, boardCount, preSelectedLeagueId])
 
   const fetchAvailableLeagues = async () => {
     try {
       const response = await fetch(`/api/clubs/${clubId}/leagues`)
       if (response.ok) {
         const data = await response.json()
-        setAvailableLeagues(data.leagues || [])
+        // Filter out inactive/terminated leagues
+        const activeLeagues = (data.leagues || []).filter((league: any) => league.isActive !== false)
+        setAvailableLeagues(activeLeagues)
       }
     } catch (err) {
       console.error("Error fetching leagues:", err)
@@ -446,31 +459,74 @@ export default function CreateTournamentModal({
                       icon={<IconTarget className="h-5 w-5" />}
                       required
                     />
-                    <FormField
-                      label="Torna jelszó"
-                      placeholder="Add meg a jelszót a jelszóval védett tornához"
-                      value={settings.tournamentPassword}
-                      onChange={(event) => handleSettingsChange("tournamentPassword", event.target.value)}
-                      required
-                    />
+                  </div>
+                  
+                  {/* Tournament Password - Full Width */}
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium">
+                      Torna jelszó
+                    </Label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Add meg a jelszót a jelszóval védett tornához"
+                        value={settings.tournamentPassword}
+                        onChange={(event) => handleSettingsChange("tournamentPassword", event.target.value)}
+                        className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? (
+                          <IconEyeOff className="h-5 w-5" />
+                        ) : (
+                          <IconEye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Format and League - Bottom Row */}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label className="text-foreground font-medium">
-                        Ligához csatolás
+                        Torna formátum
+                      </Label>
+                      <select
+                        value={settings.format}
+                        onChange={(event) => handleSettingsChange("format", event.target.value)}
+                        className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200"
+                      >
+                        <option value="group">Csoportkör</option>
+                        <option value="knockout">Kieséses</option>
+                        <option value="group_knockout">Csoportkör + Kieséses</option>
+                      </select>
+                      <p className="text-sm text-muted-foreground">
+                        Válaszd ki a torna formátumát. A csoportkör + kieséses formátum először csoportkört játszik, majd kieséses szakasz következik.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground font-medium">
+                        Ligához csatolás {lockLeagueSelection && <span className="text-xs text-warning">(OAC liga - rögzített)</span>}
                       </Label>
                       <select
                         value={selectedLeagueId}
                         onChange={(event) => setSelectedLeagueId(event.target.value)}
+                        disabled={lockLeagueSelection}
                         className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Válassz ligát</option>
                         {availableLeagues.map((league) => (
                           <option key={league._id} value={league._id}>
-                            {league.name}
+                            {league.name}{league.verified ? ' (OAC Liga)' : ''}
                           </option>
                         ))}
                       </select>
                       <p className="text-sm text-muted-foreground">
-                        Válassz ligát, ha szeretnéd a tornát ligához kötni.
+                        {lockLeagueSelection ? 'Ez egy OAC verseny, a liga automatikusan ki van választva.' : 'Válassz ligát, ha szeretnéd a tornát ligához kötni.'}
                       </p>
                     </div>
                   </div>

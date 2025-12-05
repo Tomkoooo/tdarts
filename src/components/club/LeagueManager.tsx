@@ -381,7 +381,7 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
         <Button className="flex-1" onClick={onView}>
           Részletek
         </Button>
-        {canManage && (
+        {canManage && !league.verified && (
           <Button variant="destructive" size={"icon"} onClick={onDelete}>
             <IconTrash />
           </Button>

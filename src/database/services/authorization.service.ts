@@ -4,6 +4,12 @@ import { AuthService } from "./auth.service";
 import { NextRequest } from "next/server";
 
 export class AuthorizationService {
+  static async isGlobalAdmin(userId: string): Promise<boolean> {
+    await connectMongo();
+    const user = await UserModel.findById(userId).select('isAdmin');
+    return user?.isAdmin === true;
+  }
+
   static async checkRole(userId: string, expectedRole: string, clubId: string): Promise<boolean> {
     await connectMongo();
     

@@ -59,7 +59,26 @@ export default function LeagueDetailModal({
   const [leagueStats, setLeagueStats] = useState<LeagueStatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canManage = userRole === 'admin' || userRole === 'moderator';
+  // Check if user is global admin (this prop needs to be passed or checked)
+  // For now, we assume if userRole is 'admin' they are club admin.
+  // We need to know if they are GLOBAL admin.
+  // Since we don't have isGlobalAdmin prop yet, we rely on the fact that verified leagues
+  // should be read-only for club admins.
+  
+  // If the league is verified, club admins/moderators CANNOT manage it.
+  // Only global admins can, but we might not have that info here yet.
+  // The user said: "club admin or moderator should not be able to modify any data... Only be able to access and do my super admin on the tDarts platform."
+  
+  // So for verified leagues, canManage should be false for club admins.
+  const isVerifiedLeague = league.verified;
+  const canManage = !isVerifiedLeague && (userRole === 'admin' || userRole === 'moderator');
+  
+  // Note: If the user IS a global admin, they should be able to manage.
+  // However, the current props don't pass 'isGlobalAdmin'. 
+  // We might need to update the parent component or fetch this info.
+  // For now, we strictly follow "club admin cannot modify verified leagues".
+  // If the current user IS global admin, they likely access this via a different view or we need to update props.
+  // Assuming the user wants to restrict CLUB admins.
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/clubs/${clubId}?page=leagues&league=${league._id}`;

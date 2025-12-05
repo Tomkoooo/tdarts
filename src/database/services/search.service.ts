@@ -432,15 +432,29 @@ export class SearchService {
         
         return await ClubModel.aggregate([
             {
+                $lookup: {
+                    from: 'tournaments',
+                    localField: '_id',
+                    foreignField: 'clubId',
+                    as: 'tournaments'
+                }
+            },
+            {
                 $addFields: {
+                    tournamentCount: { $size: '$tournaments' },
                     memberCount: { $size: { $ifNull: ['$members', []] } }
                 }
             },
             {
-                $sort: { memberCount: -1 }
+                $sort: { tournamentCount: -1 }
             },
             {
                 $limit: limit
+            },
+            {
+                $project: {
+                    tournaments: 0 // Remove the tournaments array to keep response light
+                }
             }
         ]);
     }

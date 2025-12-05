@@ -30,6 +30,9 @@ interface RegisterFormNewProps {
 const registerSchema = z.object({
   username: z
     .string()
+    .regex(/^[a-zA-Z0-9_]+$/, "A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat")
+    //no spaces allowed
+    .regex(/^[^\s]+$/, "A felhasználónév nem tartalmazhat szóközöket")
     .min(3, "A felhasználónévnek legalább 3 karakter hosszúnak kell lennie")
     .min(1, "Felhasználónév kötelező"),
   name: z

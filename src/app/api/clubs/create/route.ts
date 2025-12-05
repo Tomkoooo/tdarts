@@ -4,6 +4,14 @@ import { BadRequestError } from '@/middleware/errorHandle';
 
 export async function POST(req: NextRequest) {
   try {
+    // Security: Check for internal API secret for service-to-service calls
+    const internalSecret = req.headers.get('x-internal-secret');
+    const expectedSecret = process.env.INTERNAL_API_SECRET || 'development-secret-change-in-production';
+    
+    if (internalSecret !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid internal secret' }, { status: 401 });
+    }
+
     const { creatorId, clubData } = await req.json();
     
     // Validate required fields

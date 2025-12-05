@@ -29,6 +29,10 @@ export default function ClubDetailPage() {
   const [club, setClub] = React.useState<Club | null>(null)
   const [userRole, setUserRole] = React.useState<'admin' | 'moderator' | 'member' | 'none'>('none')
   const [isCreateTournamentModalOpen, setIsCreateTournamentModalOpen] = React.useState(false)
+  const [oacTournamentConfig, setOacTournamentConfig] = React.useState<{
+    isOpen: boolean
+    leagueId: string | null
+  }>({ isOpen: false, leagueId: null })
   const [isEditClubModalOpen, setIsEditClubModalOpen] = React.useState(false)
   const [clubShareModal, setClubShareModal] = React.useState(false)
   const [deleteTournamentModal, setDeleteTournamentModal] = React.useState<{
@@ -210,6 +214,26 @@ export default function ClubDetailPage() {
     }
   }
 
+  const handleCreateOacTournament = async () => {
+    if (!club) return
+    try {
+      // Fetch the verified OAC league for this club
+      const response = await axios.get(`/api/clubs/${club._id}/leagues`)
+      const oacLeague = response.data.leagues?.find((l: any) => l.verified)
+      if (oacLeague) {
+        setOacTournamentConfig({ isOpen: true, leagueId: oacLeague._id })
+      } else {
+        toast.error('OAC liga nem található!')
+      }
+    } catch (err: any) {
+      showErrorToast(err.response?.data?.error || 'OAC liga betöltése sikertelen', {
+        error: err?.response?.data?.error,
+        context: "OAC torna létrehozása",
+        errorName: "OAC liga betöltése sikertelen",
+      })
+    }
+  }
+
   // Get default page and league ID from URL
   const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' => {
     const page = searchParams.get('page')
@@ -258,7 +282,9 @@ export default function ClubDetailPage() {
           <ClubTournamentsSection
             tournaments={club.tournaments || []}
             userRole={userRole}
+            isVerified={club.verified || false}
             onCreateTournament={() => setIsCreateTournamentModalOpen(true)}
+            onCreateOacTournament={handleCreateOacTournament}
             onDeleteTournament={handleDeleteTournament}
           />
         }
@@ -302,6 +328,19 @@ export default function ClubDetailPage() {
         userRole={userRole}
         boardCount={0}
         onTournamentCreated={() => fetchClub()}
+      />
+      <CreateTournamentModal
+        isOpen={oacTournamentConfig.isOpen}
+        onClose={() => setOacTournamentConfig({ isOpen: false, leagueId: null })}
+        clubId={club._id}
+        userRole={userRole}
+        boardCount={0}
+        preSelectedLeagueId={oacTournamentConfig.leagueId || undefined}
+        lockLeagueSelection={true}
+        onTournamentCreated={() => {
+          fetchClub()
+          setOacTournamentConfig({ isOpen: false, leagueId: null })
+        }}
       />
       <ClubShareModal
         isOpen={clubShareModal}

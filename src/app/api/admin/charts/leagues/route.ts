@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import {connectMongo } from '@/lib/mongoose';
-import { ClubModel } from '@/database/models/club.model';
+import { connectMongo } from '@/lib/mongoose';
+import { LeagueModel } from '@/database/models/league.model';
 
 export async function GET() {
   try {
@@ -22,13 +22,13 @@ export async function GET() {
       months.push(monthName);
       
       // Total count
-      const totalCount = await ClubModel.countDocuments({
+      const totalCount = await LeagueModel.countDocuments({
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
         isActive: { $ne: false }
       });
       
       // Verified count
-      const verifiedCount = await ClubModel.countDocuments({
+      const verifiedCount = await LeagueModel.countDocuments({
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
         isActive: { $ne: false },
         verified: true
@@ -46,19 +46,19 @@ export async function GET() {
       labels: months,
       datasets: [
         {
-          label: 'Összes Klub',
+          label: 'Összes Liga',
           data: allData,
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
-          borderColor: 'rgba(59, 130, 246, 1)'
+          backgroundColor: 'rgba(245, 158, 11, 0.8)',
+          borderColor: 'rgba(245, 158, 11, 1)'
         },
         {
-          label: 'OAC Klubok',
+          label: 'OAC Ligák',
           data: verifiedData,
           backgroundColor: 'rgba(16, 185, 129, 0.8)',
           borderColor: 'rgba(16, 185, 129, 1)'
         },
         {
-          label: 'Platform Klubok',
+          label: 'Platform Ligák',
           data: unverifiedData,
           backgroundColor: 'rgba(156, 163, 175, 0.8)',
           borderColor: 'rgba(156, 163, 175, 1)'
@@ -69,7 +69,7 @@ export async function GET() {
     return NextResponse.json(chartData);
 
   } catch (error) {
-    console.error('Error fetching club chart data:', error);
+    console.error('Error fetching league chart data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch chart data' },
       { status: 500 }

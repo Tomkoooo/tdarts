@@ -5,9 +5,7 @@ import { BadRequestError } from '@/middleware/errorHandle';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log(req);
     const userId = await AuthorizationService.getUserIdFromRequest(req);
-    console.log(userId);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

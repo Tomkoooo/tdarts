@@ -118,9 +118,16 @@ export class LeagueService {
     }
 
     // Check permissions
-    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-    if (!hasPermission) {
-      throw new AuthorizationError('Only club moderators can update leagues');
+    if (league.verified) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+      if (!isGlobalAdmin) {
+        throw new AuthorizationError('Only global admins can update verified OAC leagues');
+      }
+    } else {
+      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+      if (!hasPermission) {
+        throw new AuthorizationError('Only club moderators can update leagues');
+      }
     }
 
     // Check for name conflicts if name is being updated
@@ -172,9 +179,16 @@ export class LeagueService {
     }
 
     // Check permissions
-    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-    if (!hasPermission) {
-      throw new AuthorizationError('Only club moderators can attach tournaments to leagues');
+    if (league.verified) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+      if (!isGlobalAdmin) {
+        throw new AuthorizationError('Only global admins can attach tournaments to verified OAC leagues');
+      }
+    } else {
+      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+      if (!hasPermission) {
+        throw new AuthorizationError('Only club moderators can attach tournaments to leagues');
+      }
     }
 
     if(!tournamentId){
@@ -237,9 +251,16 @@ export class LeagueService {
     }
 
     // Check permissions
-    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-    if (!hasPermission) {
-      throw new AuthorizationError('Only club moderators can detach tournaments from leagues');
+    if (league.verified) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+      if (!isGlobalAdmin) {
+        throw new AuthorizationError('Only global admins can detach tournaments from verified OAC leagues');
+      }
+    } else {
+      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+      if (!hasPermission) {
+        throw new AuthorizationError('Only club moderators can detach tournaments from leagues');
+      }
     }
 
     const tournament = await TournamentService.getTournament(tournamentId);
@@ -295,9 +316,16 @@ export class LeagueService {
     }
 
     // Check permissions
-    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-    if (!hasPermission) {
-      throw new AuthorizationError('Only club moderators can add players to leagues');
+    if (league.verified) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+      if (!isGlobalAdmin) {
+        throw new AuthorizationError('Only global admins can add players to verified OAC leagues');
+      }
+    } else {
+      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+      if (!hasPermission) {
+        throw new AuthorizationError('Only club moderators can add players to leagues');
+      }
     }
 
     // No, the approach as written will never reach the second lookup (by userRef) because of the thrown error.
@@ -343,9 +371,16 @@ export class LeagueService {
     }
 
     // Check permissions
-    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-    if (!hasPermission) {
-      throw new AuthorizationError('Only club moderators can adjust player points');
+    if (league.verified) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+      if (!isGlobalAdmin) {
+        throw new AuthorizationError('Only global admins can adjust player points in verified OAC leagues');
+      }
+    } else {
+      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+      if (!hasPermission) {
+        throw new AuthorizationError('Only club moderators can adjust player points');
+      }
     }
 
     const playerIndex = league.players.findIndex((p: any) => this.getPlayerId(p.player) === adjustment.playerId);
@@ -384,9 +419,16 @@ export class LeagueService {
     }
 
     // Check permissions
-    const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-    if (!hasPermission) {
-      throw new AuthorizationError('Only club moderators can undo adjustments');
+    if (league.verified) {
+      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+      if (!isGlobalAdmin) {
+        throw new AuthorizationError('Only global admins can undo adjustments in verified OAC leagues');
+      }
+    } else {
+      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+      if (!hasPermission) {
+        throw new AuthorizationError('Only club moderators can undo adjustments');
+      }
     }
 
     const playerIndex = league.players.findIndex((p: any) => this.getPlayerId(p.player) === playerId);

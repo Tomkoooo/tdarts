@@ -8,7 +8,9 @@ export async function GET() {
     
     // Get data for the last 12 months
     const months = [];
-    const data = [];
+    const allData = [];
+    const verifiedData = [];
+    const unverifiedData = [];
     
     for (let i = 11; i >= 0; i--) {
       const date = new Date();
@@ -19,24 +21,70 @@ export async function GET() {
       const monthName = date.toLocaleDateString('hu-HU', { month: 'short' });
       months.push(monthName);
       
-      const count = await TournamentModel.countDocuments({
+      // Total count
+      const totalCount = await TournamentModel.countDocuments({
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
         isDeleted: { $ne: true },
         isActive: { $ne: false }
       });
       
-      console.log(`Tournament chart - ${monthName}: ${count} tournaments (${startOfMonth.toISOString()} to ${endOfMonth.toISOString()})`);
-      data.push(count);
+      // Verified count (via aggregation to check league)
+      const verifiedResult = await TournamentModel.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+            isDeleted: { $ne: true },
+            isActive: { $ne: false }
+          }
+        },
+        {
+          $lookup: {
+            from: 'leagues',
+            localField: 'league',
+            foreignField: '_id',
+            as: 'leagueInfo'
+          }
+        },
+        {
+          $match: {
+            'leagueInfo.verified': true
+          }
+        },
+        {
+          $count: 'count'
+        }
+      ]);
+      
+      const verifiedCount = verifiedResult.length > 0 ? verifiedResult[0].count : 0;
+      const unverifiedCount = totalCount - verifiedCount;
+      
+      allData.push(totalCount);
+      verifiedData.push(verifiedCount);
+      unverifiedData.push(unverifiedCount);
     }
 
     const chartData = {
       labels: months,
-      datasets: [{
-        label: 'Új Versenyek',
-        data: data,
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgba(59, 130, 246, 1)'
-      }]
+      datasets: [
+        {
+          label: 'Összes Verseny',
+          data: allData,
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          borderColor: 'rgba(59, 130, 246, 1)'
+        },
+        {
+          label: 'OAC Versenyek',
+          data: verifiedData,
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          borderColor: 'rgba(16, 185, 129, 1)'
+        },
+        {
+          label: 'Platform Versenyek',
+          data: unverifiedData,
+          backgroundColor: 'rgba(156, 163, 175, 0.8)',
+          borderColor: 'rgba(156, 163, 175, 1)'
+        }
+      ]
     };
 
     return NextResponse.json(chartData);

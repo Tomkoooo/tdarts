@@ -20,13 +20,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch all users (excluding deleted ones)
-    const users = await UserModel.find({ isDeleted: { $ne: true } })
-      .select('name email username isAdmin isVerified createdAt lastLogin')
-      .sort({ createdAt: -1 })
-      .lean();
+    // Pagination
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json({ users });
+    // Fetch users with pagination
+    const [users, total] = await Promise.all([
+      UserModel.find({ isDeleted: { $ne: true } })
+        .select('name email username isAdmin isVerified createdAt lastLogin')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      UserModel.countDocuments({ isDeleted: { $ne: true } })
+    ]);
+
+    return NextResponse.json({
+      users,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
 
   } catch (error) {
     console.error('Error fetching users:', error);

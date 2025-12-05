@@ -38,28 +38,29 @@ export async function POST(req: NextRequest) {
     club.verified = true;
     await club.save();
 
-    // 2. Create or Update Verified League
+    // 2. Create or Update Verified OAC League
     let league = await LeagueModel.findOne({ club: clubId, verified: true });
 
     if (!league) {
       // Check if there is an unverified league that we should convert? 
       // Requirement says "create a league to it".
-      // Let's create a new "National League" for this club.
+      // Create new OAC National League for this club
       
       league = new LeagueModel({
-        name: `National League - ${club.name}`,
-        description: `Official National League for ${club.name}`,
+        name: `OAC Nemzeti Liga - ${club.name}`,
+        description: `Hivatalos Magyar Nemzeti Amatőr Darts Liga - ${club.name}`,
         club: clubId,
         verified: true,
         isActive: true,
         createdBy: session.user.name, // Or a system admin ID
-        pointSystemType: 'platform',
+        pointSystemType: 'remiz_christmas', // Use remiz point system for OAC
         pointsConfig: DEFAULT_LEAGUE_POINTS_CONFIG,
         players: [],
         attachedTournaments: []
       });
     } else {
       league.isActive = true;
+      league.pointSystemType = 'remiz_christmas'; // Ensure it's using remiz system
     }
 
     await league.save();
