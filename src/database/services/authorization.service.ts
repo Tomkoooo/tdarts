@@ -111,7 +111,11 @@ export class AuthorizationService {
    */
   static async getUserIdFromRequest(request: NextRequest): Promise<string | null> {
     try {
-      const token = request.headers.get('authorization')?.split('Bearer ')[1];
+      let token = request.headers.get('authorization')?.split('Bearer ')[1];
+      if (!token) {
+        token = request.cookies.get('token')?.value;
+      }
+
       if (!token) {
         return null;
       }
