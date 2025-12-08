@@ -20,11 +20,6 @@ export async function POST(
         console.log('Invalid payload');
         return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
-
-    // Validate boards
-    console.log('=== CREATE TOURNAMENT DEBUG ===');
-    console.log('Payload boards:', JSON.stringify(payload.boards, null, 2));
-    console.log('Boards count:', payload.boards?.length);
     
     if (!payload.boards || payload.boards.length === 0) {
         console.log('No boards provided');
