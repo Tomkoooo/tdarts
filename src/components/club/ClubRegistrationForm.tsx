@@ -53,7 +53,9 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
           creatorId: userId,
           clubData: data,
         }, {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json',
+            'x-internal-secret': process.env.INTERNAL_API_SECRET,
+           },
         }),
         {
           loading: 'Klub létrehozása folyamatban...',

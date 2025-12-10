@@ -388,6 +388,17 @@ export class TournamentService {
      * Returns true if updated, false if both slots already filled
      */
     private static async assignPlayerToNextMatch(match: any, playerId: any): Promise<boolean> {
+        // Prevent duplicate assignment - check if player is already in this match
+        // Handle both populated and unpopulated player fields
+        const p1Id = match.player1?.playerId?._id || match.player1?.playerId;
+        const p2Id = match.player2?.playerId?._id || match.player2?.playerId;
+
+        if ((p1Id && p1Id.toString() === playerId.toString()) ||
+            (p2Id && p2Id.toString() === playerId.toString())) {
+            console.log(`Player ${playerId} is already assigned to match ${match._id} - skipping duplicate assignment`);
+            return true;
+        }
+
         if (!match.player1 || !match.player1.playerId) {
             // Assign to player1 slot
             match.player1 = {
