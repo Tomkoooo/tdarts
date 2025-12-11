@@ -43,6 +43,7 @@ interface LeagueDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLeagueUpdated: () => void;
+  readOnly?: boolean;
 }
 
 type TabType = 'leaderboard' | 'tournaments' | 'settings';
@@ -54,24 +55,16 @@ export default function LeagueDetailModal({
   isOpen,
   onClose,
   onLeagueUpdated,
+  readOnly = false,
 }: LeagueDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
   const [leagueStats, setLeagueStats] = useState<LeagueStatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Check if user is global admin (this prop needs to be passed or checked)
-  // For now, we assume if userRole is 'admin' they are club admin.
-  // We need to know if they are GLOBAL admin.
-  // Since we don't have isGlobalAdmin prop yet, we rely on the fact that verified leagues
-  // should be read-only for club admins.
+  // ... (comments) ...
   
-  // If the league is verified, club admins/moderators CANNOT manage it.
-  // Only global admins can, but we might not have that info here yet.
-  // The user said: "club admin or moderator should not be able to modify any data... Only be able to access and do my super admin on the tDarts platform."
-  
-  // So for verified leagues, canManage should be false for club admins.
   const isVerifiedLeague = league.verified;
-  const canManage = !isVerifiedLeague && (userRole === 'admin' || userRole === 'moderator');
+  const canManage = !readOnly && !isVerifiedLeague && (userRole === 'admin' || userRole === 'moderator');
   
   // Note: If the user IS a global admin, they should be able to manage.
   // However, the current props don't pass 'isGlobalAdmin'. 
@@ -257,8 +250,11 @@ export default function LeagueDetailModal({
           <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <DialogTitle className="text-2xl font-semibold text-foreground">
+                <DialogTitle className="text-2xl font-semibold text-foreground flex items-center gap-2">
                   {league.name}
+                  {!league.isActive && (
+                    <Badge variant="secondary" className="text-xs">Lezárt</Badge>
+                  )}
                 </DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground">
                   Kezeld a liga ranglistáját, csatolt versenyeket és beállításokat.
@@ -1098,6 +1094,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
     description: league.description || '',
     pointsConfig: { ...league.pointsConfig },
     pointSystemType: league.pointSystemType || 'platform',
+    isActive: league.isActive ?? true,
   });
 
   useEffect(() => {
@@ -1106,6 +1103,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
       description: league.description || '',
       pointsConfig: { ...league.pointsConfig },
       pointSystemType: league.pointSystemType || 'platform',
+      isActive: league.isActive ?? true,
     });
   }, [league]);
 
@@ -1208,6 +1206,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
       description: league.description || '',
       pointsConfig: { ...league.pointsConfig },
       pointSystemType: league.pointSystemType || 'platform',
+      isActive: league.isActive ?? true,
     });
     setIsEditing(false);
   };
@@ -1400,6 +1399,28 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
               />
             </div>
           </div>
+          
+          <div className="space-y-2">
+             <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
+                <div>
+                   <label className="text-sm font-medium text-foreground block">Liga státusza</label>
+                   <span className="text-xs text-muted-foreground block mt-0.5">
+                     Ha kikapcsolod, a liga "Lezárt" státuszba kerül, és nem jelenik meg az alapértelmezett keresési listákban.
+                   </span>
+                </div>
+                <div className="flex items-center gap-2">
+                   <span className={formData.isActive ? "text-sm font-medium text-green-500" : "text-sm font-medium text-muted-foreground"}>
+                      {formData.isActive ? "Aktív" : "Lezárt"}
+                   </span>
+                   <input
+                     type="checkbox"
+                     checked={formData.isActive}
+                     onChange={(event) => setFormData({ ...formData, isActive: event.target.checked })}
+                     className="h-5 w-5 rounded accent-primary cursor-pointer"
+                   />
+                </div>
+             </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="point-system-type">Pontszámítási rendszer</Label>
@@ -1487,6 +1508,17 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
               <p className="text-base text-foreground">{league.description}</p>
             </div>
           )}
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Státusz</p>
+            <div className="flex items-center gap-2 mt-1">
+                 <Badge variant={league.isActive ? "default" : "secondary"}>
+                    {league.isActive ? "Aktív" : "Lezárt"}
+                 </Badge>
+                 {!league.isActive && (
+                     <span className="text-xs text-muted-foreground">(Nem jelenik meg a keresőkben)</span>
+                 )}
+            </div>
+          </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Pontszámítási rendszer</p>
             <p className="text-base text-foreground">

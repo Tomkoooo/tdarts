@@ -1,103 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { SearchService } from '@/database/services/search.service';
 
-export async function GET(request: NextRequest) {
+export async function POST(request: Request) {
     try {
-        const { searchParams } = new URL(request.url);
-        const query = searchParams.get('q') || '';
-        const type = searchParams.get('type') as 'players' | 'tournaments' | 'clubs' | 'all' || 'all';
-        const status = searchParams.get('status') || undefined;
-        const format = searchParams.get('format') || undefined;
-        const dateFrom = searchParams.get('dateFrom') || undefined;
-        const dateTo = searchParams.get('dateTo') || undefined;
-        const minPlayers = searchParams.get('minPlayers') ? parseInt(searchParams.get('minPlayers')!) : undefined;
-        const maxPlayers = searchParams.get('maxPlayers') ? parseInt(searchParams.get('maxPlayers')!) : undefined;
-        const location = searchParams.get('location') || undefined;
-        const tournamentType = searchParams.get('tournamentType') as 'amateur' | 'open' || undefined;
+        const body = await request.json();
+        const { query, filters, tab } = body;
 
-        const filters = {
-            type,
-            status,
-            format,
-            dateFrom: dateFrom ? new Date(dateFrom) : undefined,
-            dateTo: dateTo ? new Date(dateTo) : undefined,
-            minPlayers,
-            maxPlayers,
-            location,
-            tournamentType
-        };
+        // 1. Get Counts for ALL tabs (to show badges)
+        const counts = await SearchService.getTabCounts(query || '', filters);
 
-        // Check if we have any active filters
-        const hasActiveFilters = status || format || dateFrom || dateTo || minPlayers || maxPlayers || location || tournamentType;
+        // 2. Get specific tab results based on 'tab' param
+        let resultsData = { results: [], total: 0 };
+        const activeTab = tab || 'tournaments';
 
-        // Return empty results only if no query AND no filters
-        if (!query.trim() && !hasActiveFilters && type === 'all') {
-            return NextResponse.json({
-                success: true,
-                results: {
-                    players: [],
-                    tournaments: [],
-                    clubs: [],
-                    totalResults: 0
-                }
-            });
+        switch (activeTab) {
+            case 'tournaments':
+                resultsData = await SearchService.searchTournaments(query || '', filters);
+                break;
+            case 'players':
+                resultsData = await SearchService.searchPlayers(query || '', filters);
+                break;
+            case 'clubs':
+                resultsData = await SearchService.searchClubs(query || '', filters);
+                break;
+            case 'leagues':
+                resultsData = await SearchService.searchLeagues(query || '', filters);
+                break;
+            default:
+                resultsData = await SearchService.searchTournaments(query || '', filters);
         }
 
-        const results = await SearchService.search(query, filters);
-        
+        // 3. Get Metadata
+        const metadata = await SearchService.getMetadata(query || '', filters);
+
         return NextResponse.json({
-            success: true,
-            results
+            results: resultsData.results,
+            pagination: {
+                total: resultsData.total,
+                page: filters?.page || 1,
+                limit: filters?.limit || 10
+            },
+            counts: counts,
+            metadata: metadata
         });
-    } catch (error: any) {
-        console.error('Search error:', error);
+
+    } catch (error) {
+        console.error('Search API error:', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Search failed' },
+            { error: 'Internal server error' },
             { status: 500 }
         );
     }
 }
-
-export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const { query, filters = {} } = body;
-
-        // Check if we have any active filters
-        const hasActiveFilters = 
-            filters.status || 
-            filters.format || 
-            filters.dateFrom || 
-            filters.dateTo || 
-            filters.minPlayers || 
-            filters.maxPlayers || 
-            filters.location || 
-            filters.tournamentType;
-
-        // Return empty results only if no query AND no filters
-        if ((!query || !query.trim()) && !hasActiveFilters && (!filters.type || filters.type === 'all')) {
-            return NextResponse.json({
-                success: true,
-                results: {
-                    players: [],
-                    tournaments: [],
-                    clubs: [],
-                    totalResults: 0
-                }
-            });
-        }
-
-        const results = await SearchService.search(query, filters);
-
-        return NextResponse.json({
-            success: true,
-            results
-        });
-    } catch (error: any) {
-        console.error('Search error:', error);
-        return NextResponse.json(
-            { success: false, error: error.message || 'Search failed' },
-            { status: 500 }
-        );
-    }
-} 

@@ -4,7 +4,7 @@ import { TournamentModel } from '../models/tournament.model';
 import { ClubModel } from '../models/club.model';
 
 export interface SearchFilters {
-    type?: 'players' | 'tournaments' | 'clubs' | 'all';
+    type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'all';
     status?: string;
     format?: string;
     dateFrom?: Date;
@@ -13,263 +13,501 @@ export interface SearchFilters {
     maxPlayers?: number;
     location?: string;
     tournamentType?: 'amateur' | 'open';
+    isVerified?: boolean;
+    isOac?: boolean;
+    city?: string;
+    showFinished?: boolean;
     page?: number;
     limit?: number;
 }
+
 
 export interface SearchResult {
     players?: any[];
     tournaments?: any[];
     clubs?: any[];
+    leagues?: any[];
     totalResults: number;
     totalPages?: number;
     currentPage?: number;
 }
 
 export class SearchService {
-    static async search(query: string, filters: SearchFilters = {}): Promise<SearchResult> {
+    
+    // --- SPECIALIZED SEARCH METHODS ---
+
+    /**
+     * Get counts for all tabs based on current filters and query
+     * This allows showing badges like "Tournaments (5)"
+     */
+    static async getTabCounts(query: string, filters: SearchFilters = {}): Promise<{
+        tournaments: number;
+        players: number;
+        clubs: number;
+        leagues: number;
+    }> {
         await connectMongo();
         
-        console.log('SearchService.search called with:', { query, filters });
+        const counts = {
+            tournaments: 0,
+            players: 0,
+            clubs: 0,
+            leagues: 0
+        };
+
+        const regex = query ? new RegExp(query, 'i') : null;
+
+        // 1. Tournaments Count
+    // Ensure query is processed same as search results
+    const tournamentPipeline = this.buildTournamentPipeline(query, filters, true); // true = count only
+    const tournamentCountResult = await TournamentModel.aggregate(tournamentPipeline);
+    counts.tournaments = tournamentCountResult[0]?.total || 0;
+
+        // 2. Players Count (Only if generic filters aren't restrictive to other types)
+        if (!filters.city && !filters.isVerified && !filters.isOac && !filters.tournamentType) {
+            const playerQuery: any = {};
+            if (regex) playerQuery.name = regex;
+            counts.players = await PlayerModel.countDocuments(playerQuery);
+        }
+
+        // 3. Clubs Count
+        const clubQuery = this.buildClubQuery(query, filters);
+        counts.clubs = await ClubModel.countDocuments(clubQuery);
+
+        // 4. Leagues Count
+        const leagueQuery = this.buildLeagueQuery(query, filters);
+        const { LeagueModel } = await import('../models/league.model');
+        counts.leagues = await LeagueModel.countDocuments(leagueQuery);
+
+        return counts;
+    }
+
+    /**
+     * Search Tournaments with specialized logic
+     */
+    static async searchTournaments(query: string, filters: SearchFilters = {}): Promise<{ results: any[], total: number }> {
+        await connectMongo();
         
         const page = filters.page || 1;
         const limit = filters.limit || 10;
         const skip = (page - 1) * limit;
 
-        const results: SearchResult = {
-            totalResults: 0,
-            totalPages: 0,
-            currentPage: page
-        };
+    const pipeline = this.buildTournamentPipeline(query, filters, false);
 
-        // If no query is provided but filters are set, search without text filter
-        const searchRegex = query ? new RegExp(query, 'i') : null;
+        // Add Pagination
+        pipeline.push({ $skip: skip });
+        pipeline.push({ $limit: limit });
 
-        // Search players
-        if (filters.type === 'players' || filters.type === 'all') {
-            const playerQuery: any = {};
-            
-            if (searchRegex) {
-                // Search for players whose name matches the query (registered or not)
-                playerQuery.name = searchRegex;
+        const tournaments = await TournamentModel.aggregate(pipeline);
+        
+        // Hydrate results (similar to existing logic)
+        const hydratedTournaments = await TournamentModel.populate(tournaments, [
+            { path: 'tournamentPlayers.playerReference', select: 'name' }
+        ]);
+
+        const results = hydratedTournaments.map(t => {
+            const startDate = t.tournamentSettings?.startDate;
+            const now = new Date();
+            let registrationOpen = true; // Simplified logic, can be expanded
+            if (startDate) {
+                 registrationOpen = now < new Date(startDate);
             }
 
-            console.log('Player search query:', playerQuery);
-            
-            // Fetch ALL matching players (no limit yet) to sort properly in memory
-            // MongoDB sort doesn't handle null/undefined MMR values well
-            const players = await PlayerModel.find(playerQuery)
-                .populate('userRef', 'name email');
-            
-            console.log('Found players:', players.length);
-            
-            // Sort by MMR in memory (handle missing/null MMR values)
-            const sortedPlayers = players.sort((a, b) => {
-                const aMMR = a.stats?.mmr ?? 800; // Default to base MMR if missing
-                const bMMR = b.stats?.mmr ?? 800;
-                // Sort DESCENDING by MMR (higher MMR first)
-                if (bMMR !== aMMR) return bMMR - aMMR;
-                // Then by name ascending
-                return a.name.localeCompare(b.name);
-            });
-
-            // Calculate total for pagination
-            const totalPlayers = sortedPlayers.length;
-            if (filters.type === 'players') {
-                results.totalResults = totalPlayers;
-                results.totalPages = Math.ceil(totalPlayers / limit);
-            }
-
-            // Get global ranking position for each player
-            const globalRanking = await this.getGlobalPlayerRanking();
-            
-            // Apply pagination or limit based on type
-            const playersToReturn = filters.type === 'players' 
-                ? sortedPlayers.slice(skip, skip + limit)
-                : sortedPlayers.slice(0, 5);
-
-            results.players = playersToReturn.map(player => {
-                const mmr = player.stats?.mmr ?? 800;
-                const stats = player.stats || {};
-                // Ensure stats has mmr field
-                stats.mmr = mmr;
-                
-                // Find global ranking position
-                const globalRank = globalRanking.findIndex(p => p._id.toString() === player._id.toString()) + 1;
-                
-                return {
-                    _id: player._id,
-                    name: player.name,
-                    type: 'player',
-                    userRef: player.userRef,
-                    stats: stats,
-                    tournamentHistory: player.tournamentHistory || [],
-                    mmr: mmr,
-                    mmrTier: this.getMMRTier(mmr),
-                    globalRank: globalRank || null
-                };
-            });
-        }
-
-        // Search tournaments
-        if (filters.type === 'tournaments' || filters.type === 'all') {
-            const tournamentQuery: any = {};
-            let hasFilters = false;
-            
-            if (searchRegex) {
-                tournamentQuery.$or = [
-                    { 'tournamentSettings.name': searchRegex },
-                    { 'tournamentSettings.description': searchRegex },
-                    { 'tournamentSettings.location': searchRegex },
-                    { tournamentId: searchRegex }
-                ];
-            }
-
-            // Apply tournament filters
-            if (filters.status) {
-                if (filters.status === 'active') {
-                    tournamentQuery['tournamentSettings.status'] = { $in: ['group-stage', 'knockout'] };
-                } else {
-                    tournamentQuery['tournamentSettings.status'] = filters.status;
+            return {
+                registrationOpen,
+                tournament: {
+                    ...t,
+                    clubId: t.club, 
+                    isVerified: t.isVerified,
+                    isOac: t.isOac,
+                    city: t.city
                 }
-                hasFilters = true;
-            }
-            if (filters.format) {
-                tournamentQuery['tournamentSettings.format'] = filters.format;
-                hasFilters = true;
-            }
-            if (filters.dateFrom || filters.dateTo) {
-                tournamentQuery['tournamentSettings.startDate'] = {};
-                if (filters.dateFrom) {
-                    tournamentQuery['tournamentSettings.startDate'].$gte = new Date(filters.dateFrom);
-                }
-                if (filters.dateTo) {
-                    // Set to end of day
-                    const endDate = new Date(filters.dateTo);
-                    endDate.setHours(23, 59, 59, 999);
-                    tournamentQuery['tournamentSettings.startDate'].$lte = endDate;
-                }
-                hasFilters = true;
-            }
-            if (filters.minPlayers || filters.maxPlayers) {
-                tournamentQuery['tournamentSettings.maxPlayers'] = {};
-                if (filters.minPlayers) {
-                    tournamentQuery['tournamentSettings.maxPlayers'].$gte = Number(filters.minPlayers);
-                }
-                if (filters.maxPlayers) {
-                    tournamentQuery['tournamentSettings.maxPlayers'].$lte = Number(filters.maxPlayers);
-                }
-                hasFilters = true;
-            }
-            if (filters.tournamentType) {
-                tournamentQuery['tournamentSettings.type'] = filters.tournamentType;
-                hasFilters = true;
-            }
+            };
+        });
 
-            // Only search if we have a query OR filters OR type is 'all' OR 'tournaments'
-            if (searchRegex || hasFilters || filters.type === 'all' || filters.type === 'tournaments') {
-                // Calculate pagination if in tournaments mode
-                if (filters.type === 'tournaments') {
-                    const totalTournaments = await TournamentModel.countDocuments(tournamentQuery);
-                    results.totalResults = totalTournaments;
-                    results.totalPages = Math.ceil(totalTournaments / limit);
-                }
+        // Get total count for pagination (can use getTabCounts or separate count query)
+        // For efficiency, we can run a parallel count or just rely on getTabCounts called separately
+        // Let's run a quick count query here to be self-contained for pagination
+        const countPipeline = this.buildTournamentPipeline(query, filters, true);
+        const countRes = await TournamentModel.aggregate(countPipeline);
+        const total = countRes[0]?.total || 0;
 
-                const queryLimit = filters.type === 'tournaments' ? limit : 5;
-                const querySkip = filters.type === 'tournaments' ? skip : 0;
-
-                const tournaments = await TournamentModel.find(tournamentQuery)
-                    .populate('clubId', 'name location')
-                    .populate('tournamentPlayers.playerReference', 'name')
-                    .limit(queryLimit)
-                    .skip(querySkip)
-                    .sort({ 'tournamentSettings.startDate': -1 });
-
-                results.tournaments = tournaments.map(tournament => {
-                const startDate = tournament.tournamentSettings?.startDate;
-                const registrationDeadline = tournament.tournamentSettings?.registrationDeadline;
-                const now = new Date();
-                
-                // Determine if registration is open based on deadline or start date
-                let registrationOpen = true;
-                
-                if (registrationDeadline) {
-                    registrationOpen = registrationOpen && now < new Date(registrationDeadline);
-                } else if (startDate) {
-                    registrationOpen = registrationOpen && now < new Date(startDate.getTime() - 60 * 60 * 1000); // 1 hour before start
-                }
-
-                return {
-                    registrationOpen: registrationOpen,
-                    tournament: tournament,
-                };
-                });
-            } else {
-                results.tournaments = [];
-            }
-        }
-
-        // Search clubs
-        if (filters.type === 'clubs' || filters.type === 'all') {
-            const clubQuery: any = {};
-            let hasFilters = false;
-            
-            if (searchRegex) {
-                clubQuery.$or = [
-                    { name: searchRegex },
-                    { description: searchRegex },
-                    { location: searchRegex }
-                ];
-            }
-
-            // Apply club filters
-            if (filters.location) {
-                clubQuery.location = new RegExp(filters.location, 'i');
-                hasFilters = true;
-            }
-
-            // Only search if we have a query OR filters OR type is 'all' OR 'clubs'
-            if (searchRegex || hasFilters || filters.type === 'all' || filters.type === 'clubs') {
-                // Calculate pagination if in clubs mode
-                if (filters.type === 'clubs') {
-                    const totalClubs = await ClubModel.countDocuments(clubQuery);
-                    results.totalResults = totalClubs;
-                    results.totalPages = Math.ceil(totalClubs / limit);
-                }
-
-                const queryLimit = filters.type === 'clubs' ? limit : 5;
-                const querySkip = filters.type === 'clubs' ? skip : 0;
-
-                const clubs = await ClubModel.find(clubQuery)
-                    .populate('members', 'name email')
-                    .populate('moderators', 'name email')
-                    .limit(queryLimit)
-                    .skip(querySkip)
-                    .sort({ name: 1 });
-
-                results.clubs = clubs.map(club => ({
-                    _id: club._id,
-                    name: club.name,
-                    description: club.description,
-                    location: club.location,
-                    memberCount: club.members?.length || 0,
-                    moderatorCount: club.moderators?.length || 0,
-                    boardCount: 0, // Boards are now managed at tournament level
-                    type: 'club'
-                }));
-            } else {
-                results.clubs = [];
-            }
-        }
-
-        // Calculate total results
-        results.totalResults = (results.players?.length || 0) + 
-                              (results.tournaments?.length || 0) + 
-                              (results.clubs?.length || 0);
-
-        return results;
+        return { results, total };
     }
 
+    /**
+     * Search Players (MMR Leaderboard)
+     */
+    static async searchPlayers(query: string, filters: SearchFilters = {}): Promise<{ results: any[], total: number }> {
+        await connectMongo();
+
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+        const regex = query ? new RegExp(query, 'i') : null;
+
+        const queryObj: any = {};
+        if (regex) queryObj.name = regex;
+
+        const total = await PlayerModel.countDocuments(queryObj);
+
+        // Fetch all matching players to sort by MMR (handling nulls)
+        // Note: For large datasets, this in-memory sort is bad. 
+        // Ideally, schema should index 'stats.mmr'. detailed sort logic kept from original.
+        const allPlayers = await PlayerModel.find(queryObj).populate('userRef', 'name email');
+        
+        const sortedPlayers = allPlayers.sort((a, b) => {
+            const aMMR = a.stats?.mmr ?? 800;
+            const bMMR = b.stats?.mmr ?? 800;
+            if (bMMR !== aMMR) return bMMR - aMMR;
+            return a.name.localeCompare(b.name);
+        });
+
+        const slicedPlayers = sortedPlayers.slice(skip, skip + limit);
+        
+        // Get global ranking context (expensive, but requested)
+        const globalRanking = await this.getGlobalPlayerRanking();
+
+        const results = slicedPlayers.map(player => {
+            const mmr = player.stats?.mmr ?? 800;
+            const stats = player.stats || {};
+            stats.mmr = mmr;
+            
+            const globalRank = globalRanking.findIndex(p => p._id.toString() === player._id.toString()) + 1;
+            
+            return {
+                _id: player._id,
+                name: player.name,
+                type: 'player',
+                userRef: player.userRef,
+                stats: stats,
+                mmr: mmr,
+                mmrTier: this.getMMRTier(mmr),
+                globalRank: globalRank || null
+            };
+        });
+
+        return { results, total };
+    }
+
+    /**
+     * Search Clubs (Ranked by Tournament Count)
+     */
+    static async searchClubs(query: string, filters: SearchFilters = {}): Promise<{ results: any[], total: number }> {
+        await connectMongo();
+
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const queryObj = this.buildClubQuery(query, filters);
+        const total = await ClubModel.countDocuments(queryObj);
+
+        // Aggregate to sort by tournament count
+        // If sorting by name is preferred for simple search, we can use find().
+        // Requirement: "ranking based on tournament count"
+        
+        const pipeline: any[] = [
+             { $match: queryObj },
+             {
+                 $lookup: {
+                     from: 'tournaments',
+                     localField: '_id',
+                     foreignField: 'clubId',
+                     as: 'tournaments'
+                 }
+             },
+             {
+                 $addFields: {
+                     tournamentCount: { $size: { $filter: {
+                        input: '$tournaments',
+                        as: 't',
+                        cond: { $and: [
+                            { $ne: ['$$t.isDeleted', true] },
+                            { $ne: ['$$t.isArchived', true] }
+                        ]}
+                     }} },
+                     memberCount: { $size: { $ifNull: ['$members', []] } }
+                 }
+             },
+             { $sort: { tournamentCount: -1 } }, // Ranking logic
+             { $skip: skip },
+             { $limit: limit },
+             // Populate members/moderators if needed, but keeping it light
+        ];
+
+        const clubs = await ClubModel.aggregate(pipeline);
+        // Hydrate if needed, or simply map
+        
+        const results = clubs.map(club => ({
+            _id: club._id,
+            name: club.name,
+            description: club.description,
+            location: club.location,
+            verified: club.verified,
+            memberCount: club.memberCount, // Calculated in aggregation
+            tournamentCount: club.tournamentCount,
+            type: 'club'
+        }));
+
+        return { results, total };
+    }
+
+    /**
+     * Search Leagues
+     */
+    static async searchLeagues(query: string, filters: SearchFilters = {}): Promise<{ results: any[], total: number }> {
+        await connectMongo();
+        const { LeagueModel } = await import('../models/league.model');
+
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const queryObj = this.buildLeagueQuery(query, filters);
+        const total = await LeagueModel.countDocuments(queryObj);
+
+        const leagues = await LeagueModel.find(queryObj)
+            .populate('club', 'name location verified')
+            .sort({ isActive: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const results = leagues.map(l => ({
+            _id: l._id,
+            name: l.name,
+            description: l.description,
+            club: l.club,
+            verified: l.verified,
+            isActive: l.isActive,
+            pointSystemType: l.pointSystemType,
+            type: 'league'
+        }));
+
+        return { results, total };
+    }
+
+    /**
+     * Get Metadata (Cities) for filters
+     */
+    static async getMetadata(query?: string, filters: SearchFilters = {}): Promise<{ cities: {city: string, count: number}[] }> {
+        // Use the existing aggregation logic but refined - passing query/filters ensures cities match current results
+        const cities = await this.getPopularCities(20, false, query, filters); 
+        return { cities };
+    }
+
+
+    // --- HELPERS ---
+
+    private static buildTournamentPipeline(query: string, filters: SearchFilters, countOnly: boolean = false): any[] {
+        const pipeline: any[] = [];
+        
+        // 1. Base Match
+        pipeline.push({
+            $match: {
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
+            }
+        });
+
+        // 2. Lookup & City Extraction
+        pipeline.push(
+            {
+                $lookup: {
+                    from: 'clubs',
+                    localField: 'clubId',
+                    foreignField: '_id',
+                    as: 'club'
+                }
+            },
+            { $unwind: { path: '$club', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'leagues',
+                    localField: 'league',
+                    foreignField: '_id',
+                    as: 'leagueData'
+                }
+            },
+            { $unwind: { path: '$leagueData', preserveNullAndEmptyArrays: true } }
+        );
+
+        // City Extraction Logic: "First word that is not containing numbers and repeats"
+        // Implementing heuristic: Split by space, find first token without digits.
+        // MongoDB aggregation is tricky for regex search in array.
+        // Simplified approach: Split by comma (to get city part), then trim.
+        // Then apply regex to remove zip codes.
+        
+        pipeline.push({
+            $addFields: {
+                isVerified: { 
+                    $or: [
+                        { $eq: ['$leagueData.verified', true] },
+                        { $eq: ['$club.verified', true] }
+                    ] 
+                },
+                isOac: { $eq: ['$leagueData.pointSystemType', 'remiz_christmas'] },
+                // City extraction
+                city: {
+                    $trim: {
+                        input: {
+                            $let: {
+                                vars: {
+                                    // Improved logic: Look for 4-digit zip code pattern and take the word AFTER it.
+                                    // Pattern: 4 digits, whitespace, then City name.
+                                    // If not found, fall back to first part of comma split.
+                                    
+                                    // Note: $regexFind is available in Mongo 4.2+.
+                                    zipMatch: { 
+                                        $regexFind: { 
+                                            input: '$tournamentSettings.location', 
+                                            regex: /\b\d{4}\s+([^\s,]+)/ 
+                                        } 
+                                    },
+                                    commaSplit: { $arrayElemAt: [{ $split: ['$tournamentSettings.location', ','] }, 0] }
+                                },
+                                in: {
+                                    $cond: {
+                                        if: { $ne: ['$$zipMatch', null] },
+                                        then: { $arrayElemAt: ['$$zipMatch.captures', 0] }, // Capture group 1 is the city
+                                        else: '$$commaSplit' // Fallback
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Apply Filters
+        const matchStage: any = {};
+        const regex = query ? new RegExp(query, 'i') : null;
+        const andConditions: any[] = [];
+
+        if (regex) {
+            andConditions.push({
+                $or: [
+                    { 'tournamentSettings.name': regex },
+                    { 'tournamentSettings.description': regex },
+                    { 'city': regex }, // Search extracted city
+                    { 'tournamentSettings.location': regex }
+                ]
+            });
+        }
+
+        // Status Logic: Default "Upcoming" unless 'all' is requested
+        if (filters.status === 'upcoming' || !filters.status) { // Default
+             // Use current date for comparison
+             const now = new Date();
+             now.setHours(0, 0, 0, 0);
+             
+             // STRICT 'Upcoming': Only Pending tournaments starting today or later.
+             andConditions.push({
+                 $or: [
+                    { 
+                        'tournamentSettings.status': 'pending', 
+                        'tournamentSettings.startDate': { $gte: now } 
+                    }
+                 ]
+             });
+        }
+        // If status == 'all', we don't apply specific filter (allow finished)
+
+        if (filters.city) {
+            matchStage.city = new RegExp(filters.city, 'i');
+        }
+
+        if (filters.tournamentType) {
+            matchStage['tournamentSettings.type'] = filters.tournamentType;
+        }
+
+        if (filters.isVerified) {
+             matchStage.isVerified = true;
+        }
+
+        // Combine AND conditions
+        if (andConditions.length > 0) {
+            matchStage.$and = andConditions;
+        }
+
+        if (Object.keys(matchStage).length > 0) {
+            pipeline.push({ $match: matchStage });
+        }
+
+        // 4. Return count or results
+        if (countOnly) {
+            pipeline.push({ $count: 'total' });
+        } else {
+            pipeline.push({ $sort: { 'tournamentSettings.startDate': 1 } }); // Sort by Date Ascending for upcoming
+        }
+
+        return pipeline;
+    }
+
+    private static buildClubQuery(query: string, filters: SearchFilters): any {
+        const regex = query ? new RegExp(query, 'i') : null;
+        const q: any = {};
+        
+        if (regex) {
+            q.$or = [
+                { name: regex },
+                { location: regex }
+            ];
+        }
+
+        if (filters.city) {
+            q.location = new RegExp(filters.city, 'i');
+        }
+
+        if (filters.isVerified) {
+            q.verified = true;
+        }
+
+        return q;
+    }
+
+    private static buildLeagueQuery(query: string, filters: SearchFilters): any {
+        const regex = query ? new RegExp(query, 'i') : null;
+        const q: any = {};
+
+        if (regex) {
+            q.name = regex;
+        }
+
+        if (filters.isVerified) {
+            q.verified = true;
+        }
+
+        // Default to active unless specified? Plan didn't specify, assume all or only active?
+        // Let's show all for now, sorted by active.
+        return q;
+    }
+
+    // Keep legacy / helper methods needed for other parts of app or internal use
+    
+    static async search(query: string, filters: SearchFilters = {}): Promise<SearchResult> {
+        // Fallback for parts of app still using old method, redirects to new specialized ones
+        // In a full rewrite, we'd update callers. For now, emulate old structure.
+        const [t, p, c, l] = await Promise.all([
+            this.searchTournaments(query, filters),
+            this.searchPlayers(query, filters),
+            this.searchClubs(query, filters),
+            this.searchLeagues(query, filters)
+        ]);
+        
+        return {
+            tournaments: t.results,
+            players: p.results,
+            clubs: c.results,
+            leagues: l.results,
+            totalResults: t.total + p.total + c.total + l.total,
+            totalPages: 1 // Dummy
+        };
+    }
+
+    // ... Keep getMMRTier, getGlobalPlayerRanking, getPopularCities (updated) ...
+    
     private static getMMRTier(mmr: number): { name: string; color: string } {
         if (mmr >= 1600) return { name: 'Elit', color: 'text-error' };
         if (mmr >= 1400) return { name: 'Mester', color: 'text-warning' };
@@ -277,186 +515,6 @@ export class SearchService {
         if (mmr >= 1000) return { name: 'Középhaladó', color: 'text-success' };
         if (mmr >= 800) return { name: 'Kezdő+', color: 'text-primary' };
         return { name: 'Kezdő', color: 'text-base-content' };
-    }
-
-    static async getSearchSuggestions(query: string): Promise<string[]> {
-        await connectMongo();
-        
-        const suggestions: string[] = [];
-        const searchRegex = new RegExp(query, 'i');
-
-        // Get player name suggestions (all players)
-        const playerNames = await PlayerModel.find({ name: searchRegex })
-            .select('name')
-            .limit(5)
-            .sort({ name: 1 });
-        
-        suggestions.push(...playerNames.map(p => p.name));
-
-        // Get tournament name suggestions
-        const tournamentNames = await TournamentModel.find({ 'tournamentSettings.name': searchRegex })
-            .select('tournamentSettings.name')
-            .limit(5)
-            .sort({ 'tournamentSettings.name': 1 });
-        
-        suggestions.push(...tournamentNames.map(t => t.tournamentSettings?.name).filter(Boolean));
-
-        // Get club name suggestions
-        const clubNames = await ClubModel.find({ name: searchRegex })
-            .select('name')
-            .limit(5)
-            .sort({ name: 1 });
-        
-        suggestions.push(...clubNames.map(c => c.name));
-
-        // Remove duplicates and limit to 10 suggestions
-        return [...new Set(suggestions)].slice(0, 10);
-    }
-
-    static async getRecentTournaments(limit: number = 5): Promise<any[]> {
-        await connectMongo();
-        
-        return await TournamentModel.find()
-            .populate('clubId', 'name location')
-            .sort({ 'tournamentSettings.startDate': -1 })
-            .limit(limit);
-    }
-
-    static async getAllTournaments(limit: number = 100): Promise<any[]> {
-        await connectMongo();
-        
-        return await TournamentModel.find()
-            .populate('clubId', 'name location')
-            .populate('tournamentPlayers.playerReference', 'name')
-            .sort({ 'tournamentSettings.startDate': -1 })
-            .limit(limit);
-    }
-
-    static async getTodaysTournaments(): Promise<any[]> {
-        await connectMongo();
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        return await TournamentModel.find({
-            'tournamentSettings.startDate': {
-                $gte: today,
-                $lt: tomorrow
-            }
-        })
-            .populate('clubId', 'name location')
-            .populate('tournamentPlayers.playerReference', 'name')
-            .sort({ 'tournamentSettings.startDate': 1 });
-    }
-
-    static async getActiveTournaments(): Promise<any[]> {
-        await connectMongo();
-        
-        return await TournamentModel.find({
-            'tournamentSettings.status': { $in: ['group-stage', 'knockout'] }
-        })
-            .populate('clubId', 'name location')
-            .populate('tournamentPlayers.playerReference', 'name')
-            .sort({ 'tournamentSettings.startDate': -1 })
-            .limit(50);
-    }
-
-    static async getFinishedTournaments(limit: number = 50): Promise<any[]> {
-        await connectMongo();
-        
-        return await TournamentModel.find({
-            'tournamentSettings.status': 'finished'
-        })
-            .populate('clubId', 'name location')
-            .populate('tournamentPlayers.playerReference', 'name')
-            .sort({ 'tournamentSettings.startDate': -1 })
-            .limit(limit);
-    }
-
-    static async getAllClubs(limit: number = 100): Promise<any[]> {
-        await connectMongo();
-        
-        return await ClubModel.find()
-            .populate('members', 'name email')
-            .populate('moderators', 'name email')
-            .sort({ name: 1 })
-            .limit(limit);
-    }
-
-    static async getTopPlayers(limit: number = 10, skip: number = 0): Promise<{ players: any[], total: number }> {
-        await connectMongo();
-        
-        // Get total count of all players
-        const total = await PlayerModel.countDocuments();
-        
-        // Get ALL players to sort by MMR in memory (handle null/undefined MMR)
-        const allPlayers = await PlayerModel.find()
-        .populate('userRef', 'name email');
-        
-        // Sort by MMR descending in memory
-        const sortedPlayers = allPlayers.sort((a, b) => {
-            const aMMR = a.stats?.mmr ?? 800; // Default to base MMR if missing
-            const bMMR = b.stats?.mmr ?? 800;
-            // Sort DESCENDING by MMR (higher MMR first)
-            if (bMMR !== aMMR) return bMMR - aMMR;
-            // Then by name ascending
-            return a.name.localeCompare(b.name);
-        });
-        
-        // Apply pagination after sorting
-        const players = sortedPlayers.slice(skip, skip + limit).map((player, index) => {
-            const playerObj = player.toObject();
-            const mmr = playerObj.stats?.mmr ?? 800;
-            
-            // Ensure stats object exists and has mmr
-            if (!playerObj.stats) {
-                playerObj.stats = {};
-            }
-            playerObj.stats.mmr = mmr;
-            
-            return {
-                ...playerObj,
-                mmr: mmr,
-                mmrTier: this.getMMRTier(mmr),
-                globalRank: skip + index + 1 // Calculate global rank based on pagination
-            };
-        });
-        
-        return { players, total };
-    }
-
-    static async getPopularClubs(limit: number = 5): Promise<any[]> {
-        await connectMongo();
-        
-        return await ClubModel.aggregate([
-            {
-                $lookup: {
-                    from: 'tournaments',
-                    localField: '_id',
-                    foreignField: 'clubId',
-                    as: 'tournaments'
-                }
-            },
-            {
-                $addFields: {
-                    tournamentCount: { $size: '$tournaments' },
-                    memberCount: { $size: { $ifNull: ['$members', []] } }
-                }
-            },
-            {
-                $sort: { tournamentCount: -1 }
-            },
-            {
-                $limit: limit
-            },
-            {
-                $project: {
-                    tournaments: 0 // Remove the tournaments array to keep response light
-                }
-            }
-        ]);
     }
 
     private static async getGlobalPlayerRanking(): Promise<any[]> {
@@ -473,4 +531,121 @@ export class SearchService {
             return a._id.toString().localeCompare(b._id.toString()); // Stable sort
         });
     }
-} 
+
+    /**
+     * Get Popular Cities
+     * Now supports filtering by query and status to show RELEVANT cities
+     */
+    static async getPopularCities(limit: number = 10, showFinished: boolean = false, query?: string, filters: SearchFilters = {}): Promise<{city: string, count: number}[]> {
+        await connectMongo();
+
+        // 1. Start with base match
+        const matchStage: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            'tournamentSettings.location': { $exists: true, $ne: '' }
+        };
+
+        const andConditions: any[] = [];
+
+        // 2. Apply Text Search (if exists) - similar to buildTournamentPipeline
+        if (query) {
+            const regex = new RegExp(query, 'i');
+             andConditions.push({
+                $or: [
+                    { 'tournamentSettings.name': regex },
+                    { 'tournamentSettings.description': regex },
+                    { 'tournamentSettings.location': regex }
+                ]
+            });
+        }
+
+        // 3. Apply Filters (Status, etc)
+        // If filters.status is set, assume we want cities for THAT status.
+        // If showFinished is FALSE (legacy default), we default to upcoming.
+        // But if filters are passed, we respect them primarily.
+
+        // Status Logic
+        if (filters.status) {
+            if (filters.status === 'upcoming') {
+                 const now = new Date();
+                 now.setHours(0, 0, 0, 0);
+                 andConditions.push({
+                     $or: [
+                        { 'tournamentSettings.status': 'pending', 'tournamentSettings.startDate': { $gte: now } }
+                     ]
+                 });
+            } else if (filters.status === 'active') {
+                 andConditions.push({ 'tournamentSettings.status': { $in: ['group-stage', 'knockout'] } });
+            }
+            // if 'all', no restriction
+        } else if (!showFinished) {
+             // Legacy fallback if no filters passed: Default to upcoming/active
+             const now = new Date();
+             now.setHours(0, 0, 0, 0);
+             matchStage['tournamentSettings.status'] = { $in: ['pending', 'group-stage', 'knockout'] };
+             matchStage['tournamentSettings.startDate'] = { $gte: now };
+        }
+
+        if (filters.tournamentType) {
+            matchStage['tournamentSettings.type'] = filters.tournamentType;
+        }
+
+        if (andConditions.length > 0) {
+            matchStage.$and = andConditions;
+        }
+
+        // Aggregate cities
+        const popularCities = await TournamentModel.aggregate([
+            {
+                $match: matchStage
+            },
+            {
+                $project: {
+                    // Reuse the city extraction logic
+                    city: {
+                        $trim: {
+                            input: {
+                                $let: {
+                                    vars: {
+                                        firstPart: { $arrayElemAt: [{ $split: ['$tournamentSettings.location', ','] }, 0] }
+                                    },
+                                    in: {
+                                        $cond: {
+                                            if: { $regexMatch: { input: '$$firstPart', regex: /^\d+\s/ } },
+                                            then: { $trim: { input: { $arrayElemAt: [{ $split: ['$$firstPart', ' '] }, 1] } } },
+                                            else: '$$firstPart'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: { $toLower: '$city' }, // Group by lowercase to avoid duplicates case-sensitively
+                    originalName: { $first: '$city' }, // Keep one original casing
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $match: {
+                    _id: { $ne: '' } // Exclude empty cities
+                }
+            },
+            {
+                $sort: { count: -1 }
+            },
+            {
+                $limit: limit
+            }
+        ]);
+
+        return popularCities.map(c => ({
+            city: c.originalName,
+            count: c.count
+        }));
+    }
+}

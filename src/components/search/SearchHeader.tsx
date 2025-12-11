@@ -13,9 +13,8 @@ interface SearchHeaderProps {
   showSuggestions: boolean
   onSuggestionClick: (suggestion: string) => void
   onSuggestionsToggle: (show: boolean) => void
-  showFilters: boolean
-  onFiltersToggle: () => void
   activeFiltersCount: number
+  onClearFilters?: () => void
 }
 
 export function SearchHeader({
@@ -25,9 +24,8 @@ export function SearchHeader({
   showSuggestions,
   onSuggestionClick,
   onSuggestionsToggle,
-  showFilters,
-  onFiltersToggle,
   activeFiltersCount,
+  onClearFilters,
 }: SearchHeaderProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -79,21 +77,20 @@ export function SearchHeader({
           )}
         </div>
 
-        {/* Filter Button */}
-        <Button
-          variant={showFilters ? "default" : "outline"}
-          size="lg"
-          className="relative h-14 px-6"
-          onClick={onFiltersToggle}
-        >
-          <IconFilter className="w-5 h-5 mr-2" />
-          Szűrők
-          {activeFiltersCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
+        {/* Clear Filters Button - Show when filters are active */}
+        {activeFiltersCount > 0 && onClearFilters && (
+          <Button
+            variant="outline"
+            size="default"
+            onClick={onClearFilters}
+            className="gap-2 h-14 px-6"
+          >
+            <IconX className="w-4 h-4" />
+            Szűrők törlése
+            <Badge variant="secondary" className="ml-1">{activeFiltersCount}</Badge>
+          </Button>
+        )}
+
       </div>
     </div>
   )

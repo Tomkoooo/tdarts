@@ -123,7 +123,11 @@ export class TournamentService {
 
     static async getTournament(tournamentId: string): Promise<TournamentDocument> {
         await connectMongo();
-        let tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
+        let tournament = await TournamentModel.findOne({ 
+            tournamentId: tournamentId,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true }
+        })
             .populate('clubId')
             .populate('tournamentPlayers.playerReference')
             .populate('waitingList.playerReference')
@@ -160,7 +164,11 @@ export class TournamentService {
                 ]
             });
         if (!tournament) {
-            tournament = await TournamentModel.findById(tournamentId)
+            tournament = await TournamentModel.findOne({ 
+                _id: tournamentId,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
+            })
               .populate('clubId')
             .populate('tournamentPlayers.playerReference')
             .populate('waitingList.playerReference')
@@ -251,7 +259,11 @@ export class TournamentService {
     static async validateTournamentByPassword(tournamentId: string, password: string): Promise<boolean> {
         try {
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            const tournament = await TournamentModel.findOne({ 
+                tournamentId: tournamentId,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
+            });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -267,7 +279,11 @@ export class TournamentService {
 
     static async getBoards(tournamentId: string): Promise<any> {
         await connectMongo();
-        const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+        const tournament = await TournamentModel.findOne({ 
+            tournamentId: tournamentId,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true }
+        });
         if (!tournament) {
             throw new BadRequestError('Tournament not found');
         }
@@ -3518,8 +3534,9 @@ export class TournamentService {
                                 throw new BadRequestError(`Incomplete match in round ${roundIndex + 1}`);
                             }
 
+                            // Skip bye matches (only one player or missing players)
                             if (!match.player1 || !match.player2) {
-                                throw new BadRequestError(`Invalid players in match in round ${roundIndex + 1}`);
+                                continue;
                             }
 
                             const winnerId = (matchRefObj as any).winnerId.toString();
@@ -4212,7 +4229,11 @@ export class TournamentService {
 
 
     static async getLatestTournamentByClubId(clubId: string): Promise<any> {
-        const tournament = await TournamentModel.findOne({ clubId: clubId }).sort({ createdAt: -1 });
+        const tournament = await TournamentModel.findOne({ 
+            clubId: clubId,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true }
+        }).sort({ createdAt: -1 });
         if (!tournament) {
             return null;
         }
@@ -4222,7 +4243,11 @@ export class TournamentService {
     static async getLiveMatches(tournamentCode: string): Promise<any[]> {
         try {
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
+            const tournament = await TournamentModel.findOne({ 
+                tournamentId: tournamentCode,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
+            });
             
             if (!tournament) {
                 throw new Error('Tournament not found');
@@ -4249,7 +4274,11 @@ export class TournamentService {
             await connectMongo();
             
             // Get tournament with club information
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
+            const tournament = await TournamentModel.findOne({ 
+                tournamentId: tournamentId,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
+            })
                 .populate('clubId');
             
             if (!tournament) {
@@ -4349,7 +4378,9 @@ export class TournamentService {
             await connectMongo();
             const tournaments = await TournamentModel.find({ 
                 clubId: clubId,
-                'tournamentSettings.status': { $in: ['pending', 'group-stage', 'knockout'] }
+                'tournamentSettings.status': { $in: ['pending', 'group-stage', 'knockout'] },
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
             })
             .sort({ createdAt: -1 })
             .populate('tournamentPlayers.playerReference');
@@ -4367,7 +4398,11 @@ export class TournamentService {
     }> {
         try {
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            const tournament = await TournamentModel.findOne({ 
+                tournamentId: tournamentId,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true }
+            });
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -4397,7 +4432,11 @@ export class TournamentService {
     // --- SITEMAP SUPPORT ---
     static async getAllTournaments(): Promise<{ tournamentId: string; updatedAt?: Date }[]> {
         await connectMongo();
-        const tournaments = await TournamentModel.find({ isActive: { $ne: false } })
+        const tournaments = await TournamentModel.find({ 
+            isActive: { $ne: false },
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true }
+        })
             .select('tournamentId updatedAt')
             .lean();
         return tournaments.map((tournament: any) => ({
