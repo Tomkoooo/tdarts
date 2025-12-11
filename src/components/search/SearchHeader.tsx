@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconSearch, IconX, IconFilter } from "@tabler/icons-react"
+import { IconSearch, IconX } from "@tabler/icons-react"
 import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"

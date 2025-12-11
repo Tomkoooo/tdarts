@@ -1,6 +1,7 @@
+
 import * as React from "react"
 import Link from "next/link"
-import { IconMapPin, IconUsers, IconTrophy, IconCalendar, IconCheck, IconListCheck, IconAward } from "@tabler/icons-react"
+import { IconMapPin, IconUsers, IconTrophy, IconCalendar, IconCheck, IconListCheck } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/Button"
@@ -11,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { IconFilter } from "@tabler/icons-react"
 import PlayerCard from "@/components/player/PlayerCard"
 import Pagination from "@/components/common/Pagination"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 
 interface InitialViewProps {
   recentTournaments: any[]
@@ -29,7 +30,6 @@ interface InitialViewProps {
   onQuickAction?: (action: 'all-tournaments' | 'todays-tournaments' | 'active-tournaments' | 'finished-tournaments' | 'all-clubs') => void
   filters?: any
   onFilterChange?: (key: string, value: any) => void
-  onToggleFilters?: () => void
   showAllTournaments?: boolean
   onToggleShowAll?: (show: boolean) => void
   hasActiveQuery?: boolean
@@ -51,7 +51,6 @@ export function InitialView({
   onQuickAction,
   filters,
   onFilterChange,
-  onToggleFilters,
   showAllTournaments,
   onToggleShowAll,
   hasActiveQuery,

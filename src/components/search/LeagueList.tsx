@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { IconShieldCheck, IconTrophy } from "@tabler/icons-react"
+import { IconShieldCheck } from "@tabler/icons-react"
 import Link from "next/link"
 
 interface LeagueListProps {

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
-import { cn } from "@/lib/utils"
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchFiltersPanel } from "@/components/search/SearchFilters"
 import TournamentCard from "@/components/tournament/TournamentCard"

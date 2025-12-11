@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/card"
 import { IconMapPin, IconShieldCheck, IconUsers } from "@tabler/icons-react"

@@ -119,7 +119,7 @@ export default function SearchPage() {
                 if (debouncedQuery && data.counts) {
                     const currentCount = data.counts[activeTab as keyof TabCounts] || 0;
                     const resultEntries = Object.entries(data.counts) as [string, number][];
-                    const tabsWithResults = resultEntries.filter(([k, v]) => v > 0);
+                    const tabsWithResults = resultEntries.filter(([, v]) => v > 0);
 
                     // If current tab is empty and there is exactly one other tab with results
                     if (currentCount === 0 && tabsWithResults.length === 1) {
@@ -263,8 +263,9 @@ export default function SearchPage() {
                              >
                                 {isLoading ? (
                                     <>
-                                        <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Betöltés...
+                                        {[...Array(5)].map((_, i) => (
+                                            <div key={i} className="h-64 bg-card rounded-lg animate-pulse" />
+                                        ))}                      Betöltés...
                                     </>
                                 ) : (
                                     'További találatok betöltése'

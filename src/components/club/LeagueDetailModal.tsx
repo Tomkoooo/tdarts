@@ -1049,7 +1049,8 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
           <DialogHeader>
             <DialogTitle>Verseny eltávolítása</DialogTitle>
             <DialogDescription>
-              A művelet visszavonja a versenyhez tartozó automatikus pontszámításokat is.
+              Biztosan törölni szeretnéd a(z) &quot;{tournamentToDetach?.name}&quot; versenyt a ligából?
+              Ez a művelet visszavonhatatlanul törli a versenyhez tartozó összes pontot a ranglistáról.
             </DialogDescription>
           </DialogHeader>
 
@@ -1405,7 +1406,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                 <div>
                    <label className="text-sm font-medium text-foreground block">Liga státusza</label>
                    <span className="text-xs text-muted-foreground block mt-0.5">
-                     Ha kikapcsolod, a liga "Lezárt" státuszba kerül, és nem jelenik meg az alapértelmezett keresési listákban.
+                     Ha kikapcsolod, a liga &quot;Lezárt&quot; státuszba kerül, és nem jelenik meg az alapértelmezett keresési listákban.
                    </span>
                 </div>
                 <div className="flex items-center gap-2">

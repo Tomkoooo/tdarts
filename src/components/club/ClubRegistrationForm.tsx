@@ -55,13 +55,15 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
       // Remove city and address from the data sent to backend if backend doesn't expect them
       // Although sending them is usually harmless if backend ignores extra fields.
       // But for clarity let's prepare the payload.
-      const { city, address, ...rest } = data;
+      const { name, description, contact } = data;
       
       await toast.promise(
         axios.post<Club>('/api/clubs/create', {
           creatorId: userId,
           clubData: {
-            ...rest,
+            name,
+            description,
+            contact,
             location,
           },
         }, {

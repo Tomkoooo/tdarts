@@ -1,9 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconShieldCheck, IconRosette, IconMapPin, IconFilter, IconCalendar, IconListCheck } from "@tabler/icons-react"
-import { Badge } from "@/components/ui/Badge"
-import { Button } from "@/components/ui/Button"
+import { IconRosette, IconMapPin, IconCalendar, IconListCheck } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
 
 interface QuickFiltersProps {

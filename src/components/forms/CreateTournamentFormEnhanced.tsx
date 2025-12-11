@@ -5,8 +5,8 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { 
   IconTrophy, IconCalendar, IconUsers, IconTarget, 
-  IconLock, IconWorld, IconPlus, IconTrash, IconInfoCircle, IconMapPin
-} from "@tabler/icons-react"
+  IconLock, IconWorld, IconPlus, IconTrash, IconInfoCircle,
+} from '@tabler/icons-react';
 
 import {
   Form,
