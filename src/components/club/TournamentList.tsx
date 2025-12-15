@@ -20,6 +20,7 @@ interface TournamentListProps {
     clubId?: {
       name: string
     }
+    isSandbox?: boolean
   }>
   userRole: 'admin' | 'moderator' | 'member' | 'none'
   onDeleteTournament?: (tournamentId: string) => void

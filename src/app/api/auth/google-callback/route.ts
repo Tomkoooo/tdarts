@@ -37,7 +37,17 @@ export async function GET(request: NextRequest) {
     console.log('Google OAuth callback - Generated token for user:', user._id);
     
     // Cookie beállítása és átirányítás
-    const response = NextResponse.redirect(new URL('/', request.url));
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+    let redirectUrl = '/';
+    
+    if (callbackUrl) {
+      // Ha van callbackUrl, akkor oda irányítsunk és fűzzük hozzá a tokent
+      const hasQuery = callbackUrl.includes('?');
+      redirectUrl = `${callbackUrl}${hasQuery ? '&' : '?'}token=${token}`;
+      console.log('Redirecting to callbackUrl with token:', callbackUrl);
+    }
+    
+    const response = NextResponse.redirect(new URL(redirectUrl, request.url));
     
     // Set the token as an HTTP-only cookie (matching the login route settings)
     response.cookies.set('token', token, {

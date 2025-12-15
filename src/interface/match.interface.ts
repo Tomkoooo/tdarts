@@ -53,6 +53,8 @@ export interface Match {
   legsToWin?: number;
   startingPlayer?: 1 | 2;
   legs?: Leg[];
+  manualOverride?: boolean;
+  overrideTimestamp?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

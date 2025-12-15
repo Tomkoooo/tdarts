@@ -3,7 +3,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { IconUsers, IconLocation, IconBrowser, IconMail, IconPhone, IconPencil } from '@tabler/icons-react';
+import { IconUsers, IconLocation, IconBrowser, IconMail, IconPhone, IconPencil, IconMapPin } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -12,7 +12,8 @@ import { Club } from '@/interface/club.interface';
 const clubSchema = z.object({
   name: z.string().min(3, 'A klub neve minimum 3 karakter legyen'),
   description: z.string().min(10, 'A leírás minimum 10 karakter legyen'),
-  location: z.string().min(3, 'A helyszín minimum 3 karakter legyen'),
+  city: z.string().min(1, 'Város megadása kötelező'),
+  address: z.string().min(1, 'Cím megadása kötelező'),
   contact: z.object({
     email: z.string().email('Érvényes email címet adj meg').optional().or(z.literal('')),
     phone: z.string().optional(),
@@ -37,7 +38,8 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
     defaultValues: {
       name: '',
       description: '',
-      location: '',
+      city: '',
+      address: '',
       contact: {
         email: '',
         phone: '',
@@ -48,10 +50,22 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
 
   const onSubmit = async (data: ClubFormData) => {
     try {
+      // Construct location from city and address
+      const location = `${data.city}, ${data.address}`;
+      // Remove city and address from the data sent to backend if backend doesn't expect them
+      // Although sending them is usually harmless if backend ignores extra fields.
+      // But for clarity let's prepare the payload.
+      const { name, description, contact } = data;
+      
       await toast.promise(
         axios.post<Club>('/api/clubs/create', {
           creatorId: userId,
-          clubData: data,
+          clubData: {
+            name,
+            description,
+            contact,
+            location,
+          },
         }, {
           headers: { 'Content-Type': 'application/json' },
         }),
@@ -113,21 +127,40 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
           {errors.description && <p className="form-error">{errors.description.message}</p>}
         </div>
 
-        <div>
-          <label className="form-label">
-            <span className="form-label-text">Helyszín</span>
-          </label>
-          <div className="form-input-container">
-          <IconLocation className="form-input-icon"/>
-            <input
-              {...register('location')}
-              type="text"
-              placeholder="Helyszín"
-              className="form-input"
-              disabled={isSubmitting}
-            />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="form-label">
+              <span className="form-label-text">Város</span>
+            </label>
+            <div className="form-input-container">
+            <IconLocation className="form-input-icon"/>
+              <input
+                {...register('city')}
+                type="text"
+                placeholder="Város"
+                className="form-input"
+                disabled={isSubmitting}
+              />
+            </div>
+            {errors.city && <p className="form-error">{errors.city.message}</p>}
           </div>
-          {errors.location && <p className="form-error">{errors.location.message}</p>}
+
+          <div>
+            <label className="form-label">
+              <span className="form-label-text">Cím</span>
+            </label>
+            <div className="form-input-container">
+            <IconMapPin className="form-input-icon"/>
+              <input
+                {...register('address')}
+                type="text"
+                placeholder="Utca, házszám"
+                className="form-input"
+                disabled={isSubmitting}
+              />
+            </div>
+            {errors.address && <p className="form-error">{errors.address.message}</p>}
+          </div>
         </div>
 
         <div>

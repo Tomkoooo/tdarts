@@ -445,6 +445,12 @@ export class MatchService {
         match.player1.legsWon = matchData.player1LegsWon;
         match.player2.legsWon = matchData.player2LegsWon;
 
+        // Flag as manual override if explicitly allowed (manual entry) or if changing an already finished match
+        if (matchData.allowManualFinish || (match.status === 'finished' && oldWinnerId)) {
+            match.manualOverride = true;
+            match.overrideTimestamp = new Date();
+        }
+
         // Helper function to calculate darts for backward compatibility
         const calculateLegDarts = (throws: any[], playerNum: 1 | 2, leg: any): number => {
             if (!throws || throws.length === 0) return 0;

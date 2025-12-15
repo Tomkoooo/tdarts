@@ -15,7 +15,8 @@ const Login: React.FC = () => {
 
   // Get redirect parameter from URL
   useEffect(() => {
-    const redirect = searchParams.get('redirect');
+    // NextAuth uses 'callbackUrl', custom logic uses 'redirect'. Check both.
+    const redirect = searchParams.get('redirect') || searchParams.get('callbackUrl');
     if (redirect) {
       setRedirectPath(redirect);
     }

@@ -73,8 +73,8 @@ const NavbarNew = () => {
      { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
     { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
   ] : [
-    { name: "Versenyek", icon: IconTournament, href: "/search?type=tournaments" },
-    { name: "Klubok", icon: IconUsers, href: "/search?type=clubs" },
+    { name: "Versenyek", icon: IconTournament, href: "/search?tab=tournaments" },
+    { name: "Klubok", icon: IconUsers, href: "/search?tab=clubs" },
     { name: "Tábla", icon: IconDeviceDesktop, href: "/board" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },

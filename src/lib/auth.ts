@@ -114,7 +114,7 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       // Ha Google OAuth callback, akkor a saját route-unkra irányítsunk
       if (url.includes('/api/auth/callback/google')) {
-        return `${baseUrl}/api/auth/google-callback`;
+        return `${baseUrl}/api/auth/google-callback?callbackUrl=${encodeURIComponent(url)}`;
       }
       // Ha a főoldalra akarunk menni, akkor oda
       if (url === baseUrl || url === '/') {

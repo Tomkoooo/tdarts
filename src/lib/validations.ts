@@ -106,6 +106,9 @@ export const changePasswordSchema = z.object({
 export const createTournamentSchema = z.object({
   name: z.string().min(3, "A verseny nevének legalább 3 karakter hosszúnak kell lennie"),
   description: z.string().optional(),
+  location: z.string().optional(), // Generic location string
+  city: z.string().optional(), // For structured input
+  address: z.string().optional(), // For structured input
   startDate: z.date({
     required_error: "A kezdési dátum megadása kötelező",
   }),
@@ -136,8 +139,9 @@ export const updateTournamentSchema = createTournamentSchema.partial()
 export const createClubSchema = z.object({
   name: z.string().min(3, "A klub nevének legalább 3 karakter hosszúnak kell lennie"),
   description: z.string().optional(),
-  location: z.string().min(2, "A helyszín megadása kötelező"),
-  address: z.string().optional(),
+  location: z.string().min(2, "A helyszín megadása kötelező"), // Kept for backend compatibility, but constructed from city + address
+  city: z.string().min(2, "A város megadása kötelező"),
+  address: z.string().min(2, "A cím megadása kötelező"),
   phone: phoneValidator,
   email: emailValidator.optional().or(z.literal("")),
   website: urlValidator,

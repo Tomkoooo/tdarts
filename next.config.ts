@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ['mongoose'],
   images: {
-    domains: ['localhost', 'tdarts.sironic.hu'],
+    domains: [ 'tdarts.hu'],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: 'https://tdarts.sironic.hu, http://localhost:3000',
+            value: 'https://tdarts.hu, https://amator.tdarts.hu',
           },
           {
             key: 'Access-Control-Allow-Methods',

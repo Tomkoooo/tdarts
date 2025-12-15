@@ -5,8 +5,8 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { 
   IconTrophy, IconCalendar, IconUsers, IconTarget, 
-  IconLock, IconWorld, IconPlus, IconTrash, IconInfoCircle 
-} from "@tabler/icons-react"
+  IconLock, IconWorld, IconPlus, IconTrash, IconInfoCircle,
+} from '@tabler/icons-react';
 
 import {
   Form,
@@ -42,6 +42,8 @@ export function CreateTournamentFormEnhanced({
     defaultValues: {
       name: "",
       description: "",
+      city: "",
+      address: "",
       maxPlayers: 16,
       format: "single-elimination",
       gameType: "501",
@@ -62,6 +64,7 @@ export function CreateTournamentFormEnhanced({
         ...data,
         maxPlayers: typeof data.maxPlayers === 'string' && data.maxPlayers === '' ? 0 : data.maxPlayers,
         legsToWin: typeof data.legsToWin === 'string' && data.legsToWin === '' ? 0 : data.legsToWin,
+        location: `${data.city}, ${data.address}`, // Combine city and address
         boards: data.boards?.map((board: any) => ({
           ...board,
           number: typeof board.number === 'string' && board.number === '' ? 0 : board.number,

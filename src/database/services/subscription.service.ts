@@ -121,7 +121,8 @@ export class SubscriptionService {
           $gte: startOfMonth,
           $lte: endOfMonth
         },
-        isDeleted: false
+        isDeleted: false,
+        isSandbox: { $ne: true }
       });
 
       const canCreate = tournamentsInMonth < maxAllowed;
@@ -195,7 +196,8 @@ export class SubscriptionService {
 
       const query: any = {
         clubId: clubId,
-        isDeleted: false
+        isDeleted: false,
+        isSandbox: { $ne: true }
       };
 
       // Only check start date if it's being changed

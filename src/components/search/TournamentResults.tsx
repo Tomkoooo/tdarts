@@ -1,11 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { IconList, IconCalendar } from "@tabler/icons-react"
+import { IconList, IconCalendar, IconShieldCheck, IconRosette, IconFilter } from "@tabler/icons-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
+
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { SearchFiltersPanel } from "@/components/search/SearchFilters"
 import TournamentCard from "@/components/tournament/TournamentCard"
 
 interface Tournament {
@@ -19,16 +22,28 @@ interface Tournament {
     status: string
   }
   tournamentPlayers?: any[]
+  isVerified?: boolean
+  isOac?: boolean
+  city?: string
+  clubId?: {
+    _id: string
+    name: string
+  } | string
+  league?: string
 }
 
 interface TournamentResultsProps {
   tournaments: Tournament[]
   showViewToggle?: boolean
+  filters?: any
+  onFilterChange?: (filters: any) => void
 }
 
 export function TournamentResults({
   tournaments,
   showViewToggle = false,
+  filters,
+  onFilterChange
 }: TournamentResultsProps) {
   const [view, setView] = React.useState<'list' | 'calendar'>('list')
 
@@ -53,6 +68,14 @@ export function TournamentResults({
       
     return groups
   }, [tournaments])
+
+  const getDetailsLink = (tournament: Tournament) => {
+    if (tournament.isOac && typeof tournament.clubId === 'object' && tournament.league) {
+       // OAC tournaments link to the league view in the club page
+       return `/clubs/${tournament.clubId._id}?page=leagues&league=${tournament.league}`
+    }
+    return `/tournaments/${tournament.tournamentId}`
+  }
 
   const sortedDates = Object.keys(groupedTournaments).sort(
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
@@ -97,29 +120,58 @@ export function TournamentResults({
 
   return (
     <div className="space-y-6">
-      {/* View Toggle */}
-      {showViewToggle && (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant={view === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('list')}
-            className="gap-2"
-          >
-            <IconList className="w-4 h-4" />
-            Lista
-          </Button>
-          <Button
-            variant={view === 'calendar' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('calendar')}
-            className="gap-2"
-          >
-            <IconCalendar className="w-4 h-4" />
-            Naptár
-          </Button>
-        </div>
-      )}
+      {/* Filter and View Toggle */}
+      <div className="flex justify-between items-center gap-2 px-1">
+        {/* Filter Button - Always show if filters are available */}
+        {filters && onFilterChange && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <IconFilter className="w-4 h-4" />
+                Szűrők
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start" sideOffset={8}>
+              <div className="p-4">
+                <SearchFiltersPanel 
+                   filters={filters} 
+                   onFiltersChange={onFilterChange} 
+                   onClear={() => onFilterChange({ type: filters.type, page: 1, limit: filters.limit })}
+                   context="tournaments"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* View Toggle - Only show if enabled */}
+        {showViewToggle && (
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant={view === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('list')}
+              className="gap-2"
+            >
+              <IconList className="w-4 h-4" />
+              Lista
+            </Button>
+            <Button
+              variant={view === 'calendar' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('calendar')}
+              className="gap-2"
+            >
+              <IconCalendar className="w-4 h-4" />
+              Naptár
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Calendar View */}
       {view === 'calendar' ? (
@@ -160,7 +212,7 @@ export function TournamentResults({
                     {dayTournaments.map(tournament => (
                       <Link 
                         key={tournament._id} 
-                        href={`/tournaments/${tournament.tournamentId}`}
+                        href={getDetailsLink(tournament)}
                         className="block"
                       >
                         <div className={`p-2 rounded border-l-4 transition-all hover:shadow-md ${
@@ -170,6 +222,17 @@ export function TournamentResults({
                         }`}>
                           <div className="font-medium text-xs line-clamp-2 mb-1">
                             {tournament.tournamentSettings.name}
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                             {tournament.isVerified && (
+                                <IconShieldCheck className="w-3 h-3 text-blue-500" />
+                             )}
+                             {tournament.isOac && (
+                                <div className="flex items-center text-amber-500">
+                                   <IconRosette className="w-3 h-3" />
+                                   <span className="text-[10px] font-bold px-0.5">OAC</span>
+                                </div>
+                             )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             🕐 {new Date(tournament.tournamentSettings.startDate).toLocaleTimeString('hu-HU', { 

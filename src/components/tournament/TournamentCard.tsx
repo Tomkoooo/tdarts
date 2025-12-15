@@ -8,7 +8,9 @@ import {
   IconDotsVertical,
   IconChevronRight,
   IconEdit,
-  IconTrash
+  IconTrash,
+  IconShieldCheck,
+  IconRosette
 } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
@@ -39,8 +41,13 @@ interface TournamentCardProps {
     startDate?: string
     tournamentPlayers?: Array<any>
     clubId?: {
+      _id: string
       name: string
     } | string
+    league?: string
+    isVerified?: boolean
+    isOac?: boolean
+    city?: string
   }
   userRole?: 'admin' | 'moderator' | 'member' | 'none'
   showActions?: boolean
@@ -89,6 +96,14 @@ export default function TournamentCard({
     }
   }
 
+  const getDetailsLink = () => {
+    if (tournament.isOac && typeof tournament.clubId === 'object' && tournament.league) {
+       // OAC tournaments link to the league view in the club page
+       return `/clubs/${tournament.clubId._id}?page=leagues&league=${tournament.league}`
+    }
+    return `/tournaments/${tournamentId}`
+  }
+
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.preventDefault()
     e.stopPropagation()
@@ -96,7 +111,7 @@ export default function TournamentCard({
   }
 
   return (
-    <Link href={`/tournaments/${tournamentId}`} className="block h-full" onClick={handleCardClick}>
+    <Link href={getDetailsLink()} className="block h-full" onClick={handleCardClick}>
       <Card className="h-full border-0 bg-card/60 backdrop-blur-sm shadow-xl flex flex-col transition-all hover:shadow-2xl hover:bg-card/70 hover:scale-[1.02] cursor-pointer">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-start justify-between gap-3">
@@ -108,6 +123,17 @@ export default function TournamentCard({
                   ? tournament.clubId.name 
                   : 'Torna részletei'}
               </span>
+              {tournament.isVerified && (
+                <div className="flex items-center text-blue-500" title="Hitelesített">
+                  <IconShieldCheck className="w-4 h-4" />
+                </div>
+              )}
+              {tournament.isOac && (
+                 <div className="flex items-center text-amber-500" title="OAC Verseny">
+                   <IconRosette className="w-4 h-4" />
+                   <span className="text-xs font-bold px-1">OAC</span>
+                 </div>
+               )}
             </div>
             <h3 className="text-lg font-semibold text-foreground leading-tight line-clamp-2">
               {tournament.tournamentSettings?.name}
@@ -183,7 +209,9 @@ export default function TournamentCard({
         {tournament.tournamentSettings?.location && (
           <div className="flex items-center gap-2">
             <IconMapPin className="w-4 h-4 text-accent" />
-            <span className="truncate">{tournament.tournamentSettings.location}</span>
+            <span className="truncate">
+              {tournament.city || tournament.tournamentSettings.location}
+            </span>
           </div>
         )}
 

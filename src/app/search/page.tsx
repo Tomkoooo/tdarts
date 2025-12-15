@@ -1,526 +1,281 @@
-'use client'
+"use client"
 
-import * as React from 'react'
-import axios from 'axios'
-import { useSearchParams, useRouter } from 'next/navigation'
-import SearchHeader from '@/components/search/SearchHeader'
-import SearchFiltersPanel from '@/components/search/SearchFilters'
-import SearchTabs from '@/components/search/SearchTabs'
-import TournamentResults from '@/components/search/TournamentResults'
-import InitialView from '@/components/search/InitialView'
-import EmptyState from '@/components/search/EmptyState'
-import PlayerCard from '@/components/player/PlayerCard'
-import PlayerStatsModal from '@/components/player/PlayerStatsModal'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import Link from 'next/link'
-import { IconMoodSad, IconMapPin, IconUsers } from '@tabler/icons-react'
-import Pagination from "@/components/common/Pagination"
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useState, useEffect, useCallback } from "react"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { useDebounce } from "use-debounce"
+import { SearchTabs } from "@/components/search/SearchTabs"
+import { FilterBar } from "@/components/search/FilterBar"
+import { TournamentList } from "@/components/search/TournamentList"
+import { PlayerLeaderboard } from "@/components/search/PlayerLeaderboard"
+import { ClubList } from "@/components/search/ClubList"
+import { LeagueList } from "@/components/search/LeagueList"
+import { Input } from "@/components/ui/Input"
+import { IconSearch, IconLoader2 } from "@tabler/icons-react"
+import type { SearchFilters } from "@/database/services/search.service"
+import { Button } from "@/components/ui/Button"
 
-// Interfaces
-interface SearchFilters {
-  type: 'tournaments' | 'players' | 'clubs' | 'all'
-  status?: string
-  format?: string
-  dateFrom?: string
-  dateTo?: string
-  minPlayers?: number
-  maxPlayers?: number
-  location?: string
-  tournamentType?: 'amateur' | 'open'
-  page?: number
-  limit?: number
-}
-
-interface SearchResult {
-  players?: any[]
-  tournaments?: any[]
-  clubs?: any[]
-  totalResults: number
-  totalPages?: number
-  currentPage?: number
-}
-
-// Debounce utility
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
+// Define interfaces locally to avoid server-code import issues if any
+interface TabCounts {
+    tournaments: number;
+    players: number;
+    clubs: number;
+    leagues: number;
 }
 
 export default function SearchPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  
-  // Helper to get initial filters based on URL params
-  const getInitialFilters = (): SearchFilters => {
-    const type = (searchParams.get('type') as any) || 'all'
-    const filters: SearchFilters = {
-      type,
-      page: 1,
-      limit: 12
-    }
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
+
+    // --- State ---
+    const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "tournaments")
+    const [query, setQuery] = useState(searchParams.get("q") || "")
+    const [debouncedQuery] = useDebounce(query, 500)
     
-    // If navigating to tournaments from navbar (type=tournaments without other params), show all tournaments from today
-    if (type === 'tournaments' && !searchParams.get('q') && !searchParams.get('status') && !searchParams.get('dateFrom')) {
-      const today = new Date().toISOString().split('T')[0]
-      const endDate = new Date("2225-12-31").toISOString().split('T')[0]
-      filters.dateFrom = today
-      filters.dateTo = endDate
-    } else {
-      // Use URL params if they exist
-      if (searchParams.get('status')) filters.status = searchParams.get('status') || undefined
-      if (searchParams.get('dateFrom')) filters.dateFrom = searchParams.get('dateFrom') || undefined
-      if (searchParams.get('dateTo')) filters.dateTo = searchParams.get('dateTo') || undefined
-    }
+    // Sync query to URL
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (debouncedQuery) {
+            params.set('q', debouncedQuery)
+        } else {
+            params.delete('q')
+        }
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }, [debouncedQuery, pathname, router]) // searchParams in dep array causes loops if not careful? 
+    // Actually, we should probably rely on the updateUrl callback but it takes an object.
+    // Let's use the standard router.replace for this isolated sync.
     
-    return filters
-  }
+    // Filters State (derived from URL on mount/update)
+    const [filters, setFilters] = useState<SearchFilters>({
+        status: searchParams.get("status") || undefined,
+        type: (searchParams.get("type") as any) || undefined, // generic type vs tournamentType
+        tournamentType: (searchParams.get("tournamentType") as any) || undefined,
+        city: searchParams.get("city") || undefined,
+        isVerified: searchParams.get("verified") === "true" || undefined,
+        page: Number(searchParams.get("page")) || 1,
+        limit: 10
+    })
 
-  // State
-  const [query, setQuery] = React.useState(searchParams.get('q') || '')
-  const [filters, setFilters] = React.useState<SearchFilters>(getInitialFilters())
-  const [results, setResults] = React.useState<SearchResult>({ totalResults: 0 })
-  const [loading, setLoading] = React.useState(false)
-  const [suggestions, setSuggestions] = React.useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = React.useState(false)
-  const [showFilters, setShowFilters] = React.useState(false)
-  const [selectedPlayer, setSelectedPlayer] = React.useState<any>(null)
-  
-  // Pagination for initial view
-  const [playersPage, setPlayersPage] = React.useState(1)
-  const [clubsPage, setClubsPage] = React.useState(1)
-  const itemsPerPage = 6
-  
-  // Helper handlers
-  const handleQueryChange = (newQuery: string) => {
-    setQuery(newQuery)
-    setFilters(prev => ({ ...prev, page: 1 }))
-  }
+    // Data State
+    const [results, setResults] = useState<any[]>([])
+    const [counts, setCounts] = useState<TabCounts>({ tournaments: 0, players: 0, clubs: 0, leagues: 0 })
+    const [metadata, setMetadata] = useState<{ cities: {city: string, count: number}[] }>({ cities: [] })
+    const [isLoading, setIsLoading] = useState(false)
+    const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 })
 
-  const handleFiltersChange = (newFilters: SearchFilters) => {
-    setFilters({ ...newFilters, page: 1 })
-  }
-  
-  // Initial data
-  const [recentTournaments, setRecentTournaments] = React.useState<any[]>([])
-  const [topPlayers, setTopPlayers] = React.useState<any[]>([])
-  const [popularClubs, setPopularClubs] = React.useState<any[]>([])
-  const [activeLeagues, setActiveLeagues] = React.useState<any[]>([])
-  const [topPlayersTotal, setTopPlayersTotal] = React.useState(0)
-  const [isLoadingInitial, setIsLoadingInitial] = React.useState(true)
-
-  // Helper to check if tournament is in future
-  const isFutureTournament = (tournament: any) => {
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-    const startDate = new Date(tournament.tournamentSettings?.startDate)
-    startDate.setHours(0, 0, 0, 0)
-    return tournament.tournamentSettings?.status === 'pending' && startDate >= now
-  }
-
-  // Handle quick actions
-  const handleQuickAction = (action: 'all-tournaments' | 'todays-tournaments' | 'active-tournaments' | 'finished-tournaments' | 'all-clubs') => {
-    // Reset query when using quick actions
-    setQuery('')
-    
-    switch (action) {
-      case 'all-tournaments':
-        const todayAll = new Date().toISOString().split('T')[0]
-        const endDateAll = new Date("2225-12-31").toISOString().split('T')[0]
-        setFilters({ type: 'tournaments', dateFrom: todayAll, dateTo: endDateAll, page: 1 })
-        break
-      case 'todays-tournaments':
-        const todayTodays = new Date().toISOString().split('T')[0]
-        const endDateTodays = new Date("2225-12-31").toISOString().split('T')[0]
-        setFilters({ type: 'tournaments', dateFrom: todayTodays, dateTo: endDateTodays, page: 1 })
-        break
-      case 'active-tournaments':
-        setFilters({ type: 'tournaments', status: 'active', page: 1 })
-        break
-      case 'finished-tournaments':
-        setFilters({ type: 'tournaments', status: 'finished', page: 1 })
-        break
-      case 'all-clubs':
-        setFilters({ type: 'clubs', page: 1 })
-        break
-    }
-  }
-
-  // Load initial data (only for initial view when no filters/query)
-  React.useEffect(() => {
-    const loadInitialData = async () => {
-      // Only load initial view data if there are no active filters or query
-      const hasActiveFilters = 
-        filters.type !== 'all' ||
-        filters.status || 
-        filters.format || 
-        filters.dateFrom || 
-        filters.dateTo || 
-        filters.minPlayers || 
-        filters.maxPlayers || 
-        filters.location || 
-        filters.tournamentType ||
-        query.trim()
-
-      if (hasActiveFilters) {
-        setIsLoadingInitial(false)
-        return
-      }
-
-      setIsLoadingInitial(true)
-      try {
-        // No params - load all data for initial view
-          const [tournamentsRes, playersRes, clubsRes, leaguesRes] = await Promise.all([
-            axios.get('/api/search/recent-tournaments?limit=50'),
-            axios.get(`/api/search/top-players?page=${playersPage}&limit=${itemsPerPage}`),
-            axios.get('/api/search/popular-clubs?limit=50'),
-            axios.get('/api/search/leagues?limit=50')
-          ])
-
-          if (tournamentsRes.data.success) {
-            const futureTournaments = tournamentsRes.data.tournaments.filter(isFutureTournament)
-            setRecentTournaments(futureTournaments)
-          }
-          if (playersRes.data.success) {
-            setTopPlayers(playersRes.data.players)
-            setTopPlayersTotal(playersRes.data.total)
-          }
-          if (clubsRes.data.success) {
-            setPopularClubs(clubsRes.data.clubs)
-          }
-          if (leaguesRes.data.success) {
-            setActiveLeagues(leaguesRes.data.leagues)
-          }
-      } catch (error) {
-        console.error('Failed to load initial data:', error)
-      } finally {
-        setIsLoadingInitial(false)
-      }
-    }
-
-    loadInitialData()
-  }, [playersPage, filters.type, filters.status, filters.dateFrom, filters.dateTo, query])
-
-  // Debounced search
-  const debouncedSearch = React.useCallback(
-    debounce(async (searchQuery: string, searchFilters: SearchFilters) => {
-      // Check if we have any active filters
-      const hasActiveFilters = 
-        searchFilters.status || 
-        searchFilters.format || 
-        searchFilters.dateFrom || 
-        searchFilters.dateTo || 
-        searchFilters.minPlayers || 
-        searchFilters.maxPlayers || 
-        searchFilters.location || 
-        searchFilters.tournamentType ||
-        (searchFilters.type !== 'all') // Treat type change as filter too
-
-      // Only search if we have a query OR active filters
-      if (!searchQuery.trim() && !hasActiveFilters) {
-        setResults({ totalResults: 0 })
-        return
-      }
-
-      setLoading(true)
-      try {
-        const response = await axios.post('/api/search', {
-          query: searchQuery,
-          filters: searchFilters
+    // --- Sync URL with State ---
+    const updateUrl = useCallback((newParams: any) => {
+        const params = new URLSearchParams(searchParams.toString())
+        
+        Object.entries(newParams).forEach(([key, value]) => {
+            if (value === undefined || value === null || value === "") {
+                params.delete(key)
+            } else {
+                params.set(key, String(value))
+            }
         })
         
-        if (response.data.success) {
-          setResults(response.data.results)
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }, [searchParams, router, pathname])
+
+    // --- Data Fetching ---
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true)
+            try {
+                // Construct payload
+                const payload = {
+                    query: debouncedQuery,
+                    tab: activeTab,
+                    filters: {
+                        ...filters,
+                        page: filters.page
+                    }
+                }
+
+                const res = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+
+                if (!res.ok) throw new Error('Search failed')
+
+                const data = await res.json()
+                
+                if (filters.page && filters.page > 1) {
+                     setResults(prev => [...prev, ...data.results])
+                } else {
+                     setResults(data.results)
+                }
+
+                setCounts(data.counts || { tournaments: 0, players: 0, clubs: 0, leagues: 0 })
+                if (data.metadata) setMetadata(data.metadata)
+                if (data.pagination) setPagination(data.pagination)
+
+                // Smart Tab Logic: 
+                // If we have a query, and the current tab has 0 results, 
+                // but EXACTLY ONE other tab has results, switch to it.
+                if (debouncedQuery && data.counts) {
+                    const currentCount = data.counts[activeTab as keyof TabCounts] || 0;
+                    const resultEntries = Object.entries(data.counts) as [string, number][];
+                    const tabsWithResults = resultEntries.filter(([, v]) => v > 0);
+
+                    // If current tab is empty and there is exactly one other tab with results
+                    if (currentCount === 0 && tabsWithResults.length === 1) {
+                         const targetTab = tabsWithResults[0][0];
+                         if (targetTab !== activeTab) {
+                             setActiveTab(targetTab);
+                             // Update URL without full reload
+                             const params = new URLSearchParams(searchParams.toString());
+                             params.set('tab', targetTab);
+                             router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                         }
+                    }
+                }
+
+            } catch (error) {
+                console.error("Search error:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
-      } catch (error) {
-        console.error('Search error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }, 500),
-    []
-  )
 
-  // Debounced suggestions
-  const debouncedSuggestions = React.useCallback(
-    debounce(async (searchQuery: string) => {
-      if (!searchQuery.trim()) {
-        setSuggestions([])
-        return
-      }
+        fetchData()
+    }, [debouncedQuery, activeTab, filters, searchParams, pathname, router]) 
 
-      try {
-        const response = await axios.get(`/api/search/suggestions?q=${encodeURIComponent(searchQuery)}`)
-        if (response.data.success) {
-          setSuggestions(response.data.suggestions)
+    // --- Handlers ---
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab)
+        
+        // Reset filters if no query is present 
+        if (!query) {
+             setFilters(prev => ({
+                 ...prev,
+                 status: undefined,
+                 type: undefined,
+                 tournamentType: undefined,
+                 isVerified: undefined,
+                 page: 1
+             }))
+             // Clear URL params for filters
+             const params = new URLSearchParams(searchParams.toString());
+             params.set('tab', tab);
+             params.delete('status');
+             params.delete('type');
+             params.delete('tournamentType');
+             params.delete('verified');
+             
+             router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        } else {
+             updateUrl({ tab, page: 1 })
         }
-      } catch (error) {
-        console.error('Suggestions error:', error)
-      }
-    }, 300),
-    []
-  )
-
-  // Handle search
-  React.useEffect(() => {
-    // Check if we have any active filters
-    const hasActiveFilters = 
-      filters.status || 
-      filters.format || 
-      filters.dateFrom || 
-      filters.dateTo || 
-      filters.minPlayers || 
-      filters.maxPlayers || 
-      filters.location || 
-      filters.tournamentType ||
-      (filters.type !== 'all') // Treat type change as filter too
-
-    // Search if we have query OR active filters
-    if (query.trim() || hasActiveFilters) {
-      debouncedSearch(query, filters)
-    } else {
-      setResults({ totalResults: 0 })
-    }
-    
-    // Only show suggestions if there's a query
-    if (query.trim()) {
-      debouncedSuggestions(query)
-    } else {
-      setSuggestions([])
-    }
-  }, [query, filters])
-
-  // Update URL
-  React.useEffect(() => {
-    const params = new URLSearchParams()
-    if (query) params.set('q', query)
-    if (filters.type !== 'all') params.set('type', filters.type)
-    if (filters.status) params.set('status', filters.status)
-    if (filters.format) params.set('format', filters.format)
-    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom)
-    if (filters.dateTo) params.set('dateTo', filters.dateTo)
-    if (filters.minPlayers) params.set('minPlayers', filters.minPlayers.toString())
-    if (filters.maxPlayers) params.set('maxPlayers', filters.maxPlayers.toString())
-    if (filters.location) params.set('location', filters.location)
-    if (filters.tournamentType) params.set('tournamentType', filters.tournamentType)
-    
-    const newUrl = params.toString() ? `/search?${params.toString()}` : '/search'
-    router.replace(newUrl, { scroll: false })
-  }, [query, filters, router])
-
-  // Click outside handler for suggestions
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (!target.closest('.search-container')) {
-        setShowSuggestions(false)
-      }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  // Count active filters
-  const activeFiltersCount = React.useMemo(() => {
-    let count = 0
-    if (filters.type !== 'all') count++
-    if (filters.status) count++
-    if (filters.format) count++
-    if (filters.dateFrom) count++
-    if (filters.dateTo) count++
-    if (filters.minPlayers) count++
-    if (filters.maxPlayers) count++
-    if (filters.location) count++
-    if (filters.tournamentType) count++
-    return count
-  }, [filters])
-
-  // Clear filters
-  const clearFilters = () => {
-    setFilters({ type: 'all', page: 1 })
-  }
-
-  // Render search results
-  const renderSearchResults = () => {
-    if (loading) {
-      return (
-        <div className="flex justify-center items-center py-24">
-          <LoadingSpinner size="lg" />
-        </div>
-      )
+    const handleFilterChange = (key: string, value: any) => {
+        setFilters(prev => ({ ...prev, [key]: value, page: 1 })) 
+        const urlKey = key === 'isVerified' ? 'verified' : key
+        updateUrl({ [urlKey]: value, page: 1 })
     }
 
-    if (results.totalResults === 0) {
-      return (
-        <EmptyState
-          title="Nincs találat"
-          description={query ? 'Próbáld meg másik keresési kifejezéssel.' : 'Próbáld meg másik szűrőket használni.'}
-          icon={<IconMoodSad className="w-10 h-10 text-muted-foreground" />}
-        />
-      )
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value)
     }
 
+    const loadMore = () => {
+         const newPage = pagination.page + 1
+         setFilters(prev => ({ ...prev, page: newPage }))
+         updateUrl({ page: newPage })
+    }
+
+
+    // --- Render ---
     return (
-      <div className="space-y-8">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold mb-2">
-            {query ? `Eredmények: "${query}"` : 'Szűrt eredmények'}
-          </h2>
-          <p className="text-muted-foreground">{results.totalResults} találat</p>
-        </div>
+        <div className="min-h-screen bg-base-100/50">
+            {/* Header / Search Bar Area */}
+            <div className="sticky top-0 z-40 bg-base-100/80 backdrop-blur-md border-b border-base-200">
+                <div className="container mx-auto px-4 py-4 space-y-4">
+                    <div className="relative max-w-2xl mx-auto">
+                        <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                        <Input 
+                            value={query}
+                            onChange={handleSearch}
+                            placeholder="Keress versenyeket, játékosokat, klubokat..." 
+                            className="pl-12 h-12 text-lg rounded-2xl border-base-300 bg-base-100 shadow-sm focus:ring-2 ring-primary/20 transition-all"
+                        />
+                         {isLoading && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
+                            </div>
+                        )}
+                    </div>
 
-        {/* Tournaments */}
-        {results.tournaments && results.tournaments.length > 0 && (
-          <section>
-            <CardHeader className="px-0">
-              <CardTitle className="text-2xl">Tornák</CardTitle>
-            </CardHeader>
-            <TournamentResults 
-              tournaments={results.tournaments.map(t => t.tournament)} 
-              showViewToggle={filters.type === 'tournaments'}
-            />
-          </section>
-        )}
+                    <div className="max-w-4xl mx-auto">
+                        <SearchTabs 
+                            activeTab={activeTab} 
+                            onTabChange={handleTabChange} 
+                            counts={counts}
+                        />
+                    </div>
+                </div>
+            </div>
 
-        {/* Players */}
-        {results.players && results.players.length > 0 && (
-          <section>
-            <CardHeader className="px-0">
-              <CardTitle className="text-2xl">Játékosok</CardTitle>
-            </CardHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {results.players.map((player) => (
-                <PlayerCard 
-                  key={player._id} 
-                  player={player} 
-                  onClick={() => setSelectedPlayer(player)} 
-                  showGlobalRank 
+            {/* Main Content */}
+            <main className="container mx-auto px-4 py-8 max-w-7xl">
+                
+                {/* Filters */}
+                <FilterBar 
+                    activeTab={activeTab} 
+                    filters={filters} 
+                    onFilterChange={handleFilterChange}
+                    cities={metadata.cities || []}
+                    hasActiveQuery={!!debouncedQuery}
                 />
-              ))}
-            </div>
-          </section>
-        )}
 
-        {/* Clubs */}
-        {results.clubs && results.clubs.length > 0 && (
-          <section>
-            <CardHeader className="px-0">
-              <CardTitle className="text-2xl">Klubok</CardTitle>
-            </CardHeader>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {results.clubs.map((club) => (
-                <Link key={club._id} href={`/clubs/${club._id}`}>
-                  <Card className="h-full transition-all hover:-translate-y-1 hover:shadow-2xl bg-card/95 border-0">
-                    <CardContent className="flex h-full flex-col gap-4 p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <h4 className="text-lg font-semibold text-foreground">{club.name}</h4>
-                      </div>
-                      <div className="space-y-3 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <IconMapPin className="h-4 w-4 text-primary/70" />
-                          <span className="text-foreground">{club.location || 'Nincs megadva helyszín'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <IconUsers className="h-4 w-4 text-primary/70" />
-                          <span className="text-foreground">{club.memberCount} tag</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+                {/* Results View */}
+                <div className="min-h-[400px]">
+                    {/* Dynamic Header */}
+                    {activeTab === 'tournaments' && (
+                         <div className="mb-6">
+                              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent inline-block">
+                                   {debouncedQuery ? 'Keresési Találatok' : (filters.status === 'all' ? 'Összes Torna' : 'Közelgő Tornák')}
+                              </h2>
+                              {debouncedQuery && results.length === 0 && (
+                                   <p className="text-muted-foreground mt-1">Nincs találat a keresési feltételeknek megfelelően.</p>
+                              )}
+                         </div>
+                    )}
 
-        {/* Pagination */}
-        {filters.type !== 'all' && results.totalPages && results.totalPages > 1 && (
-          <Pagination
-            currentPage={filters.page || 1}
-            totalPages={results.totalPages}
-            onPageChange={(page) => {
-              setFilters(prev => ({ ...prev, page }))
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-          />
-        )}
-      </div>
+                    {activeTab === 'tournaments' && <TournamentList tournaments={results} />}
+                    {activeTab === 'players' && <PlayerLeaderboard players={results} />}
+                    {activeTab === 'clubs' && <ClubList clubs={results} />}
+                    {activeTab === 'leagues' && <LeagueList leagues={results} />}
+
+                    {/* Load More Trigger / Button */}
+                    {results.length > 0 && results.length < pagination.total && (
+                        <div className="flex justify-center mt-12">
+                             <Button 
+                                variant="outline" 
+                                size="lg" 
+                                onClick={loadMore}
+                                disabled={isLoading}
+                                className="min-w-[200px]"
+                             >
+                                {isLoading ? (
+                                    <>
+                                        {[...Array(5)].map((_, i) => (
+                                            <div key={i} className="h-64 bg-card rounded-lg animate-pulse" />
+                                        ))}                      Betöltés...
+                                    </>
+                                ) : (
+                                    'További találatok betöltése'
+                                )}
+                             </Button>
+                        </div>
+                    )}
+                </div>
+
+            </main>
+        </div>
     )
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        {/* Search Header */}
-        <div className="max-w-4xl mx-auto mb-8 space-y-6">
-          <SearchHeader
-            query={query}
-            onQueryChange={handleQueryChange}
-            suggestions={suggestions}
-            showSuggestions={showSuggestions}
-            onSuggestionClick={handleQueryChange}
-            onSuggestionsToggle={setShowSuggestions}
-            showFilters={showFilters}
-            onFiltersToggle={() => setShowFilters(!showFilters)}
-            activeFiltersCount={activeFiltersCount}
-          />
-
-          {/* Tabs (only shown when searching) */}
-          {query && (
-            <SearchTabs
-              activeTab={filters.type}
-              onTabChange={(type) => setFilters({ ...filters, type, page: 1 })}
-            />
-          )}
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="max-w-4xl mx-auto mb-8">
-            <SearchFiltersPanel
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              onClear={clearFilters}
-            />
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="max-w-6xl mx-auto">
-          {query || filters.type !== 'all' ? (
-            renderSearchResults()
-          ) : (
-            <InitialView
-              recentTournaments={recentTournaments}
-              topPlayers={topPlayers}
-              popularClubs={popularClubs}
-              activeLeagues={activeLeagues}
-              loading={isLoadingInitial}
-              playersPage={playersPage}
-              topPlayersTotal={topPlayersTotal}
-              clubsPage={clubsPage}
-              itemsPerPage={itemsPerPage}
-              onPlayersPageChange={setPlayersPage}
-              onClubsPageChange={setClubsPage}
-              onPlayerClick={setSelectedPlayer}
-              onQuickAction={handleQuickAction}
-            />
-          )}
-        </div>
-
-        {/* Player Modal */}
-        <PlayerStatsModal 
-          player={selectedPlayer} 
-          onClose={() => setSelectedPlayer(null)} 
-        />
-      </div>
-    </div>
-  )
 }
