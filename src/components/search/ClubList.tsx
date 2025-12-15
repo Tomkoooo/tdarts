@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/Card"
 import { IconMapPin, IconShieldCheck, IconUsers } from "@tabler/icons-react"
 import Link from "next/link"
 

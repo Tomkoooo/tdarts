@@ -40,18 +40,22 @@ export async function POST(
     }
 
     // Check subscription limits
+    // Check subscription limits (Skip for sandbox tournaments)
     const tournamentStartDate = payload.startDate ? new Date(payload.startDate) : new Date();
-    const subscriptionCheck = await SubscriptionService.canCreateTournament(clubId, tournamentStartDate);
     
-    if (!subscriptionCheck.canCreate) {
-        console.log('Subscription limit exceeded:', subscriptionCheck.errorMessage);
-        return NextResponse.json({ 
-            error: subscriptionCheck.errorMessage,
-            subscriptionError: true,
-            currentCount: subscriptionCheck.currentCount,
-            maxAllowed: subscriptionCheck.maxAllowed,
-            planName: subscriptionCheck.planName
-        }, { status: 403 });
+    if (!payload.isSandbox) {
+        const subscriptionCheck = await SubscriptionService.canCreateTournament(clubId, tournamentStartDate);
+        
+        if (!subscriptionCheck.canCreate) {
+            console.log('Subscription limit exceeded:', subscriptionCheck.errorMessage);
+            return NextResponse.json({ 
+                error: subscriptionCheck.errorMessage,
+                subscriptionError: true,
+                currentCount: subscriptionCheck.currentCount,
+                maxAllowed: subscriptionCheck.maxAllowed,
+                planName: subscriptionCheck.planName
+            }, { status: 403 });
+        }
     }
 
     // Check Verified League constraints
@@ -121,6 +125,7 @@ export async function POST(
         isDeleted: false,
         isArchived: false,
         isCancelled: false,
+        isSandbox: payload.isSandbox || false,
     } as Partial<Omit<TournamentDocument, keyof Document>>;
 
     

@@ -130,37 +130,52 @@
               "Típus (amatőr vagy nyílt)",
               "Nevezési határidő"
             ],
-            "subsections": [
-              {
-                "title": "Táblák hozzáadása",
-                "content": [
-                  "Kattints a &ldquo;Tábla hozzáadása&rdquo; gombra.",
-                  "Add meg a tábla egyedi nevét (pl. &ldquo;Főtábla&rdquo;, &ldquo;VIP Tábla&rdquo;).",
-                  "A táblák automatikusan sorszámot kapnak (1, 2, 3...).",
-                  "Több táblát is hozzáadhatsz dinamikusan.",
-                  "A táblák később is szerkeszthetők a verseny beállításainál."
-                ],
-                "note": {
-                  "type": "info",
-                  "content": "Minden versenyhez külön táblák rendelhetők, így rugalmasan kezelheted a különböző méretű versenyeket. A táblák száma határozza meg, hogy hány meccs játszható párhuzamosan."
-                }
-              },
-              {
-                "title": "Lebonyolítási mód",
-                "content": [
-                  "Határozd meg a lebonyolítási módot:",
-                  "• Csak csoportkör",
-                  "• Csak egyenes kiesés",
-                  "• Csoportkör és egyenes kiesés kombinációja"
-                ]
-              },
-              {
-                "title": "Végső beállítások",
-                "content": [
-                  "Add meg a kezdő pontszámot, a maximális létszámot és a torna jelszavát, amit a játékosok az írói felület eléréséhez használnak.",
-                  "Kattints a &ldquo;Torna létrehozása&rdquo; gombra, és a rendszer átirányít az új torna oldalára."
-                ]
-              }
+            "note": {
+              "type": "info",
+              "content": "Minden versenyhez külön táblák rendelhetők, így rugalmasan kezelheted a különböző méretű versenyeket. A táblák száma határozza meg, hogy hány meccs játszható párhuzamosan."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "OAC Verseny Indítása",
+            "content": [
+              "OAC ligába verseny indítására a jóváhagyás után van lehetőség.",
+              "A klub verseny fülnél megjelen egy új opció arra, hogy OAC versenyt hozz létre.",
+              "Itt hasonló módon kell minden adatot megadni, mint egy sima verseny létrehozásánál, annyi különbséggel, hogy az OAC ligához egyből hozzá van rendelve és nem lehet ezt megváltoztatni.",
+              "Ez azért fontos, mert máshogyan a ligába nem lehet felvenni versenyt, és csak az itt hozzáadott versenyek lesznek érvényesek."
+            ],
+            "note": {
+              "type": "important",
+              "content": "OAC versenyt csak a jóváhagyás után, a dedikált OAC opcióval lehet létrehozni."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Lebonyolítási mód",
+            "content": [
+              "Határozd meg a lebonyolítási módot:",
+              "• Csak csoportkör",
+              "• Csak egyenes kiesés",
+              "• Csoportkör és egyenes kiesés kombinációja"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Sandbox Mód (Teszt verseny)",
+            "content": [
+              "A &ldquo;Beállítások&rdquo; fülön bekapcsolhatod a &ldquo;Sandbox Mód&rdquo; opciót.",
+              "A sandbox versenyek NEM jelennek meg a publikus keresőben.",
+              "A sandbox versenyek eredményei NEM számítanak bele a statisztikákba és az MMR-be.",
+              "Ideális a rendszer kipróbálására, tesztelésre vagy baráti játékhoz, amit nem szeretnétek nyilvánossá tenni.",
+              "A klub admin felületén külön &ldquo;Sandbox&rdquo; jelöléssel és szűrővel érhetők el ezek a versenyek."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Végső beállítások",
+            "content": [
+              "Add meg a kezdő pontszámot, a maximális létszámot és a torna jelszavát, amit a játékosok az írói felület eléréséhez használnak.",
+              "Kattints a &ldquo;Torna létrehozása&rdquo; gombra, és a rendszer átirányít az új torna oldalára."
             ]
           },
           {

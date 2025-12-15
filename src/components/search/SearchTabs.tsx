@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/Badge"
 
 interface SearchTabsProps {
     activeTab: string;

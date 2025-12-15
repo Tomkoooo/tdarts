@@ -10,7 +10,7 @@ export async function POST(request: Request) {
         const counts = await SearchService.getTabCounts(query || '', filters);
 
         // 2. Get specific tab results based on 'tab' param
-        let resultsData = { results: [], total: 0 };
+        let resultsData: { results: any[]; total: number } = { results: [], total: 0 };
         const activeTab = tab || 'tournaments';
 
         switch (activeTab) {

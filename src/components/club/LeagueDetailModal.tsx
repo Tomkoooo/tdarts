@@ -245,9 +245,9 @@ export default function LeagueDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden px-0 py-0 flex flex-col">
-        <div className="flex h-full flex-col overflow-hidden">
-          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto px-0 py-0 flex flex-col">
+        <div className="flex flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <DialogTitle className="text-2xl font-semibold text-foreground flex items-center gap-2">
@@ -273,9 +273,9 @@ export default function LeagueDetailModal({
             <StatsOverview stats={stats} isLoading={loading} />
           </div>
 
-          <div className="mt-4 flex flex-1 flex-col overflow-hidden px-6 pb-6">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="flex h-full flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+          <div className="mt-4 px-6 pb-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="leaderboard">Ranglista</TabsTrigger>
                 <TabsTrigger value="tournaments">Versenyek</TabsTrigger>
                 <TabsTrigger value="settings" disabled={!canManage}>
@@ -283,7 +283,7 @@ export default function LeagueDetailModal({
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="leaderboard" className="mt-4 flex-1 overflow-y-auto min-h-0">
+              <TabsContent value="leaderboard" className="mt-4">
                 <LeaderboardTab
                   league={league}
                   leaderboard={leagueStats?.leaderboard || []}
@@ -295,7 +295,7 @@ export default function LeagueDetailModal({
                 />
               </TabsContent>
 
-              <TabsContent value="tournaments" className="mt-4 flex-1 overflow-y-auto min-h-0">
+              <TabsContent value="tournaments" className="mt-4">
                 <TournamentsTab
                   tournaments={leagueStats?.league?.attachedTournaments || []}
                   canManage={canManage}
@@ -306,7 +306,7 @@ export default function LeagueDetailModal({
                 />
               </TabsContent>
 
-              <TabsContent value="settings" className="mt-4 flex-1 overflow-y-auto min-h-0">
+              <TabsContent value="settings" className="mt-4">
                 <SettingsTab
                   league={league}
                   clubId={clubId}

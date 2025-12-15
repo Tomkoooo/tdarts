@@ -38,16 +38,21 @@ interface CreateTournamentModalProps {
   onTournamentCreated: () => void
   preSelectedLeagueId?: string  // Optional pre-selected league
   lockLeagueSelection?: boolean  // If true, league selection is locked
+  defaultIsSandbox?: boolean
 }
 
 type Step = "details" | "boards" | "settings"
+
+interface FormSettings extends TournamentSettings {
+  isSandbox?: boolean
+}
 
 interface BoardInput {
   boardNumber: number
   name: string
 }
 
-const defaultSettings: TournamentSettings = {
+const defaultSettings: FormSettings = {
   status: "pending",
   boardCount: 1,
   location: "",
@@ -56,11 +61,12 @@ const defaultSettings: TournamentSettings = {
   startDate: new Date(),
   entryFee: 0,
   maxPlayers: 16,
-  format: "group_knockout",  // Changed default to group_knockout
+  format: "group_knockout",
   startingScore: 501,
   tournamentPassword: "",
   type: "amateur",
   registrationDeadline: new Date(),
+  isSandbox: false,
 }
 
 const steps = [
@@ -85,11 +91,12 @@ export default function CreateTournamentModal({
   onTournamentCreated,
   preSelectedLeagueId,
   lockLeagueSelection = false,
+  defaultIsSandbox = false,
 }: CreateTournamentModalProps) {
   const router = useRouter()
 
   const [currentStep, setCurrentStep] = useState<Step>("details")
-  const [settings, setSettings] = useState<TournamentSettings>(defaultSettings)
+  const [settings, setSettings] = useState<FormSettings>(defaultSettings)
   const [boards, setBoards] = useState<BoardInput[]>(initializeBoards(boardCount))
   const [availableLeagues, setAvailableLeagues] = useState<any[]>([])
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>("")
@@ -109,13 +116,14 @@ export default function CreateTournamentModal({
       setError("")
       setSubscriptionError(null)
       setBoards(initializeBoards(boardCount))
-      setSettings(() => ({ ...defaultSettings, boardCount: initializeBoards(boardCount).length }))
+      setBoards(initializeBoards(boardCount))
+      setSettings(() => ({ ...defaultSettings, boardCount: initializeBoards(boardCount).length, isSandbox: defaultIsSandbox }))
       // Set pre-selected league if provided
       if (preSelectedLeagueId) {
         setSelectedLeagueId(preSelectedLeagueId)
       }
     }
-  }, [isOpen, clubId, boardCount, preSelectedLeagueId])
+  }, [isOpen, clubId, boardCount, preSelectedLeagueId, defaultIsSandbox])
 
   const fetchAvailableLeagues = async () => {
     try {
@@ -131,7 +139,7 @@ export default function CreateTournamentModal({
     }
   }
 
-  const handleSettingsChange = (field: keyof TournamentSettings, value: any) => {
+  const handleSettingsChange = (field: keyof FormSettings, value: any) => {
     setSettings((prev) => ({ ...prev, [field]: value }))
     setError("")
   }
@@ -208,6 +216,7 @@ export default function CreateTournamentModal({
         type: settings.type,
         registrationDeadline: settings.registrationDeadline,
         leagueId: selectedLeagueId || undefined,
+        isSandbox: settings.isSandbox || false,
       }
 
       const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
@@ -538,6 +547,23 @@ export default function CreateTournamentModal({
                       </span>
                     </AlertDescription>
                   </Alert>
+
+                  {/* Sandbox Mode Toggle */}
+                  <div className="flex items-center space-x-2 rounded-lg border border-warning/50 bg-warning/10 p-4">
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor="sandbox-mode" className="font-medium text-warning">Sandbox Mód (Teszt)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        A sandbox versenyek nem jelennek meg a publikus keresőben, és nem számítanak bele a statisztikákba. Ideális rendszer teszteléshez.
+                      </p>
+                    </div>
+                    <input
+                      id="sandbox-mode"
+                      type="checkbox"
+                      checked={settings.isSandbox || false}
+                      onChange={(e) => handleSettingsChange("isSandbox", e.target.checked)}
+                      className="h-5 w-5 rounded border-warning text-warning focus:ring-warning"
+                    />
+                  </div>
                 </div>
               )}
             </CardContent>

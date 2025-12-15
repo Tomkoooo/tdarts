@@ -588,7 +588,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         </Alert>
       )}
 
-      {allowPlayerRegistration && localUserPlayerStatus === 'none' && !isOnWaitingList && (
+      {allowPlayerRegistration && localUserPlayerStatus === 'none' && !isOnWaitingList && !tournament?.isSandbox && (
         <div className="flex flex-wrap items-center gap-3">
           {user ? (
             <Button onClick={handleSelfSignUp} disabled={!hasFreeSpots}>

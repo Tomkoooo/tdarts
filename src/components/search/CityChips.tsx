@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/Badge"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
@@ -41,7 +41,7 @@ export function CityChips({ cities, selectedCity, onSelectCity }: CityChipsProps
                     </Badge>
                 ))}
             </div>
-            <ScrollBar orientation="horizontal" className="h-2.5" />
+            <ScrollBar className="h-2.5" />
         </ScrollArea>
     )
 }

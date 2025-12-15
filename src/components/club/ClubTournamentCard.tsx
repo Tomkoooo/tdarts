@@ -34,6 +34,7 @@ interface ClubTournamentCardProps {
     clubId?: {
       name: string
     } | string
+    isSandbox?: boolean
   }
   userRole?: 'admin' | 'moderator' | 'member' | 'none'
   onDelete?: () => void
@@ -105,6 +106,11 @@ export default function ClubTournamentCard({
               >
                 {statusLabels[status]}
               </Badge>
+              {tournament.isSandbox && (
+                <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10">
+                  SANDBOX
+                </Badge>
+              )}
             </div>
             <div className="w-6">
 

@@ -53,6 +53,8 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   status: { type: String, enum: ['pending', 'ongoing', 'finished'], default: 'pending' },
   winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
   legs: [legSchema],
+  manualOverride: { type: Boolean, default: false },
+  overrideTimestamp: { type: Date },
 }, { timestamps: true });
 
 // Automatikus winnerId számítás mentés előtt

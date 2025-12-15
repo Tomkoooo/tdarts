@@ -80,6 +80,24 @@ export class TournamentService {
         // Ensure no code field is present (to avoid duplicate key errors)
         const tournamentData = { ...tournament };
         delete (tournamentData as any).code;
+
+        // Sandbox check: Limit to 5 per month per club
+        if (tournamentData.clubId && tournamentData.isSandbox) {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+
+            const sandboxCount = await TournamentModel.countDocuments({
+                clubId: tournamentData.clubId,
+                isSandbox: true,
+                createdAt: { $gte: startOfMonth }
+            });
+
+            if (sandboxCount >= 5) {
+                // Check if user is trying to create another one
+                 throw new BadRequestError('Maximum 5 sandbox tournaments per month allowed.', 'tournament');
+            }
+        }
         
         console.log('=== CREATE TOURNAMENT SERVICE DEBUG ===');
         console.log('Tournament data boards:', JSON.stringify(tournamentData.boards, null, 2));
@@ -3925,158 +3943,162 @@ export class TournamentService {
                 tournamentAverageScore = totalAvg / playerStats.size;
             }
 
-            // Step 9: Update Player collection statistics with MMR
-            for (const [playerId, stats] of playerStats) {
-                const player = await PlayerModel.findById(playerId);
-                if (player) {
-                    // Get the tournament standing from the tournament players array
-                    const tournamentPlayer = tournament.tournamentPlayers.find((tp: any) => {
-                        const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
-                        return tpPlayerId === playerId;
-                    });
-                    const placement = tournamentPlayer?.tournamentStanding || totalPlayers;
+            // Step 9: Update Player collection statistics with MMR (ONLY for non-sandbox)
+            if (!tournament.isSandbox) {
+                for (const [playerId, stats] of playerStats) {
+                    const player = await PlayerModel.findById(playerId);
+                    if (player) {
+                        // Get the tournament standing from the tournament players array
+                        const tournamentPlayer = tournament.tournamentPlayers.find((tp: any) => {
+                            const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
+                            return tpPlayerId === playerId;
+                        });
+                        const placement = tournamentPlayer?.tournamentStanding || totalPlayers;
 
-                    // Update tournament history
-                    const tournamentHistory = {
-                        tournamentId: tournament.tournamentId,
-                        tournamentName: tournament.tournamentSettings?.name || 'Unknown Tournament',
-                        position: placement,
-                        eliminatedIn: this.getEliminationText(placement, format),
-                        stats: {
-                            matchesWon: stats.matchesWon,
-                            matchesLost: stats.matchesPlayed - stats.matchesWon,
-                            legsWon: stats.legsWon,
-                            legsLost: stats.legsPlayed - stats.legsWon,
-                            oneEightiesCount: stats.oneEighties,
-                            highestCheckout: stats.highestCheckout,
-                            average: stats.average, // Add tournament average to history
-                        },
-                        date: new Date()
-                    };
-
-                    if (!player.tournamentHistory) {
-                        player.tournamentHistory = [];
-                    }
-                    player.tournamentHistory.push(tournamentHistory);
-
-                    // Update overall statistics
-                    if (!player.stats) {
-                        player.stats = {
-                            tournamentsPlayed: 0,
-                            matchesPlayed: 0,
-                            legsWon: 0,
-                            legsLost: 0,
-                            oneEightiesCount: 0,
-                            highestCheckout: 0,
-                            avg: 0,
-                            averagePosition: 0,
-                            bestPosition: 999,
-                            totalMatchesWon: 0,
-                            totalMatchesLost: 0,
-                            totalLegsWon: 0,
-                            totalLegsLost: 0,
-                            total180s: 0
+                        // Update tournament history
+                        const tournamentHistory = {
+                            tournamentId: tournament.tournamentId,
+                            tournamentName: tournament.tournamentSettings?.name || 'Unknown Tournament',
+                            position: placement,
+                            eliminatedIn: this.getEliminationText(placement, format),
+                            stats: {
+                                matchesWon: stats.matchesWon,
+                                matchesLost: stats.matchesPlayed - stats.matchesWon,
+                                legsWon: stats.legsWon,
+                                legsLost: stats.legsPlayed - stats.legsWon,
+                                oneEightiesCount: stats.oneEighties,
+                                highestCheckout: stats.highestCheckout,
+                                average: stats.average, // Add tournament average to history
+                            },
+                            date: new Date()
                         };
+
+                        if (!player.tournamentHistory) {
+                            player.tournamentHistory = [];
+                        }
+                        player.tournamentHistory.push(tournamentHistory);
+
+                        // Update overall statistics
+                        if (!player.stats) {
+                            player.stats = {
+                                tournamentsPlayed: 0,
+                                matchesPlayed: 0,
+                                legsWon: 0,
+                                legsLost: 0,
+                                oneEightiesCount: 0,
+                                highestCheckout: 0,
+                                avg: 0,
+                                averagePosition: 0,
+                                bestPosition: 999,
+                                totalMatchesWon: 0,
+                                totalMatchesLost: 0,
+                                totalLegsWon: 0,
+                                totalLegsLost: 0,
+                                total180s: 0
+                            };
+                        }
+
+                        // Handle legacy data: ensure tournamentsPlayed is a number
+                        if (Array.isArray(player.stats.tournamentsPlayed)) {
+                            player.stats.tournamentsPlayed = player.stats.tournamentsPlayed.length;
+                        } else if (typeof player.stats.tournamentsPlayed !== 'number') {
+                            player.stats.tournamentsPlayed = 0;
+                        }
+
+                        // Update tournament count
+                        player.stats.tournamentsPlayed += 1;
+
+                        // Ensure all stats fields are numbers
+                        if (typeof player.stats.bestPosition !== 'number') player.stats.bestPosition = 999;
+                        if (typeof player.stats.totalMatchesWon !== 'number') player.stats.totalMatchesWon = 0;
+                        if (typeof player.stats.totalMatchesLost !== 'number') player.stats.totalMatchesLost = 0;
+                        if (typeof player.stats.totalLegsWon !== 'number') player.stats.totalLegsWon = 0;
+                        if (typeof player.stats.totalLegsLost !== 'number') player.stats.totalLegsLost = 0;
+                        if (typeof player.stats.total180s !== 'number') player.stats.total180s = 0;
+                        if (typeof player.stats.highestCheckout !== 'number') player.stats.highestCheckout = 0;
+                        if (typeof player.stats.averagePosition !== 'number') player.stats.averagePosition = 0;
+                        if (typeof player.stats.matchesPlayed !== 'number') player.stats.matchesPlayed = 0;
+                        if (typeof player.stats.legsWon !== 'number') player.stats.legsWon = 0;
+                        if (typeof player.stats.legsLost !== 'number') player.stats.legsLost = 0;
+                        if (typeof player.stats.oneEightiesCount !== 'number') player.stats.oneEightiesCount = 0;
+                        if (typeof player.stats.avg !== 'number') player.stats.avg = 0;
+                        if (typeof player.stats.mmr !== 'number') player.stats.mmr = MMRService.getInitialMMR();
+
+                        // Update best position
+                        if (placement < player.stats.bestPosition || player.stats.bestPosition === 0 || player.stats.bestPosition === 999) {
+                            player.stats.bestPosition = placement;
+                        }
+
+                        // Update match statistics
+                        player.stats.totalMatchesWon += stats.matchesWon;
+                        player.stats.totalMatchesLost += (stats.matchesPlayed - stats.matchesWon);
+                        player.stats.totalLegsWon += stats.legsWon;
+                        player.stats.totalLegsLost += (stats.legsPlayed - stats.legsWon);
+                        player.stats.total180s += stats.oneEighties;
+
+                        // Update highest checkout
+                        if (stats.highestCheckout > player.stats.highestCheckout) {
+                            player.stats.highestCheckout = stats.highestCheckout;
+                        }
+
+                        // Update one-eighties count
+                        player.stats.oneEightiesCount += stats.oneEighties;
+
+                        // Update matches and legs played
+                        player.stats.matchesPlayed += stats.matchesPlayed;
+                        player.stats.legsWon += stats.legsWon;
+                        player.stats.legsLost += (stats.legsPlayed - stats.legsWon);
+
+                        // Update average - use tournament history to recalculate all-time average
+                        // This ensures accuracy even if tournaments are reopened and re-finished
+                        if (player.tournamentHistory && player.tournamentHistory.length > 0) {
+                            // Calculate all-time average from tournament history
+                            const totalAvg = player.tournamentHistory.reduce((sum: number, hist: any) => {
+                                // Get average from tournament stats, fallback to 0
+                                return sum + (hist.stats?.average || 0);
+                            }, 0);
+                            player.stats.avg = totalAvg / player.tournamentHistory.length;
+                        } else {
+                            player.stats.avg = stats.average;
+                        }
+
+                        console.log(`Player ${player.name} tournament average: ${stats.average.toFixed(2)}, all-time average: ${player.stats.avg.toFixed(2)}`);
+
+                        // Calculate average position from tournament history
+                        if (player.tournamentHistory && player.tournamentHistory.length > 0) {
+                            const totalPosition = player.tournamentHistory.reduce((sum: number, hist: any) => sum + hist.position, 0);
+                            player.stats.averagePosition = totalPosition / player.tournamentHistory.length;
+                        } else {
+                            player.stats.averagePosition = placement;
+                        }
+
+                        // Calculate MMR change
+                        const matchWinRate = stats.matchesPlayed > 0 ? stats.matchesWon / stats.matchesPlayed : 0;
+                        const legWinRate = stats.legsPlayed > 0 ? stats.legsWon / stats.legsPlayed : 0;
+                        
+                        // Get current MMR or initialize to base value if not set
+                        const currentMMR = player.stats.mmr || MMRService.getInitialMMR();
+                        
+                        const newMMR = MMRService.calculateMMRChange(
+                            currentMMR,
+                            placement,
+                            totalPlayers,
+                            matchWinRate,
+                            legWinRate,
+                            stats.average,
+                            tournamentAverageScore
+                        );
+                        
+                        const mmrChange = Math.ceil(newMMR) - currentMMR;
+                        player.stats.mmr = Math.ceil(newMMR); // Felfelé kerekítés tizedesjegyek nélkül
+                        
+                        console.log(`Player ${player.name} MMR: ${currentMMR} → ${Math.ceil(newMMR)} (${mmrChange >= 0 ? '+' : ''}${mmrChange})`);
+
+                        await player.save();
                     }
-
-                    // Handle legacy data: ensure tournamentsPlayed is a number
-                    if (Array.isArray(player.stats.tournamentsPlayed)) {
-                        player.stats.tournamentsPlayed = player.stats.tournamentsPlayed.length;
-                    } else if (typeof player.stats.tournamentsPlayed !== 'number') {
-                        player.stats.tournamentsPlayed = 0;
-                    }
-
-                    // Update tournament count
-                    player.stats.tournamentsPlayed += 1;
-
-                    // Ensure all stats fields are numbers
-                    if (typeof player.stats.bestPosition !== 'number') player.stats.bestPosition = 999;
-                    if (typeof player.stats.totalMatchesWon !== 'number') player.stats.totalMatchesWon = 0;
-                    if (typeof player.stats.totalMatchesLost !== 'number') player.stats.totalMatchesLost = 0;
-                    if (typeof player.stats.totalLegsWon !== 'number') player.stats.totalLegsWon = 0;
-                    if (typeof player.stats.totalLegsLost !== 'number') player.stats.totalLegsLost = 0;
-                    if (typeof player.stats.total180s !== 'number') player.stats.total180s = 0;
-                    if (typeof player.stats.highestCheckout !== 'number') player.stats.highestCheckout = 0;
-                    if (typeof player.stats.averagePosition !== 'number') player.stats.averagePosition = 0;
-                    if (typeof player.stats.matchesPlayed !== 'number') player.stats.matchesPlayed = 0;
-                    if (typeof player.stats.legsWon !== 'number') player.stats.legsWon = 0;
-                    if (typeof player.stats.legsLost !== 'number') player.stats.legsLost = 0;
-                    if (typeof player.stats.oneEightiesCount !== 'number') player.stats.oneEightiesCount = 0;
-                    if (typeof player.stats.avg !== 'number') player.stats.avg = 0;
-                    if (typeof player.stats.mmr !== 'number') player.stats.mmr = MMRService.getInitialMMR();
-
-                    // Update best position
-                    if (placement < player.stats.bestPosition || player.stats.bestPosition === 0 || player.stats.bestPosition === 999) {
-                        player.stats.bestPosition = placement;
-                    }
-
-                    // Update match statistics
-                    player.stats.totalMatchesWon += stats.matchesWon;
-                    player.stats.totalMatchesLost += (stats.matchesPlayed - stats.matchesWon);
-                    player.stats.totalLegsWon += stats.legsWon;
-                    player.stats.totalLegsLost += (stats.legsPlayed - stats.legsWon);
-                    player.stats.total180s += stats.oneEighties;
-
-                    // Update highest checkout
-                    if (stats.highestCheckout > player.stats.highestCheckout) {
-                        player.stats.highestCheckout = stats.highestCheckout;
-                    }
-
-                    // Update one-eighties count
-                    player.stats.oneEightiesCount += stats.oneEighties;
-
-                    // Update matches and legs played
-                    player.stats.matchesPlayed += stats.matchesPlayed;
-                    player.stats.legsWon += stats.legsWon;
-                    player.stats.legsLost += (stats.legsPlayed - stats.legsWon);
-
-                    // Update average - use tournament history to recalculate all-time average
-                    // This ensures accuracy even if tournaments are reopened and re-finished
-                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
-                        // Calculate all-time average from tournament history
-                        const totalAvg = player.tournamentHistory.reduce((sum: number, hist: any) => {
-                            // Get average from tournament stats, fallback to 0
-                            return sum + (hist.stats?.average || 0);
-                        }, 0);
-                        player.stats.avg = totalAvg / player.tournamentHistory.length;
-                    } else {
-                        player.stats.avg = stats.average;
-                    }
-
-                    console.log(`Player ${player.name} tournament average: ${stats.average.toFixed(2)}, all-time average: ${player.stats.avg.toFixed(2)}`);
-
-                    // Calculate average position from tournament history
-                    if (player.tournamentHistory && player.tournamentHistory.length > 0) {
-                        const totalPosition = player.tournamentHistory.reduce((sum: number, hist: any) => sum + hist.position, 0);
-                        player.stats.averagePosition = totalPosition / player.tournamentHistory.length;
-                    } else {
-                        player.stats.averagePosition = placement;
-                    }
-
-                    // Calculate MMR change
-                    const matchWinRate = stats.matchesPlayed > 0 ? stats.matchesWon / stats.matchesPlayed : 0;
-                    const legWinRate = stats.legsPlayed > 0 ? stats.legsWon / stats.legsPlayed : 0;
-                    
-                    // Get current MMR or initialize to base value if not set
-                    const currentMMR = player.stats.mmr || MMRService.getInitialMMR();
-                    
-                    const newMMR = MMRService.calculateMMRChange(
-                        currentMMR,
-                        placement,
-                        totalPlayers,
-                        matchWinRate,
-                        legWinRate,
-                        stats.average,
-                        tournamentAverageScore
-                    );
-                    
-                    const mmrChange = Math.ceil(newMMR) - currentMMR;
-                    player.stats.mmr = Math.ceil(newMMR); // Felfelé kerekítés tizedesjegyek nélkül
-                    
-                    console.log(`Player ${player.name} MMR: ${currentMMR} → ${Math.ceil(newMMR)} (${mmrChange >= 0 ? '+' : ''}${mmrChange})`);
-
-                    await player.save();
                 }
+            } else {
+                console.log('🛡️ Sandbox tournament: Skipping global Player stats and MMR updates');
             }
 
             // Step 10: Update tournament status to finished and reset boards
@@ -4125,12 +4147,16 @@ export class TournamentService {
                 const { LeagueService } = await import('./league.service');
                 const league = await LeagueService.findLeagueByTournament(tournament._id.toString());
                 if (league) {
-                    console.log('Tournament is attached to league, calculating points...');
-                    // Get updated tournament with final standings
-                    const updatedTournament = await TournamentModel.findById(tournament._id);
-                    if (updatedTournament) {
-                        await LeagueService.calculatePointsForTournament(updatedTournament, league);
-                        console.log('League points calculated successfully');
+                    if (tournament.isSandbox) {
+                        console.log('🛡️ Sandbox tournament: Skipping League points calculation');
+                    } else {
+                        console.log('Tournament is attached to league, calculating points...');
+                        // Get updated tournament with final standings
+                        const updatedTournament = await TournamentModel.findById(tournament._id);
+                        if (updatedTournament) {
+                            await LeagueService.calculatePointsForTournament(updatedTournament, league);
+                            console.log('League points calculated successfully');
+                        }
                     }
                 }
             } catch (error) {

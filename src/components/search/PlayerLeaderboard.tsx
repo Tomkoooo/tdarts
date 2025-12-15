@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/Button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/Card"
 import { IconTrophy, IconUser, IconChartBar } from "@tabler/icons-react"
 import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 

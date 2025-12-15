@@ -29,6 +29,7 @@ export default function ClubDetailPage() {
   const [club, setClub] = React.useState<Club | null>(null)
   const [userRole, setUserRole] = React.useState<'admin' | 'moderator' | 'member' | 'none'>('none')
   const [isCreateTournamentModalOpen, setIsCreateTournamentModalOpen] = React.useState(false)
+  const [defaultIsSandbox, setDefaultIsSandbox] = React.useState(false)
   const [oacTournamentConfig, setOacTournamentConfig] = React.useState<{
     isOpen: boolean
     leagueId: string | null
@@ -283,7 +284,10 @@ export default function ClubDetailPage() {
             tournaments={club.tournaments || []}
             userRole={userRole}
             isVerified={club.verified || false}
-            onCreateTournament={() => setIsCreateTournamentModalOpen(true)}
+            onCreateTournament={(isSandbox: boolean) => {
+              setDefaultIsSandbox(isSandbox)
+              setIsCreateTournamentModalOpen(true)
+            }}
             onCreateOacTournament={handleCreateOacTournament}
             onDeleteTournament={handleDeleteTournament}
           />
@@ -302,7 +306,10 @@ export default function ClubDetailPage() {
               userRole={userRole}
               userId={user?._id}
               onEditClub={() => setIsEditClubModalOpen(true)}
-              onCreateTournament={() => setIsCreateTournamentModalOpen(true)}
+              onCreateTournament={() => {
+                setDefaultIsSandbox(false)
+                setIsCreateTournamentModalOpen(true)
+              }}
               onPlayerSelected={handlePlayerSelected}
               onLeaveClub={handleLeaveClub}
               onDeactivateClub={handleDeactivateClub}
@@ -328,6 +335,7 @@ export default function ClubDetailPage() {
         userRole={userRole}
         boardCount={0}
         onTournamentCreated={() => fetchClub()}
+        defaultIsSandbox={defaultIsSandbox}
       />
       <CreateTournamentModal
         isOpen={oacTournamentConfig.isOpen}

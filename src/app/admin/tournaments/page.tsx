@@ -48,6 +48,7 @@ interface AdminTournament {
     name: string
     verified: boolean
   }
+  isSandbox: boolean
 }
 
 export default function AdminTournamentsPage() {
@@ -56,6 +57,7 @@ export default function AdminTournamentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [verifiedFilter, setVerifiedFilter] = useState<string>("all") // all, verified, unverified
+  const [sandboxFilter, setSandboxFilter] = useState<string>("all") // all, active, sandbox
 
   const fetchTournaments = async () => {
     try {
@@ -85,7 +87,11 @@ export default function AdminTournamentsPage() {
                             (verifiedFilter === "verified" && tournament.verified === true) ||
                             (verifiedFilter === "unverified" && tournament.verified !== true)
     
-    return matchesSearch && matchesStatus && matchesVerified
+    const matchesSandbox = sandboxFilter === "all" ||
+                           (sandboxFilter === "active" && !tournament.isSandbox) ||
+                           (sandboxFilter === "sandbox" && tournament.isSandbox)
+
+    return matchesSearch && matchesStatus && matchesVerified && matchesSandbox
   })
 
   const getStatusConfig = (status: string) => {
@@ -116,6 +122,7 @@ export default function AdminTournamentsPage() {
    totalPlayers: tournaments.reduce((total, t) => total + t.playerCount, 0),
     verified: tournaments.filter((t) => t.verified === true).length,
     unverified: tournaments.filter((t) => t.verified !== true).length,
+    sandbox: tournaments.filter((t) => t.isSandbox === true).length,
   }
 
   if (loading) {
@@ -256,6 +263,19 @@ export default function AdminTournamentsPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Mód</Label>
+              <Select value={sandboxFilter} onValueChange={setSandboxFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Minden mód</SelectItem>
+                  <SelectItem value="active">Éles versenyek</SelectItem>
+                  <SelectItem value="sandbox">Sandbox versenyek ({stats.sandbox})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -304,6 +324,11 @@ export default function AdminTournamentsPage() {
                               <Badge variant="default" className="bg-success text-success-foreground">
                                 <IconTrophy size={14} className="mr-1" />
                                 OAC Verseny
+                              </Badge>
+                          )}
+                          {tournament.isSandbox && (
+                              <Badge variant="outline" className="border-warning text-warning">
+                                Sandbox
                               </Badge>
                           )}
                         </div>

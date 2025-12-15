@@ -103,6 +103,7 @@ export default async function RootLayout({
   // Define paths where you don't want to render certain elements
   const hideNavbarPaths = ['/board', '/test', '/tv'];
   const shouldHideNavbar = hideNavbarPaths.some(path => pathname.startsWith(path) || pathname.includes('/tv'));
+
   
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value;

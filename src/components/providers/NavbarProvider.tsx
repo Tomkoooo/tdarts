@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import NavbarNew from '@/components/homapage/NavbarNew'
+import Footer from '@/components/homapage/Footer'
 
 export function NavbarProvider({ 
   children, 
@@ -13,6 +14,7 @@ export function NavbarProvider({
 }) {
   const pathname = usePathname()
   const [shouldHideNavbar, setShouldHideNavbar] = useState(initialShouldHide)
+  const [showFooter, setShowFooter] = useState(false)
 
   useEffect(() => {
     if (!pathname) return;
@@ -20,10 +22,14 @@ export function NavbarProvider({
     const hideNavbarPaths = ['/board', '/test']
     const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path)) || pathname.includes('/tv')
     
-    console.log("NavbarProvider - Pathname:", pathname, "Should Hide:", shouldHide);
+    // Footer visibility logic
+    const shownFooterPaths = ['/search', '/profile', '/club'];
+    const shouldShowFooter = shownFooterPaths.some(path => pathname.startsWith(path)) || pathname === '/';
+    
+    // console.log("NavbarProvider - Pathname:", pathname, "Should Hide:", shouldHide, "Show Footer:", shouldShowFooter);
     
     setShouldHideNavbar(shouldHide)
-    // Removed body class manipulation to avoid conflicts with React hydration
+    setShowFooter(shouldShowFooter)
   }, [pathname])
 
   return (
@@ -36,6 +42,7 @@ export function NavbarProvider({
         </>
       )}
       {children}
+      {!shouldHideNavbar && showFooter && <Footer />}
     </>
   )
 }

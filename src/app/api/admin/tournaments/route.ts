@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
           verified: 1,
           createdAt: 1,
           isDeleted: { $ifNull: ['$isDeleted', false] },
+          isSandbox: { $ifNull: ['$isSandbox', false] },
           clubId: {
             _id: '$club._id',
             name: '$club.name'
