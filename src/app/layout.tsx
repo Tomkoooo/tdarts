@@ -9,12 +9,11 @@ import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import NavbarNew from "@/components/homapage/NavbarNew";
 import {  Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: {
-    default: "tDarts - Darts Tournament Rendszer",
+    default: "tDarts - Darts Tournament Levezető Rendszer",
     template: "%s | tDarts"
   },
   description: "A legjobb darts tournament levezető rendszer. Klubok létrehozása, versenyek szervezése, élő követés és statisztikák.",
@@ -27,7 +26,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.sironic.hu"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"),
   alternates: {
     canonical: "/",
   },
@@ -198,7 +197,6 @@ export default async function RootLayout({
             <NavbarProvider initialShouldHide={shouldHideNavbar}>
              
               <Toaster position="top-left" />
-              <NavbarNew />
               {children}
             </NavbarProvider>
           </UserProvider>

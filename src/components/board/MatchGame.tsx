@@ -931,7 +931,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         <header className="flex h-[28dvh] landscape:h-[35dvh] w-full bg-gradient-to-b from-gray-900 to-black relative">
 
           {/* Player 1 */}
-          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 ${currentPlayer === 1 ? 'border-2 border-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player1.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
@@ -952,7 +952,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           </div>
           
           {/* Player 2 */}
-          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 z-50 ${currentPlayer === 2 ? 'ring-2 ring-primary' : 'bg-gray-900/50'}`}>
+          <div className={`flex-1 flex flex-col items-center justify-center   transition-all duration-300 z-50 ${currentPlayer === 2 ? 'border-2 border-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
               <div className="truncate max-w-full">{player2.name}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
