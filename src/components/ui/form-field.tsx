@@ -71,8 +71,11 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
           )}
           <Input
             ref={ref}
-            error={!!error}
-            className={cn(icon && "pl-10", className)}
+            className={cn(
+              icon && "pl-10", 
+              error && "border-destructive focus-visible:ring-destructive",
+              className
+            )}
             {...props}
           />
         </motion.div>

@@ -34,11 +34,11 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<StatusType, {
   label: string
-  variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info"
+  variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning"
 }> = {
   // Tournament statuses
   pending: { label: "Függőben", variant: "secondary" },
-  registration: { label: "Regisztráció", variant: "info" },
+  registration: { label: "Regisztráció", variant: "secondary" },
   "group-stage": { label: "Csoportkör", variant: "default" },
   knockout: { label: "Egyenes kiesés", variant: "warning" },
   finished: { label: "Befejezett", variant: "success" },
@@ -50,7 +50,7 @@ const statusConfig: Record<StatusType, {
   maintenance: { label: "Karbantartás", variant: "warning" },
   
   // Player statuses
-  applied: { label: "Jelentkezett", variant: "info" },
+  applied: { label: "Jelentkezett", variant: "secondary" },
   "checked-in": { label: "Bejelentkezett", variant: "success" },
   playing: { label: "Játszik", variant: "default" },
   eliminated: { label: "Kiesett", variant: "secondary" },

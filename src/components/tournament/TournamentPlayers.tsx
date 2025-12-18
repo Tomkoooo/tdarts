@@ -506,7 +506,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </Button>
             <Button
               size="sm"
-              variant="error"
+              variant="destructive"
               onClick={() =>
                 setRemoveConfirm({
                   isOpen: true,
