@@ -23,18 +23,24 @@ export async function GET(request: NextRequest) {
     const assignedTo = searchParams.get('assignedTo');
     const search = searchParams.get('search');
 
-    const filters: any = {};
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+
+    const filters: any = {
+      page,
+      limit
+    };
     if (status) filters.status = status;
     if (category) filters.category = category;
     if (priority) filters.priority = priority;
     if (assignedTo) filters.assignedTo = assignedTo;
     if (search) filters.search = search;
 
-    const feedback = await FeedbackService.getAllFeedback(filters);
+    const result = await FeedbackService.getAllFeedback(filters);
     
     return NextResponse.json({
       success: true,
-      feedback
+      ...result
     });
 
   } catch (error) {

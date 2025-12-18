@@ -57,36 +57,32 @@ export default function ClubLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="relative flex h-48 flex-col justify-end overflow-hidden bg-gradient-to-br from-[#310c0c] via-[#4b1018] to-[#241217] pb-12 md:h-64 md:pb-16">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.18),_transparent_60%)]"
-          style={{ maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 55%, rgba(0,0,0,0))" }}
-        />
+    <div className="min-h-screen bg-background">
+      <div className="relative flex h-48 flex-col justify-end overflow-hidden bg-card pb-12 md:h-64 md:pb-16">
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-6 md:pb-10">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 backdrop-blur md:h-16 md:w-16">
-              <svg className="h-6 w-6 text-white md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 backdrop-blur md:h-16 md:w-16">
+              <svg className="h-6 w-6 text-primary md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white drop-shadow md:text-5xl">{clubName}</h1>
-              <p className="mt-2 text-sm text-white/80">Versenyek, játékosok, ligák – minden egy helyen.</p>
+              <h1 className="text-3xl font-bold text-foreground drop-shadow md:text-5xl">{clubName}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">Versenyek, játékosok, ligák – minden egy helyen.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto -mt-10 w-full max-w-6xl px-4 pb-12 md:-mt-14">
+      <div className="relative z-10 mx-auto -mt-10 w-full max-w-6xl px-4 pb-12 md:-mt-14 mb-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="rounded-2xl bg-card/85/95 p-2 shadow-lg shadow-black/30 backdrop-blur">
+          <div className="sticky top-0 z-20 rounded-2xl bg-card/95 p-2 shadow-lg shadow-black/30 backdrop-blur mb-6">
             <TabsList className="flex w-full gap-0.5 overflow-x-auto rounded-2xl bg-transparent p-1 sm:flex-wrap sm:justify-between [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {tabs.map((tab) => (
                 <TabsTrigger
                   key={tab.key}
                   value={tab.key}
-                  className="flex min-w-[60px] items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/15 data-[state=active]:bg-primary/20 data-[state=active]:text-primary sm:min-w-[80px] sm:px-2.5 sm:text-sm"
+                  className="flex min-w-[60px] items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/30 hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:min-w-[80px] sm:px-2.5 sm:text-sm"
                 >
                   <tab.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="hidden xs:inline sm:inline">{tab.label}</span>
@@ -95,7 +91,7 @@ export default function ClubLayout({
             </TabsList>
           </div>
 
-          <div className="rounded-2xl bg-card/92 p-6 shadow-xl shadow-black/35 md:p-8">
+          <div className="rounded-2xl bg-card p-6 shadow-xl shadow-black/35 md:p-8 min-h-[400px]">
             <TabsContent value="summary" className="mt-0">
               {summary}
             </TabsContent>

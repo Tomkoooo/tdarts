@@ -191,9 +191,9 @@ export default function SearchPage() {
 
     // --- Render ---
     return (
-        <div className="min-h-screen bg-base-100/50">
+        <div className="min-h-screen bg-background">
             {/* Header / Search Bar Area */}
-            <div className="sticky top-0 z-40 bg-base-100/80 backdrop-blur-md border-b border-base-200">
+            <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="relative max-w-2xl mx-auto">
                         <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
@@ -201,7 +201,7 @@ export default function SearchPage() {
                             value={query}
                             onChange={handleSearch}
                             placeholder="Keress versenyeket, játékosokat, klubokat..." 
-                            className="pl-12 h-12 text-lg rounded-2xl border-base-300 bg-base-100 shadow-sm focus:ring-2 ring-primary/20 transition-all"
+                            className="pl-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
                         />
                          {isLoading && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">

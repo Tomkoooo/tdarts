@@ -19,6 +19,12 @@ export interface FeedbackDocument extends Document {
   userId?: string; // Ha bejelentkezett felhasználó
   createdAt: Date;
   updatedAt: Date;
+  history?: {
+    action: string;
+    user: any;
+    date: Date;
+    details: string;
+  }[];
 }
 
 const feedbackSchema = new Schema<FeedbackDocument>({
@@ -95,6 +101,16 @@ const feedbackSchema = new Schema<FeedbackDocument>({
   userId: { 
     type: Schema.Types.ObjectId, 
     ref: 'User' 
+  },
+
+  history: {
+    type: [{
+      action: String, // 'status_change', 'reply', 'note', 'create'
+      user: { type: Schema.Types.ObjectId, ref: 'User' },
+      date: { type: Date, default: Date.now },
+      details: String
+    }],
+    default: []
   }
 }, { timestamps: true });
 

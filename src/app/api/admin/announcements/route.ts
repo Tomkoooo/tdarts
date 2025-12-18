@@ -27,11 +27,16 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
-        const announcements = await AnnouncementService.getAnnouncementsForAdmin();
+        const searchParams = request.nextUrl.searchParams;
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '10');
+        const search = searchParams.get('search') || undefined;
+
+        const result = await AnnouncementService.getAnnouncementsForAdmin(page, limit, search);
         
         return NextResponse.json({
             success: true,
-            announcements
+            ...result
         });
     } catch (error: any) {
         console.error('Get admin announcements error:', error);

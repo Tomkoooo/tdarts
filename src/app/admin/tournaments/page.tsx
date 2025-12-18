@@ -2,29 +2,37 @@
 
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { 
-  IconTrophy, 
-  IconUsers, 
-  IconCalendar, 
-  IconExternalLink, 
-  IconSearch, 
-  IconRefresh, 
-  IconFilter, 
+import Link from "next/link"
+import {
+  IconTrophy,
+  IconUsers,
+  IconCalendar,
+  IconExternalLink,
+  IconSearch,
+  IconRefresh,
   IconBuilding,
   IconClock,
   IconTarget,
+  IconShield
 } from "@tabler/icons-react"
-import Link from "next/link"
 import toast from "react-hot-toast"
 import DailyChart from "@/components/admin/DailyChart"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Label } from "@/components/ui/Label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import Pagination from "@/components/common/Pagination"
 
 interface AdminTournament {
   _id: string
@@ -42,7 +50,7 @@ interface AdminTournament {
   }
   createdAt: string
   isDeleted: boolean
-  verified: boolean  // Verified if attached to a verified league
+  verified: boolean
   league?: {
     _id: string
     name: string
@@ -51,48 +59,73 @@ interface AdminTournament {
   isSandbox: boolean
 }
 
+interface TournamentStats {
+  total: number
+  active: number
+  finished: number
+  pending: number
+  totalPlayers: number
+  verified: number
+  unverified: number
+  sandbox: number
+}
+
 export default function AdminTournamentsPage() {
   const [tournaments, setTournaments] = useState<AdminTournament[]>([])
+  const [stats, setStats] = useState<TournamentStats>({ 
+    total: 0, active: 0, finished: 0, pending: 0, 
+    totalPlayers: 0, verified: 0, unverified: 0, sandbox: 0 
+  })
   const [loading, setLoading] = useState(true)
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [verifiedFilter, setVerifiedFilter] = useState<string>("all") // all, verified, unverified
   const [sandboxFilter, setSandboxFilter] = useState<string>("all") // all, active, sandbox
+  
+  // Pagination
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [paginationTotal, setPaginationTotal] = useState(0)
 
-  const fetchTournaments = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1)
+      fetchTournaments(1, searchTerm, statusFilter, verifiedFilter, sandboxFilter)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm, statusFilter, verifiedFilter, sandboxFilter])
+
+  useEffect(() => {
+    fetchTournaments(page, searchTerm, statusFilter, verifiedFilter, sandboxFilter)
+  }, [page])
+
+  const fetchTournaments = async (p: number, search: string, status: string, verified: string, sandbox: string) => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/tournaments")
+      const response = await axios.get("/api/admin/tournaments", {
+        params: {
+          page: p,
+          limit: 10,
+          search,
+          status,
+          verified,
+          sandbox
+        }
+      })
       setTournaments(response.data.tournaments || [])
+      setStats(response.data.stats || { total: 0, active: 0, finished: 0, pending: 0, totalPlayers: 0, verified: 0, unverified: 0, sandbox: 0 })
+      setTotalPages(response.data.pagination.totalPages || 1)
+      setPaginationTotal(response.data.pagination.total || 0)
+      setPage(response.data.pagination.page || 1)
     } catch (error: any) {
       console.error("Error fetching tournaments:", error)
-      toast.error(error.response?.data?.error || "Hiba történt a versenyek betöltése során")
+      toast.error("Hiba történt az adatok betöltése során")
     } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    fetchTournaments()
-  }, [])
-
-  const filteredTournaments = tournaments.filter((tournament) => {
-    const matchesSearch =
-      tournament.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (tournament.description && tournament.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      tournament.clubId.name.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = statusFilter === "all" || tournament.status === statusFilter
-    const matchesVerified = verifiedFilter === "all" || 
-                            (verifiedFilter === "verified" && tournament.verified === true) ||
-                            (verifiedFilter === "unverified" && tournament.verified !== true)
-    
-    const matchesSandbox = sandboxFilter === "all" ||
-                           (sandboxFilter === "active" && !tournament.isSandbox) ||
-                           (sandboxFilter === "sandbox" && tournament.isSandbox)
-
-    return matchesSearch && matchesStatus && matchesVerified && matchesSandbox
-  })
 
   const getStatusConfig = (status: string) => {
     const configs: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
@@ -114,259 +147,251 @@ export default function AdminTournamentsPage() {
     return configs[type] || { label: type, icon: IconTrophy }
   }
 
-  const stats = {
-    total: tournaments.length,
-    active: tournaments.filter((t) => t.status === "active" || t.status === "group-stage" || t.status === "knockout").length,
-    finished: tournaments.filter((t) => t.status === "finished").length,
-    pending: tournaments.filter((t) => t.status === "pending").length,
-   totalPlayers: tournaments.reduce((total, t) => total + t.playerCount, 0),
-    verified: tournaments.filter((t) => t.verified === true).length,
-    unverified: tournaments.filter((t) => t.verified !== true).length,
-    sandbox: tournaments.filter((t) => t.isSandbox === true).length,
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="size-16 rounded-2xl" />
-          <p className="text-sm text-muted-foreground">Versenyek betöltése…</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-8 pb-8 animate-in fade-in duration-500">
+      
       {/* Header */}
-      <Card
-        elevation="elevated"
-        className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
-      >
-        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-warning">
-              <IconTrophy className="size-10" />
-              <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Verseny Kezelés</h1>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Versenyek</h1>
+          <p className="text-muted-foreground">Versenyek kezelése, statisztikák és áttekintés</p>
         </div>
-            <p className="max-w-xl text-sm text-muted-foreground">Versenyek áttekintése és kezelése</p>
-          </div>
-          
-          <Button onClick={fetchTournaments} disabled={loading} variant="outline" className="gap-2">
-            <IconRefresh className={cn("size-5", loading && "animate-spin")} />
-            Frissítés
-          </Button>
-        </div>
-      </Card>
+        <Button 
+          onClick={() => fetchTournaments(page, searchTerm, statusFilter, verifiedFilter, sandboxFilter)} 
+          disabled={loading} 
+          variant="outline" 
+          size="sm"
+          className="gap-2"
+        >
+          <IconRefresh className={cn("size-4", loading && "animate-spin")} />
+          Frissítés
+        </Button>
+      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-          <CardContent className="p-6 text-center">
-            <div className="size-14 backdrop-blur-md bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconTrophy className="size-7 text-primary" />
-          </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Összes</h3>
-          <p className="text-4xl font-bold text-primary">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-          <CardContent className="p-6 text-center">
-            <div className="size-14 backdrop-blur-md bg-info/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconClock className="size-7 text-info" />
-        </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Aktív</h3>
-          <p className="text-4xl font-bold text-info">{stats.active}</p>
-          </CardContent>
-        </Card>
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-          <CardContent className="p-6 text-center">
-            <div className="size-14 backdrop-blur-md bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconTrophy className="size-7 text-success" />
-        </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Befejezett</h3>
-          <p className="text-4xl font-bold text-success">{stats.finished}</p>
-          </CardContent>
-        </Card>
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-          <CardContent className="p-6 text-center">
-            <div className="size-14 backdrop-blur-md bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconClock className="size-7 text-warning" />
-        </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Függőben</h3>
-          <p className="text-4xl font-bold text-warning">{stats.pending}</p>
-          </CardContent>
-        </Card>
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-          <CardContent className="p-6 text-center">
-            <div className="size-14 backdrop-blur-md bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconUsers className="size-7 text-destructive" />
-        </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Játékosok</h3>
-            <p className="text-4xl font-bold text-destructive">{stats.totalPlayers}</p>
-          </CardContent>
-        </Card>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatsCard 
+          title="Összes" 
+          value={stats.total} 
+          icon={IconTrophy} 
+          className="bg-primary/5 text-primary" 
+        />
+        <StatsCard 
+          title="Aktív" 
+          value={stats.active} 
+          icon={IconClock} 
+          className="bg-info/5 text-info" 
+        />
+        <StatsCard 
+          title="Befejezett" 
+          value={stats.finished} 
+          icon={IconTrophy} 
+          className="bg-success/5 text-success" 
+        />
+        <StatsCard 
+          title="Függőben" 
+          value={stats.pending} 
+          icon={IconClock} 
+          className="bg-warning/5 text-warning" 
+        />
+         <StatsCard 
+          title="Játékosok" 
+          value={stats.totalPlayers} 
+          icon={IconUsers} 
+          className="bg-destructive/5 text-destructive" 
+        />
       </div>
 
       {/* Daily Chart */}
       <DailyChart title="Versenyek napi indítása" apiEndpoint="/api/admin/charts/tournaments/daily" color="warning" />
 
-      {/* Filters */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconFilter className="size-5 text-primary" />
-            Szűrők
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="font-semibold">Keresés</Label>
-            <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-                <Input
-                type="text"
-                placeholder="Keresés név, leírás vagy klub alapján..."
-                  className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Státusz</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Összes státusz</SelectItem>
-                  <SelectItem value="pending">Függőben</SelectItem>
-                  <SelectItem value="active">Aktív</SelectItem>
-                  <SelectItem value="group-stage">Csoportkör</SelectItem>
-                  <SelectItem value="knockout">Kieséses</SelectItem>
-                  <SelectItem value="finished">Befejezett</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Versenyek típusa</Label>
-              <Select value={verifiedFilter} onValueChange={setVerifiedFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Minden verseny ({stats.total})</SelectItem>
-                  <SelectItem value="verified">OAC Versenyek ({stats.verified})</SelectItem>
-                  <SelectItem value="unverified">Platform Versenyek ({stats.unverified})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Mód</Label>
-              <Select value={sandboxFilter} onValueChange={setSandboxFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Minden mód</SelectItem>
-                  <SelectItem value="active">Éles versenyek</SelectItem>
-                  <SelectItem value="sandbox">Sandbox versenyek ({stats.sandbox})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tournaments List */}
-      {filteredTournaments.length === 0 ? (
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-          <CardContent className="p-12 text-center">
-            <div className="size-20 backdrop-blur-md bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconTrophy className="size-10 text-muted-foreground/30" />
-          </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Nincsenek versenyek</h3>
-            <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all"
-                ? "Nincsenek versenyek a megadott feltételekkel."
-                : "Még nincsenek versenyek."}
-          </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredTournaments.map((tournament) => {
-            const statusConfig = getStatusConfig(tournament.status)
-            const typeConfig = getTypeConfig(tournament.tournamentType)
-            return (
-              <Card key={tournament._id} elevation="elevated" className="backdrop-blur-xl bg-card/30 hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-3 mb-3">
-                        <div className="size-12 backdrop-blur-md bg-warning/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <IconTrophy className="size-6 text-warning" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                          <h3 className="text-xl font-bold text-foreground mb-2 break-words">{tournament.name}</h3>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                            <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
-                            <Badge variant="outline" className="gap-1">
-                            <typeConfig.icon size={14} />
-                            {typeConfig.label}
-                            </Badge>
-                          {tournament.isDeleted && (
-                              <Badge variant="destructive">Törölve</Badge>
-                          )}
-                          {tournament.verified && (
-                              <Badge variant="default" className="bg-success text-success-foreground">
-                                <IconTrophy size={14} className="mr-1" />
-                                OAC Verseny
-                              </Badge>
-                          )}
-                          {tournament.isSandbox && (
-                              <Badge variant="outline" className="border-warning text-warning">
-                                Sandbox
-                              </Badge>
-                          )}
-                        </div>
-                        {tournament.description && (
-                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{tournament.description}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                        <IconBuilding size={16} className="text-primary" />
-                        <span className="truncate">{tournament.clubId.name}</span>
-                      </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                        <IconUsers size={16} className="text-info" />
-                        <span>{tournament.playerCount} játékos</span>
-                      </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                        <IconCalendar size={16} className="text-warning" />
-                          <span>{new Date(tournament.startDate).toLocaleDateString("hu-HU")}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                    <Link href={`/tournaments/${tournament.tournamentId}`} target="_blank">
-                      <Button variant="default" className="gap-2 flex-shrink-0">
-                    <IconExternalLink size={18} />
-                    Megnyitás
-                      </Button>
-                  </Link>
+      {/* Filters & Content */}
+      <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">
+        <CardHeader className="border-b bg-muted/40 px-6 py-4">
+           {/* Filters Row */}
+           <div className="flex flex-col gap-4">
+             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="relative w-full md:w-96">
+                    <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Keresés név, klub vagy leírás alapján..." 
+                      className="pl-9 bg-background/50 border-input/50 focus:bg-background transition-all"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[140px] bg-background/50">
+                             <SelectValue placeholder="Státusz" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Összes státusz</SelectItem>
+                          <SelectItem value="pending">Függőben</SelectItem>
+                          <SelectItem value="active">Aktív</SelectItem>
+                          <SelectItem value="group-stage">Csoportkör</SelectItem>
+                          <SelectItem value="knockout">Kieséses</SelectItem>
+                          <SelectItem value="finished">Befejezett</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={verifiedFilter} onValueChange={setVerifiedFilter}>
+                        <SelectTrigger className="w-[140px] bg-background/50">
+                             <SelectValue placeholder="Típus" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Minden típus</SelectItem>
+                          <SelectItem value="verified">Verified (OAC)</SelectItem>
+                          <SelectItem value="unverified">Platform</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={sandboxFilter} onValueChange={setSandboxFilter}>
+                         <SelectTrigger className="w-[140px] bg-background/50">
+                             <SelectValue placeholder="Mód" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Minden mód</SelectItem>
+                          <SelectItem value="active">Éles</SelectItem>
+                          <SelectItem value="sandbox">Sandbox</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+             </div>
+           </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead>Verseny Név</TableHead>
+                <TableHead>Klub</TableHead>
+                <TableHead>Típus</TableHead>
+                <TableHead>Státusz</TableHead>
+                <TableHead className="text-center">Játékosok</TableHead>
+                <TableHead>Dátum</TableHead>
+                <TableHead className="text-right">Műveletek</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && tournaments.length === 0 ? (
+                 Array.from({ length: 5 }).map((_, i) => (
+                   <TableRow key={i}>
+                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                     <TableCell><Skeleton className="size-8 ml-auto" /></TableCell>
+                   </TableRow>
+                 ))
+              ) : tournaments.length === 0 ? (
+                <TableRow>
+                   <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    Nincs találat a keresési feltételek alapján.
+                   </TableCell>
+                </TableRow>
+              ) : (
+                tournaments.map((tournament) => {
+                  const statusConfig = getStatusConfig(tournament.status)
+                  const typeConfig = getTypeConfig(tournament.tournamentType)
+                  return (
+                    <TableRow key={tournament._id} className="group hover:bg-muted/30 transition-colors">
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-foreground">{tournament.name}</span>
+                          <div className="flex items-center gap-2">
+                             {tournament.verified && (
+                                <Badge variant="secondary" className="h-5 px-1 bg-success/15 text-success hover:bg-success/25 gap-1 text-[10px]">
+                                  <IconShield className="size-3" /> OAC
+                                </Badge>
+                             )}
+                             {tournament.isSandbox && (
+                                <Badge variant="outline" className="h-5 px-1 border-warning/50 text-warning gap-1 text-[10px]">
+                                   Sandbox 
+                                </Badge>
+                             )}
+                              {tournament.isDeleted && <Badge variant="destructive" className="h-5 px-1 text-[10px]">TÖRÖLVE</Badge>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <IconBuilding className="size-3.5" />
+                          <span className="text-xs">{tournament.clubId?.name || "Ismeretlen"}</span>
+                        </div>
+                      </TableCell>
+                       <TableCell>
+                         <Badge variant="outline" className="gap-1 font-normal">
+                           <typeConfig.icon size={12} />
+                           {typeConfig.label}
+                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                         <Badge variant={statusConfig.variant} className="capitalize">
+                           {statusConfig.label}
+                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary" className="bg-muted/50 text-muted-foreground">
+                            {tournament.playerCount}
+                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        <div className="flex items-center gap-1">
+                            <IconCalendar size={14} />
+                            {new Date(tournament.startDate).toLocaleDateString("hu-HU")}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                         <div className="flex justify-end">
+                            <Link href={`/tournaments/${tournament.tournamentId}`} target="_blank">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                <IconExternalLink className="size-4" />
+                              </Button>
+                            </Link>
+                         </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+
+        {/* Pagination Footer */}
+        <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Összesen <strong>{paginationTotal}</strong> találat (Oldal: {page} / {totalPages})
+            </span>
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            )}
         </div>
-      )}
+      </Card>
+      
     </div>
+  )
+}
+
+function StatsCard({ title, value, icon: Icon, className }: any) {
+  return (
+    <Card className="hover:shadow-lg transition-all duration-300 border-none shadow-sm bg-card/50 backdrop-blur-sm">
+      <CardContent className="p-6 flex items-center gap-4">
+        <div className={cn("p-3 rounded-xl", className)}>
+          <Icon className="size-6" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="text-2xl font-bold">{value.toLocaleString()}</div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

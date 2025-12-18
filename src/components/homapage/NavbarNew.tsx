@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconMessageCircle, IconMedal, IconHelp, IconBuilding, IconTrophy, IconAlertTriangle, IconSettings, IconBug, IconSettingsCheck, IconBell, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
+import React, { useState, useEffect } from "react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -11,17 +11,22 @@ import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/Badge";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 const NavbarNew = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user } = useUserContext();
   const { logout } = useLogout();
   const pathname = usePathname();
-  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,44 +40,9 @@ const NavbarNew = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    };
+  // const isAdminPage = pathname?.startsWith('/admin'); // User requested normal navbar on admin pages
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  useEffect(() => {
-    setIsUserMenuOpen(false);
-  }, [pathname, isMobileMenuOpen]);
-
-  const isAdminPage = pathname?.startsWith('/admin');
-
-  const navItems = isAdminPage ? [
-    { name: "Felhasználók", icon: IconUsers, href: "/admin/users" },
-    { name: "Klubok", icon: IconBuilding, href: "/admin/clubs" },
-    { name: "Versenyek", icon: IconTrophy, href: "/admin/tournaments" },
-   {name: "Ligák", icon: IconMedal, href: "/admin/leagues"},
-    { name: "Visszajelzés", icon: IconMessageCircle, href: "/admin/feedback" },
-    { name: "Todos", icon: IconSettingsCheck, href: "/admin/todos" },
-    { name: "Jelzések", icon: IconBell, href: "/admin/announcements" },
-     { name: "Hibák", icon: IconAlertTriangle, href: "/admin/errors" },
-    { name: "Beállítások", icon: IconSettings, href: "/admin/settings" },
-  ] : [
+  const navItems = [
     { name: "Versenyek", icon: IconTournament, href: "/search?tab=tournaments" },
     { name: "Klubok", icon: IconUsers, href: "/search?tab=clubs" },
     { name: "Tábla", icon: IconDeviceDesktop, href: "/board" },
@@ -88,28 +58,28 @@ const NavbarNew = () => {
   return (
     <nav
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 border-b",
         isScrolled
-          ? "bg-card/85 backdrop-blur-xl shadow-lg shadow-black/40"
-          : "bg-transparent"
+          ? "bg-background/95 backdrop-blur-sm border-border shadow-sm"
+          : "bg-background/0 border-transparent shadow-none"
       )}
       style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}
     >
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8" style={{ width: '100%', maxWidth: '100%' }}>
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link href={isAdminPage ? "/admin" : "/"} className="flex items-center gap-2 flex-shrink-0 group">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
             <div className="relative">
               <Image 
                 src="/tdarts_fav.svg" 
-                width={40} 
-                height={40} 
+                width={36} 
+                height={36} 
                 alt="tDarts Logo"
-                className="transition-transform group-hover:scale-110"
+                className="transition-transform group-hover:scale-105"
               />
             </div>
-            <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {isAdminPage ? "Admin" : "tDarts"}
+            <span className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+              tDarts
             </span>
           </Link>
 
@@ -124,10 +94,10 @@ const NavbarNew = () => {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
+                    "flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium",
                     isActive 
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -139,131 +109,73 @@ const NavbarNew = () => {
 
           {/* Desktop User Menu */}
           <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
-            {isAdminPage ? (
+            {user ? (
               <>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/">
-                    <IconLogout className="w-4 h-4" />
-                    Kilépés
-                  </Link>
-                </Button>
-              </>
-            ) : user ? (
-              <>
-                <Link 
-                  href="/myclub"
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
-                    pathname === "/myclub"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
-                  )}
-                >
-                  <IconDart className="w-4 h-4" />
-                  <span className="hidden xl:inline">Saját klub</span>
+                <Link href="/myclub">
+                  <Button variant={pathname === "/myclub" ? "secondary" : "ghost"} size="sm">
+                    <IconDart className="w-4 h-4 mr-2" />
+                    <span className="hidden xl:inline">Saját klub</span>
+                  </Button>
                 </Link>
-                <Link 
-                  href="/feedback"
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
-                    pathname === "/feedback"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
-                  )}
-                >
-                  <IconBug className="w-4 h-4" />
-                  <span className="hidden xl:inline">Visszajelzés</span>
+                <Link href="/feedback">
+                  <Button variant={pathname === "/feedback" ? "secondary" : "ghost"} size="sm">
+                    <IconBug className="w-4 h-4 mr-2" />
+                    <span className="hidden xl:inline">Visszajelzés</span>
+                  </Button>
                 </Link>
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
-                      "text-muted-foreground hover:text-foreground hover:bg-accent/10"
-                    )}
-                    onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                    aria-expanded={isUserMenuOpen}
-                    aria-haspopup="true"
-                    aria-controls="user-menu"
-                  >
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="text-sm">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden xl:inline">{user.username}</span>
-                  </button>
-                  <div
-                    id="user-menu"
-                    className={cn(
-                      "absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/35 transition-all duration-200",
-                      "bg-background/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/40 bg-gray-300/15",
-                      "before:absolute before:left-0 before:top-2 before:h-[calc(100%-1rem)] before:w-[2px] before:rounded-full before:bg-gradient-to-b before:from-primary/60 before:via-primary/30 before:to-transparent",
-                      isUserMenuOpen
-                        ? "pointer-events-auto opacity-100 translate-y-0"
-                        : "pointer-events-none opacity-0 -translate-y-2"
-                    )}
-                    aria-hidden={!isUserMenuOpen}
-                  >
-                    <div
-                      className={cn(
-                        "overflow-hidden transition-[max-height] duration-200 ease-in-out",
-                        isUserMenuOpen ? "max-h-96" : "max-h-0"
-                      )}
-                    >
-                      <div className="space-y-1 p-2">
-                        <div className="px-2 py-1.5 text-sm font-semibold">
-                          <p className="text-foreground">{user.name}</p>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-2">
+                        <div className="flex flex-col space-y-1 leading-none">
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                         </div>
-                        <Separator className="my-1" />
-                        <Link
-                          href="/profile"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted/20 hover:text-foreground"
-                        >
-                          <IconUser className="h-4 w-4" />
-                          Profil
-                        </Link>
-                        <Link
-                          href="/myclub"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted/20 hover:text-foreground"
-                        >
-                          <IconDart className="h-4 w-4" />
-                          Saját klub
-                        </Link>
-                        {user.isAdmin && (
-                          <>
-                            <Separator className="my-1" />
-                            <Link
-                              href="/admin"
-                              onClick={() => setIsUserMenuOpen(false)}
-                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted/20 hover:text-foreground"
-                            >
-                              <IconSettings className="h-4 w-4" />
-                              Admin
-                            </Link>
-                          </>
-                        )}
-                        <Separator className="my-1" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            logout();
-                            setIsUserMenuOpen(false);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-destructive transition hover:bg-destructive/10"
-                        >
-                          <IconLogout className="h-4 w-4" />
-                          Kijelentkezés
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile" className="cursor-pointer w-full flex items-center">
+                        <IconUser className="mr-2 h-4 w-4" />
+                        Profil
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/myclub" className="cursor-pointer w-full flex items-center">
+                        <IconDart className="mr-2 h-4 w-4" />
+                        Saját klub
+                      </Link>
+                    </DropdownMenuItem>
+                    {user.isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin" className="cursor-pointer w-full flex items-center">
+                            <IconSettings className="mr-2 h-4 w-4" />
+                            Admin
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => logout()}
+                    >
+                      <IconLogout className="mr-2 h-4 w-4" />
+                      Kijelentkezés
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
-              <>
+              <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/auth/login">
                     Bejelentkezés
@@ -274,7 +186,7 @@ const NavbarNew = () => {
                     Regisztráció
                   </Link>
                 </Button>
-              </>
+              </div>
             )}
           </div>
 
@@ -282,47 +194,38 @@ const NavbarNew = () => {
           <div className="lg:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="lg" className="relative">
-                  <IconMenu2 size={28} />
+                <Button variant="ghost" size="icon" className="relative">
+                  <IconMenu2 className="h-6 w-6" />
                   {!user && (
-                    <Badge className="absolute -top-1 -right-1 w-2 h-2 p-0 bg-destructive" />
+                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive" />
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="flex h-full w-full max-w-sm flex-col bg-card/95 px-4 py-6 shadow-2xl shadow-black/45 backdrop-blur"
-              >
-                <SheetHeader>
+              <SheetContent side="right" className="flex w-full max-w-xs flex-col px-4 py-6">
+                <SheetHeader className="px-1 text-left">
                   <SheetTitle className="flex items-center gap-2">
-                    <Image src="/tdarts_fav.svg" width={32} height={32} alt="tDarts" />
-                    <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      {isAdminPage ? "Admin" : "tDarts"}
+                    <Image src="/tdarts_fav.svg" width={28} height={28} alt="tDarts" />
+                    <span className="text-lg font-bold text-foreground">
+                      tDarts
                     </span>
                   </SheetTitle>
                 </SheetHeader>
 
-                <div className="mt-4 flex-1 overflow-y-auto space-y-4">
-                  {/* User Info */}
+                <div className="mt-6 flex-1 overflow-y-auto">
+                  {/* User Info Mobile */}
                   {user && (
-                    <>
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/10">
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{user.name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{user.username}</p>
-                        </div>
-                        {user.isAdmin && (
-                          <Badge variant="default">Admin</Badge>
-                        )}
+                    <div className="mb-6 flex items-center gap-3 rounded-md bg-muted/50 p-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                      </Avatar>
+                      <div className="overflow-hidden">
+                        <p className="font-medium truncate">{user.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.username}</p>
                       </div>
-                      <Separator />
-                    </>
+                    </div>
                   )}
 
-                  {/* Navigation Items */}
+                  {/* Navigation Items Mobile */}
                   <div className="space-y-1">
                     {navItems.map((item) => {
                       const Icon = item.icon;
@@ -334,10 +237,10 @@ const NavbarNew = () => {
                           href={item.href}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium",
+                            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium",
                             isActive 
-                              ? "bg-primary text-primary-foreground"
-                              : "text-foreground hover:bg-accent/10"
+                              ? "bg-muted text-foreground"
+                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                           )}
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />
@@ -347,71 +250,54 @@ const NavbarNew = () => {
                     })}
                   </div>
 
-                  <Separator />
+                  <Separator className="my-6" />
 
-                  {/* User Actions */}
-                  {isAdminPage ? (
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start gap-2"
-                      asChild
-                    >
-                      <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
-                        <IconLogout className="w-5 h-5" />
-                        Kilépés az Admin területről
-                      </Link>
-                    </Button>
-                  ) : user ? (
-                    <div className="space-y-2 pb-4">
+                  {/* User Actions Mobile */}
+                  {user ? (
+                    <div className="space-y-2">
                       <Button 
                         variant="ghost" 
                         className="w-full justify-start gap-2"
                         asChild
                       >
                         <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
-                          <IconUser className="w-5 h-5" />
+                          <IconUser className="w-4 h-4" />
                           Profil
                         </Link>
                       </Button>
-                      <Link 
-                        href="/myclub" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium",
-                          pathname === "/myclub"
-                            ? "bg-primary text-primary-foreground"
-                            : "text-foreground hover:bg-accent/10"
-                        )}
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start gap-2"
+                        asChild
                       >
-                        <IconDart className="w-5 h-5" />
-                        Saját klub
-                      </Link>
-                      <Link 
-                        href="/feedback" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium",
-                          pathname === "/feedback"
-                            ? "bg-primary text-primary-foreground"
-                            : "text-foreground hover:bg-accent/10"
-                        )}
+                         <Link href="/myclub" onClick={() => setIsMobileMenuOpen(false)}>
+                          <IconDart className="w-4 h-4" />
+                          Saját klub
+                        </Link>
+                      </Button>
+                       <Button 
+                        variant="ghost" 
+                        className="w-full justify-start gap-2"
+                        asChild
                       >
-                        <IconBug className="w-5 h-5" />
-                        Visszajelzés
-                      </Link>
+                        <Link href="/feedback" onClick={() => setIsMobileMenuOpen(false)}>
+                          <IconBug className="w-4 h-4" />
+                          Visszajelzés
+                        </Link>
+                      </Button>
                       {user.isAdmin && (
-                        <Button 
+                         <Button 
                           variant="ghost" 
                           className="w-full justify-start gap-2"
                           asChild
                         >
                           <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
-                            <IconSettings className="w-5 h-5" />
+                            <IconSettings className="w-4 h-4" />
                             Admin
                           </Link>
                         </Button>
                       )}
-                      <Separator />
+                      <Separator className="my-2" />
                       <Button 
                         variant="destructive" 
                         className="w-full justify-start gap-2"
@@ -420,25 +306,18 @@ const NavbarNew = () => {
                           setIsMobileMenuOpen(false);
                         }}
                       >
-                        <IconLogout className="w-5 h-5" />
+                        <IconLogout className="w-4 h-4" />
                         Kijelentkezés
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-2 pb-4">
-                      <Button 
-                        className="w-full"
-                        asChild
-                      >
+                    <div className="space-y-2">
+                      <Button className="w-full" asChild>
                         <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
                           Bejelentkezés
                         </Link>
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        asChild
-                      >
+                      <Button variant="outline" className="w-full" asChild>
                         <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
                           Regisztráció
                         </Link>
@@ -456,4 +335,3 @@ const NavbarNew = () => {
 };
 
 export default NavbarNew;
-

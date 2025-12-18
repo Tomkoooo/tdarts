@@ -49,10 +49,15 @@ export class FeedbackService {
     priority?: string;
     assignedTo?: string;
     search?: string;
-  }): Promise<FeedbackDocument[]> {
+    page?: number;
+    limit?: number;
+  }): Promise<{ feedback: FeedbackDocument[]; total: number; page: number; totalPages: number }> {
     await connectMongo();
     
     const query: any = {};
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const skip = (page - 1) * limit;
     
     if (filters?.status) query.status = filters.status;
     if (filters?.category) query.category = filters.category;
@@ -67,11 +72,23 @@ export class FeedbackService {
       ];
     }
     
-    return await FeedbackModel.find(query)
-      .populate('assignedTo', 'name username')
-      .populate('resolvedBy', 'name username')
-      .populate('userId', 'name username')
-      .sort({ createdAt: -1 });
+    const [feedback, total] = await Promise.all([
+      FeedbackModel.find(query)
+        .populate('assignedTo', 'name username')
+        .populate('resolvedBy', 'name username')
+        .populate('userId', 'name username')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      FeedbackModel.countDocuments(query)
+    ]);
+
+    return {
+      feedback,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   static async updateFeedback(

@@ -290,7 +290,7 @@ const TournamentPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto space-y-6 px-4 py-8">
         {/* Header */}
         <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -322,7 +322,7 @@ const TournamentPage = () => {
                     Táblák / Író program
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="sm" className="gap-2 bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30">
+                <Button asChild variant="info" size="sm" className="gap-2">
                   <Link href={`/tournaments/${code}/tv`} target="_blank" rel="noopener noreferrer">
                   <IconDeviceTv/>
                      TV
@@ -337,7 +337,9 @@ const TournamentPage = () => {
         </header>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-6 pb-24 md:pb-0">
-          <TabsList className="hidden w-full gap-2 rounded-xl bg-card/90 p-1 md:flex">
+        <div className="flex flex-col gap-3 -mx-4 px-4 pb-6">
+          <div className="bg-muted top-20 sticky z-50 rounded-xl p-1 shadow-lg">
+            <TabsList className="hidden w-full gap-2 bg-transparent p-0 md:flex">
             {tabs.map((tab) => {
               const isAdminTab = tab.value === 'admin'
               const canSeeAdminTab = userClubRole === 'admin' || userClubRole === 'moderator'
@@ -357,6 +359,7 @@ const TournamentPage = () => {
               )
             })}
           </TabsList>
+          </div>
           <div className="md:hidden">
             <div className="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-1rem)] max-w-[380px] -translate-x-1/2 items-center gap-0.5 rounded-2xl bg-card/85 backdrop-blur-xl p-1 shadow-lg shadow-black/30">
               {tabs.map((tab) => {
@@ -479,6 +482,7 @@ const TournamentPage = () => {
               </Card>
             )}
           </TabsContent>
+          </div>
         </Tabs>
       </div>
 

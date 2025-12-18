@@ -116,7 +116,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-8 pb-8">
       {/* Header */}
       <Card
-        elevation="elevated"
+        
         className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
       >
         <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -137,7 +137,7 @@ export default function AdminSettingsPage() {
 
       {/* System Health Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-success/20 rounded-full flex items-center justify-center">
@@ -150,7 +150,7 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-info/20 rounded-full flex items-center justify-center">
@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-warning/20 rounded-full flex items-center justify-center">
@@ -177,7 +177,7 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
               <div className="size-12 backdrop-blur-md bg-primary/20 rounded-full flex items-center justify-center">
@@ -192,7 +192,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Database Details */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="size-10 backdrop-blur-md bg-primary/20 rounded-lg flex items-center justify-center">
@@ -203,19 +203,19 @@ export default function AdminSettingsPage() {
         </CardHeader>
         <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card elevation="base" className="backdrop-blur-md bg-muted/30">
+            <Card  className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.collections}</div>
                 <div className="text-sm text-muted-foreground font-medium">Kollekciók</div>
               </CardContent>
             </Card>
-            <Card elevation="base" className="backdrop-blur-md bg-muted/30">
+            <Card  className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.documents.toLocaleString()}</div>
                 <div className="text-sm text-muted-foreground font-medium">Dokumentumok</div>
               </CardContent>
             </Card>
-            <Card elevation="base" className="backdrop-blur-md bg-muted/30">
+            <Card  className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
                 <div className="text-4xl font-bold text-primary mb-2">
                   {systemInfo.database.status === "connected" ? "✓" : "✗"}
@@ -228,7 +228,7 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Features */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="size-10 backdrop-blur-md bg-success/20 rounded-lg flex items-center justify-center">
@@ -272,7 +272,7 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Environment Variables */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="size-10 backdrop-blur-md bg-info/20 rounded-lg flex items-center justify-center">
@@ -357,7 +357,7 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* System Version */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

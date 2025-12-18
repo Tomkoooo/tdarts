@@ -93,10 +93,8 @@ const FeaturesSectionNew = () => {
             Funkciók
           </Badge>
           
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold">
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Miért tDarts?
-            </span>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">
+            Miért tDarts?
           </h2>
           
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -124,11 +122,7 @@ const FeaturesSectionNew = () => {
                   animation: 'fadeInUp 0.6s ease-out forwards'
                 }}
               >
-                {/* Gradient Background */}
-                <div className={cn(
-                  "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                  feature.color
-                )} />
+
                 
                 <CardHeader className="relative">
                   <div className="flex items-start justify-between mb-4">
@@ -136,18 +130,13 @@ const FeaturesSectionNew = () => {
                     <div className="relative">
                       <div className={cn(
                         "p-3 rounded-xl transition-all duration-300",
-                        "bg-gradient-to-br from-primary/10 to-accent/5",
-                        "group-hover:scale-110 group-hover:shadow-lg"
+                        "bg-muted/50",
+                        "group-hover:scale-110"
                       )}>
                         <Icon className={cn("w-7 h-7", feature.iconColor)} />
                       </div>
                       
-                      {/* Pulse Effect */}
-                      <div className={cn(
-                        "absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100",
-                        "bg-gradient-to-br from-primary/20 to-accent/10",
-                        "animate-ping"
-                      )} style={{ animationDuration: '2s' }} />
+
                     </div>
                     
                     {/* Badge */}

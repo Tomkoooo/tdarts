@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IconX, IconInfoCircle, IconCircleDashedCheck, IconAlertTriangle, IconAlertOctagon } from '@tabler/icons-react';
+import { Button } from "@/components/ui/Button";
 
 interface Announcement {
   _id: string;
@@ -146,12 +147,14 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
                 {announcement.title}
               </h3>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleClose}
-              className="text-base-content/60 hover:text-base-content transition-colors"
+              className="text-white/60 hover:text-white hover:bg-white/10 h-6 w-6"
             >
-              <IconX color='white'/>
-            </button>
+              <IconX className="size-4" />
+            </Button>
           </div>
 
           {/* Content */}
@@ -162,12 +165,14 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
           {/* Button */}
           {announcement.showButton && announcement.buttonText && (
             <div className="flex justify-end">
-              <button
+              <Button
                 onClick={handleButtonClick}
-                className={`btn btn-sm ${styles.textColor.replace('text-', 'btn-')} `}
+                size="sm"
+                variant={announcement.type === 'error' ? 'destructive' : announcement.type as any}
+                className="font-medium"
               >
                 {announcement.buttonText}
-              </button>
+              </Button>
             </div>
           )}
 

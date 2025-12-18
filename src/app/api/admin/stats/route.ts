@@ -1,14 +1,34 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { ClubModel } from '@/database/models/club.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { LogModel } from '@/database/models/log.model';
 import { FeedbackModel } from '@/database/models/feedback.model';
+import jwt from 'jsonwebtoken';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectMongo();
+    
+    // Standard Admin Auth (Cookie -> JWT -> DB)
+    const token = request.cookies.get('token')?.value;
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+      const user = await UserModel.findById(decoded.id).select('isAdmin');
+      
+      if (!user?.isAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } catch (error) {
+       console.error('Invalid token:', error);
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
     // Get current date and previous month
     const now = new Date();

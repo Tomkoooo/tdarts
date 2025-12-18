@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from "@/components/ui/Card";
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+
+
 
 const HeroSectionNew = () => {
   const stats = [
@@ -23,13 +24,10 @@ const HeroSectionNew = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20">
-      {/* Animated Background Gradient Orbs */}
+      {/* Subtle Background Highlights */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-primary/15 rounded-full blur-3xl animate-pulse" 
-             style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse" 
-             style={{ animationDelay: '1s' }} />
+        <div className="absolute top-20 left-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-20 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
       {/* Main Content */}
@@ -38,8 +36,8 @@ const HeroSectionNew = () => {
           {/* Badge */}
           <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Badge 
-              variant="secondary" 
-              className="px-4 py-2 gap-2 text-sm font-medium border border-primary/20 bg-card/50 backdrop-blur-sm"
+              variant="outline" 
+              className="px-4 py-2 gap-2 text-sm font-medium border-primary/20 bg-background/50 backdrop-blur-sm"
             >
               <IconSparkles className="w-4 h-4 text-primary" />
               Professzionális Darts Tournament Platform
@@ -47,16 +45,14 @@ const HeroSectionNew = () => {
           </div>
 
           {/* Main Heading */}
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '100ms' }}>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent inline-block animate-gradient">
-                TDARTS
-              </span>
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 hover:scale-[1.01] transition-transform duration-500" style={{ animationDelay: '100ms' }}>
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground">
+              TDARTS
             </h1>
             <div className="flex items-center justify-center gap-3 flex-wrap">
-              <IconTarget className="w-8 h-8 text-primary animate-pulse" />
-              <Separator orientation="vertical" className="h-8" />
-              <span className="text-2xl sm:text-3xl font-semibold text-foreground">
+              <IconTarget className="w-8 h-8 text-primary" />
+              <Separator orientation="vertical" className="h-8 bg-border" />
+              <span className="text-2xl sm:text-3xl font-semibold text-muted-foreground">
                 Verseny Platform
               </span>
             </div>
@@ -64,7 +60,7 @@ const HeroSectionNew = () => {
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '200ms' }}>
-            A következő generációs <span className="text-primary font-semibold">darts verseny platform</span>. 
+            A következő generációs <span className="text-foreground font-semibold">darts verseny platform</span>. 
             Versenykeresés, klub létrehozás, valós idejű eredmények és teljes testreszabhatóság.
           </p>
 
@@ -73,17 +69,17 @@ const HeroSectionNew = () => {
             {features.map((feature, index) => (
               <div 
                 key={index}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/30 border border-border"
               >
                 <IconCheck className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm font-medium text-foreground">{feature}</span>
+                <span className="text-sm font-medium text-muted-foreground">{feature}</span>
               </div>
             ))}
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '400ms' }}>
-            <Button size="xl" className="gap-2 group btn btn-primary" asChild>
+            <Button size="lg" className="gap-2 group min-w-[160px]" asChild>
               <Link href="/search">
                 <IconPlayerPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 Kezdés Most
@@ -91,7 +87,7 @@ const HeroSectionNew = () => {
               </Link>
             </Button>
             
-            <Button size="xl" variant="outline" className="gap-2 group" asChild>
+            <Button size="lg" variant="outline" className="gap-2 group min-w-[160px]" asChild>
               <Link href="/myclub">
                 <IconTrophy className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 Verseny Létrehozása
@@ -104,13 +100,10 @@ const HeroSectionNew = () => {
             {stats.map((stat, index) => (
               <Card 
                 key={index} 
-                className={cn(
-                  "group hover:shadow-lg hover:shadow-black/30 transition-all duration-300 hover:-translate-y-1",
-                  "border-primary/20 bg-card/50 backdrop-blur-sm"
-                )}
+                className="group hover:bg-muted/50 transition-colors duration-300 border-border bg-card"
               >
                 <CardContent className="p-6 text-center space-y-2">
-                  <div className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  <div className="text-4xl sm:text-5xl font-bold text-primary">
                     {stat.number}
                   </div>
                   <div className="space-y-1">
@@ -129,17 +122,17 @@ const HeroSectionNew = () => {
           {/* Trust Indicators */}
           <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-sm text-muted-foreground animate-in fade-in duration-700" style={{ animationDelay: '600ms' }}>
             <div className="flex items-center gap-2">
-              <IconCheck className="w-4 h-4 text-success" />
+              <IconCheck className="w-4 h-4 text-primary" />
               <span>Ingyenes regisztráció</span>
             </div>
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="h-4 bg-border" />
             <div className="flex items-center gap-2">
-              <IconCheck className="w-4 h-4 text-success" />
+              <IconCheck className="w-4 h-4 text-primary" />
               <span>Nincs rejtett költség</span>
             </div>
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="h-4 bg-border" />
             <div className="flex items-center gap-2">
-              <IconCheck className="w-4 h-4 text-success" />
+              <IconCheck className="w-4 h-4 text-primary" />
               <span>24/7 támogatás</span>
             </div>
           </div>
@@ -148,8 +141,8 @@ const HeroSectionNew = () => {
 
       {/* Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-primary/30 rounded-full flex items-start justify-center p-2">
-          <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+        <div className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex items-start justify-center p-2">
+          <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full" />
         </div>
       </div>
     </section>

@@ -152,7 +152,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
 
   if (loading) {
     return (
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardContent className="p-6">
         <div className="text-center">
             <Skeleton className="h-8 w-48 mx-auto mb-4" />
@@ -165,7 +165,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
 
   if (error) {
     return (
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardContent className="p-6">
         <div className="text-center">
             <div className="text-destructive text-6xl mb-4">⚠️</div>
@@ -188,7 +188,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
   })) || []
 
   return (
-    <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+    <Card  className="backdrop-blur-xl bg-card/30">
       <CardHeader>
         <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
