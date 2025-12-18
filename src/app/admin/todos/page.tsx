@@ -1,6 +1,6 @@
 "use client"
 
-import TodoManager from "@/components/admin/TodoManager"
+import SmartTodoManager from "@/components/admin/SmartTodoManager"
 import { Card } from "@/components/ui/Card"
 import { IconCheck } from "@tabler/icons-react"
 
@@ -9,7 +9,7 @@ export default function AdminTodosPage() {
     <div className="space-y-8 pb-8">
       {/* Header */}
       <Card
-        elevation="elevated"
+        
         className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
       >
         <div className="relative z-10 space-y-3">
@@ -21,7 +21,7 @@ export default function AdminTodosPage() {
       </div>
       </Card>
 
-      <TodoManager />
+      <SmartTodoManager />
     </div>
   )
 }

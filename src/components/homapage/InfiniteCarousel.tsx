@@ -24,7 +24,7 @@ const InfiniteCarousel = () => {
   const horizontalOffset = scrollY * 0.5;
 
   return (
-    <div className="py-16 overflow-hidden bg-gradient-to-r from-red-900/20 to-red-800/20">
+    <div className="py-16 overflow-hidden bg-muted/20 border-y border-border">
       <div className="flex">
         <div 
           className="flex transition-transform duration-100 ease-out"
@@ -36,10 +36,10 @@ const InfiniteCarousel = () => {
           {[...items, ...items, ...items].map((item, index) => (
             <div 
               key={index}
-              className="flex items-center gap-4 mx-8 whitespace-nowrap glass-card px-6 py-4 min-w-max"
+              className="flex items-center gap-4 mx-8 whitespace-nowrap bg-card border border-border rounded-lg px-6 py-4 min-w-max shadow-sm"
             >
-              <item.icon className="w-6 h-6 text-red-400" />
-              <span className="text-white font-medium">{item.text}</span>
+              <item.icon className="w-6 h-6 text-primary" />
+              <span className="text-foreground font-medium">{item.text}</span>
             </div>
           ))}
         </div>
@@ -57,10 +57,10 @@ const InfiniteCarousel = () => {
           {[...items.slice().reverse(), ...items.slice().reverse()].map((item, index) => (
             <div 
               key={`reverse-${index}`}
-              className="flex items-center gap-4 mx-8 whitespace-nowrap glass-card px-6 py-4 min-w-max opacity-75"
+              className="flex items-center gap-4 mx-8 whitespace-nowrap bg-muted border border-border rounded-lg px-6 py-4 min-w-max opacity-80"
             >
-              <item.icon className="w-5 h-5 text-red-300" />
-              <span className="text-white/80 font-medium text-sm">{item.text}</span>
+              <item.icon className="w-5 h-5 text-secondary" />
+              <span className="text-muted-foreground font-medium text-sm">{item.text}</span>
             </div>
           ))}
         </div>

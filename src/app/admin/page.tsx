@@ -12,21 +12,24 @@ import {
   IconRefresh,
   IconTrendingUp,
   IconTrendingDown,
-  IconChartBar,
-  IconArrowRight,
-  IconSpeakerphone,
-  IconCheck,
-  IconBug,
+  IconMessageCircle,
   IconServer,
+  IconClock,
+  IconCheck
 } from "@tabler/icons-react"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { format } from "date-fns"
+import { hu } from "date-fns/locale"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/Badge"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
+import { useUserContext } from "@/hooks/useUser"
+import { IconPlus, IconCommand } from "@tabler/icons-react"
 
+// --- Interfaces ---
 interface DashboardStats {
   totalUsers: number
   totalClubs: number
@@ -55,47 +58,56 @@ interface ChartData {
   }[]
 }
 
+interface ActivityItem {
+  id: string
+  type: "user" | "club" | "tournament" | "auth"
+  message: string
+  time: string
+  highlight?: boolean
+}
+
+// --- Mock Data Helpers (Replace with real API later) ---
+
 export default function AdminDashboardPage() {
+  const { user } = useUserContext()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [userChartData, setUserChartData] = useState<ChartData | null>(null)
-  const [clubChartData, setClubChartData] = useState<ChartData | null>(null)
-  const [leagueChartData, setLeagueChartData] = useState<ChartData | null>(null)
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null)
-  const [errorChartData, setErrorChartData] = useState<ChartData | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [alerts, setAlerts] = useState<{ errors24h: number; pendingFeedback: number } | null>(null)
 
   const fetchDashboardData = async () => {
     try {
       setIsRefreshing(true)
-      const [statsResponse, userChartResponse, clubChartResponse, leagueChartResponse, tournamentChartResponse, errorChartResponse] = await Promise.all([
+      const [
+        statsResponse, 
+        userChartResponse, 
+        tournamentChartResponse,
+        activitiesResponse,
+        alertsResponse
+      ] = await Promise.all([
         axios.get("/api/admin/stats"),
         axios.get("/api/admin/charts/users"),
-        axios.get("/api/admin/charts/clubs"),
-        axios.get("/api/admin/charts/leagues"),
         axios.get("/api/admin/charts/tournaments"),
-        axios.get("/api/admin/charts/errors"),
+        axios.get("/api/admin/activities"),
+        axios.get("/api/admin/alerts")
       ])
 
       setStats(statsResponse.data)
+      setActivities(activitiesResponse.data.data)
+      setAlerts(alertsResponse.data.data)
 
       const extractChartData = (response: any): ChartData | null => {
-        if (response.data && response.data.success && response.data.data) {
-          return response.data.data
-        }
-        if (response.data && response.data.labels && response.data.datasets) {
-          return response.data
-        }
+        if (response.data && response.data.success && response.data.data) return response.data.data
+        if (response.data && response.data.labels && response.data.datasets) return response.data
         return null
       }
 
       setUserChartData(extractChartData(userChartResponse))
-      setClubChartData(extractChartData(clubChartResponse))
-      setLeagueChartData(extractChartData(leagueChartResponse))
       setTournamentChartData(extractChartData(tournamentChartResponse))
-      setErrorChartData(extractChartData(errorChartResponse))
-
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error)
@@ -112,427 +124,314 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Skeleton className="size-16 rounded-2xl" />
-          <p className="text-sm text-muted-foreground">Admin adatok betöltése…</p>
+          <div className="size-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-sm text-muted-foreground animate-pulse">Betöltés...</p>
         </div>
       </div>
     )
   }
 
-  if (!stats) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 max-w-md text-center">
-          <div className="size-24 rounded-full bg-destructive/10 flex items-center justify-center">
-            <IconAlertTriangle className="size-12 text-destructive" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">Hiba történt</h2>
-            <p className="text-muted-foreground">Nem sikerült betölteni a dashboard adatokat.</p>
-          </div>
-          <Button onClick={fetchDashboardData} className="gap-2">
-            <IconRefresh className="size-5" />
-            Újrapróbálás
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  if (!stats) return null 
 
-  const HeroStatCard = ({
-    title,
-    value,
-    change,
-    icon: Icon,
-    color = "primary",
-    monthlyValue,
-    monthlyLabel,
-  }: {
-    title: string
-    value: number
-    change: number
-    icon: any
-    color?: "primary" | "success" | "warning" | "error" | "info"
-    monthlyValue?: number
-    monthlyLabel?: string
-  }) => {
-    const iconColorClasses = {
-      primary: "text-primary",
-      success: "text-success",
-      warning: "text-warning",
-      error: "text-destructive",
-      info: "text-info",
-    }
+  // --- Sub-components ---
 
-    return (
-      <Card elevation="elevated" className="relative overflow-hidden backdrop-blur-xl bg-card/30">
-        <CardContent className="relative z-10 p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className={cn("p-3 rounded-xl backdrop-blur-md bg-card/40")}>
-              <Icon className={cn("size-7", iconColorClasses[color])} />
-            </div>
-            <div className="flex items-center gap-2">
-              {change >= 0 ? (
-                <IconTrendingUp className="size-5 text-success" />
-              ) : (
-                <IconTrendingDown className="size-5 text-destructive" />
-              )}
-              <span className={cn("text-sm font-bold", change >= 0 ? "text-success" : "text-destructive")}>
-                {change >= 0 ? "+" : ""}
+  const MiniStatCard = ({ title, value, change, icon: Icon, colorClass }: any) => (
+    <Card className="overflow-hidden hover:shadow-md transition-shadow backdrop-blur-sm bg-card/50">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-bold font-mono tabular-nums">{value.toLocaleString()}</h3>
+              <span className={cn("text-xs font-medium flex items-center", change >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                {change >= 0 ? <IconTrendingUp className="size-3 mr-0.5" /> : <IconTrendingDown className="size-3 mr-0.5" />}
                 {change}%
               </span>
             </div>
           </div>
+          <div className={cn("p-2 rounded-lg opacity-80", colorClass)}>
+            <Icon className="size-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">{title}</h3>
-
-          <p className="text-4xl font-bold text-foreground mb-4 tabular-nums">{value.toLocaleString()}</p>
-
-          {monthlyValue !== undefined && (
-            <div className="flex items-center justify-between pt-4">
-              <span className="text-xs text-muted-foreground">{monthlyLabel}</span>
-              <span className={cn("text-sm font-bold", iconColorClasses[color])}>+{monthlyValue}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const ModernChartCard = ({
-    title,
-    data,
-    //eslint-disable-next-line
-    color = "primary",
-    type = "area",
-  }: {
-    title: string
-    data: ChartData | null
-    color?: "primary" | "success" | "warning" | "error" | "info"
-    type?: "area" | "bar"
-  }) => {
-    const CustomTooltip = ({ active, payload, label }: any) => {
-      if (active && payload && payload.length) {
-        return (
-          <div className="backdrop-blur-xl bg-card/90 rounded-lg p-3 shadow-xl border border-border/50">
-            <p className="text-sm font-medium text-foreground mb-2">{label}</p>
-            {payload.map((entry: any, index: number) => (
-              <div key={index} className="flex items-center gap-2 mb-1 last:mb-0">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-xs text-muted-foreground">{entry.name}:</span>
-                <span className="text-sm font-bold text-foreground">{entry.value}</span>
+  const ActivityFeed = () => (
+    <Card className="h-full flex flex-col backdrop-blur-sm bg-card/50">
+      <CardHeader className="pb-3 shrink-0">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <IconActivity className="size-4 text-primary" />
+          Friss Tevékenységek
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 flex-1 overflow-y-auto min-h-[300px] max-h-[400px]">
+        {activities.length > 0 ? (
+          <div className="divide-y divide-border/50">
+            {activities.map((activity) => (
+              <div key={activity.id} className="p-4 hover:bg-muted/30 transition-colors flex items-start gap-3 text-sm group">
+                <div className={cn("mt-1.5 size-2 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card transition-all group-hover:scale-110", 
+                  activity.type === 'user' || activity.type === 'auth' ? 'bg-blue-500 ring-blue-500/20' : 
+                  activity.type === 'tournament' ? 'bg-amber-500 ring-amber-500/20' : 
+                  activity.type === 'club' ? 'bg-violet-500 ring-violet-500/20' : 'bg-slate-500 ring-slate-500/20'
+                )} />
+                <div className="flex-1 space-y-1">
+                  <p className="font-medium leading-snug">{activity.message}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <IconClock className="size-3" />
+                    {activity.time}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
-        )
-      }
-      return null
-    }
+        ) : (
+          <div className="flex items-center justify-center h-48 text-muted-foreground text-sm flex-col gap-2">
+            <IconActivity className="size-8 opacity-20" />
+            <p>Nincs friss tevékenység</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 
-    const chartData =
-      data && data.datasets
-        ? data.labels.map((label, index) => {
-            const point: any = { month: label };
-            data.datasets.forEach(dataset => {
-              point[dataset.label] = dataset.data[index] || 0;
-            });
-            return point;
-          })
-        : []
+  const CriticalAlerts = () => (
+    <Card className="h-full border-l-4 border-l-rose-500 backdrop-blur-sm bg-card/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base text-rose-500">
+          <IconAlertTriangle className="size-4" />
+          Figyelmeztetések
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 transition-transform hover:scale-[1.02]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-rose-500/20 rounded-md">
+              <IconServer className="size-5 text-rose-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-rose-600 dark:text-rose-400 text-sm">Rendszerhibák</p>
+              <p className="text-xs text-rose-600/70 dark:text-rose-400/70">Az elmúlt 24 órában</p>
+            </div>
+          </div>
+          <Badge variant="destructive" className="text-lg font-mono ml-4">{alerts?.errors24h || 0}</Badge>
+        </div>
+        
+        <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 transition-transform hover:scale-[1.02]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/20 rounded-md">
+              <IconMessageCircle className="size-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-600 dark:text-amber-400 text-sm">Visszajelzések</p>
+              <p className="text-xs text-amber-600/70 dark:text-amber-400/70">Olvasatlan üzenetek</p>
+            </div>
+          </div>
+          <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-mono ml-4">{alerts?.pendingFeedback || 0}</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const SimpleChart = ({ title, data, color }: any) => {
+    // Transform chart data logic
+    const chartData = data && data.datasets ? data.labels.map((label: any, index: any) => ({
+      name: label,
+      value: data.datasets[0].data[index]
+    })) : []
 
     return (
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconChartBar className="size-5 text-primary" />
-            {title}
-          </CardTitle>
+      <Card className="backdrop-blur-sm bg-card/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          {chartData.length > 0 ? (
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                {type === "area" ? (
-                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      {data?.datasets.map((dataset, index) => (
-                        <linearGradient key={dataset.label} id={`gradient-${title}-${index}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={dataset.borderColor} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={dataset.borderColor} stopOpacity={0.05} />
-                        </linearGradient>
-                      ))}
-                    </defs>
-
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" vertical={false} />
-
-                    <XAxis
-                      dataKey="month"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: "rgba(156, 163, 175, 0.8)" }}
-                    />
-
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: "rgba(156, 163, 175, 0.8)" }}
-                    />
-
-                    <Tooltip content={<CustomTooltip />} />
-
-                    {data?.datasets.map((dataset, index) => (
-                      <Area
-                        key={dataset.label}
-                        type="monotone"
-                        dataKey={dataset.label}
-                        stroke={dataset.borderColor}
-                        strokeWidth={2}
-                        fill={`url(#gradient-${title}-${index})`}
-                        dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
-                      />
-                    ))}
-                  </AreaChart>
-                ) : (
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" vertical={false} />
-
-                    <XAxis
-                      dataKey="month"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: "rgba(156, 163, 175, 0.8)" }}
-                    />
-
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: "rgba(156, 163, 175, 0.8)" }}
-                    />
-
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }} />
-
-                    {data?.datasets.map((dataset) => (
-                      <Bar 
-                        key={dataset.label} 
-                        dataKey={dataset.label} 
-                        fill={dataset.borderColor} 
-                        radius={[4, 4, 0, 0]} 
-                        maxBarSize={50}
-                      />
-                    ))}
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-64 flex items-center justify-center">
-              <div className="text-center space-y-3">
-                <div className="size-16 rounded-full bg-muted flex items-center justify-center mx-auto">
-                  <IconChartBar className="size-8 text-muted-foreground/30" />
-                </div>
-                <p className="text-muted-foreground text-sm">Nincs megjeleníthető adat</p>
-              </div>
-            </div>
-          )}
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={color} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" vertical={false} />
+                <XAxis dataKey="name" hide />
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
+                  itemStyle={{ color: color }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke={color} 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill={`url(#gradient-${title})`} 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
     )
   }
 
-  const QuickActionCard = ({
-    title,
-    description,
-    icon: Icon,
-    href,
-  }: {
-    title: string
-    description: string
-    icon: any
-    href: string
-  }) => {
-    return (
-      <Link href={href} className="group">
-        <Card
-          elevation="elevated"
-          className="relative overflow-hidden backdrop-blur-xl bg-card/30 transition-all duration-300 hover:scale-[1.02]"
-        >
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg backdrop-blur-md bg-card/40 group-hover:scale-110 transition-transform duration-300">
-                <Icon className="size-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-foreground mb-1 truncate">{title}</h4>
-                <p className="text-sm text-muted-foreground truncate">{description}</p>
-              </div>
-              <IconArrowRight className="size-5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" />
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
-    )
-  }
+  // --- Sub-components (Chart wrappers) ---
 
   return (
-    <div className="space-y-8 pb-8">
-      {/* Header Section */}
-      <Card
-        elevation="elevated"
-        className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
-      >
-        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-primary">
-              <IconActivity className="size-10" />
-              <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Admin Dashboard</h1>
-            </div>
-            <p className="max-w-xl text-sm text-muted-foreground">Rendszer áttekintés és statisztikák</p>
-          </div>
+    <div className="space-y-6 max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 sticky top-0 z-10 bg-background/80 backdrop-blur-xl py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-border/40 mb-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+            Szia, {user?.name?.split(" ")[0] || user?.username || "Admin"}! 👋
+          </h1>
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            A rendszer jelenleg <span className="text-emerald-500 font-medium">stabilan</span> üzemel.
+            <span className="hidden sm:inline-block opacity-50">|</span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-muted/50 px-2 py-0.5 rounded border border-border/50">
+              <IconCommand className="size-3" /> K
+              <span className="opacity-70">keresés</span>
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-muted/50 px-2 py-0.5 rounded border border-border/50">
+              <IconCommand className="size-3" /> J
+              <span className="opacity-70">menü</span>
+            </span>
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3 w-full xl:w-auto">
+           {/* Quick Action Buttons */}
+           <div className="flex items-center gap-2 flex-1 xl:flex-none">
+             <Button size="sm" className="hidden sm:flex" variant="outline" asChild>
+                <Link href="/admin/announcements">
+                  <IconMessageCircle className="size-4 mr-2" />
+                  Új Hír
+                </Link>
+             </Button>
+             <Button size="sm" className="w-full sm:w-auto" asChild>
+                <Link href="/admin/tournaments">
+                  <IconPlus className="size-4 mr-2" />
+                  Verseny Létrehozása
+                </Link>
+             </Button>
+           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              <div className="flex items-center gap-2 mb-1">
-                <IconRefresh className="size-4" />
-                <span className="font-medium">Utolsó frissítés:</span>
-              </div>
-              <div className="font-mono text-foreground">{lastUpdate.toLocaleString("hu-HU")}</div>
-            </div>
-            <Button onClick={fetchDashboardData} disabled={isRefreshing} variant="outline" className="gap-2 min-w-[140px]">
-              <IconRefresh className={cn("size-5", isRefreshing && "animate-spin")} />
-              {isRefreshing ? "Frissítés…" : "Frissítés"}
-          </Button>
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 shrink-0">
+            <span className="text-xs text-muted-foreground px-2 py-1 font-mono hidden sm:inline-block">
+              {format(lastUpdate, "HH:mm:ss", { locale: hu })}
+            </span>
+            <Button size="sm" variant="ghost" onClick={fetchDashboardData} disabled={isRefreshing} className="h-8 w-8 p-0">
+              <IconRefresh className={cn("size-4", isRefreshing && "animate-spin")} />
+              <span className="sr-only">Frissítés</span>
+            </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Hero Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        <HeroStatCard
-          title="Felhasználók"
-          value={stats.totalUsers}
-          change={stats.userGrowth}
+      {/* Mini Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MiniStatCard 
+          title="Felhasználók" 
+          value={stats?.totalUsers || 0} 
+          change={stats?.userGrowth || 0} 
           icon={IconUsers}
-          color="primary"
-          monthlyValue={stats.newUsersThisMonth}
-          monthlyLabel="Új ebben a hónapban"
+          colorClass="bg-blue-500"
         />
-        <HeroStatCard
-          title="Klubok"
-          value={stats.totalClubs}
-          change={stats.clubGrowth}
+        <MiniStatCard 
+          title="Klubok" 
+          value={stats?.totalClubs || 0} 
+          change={stats?.clubGrowth || 0} 
           icon={IconBuilding}
-          color="info"
-          monthlyValue={stats.newClubsThisMonth}
-          monthlyLabel="Új ebben a hónapban"
+          colorClass="bg-violet-500"
         />
-        <HeroStatCard
-          title="Versenyek"
-          value={stats.totalTournaments}
-          change={stats.tournamentGrowth}
+        <MiniStatCard 
+          title="Versenyek" 
+          value={stats?.totalTournaments || 0} 
+          change={stats?.tournamentGrowth || 0} 
           icon={IconTrophy}
-          color="success"
-          monthlyValue={stats.newTournamentsThisMonth}
-          monthlyLabel="Új ebben a hónapban"
+          colorClass="bg-amber-500"
         />
-        <HeroStatCard
-          title="Hibák"
-          value={stats.totalErrors}
-          change={stats.errorGrowth}
+        <MiniStatCard 
+          title="Nyitott Hibák" 
+          value={stats?.totalErrors || 0} 
+          change={stats?.errorGrowth || 0} 
           icon={IconAlertTriangle}
-          color="error"
-          monthlyValue={stats.errorsThisMonth}
-          monthlyLabel="Új ebben a hónapban"
-        />
-        <HeroStatCard
-          title="Visszajelzések"
-          value={stats.totalFeedback}
-          change={stats.feedbackGrowth}
-          icon={IconBug}
-          color="warning"
-          monthlyValue={stats.feedbackThisMonth}
-          monthlyLabel="Új ebben a hónapban"
+          colorClass="bg-rose-500"
         />
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ModernChartCard title="Felhasználó Regisztrációk" data={userChartData} color="warning" type="area" />
-        <ModernChartCard title="Klub Létrehozások" data={clubChartData} color="info" type="area" />
-        <ModernChartCard title="Liga Létrehozások" data={leagueChartData} color="warning" type="area" />
-        <ModernChartCard title="Verseny Indítások" data={tournamentChartData} color="success" type="bar" />
-        <ModernChartCard title="Hibák Időbeli Alakulása" data={errorChartData} color="error" type="area" />
-              </div>
+      {/* Main Content Areas */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left Column: Activity Feed & Alerts */}
+        <div className="space-y-6 xl:col-span-1">
+          <div className="h-auto">
+            <CriticalAlerts />
+          </div>
+          <div className="h-auto">
+            <ActivityFeed />
+          </div>
+        </div>
 
-      {/* Quick Actions Section */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <IconActivity className="size-7 text-primary" />
-            Gyors Műveletek
-          </CardTitle>
+        {/* Right Column: Key Charts */}
+        <div className="space-y-6 xl:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SimpleChart title="Felhasználói aktivitás (Havi)" data={userChartData} color="#3b82f6" />
+            <SimpleChart title="Versenyek száma (Havi)" data={tournamentChartData} color="#f59e0b" />
+          </div>
+          
+          <Card className="backdrop-blur-sm bg-card/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Gyorselérés</CardTitle>
+              <CardDescription>A leggyakrabban használt adminisztrációs felületek</CardDescription>
             </CardHeader>
             <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <QuickActionCard
-              title="Üzenetek"
-              description="Rendszerüzenetek kezelése"
-              icon={IconSpeakerphone}
-              href="/admin/announcements"
-            />
-            <QuickActionCard
-              title="Todo Kezelő"
-              description="Feladatok és észrevételek"
-              icon={IconCheck}
-              href="/admin/todos"
-            />
-            <QuickActionCard
-              title="Visszajelzések"
-              description="Felhasználói visszajelzések"
-              icon={IconBug}
-              href="/admin/feedback"
-            />
-            <QuickActionCard
-              title="Felhasználók"
-              description="Felhasználók kezelése"
-              icon={IconUsers}
-              href="/admin/users"
-            />
-            <QuickActionCard
-              title="Klubok"
-              description="Klubok áttekintése"
-              icon={IconBuilding}
-              href="/admin/clubs"
-            />
-            <QuickActionCard
-              title="Ligák"
-              description="Ligák áttekintése"
-              icon={IconTrophy}
-              href="/admin/leagues"
-            />
-            <QuickActionCard
-              title="Versenyek"
-              description="Versenyek kezelése"
-              icon={IconTrophy}
-              href="/admin/tournaments"
-            />
-            <QuickActionCard
-              title="Hibák"
-              description="Rendszerhibák áttekintése"
-              icon={IconAlertTriangle}
-              href="/admin/errors"
-            />
-            <QuickActionCard
-              title="Beállítások"
-              description="Rendszer konfiguráció"
-              icon={IconServer}
-              href="/admin/settings"
-            />
-          </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <Link href="/admin/users" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
+                  <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                     <IconUsers className="size-5" />
+                  </div>
+                  <span className="text-xs font-semibold">Felhasználók</span>
+                </Link>
+                <Link href="/admin/tournaments" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
+                  <div className="p-2 rounded-full bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                     <IconTrophy className="size-5" />
+                  </div>
+                  <span className="text-xs font-semibold">Versenyek</span>
+                </Link>
+                <Link href="/admin/clubs" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
+                  <div className="p-2 rounded-full bg-violet-500/10 text-violet-500 group-hover:bg-violet-500 group-hover:text-white transition-colors">
+                     <IconBuilding className="size-5" />
+                  </div>
+                  <span className="text-xs font-semibold">Klubok</span>
+                </Link>
+                <Link href="/admin/todos" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
+                   <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                     <IconCheck className="size-5" />
+                  </div>
+                  <span className="text-xs font-semibold">Teendők</span>
+                </Link>
+                <Link href="/admin/announcements" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
+                   <div className="p-2 rounded-full bg-pink-500/10 text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-colors">
+                     <IconMessageCircle className="size-5" />
+                  </div>
+                  <span className="text-xs font-semibold">Hírek</span>
+                </Link>
+                <Link href="/admin/settings" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
+                   <div className="p-2 rounded-full bg-slate-500/10 text-slate-500 group-hover:bg-slate-500 group-hover:text-white transition-colors">
+                     <IconServer className="size-5" />
+                  </div>
+                  <span className="text-xs font-semibold">Beállítások</span>
+                </Link>
+              </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
     </div>
   )
 }

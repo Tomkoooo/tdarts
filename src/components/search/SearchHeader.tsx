@@ -15,6 +15,7 @@ interface SearchHeaderProps {
   onSuggestionsToggle: (show: boolean) => void
   activeFiltersCount: number
   onClearFilters?: () => void
+  loading?: boolean
 }
 
 export function SearchHeader({
@@ -26,6 +27,7 @@ export function SearchHeader({
   onSuggestionsToggle,
   activeFiltersCount,
   onClearFilters,
+  loading = false,
 }: SearchHeaderProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -35,12 +37,16 @@ export function SearchHeader({
         {/* Search Input */}
         <div className="flex-1 relative">
           <div className="relative">
-            <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
+            {loading ? (
+               <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 z-10 animate-spin border-2 border-primary border-t-transparent rounded-full" />
+            ) : (
+              <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+            )}
             <Input
               ref={inputRef}
               type="text"
               placeholder="Keress tornára, játékosra, klubra..."
-              className="h-14 pl-12 pr-12 text-base"
+              className="h-14 pl-12 pr-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               onFocus={() => onSuggestionsToggle(true)}

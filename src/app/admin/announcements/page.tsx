@@ -1,6 +1,6 @@
 "use client"
 
-import AnnouncementManager from "@/components/admin/AnnouncementManager"
+import AnnouncementTable from "@/components/admin/AnnouncementTable"
 import { IconSpeakerphone } from "@tabler/icons-react"
 import { Card } from "@/components/ui/Card"
 
@@ -9,7 +9,6 @@ export default function AdminAnnouncementsPage() {
     <div className="space-y-8 pb-8">
       {/* Header */}
       <Card
-        elevation="elevated"
         className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
       >
         <div className="relative z-10 space-y-3">
@@ -22,7 +21,7 @@ export default function AdminAnnouncementsPage() {
       </Card>
 
       {/* Announcement Manager Component */}
-      <AnnouncementManager />
+      <AnnouncementTable />
     </div>
   )
 }

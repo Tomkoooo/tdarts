@@ -1,6 +1,6 @@
 "use client"
 
-import FeedbackManager from "@/components/admin/FeedbackManager"
+import FeedbackTable from "@/components/admin/FeedbackTable"
 import DailyChart from "@/components/admin/DailyChart"
 import { Card } from "@/components/ui/Card"
 import { IconBug } from "@tabler/icons-react"
@@ -10,7 +10,7 @@ export default function AdminFeedbackPage() {
     <div className="space-y-8 pb-8">
       {/* Header */}
       <Card
-        elevation="elevated"
+        
         className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
       >
         <div className="relative z-10 space-y-3">
@@ -28,7 +28,7 @@ export default function AdminFeedbackPage() {
         color="warning" 
       />
       
-      <FeedbackManager />
+      <FeedbackTable />
     </div>
   )
 }

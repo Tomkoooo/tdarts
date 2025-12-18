@@ -57,7 +57,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { status, assignedTo, adminNotes, resolution, priority } = body;
+    const { status, assignedTo, adminNotes, resolution, priority, emailNotification, customEmailMessage, customEmailSubject } = body;
 
     const updates: any = {};
     if (status !== undefined) updates.status = status;
@@ -66,34 +66,76 @@ export async function PUT(
     if (resolution !== undefined) updates.resolution = resolution;
     if (priority !== undefined) updates.priority = priority;
 
+    // History Entry
+    const historyEntry = {
+        action: 'update',
+        user: user._id,
+        date: new Date(),
+        details: `Updated: ${Object.keys(updates).join(', ')}`
+    };
+    
+    // Explicit actions for history
+    if (status) historyEntry.details = `Status changed to ${status}`;
+    if (customEmailMessage) {
+        historyEntry.action = 'reply';
+        historyEntry.details = 'Sent email reply';
+    }
+
+    // Add to history using $push
+    updates.$push = { history: historyEntry };
+
     const updatedFeedback = await FeedbackService.updateFeedback(
       id,
       updates,
       user._id.toString()
     );
 
-    // Email értesítés küldése a felhasználónak
+    // Email Handling
     try {
-      if (status === 'resolved' || status === 'rejected' || status === 'closed') {
-        const subject = status === 'resolved' ? 'Visszajelzésmegoldva' :
-                       status === 'rejected' ? 'Visszajelzéselutasítva' :
-                       'Visszajelzéslezárva';
+      if (emailNotification !== 'none') {
+        const isCustom = emailNotification === 'custom';
+        const subject = isCustom ? (customEmailSubject || `Válasz a visszajelzésre: ${updatedFeedback.title}`) : `Visszajelzés Frissítés: ${updatedFeedback.title}`;
         
-        await sendEmail({
-          to: [updatedFeedback.email],
-          subject: subject,
-          text: subject,
-          html: `
-            <h2>${subject}</h2>
-            <p><strong>Referencia szám:</strong> ${updatedFeedback._id}</p>
-            <p><strong>Cím:</strong> ${updatedFeedback.title}</p>
-            <p><strong>Státusz:</strong> ${status}</p>
-            ${resolution ? `<p><strong>Megoldás:</strong> ${resolution}</p>` : ''}
-            ${adminNotes ? `<p><strong>Admin megjegyzés:</strong> ${adminNotes}</p>` : ''}
-            <br>
-            <p>Köszönjük, hogy segített minket a szolgáltatás fejlesztésében!</p>
-          `
-        });
+        let htmlContent = '';
+
+        if (isCustom && customEmailMessage) {
+            htmlContent = `
+                <h2>Frissítés a visszajelzéssel kapcsolatban</h2>
+                <p>${customEmailMessage.replace(/\n/g, '<br>')}</p>
+                <br>
+                <hr>
+                <p><small>Referencia szám: ${updatedFeedback._id}</small></p>
+                <p><small>Ez egy automatikus üzenet, kérjük ne válaszoljon rá.</small></p>
+            `;
+        } else if (emailNotification === 'status' && status) {
+             const statusLabels: Record<string, string> = {
+                'pending': 'Függőben',
+                'in-progress': 'Folyamatban',
+                'resolved': 'Megoldva',
+                'rejected': 'Elutasítva',
+                'closed': 'Lezárva'
+            };
+            
+            htmlContent = `
+                <h2>Visszajelzés Státuszváltozás</h2>
+                <p><strong>Referencia szám:</strong> ${updatedFeedback._id}</p>
+                <p><strong>Cím:</strong> ${updatedFeedback.title}</p>
+                <p><strong>Új Státusz:</strong> ${statusLabels[status] || status}</p>
+                ${resolution ? `<p><strong>Megoldás:</strong> ${resolution}</p>` : ''}
+                ${adminNotes ? `<p><strong>Admin megjegyzés:</strong> ${adminNotes}</p>` : ''}
+                <br>
+                <p>Köszönjük, hogy segített minket a szolgáltatás fejlesztésében!</p>
+            `;
+        }
+        
+        if (htmlContent) {
+             await sendEmail({
+              to: [updatedFeedback.email],
+              subject: subject,
+              text: subject, 
+              html: htmlContent
+            });
+        }
       }
     } catch (emailError) {
       console.error('Error sending status update email:', emailError);

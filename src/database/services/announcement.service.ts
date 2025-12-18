@@ -41,10 +41,33 @@ export class AnnouncementService {
     return await AnnouncementModel.find().sort({ createdAt: -1 });
   }
 
-  static async getAnnouncementsForAdmin(): Promise<AnnouncementDocument[]> {
+  static async getAnnouncementsForAdmin(page: number = 1, limit: number = 10, search?: string): Promise<{ announcements: AnnouncementDocument[]; total: number; page: number; totalPages: number }> {
     await connectMongo();
     
-    return await AnnouncementModel.find().sort({ createdAt: -1 });
+    const query: any = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [announcements, total] = await Promise.all([
+      AnnouncementModel.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      AnnouncementModel.countDocuments(query)
+    ]);
+    
+    return {
+      announcements,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   static async getAnnouncementById(id: string): Promise<AnnouncementDocument | null> {

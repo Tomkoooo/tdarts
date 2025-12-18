@@ -7,6 +7,14 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Input } from '@/components/ui/Input';
+import{ Label } from '@/components/ui/Label';
+import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
 
 interface Player {
   playerId: {
@@ -94,7 +102,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setExpandedMatches(newExpanded);
   };
 
-
   const handleEditMatch = (match: Match) => {
     setSelectedMatch(match);
     setPlayer1Legs(match.player1.legsWon || 0);
@@ -125,7 +132,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       return;
     }
 
-    // Show warning about manual standing adjustment
     const confirmMessage = `Biztosan módosítod a játékos helyezését?\n\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.`;
     
     if (!window.confirm(confirmMessage)) {
@@ -142,7 +148,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
         toast.success('Helyezés sikeresen módosítva!', {
           duration: 4000,
         });
-        // Refresh the page to show updated standings
         window.location.reload();
       } else {
         toast.error('Hiba történt a helyezés módosítása során!');
@@ -156,7 +161,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const handleSaveMatch = async () => {
     if (!selectedMatch) return;
 
-    // Validate no tie
     if (player1Legs === player2Legs) {
       toast.error('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.');
       return;
@@ -173,7 +177,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           player2LegsWon: player2Legs,
           player1Stats,
           player2Stats,
-          allowManualFinish: true // Allow finishing without legs (admin manual entry)
+          allowManualFinish: true
         })
       });
 
@@ -185,7 +189,6 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       setShowAdminModal(false);
       setSelectedMatch(null);
       toast.success('Meccs sikeresen frissítve!');
-      // Optionally trigger a refetch of tournament data
       window.location.reload();
     } catch (err: any) {
       showErrorToast(err?.message || 'Hiba történt a mentés során!', {
@@ -202,310 +205,292 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   if (!tournament.groups || tournament.groups.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-base-content/70">Még nincsenek csoportok generálva.</p>
+        <p className="text-muted-foreground">Még nincsenek csoportok generálva.</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-bold">Csoportok</h2>
-      <div className="space-y-4 mt-4">
-        {tournament.groups.map((group: any, groupIndex: number) => {
-          const groupPlayers = tournament.tournamentPlayers
-            .filter((player: any) => player.groupId === group._id)
-            .sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0));
-          
-          const isExpanded = expandedGroups.has(group._id);
-          const isMatchesExpanded = expandedMatches.has(group._id);
+    <div className="mt-6 space-y-4">
+      <h2 className="text-xl font-bold text-foreground">Csoportok</h2>
+      
+      {tournament.groups.map((group: any, groupIndex: number) => {
+        const groupPlayers = tournament.tournamentPlayers
+          .filter((player: any) => player.groupId === group._id)
+          .sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0));
+        
+        const isExpanded = expandedGroups.has(group._id);
+        const isMatchesExpanded = expandedMatches.has(group._id);
 
-          return (
-            <div key={group._id} className="card bg-base-200 shadow-md w-full">
-              <div className="card-body">
-                <div className="flex justify-between items-center">
-                  <h3 className="card-title">
-                    Csoport {groupIndex + 1} (Tábla {group.board})
-                  </h3>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => toggleGroup(group._id)}
-                  >
-                    <svg
-                      className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Collapsed State - Compact Player Cards */}
-                {!isExpanded && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {groupPlayers.map((player: any, index: number) => (
-                      <div key={player._id} className="bg-base-100 rounded-md p-2 hover:bg-base-300 transition-colors ">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <span className="badge badge-primary badge-xs font-bold">
-                              {player.groupStanding || index + 1}.
-                            </span>
-                            <span className="font-medium text-xs truncate">
-                              {player.playerReference?.name || 'Ismeretlen'}
-                            </span>
-                          </div>
-                          <div className="text-xs text-base-content/70 ml-2">
-                            {(player.stats?.matchesWon || 0) * 2}p
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Expanded State */}
-                {isExpanded && (
-                  <div className="mt-4">
-                    {/* Players Table */}
-                    <div className="mb-6">
-                      <h4 className="font-bold text-lg mb-3">Játékosok Rangsora</h4>
-                      <div className="overflow-x-auto">
-                        <table className="table table-zebra w-full">
-                          <thead>
-                            <tr>
-                              <th className="text-center">Sorszám</th>
-                              <th className="text-center">Helyezés</th>
-                              <th>Név</th>
-                              {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                                <th className="text-center">Mozgatás</th>
-                              )}
-                              <th className="text-center">Pontok</th>
-                              <th className="text-center">Nyert Meccsek</th>
-                              <th className="text-center">Vesztett Meccsek</th>
-                              <th className="text-center">Nyert Legek</th>
-                              <th className="text-center">Vesztett Legek</th>
-                              <th className="text-center">Legkülönbség</th>
-                              <th className="text-center">Átlag</th>
-                              <th className="text-center">180-ak</th>
-                              <th className="text-center">Legmagasabb Kiszálló</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groupPlayers.map((player: any, index: number) => {
-                              const stats = player.stats || {};
-                              const legDifference = (stats.legsWon || 0) - (stats.legsLost || 0);
-                              
-                              return (
-                                <tr key={player._id} className="hover:bg-base-200">
-                                  <td className="text-center font-bold">
-                                    {player.groupOrdinalNumber +1}.
-                                  </td>
-                                  <td className="text-center font-bold">
-                                    {player.groupStanding || index + 1}.
-                                  </td>
-                                  <td className="font-semibold">
-                                    {player.playerReference?.name || 'Ismeretlen'}
-                                  </td>
-                                  {(userClubRole === 'admin' || userClubRole === 'moderator') && (
-                                    <td className="text-center">
-                                      <div className="flex flex-col gap-1">
-                                        <button
-                                          onClick={() => handleMovePlayer(group._id, player._id, 'up')}
-                                          disabled={index === 0}
-                                          className="btn btn-xs btn-ghost p-1"
-                                          title="Fel mozgatás"
-                                        >
-                                          <IconArrowUp size={12} />
-                                        </button>
-                                        <button
-                                          onClick={() => handleMovePlayer(group._id, player._id, 'down')}
-                                          disabled={index === groupPlayers.length - 1}
-                                          className="btn btn-xs btn-ghost p-1"
-                                          title="Le mozgatás"
-                                        >
-                                          <IconArrowDown size={12} />
-                                        </button>
-                                      </div>
-                                    </td>
-                                  )}
-                                  <td className="text-center">
-                                    {(stats.matchesWon || 0) * 2}
-                                  </td>
-                                  <td className="text-center text-success">
-                                    {stats.matchesWon || 0}
-                                  </td>
-                                  <td className="text-center text-error">
-                                    {stats.matchesLost || 0}
-                                  </td>
-                                  <td className="text-center text-success">
-                                    {stats.legsWon || 0}
-                                  </td>
-                                  <td className="text-center text-error">
-                                    {stats.legsLost || 0}
-                                  </td>
-                                  <td className={`text-center font-bold ${legDifference > 0 ? 'text-success' : legDifference < 0 ? 'text-error' : ''}`}>
-                                    {legDifference > 0 ? '+' : ''}{legDifference}
-                                  </td>
-                                  <td className="text-center">
-                                    {stats.avg ? stats.avg.toFixed(1) : (stats.average ? stats.average.toFixed(1) : '0.0')}
-                                  </td>
-                                  <td className="text-center">
-                                    {stats.oneEightiesCount || 0}
-                                  </td>
-                                  <td className="text-center">
-                                    {stats.highestCheckout || 0}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Matches Section */}
-                    <div>
-                      <button
-                        className="btn shadow-md btn-sm w-full flex justify-between items-center mb-4"
-                        onClick={() => toggleMatches(group._id)}
-                      >
-                        <span>Mérkőzések</span>
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isMatchesExpanded ? "rotate-180" : ""}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {isMatchesExpanded && (
-                        <div className="mt-4">
-                          <div className="mb-4 flex flex-col items-start gap-2">
-                            <label className="label">
-                              <span className="label-text">Szűrés állapot szerint:</span>
-                            </label>
-                            <select
-                              className="select select-sm select-bordered"
-                              value={matchFilter}
-                              onChange={(e) => setMatchFilter(e.target.value as 'all' | 'pending' | 'ongoing' | 'finished')}
-                            >
-                              <option value="all">Összes</option>
-                              <option value="pending">Függőben</option>
-                              <option value="ongoing">Folyamatban</option>
-                              <option value="finished">Befejezve</option>
-                            </select>
-                          </div>
-
-                          {group.matches && group.matches.length > 0 ? (
-                            <div className="overflow-x-auto">
-                              <table className="table table-zebra w-full">
-                                <thead>
-                                  <tr>
-                                    <th className="text-center">Sorszám</th>
-                                    <th>Játékosok</th>
-                                    <th>Pontozó</th>
-                                    <th className="text-center">Állapot</th>
-                                    <th className="text-center">Átlag</th>
-                                    <th className="text-center">Eredmény</th>
-                                    <th className="text-center">Műveletek</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {group.matches
-                                    .filter((match: Match) =>
-                                      matchFilter === 'all' ? true : match.status === matchFilter
-                                    )
-                                    .map((match: Match, matchIndex: number) => (
-                                    <tr key={match._id} className="hover:bg-base-200">
-                                      <td className="text-center font-bold">
-                                        {matchIndex + 1}.
-                                      </td>
-                                      <td className="font-semibold">
-                                        {match.player1?.playerId?.name || 'Ismeretlen'} vs {match.player2?.playerId?.name || 'Ismeretlen'}
-                                      </td>
-                                      <td>
-                                        {match.scorer?.name || 'Nincs'}
-                                      </td>
-                                      <td className="text-center">
-                                        <span className={`badge ${
-                                          match.status === 'pending' ? 'badge-warning' : 
-                                          match.status === 'ongoing' ? 'badge-primary' : 
-                                          match.status === 'finished' ? 'badge-success' : 'badge-ghost'
-                                        }`}>
-                                          {match.status === 'pending' ? 'Függőben' : 
-                                           match.status === 'ongoing' ? 'Folyamatban' : 
-                                           match.status === 'finished' ? 'Befejezett' : 'Ismeretlen'}
-                                        </span>
-                                      </td>
-                                      <td className="text-center">
-                                        {match.player1.average && match.player2.average ? (
-                                          <span>
-                                            {match.player1.average?.toFixed(1)} - {match.player2.average?.toFixed(1)}
-                                          </span>
-                                        ) : (
-                                          '-'
-                                        )}
-                                      </td>
-                                      <td className="text-center">
-                                        {(match.status === 'finished' || match.status === 'ongoing') ? (
-                                          <span className="badge badge-neutral">
-                                            {match.player1.legsWon} - {match.player2.legsWon}
-                                          </span>
-                                        ) : (
-                                          '-'
-                                        )}
-                                      </td>
-                                      <td className="text-center">
-                                        <div className="flex gap-1">
-                                          {(match.status === 'ongoing' || match.status === 'finished') && (
-                                            <button
-                                              className="btn btn-info btn-sm"
-                                              onClick={() => handleViewLegs(match)}
-                                              title="Legek megtekintése"
-                                            >
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                              </svg>
-                                              Legek
-                                            </button>
-                                          )}
-                                          {isAdminOrModerator && (
-                                            <button
-                                              className="btn btn-warning btn-sm"
-                                              onClick={() => handleEditMatch(match)}
-                                            >
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                              </svg>
-                                              Szerkesztés
-                                            </button>
-                                          )}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <p>Nincsenek mérkőzések a csoportban.</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+        return (
+          <Card key={group._id} className="bg-card shadow-lg shadow-black/20">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-bold text-foreground">
+                  Csoport {groupIndex + 1} <span className="text-muted-foreground text-sm">(Tábla {group.board})</span>
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleGroup(group._id)}
+                >
+                  <IconChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                </Button>
               </div>
-            </div>
-          );
-        })}
-      </div>
+
+              {/* Collapsed State - Compact Player Cards */}
+              {!isExpanded && (
+                <div className="flex flex-wrap gap-2">
+                  {groupPlayers.map((player: any, index: number) => (
+                    <div key={player._id} className="bg-muted/50 rounded-md p-2 hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="text-xs">
+                          {player.groupStanding || index + 1}.
+                        </Badge>
+                        <span className="font-medium text-sm text-foreground">
+                          {player.playerReference?.name || 'Ismeretlen'}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {(player.stats?.matchesWon || 0) * 2}p
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Expanded State */}
+              {isExpanded && (
+                <div className="mt-4 space-y-6">
+                  {/* Players Table */}
+                  <div>
+                    <h4 className="font-bold text-base mb-3 text-foreground">Játékosok Rangsora</h4>
+                    <div className="rounded-md border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-center w-16">Sorszám</TableHead>
+                            <TableHead className="text-center w-16">Helyezés</TableHead>
+                            <TableHead>Név</TableHead>
+                            {isAdminOrModerator && <TableHead className="text-center w-20">Mozgatás</TableHead>}
+                            <TableHead className="text-center">Pontok</TableHead>
+                            <TableHead className="text-center">Nyert</TableHead>
+                            <TableHead className="text-center">Vesztett</TableHead>
+                            <TableHead className="text-center">Nyert Leg</TableHead>
+                            <TableHead className="text-center">Vesztett Leg</TableHead>
+                            <TableHead className="text-center">Leg ±</TableHead>
+                            <TableHead className="text-center">Átlag</TableHead>
+                            <TableHead className="text-center">180</TableHead>
+                            <TableHead className="text-center">Max Kiszálló</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {groupPlayers.map((player: any, index: number) => {
+                            const stats = player.stats || {};
+                            const legDifference = (stats.legsWon || 0) - (stats.legsLost || 0);
+                            
+                            return (
+                              <TableRow key={player._id}>
+                                <TableCell className="text-center font-bold">
+                                  {player.groupOrdinalNumber + 1}.
+                                </TableCell>
+                                <TableCell className="text-center font-bold">
+                                  {player.groupStanding || index + 1}.
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {player.playerReference?.name || 'Ismeretlen'}
+                                </TableCell>
+                                {isAdminOrModerator && (
+                                  <TableCell className="text-center">
+                                    <div className="flex justify-center gap-1">
+                                      <Button
+                                        onClick={() => handleMovePlayer(group._id, player._id, 'up')}
+                                        disabled={index === 0}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        title="Fel mozgatás"
+                                      >
+                                        <IconArrowUp className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => handleMovePlayer(group._id, player._id, 'down')}
+                                        disabled={index === groupPlayers.length - 1}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        title="Le mozgatás"
+                                      >
+                                        <IconArrowDown className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                )}
+                                <TableCell className="text-center">
+                                  {(stats.matchesWon || 0) * 2}
+                                </TableCell>
+                                <TableCell className="text-center text-success">
+                                  {stats.matchesWon || 0}
+                                </TableCell>
+                                <TableCell className="text-center text-destructive">
+                                  {stats.matchesLost || 0}
+                                </TableCell>
+                                <TableCell className="text-center text-success">
+                                  {stats.legsWon || 0}
+                                </TableCell>
+                                <TableCell className="text-center text-destructive">
+                                  {stats.legsLost || 0}
+                                </TableCell>
+                                <TableCell className={`text-center font-bold ${legDifference > 0 ? 'text-success' : legDifference < 0 ? 'text-destructive' : ''}`}>
+                                  {legDifference > 0 ? '+' : ''}{legDifference}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {stats.avg ? stats.avg.toFixed(1) : (stats.average ? stats.average.toFixed(1) : '0.0')}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {stats.oneEightiesCount || 0}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {stats.highestCheckout || 0}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Matches Section */}
+                  <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-between mb-4"
+                      onClick={() => toggleMatches(group._id)}
+                    >
+                      <span>Mérkőzések</span>
+                      <IconChevronDown className={`h-4 w-4 transition-transform ${isMatchesExpanded ? "rotate-180" : ""}`} />
+                    </Button>
+
+                    {isMatchesExpanded && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm">Szűrés állapot szerint:</Label>
+                          <Select value={matchFilter} onValueChange={(v) => setMatchFilter(v as any)}>
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Összes</SelectItem>
+                              <SelectItem value="pending">Függőben</SelectItem>
+                              <SelectItem value="ongoing">Folyamatban</SelectItem>
+                              <SelectItem value="finished">Befejezve</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {group.matches && group.matches.length > 0 ? (
+                          <div className="rounded-md border border-border overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-center w-16">#</TableHead>
+                                  <TableHead>Játékosok</TableHead>
+                                  <TableHead>Pontozó</TableHead>
+                                  <TableHead className="text-center">Állapot</TableHead>
+                                  <TableHead className="text-center">Átlag</TableHead>
+                                  <TableHead className="text-center">Eredmény</TableHead>
+                                  <TableHead className="text-center">Műveletek</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {group.matches
+                                  .filter((match: Match) =>
+                                    matchFilter === 'all' ? true : match.status === matchFilter
+                                  )
+                                  .map((match: Match, matchIndex: number) => (
+                                  <TableRow key={match._id}>
+                                    <TableCell className="text-center font-bold">
+                                      {matchIndex + 1}.
+                                    </TableCell>
+                                    <TableCell className="font-semibold">
+                                      {match.player1?.playerId?.name || 'Ismeretlen'} vs {match.player2?.playerId?.name || 'Ismeretlen'}
+                                    </TableCell>
+                                    <TableCell>
+                                      {match.scorer?.name || 'Nincs'}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Badge variant={
+                                        match.status === 'pending' ? 'warning' : 
+                                        match.status === 'ongoing' ? 'default' : 
+                                        match.status === 'finished' ? 'success' : 'outline'
+                                      }>
+                                        {match.status === 'pending' ? 'Függőben' : 
+                                         match.status === 'ongoing' ? 'Folyamatban' : 
+                                         match.status === 'finished' ? 'Befejezett' : 'Ismeretlen'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {match.player1.average && match.player2.average ? (
+                                        <span>
+                                          {match.player1.average?.toFixed(1)} - {match.player2.average?.toFixed(1)}
+                                        </span>
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {(match.status === 'finished' || match.status === 'ongoing') ? (
+                                        <Badge variant="outline">
+                                          {match.player1.legsWon} - {match.player2.legsWon}
+                                        </Badge>
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="flex justify-center gap-1">
+                                        {(match.status === 'ongoing' || match.status === 'finished') && (
+                                          <Button
+                                            variant="info"
+                                            size="sm"
+                                            onClick={() => handleViewLegs(match)}
+                                            title="Legek megtekintése"
+                                          >
+                                            <IconEye className="h-4 w-4 mr-1" />
+                                            Legek
+                                          </Button>
+                                        )}
+                                        {isAdminOrModerator && (
+                                          <Button
+                                            variant="warning"
+                                            size="sm"
+                                            onClick={() => handleEditMatch(match)}
+                                          >
+                                            <IconEdit className="h-4 w-4 mr-1" />
+                                            Szerkesztés
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Nincsenek mérkőzések a csoportban.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {/* Admin Modal */}
       <Dialog open={showAdminModal} onOpenChange={setShowAdminModal}>
@@ -527,28 +512,24 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
               <div className="space-y-4">
                 <h5 className="font-bold text-lg text-primary">{selectedMatch.player1?.playerId?.name}</h5>
                 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Nyert legek:</span>
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="p1-legs">Nyert legek:</Label>
+                  <Input
+                    id="p1-legs"
                     type="number"
                     max="10"
-                    className="input input-bordered w-full"
                     value={player1Legs}
                     onChange={(e) => setPlayer1Legs(parseInt(e.target.value) || 0)}
                   />
                 </div>
                 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">180-ak száma:</span>
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="p1-180s">180-ak száma:</Label>
+                  <Input
+                    id="p1-180s"
                     type="number"
                     max="50"
-                    className="input input-bordered w-full"
-                    value={player1Stats.oneEightiesCount || 0 }
+                    value={player1Stats.oneEightiesCount || 0}
                     onChange={(e) => setPlayer1Stats(prev => ({
                       ...prev,
                       oneEightiesCount: parseInt(e.target.value) || 0
@@ -556,14 +537,12 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   />
                 </div>
                 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Legmagasabb kiszálló:</span>
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="p1-checkout">Legmagasabb kiszálló:</Label>
+                  <Input
+                    id="p1-checkout"
                     type="number"
                     max="170"
-                    className="input input-bordered w-full"
                     value={player1Stats.highestCheckout || 0}
                     onChange={(e) => setPlayer1Stats(prev => ({
                       ...prev,
@@ -577,27 +556,23 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
               <div className="space-y-4">
                 <h5 className="font-bold text-lg text-primary">{selectedMatch.player2?.playerId?.name}</h5>
                 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Nyert legek:</span>
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="p2-legs">Nyert legek:</Label>
+                  <Input
+                    id="p2-legs"
                     type="number"
                     max="10"
-                    className="input input-bordered w-full"
                     value={player2Legs}
                     onChange={(e) => setPlayer2Legs(parseInt(e.target.value) || 0)}
                   />
                 </div>
                 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">180-ak száma:</span>
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="p2-180s">180-ak száma:</Label>
+                  <Input
+                    id="p2-180s"
                     type="number"
                     max="50"
-                    className="input input-bordered w-full"
                     value={player2Stats.oneEightiesCount || 0}
                     onChange={(e) => setPlayer2Stats(prev => ({
                       ...prev,
@@ -606,14 +581,12 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                   />
                 </div>
                 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Legmagasabb kiszálló:</span>
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="p2-checkout">Legmagasabb kiszálló:</Label>
+                  <Input
+                    id="p2-checkout"
                     type="number"
                     max="170"
-                    className="input input-bordered w-full"
                     value={player2Stats.highestCheckout || 0}
                     onChange={(e) => setPlayer2Stats(prev => ({
                       ...prev,
@@ -626,21 +599,13 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           )}
             
           <DialogFooter>
-              <button
-              type="button"
-              className="btn btn-success"
-                onClick={handleSaveMatch}
-                disabled={loading || player1Legs === player2Legs}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Mentés"
-                )}
-              </button>
+            <Button
+              variant="success"
+              onClick={handleSaveMatch}
+              disabled={loading || player1Legs === player2Legs}
+            >
+              {loading ? 'Mentés...' : 'Mentés'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

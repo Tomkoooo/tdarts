@@ -86,10 +86,8 @@ const PricingSection = () => {
             Árazás
           </Badge>
           
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold">
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">
             Válaszd ki a Tökéletes Csomagot
-            </span>
           </h2>
           
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -123,7 +121,7 @@ const PricingSection = () => {
 
                 <CardHeader className="text-center space-y-4 pt-8">
               {/* Package Icon */}
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-muted flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
                     <Icon className="w-8 h-8 text-primary" />
               </div>
 

@@ -196,7 +196,7 @@ export default function TodoManager() {
     const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && todo.status !== 'completed';
 
     return (
-      <div className="bg-base-100 border  rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
+      <div className="bg-base-100   rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
         {/* Priority Badge */}
         <div className="flex items-start justify-between mb-3">
           <span className={`${priorityConfig.color} px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1`}>
@@ -327,19 +327,19 @@ export default function TodoManager() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-primary/20 to-primary/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-primary/20 to-primary/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
             <div className="text-sm text-base-content/70 font-medium">Összes Todo</div>
           </div>
-          <div className="bg-gradient-to-br from-warning/20 to-warning/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-warning/20 to-warning/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
             <div className="text-sm text-base-content/70 font-medium">Függőben</div>
           </div>
-          <div className="bg-gradient-to-br from-info/20 to-info/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-info/20 to-info/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
             <div className="text-sm text-base-content/70 font-medium">Folyamatban</div>
           </div>
-          <div className="bg-gradient-to-br from-success/20 to-success/5 border  rounded-xl p-6 text-center">
+          <div className="bg-gradient-to-br from-success/20 to-success/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-success mb-2">{stats.completed}</div>
             <div className="text-sm text-base-content/70 font-medium">Befejezve</div>
           </div>
@@ -347,7 +347,7 @@ export default function TodoManager() {
       )}
 
       {/* Toolbar */}
-      <div className="bg-base-100 border  rounded-xl p-6">
+      <div className="bg-base-100   rounded-xl p-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* View Toggle */}
           <div className="flex gap-2">
@@ -370,7 +370,7 @@ export default function TodoManager() {
           {/* Filters */}
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select
-              className="select select-bordered select-sm w-full"
+              className="select select-ed select-sm w-full"
               value={filters.priority}
               onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
             >
@@ -382,7 +382,7 @@ export default function TodoManager() {
             </select>
 
             <select
-              className="select select-bordered select-sm w-full"
+              className="select select-ed select-sm w-full"
               value={filters.category}
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
             >
@@ -398,7 +398,7 @@ export default function TodoManager() {
               <input
                 type="text"
                 placeholder="Keresés..."
-                className="input input-bordered input-sm w-full pl-10"
+                className="input input-ed input-sm w-full pl-10"
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               />
@@ -424,32 +424,32 @@ export default function TodoManager() {
             status="pending"
             title="Függőben"
             icon={IconClock}
-            color="bg-amber-200/20 border border-amber-200/40"
+            color="bg-amber-200/20  -amber-200/40"
           />
           <KanbanColumn
             status="in-progress"
             title="Folyamatban"
             icon={IconProgress}
-            color="bg-sky-200/20 border border-sky-200/40"
+            color="bg-sky-200/20  -sky-200/40"
           />
           <KanbanColumn
             status="completed"
             title="Befejezve"
             icon={IconCircleCheck}
-            color="bg-emerald-200/20 border border-emerald-200/40"
+            color="bg-emerald-200/20  -emerald-200/40"
           />
           <KanbanColumn
             status="cancelled"
             title="Törölve"
             icon={IconCircleX}
-            color="bg-muted/40 border border-muted/60"
+            color="bg-muted/40  -muted/60"
           />
         </div>
       )}
 
       {/* List View */}
       {viewMode === 'list' && (
-        <div className="bg-base-100 border  rounded-xl p-6">
+        <div className="bg-base-100   rounded-xl p-6">
           <h3 className="text-lg font-bold mb-4">Todo-k ({filteredTodos.length})</h3>
           
           {filteredTodos.length === 0 ? (
@@ -488,7 +488,7 @@ export default function TodoManager() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full"
+                  className="input input-ed w-full"
                   value={newTodo.title}
                   onChange={(e) => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Todo címe..."
@@ -501,7 +501,7 @@ export default function TodoManager() {
                     <span className="label-text font-bold">Kategória</span>
                   </label>
                   <select
-                    className="select select-bordered w-full"
+                    className="select select-ed w-full"
                     value={newTodo.category}
                     onChange={(e) => setNewTodo(prev => ({ ...prev, category: e.target.value as any }))}
                   >
@@ -518,7 +518,7 @@ export default function TodoManager() {
                     <span className="label-text font-bold">Prioritás</span>
                   </label>
                   <select
-                    className="select select-bordered w-full"
+                    className="select select-ed w-full"
                     value={newTodo.priority}
                     onChange={(e) => setNewTodo(prev => ({ ...prev, priority: e.target.value as any }))}
                   >
@@ -536,7 +536,7 @@ export default function TodoManager() {
                 </label>
                 <input
                   type="date"
-                  className="input input-bordered w-full"
+                  className="input input-ed w-full"
                   value={newTodo.dueDate}
                   onChange={(e) => setNewTodo(prev => ({ ...prev, dueDate: e.target.value }))}
                 />
@@ -547,7 +547,7 @@ export default function TodoManager() {
                   <span className="label-text font-bold">Leírás</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered w-full h-32"
+                  className="textarea textarea-ed w-full h-32"
                   value={newTodo.description}
                   onChange={(e) => setNewTodo(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Részletes leírás..."
@@ -560,7 +560,7 @@ export default function TodoManager() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full"
+                  className="input input-ed w-full"
                   placeholder="Címke hozzáadása (Enter)"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -638,7 +638,7 @@ export default function TodoManager() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full"
+                  className="input input-ed w-full"
                   value={editingTodo.title}
                   onChange={(e) => setEditingTodo(prev => prev ? { ...prev, title: e.target.value } : null)}
                 />
@@ -650,7 +650,7 @@ export default function TodoManager() {
                     <span className="label-text font-bold">Státusz</span>
                   </label>
                   <select
-                    className="select select-bordered w-full"
+                    className="select select-ed w-full"
                     value={editingTodo.status}
                     onChange={(e) => setEditingTodo(prev => prev ? { ...prev, status: e.target.value as any } : null)}
                   >
@@ -666,7 +666,7 @@ export default function TodoManager() {
                     <span className="label-text font-bold">Prioritás</span>
                   </label>
                   <select
-                    className="select select-bordered w-full"
+                    className="select select-ed w-full"
                     value={editingTodo.priority}
                     onChange={(e) => setEditingTodo(prev => prev ? { ...prev, priority: e.target.value as any } : null)}
                   >
@@ -683,7 +683,7 @@ export default function TodoManager() {
                   <span className="label-text font-bold">Kategória</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-ed w-full"
                   value={editingTodo.category}
                   onChange={(e) => setEditingTodo(prev => prev ? { ...prev, category: e.target.value as any } : null)}
                 >
@@ -700,7 +700,7 @@ export default function TodoManager() {
                   <span className="label-text font-bold">Leírás</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered w-full h-32"
+                  className="textarea textarea-ed w-full h-32"
                   value={editingTodo.description || ''}
                   onChange={(e) => setEditingTodo(prev => prev ? { ...prev, description: e.target.value } : null)}
                 />

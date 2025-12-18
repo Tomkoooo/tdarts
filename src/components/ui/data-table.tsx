@@ -18,6 +18,14 @@ import { IconArrowUp, IconArrowDown, IconSearch, IconChevronLeft, IconChevronRig
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
@@ -64,14 +72,12 @@ export function DataTable<TData, TValue>({
   if (loading) {
     return (
       <div className="space-y-4">
-        {/* Search skeleton */}
         {searchKey && (
           <div className="flex items-center gap-2">
-            <Skeleton className="h-11 w-full max-w-sm" />
+            <Skeleton className="h-10 w-full max-w-sm" />
           </div>
         )}
-        {/* Table skeleton */}
-        <div className="rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="rounded-md border">
           <div className="p-4 space-y-3">
             {[...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
@@ -84,7 +90,6 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      {/* Search */}
       {searchKey && (
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-sm">
@@ -101,96 +106,79 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b border-border/50 bg-muted/30">
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <th
-                        key={header.id}
-                        className="h-12 px-4 text-left align-middle font-semibold text-sm text-foreground"
-                      >
-                        {header.isPlaceholder ? null : (
-                          <div
-                            className={cn(
-                              header.column.getCanSort() &&
-                                "flex items-center gap-2 cursor-pointer select-none hover:text-primary transition-colors",
-                            )}
-                            onClick={header.column.getToggleSortingHandler()}
-                          >
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                            {header.column.getCanSort() && (
-                              <div className="flex flex-col">
-                                {header.column.getIsSorted() === "asc" && (
-                                  <IconArrowUp className="w-4 h-4 text-primary" />
-                                )}
-                                {header.column.getIsSorted() === "desc" && (
-                                  <IconArrowDown className="w-4 h-4 text-primary" />
-                                )}
-                                {!header.column.getIsSorted() && (
-                                  <div className="w-4 h-4 opacity-30">
-                                    <IconArrowUp className="w-4 h-4" />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </th>
-                    )
-                  })}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className={cn(
-                      "border-b border-border/50 transition-colors hover:bg-muted/50",
-                      onRowClick && "cursor-pointer",
-                      row.getIsSelected() && "bg-primary/5"
-                    )}
-                    onClick={() => onRowClick?.(row.original)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="p-4 align-middle text-sm text-foreground"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    Nincs találat.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder ? null : (
+                        <div
+                          className={cn(
+                            header.column.getCanSort() &&
+                              "flex items-center gap-2 cursor-pointer select-none hover:text-foreground transition-colors",
+                          )}
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                          {header.column.getCanSort() && (
+                            <div className="flex flex-col">
+                              {header.column.getIsSorted() === "asc" && (
+                                <IconArrowUp className="w-4 h-4" />
+                              )}
+                              {header.column.getIsSorted() === "desc" && (
+                                <IconArrowDown className="w-4 h-4" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className={cn(
+                    onRowClick && "cursor-pointer"
+                  )}
+                  onClick={() => onRowClick?.(row.original)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  Nincs találat.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length > 0 && (
@@ -228,4 +216,3 @@ export function DataTable<TData, TValue>({
     </div>
   )
 }
-

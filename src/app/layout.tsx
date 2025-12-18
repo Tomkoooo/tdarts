@@ -9,6 +9,8 @@ import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import NavbarNew from "@/components/homapage/NavbarNew";
+import {  Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: {
@@ -102,7 +104,7 @@ export default async function RootLayout({
   
   // Define paths where you don't want to render certain elements
   const hideNavbarPaths = ['/board', '/test', '/tv'];
-  const shouldHideNavbar = hideNavbarPaths.some(path => pathname.startsWith(path) || pathname.includes('/tv'));
+  const shouldHideNavbar = hideNavbarPaths.some(path => pathname.includes(path));
 
   
   const cookieStore = cookies();
@@ -180,51 +182,13 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="hu" data-theme="tDarts" className="dark">
+    <html lang="hu" className="dark">
       <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="color-scheme" content="only dark" />
-        <meta name="theme-color" content="#42010b" />
-        <meta name="supported-color-schemes" content="dark" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="theme-color" content="#373d42" />
         <meta name="google-site-verification" content="0fadL9zSu0Oc0kyt3hnRa_S1jEOTUVQp4PaHLJm7JF4" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Force dark mode immediately
-              document.documentElement.style.colorScheme = 'dark';
-              document.documentElement.style.backgroundColor = '#42010b';
-              document.documentElement.style.color = '#ffffff';
-              document.body.style.color = '#ffffff';
-              // Don't override body background - let CSS handle it
-              
-              // Also set data attribute
-              document.documentElement.setAttribute('data-theme', 'tDarts');
-              document.documentElement.classList.add('dark');
-              
-              // Force CSS custom properties for production
-              document.documentElement.style.setProperty('--color-base-100', 'oklch(15% 0.02 12)');
-              document.documentElement.style.setProperty('--color-base-200', 'oklch(18% 0.055 18)');
-              document.documentElement.style.setProperty('--color-base-300', 'oklch(18% 0.03 12)');
-              document.documentElement.style.setProperty('--color-base-content', 'oklch(95% 0.005 0)');
-              document.documentElement.style.setProperty('--color-primary', 'oklch(51% 0.18 16)');
-              document.documentElement.style.setProperty('--color-primary-content', 'oklch(100% 0 0)');
-              document.documentElement.style.setProperty('--color-secondary', 'oklch(18% 0.03 12)');
-              document.documentElement.style.setProperty('--color-secondary-content', 'oklch(95% 0.005 0)');
-              document.documentElement.style.setProperty('--color-accent', 'oklch(51% 0.18 16)');
-              document.documentElement.style.setProperty('--color-accent-content', 'oklch(100% 0 0)');
-              document.documentElement.style.setProperty('--color-neutral', 'oklch(15% 0.025 12)');
-              document.documentElement.style.setProperty('--color-neutral-content', 'oklch(95% 0.005 0)');
-              document.documentElement.style.setProperty('--color-info', 'oklch(70% 0.16 233)');
-              document.documentElement.style.setProperty('--color-info-content', 'oklch(100% 0 0)');
-              document.documentElement.style.setProperty('--color-success', 'oklch(64% 0.2 132)');
-              document.documentElement.style.setProperty('--color-success-content', 'oklch(100% 0 0)');
-              document.documentElement.style.setProperty('--color-warning', 'oklch(68% 0.162 76)');
-              document.documentElement.style.setProperty('--color-warning-content', 'oklch(100% 0 0)');
-              document.documentElement.style.setProperty('--color-error', 'oklch(60% 0.184 16)');
-              document.documentElement.style.setProperty('--color-error-content', 'oklch(100% 0 0)');
-            `,
-          }}
-        />
+
       </head>
       <body className="flex flex-col">
         <SessionProvider>
@@ -232,7 +196,10 @@ export default async function RootLayout({
             <AuthSync />
             <PWAProvider />
             <NavbarProvider initialShouldHide={shouldHideNavbar}>
-            {children}
+             
+              <Toaster position="top-left" />
+              <NavbarNew />
+              {children}
             </NavbarProvider>
           </UserProvider>
         </SessionProvider>

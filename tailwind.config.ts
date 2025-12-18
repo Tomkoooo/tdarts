@@ -10,123 +10,86 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ===== shadcn/ui Core Colors (OKLCH) =====
-        border: "oklch(20% 0.03 12)",
-        input: "oklch(20% 0.03 12)",
-        ring: "oklch(51% 0.18 16)",
-        background: "oklch(8% 0.02 12)",
-        foreground: "oklch(95% 0.005 0)",
+        // ===== Revised Dark Red Theme (User Request) =====
         
-        // Primary Red Colors
+        // Base Colors
+        background: "#1a0505", // Very Deep Red/Black
+        foreground: "#f2dccd", // Light Warm Beige for contrast
+        
+        // Primary (Rich Dark Red - The Brand Color)
         primary: {
-          DEFAULT: "oklch(51% 0.18 16)",
-          foreground: "oklch(100% 0 0)",
-          hover: "oklch(56% 0.18 16)",
-          active: "oklch(48% 0.20 16)",
-          disabled: "oklch(36% 0.11 16) / 0.5",
-          dark: "oklch(41% 0.18 16)",
-          darker: "oklch(31% 0.18 16)",
+          DEFAULT: "#922210", 
+          foreground: "#ffffff",
+          dark: "#7a1c0d",
         },
-        
-        // Secondary Colors
+
+        // Secondary (Warm Bronze/Gold to complement red)
         secondary: {
-          DEFAULT: "oklch(18% 0.03 12)",
-          foreground: "oklch(95% 0.005 0)",
-          hover: "oklch(23% 0.03 12)",
-          active: "oklch(15% 0.04 12)",
+          DEFAULT: "#c18c5d",
+          foreground: "#ffffff",
+          dark: "#a67850",
         },
         
-        // Destructive Colors
-        destructive: {
-          DEFAULT: "oklch(60% 0.184 16)",
-          foreground: "oklch(100% 0 0)",
-          hover: "oklch(65% 0.184 16)",
-          active: "oklch(57% 0.20 16)",
-        },
-        
-        // Muted Colors
-        muted: {
-          DEFAULT: "oklch(15% 0.025 12)",
-          foreground: "oklch(65% 0.01 12)",
-        },
-        
-        // Accent Colors
+        // Accent (Brighter Red/Orange for highlights)
         accent: {
-          DEFAULT: "oklch(51% 0.18 16)",
-          foreground: "oklch(100% 0 0)",
-          hover: "oklch(56% 0.18 16)",
-          active: "oklch(48% 0.20 16)",
+          DEFAULT: "#d94e32",
+          foreground: "#ffffff",
         },
-        
-        // Popover Colors
-        popover: {
-          DEFAULT: "oklch(12% 0.025 12)",
-          foreground: "oklch(95% 0.005 0)",
+
+        // Muted / Elevated surfaces (MUCH lighter for nested/elevated components)
+        muted: {
+          DEFAULT: "#6d4545",
+          foreground: "#e5d5cd",
         },
-        
-        // Card Colors
+
+        // Card / Level 1 elevation
         card: {
-          DEFAULT: "oklch(12% 0.025 12)",
-          foreground: "oklch(95% 0.005 0)",
+          DEFAULT: "#4a2828",
+          foreground: "#f2dccd",
         },
         
-        // Success, Warning, Info
+        // Popover
+        popover: {
+          DEFAULT: "#4a2828",
+          foreground: "#f2dccd",
+        },
+
+        // Destructive
+        destructive: {
+          DEFAULT: "#dc2626", 
+          foreground: "#ffffff",
+        },
+
+        // Success (Green)
         success: {
-          DEFAULT: "oklch(64% 0.2 132)",
-          foreground: "oklch(100% 0 0)",
-          hover: "oklch(69% 0.2 132)",
+          DEFAULT: "#16a34a",
+          foreground: "#ffffff",
         },
-        warning: {
-          DEFAULT: "oklch(68% 0.162 76)",
-          foreground: "oklch(15% 0.025 12)",
-          hover: "oklch(73% 0.162 76)",
-        },
+
+        // Info (Blue)
         info: {
-          DEFAULT: "oklch(70% 0.16 233)",
-          foreground: "oklch(100% 0 0)",
-          hover: "oklch(75% 0.16 233)",
+          DEFAULT: "#2563eb",
+          foreground: "#ffffff",
         },
-        
-        // ===== Glass Morphism System =====
-        glass: {
-          bg: "oklch(100% 0 0 / 0.08)",
-          "bg-elevated": "oklch(100% 0 0 / 0.12)",
-          "bg-modal": "oklch(100% 0 0 / 0.15)",
-          border: "oklch(100% 0 0 / 0.10)",
-          "border-focus": "oklch(100% 0 0 / 0.20)",
-          "inner-glow": "oklch(100% 0 0 / 0.05)",
-          shadow: "oklch(0% 0 0 / 0.20)",
+
+        // Warning (Amber)
+        warning: {
+          DEFAULT: "#d97706",
+          foreground: "#ffffff",
         },
+
+        // Borders and Inputs (Subtle Red-Gray)
+        border: "#4a2020",
+        input: "#4a2020",
+        ring: "#922210", 
       },
       
-      // Enhanced backdrop blur
-      backdropBlur: {
-        xs: "2px",
-        sm: "4px",
-        md: "8px",
-        lg: "12px",
-        xl: "16px",
-        "2xl": "24px",
-        "3xl": "32px",
-      },
-      
-      // Consistent border radius
       borderRadius: {
-        lg: "0.75rem",
-        md: "0.5rem",
-        sm: "0.25rem",
+        lg: "0.5rem",
+        md: "calc(0.5rem - 2px)",
+        sm: "calc(0.5rem - 4px)",
       },
       
-      // Box shadows with OKLCH
-      boxShadow: {
-        'glass': '0 8px 32px 0 oklch(0% 0 0 / 0.20)',
-        'glass-lg': '0 12px 40px 0 oklch(0% 0 0 / 0.30)',
-        'glass-xl': '0 16px 48px 0 oklch(0% 0 0 / 0.40)',
-        'primary': '0 4px 15px 0 oklch(51% 0.18 16 / 0.40)',
-        'primary-lg': '0 8px 25px 0 oklch(51% 0.18 16 / 0.60)',
-      },
-      
-      // Animation keyframes
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -144,60 +107,19 @@ const config: Config = {
           from: { opacity: "1" },
           to: { opacity: "0" },
         },
-        "slide-in-from-top": {
-          from: { transform: "translateY(-100%)" },
-          to: { transform: "translateY(0)" },
-        },
-        "slide-in-from-bottom": {
-          from: { transform: "translateY(100%)" },
-          to: { transform: "translateY(0)" },
-        },
-        "slide-in-from-left": {
-          from: { transform: "translateX(-100%)" },
-          to: { transform: "translateX(0)" },
-        },
-        "slide-in-from-right": {
-          from: { transform: "translateX(100%)" },
-          to: { transform: "translateX(0)" },
-        },
-        "zoom-in": {
-          from: { transform: "scale(0.95)", opacity: "0" },
-          to: { transform: "scale(1)", opacity: "1" },
-        },
-        "zoom-out": {
-          from: { transform: "scale(1)", opacity: "1" },
-          to: { transform: "scale(0.95)", opacity: "0" },
-        },
       },
       
-      // Animation utilities
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.2s ease-out",
         "fade-out": "fade-out 0.2s ease-in",
-        "slide-in-from-top": "slide-in-from-top 0.3s ease-out",
-        "slide-in-from-bottom": "slide-in-from-bottom 0.3s ease-out",
-        "slide-in-from-left": "slide-in-from-left 0.3s ease-out",
-        "slide-in-from-right": "slide-in-from-right 0.3s ease-out",
-        "zoom-in": "zoom-in 0.2s ease-out",
-        "zoom-out": "zoom-out 0.2s ease-in",
-      },
-      
-      // Transitions
-      transitionDuration: {
-        '0': '0ms',
-        '200': '200ms',
-        '300': '300ms',
-        '400': '400ms',
       },
     },
   },
   plugins: [
-    // DaisyUI handles color utilities and component classes
-    // Keeping this empty but available for future custom utilities
+    require("tailwindcss-animate"), 
   ],
 };
 
 export default config;
-

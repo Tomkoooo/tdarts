@@ -152,7 +152,7 @@ export default function AdminErrorsPage() {
     <div className="space-y-8 pb-8">
       {/* Header */}
       <Card
-        elevation="elevated"
+        
         className="relative overflow-hidden backdrop-blur-xl bg-card/30 p-8"
       >
         <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -173,7 +173,7 @@ export default function AdminErrorsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconAlertTriangle className="size-7 text-destructive" />
@@ -187,7 +187,7 @@ export default function AdminErrorsPage() {
           .map(([level, count]) => {
             const config = getLevelConfig(level)
             return (
-              <Card key={level} elevation="elevated" className="backdrop-blur-xl bg-card/30">
+              <Card key={level}  className="backdrop-blur-xl bg-card/30">
                 <CardContent className="p-6 text-center">
                   <div className="size-14 backdrop-blur-md bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <config.icon className="size-7 text-primary" />
@@ -208,7 +208,7 @@ export default function AdminErrorsPage() {
       />
 
       {/* Filters */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconFilter className="size-5 text-primary" />
@@ -284,7 +284,7 @@ export default function AdminErrorsPage() {
 
       {/* Category and Level Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconCode className="size-6 text-primary" />
@@ -319,7 +319,7 @@ export default function AdminErrorsPage() {
           </CardContent>
         </Card>
 
-        <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+        <Card  className="backdrop-blur-xl bg-card/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconAlertTriangle className="size-6 text-primary" />
@@ -353,7 +353,7 @@ export default function AdminErrorsPage() {
       </div>
 
       {/* Recent Errors */}
-      <Card elevation="elevated" className="backdrop-blur-xl bg-card/30">
+      <Card  className="backdrop-blur-xl bg-card/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconBug className="size-6 text-primary" />
@@ -369,7 +369,7 @@ export default function AdminErrorsPage() {
                 const isExpanded = expandedError === error._id
 
                 return (
-                  <Card key={error._id} elevation="base" className="overflow-hidden backdrop-blur-xl bg-card/30">
+                  <Card key={error._id}  className="overflow-hidden backdrop-blur-xl bg-card/30">
                     <CardContent className="p-5 backdrop-blur-md bg-muted/20">
                       {/* Header */}
                       <div className="flex items-start justify-between gap-4 mb-3">

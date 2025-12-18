@@ -24,21 +24,22 @@ const ParallaxBackground = () => {
   ];
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none bg-background">
       {/* Enhanced Animated Background Shapes */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 opacity-20">
         {[...Array(12)].map((_, i) => (
           <div
             key={i}
-            className="floating-shape"
+            className="absolute rounded-full bg-primary/10 blur-xl animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              width: `${Math.random() * 100 + 50}px`,
+              height: `${Math.random() * 100 + 50}px`,
               animationDelay: `${Math.random() * 6}s`,
+              animationDuration: `${Math.random() * 5 + 5}s`
             }}
-          >
-            <div className="w-4 h-4 bg-red-500/20 rounded-full blur-sm" />
-          </div>
+          />
         ))}
       </div>
 
@@ -47,11 +48,11 @@ const ParallaxBackground = () => {
         {floatingIcons.map((item, index) => (
           <div
             key={index}
-            className="floating-icon text-red-500/30"
+            className="absolute text-primary/10 transition-transform duration-1000 ease-in-out"
             style={{
               left: `${10 + (index * 12)}%`,
               top: `${20 + (index * 8)}%`,
-              animationDelay: `${item.delay}s`,
+              animation: `float ${item.delay + 5}s ease-in-out infinite alternate`,
             }}
           >
             <item.Icon size={item.size} />
@@ -59,73 +60,42 @@ const ParallaxBackground = () => {
         ))}
       </div>
 
-      {/* Additional floating icons scattered */}
-      <div className="absolute inset-0">
-        {floatingIcons.slice(0, 4).map((item, index) => (
-          <div
-            key={`scattered-${index}`}
-            className="floating-icon text-red-500/20"
-            style={{
-              right: `${15 + (index * 15)}%`,
-              bottom: `${25 + (index * 10)}%`,
-              animationDelay: `${item.delay + 3}s`,
-              animationDuration: '7s'
-            }}
-          >
-            <item.Icon size={item.size - 10} />
-          </div>
-        ))}
-      </div>
-
-      {/* Dart Board Rings */}
-      <div className="absolute top-1/4 right-1/4 w-96 h-96">
-        <div className="dart-ring w-full h-full" />
-        <div className="dart-ring w-3/4 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-        <div className="dart-ring w-1/2 h-1/2 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      {/* Dart Board Rings - Minimalist Representation */}
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 opacity-5">
+        <div className="absolute inset-0 border-2 border-primary rounded-full" />
+        <div className="absolute inset-[15%] border-2 border-primary rounded-full" />
+        <div className="absolute inset-[30%] border-2 border-primary rounded-full" />
+        <div className="absolute inset-[45%] border-2 border-primary rounded-full" />
       </div>
 
       {/* Parallax Icons with scroll-based movement */}
       <div 
-        className="absolute top-20 left-10 text-red-500/30"
+        className="absolute top-20 left-10 text-primary/10"
         style={{ transform: `translateY(${scrollY * 0.2}px)` }}
       >
         <IconTarget size={40} />
       </div>
       
       <div 
-        className="absolute top-40 right-20 text-red-500/20"
+        className="absolute top-40 right-20 text-accent/10"
         style={{ transform: `translateY(${scrollY * 0.3}px)` }}
       >
         <IconTrophy size={60} />
       </div>
 
       <div 
-        className="absolute top-96 left-1/3 text-red-500/25"
+        className="absolute top-96 left-1/3 text-secondary/10"
         style={{ transform: `translateY(${scrollY * 0.15}px)` }}
       >
         <IconUsers size={35} />
       </div>
 
       <div 
-        className="absolute bottom-40 right-10 text-red-500/30"
+        className="absolute bottom-40 right-10 text-primary/10"
         style={{ transform: `translateY(${scrollY * -0.2}px)` }}
       >
         <IconBolt size={45} />
       </div>
-
-      {/* Scroll-responsive horizontal elements */}
-      <div 
-        className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-red-500/20 to-transparent"
-        style={{
-          transform: `translateX(${-scrollY * 0.5}px)`,
-        }}
-      />
-      <div 
-        className="absolute top-20 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500/10 to-transparent"
-        style={{
-          transform: `translateX(${scrollY * 0.3}px)`,
-        }}
-      />
     </div>
   );
 };
