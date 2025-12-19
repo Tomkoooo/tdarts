@@ -385,6 +385,8 @@ export class MatchService {
         player1LegsWon: number;
         player2LegsWon: number;
         allowManualFinish?: boolean; // Allow finishing without legs (for admin manual entry)
+        isManual?: boolean; // Indicates this is a manual admin change
+        adminId?: string | null; // Admin user ID who made the manual change
     }) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found');
@@ -438,6 +440,7 @@ export class MatchService {
                                match.winnerId.toString() !== newWinnerId.toString();
         
         const oldWinnerId = match.winnerId;
+        const oldStatus = match.status;
 
         // Update match status and winner
         match.status = 'finished';
@@ -449,6 +452,22 @@ export class MatchService {
         if (matchData.allowManualFinish || (match.status === 'finished' && oldWinnerId)) {
             match.manualOverride = true;
             match.overrideTimestamp = new Date();
+        }
+
+        // Track manual changes with detailed information
+        if (matchData.isManual && matchData.adminId) {
+            match.manualOverride = true;
+            match.overrideTimestamp = new Date();
+            match.manualChangedBy = matchData.adminId as any;
+            
+            // Determine the type of manual change
+            if (isWinnerChange) {
+                match.manualChangeType = 'winner_override';
+            } else if (oldStatus === 'finished') {
+                match.manualChangeType = 'admin_state_change';
+            } else {
+                match.manualChangeType = 'admin_finish';
+            }
         }
 
         // Helper function to calculate darts for backward compatibility

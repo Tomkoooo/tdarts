@@ -46,6 +46,11 @@ interface DashboardStats {
   tournamentGrowth: number
   errorGrowth: number
   feedbackGrowth: number
+  newUsersLast24h: number
+  newClubsLast24h: number
+  newTournamentsLast24h: number
+  errorsLast24h: number
+  feedbackLast24h: number
 }
 
 interface ChartData {
@@ -137,7 +142,7 @@ export default function AdminDashboardPage() {
 
   // --- Sub-components ---
 
-  const MiniStatCard = ({ title, value, change, icon: Icon, colorClass }: any) => (
+  const MiniStatCard = ({ title, value, change, icon: Icon, colorClass, count24h }: any) => (
     <Card className="overflow-hidden hover:shadow-md transition-shadow backdrop-blur-sm bg-card/50">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
@@ -150,6 +155,12 @@ export default function AdminDashboardPage() {
                 {change}%
               </span>
             </div>
+            {count24h !== undefined && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <IconClock className="size-3" />
+                <span>+{count24h} in last 24h</span>
+              </div>
+            )}
           </div>
           <div className={cn("p-2 rounded-lg opacity-80", colorClass)}>
             <Icon className="size-5 text-white" />
@@ -339,6 +350,7 @@ export default function AdminDashboardPage() {
           title="Felhasználók" 
           value={stats?.totalUsers || 0} 
           change={stats?.userGrowth || 0} 
+          count24h={stats?.newUsersLast24h}
           icon={IconUsers}
           colorClass="bg-blue-500"
         />
@@ -346,6 +358,7 @@ export default function AdminDashboardPage() {
           title="Klubok" 
           value={stats?.totalClubs || 0} 
           change={stats?.clubGrowth || 0} 
+          count24h={stats?.newClubsLast24h}
           icon={IconBuilding}
           colorClass="bg-violet-500"
         />
@@ -353,6 +366,7 @@ export default function AdminDashboardPage() {
           title="Versenyek" 
           value={stats?.totalTournaments || 0} 
           change={stats?.tournamentGrowth || 0} 
+          count24h={stats?.newTournamentsLast24h}
           icon={IconTrophy}
           colorClass="bg-amber-500"
         />
@@ -360,6 +374,7 @@ export default function AdminDashboardPage() {
           title="Nyitott Hibák" 
           value={stats?.totalErrors || 0} 
           change={stats?.errorGrowth || 0} 
+          count24h={stats?.errorsLast24h}
           icon={IconAlertTriangle}
           colorClass="bg-rose-500"
         />

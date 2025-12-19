@@ -95,6 +95,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     isArchived: { type: Boolean, default: false },
     isCancelled: { type: Boolean, default: false },
     isSandbox: { type: Boolean, default: false },
+    verified: { type: Boolean, default: false },
 }, { collection: 'tournaments' });
 
 export const TournamentModel = mongoose.models.Tournament || mongoose.model<TournamentDocument>('Tournament', tournamentSchema);

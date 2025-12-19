@@ -75,7 +75,7 @@ export function TournamentList({ tournaments }: TournamentListProps) {
                 return (
                     <section key={dateKey} className="space-y-5">
                         <div className="flex items-center gap-4 sticky top-[60px] md:top-[70px] z-10 py-2 bg-base-100/95 backdrop-blur-sm border-b border-base-200">
-                            <h3 className="text-lg md:text-xl font-bold text-primary capitalize flex items-center gap-2">
+                            <h3 className="text-lg md:text-xl font-bold text-primary-foreground capitalize flex items-center gap-2">
                                 <IconCalendar className="w-5 h-5 opacity-70" />
                                 {formatDateHeader(date)}
                             </h3>

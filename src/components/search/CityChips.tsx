@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/Badge"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 interface CityChipsProps {
@@ -12,7 +11,7 @@ export function CityChips({ cities, selectedCity, onSelectCity }: CityChipsProps
     if (!cities?.length) return null;
 
     return (
-        <ScrollArea className="w-full whitespace-nowrap pb-2">
+        <div className="w-full whitespace-nowrap pb-2 overflow-x-scroll">
             <div className="flex w-max space-x-2 p-1">
                 <Badge
                     variant={!selectedCity ? "default" : "outline"}
@@ -41,7 +40,6 @@ export function CityChips({ cities, selectedCity, onSelectCity }: CityChipsProps
                     </Badge>
                 ))}
             </div>
-            <ScrollBar className="h-2.5" />
-        </ScrollArea>
+        </div>
     )
 }

@@ -55,6 +55,8 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   legs: [legSchema],
   manualOverride: { type: Boolean, default: false },
   overrideTimestamp: { type: Date },
+  manualChangeType: { type: String, enum: ['admin_finish', 'admin_state_change', 'winner_override', null], default: null },
+  manualChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 // Automatikus winnerId számítás mentés előtt
@@ -112,4 +114,10 @@ matchSchema.pre('save', function (this: MatchDocument, next) {
   next();
 });
 
-export const MatchModel = mongoose.models.Match || mongoose.model<MatchDocument>('Match', matchSchema); 
+// Indexes for efficient querying
+matchSchema.index({ tournamentRef: 1, manualOverride: 1 });
+matchSchema.index({ manualChangeType: 1 });
+matchSchema.index({ manualChangedBy: 1 });
+matchSchema.index({ tournamentRef: 1, status: 1 });
+
+export const MatchModel = mongoose.models.Match || mongoose.model<MatchDocument>('Match', matchSchema);

@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: 'https://tdarts.hu, https://amator.tdarts.hu',
+            value: 'https://tdarts.hu, https://amator.tdarts.hu, http://localhost:3001',
           },
           {
             key: 'Access-Control-Allow-Methods',

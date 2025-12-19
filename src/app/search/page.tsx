@@ -9,6 +9,7 @@ import { TournamentList } from "@/components/search/TournamentList"
 import { PlayerLeaderboard } from "@/components/search/PlayerLeaderboard"
 import { ClubList } from "@/components/search/ClubList"
 import { LeagueList } from "@/components/search/LeagueList"
+import { FloatingSearchMenu } from "@/components/search/FloatingSearchMenu"
 import { Input } from "@/components/ui/Input"
 import { IconSearch, IconLoader2 } from "@tabler/icons-react"
 import type { SearchFilters } from "@/database/services/search.service"
@@ -31,6 +32,7 @@ export default function SearchPage() {
     const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "tournaments")
     const [query, setQuery] = useState(searchParams.get("q") || "")
     const [debouncedQuery] = useDebounce(query, 500)
+    const [isScrolled, setIsScrolled] = useState(false)
     
     // Sync query to URL
     useEffect(() => {
@@ -44,6 +46,16 @@ export default function SearchPage() {
     }, [debouncedQuery, pathname, router]) // searchParams in dep array causes loops if not careful? 
     // Actually, we should probably rely on the updateUrl callback but it takes an object.
     // Let's use the standard router.replace for this isolated sync.
+    
+    // Scroll detection for floating menu
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 200)
+        }
+        
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
     
     // Filters State (derived from URL on mount/update)
     const [filters, setFilters] = useState<SearchFilters>({
@@ -192,8 +204,19 @@ export default function SearchPage() {
     // --- Render ---
     return (
         <div className="min-h-screen bg-background">
+            {/* Floating Search Menu */}
+            <FloatingSearchMenu
+                isVisible={isScrolled}
+                query={query}
+                onQueryChange={handleSearch}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                counts={counts}
+                isLoading={isLoading}
+            />
+
             {/* Header / Search Bar Area */}
-            <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
+            <div className=" z-40 backdrop-blur-md border-b border-border">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="relative max-w-2xl mx-auto">
                         <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
@@ -237,7 +260,7 @@ export default function SearchPage() {
                     {/* Dynamic Header */}
                     {activeTab === 'tournaments' && (
                          <div className="mb-6">
-                              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent inline-block">
+                              <h2 className="text-2xl font-bold text-primary-foreground inline-block">
                                    {debouncedQuery ? 'Keresési Találatok' : (filters.status === 'all' ? 'Összes Torna' : 'Közelgő Tornák')}
                               </h2>
                               {debouncedQuery && results.length === 0 && (

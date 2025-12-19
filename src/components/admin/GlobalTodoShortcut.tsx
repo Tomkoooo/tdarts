@@ -44,8 +44,8 @@ export function GlobalTodoShortcut() {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={setIsOpen} >
+      <DialogContent className="sm:max-w-[600px] h-[300px] p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl">
         <div className="p-6 pb-2">
             <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">

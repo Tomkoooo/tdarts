@@ -58,7 +58,7 @@ export default function ClubLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative flex h-48 flex-col justify-end overflow-hidden bg-card pb-12 md:h-64 md:pb-16">
+      <div className="relative flex h-48 flex-col justify-end overflow-hidden backdrop-blur-md pb-12 bg-white/10 md:h-64 md:pb-16">
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-6 md:pb-10">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 backdrop-blur md:h-16 md:w-16">
@@ -76,7 +76,7 @@ export default function ClubLayout({
 
       <div className="relative z-10 mx-auto -mt-10 w-full max-w-6xl px-4 pb-12 md:-mt-14 mb-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="sticky top-0 z-20 rounded-2xl bg-card/95 p-2 shadow-lg shadow-black/30 backdrop-blur mb-6">
+          <div className="fixed bottom-0 left-0 z-50 w-full translate-y-0 rounded-t-2xl bg-card/95 p-2 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)] backdrop-blur md:sticky md:top-10 md:mb-6 md:w-full md:translate-y-[40px] md:rounded-2xl md:shadow-lg md:shadow-black/30">
             <TabsList className="flex w-full gap-0.5 overflow-x-auto rounded-2xl bg-transparent p-1 sm:flex-wrap sm:justify-between [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {tabs.map((tab) => (
                 <TabsTrigger
@@ -91,7 +91,7 @@ export default function ClubLayout({
             </TabsList>
           </div>
 
-          <div className="rounded-2xl bg-card p-6 shadow-xl shadow-black/35 md:p-8 min-h-[400px]">
+          <div className="rounded-2xl  p-6 shadow-xl shadow-black/35 md:p-8 min-h-[400px]">
             <TabsContent value="summary" className="mt-0">
               {summary}
             </TabsContent>

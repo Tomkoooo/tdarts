@@ -555,13 +555,15 @@ export default function CreateTournamentModal({
                       <p className="text-sm text-muted-foreground">
                         A sandbox versenyek nem jelennek meg a publikus keresőben, és nem számítanak bele a statisztikákba. Ideális rendszer teszteléshez.
                       </p>
+                      {lockLeagueSelection && <p className="text-xs text-muted-foreground italic">OAC versenyek nem lehetnek sandbox módban.</p>}
                     </div>
                     <input
                       id="sandbox-mode"
                       type="checkbox"
                       checked={settings.isSandbox || false}
                       onChange={(e) => handleSettingsChange("isSandbox", e.target.checked)}
-                      className="h-5 w-5 rounded border-warning text-warning focus:ring-warning"
+                      disabled={lockLeagueSelection} // Disable for OAC tournaments
+                      className="h-5 w-5 rounded border-warning text-warning focus:ring-warning disabled:cursor-not-allowed disabled:opacity-50"
                     />
                   </div>
                 </div>

@@ -63,25 +63,73 @@ export async function PUT(
       }
     }
 
-    // Check Verified League restrictions
-    if (tournament.league) {
+    // Check Verified Tournament restrictions (OAC)
+    if (tournament.verified || tournament.league) {
       const { LeagueModel } = await import('@/database/models/league.model');
       const { UserModel } = await import('@/database/models/user.model');
       
-      const league = await LeagueModel.findById(tournament.league);
-      if (league && league.verified) {
-        // Check if restricted fields are being modified
-        const isLeagueChanged = settings.leagueId && settings.leagueId !== tournament.league.toString();
-        const isDateChanged = settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime();
+      let isVerified = tournament.verified || false;
+      
+      if (tournament.league) {
+        const league = await LeagueModel.findById(tournament.league);
+        isVerified = isVerified || (league?.verified || false);
+        
+        if (league && league.verified) {
+          // Check if restricted fields are being modified
+          const isLeagueChanged = settings.leagueId && settings.leagueId !== tournament.league.toString();
+          const isDateChanged = settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime();
 
-        if (isLeagueChanged || isDateChanged) {
-          // Check if user is Global Admin
-          const user = await UserModel.findById(requesterId);
-          if (!user || !user.isAdmin) {
-             return NextResponse.json({ 
-              error: "Only Global Admins can modify the league or date of a Verified League tournament." 
-            }, { status: 403 });
+          if (isLeagueChanged || isDateChanged) {
+            // Check if user is Global Admin
+            const user = await UserModel.findById(requesterId);
+            if (!user || !user.isAdmin) {
+               return NextResponse.json({ 
+                error: "Only Global Admins can modify the league or date of a Verified League tournament." 
+              }, { status: 403 });
+            }
           }
+        }
+      }
+      
+      // Check verified tournament weekly limit if date is being changed
+      if (isVerified && settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
+        const { TournamentModel } = await import('@/database/models/tournament.model');
+        const newStartDate = new Date(settings.startDate);
+        const dayOfWeek = newStartDate.getDay();
+        
+        // Calculate Monday of this week
+        let daysFromMonday: number;
+        if (dayOfWeek === 0) {
+          daysFromMonday = 6;
+        } else {
+          daysFromMonday = dayOfWeek - 1;
+        }
+        
+        const weekStart = new Date(newStartDate);
+        weekStart.setDate(weekStart.getDate() - daysFromMonday);
+        weekStart.setHours(0, 0, 0, 0);
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 5);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        // Check for existing verified tournaments in target week (excluding current tournament)
+        const existingVerifiedTournament = await TournamentModel.findOne({
+          clubId: tournament.clubId._id,
+          verified: true,
+          tournamentId: { $ne: tournament.tournamentId }, // Exclude current tournament
+          'tournamentSettings.startDate': {
+            $gte: weekStart,
+            $lte: weekEnd
+          },
+          isDeleted: false,
+          isCancelled: false
+        });
+
+        if (existingVerifiedTournament) {
+          return NextResponse.json({ 
+            error: 'A klubod már létrehozott egy OAC versenyt ezen a héten (hétfőtől szombatig). Heti egy OAC verseny engedélyezett.' 
+          }, { status: 400 });
         }
       }
     }

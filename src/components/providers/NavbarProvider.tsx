@@ -19,7 +19,7 @@ export function NavbarProvider({
   useEffect(() => {
     if (!pathname) return;
 
-    const hideNavbarPaths = ['/board', '/test']
+    const hideNavbarPaths = ['/board', '/test', '/admin', '/api/admin']
     const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path)) || pathname.includes('/tv')
     
     // Footer visibility logic

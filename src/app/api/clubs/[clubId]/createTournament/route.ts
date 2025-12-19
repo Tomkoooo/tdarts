@@ -39,46 +39,71 @@ export async function POST(
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check subscription limits
     // Check subscription limits (Skip for sandbox tournaments)
     const tournamentStartDate = payload.startDate ? new Date(payload.startDate) : new Date();
+    const isSandbox = payload.isSandbox || false;
+    const isVerified = payload.verified || false;
     
-    if (!payload.isSandbox) {
-        const subscriptionCheck = await SubscriptionService.canCreateTournament(clubId, tournamentStartDate);
-        
-        if (!subscriptionCheck.canCreate) {
-            console.log('Subscription limit exceeded:', subscriptionCheck.errorMessage);
-            return NextResponse.json({ 
-                error: subscriptionCheck.errorMessage,
-                subscriptionError: true,
-                currentCount: subscriptionCheck.currentCount,
-                maxAllowed: subscriptionCheck.maxAllowed,
-                planName: subscriptionCheck.planName
-            }, { status: 403 });
-        }
+    // Check subscription limits
+    const subscriptionCheck = await SubscriptionService.canCreateTournament(
+      clubId, 
+      tournamentStartDate,
+      isSandbox,
+      isVerified
+    );
+    
+    if (!subscriptionCheck.canCreate) {
+        console.log('Subscription limit exceeded:', subscriptionCheck.errorMessage);
+        return NextResponse.json({ 
+            error: subscriptionCheck.errorMessage,
+            subscriptionError: true,
+            currentCount: subscriptionCheck.currentCount,
+            maxAllowed: subscriptionCheck.maxAllowed,
+            planName: subscriptionCheck.planName
+        }, { status: 403 });
     }
 
-    // Check Verified League constraints
-    if (payload.leagueId) {
+    // Check Verified Tournament constraints (OAC)
+    // A club can only create ONE verified tournament per week (Monday-Saturday)
+    if (isVerified || payload.leagueId) {
         const { LeagueModel } = await import('@/database/models/league.model');
         const { TournamentModel } = await import('@/database/models/tournament.model');
         
-        const league = await LeagueModel.findById(payload.leagueId);
-        if (league && league.verified) {
-            // Calculate start and end of the ISO week for the tournament start date
+        let leagueIsVerified = false;
+        if (payload.leagueId) {
+            const league = await LeagueModel.findById(payload.leagueId);
+            leagueIsVerified = league?.verified || false;
+        }
+        
+        // Check if this is a verified tournament (either directly or through league)
+        if (isVerified || leagueIsVerified) {
+            // Calculate start and end of the week (Monday to Saturday) for the tournament start date
             const date = new Date(tournamentStartDate);
-            const day = date.getDay() || 7; // Get current day number, converting Sun (0) to 7
-            if (day !== 1) date.setHours(-24 * (day - 1)); // Set to Monday of this week
-            date.setHours(0, 0, 0, 0);
+            const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            
+            // Calculate Monday of this week
+            let daysFromMonday: number;
+            if (dayOfWeek === 0) {
+                // Sunday - go back 6 days to Monday
+                daysFromMonday = 6;
+            } else {
+                // Monday to Saturday - go back to Monday
+                daysFromMonday = dayOfWeek - 1;
+            }
             
             const weekStart = new Date(date);
-            const weekEnd = new Date(date);
-            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekStart.setDate(weekStart.getDate() - daysFromMonday);
+            weekStart.setHours(0, 0, 0, 0);
+            
+            // Saturday end of week
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 5); // Monday + 5 = Saturday
             weekEnd.setHours(23, 59, 59, 999);
 
-            // Check for existing tournaments in this league within the same week
-            const existingTournament = await TournamentModel.findOne({
-                league: payload.leagueId,
+            // Check for existing verified tournaments in this week
+            const existingVerifiedTournament = await TournamentModel.findOne({
+                clubId: clubId,
+                verified: true,
                 'tournamentSettings.startDate': {
                     $gte: weekStart,
                     $lte: weekEnd
@@ -87,9 +112,9 @@ export async function POST(
                 isCancelled: false
             });
 
-            if (existingTournament) {
+            if (existingVerifiedTournament) {
                 return NextResponse.json({ 
-                    error: 'Verified leagues can only host one tournament per week.' 
+                    error: 'A klubod már létrehozott egy OAC versenyt ezen a héten (hétfőtől szombatig). Heti egy OAC verseny engedélyezett.' 
                 }, { status: 400 });
             }
         }
@@ -126,6 +151,7 @@ export async function POST(
         isArchived: false,
         isCancelled: false,
         isSandbox: payload.isSandbox || false,
+        verified: payload.verified || false,
     } as Partial<Omit<TournamentDocument, keyof Document>>;
 
     

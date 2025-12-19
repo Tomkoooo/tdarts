@@ -118,6 +118,7 @@ export interface Tournament {
     isArchived?: boolean;
     isCancelled?: boolean;
     isSandbox?: boolean;
+    verified?: boolean;
 }
 
 // Document types (Mongoose)

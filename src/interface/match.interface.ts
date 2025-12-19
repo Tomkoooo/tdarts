@@ -55,6 +55,8 @@ export interface Match {
   legs?: Leg[];
   manualOverride?: boolean;
   overrideTimestamp?: Date;
+  manualChangeType?: 'admin_finish' | 'admin_state_change' | 'winner_override' | null;
+  manualChangedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

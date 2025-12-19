@@ -1322,7 +1322,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             )}
           </div>
 
-          <ScrollArea className={cn("relative w-full", isFullscreen ? "flex-1" : "")}>
+          <ScrollArea className={cn("relative w-full border rounded-xl bg-card/40", isFullscreen ? "flex-1" : "")}>
             <div className={cn("relative min-w-max pt-20 pb-6", isFullscreen ? "pl-12 pr-6" : "px-6")}>
               <div
                 className="origin-top-left"
@@ -1337,7 +1337,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 />
               </div>
             </div>
-            <ScrollBar className="h-3" />
+            <ScrollBar orientation="horizontal" />
+            <ScrollBar orientation="vertical" />
           </ScrollArea>
         </div>
 

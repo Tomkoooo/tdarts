@@ -60,13 +60,18 @@ export async function GET(request: NextRequest) {
       {
         $addFields: {
           playerCount: { $size: { $ifNull: ['$tournamentPlayers', []] } },
-          // A tournament is verified if it's attached to a verified league
+          // A tournament is verified if it is explicitly verified OR attached to a verified league
           isVerified: {
-            $cond: {
-              if: { $gt: [{ $size: { $ifNull: ['$leagueInfo', []] } }, 0] },
-              then: { $arrayElemAt: ['$leagueInfo.verified', 0] }, // leagueInfo is array from lookup
-              else: false
-            }
+            $or: [
+              { $eq: ['$verified', true] },
+              {
+                $cond: {
+                  if: { $gt: [{ $size: { $ifNull: ['$leagueInfo', []] } }, 0] },
+                  then: { $arrayElemAt: ['$leagueInfo.verified', 0] },
+                  else: false
+                }
+              }
+            ]
           }
         }
       }

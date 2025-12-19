@@ -24,13 +24,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             throw new BadRequestError('Match cannot end in a tie');
         }
 
+        // Extract admin userId if this is a manual change
+        let adminId: string | null = null;
+        if (body.isManual) {
+            const { AuthorizationService } = await import('@/database/services/authorization.service');
+            adminId = await AuthorizationService.getUserIdFromRequest(request);
+            
+            if (!adminId) {
+                throw new BadRequestError('Admin authentication required for manual changes');
+            }
+        }
+
         // Call the service method to finish the match
         // Backend will calculate all stats from saved legs
         // If allowManualFinish is true, skip leg validation (for admin manual entry)
         const result = await MatchService.finishMatch(matchId, {
             player1LegsWon: body.player1LegsWon,
             player2LegsWon: body.player2LegsWon,
-            allowManualFinish: body.allowManualFinish || false
+            allowManualFinish: body.allowManualFinish || false,
+            isManual: body.isManual || false,
+            adminId: adminId
         });
 
         if (!result) {

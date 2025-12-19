@@ -44,22 +44,22 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
   };
 
   return (
-    <div className="flex justify-center items-center gap-2 mt-6">
+    <div className="flex flex-wrap justify-center items-center gap-2 mt-6 w-full">
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="h-9 w-9 p-0"
+        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
       >
         <IconChevronLeft className="h-4 w-4" />
       </Button>
       
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap justify-center items-center gap-1">
         {getPageNumbers().map((page, idx) => {
           if (page === '...') {
             return (
-              <span key={`ellipsis-${idx}`} className="px-2 text-sm text-muted-foreground">
+              <span key={`ellipsis-${idx}`} className="px-1 sm:px-2 text-xs sm:text-sm text-muted-foreground">
                 ...
               </span>
             );
@@ -72,7 +72,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
               size="sm"
               onClick={() => onPageChange(pageNum)}
               className={cn(
-                "h-9 min-w-[36px] px-3",
+                "h-8 min-w-[32px] px-2 sm:h-9 sm:min-w-[36px] sm:px-3 text-xs sm:text-sm",
                 currentPage === pageNum && "bg-primary text-primary-foreground"
               )}
             >
@@ -87,7 +87,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="h-9 w-9 p-0"
+        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
       >
         <IconChevronRight className="h-4 w-4" />
       </Button>

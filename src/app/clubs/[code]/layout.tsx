@@ -91,5 +91,5 @@ export async function generateMetadata({
 }
 
 export default function ClubLayout({ children }: LayoutProps) {
-  return <>{children}</>;
+  return <div className="min-h-screen">{children}</div>;
 }

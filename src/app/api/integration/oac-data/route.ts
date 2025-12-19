@@ -4,14 +4,68 @@ import { MatchModel } from '@/database/models/match.model';
 import { LeagueModel } from '@/database/models/league.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { connectMongo } from '@/lib/mongoose';
-import { PlayerModel } from '@/database/models/player.model';
+import { LogModel } from '@/database/models/log.model';
+import { ClubModel } from '@/database/models/club.model';
+
+// Utility to process growth data
+function getGrowthData(items: any[]) {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    sixMonthsAgo.setDate(1); // Start of month
+
+    // Filter items created in the last 6 months
+    const recentItems = items.filter(item => new Date(item.createdAt) >= sixMonthsAgo);
+
+    // Group by Month
+    const monthlyCounts: { [key: string]: number } = {};
+    
+    // Initialize months
+    const monthKeys = [];
+    for(let i=0; i<6; i++) {
+        const d = new Date(sixMonthsAgo);
+        d.setMonth(d.getMonth() + i);
+        const key = d.toLocaleDateString('hu-HU', { year: 'numeric', month: 'short' });
+        monthlyCounts[key] = 0;
+        monthKeys.push(key);
+    }
+
+    // Determine baseline count (items created BEFORE the 6 month window)
+    let runningTotal = items.filter(item => new Date(item.createdAt) < sixMonthsAgo).length;
+
+    // Sort items by date
+    recentItems.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    // Iterate through months and add up
+    const result = [];
+    
+    for(let i=0; i<monthKeys.length; i++) {
+        const d = new Date(sixMonthsAgo);
+        d.setMonth(d.getMonth() + i);
+        const label = monthKeys[i];
+        
+        // Find items in this month
+        const nextMonth = new Date(d);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        
+        const countInMonth = items.filter(item => {
+            const c = new Date(item.createdAt);
+            return c >= d && c < nextMonth;
+        }).length;
+
+        runningTotal += countInMonth;
+        result.push({ name: label, value: runningTotal });
+    }
+
+    // Always ensure current month is up to date
+    return result;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_req: NextRequest) {
     try {
         await connectMongo();
 
-        // 1. Find OAC Leagues (identified by verified: true)
+        // 1. Find OAC Leagues
         const oacLeagues = await LeagueModel.find({ 
             verified: true,
             isActive: true 
@@ -20,189 +74,161 @@ export async function GET(_req: NextRequest) {
             .populate('players.player', 'name email')
             .lean();
 
-        if (!oacLeagues || oacLeagues.length === 0) {
-            return NextResponse.json({
-                suspiciousMatches: [],
-                globalStats: { totalLeagues: 0, totalTournaments: 0, totalMatches: 0, totalPlayers: 0 },
-                leagueRankings: []
-            }, { status: 200 });
+        // 2. Get Verified OAC Tournaments (Active/Finished)
+        const verifiedTournaments = await TournamentModel.find({
+            verified: true,
+            isDeleted: false,
+            isCancelled: false,
+        }).select('_id name startDate createdAt school').lean();
+
+        const verifiedTournamentIds = verifiedTournaments.map(t => t._id);
+
+        // 3. Unique Players Count
+        const uniquePlayersPipeline = [
+            { 
+                $match: { 
+                    tournamentRef: { $in: verifiedTournamentIds },
+                } 
+            },
+            {
+                $project: {
+                    players: ["$player1.playerId", "$player2.playerId"]
+                }
+            },
+            {
+                $unwind: "$players"
+            },
+            {
+                $match: {
+                    players: { $ne: null }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    uniquePlayers: { $addToSet: "$players" }
+                }
+            }
+        ];
+
+        const uniquePlayersResult = await MatchModel.aggregate(uniquePlayersPipeline);
+        let uniquePlayerCount = 0;
+        if (uniquePlayersResult.length > 0 && uniquePlayersResult[0].uniquePlayers) {
+             const playerIds = uniquePlayersResult[0].uniquePlayers.filter((id: any) => id);
+             uniquePlayerCount = playerIds.length;
         }
 
-        // Get IDs
-        // const oacLeagueIds = oacLeagues.map(l => l._id);
-        const oacClubIds = [...new Set(oacLeagues.map((l: any) => l.club?._id?.toString()).filter(Boolean))];
-        
-        // 2. Get all OAC tournaments (attached to OAC leagues)
-        const allOacTournamentIds: any[] = [];
-        oacLeagues.forEach((l: any) => {
-            if (l.attachedTournaments) {
-                l.attachedTournaments.forEach((t: any) => allOacTournamentIds.push(t));
-            }
-        });
-        
-        const oacTournaments = await TournamentModel.find({
-            _id: { $in: allOacTournamentIds }
-        }).select('_id name').lean();
-        
-        const oacTournamentIds = oacTournaments.map(t => t._id);
+        // 4. Integrity Stats (Manual Overrides)
+        // Aggregation to find tournaments with most overrides
+        const integrityAggregation = await MatchModel.aggregate([
+            {
+                $match: {
+                    manualOverride: true,
+                    // Optionally restrict to verified tournaments if needed, but integrity checks usually global
+                    tournamentRef: { $in: verifiedTournamentIds }
+                }
+            },
+            {
+                $group: {
+                    _id: "$tournamentRef",
+                    count: { $sum: 1 },
+                    // matches: { $push: { _id: "$_id", reason: "$manualChangeType", user: "$manualChangedBy" } }
+                }
+            },
+            {
+                $lookup: {
+                    from: "tournaments",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "tournament"
+                }
+            },
+            {
+                $unwind: "$tournament"
+            },
+            {
+                $project: {
+                    tournamentName: "$tournament.name",
+                    tournamentId: "$_id",
+                    overrideCount: "$count",
+                }
+            },
+            { $sort: { overrideCount: -1 } },
+            { $limit: 10 }
+        ]);
 
-        // 3. Suspicious Matches (Manual Overrides) - Only from OAC tournaments
         const suspiciousMatches = await MatchModel.find({ 
             manualOverride: true,
-            tournamentRef: { $in: oacTournamentIds }
+            tournamentRef: { $in: verifiedTournamentIds }
         })
             .populate('tournamentRef', 'name')
             .populate('player1.playerId', 'name email')
             .populate('player2.playerId', 'name email')
             .populate('winnerId', 'name')
+            .populate('manualChangedBy', 'name email')
             .sort({ overrideTimestamp: -1 })
             .limit(50)
             .lean();
 
-        // 4. Global Stats - OAC Only
+        // 5. Global Stats
         const totalLeagues = oacLeagues.length;
-        const totalTournaments = oacTournamentIds.length;
-        const totalMatches = await MatchModel.countDocuments({ 
-            tournamentRef: { $in: oacTournamentIds } 
-        });
-        
-        // Count unique players across OAC leagues
-        const oacPlayerIds = new Set<string>();
-        oacLeagues.forEach((l: any) => {
-            l.players?.forEach((p: any) => {
-                if (p.player?._id) {
-                    oacPlayerIds.add(p.player._id.toString());
-                } else if (p.player) {
-                    oacPlayerIds.add(p.player.toString());
-                }
-            });
-        });
-        const totalPlayers = oacPlayerIds.size;
+        const totalTournaments = verifiedTournaments.length;
+        const verifiedClubs = await ClubModel.find({ verified: true, isActive: true }).select('createdAt name').lean();
+        const verifiedClubsCount = verifiedClubs.length;
 
-        // 5. Generate League Rankings - Organized by League
-        const leagueRankings = oacLeagues.map((league: any) => {
-            // Sort players by totalPoints
-            const sortedPlayers = (league.players || [])
-                .map((p: any) => ({
-                    playerId: p.player?._id?.toString() || p.player?.toString(),
-                    name: p.player?.name || 'Unknown',
-                    email: p.player?.email || '',
-                    totalPoints: p.totalPoints || 0,
-                    tournamentsPlayed: p.tournamentPoints?.length || 0
-                }))
-                .sort((a: any, b: any) => b.totalPoints - a.totalPoints)
-                .map((p: any, idx: number) => ({ ...p, position: idx + 1 }));
+        // 6. Activity Feed (Logs) - Filtered (No Errors)
+        const recentLogs = await LogModel.find({
+            category: { $in: ['auth', 'club', 'tournament', 'system'] },
+            level: { $ne: 'error' } 
+        })
+        .sort({ timestamp: -1 })
+        .limit(20)
+        .lean();
 
-            return {
-                leagueId: league._id.toString(),
-                leagueName: league.name,
-                clubName: league.club?.name || 'N/A',
-                clubCity: league.club?.city || 'N/A',
-                playerCount: sortedPlayers.length,
-                tournamentCount: league.attachedTournaments?.length || 0,
-                players: sortedPlayers
-            };
-        }).sort((a: any, b: any) => b.playerCount - a.playerCount); // Sort by most active leagues first
+        // 7. Pending Applications
+        const pendingApplications = await ClubModel.find({
+            verified: false,
+            isActive: true 
+        }).select('name description location createdAt contact').sort({ createdAt: -1 }).limit(10).lean();
 
-        // 6. Aggregate Player Match Stats - OAC Only
-        const matchAggregation = await MatchModel.aggregate([
-            { $match: { tournamentRef: { $in: oacTournamentIds }, status: "finished" } },
-            {
-                $facet: {
-                    p1Stats: [
-                        { $match: { "player1.playerId": { $ne: null } } },
-                        {
-                            $group: {
-                                _id: "$player1.playerId",
-                                matchesPlayed: { $sum: 1 },
-                                matchesWon: { 
-                                    $sum: { $cond: [{ $eq: ["$winnerId", "$player1.playerId"] }, 1, 0] } 
-                                },
-                                sumAverage: { $sum: "$player1.average" },
-                                total180s: { $sum: "$player1.oneEightiesCount" },
-                                highestCheckout: { $max: "$player1.highestCheckout" }
-                            }
-                        }
-                    ],
-                    p2Stats: [
-                        { $match: { "player2.playerId": { $ne: null } } },
-                        {
-                            $group: {
-                                _id: "$player2.playerId",
-                                matchesPlayed: { $sum: 1 },
-                                matchesWon: { 
-                                    $sum: { $cond: [{ $eq: ["$winnerId", "$player2.playerId"] }, 1, 0] } 
-                                },
-                                sumAverage: { $sum: "$player2.average" },
-                                total180s: { $sum: "$player2.oneEightiesCount" },
-                                highestCheckout: { $max: "$player2.highestCheckout" }
-                            }
-                        }
-                    ]
-                }
-            }
-        ]);
-
-        // Merge stats
-        const statsMap = new Map();
-        const mergeStats = (items: any[]) => {
-            items.forEach(item => {
-                if (!item._id) return;
-                // Only include if player is in an OAC league
-                if (!oacPlayerIds.has(item._id.toString())) return;
-                
-                const id = item._id.toString();
-                if (!statsMap.has(id)) {
-                    statsMap.set(id, {
-                        playerId: id,
-                        matchesPlayed: 0,
-                        matchesWon: 0,
-                        sumAverage: 0,
-                        total180s: 0,
-                        highestCheckout: 0
-                    });
-                }
-                const current = statsMap.get(id);
-                current.matchesPlayed += item.matchesPlayed || 0;
-                current.matchesWon += item.matchesWon || 0;
-                current.sumAverage += item.sumAverage || 0;
-                current.total180s += item.total180s || 0;
-                current.highestCheckout = Math.max(current.highestCheckout, item.highestCheckout || 0);
-            });
-        };
-
-        if (matchAggregation[0]) {
-            mergeStats(matchAggregation[0].p1Stats || []);
-            mergeStats(matchAggregation[0].p2Stats || []);
-        }
-
-        // Get player names for match stats
-        const playerIdsForMatches = Array.from(statsMap.keys());
-        const playersForMatches = await PlayerModel.find({ _id: { $in: playerIdsForMatches } }).select('name email').lean();
-        const playerLookup = new Map(playersForMatches.map((p: any) => [p._id.toString(), p]));
-
-        const playerMatchStats = Array.from(statsMap.values()).map(stat => {
-            const player = playerLookup.get(stat.playerId);
-            return {
-                ...stat,
-                name: player?.name || 'Unknown',
-                email: player?.email || '',
-                average: stat.matchesPlayed > 0 ? (stat.sumAverage / stat.matchesPlayed).toFixed(2) : '0.00',
-                winRate: stat.matchesPlayed > 0 ? ((stat.matchesWon / stat.matchesPlayed) * 100).toFixed(1) : '0.0'
-            };
-        }).sort((a, b) => b.matchesPlayed - a.matchesPlayed);
+        // 8. Growth Stats
+        const clubGrowth = getGrowthData(verifiedClubs);
+        const tournamentGrowth = getGrowthData(verifiedTournaments);
 
         return NextResponse.json({
-            suspiciousMatches,
+            // Integrity Data
+            integrityStats: {
+                topOffendingTournaments: integrityAggregation,
+                suspiciousMatches: suspiciousMatches,
+            },
+            // Dashboard Data
             globalStats: { 
                 totalLeagues, 
                 totalTournaments, 
-                totalMatches, 
-                totalPlayers,
-                oacClubCount: oacClubIds.length
+                totalPlayers: uniquePlayerCount,
+                verifiedClubCount: verifiedClubsCount
             },
-            leagueRankings,
-            playerMatchStats
+            growthStats: {
+                clubs: clubGrowth,
+                tournaments: tournamentGrowth
+            },
+            recentLogs: recentLogs.map((log: any) => ({
+                id: log._id,
+                user: {
+                    name: log.userRole || 'System',
+                    email: log.category,
+                    image: null
+                },
+                action: log.message,
+                date: new Date(log.timestamp).toLocaleTimeString('hu-HU', { hour: '2-digit', minute:'2-digit' }),
+                type: log.level === 'warn' ? 'warning' : 'info'
+            })),
+            pendingApplications: pendingApplications.map((app: any) => ({
+                _id: app._id,
+                clubName: app.name,
+                status: 'submitted',
+                submittedAt: app.createdAt
+            })),
         }, { status: 200 });
 
     } catch (error) {

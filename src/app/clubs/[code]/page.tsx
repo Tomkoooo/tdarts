@@ -36,6 +36,7 @@ export default function ClubDetailPage() {
   }>({ isOpen: false, leagueId: null })
   const [isEditClubModalOpen, setIsEditClubModalOpen] = React.useState(false)
   const [clubShareModal, setClubShareModal] = React.useState(false)
+  const [isClubLoading, setIsClubLoading] = React.useState(true)
   const [deleteTournamentModal, setDeleteTournamentModal] = React.useState<{
     isOpen: boolean
     tournamentId: string | null
@@ -52,9 +53,14 @@ export default function ClubDetailPage() {
 
   // Helper to fetch club data
   const fetchClub = async () => {
-    if (!code) return
+    if (!code) {
+      setIsClubLoading(false)
+      return
+    }
     const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`)
+        setIsClubLoading(false)
     setClub(clubResponse.data)
+
   }
 
   // Fetch club and role
@@ -68,6 +74,7 @@ export default function ClubDetailPage() {
       try {
         const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`)
         setClub(clubResponse.data)
+        setIsClubLoading(false)
 
         // Only fetch user role if user is logged in
         if (user?._id) {
@@ -86,6 +93,7 @@ export default function ClubDetailPage() {
           context: "Klub részletek",
           errorName: "Klub betöltése sikertelen",
         })
+        setIsClubLoading(false)
         console.error(err)
         router.push('/clubs')
       }
@@ -256,7 +264,27 @@ export default function ClubDetailPage() {
     return searchParams.get('league')
   }
 
-  if (!club) return null
+  if (isClubLoading) return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="flex flex-col items-center">
+        <div className="text-4xl font-bold mb-4 flex flex-col">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        </div>
+        <div className="text-xl mb-4">Klub betöltése folyamatban...</div>
+      </div>
+    </div>
+  )
+
+  if (!club) return (
+    //club not found section -- use icons and spacing
+    <div className="flex items-center justify-center h-screen">
+      <div className="flex flex-col items-center">
+        <div className="text-4xl font-bold mb-4">Klub nem található!</div>
+        <div className="text-xl mb-4">Sajnálom, de a keresett klub nem található.</div>
+        <div className="text-xl mb-4">Kérem ellenőrizd a klub kódját.</div>
+      </div>
+    </div>
+  )
 
   return (
     <>

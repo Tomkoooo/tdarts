@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     // Fetch all statistics in parallel
     const [
@@ -51,12 +52,17 @@ export async function GET(request: NextRequest) {
       newClubsPreviousMonth,
       newTournamentsPreviousMonth,
       errorsPreviousMonth,
-      feedbackPreviousMonth
+      feedbackPreviousMonth,
+      newUsersLast24h,
+      newClubsLast24h,
+      newTournamentsLast24h,
+      errorsLast24h,
+      feedbackLast24h
     ] = await Promise.all([
       UserModel.countDocuments(),
       ClubModel.countDocuments({ isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ isDeleted: { $ne: true } }),
-      LogModel.countDocuments({ level: 'error' }),
+      LogModel.countDocuments({ level: 'error', category: { $ne: 'auth' } }),
       FeedbackModel.countDocuments(),
       UserModel.countDocuments({ createdAt: { $gte: currentMonth } }),
       ClubModel.countDocuments({ 
@@ -69,6 +75,7 @@ export async function GET(request: NextRequest) {
       }),
       LogModel.countDocuments({ 
         level: 'error',
+        category: { $ne: 'auth' },
         timestamp: { $gte: currentMonth }
       }),
       FeedbackModel.countDocuments({ createdAt: { $gte: currentMonth } }),
@@ -83,9 +90,25 @@ export async function GET(request: NextRequest) {
       }),
       LogModel.countDocuments({ 
         level: 'error',
+        category: { $ne: 'auth' },
         timestamp: { $gte: previousMonth, $lt: currentMonth }
       }),
-      FeedbackModel.countDocuments({ createdAt: { $gte: previousMonth, $lt: currentMonth } })
+      FeedbackModel.countDocuments({ createdAt: { $gte: previousMonth, $lt: currentMonth } }),
+      UserModel.countDocuments({ createdAt: { $gte: twentyFourHoursAgo } }),
+      ClubModel.countDocuments({ 
+        createdAt: { $gte: twentyFourHoursAgo },
+        isDeleted: { $ne: true }
+      }),
+      TournamentModel.countDocuments({ 
+        createdAt: { $gte: twentyFourHoursAgo },
+        isDeleted: { $ne: true }
+      }),
+      LogModel.countDocuments({ 
+        level: 'error',
+        category: { $ne: 'auth' },
+        timestamp: { $gte: twentyFourHoursAgo }
+      }),
+      FeedbackModel.countDocuments({ createdAt: { $gte: twentyFourHoursAgo } })
     ]);
 
     // Calculate growth percentages
@@ -109,7 +132,12 @@ export async function GET(request: NextRequest) {
       clubGrowth: calculateGrowth(newClubsThisMonth, newClubsPreviousMonth),
       tournamentGrowth: calculateGrowth(newTournamentsThisMonth, newTournamentsPreviousMonth),
       errorGrowth: calculateGrowth(errorsThisMonth, errorsPreviousMonth),
-      feedbackGrowth: calculateGrowth(feedbackThisMonth, feedbackPreviousMonth)
+      feedbackGrowth: calculateGrowth(feedbackThisMonth, feedbackPreviousMonth),
+      newUsersLast24h,
+      newClubsLast24h,
+      newTournamentsLast24h,
+      errorsLast24h,
+      feedbackLast24h
     };
 
     return NextResponse.json(stats);

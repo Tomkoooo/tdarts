@@ -362,16 +362,19 @@ export default function AdminTournamentsPage() {
         </CardContent>
 
         {/* Pagination Footer */}
-        <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
+        {/* Pagination Footer */}
+        <div className="border-t bg-muted/20 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-xs text-muted-foreground order-2 sm:order-1 text-center sm:text-left w-full sm:w-auto">
               Összesen <strong>{paginationTotal}</strong> találat (Oldal: {page} / {totalPages})
             </span>
             {totalPages > 1 && (
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
+              <div className="order-1 sm:order-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              </div>
             )}
         </div>
       </Card>

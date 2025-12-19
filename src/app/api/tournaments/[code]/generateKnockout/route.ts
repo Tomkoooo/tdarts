@@ -24,6 +24,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         const format = tournament.tournamentSettings?.format || 'group_knockout';
+        
+        // Check if current date matches tournament start date (for knockout-only tournaments)
+        if (format === 'knockout') {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const startDate = new Date(tournament.tournamentSettings.startDate);
+          startDate.setHours(0, 0, 0, 0);
+
+          if (today < startDate) {
+            return NextResponse.json({
+              success: false,
+              error: 'A torna csak a kezdési napon indítható. Módosítsd a kezdési dátumot, ha korábban szeretnéd indítani.',
+              canChangeDate: true,
+              currentStartDate: startDate.toISOString(),
+              currentDate: today.toISOString()
+            }, { status: 400 });
+          }
+        }
 
         // Validate parameters for group_knockout format
         if (format === 'group_knockout') {
