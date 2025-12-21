@@ -405,7 +405,7 @@ export default function FeedbackTable() {
       </div>
       
       <Dialog open={!!editingFeedback} onOpenChange={(open) => !open && setEditingFeedback(null)}>
-        <DialogContent className="sm:max-w-[600px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-y-scroll">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle>Visszajelzés Kezelése</DialogTitle>
             <DialogDescription>

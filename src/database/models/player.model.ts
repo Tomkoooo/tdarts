@@ -20,7 +20,8 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         totalLegsWon: { type: Number, default: 0 },
         totalLegsLost: { type: Number, default: 0 },
         total180s: { type: Number, default: 0 },
-        mmr: { type: Number, default: 800 }, // Matchmaking Rating - starts at 1200
+        mmr: { type: Number, default: 800 }, // Matchmaking Rating - starts at 800 (legacy 1200)
+        oacMmr: { type: Number, default: 800 }, // OAC National MMR - starts at 800
     },
     tournamentHistory: [{
         tournamentId: { type: String, required: true },
@@ -37,6 +38,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
             average: { type: Number, default: 0 }, // Tornához tartozó átlag (meccs átlagok átlaga)
         },
         date: { type: Date, default: Date.now },
+        verified: { type: Boolean, default: false }, // Indicates if tournament was verified (OAC)
     }]
 }, {collection: 'players'});
 

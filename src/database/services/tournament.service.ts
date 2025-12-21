@@ -10,6 +10,7 @@ import { MatchModel } from '../models/match.model';
 import { AuthorizationService } from './authorization.service';
 import { SubscriptionService } from './subscription.service';
 import { MMRService } from './mmr.service';
+import { OacMmrService } from './oac-mmr.service';
 
 import { TournamentGroupService } from './tournament-group.service';
 import { TournamentStatsService } from './tournament-stats.service';
@@ -3948,15 +3949,98 @@ export class TournamentService {
                 for (const [playerId, stats] of playerStats) {
                     const player = await PlayerModel.findById(playerId);
                     if (player) {
-                        // Get the tournament standing from the tournament players array
+                        // 1. Check for existing entry
+                        if (!player.tournamentHistory) player.tournamentHistory = [];
+                        const existingHistoryIndex = player.tournamentHistory.findIndex((h: any) => h.tournamentId === tournament.tournamentId);
+
+                        // 2. Identify placement
                         const tournamentPlayer = tournament.tournamentPlayers.find((tp: any) => {
                             const tpPlayerId = tp.playerReference?._id?.toString() || tp.playerReference?.toString();
                             return tpPlayerId === playerId;
                         });
                         const placement = tournamentPlayer?.tournamentStanding || totalPlayers;
 
-                        // Update tournament history
-                        const tournamentHistory = {
+                        // 3. OAC MMR CALCULATION (Using previous history only)
+                        let verifiedAverage = 0;
+                        if (tournament.verified) {
+                            // If re-finishing, skip the existing entry for this tournament to get the "true" previous average
+                            const historicalEntries = existingHistoryIndex > -1 
+                                ? player.tournamentHistory.filter((_: any, i: number) => i !== existingHistoryIndex)
+                                : player.tournamentHistory;
+                            verifiedAverage = OacMmrService.calculateVerifiedAverage(historicalEntries);
+                        }
+
+                        const currentOacMmr = player.stats.oacMmr || OacMmrService.BASE_OAC_MMR;
+                        if (tournament.verified) {
+                            const nextOacMmr = OacMmrService.calculateMMRChange({
+                                currentOacMmr,
+                                placement,
+                                totalParticipants: totalPlayers,
+                                currentAverage: stats.average,
+                                verifiedAverage,
+                                oneEightiesCount: stats.oneEighties,
+                                highestCheckout: stats.highestCheckout,
+                                matchesWon: stats.matchesWon
+                            });
+                            player.stats.oacMmr = nextOacMmr;
+                            console.log(`Player ${player.name} OAC MMR: ${currentOacMmr} → ${nextOacMmr} (${nextOacMmr - currentOacMmr >= 0 ? '+' : ''}${nextOacMmr - currentOacMmr})`);
+                        }
+
+                        // 4. GLOBAL MMR CALCULATION
+                        const matchWinRate = stats.matchesPlayed > 0 ? stats.matchesWon / stats.matchesPlayed : 0;
+                        const legWinRate = stats.legsPlayed > 0 ? stats.legsWon / stats.legsPlayed : 0;
+                        const currentMMR = player.stats.mmr || MMRService.getInitialMMR();
+                        const nextMMR = MMRService.calculateMMRChange(
+                            currentMMR,
+                            placement,
+                            totalPlayers,
+                            matchWinRate,
+                            legWinRate,
+                            stats.average,
+                            tournamentAverageScore
+                        );
+                        player.stats.mmr = Math.ceil(nextMMR);
+                        console.log(`Player ${player.name} Global MMR: ${currentMMR} → ${player.stats.mmr} (${player.stats.mmr - currentMMR >= 0 ? '+' : ''}${player.stats.mmr - currentMMR})`);
+
+                        // 5. UPDATE GLOBAL STATS INCREMENTALLY (No all-time loops)
+                        const isNewTournament = existingHistoryIndex === -1;
+                        if (isNewTournament) {
+                            player.stats.tournamentsPlayed = (player.stats.tournamentsPlayed || 0) + 1;
+                            
+                            // Weighted averages calculation (incremental)
+                            const historyCount = player.tournamentHistory.length;
+                            if (historyCount > 0) {
+                                player.stats.avg = ((player.stats.avg * historyCount) + stats.average) / (historyCount + 1);
+                                player.stats.averagePosition = ((player.stats.averagePosition * historyCount) + placement) / (historyCount + 1);
+                            } else {
+                                player.stats.avg = stats.average;
+                                player.stats.averagePosition = placement;
+                            }
+
+                            // Incremental counters
+                            player.stats.totalMatchesWon = (player.stats.totalMatchesWon || 0) + stats.matchesWon;
+                            player.stats.totalMatchesLost = (player.stats.totalMatchesLost || 0) + (stats.matchesPlayed - stats.matchesWon);
+                            player.stats.totalLegsWon = (player.stats.totalLegsWon || 0) + stats.legsWon;
+                            player.stats.totalLegsLost = (player.stats.totalLegsLost || 0) + (stats.legsPlayed - stats.legsWon);
+                            player.stats.total180s = (player.stats.total180s || 0) + stats.oneEighties;
+                            player.stats.oneEightiesCount = (player.stats.oneEightiesCount || 0) + stats.oneEighties;
+                            player.stats.matchesPlayed = (player.stats.matchesPlayed || 0) + stats.matchesPlayed;
+                            player.stats.legsWon = (player.stats.legsWon || 0) + stats.legsWon;
+                            player.stats.legsLost = (player.stats.legsLost || 0) + (stats.legsPlayed - stats.legsWon);
+                        } else {
+                            // If re-finishing, skipping all-time recalculation as requested
+                            console.log(`Re-finishing tournament ${tournament.tournamentId} for ${player.name}. Skipping incremental stat updates.`);
+                        }
+
+                        if (stats.highestCheckout > (player.stats.highestCheckout || 0)) {
+                            player.stats.highestCheckout = stats.highestCheckout;
+                        }
+                        if (placement < (player.stats.bestPosition || 999) || player.stats.bestPosition === 0) {
+                            player.stats.bestPosition = placement;
+                        }
+
+                        // 6. UPDATE TOURNAMENT HISTORY ENTRY
+                        const tournamentHistoryEntry = {
                             tournamentId: tournament.tournamentId,
                             tournamentName: tournament.tournamentSettings?.name || 'Unknown Tournament',
                             position: placement,
@@ -3968,131 +4052,17 @@ export class TournamentService {
                                 legsLost: stats.legsPlayed - stats.legsWon,
                                 oneEightiesCount: stats.oneEighties,
                                 highestCheckout: stats.highestCheckout,
-                                average: stats.average, // Add tournament average to history
+                                average: stats.average,
                             },
-                            date: new Date()
+                            date: new Date(),
+                            verified: tournament.verified || false
                         };
 
-                        if (!player.tournamentHistory) {
-                            player.tournamentHistory = [];
-                        }
-                        player.tournamentHistory.push(tournamentHistory);
-
-                        // Update overall statistics
-                        if (!player.stats) {
-                            player.stats = {
-                                tournamentsPlayed: 0,
-                                matchesPlayed: 0,
-                                legsWon: 0,
-                                legsLost: 0,
-                                oneEightiesCount: 0,
-                                highestCheckout: 0,
-                                avg: 0,
-                                averagePosition: 0,
-                                bestPosition: 999,
-                                totalMatchesWon: 0,
-                                totalMatchesLost: 0,
-                                totalLegsWon: 0,
-                                totalLegsLost: 0,
-                                total180s: 0
-                            };
-                        }
-
-                        // Handle legacy data: ensure tournamentsPlayed is a number
-                        if (Array.isArray(player.stats.tournamentsPlayed)) {
-                            player.stats.tournamentsPlayed = player.stats.tournamentsPlayed.length;
-                        } else if (typeof player.stats.tournamentsPlayed !== 'number') {
-                            player.stats.tournamentsPlayed = 0;
-                        }
-
-                        // Update tournament count
-                        player.stats.tournamentsPlayed += 1;
-
-                        // Ensure all stats fields are numbers
-                        if (typeof player.stats.bestPosition !== 'number') player.stats.bestPosition = 999;
-                        if (typeof player.stats.totalMatchesWon !== 'number') player.stats.totalMatchesWon = 0;
-                        if (typeof player.stats.totalMatchesLost !== 'number') player.stats.totalMatchesLost = 0;
-                        if (typeof player.stats.totalLegsWon !== 'number') player.stats.totalLegsWon = 0;
-                        if (typeof player.stats.totalLegsLost !== 'number') player.stats.totalLegsLost = 0;
-                        if (typeof player.stats.total180s !== 'number') player.stats.total180s = 0;
-                        if (typeof player.stats.highestCheckout !== 'number') player.stats.highestCheckout = 0;
-                        if (typeof player.stats.averagePosition !== 'number') player.stats.averagePosition = 0;
-                        if (typeof player.stats.matchesPlayed !== 'number') player.stats.matchesPlayed = 0;
-                        if (typeof player.stats.legsWon !== 'number') player.stats.legsWon = 0;
-                        if (typeof player.stats.legsLost !== 'number') player.stats.legsLost = 0;
-                        if (typeof player.stats.oneEightiesCount !== 'number') player.stats.oneEightiesCount = 0;
-                        if (typeof player.stats.avg !== 'number') player.stats.avg = 0;
-                        if (typeof player.stats.mmr !== 'number') player.stats.mmr = MMRService.getInitialMMR();
-
-                        // Update best position
-                        if (placement < player.stats.bestPosition || player.stats.bestPosition === 0 || player.stats.bestPosition === 999) {
-                            player.stats.bestPosition = placement;
-                        }
-
-                        // Update match statistics
-                        player.stats.totalMatchesWon += stats.matchesWon;
-                        player.stats.totalMatchesLost += (stats.matchesPlayed - stats.matchesWon);
-                        player.stats.totalLegsWon += stats.legsWon;
-                        player.stats.totalLegsLost += (stats.legsPlayed - stats.legsWon);
-                        player.stats.total180s += stats.oneEighties;
-
-                        // Update highest checkout
-                        if (stats.highestCheckout > player.stats.highestCheckout) {
-                            player.stats.highestCheckout = stats.highestCheckout;
-                        }
-
-                        // Update one-eighties count
-                        player.stats.oneEightiesCount += stats.oneEighties;
-
-                        // Update matches and legs played
-                        player.stats.matchesPlayed += stats.matchesPlayed;
-                        player.stats.legsWon += stats.legsWon;
-                        player.stats.legsLost += (stats.legsPlayed - stats.legsWon);
-
-                        // Update average - use tournament history to recalculate all-time average
-                        // This ensures accuracy even if tournaments are reopened and re-finished
-                        if (player.tournamentHistory && player.tournamentHistory.length > 0) {
-                            // Calculate all-time average from tournament history
-                            const totalAvg = player.tournamentHistory.reduce((sum: number, hist: any) => {
-                                // Get average from tournament stats, fallback to 0
-                                return sum + (hist.stats?.average || 0);
-                            }, 0);
-                            player.stats.avg = totalAvg / player.tournamentHistory.length;
+                        if (isNewTournament) {
+                            player.tournamentHistory.push(tournamentHistoryEntry);
                         } else {
-                            player.stats.avg = stats.average;
+                            player.tournamentHistory[existingHistoryIndex] = tournamentHistoryEntry;
                         }
-
-                        console.log(`Player ${player.name} tournament average: ${stats.average.toFixed(2)}, all-time average: ${player.stats.avg.toFixed(2)}`);
-
-                        // Calculate average position from tournament history
-                        if (player.tournamentHistory && player.tournamentHistory.length > 0) {
-                            const totalPosition = player.tournamentHistory.reduce((sum: number, hist: any) => sum + hist.position, 0);
-                            player.stats.averagePosition = totalPosition / player.tournamentHistory.length;
-                        } else {
-                            player.stats.averagePosition = placement;
-                        }
-
-                        // Calculate MMR change
-                        const matchWinRate = stats.matchesPlayed > 0 ? stats.matchesWon / stats.matchesPlayed : 0;
-                        const legWinRate = stats.legsPlayed > 0 ? stats.legsWon / stats.legsPlayed : 0;
-                        
-                        // Get current MMR or initialize to base value if not set
-                        const currentMMR = player.stats.mmr || MMRService.getInitialMMR();
-                        
-                        const newMMR = MMRService.calculateMMRChange(
-                            currentMMR,
-                            placement,
-                            totalPlayers,
-                            matchWinRate,
-                            legWinRate,
-                            stats.average,
-                            tournamentAverageScore
-                        );
-                        
-                        const mmrChange = Math.ceil(newMMR) - currentMMR;
-                        player.stats.mmr = Math.ceil(newMMR); // Felfelé kerekítés tizedesjegyek nélkül
-                        
-                        console.log(`Player ${player.name} MMR: ${currentMMR} → ${Math.ceil(newMMR)} (${mmrChange >= 0 ? '+' : ''}${mmrChange})`);
 
                         await player.save();
                     }

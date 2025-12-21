@@ -133,7 +133,7 @@ export function InitialView({
       {(activeTab === 'tournaments' || activeTab === 'all') && (
         <section className="space-y-6">
           <CardHeader className="px-0">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold text-primary-foreground">
               {hasActiveQuery ? 'Keresési Találatok' : (filters?.status === 'all' ? 'Összes Torna' : 'Közelgő Tornák')}
             </CardTitle>
           </CardHeader>

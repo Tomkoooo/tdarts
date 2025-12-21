@@ -387,6 +387,7 @@ export class MatchService {
         allowManualFinish?: boolean; // Allow finishing without legs (for admin manual entry)
         isManual?: boolean; // Indicates this is a manual admin change
         adminId?: string | null; // Admin user ID who made the manual change
+        fromScoreboard?: boolean; // Indicates this is a regular scoreboard play
     }) {
         const match = await MatchModel.findById(matchId);
         if (!match) throw new BadRequestError('Match not found');
@@ -441,6 +442,12 @@ export class MatchService {
         
         const oldWinnerId = match.winnerId;
         const oldStatus = match.status;
+        const oldP1Legs = match.player1.legsWon;
+        const oldP2Legs = match.player2.legsWon;
+
+        // Determine if this is a manual override scenario
+        const isManualOverride = matchData.isManual || 
+                                (!matchData.fromScoreboard && match.status === 'finished' && oldWinnerId);
 
         // Update match status and winner
         match.status = 'finished';
@@ -448,24 +455,30 @@ export class MatchService {
         match.player1.legsWon = matchData.player1LegsWon;
         match.player2.legsWon = matchData.player2LegsWon;
 
-        // Flag as manual override if explicitly allowed (manual entry) or if changing an already finished match
-        if (matchData.allowManualFinish || (match.status === 'finished' && oldWinnerId)) {
-            match.manualOverride = true;
-            match.overrideTimestamp = new Date();
-        }
-
         // Track manual changes with detailed information
-        if (matchData.isManual && matchData.adminId) {
+        if (isManualOverride) {
+            // Log previous state for auditing - use the values captured BEFORE update
+            match.previousState = {
+                player1LegsWon: oldP1Legs || 0,
+                player2LegsWon: oldP2Legs || 0,
+                winnerId: oldWinnerId,
+                status: oldStatus
+            };
+
             match.manualOverride = true;
             match.overrideTimestamp = new Date();
-            match.manualChangedBy = matchData.adminId as any;
+            
+            // Set adminId if available
+            if (matchData.adminId) {
+                match.manualChangedBy = matchData.adminId as any;
+            }
             
             // Determine the type of manual change
             if (isWinnerChange) {
                 match.manualChangeType = 'winner_override';
             } else if (oldStatus === 'finished') {
                 match.manualChangeType = 'admin_state_change';
-            } else {
+            } else if (matchData.allowManualFinish || matchData.isManual) {
                 match.manualChangeType = 'admin_finish';
             }
         }

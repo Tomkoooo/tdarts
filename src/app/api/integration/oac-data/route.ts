@@ -83,39 +83,16 @@ export async function GET(_req: NextRequest) {
 
         const verifiedTournamentIds = verifiedTournaments.map(t => t._id);
 
-        // 3. Unique Players Count
-        const uniquePlayersPipeline = [
-            { 
-                $match: { 
-                    tournamentRef: { $in: verifiedTournamentIds },
-                } 
-            },
-            {
-                $project: {
-                    players: ["$player1.playerId", "$player2.playerId"]
-                }
-            },
-            {
-                $unwind: "$players"
-            },
-            {
-                $match: {
-                    players: { $ne: null }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    uniquePlayers: { $addToSet: "$players" }
-                }
-            }
-        ];
-
-        const uniquePlayersResult = await MatchModel.aggregate(uniquePlayersPipeline);
+        // 3. Unique Players Count (from all verified tournaments)
+        const uniquePlayersResult = await TournamentModel.aggregate([
+            { $match: { verified: true, isDeleted: false, isCancelled: false } },
+            { $unwind: '$tournamentPlayers' },
+            { $group: { _id: null, uniquePlayers: { $addToSet: '$tournamentPlayers.playerReference' } } }
+        ]);
+        
         let uniquePlayerCount = 0;
         if (uniquePlayersResult.length > 0 && uniquePlayersResult[0].uniquePlayers) {
-             const playerIds = uniquePlayersResult[0].uniquePlayers.filter((id: any) => id);
-             uniquePlayerCount = playerIds.length;
+            uniquePlayerCount = uniquePlayersResult[0].uniquePlayers.length;
         }
 
         // 4. Integrity Stats (Manual Overrides)
@@ -148,8 +125,8 @@ export async function GET(_req: NextRequest) {
             },
             {
                 $project: {
-                    tournamentName: "$tournament.name",
-                    tournamentId: "$_id",
+                    tournamentName: "$tournament.tournamentSettings.name",
+                    tournamentId: "$tournament.tournamentId",
                     overrideCount: "$count",
                 }
             },
@@ -161,13 +138,14 @@ export async function GET(_req: NextRequest) {
             manualOverride: true,
             tournamentRef: { $in: verifiedTournamentIds }
         })
-            .populate('tournamentRef', 'name')
+            .populate('tournamentRef', 'tournamentSettings.name tournamentId')
             .populate('player1.playerId', 'name email')
             .populate('player2.playerId', 'name email')
             .populate('winnerId', 'name')
             .populate('manualChangedBy', 'name email')
+            .populate('scorer', 'name')
             .sort({ overrideTimestamp: -1 })
-            .limit(50)
+            .limit(100)
             .lean();
 
         // 5. Global Stats
@@ -195,11 +173,90 @@ export async function GET(_req: NextRequest) {
         const clubGrowth = getGrowthData(verifiedClubs);
         const tournamentGrowth = getGrowthData(verifiedTournaments);
 
+        // 9. Player Leaderboard from Verified Tournaments
+        const playerLeaderboard = await TournamentModel.aggregate([
+            {
+                $match: {
+                    verified: true,
+                    isDeleted: false,
+                    isCancelled: false
+                }
+            },
+            {
+                $unwind: {
+                    path: '$tournamentPlayers',
+                    preserveNullAndEmptyArrays: false
+                }
+            },
+            {
+                $addFields: {
+                    playerRefObj: { $toObjectId: '$tournamentPlayers.playerReference' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'players',
+                    localField: 'playerRefObj',
+                    foreignField: '_id',
+                    as: 'playerDoc'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$playerDoc',
+                    preserveNullAndEmptyArrays: false // Skip if player doc not found
+                }
+            },
+            {
+                // Optionally join with users to get email
+                $lookup: {
+                    from: 'users',
+                    localField: 'playerDoc.userRef',
+                    foreignField: '_id',
+                    as: 'userDoc'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$userDoc',
+                    preserveNullAndEmptyArrays: true // Keep even if no user account
+                }
+            },
+            {
+                $group: {
+                    _id: '$playerDoc._id',
+                    name: { $first: '$playerDoc.name' },
+                    email: { $first: '$userDoc.email' },
+                    oacMmr: { $first: '$playerDoc.stats.oacMmr' },
+                    totalAverage: { $avg: '$tournamentPlayers.stats.avg' },
+                    maxAverage: { $max: '$tournamentPlayers.stats.avg' },
+                    totalOneEighties: { $sum: '$tournamentPlayers.stats.oneEightiesCount' },
+                    maxCheckout: { $max: '$tournamentPlayers.stats.highestCheckout' },
+                    tournamentsPlayed: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { oacMmr: -1, totalAverage: -1, name: 1 }
+            },
+            {
+                $limit: 100 // Top 100 players
+            }
+        ]);
+        
+        console.log('DEBUG: Player leaderboard count:', playerLeaderboard.length);
+        if (playerLeaderboard.length > 0) {
+            console.log('DEBUG: First player:', JSON.stringify(playerLeaderboard[0], null, 2));
+        }
+
         return NextResponse.json({
             // Integrity Data
             integrityStats: {
                 topOffendingTournaments: integrityAggregation,
-                suspiciousMatches: suspiciousMatches,
+                suspiciousMatches: suspiciousMatches.map((m: any) => ({
+                    ...m,
+                    tournamentName: m.tournamentRef?.tournamentSettings?.name || 'Ismeretlen',
+                    tournamentCode: m.tournamentRef?.tournamentId
+                })),
             },
             // Dashboard Data
             globalStats: { 
@@ -212,6 +269,18 @@ export async function GET(_req: NextRequest) {
                 clubs: clubGrowth,
                 tournaments: tournamentGrowth
             },
+            // Player leaderboard
+            playerStats: playerLeaderboard.map((p: any) => ({
+                _id: p._id,
+                name: p.name,
+                email: p.email,
+                oacMmr: p.oacMmr || 800,
+                average: Math.round(p.totalAverage * 100) / 100,
+                maxAverage: Math.round(p.maxAverage * 100) / 100,
+                oneEighties: p.totalOneEighties || 0,
+                highestCheckout: p.maxCheckout || 0,
+                tournamentsPlayed: p.tournamentsPlayed
+            })),
             recentLogs: recentLogs.map((log: any) => ({
                 id: log._id,
                 user: {

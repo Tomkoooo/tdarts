@@ -15,6 +15,7 @@ export interface TournamentHistory {
         average: number; // Tornához tartozó átlag (meccs átlagok átlaga)
     };
     date: Date;
+    verified: boolean;
 }
 
 export interface PlayerStatistics {
@@ -28,6 +29,7 @@ export interface PlayerStatistics {
     highestCheckout: number;
     averagePosition: number;
     mmr: number; // Matchmaking Rating - performance-based ranking
+    oacMmr: number; // OAC National MMR
 }
 
 export interface PlayerDocument {
@@ -63,6 +65,7 @@ export interface PlayerDocument {
         totalLegsLost: number;
         total180s: number;
         mmr: number; // Matchmaking Rating
+        oacMmr: number; // OAC National MMR
     };
     /**
      * Tournament history with detailed results
@@ -89,6 +92,7 @@ export interface Player {
         totalLegsLost: number;
         total180s: number;
         mmr: number; // Matchmaking Rating
+        oacMmr: number; // OAC National MMR
     };
     tournamentHistory?: TournamentHistory[];
     statistics?: PlayerStatistics;

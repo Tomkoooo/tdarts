@@ -717,7 +717,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           player1LegsWon: finalPlayer1LegsWon,
-          player2LegsWon: finalPlayer2LegsWon
+          player2LegsWon: finalPlayer2LegsWon,
+          fromScoreboard: true
         })
       });
       

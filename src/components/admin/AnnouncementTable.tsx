@@ -38,6 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/Badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   IconDots,
   IconEdit,
@@ -57,6 +59,10 @@ interface Announcement {
   type: "info" | "success" | "warning" | "error"
   isActive: boolean
   expiresAt: string
+  showButton: boolean
+  buttonText?: string
+  buttonAction?: string
+  duration: number
 }
 
 export default function AnnouncementTable() {
@@ -69,11 +75,18 @@ export default function AnnouncementTable() {
 
   // Edit State
   const [editingItem, setEditingItem] = useState<Announcement | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
   const [editForm, setEditForm] = useState({
       title: "",
       description: "",
-      type: "info",
-      expiresAt: ""
+      type: "info" as Announcement["type"],
+      expiresAt: "",
+      showButton: false,
+      buttonText: "",
+      buttonAction: "",
+      duration: 10000
   })
 
   const limit = 10
@@ -130,6 +143,21 @@ export default function AnnouncementTable() {
       }
   }
 
+  const openCreateModal = () => {
+      setEditingItem(null)
+      setEditForm({
+          title: "",
+          description: "",
+          type: "info",
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // +1 week default
+          showButton: false,
+          buttonText: "Részletek",
+          buttonAction: "",
+          duration: 10000
+      })
+      setShowModal(true)
+  }
+
   const openEditModal = (item: Announcement) => {
       setEditingItem(item)
       setEditForm({
@@ -137,22 +165,39 @@ export default function AnnouncementTable() {
           description: item.description,
           type: item.type,
           // Format date for datetime-local input: YYYY-MM-DDThh:mm
-          expiresAt: new Date(item.expiresAt).toISOString().slice(0, 16)
+          expiresAt: new Date(item.expiresAt).toISOString().slice(0, 16),
+          showButton: item.showButton || false,
+          buttonText: item.buttonText || "",
+          buttonAction: item.buttonAction || "",
+          duration: item.duration || 10000
       })
+      setShowModal(true)
   }
 
   const handleUpdate = async () => {
-      if (!editingItem) return
       try {
-          await axios.patch(`/api/admin/announcements/${editingItem._id}`, {
+          setIsSaving(true)
+          const payload = {
               ...editForm,
               expiresAt: new Date(editForm.expiresAt)
-          })
-          toast.success("Hír frissítve")
+          }
+
+          if (editingItem) {
+              await axios.patch(`/api/admin/announcements/${editingItem._id}`, payload)
+              toast.success("Hír frissítve")
+          } else {
+              await axios.post(`/api/admin/announcements`, payload)
+              toast.success("Hír létrehozva")
+          }
+          
+          setShowModal(false)
           setEditingItem(null)
           fetchData()
-    } catch {
-      toast.error("Hiba a frissítés során")
+    } catch (err: any) {
+      console.error("Error saving announcement:", err)
+      toast.error(err.response?.data?.error || "Hiba a mentés során")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -176,7 +221,7 @@ export default function AnnouncementTable() {
           className="max-w-xs"
         />
         <div className="flex gap-2">
-            <Button onClick={() => window.location.href='/admin/announcements/new'}>
+           <Button onClick={openCreateModal}>
                 <IconPlus className="mr-2 size-4" />
                 Új Hír
             </Button>
@@ -282,71 +327,122 @@ export default function AnnouncementTable() {
       </div>
 
             {/* Edit Dialog */}
-      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Hír Szerkesztése</DialogTitle>
+      {/* Edit/Create Dialog */}
+      <Dialog open={showModal} onOpenChange={(open) => !open && setShowModal(false)}>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>{editingItem ? "Hír Szerkesztése" : "Új Hír Létrehozása"}</DialogTitle>
             <DialogDescription>
-              Módosítsd a hír részleteit.
+              {editingItem ? "Módosítsd a hír részleteit." : "Add meg az új hír adatait."}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Cím
-              </Label>
-              <Input
-                id="title"
-                value={editForm.title}
-                onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                className="col-span-3"
-              />
+          
+          <ScrollArea className="flex-1 px-6 py-4">
+            <div className="grid gap-4 pb-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Cím</Label>
+                <Input
+                  id="title"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                  placeholder="Hír címe"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="type">Típus</Label>
+                  <Select value={editForm.type} onValueChange={(v: any) => setEditForm({...editForm, type: v})}>
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Típus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">Infó (Kék)</SelectItem>
+                      <SelectItem value="success">Siker (Zöld)</SelectItem>
+                      <SelectItem value="warning">Figyelem (Sárga)</SelectItem>
+                      <SelectItem value="error">Hiba (Piros)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Időtartam (ms)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    step="1000"
+                    min="3000"
+                    max="60000"
+                    value={editForm.duration}
+                    onChange={(e) => setEditForm({...editForm, duration: parseInt(e.target.value) || 10000})}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="expiresAt">Lejárat</Label>
+                <Input
+                  id="expiresAt"
+                  type="datetime-local"
+                  value={editForm.expiresAt}
+                  onChange={(e) => setEditForm({...editForm, expiresAt: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Leírás</Label>
+                <textarea
+                  id="description"
+                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                  placeholder="Hír szövege..."
+                />
+              </div>
+
+              <div className="space-y-4 pt-2 border-t mt-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="showButton" 
+                    checked={editForm.showButton} 
+                    onCheckedChange={(checked) => setEditForm({...editForm, showButton: checked === true})}
+                  />
+                  <Label htmlFor="showButton" className="cursor-pointer">Gomb megjelenítése</Label>
+                </div>
+
+                {editForm.showButton && (
+                  <div className="grid gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="buttonText">Gomb felirata</Label>
+                      <Input
+                        id="buttonText"
+                        value={editForm.buttonText}
+                        onChange={(e) => setEditForm({...editForm, buttonText: e.target.value})}
+                        placeholder="Pl: Részletek"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="buttonAction">Gomb link (URL)</Label>
+                      <Input
+                        id="buttonAction"
+                        value={editForm.buttonAction}
+                        onChange={(e) => setEditForm({...editForm, buttonAction: e.target.value})}
+                        placeholder="Pl: /results vagy https://..."
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">
-                Típus
-              </Label>
-               <Select value={editForm.type} onValueChange={(v: any) => setEditForm({...editForm, type: v})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Típus" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">Infó (Kék)</SelectItem>
-                  <SelectItem value="success">Siker (Zöld)</SelectItem>
-                  <SelectItem value="warning">Figyelem (Sárga)</SelectItem>
-                  <SelectItem value="error">Hiba (Piros)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expiresAt" className="text-right">
-                Lejárat
-              </Label>
-              <Input
-                id="expiresAt"
-                type="datetime-local"
-                value={editForm.expiresAt}
-                onChange={(e) => setEditForm({...editForm, expiresAt: e.target.value})}
-                className="col-span-3"
-              />
-            </div>
-             <div className="grid grid-cols-4 gap-4">
-              <Label htmlFor="description" className="text-right pt-2">
-                Leírás
-              </Label>
-              <textarea
-                id="description"
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 col-span-3"
-                value={editForm.description}
-                onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setEditingItem(null)}>
+          </ScrollArea>
+
+          <DialogFooter className="p-6 pt-2 border-t">
+            <Button type="button" variant="outline" onClick={() => setShowModal(false)} disabled={isSaving}>
                 Mégse
             </Button>
-            <Button type="submit" onClick={handleUpdate}>Mentés</Button>
+            <Button type="submit" onClick={handleUpdate} disabled={isSaving}>
+                {isSaving ? "Mentés..." : (editingItem ? "Mentés" : "Létrehozás")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

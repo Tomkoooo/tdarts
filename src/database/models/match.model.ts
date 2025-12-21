@@ -57,6 +57,12 @@ const matchSchema = new mongoose.Schema<MatchDocument>({
   overrideTimestamp: { type: Date },
   manualChangeType: { type: String, enum: ['admin_finish', 'admin_state_change', 'winner_override', null], default: null },
   manualChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  previousState: {
+    player1LegsWon: { type: Number },
+    player2LegsWon: { type: Number },
+    winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+    status: { type: String }
+  }
 }, { timestamps: true });
 
 // Automatikus winnerId számítás mentés előtt

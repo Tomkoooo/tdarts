@@ -76,7 +76,7 @@ This document tracks the comprehensive refactor of ALL components and pages to u
 5. ✅ `TournamentKnockoutBracket.tsx` → Have `KnockoutBracketNew`
 6. ⏳ `EditTournamentModal.tsx` → Use new Form components
 7. ⏳ `TournamentCard.tsx` → Redesign with hover effects
-8. ⏳ `TournamentStatusChanger.tsx` → Better UI
+8. ⏳ `Changer.tsx` → Better UI
 9. ⏳ `TournamentShareModal.tsx` → Modern sharing
 10. ⏳ `PlayerMatchesModal.tsx` → Use MatchesDataTable
 11. ⏳ `PlayerNotificationModal.tsx` → Better notifications

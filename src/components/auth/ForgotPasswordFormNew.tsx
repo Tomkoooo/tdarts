@@ -114,7 +114,7 @@ export function ForgotPasswordFormNew() {
           </DropdownMenu>
         </div>
 
-        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <CardTitle className="text-2xl font-bold text-primary-foreground">
           {t.title}
         </CardTitle>
         <CardDescription className="text-base">

@@ -183,7 +183,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
                 </Link>
               </Button>
             )}
-            {canEdit && (
+            {canEdit && status !== 'finished' && (
               <Button variant="secondary" size="sm" onClick={onEdit}>
                 <IconEdit className="mr-2 h-4 w-4" />
                 Szerkesztés

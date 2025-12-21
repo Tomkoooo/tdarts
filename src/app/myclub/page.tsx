@@ -69,7 +69,7 @@ export default function MyClubPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full border-2 border-primary/20 mb-6">
                 <IconUsersGroup className="w-10 h-10 text-primary" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
                 Új Klub Regisztrálása
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">

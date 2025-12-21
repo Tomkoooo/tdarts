@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/Label";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { showErrorToast } from "@/lib/toastUtils";
+import { useUserContext } from "@/hooks/useUser";
 
 import LegsViewModal from "./LegsViewModal";
 import KnockoutBracketDiagram, { DiagramMatch, DiagramRound, RoundSummary } from "./KnockoutBracketDiagram";
@@ -129,6 +130,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   knockoutMethod,
   clubId,
 }) => {
+  const { user } = useUserContext()
   const isAdmin = userClubRole === "admin" || userClubRole === "moderator"
   const fullscreenContainerRef = useRef<HTMLDivElement>(null)
   const [knockoutData, setKnockoutData] = useState<KnockoutRound[]>([])
@@ -304,8 +306,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       if (response.data?.tournamentPlayers) {
         setAvailablePlayers(response.data.tournamentPlayers)
       }
+
       const statusFromResponse =
         response.data?.tournament?.tournamentSettings?.status || response.data?.tournament?.status || response.data?.status || null
+
       if (statusFromResponse) {
         setTournamentStatus(statusFromResponse as string)
       }
@@ -338,7 +342,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         })
         setKnockoutData(knockoutRounds)
         const statusFromKnockout =
-          response.data?.tournament?.tournamentSettings?.status || response.data?.tournament?.status || response.data?.status || null
+          response.data?.tournament?.tournamentSettings?.status || response.data?.tournamentStatus || response.data?.status || null
         if (statusFromKnockout) {
           setTournamentStatus(statusFromKnockout as string)
         }
@@ -447,6 +451,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           highestCheckout: editForm.player2Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player2Stats.highestCheckout,
         },
         allowManualFinish: true, // Allow finishing without legs (admin manual entry)
+        isManual: true,
+        adminId: user?._id,
       };
 
       const matchId =
@@ -977,6 +983,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     )
   }, [roundsWithMatches, availableBoards])
 
+  const isTournamentLocked = tournamentStatus === "finished" || tournamentStatus === "archived" || tournamentStatus === "cancelled"
   const roundSummaries: RoundSummary[] = useMemo(() => {
     if (!roundsWithMatches || roundsWithMatches.length === 0) {
       return []
@@ -984,11 +991,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     return roundsWithMatches.map((round, index) => ({
       label: getRoundTitle(index, round.matches?.length || 0, roundsWithMatches.length),
       roundNumber: round.round,
-      canAdd: isAdmin && currentKnockoutMethod === "manual",
+      canAdd: isAdmin && currentKnockoutMethod === "manual" && !isTournamentLocked,
     }))
-  }, [roundsWithMatches, currentKnockoutMethod, isAdmin])
-
-  const isTournamentLocked = tournamentStatus === "finished" || tournamentStatus === "archived" || tournamentStatus === "cancelled"
+  }, [roundsWithMatches, currentKnockoutMethod, isAdmin, isTournamentLocked])
 
   const knockoutHasStarted = useMemo(
     () =>
@@ -1181,7 +1186,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <IconHierarchy className="h-6 w-6 text-primary" />
                   Egyenes kiesés
-                  {isAdmin && roundsWithMatches.length > 0 && !isTournamentLocked && (
+                  {isAdmin && roundsWithMatches.length > 0 && !isTournamentLocked && tournamentStatus !== 'finished' && (
                     <Button
                       className="gap-2 ml-4"
                       size="sm"

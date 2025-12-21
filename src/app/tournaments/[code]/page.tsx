@@ -343,8 +343,17 @@ const TournamentPage = () => {
             {tabs.map((tab) => {
               const isAdminTab = tab.value === 'admin'
               const canSeeAdminTab = userClubRole === 'admin' || userClubRole === 'moderator'
-              
+              const format = tournament?.tournamentSettings?.format
+
               if (isAdminTab && !canSeeAdminTab) {
+                return null
+              }
+
+              if (tab.value === 'groups' && format === 'knockout') {
+                return null
+              }
+
+              if (tab.value === 'bracket' && format === 'group') {
                 return null
               }
               
@@ -366,8 +375,17 @@ const TournamentPage = () => {
                 const isActive = activeTab === tab.value
                 const isAdmin = tab.value === 'admin'
                 const canSeeAdminTab = userClubRole === 'admin' || userClubRole === 'moderator'
-                
+                const format = tournament?.tournamentSettings?.format
+
                 if (isAdmin && !canSeeAdminTab) {
+                  return null
+                }
+
+                if (tab.value === 'groups' && format === 'knockout') {
+                  return null
+                }
+
+                if (tab.value === 'bracket' && format === 'group') {
                   return null
                 }
                 
@@ -433,19 +451,23 @@ const TournamentPage = () => {
             <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
           </TabsContent>
 
-          <TabsContent value="groups" className="mt-0 space-y-4">
-            <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
-          </TabsContent>
+          {tournament?.tournamentSettings?.format !== 'knockout' && (
+            <TabsContent value="groups" className="mt-0 space-y-4">
+              <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="bracket" className="mt-0 space-y-4">
-            <TournamentKnockoutBracket
-              tournamentCode={tournament.tournamentId}
-              userClubRole={userClubRole}
-              tournamentPlayers={players}
-              knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
-              clubId={tournament.clubId?.toString()}
-            />
-          </TabsContent>
+          {tournament?.tournamentSettings?.format !== 'group' && (
+            <TabsContent value="bracket" className="mt-0 space-y-4">
+              <TournamentKnockoutBracket
+                tournamentCode={tournament.tournamentId}
+                userClubRole={userClubRole}
+                tournamentPlayers={players}
+                knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
+                clubId={tournament.clubId?.toString()}
+              />
+            </TabsContent>
+          )}
 
           <TabsContent value="admin" className="mt-0 space-y-6">
             {userClubRole === 'admin' || userClubRole === 'moderator' ? (

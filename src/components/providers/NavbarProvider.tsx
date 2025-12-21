@@ -19,7 +19,7 @@ export function NavbarProvider({
   useEffect(() => {
     if (!pathname) return;
 
-    const hideNavbarPaths = ['/board', '/test', '/admin', '/api/admin']
+    const hideNavbarPaths = ['/board', '/test', '/tv', '/api/admin']
     const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path)) || pathname.includes('/tv')
     
     // Footer visibility logic
@@ -33,7 +33,7 @@ export function NavbarProvider({
   }, [pathname])
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       {!shouldHideNavbar && (
         <>
           <NavbarNew />
@@ -41,9 +41,11 @@ export function NavbarProvider({
           <div className="h-16 md:h-20" />
         </>
       )}
-      {children}
+      <main className="flex-1">
+        {children}
+      </main>
       {!shouldHideNavbar && showFooter && <Footer />}
-    </>
+    </div>
   )
 }
 

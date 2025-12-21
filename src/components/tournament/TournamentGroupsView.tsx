@@ -6,6 +6,7 @@ import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
+import { useUserContext } from '@/hooks/useUser';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -57,6 +58,7 @@ interface TournamentGroupsViewProps {
 }
 
 const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament, userClubRole }) => {
+  const { user } = useUserContext();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [player1Legs, setPlayer1Legs] = useState(0);
@@ -177,7 +179,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           player2LegsWon: player2Legs,
           player1Stats,
           player2Stats,
-          allowManualFinish: true
+          allowManualFinish: true,
+          isManual: true,
+          adminId: user?._id
         })
       });
 
@@ -462,7 +466,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                             Legek
                                           </Button>
                                         )}
-                                        {isAdminOrModerator && (
+                                        {isAdminOrModerator && tournament.tournamentSettings?.status !== 'finished' && (
                                           <Button
                                             variant="warning"
                                             size="sm"

@@ -89,7 +89,7 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
   const pathname = usePathname()
 
   return (
-    <nav className="flex flex-col gap-1.5 p-2 h-full">
+    <nav className="flex flex-col gap-1.5 p-2 h-[calc(100vh-4rem)]">
       <div className="space-y-1.5">
       {sidebarItems.map((item) => {
         const Icon = item.icon
@@ -188,7 +188,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Loading state
   if (adminLoading || isAdmin === null || !user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="h-16 w-16 rounded-2xl" />
           <p className="text-sm text-muted-foreground">Admin jogosultság ellenőrzése...</p>

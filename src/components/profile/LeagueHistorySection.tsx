@@ -58,7 +58,7 @@ export function LeagueHistorySection({
             >
               <Card className="bg-card hover:bg-muted/50 transition-colors">
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start gap-4">
+                  <div className="flex md:flex-row flex-col justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <IconTrophy className="w-4 h-4 text-warning flex-shrink-0" />

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     // Verify internal secret
     const internalSecret = request.headers.get('x-internal-secret');
-    if (internalSecret !== process.env.TDARTS_INTERNAL_SECRET) {
+    if (internalSecret !== process.env.INTERNAL_API_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

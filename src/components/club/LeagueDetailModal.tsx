@@ -1165,6 +1165,12 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
   };
 
   const handleSave = async () => {
+    if (league.isActive && !formData.isActive) {
+      if (!confirm('Figyelem: A liga lezárása után a beállítások és a ranglista adatai nem lesznek módosíthatóak! Biztosan folytatod?')) {
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       // Convert empty strings to 0 in pointsConfig
@@ -1421,6 +1427,14 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                    />
                 </div>
              </div>
+             {!formData.isActive && (
+               <Alert className="border-warning/50 bg-warning/5 py-3">
+                 <IconInfoCircle className="h-4 w-4 text-warning" />
+                 <AlertDescription className="text-xs text-warning font-medium">
+                   Figyelem: A liga lezárása után a beállítások és a ranglista adatai nem lesznek módosíthatóak!
+                 </AlertDescription>
+               </Alert>
+             )}
           </div>
 
           <div className="space-y-2">

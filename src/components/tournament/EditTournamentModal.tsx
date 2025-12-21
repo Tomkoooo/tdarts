@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { TournamentSettings } from '@/interface/tournament.interface';
-import { IconX, IconTarget, IconExternalLink } from '@tabler/icons-react';
+import { IconTarget, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -141,127 +142,123 @@ export default function EditTournamentModal({
     }
   };
 
-
   const isTournamentStarted = tournament?.tournamentSettings?.status !== 'pending';
 
-  if (!isOpen) return null;
-
   return (
-    <dialog open={isOpen} className="modal">
-      <div className="modal-box glass-card p-4 sm:p-8 bg-[hsl(var(--background)/0.3)] rounded-xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/45">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-md shadow-2xl border-border/40">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-primary-foreground">
             Torna szerkesztése
-          </h2>
-          <button
-            onClick={onClose}
-            className="btn btn-ghost btn-sm btn-circle"
-          >
-            <IconX className="w-5 h-5" />
-          </button>
-        </div>
+          </DialogTitle>
+          <DialogDescription>
+            Itt módosíthatod a torna alapadatait és beállításait.
+          </DialogDescription>
+        </DialogHeader>
 
         {error && (
-          <div className="alert alert-error mb-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="font-medium">{error}</p>
-                {subscriptionError && (
-                  <div className="mt-2 text-sm">
-                    <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span></p>
-                    <p>Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}</p>
-                  </div>
-                )}
-              </div>
+          <div className="bg-destructive/15 text-destructive p-4 rounded-lg mb-4 flex items-start justify-between">
+            <div className="flex-1">
+              <p className="font-medium">{error}</p>
               {subscriptionError && (
-                <Link
-                  href="/#pricing" 
-                  className="btn btn-primary btn-sm ml-3 flex items-center gap-2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onClose();
-                    router.push('/#pricing');
-                  }}
-                >
-                  <IconExternalLink className="w-4 h-4" />
-                  Csomagok
-                </Link>
+                <div className="mt-2 text-sm">
+                  <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span></p>
+                  <p>Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}</p>
+                </div>
               )}
             </div>
+            {subscriptionError && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="ml-3 gap-2"
+                onClick={() => {
+                  onClose();
+                  router.push('/#pricing');
+                }}
+              >
+                <IconExternalLink className="w-4 h-4" />
+                Csomagok
+              </Button>
+            )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-primary">Alapadatok</h3>
             
-            <div>
-              <label className="block text-sm font-medium mb-1">Torna neve *</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Torna neve *</label>
               <input
                 type="text"
                 value={settings.name}
                 onChange={(e) => handleSettingsChange('name', e.target.value)}
-                className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 placeholder="Pl.: Tavaszi Bajnokság 2024"
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Leírás</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Leírás</label>
               <textarea
                 value={settings.description || ''}
                 onChange={(e) => handleSettingsChange('description', e.target.value)}
-                className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20 min-h-[80px]"
+                className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20 min-h-[80px]"
                 placeholder="Részletes leírás a tornáról..."
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Helyszín</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Helyszín</label>
               <input
                 type="text"
                 value={settings.location || ''}
                 onChange={(e) => handleSettingsChange('location', e.target.value)}
-                className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 placeholder="Pl.: Budapest, Sport Klub"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Kezdés dátuma *</label>
-              <input
-                type="datetime-local"
-                value={new Date(settings.startDate).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
-                onChange={(e) => handleSettingsChange('startDate', new Date(e.target.value))}
-                className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Kezdés dátuma *</label>
+                <input
+                  type="datetime-local"
+                  value={new Date(settings.startDate).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
+                  onChange={(e) => handleSettingsChange('startDate', new Date(e.target.value))}
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Nevezési határidő</label>
-              <input
-                type="datetime-local"
-                value={settings.registrationDeadline ? new Date(settings.registrationDeadline).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T') : ''}
-                onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value ? new Date(e.target.value) : undefined)}
-                className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nevezési határidő</label>
+                <input
+                  type="datetime-local"
+                  value={settings.registrationDeadline ? new Date(settings.registrationDeadline).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T') : ''}
+                  onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value ? new Date(e.target.value) : undefined)}
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
+                />
+              </div>
             </div>
           </div>
+
+          <Separator />
 
           {/* Tournament Settings */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-primary">Verseny beállítások</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Formátum *</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Formátum *</label>
                 <select
                   value={settings.format}
                   onChange={(e) => handleSettingsChange('format', e.target.value)}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                   disabled={isTournamentStarted}
                   required
                 >
@@ -270,94 +267,92 @@ export default function EditTournamentModal({
                   <option value="group_knockout">Csoportkör + Kieséses</option>
                 </select>
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning mt-1">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Típus</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Típus</label>
                 <select
                   value={settings.type}
                   onChange={(e) => handleSettingsChange('type', e.target.value)}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 >
                   <option value="amateur">Amatőr</option>
                   <option value="open">Open</option>
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Max. létszám *</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Max. létszám *</label>
                 <input
                   type="number"
                   value={settings.maxPlayers ?? ''}
                   onChange={(e) => handleSettingsChange('maxPlayers', e.target.value === '' ? '' : parseInt(e.target.value))}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                   min="0"
                   disabled={isTournamentStarted}
                   required
                 />
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning mt-1">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Kezdő pontszám *</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Kezdő pontszám *</label>
                 <input
                   type="number"
                   value={settings.startingScore ?? ''}
                   onChange={(e) => handleSettingsChange('startingScore', e.target.value === '' ? '' : parseInt(e.target.value))}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                   min="0"
                   disabled={isTournamentStarted}
                   required
                 />
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning mt-1">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Táblák száma</label>
-                <div className="w-full px-3 py-2 bg-base-200 rounded-lg border  text-base-content/70">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Táblák száma</label>
+                <div className="w-full px-3 py-2 bg-muted/20 text-muted-foreground rounded-lg border border-border/20">
                   {boards.length} tábla
                 </div>
-                <p className="text-xs text-base-content/60 mt-1">
-                  Automatikusan frissül a táblák alapján
-                </p>
+                <p className="text-xs text-muted-foreground">Automatikusan frissül a táblák alapján</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Nevezési díj (Ft)</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nevezési díj (Ft)</label>
                 <input
                   type="number"
                   value={settings.entryFee ?? ''}
                   onChange={(e) => handleSettingsChange('entryFee', e.target.value === '' ? '' : parseInt(e.target.value))}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                   min="0"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Jelszó</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Jelszó</label>
               <input
                 type="text"
                 value={settings.tournamentPassword}
                 onChange={(e) => handleSettingsChange('tournamentPassword', e.target.value)}
-                className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 placeholder="Opcionális jelszó a versenyhez"
               />
             </div>
 
             {settings.format === 'group_knockout' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Kieséses módszer</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Kieséses módszer</label>
                 <select
                   value={settings.knockoutMethod || 'automatic'}
                   onChange={(e) => handleSettingsChange('knockoutMethod', e.target.value)}
-                  className="w-full px-3 py-2 bg-base-100 rounded-lg outline-none focus:ring-2 ring-primary/20"
+                  className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 >
                   <option value="automatic">Automatikus</option>
                   <option value="manual">Manuális</option>
@@ -372,61 +367,63 @@ export default function EditTournamentModal({
               <h3 className="text-lg font-semibold text-primary">Tábla kezelés</h3>
               
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Kezeld a tornához tartozó táblákat
-                </p>
                 {boards.map((board, index) => (
-                  <div key={index} className="flex gap-2 items-center p-3 bg-base-100 rounded-lg">
-                    <div className="flex items-center gap-2">
+                  <div key={index} className="flex gap-2 items-center p-3 bg-muted/20 rounded-lg border border-border/20">
+                    <div className="flex items-center gap-2 px-2">
                       <IconTarget className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium">#{index + 1}</span>
+                      <span className="text-sm font-medium whitespace-nowrap">#{index + 1}</span>
                     </div>
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={board.name}
-                        onChange={(e) => handleBoardChange(index, 'name', e.target.value)}
-                        className="w-full px-3 py-2 bg-base-200 rounded-lg outline-none focus:ring-2 ring-primary/20"
-                        placeholder={`Tábla ${index + 1}`}
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      value={board.name}
+                      onChange={(e) => handleBoardChange(index, 'name', e.target.value)}
+                      className="flex-1 px-3 py-1.5 bg-background/50 rounded-md border border-border/40 outline-none focus:ring-1 ring-primary/30 text-sm"
+                      placeholder={`Tábla ${index + 1}`}
+                    />
                     {boards.length > 1 && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleRemoveBoard(index)}
-                        className="btn btn-ghost btn-sm btn-circle text-error"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
                       >
                         ✕
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={handleAddBoard}
-                  className="btn btn-outline btn-sm w-full"
+                  className="w-full border-dashed"
                 >
                   + Új tábla hozzáadása
-                </button>
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col justify-end gap-3 pt-4 sm:flex-row">
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Mégse
+            </Button>
             <Button
               type="submit"
               disabled={loading || (boards.length === 0 && !isTournamentStarted)}
-              className="order-1 sm:order-2"
             >
-              Mentés
+              {loading ? "Mentés..." : "Mentés"}
             </Button>
           </div>
         </form>
-      </div>
-      <form method="dialog" className="modal-backdrop">
-        <button onClick={onClose}>close</button>
-      </form>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

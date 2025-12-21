@@ -403,13 +403,21 @@ export class SearchService {
              // Use current date for comparison
              const now = new Date();
              now.setHours(0, 0, 0, 0);
+             const tomorrow = new Date(now);
+             tomorrow.setDate(now.getDate() + 1);
              
-             // STRICT 'Upcoming': Only Pending tournaments starting today or later.
+             // 'Upcoming' includes:
+             // 1. Pending tournaments starting today or in the future
+             // 2. Ongoing tournaments (started but not pending) that started TODAY
              andConditions.push({
                  $or: [
                     { 
                         'tournamentSettings.status': 'pending', 
                         'tournamentSettings.startDate': { $gte: now } 
+                    },
+                    {
+                        'tournamentSettings.status': { $in: ['group-stage', 'knockout'] },
+                        'tournamentSettings.startDate': { $gte: now, $lt: tomorrow }
                     }
                  ]
              });
