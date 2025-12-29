@@ -309,6 +309,31 @@ export class TournamentService {
         return tournament.boards || [];
     }
 
+    static async updateBoard(tournamentId: string, boardNumber: number, data: { name?: string; scoliaSerialNumber?: string; scoliaAccessToken?: string }): Promise<TournamentDocument> {
+        await connectMongo();
+        const tournament = await TournamentModel.findOne({
+            tournamentId: tournamentId,
+             isDeleted: { $ne: true },
+            isArchived: { $ne: true }
+        });
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === boardNumber);
+        if (boardIndex === -1) {
+            throw new BadRequestError('Board not found');
+        }
+
+        if (data.name !== undefined) tournament.boards[boardIndex].name = data.name;
+        if (data.scoliaSerialNumber !== undefined) tournament.boards[boardIndex].scoliaSerialNumber = data.scoliaSerialNumber;
+        if (data.scoliaAccessToken !== undefined) tournament.boards[boardIndex].scoliaAccessToken = data.scoliaAccessToken;
+
+        await tournament.save();
+        return tournament;
+    }
+
     /**
      * Automatically advance winner to next round after knockout match finishes
      * Creates or updates next round match with the winner

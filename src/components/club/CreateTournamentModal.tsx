@@ -140,7 +140,16 @@ export default function CreateTournamentModal({
   }
 
   const handleSettingsChange = (field: keyof FormSettings, value: any) => {
-    setSettings((prev) => ({ ...prev, [field]: value }))
+    // If startDate changes, automatically update registrationDeadline to match it
+    if (field === 'startDate') {
+      setSettings((prev) => ({ 
+        ...prev, 
+        [field]: value,
+        registrationDeadline: value 
+      }))
+    } else {
+      setSettings((prev) => ({ ...prev, [field]: value }))
+    }
     setError("")
   }
 
@@ -368,6 +377,19 @@ export default function CreateTournamentModal({
                     onChange={(event) => handleSettingsChange("startDate", new Date(event.target.value))}
                     icon={<IconCalendar className="h-5 w-5" />}
                     required
+                  />
+                  <FormField
+                    type="datetime-local"
+                    label="Nevezési határidő"
+                    value={new Date(settings.registrationDeadline || settings.startDate).toLocaleString("sv-SE", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).replace(" ", "T")}
+                    onChange={(event) => handleSettingsChange("registrationDeadline", new Date(event.target.value))}
+                    icon={<IconCalendar className="h-5 w-5" />}
                   />
                   <FormField
                     label="Helyszín"

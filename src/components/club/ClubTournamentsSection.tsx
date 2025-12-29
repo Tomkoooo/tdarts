@@ -22,17 +22,25 @@ export function ClubTournamentsSection({
   onCreateOacTournament,
   onDeleteTournament,
 }: ClubTournamentsSectionProps) {
-  const [showSandbox, setShowSandbox] = React.useState(false)
+  const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
 
   // Filter tournaments
   const filteredTournaments = React.useMemo(() => {
     return tournaments.filter(t => {
-      // If showSandbox is true, show ONLY sandbox tournaments
-      // If showSandbox is false, show ONLY non-sandbox tournaments
-      const isSandboxNodes = t.isSandbox === true;
-      return showSandbox ? isSandboxNodes : !isSandboxNodes;
+      const isDeleted = t.isDeleted === true;
+      const isSandbox = t.isSandbox === true;
+
+      if (viewMode === 'deleted') return isDeleted;
+      
+      // If we are not in deleted mode, hide deleted tournaments
+      if (isDeleted) return false;
+
+      if (viewMode === 'sandbox') return isSandbox;
+      if (viewMode === 'active') return !isSandbox;
+      
+      return !isSandbox && !isDeleted;
     })
-  }, [tournaments, showSandbox])
+  }, [tournaments, viewMode])
 
   return (
     <div className="space-y-6">
@@ -47,26 +55,36 @@ export function ClubTournamentsSection({
           {/* Sandbox Toggle */}
           {/* Sandbox Toggle - Only visible to admins/moderators */}
           {(userRole === 'admin' || userRole === 'moderator') && (
-            <div className="flex items-center gap-1 ml-6 bg-muted/30 p-1 rounded-lg">
+            <div className="flex flex-wrap items-center gap-1 ml-6 bg-muted/30 p-1 rounded-lg">
               <button
-                onClick={() => setShowSandbox(false)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  !showSandbox 
+                onClick={() => setViewMode('active')}
+                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                  viewMode === 'active'
                     ? 'bg-background shadow-sm text-foreground' 
                     : 'text-muted-foreground hover:text-foreground/80'
                 }`}
               >
-                Éles versenyek
+                Éles
               </button>
               <button
-                onClick={() => setShowSandbox(true)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  showSandbox 
+                onClick={() => setViewMode('sandbox')}
+                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                  viewMode === 'sandbox'
                     ? 'bg-warning/10 text-warning shadow-sm ring-1 ring-warning/20' 
                     : 'text-muted-foreground hover:text-warning/80'
                 }`}
               >
-                Teszt versenyek
+                Teszt
+              </button>
+              <button
+                onClick={() => setViewMode('deleted')}
+                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                  viewMode === 'deleted'
+                    ? 'bg-destructive/10 text-destructive shadow-sm ring-1 ring-destructive/20' 
+                    : 'text-muted-foreground hover:text-destructive/80'
+                }`}
+              >
+                Törölt
               </button>
             </div>
           )}
@@ -86,10 +104,10 @@ export function ClubTournamentsSection({
               <span className="xs:hidden">OAC</span>
             </Button>
           )}
-          <Button onClick={() => onCreateTournament(showSandbox)} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
+          <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
             <IconPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            <span className="hidden xs:inline">{showSandbox ? "Teszt verseny" : "Új verseny"}</span>
-            <span className="xs:hidden">{showSandbox ? "Teszt" : "Új"}</span>
+            <span className="hidden xs:inline">{viewMode === 'sandbox' ? "Teszt verseny" : "Új verseny"}</span>
+            <span className="xs:hidden">{viewMode === 'sandbox' ? "Teszt" : "Új"}</span>
           </Button>
         </div>
       )}

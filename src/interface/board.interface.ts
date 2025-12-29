@@ -14,5 +14,7 @@ export interface BoardDocument {
    * Az aktuális meccs (match collection ref), ha van folyamatban
    */
   currentMatch?: string | mongoose.Types.ObjectId;
+  scoliaSerialNumber?: string;
+  scoliaAccessToken?: string;
   updatedAt: Date;
 }

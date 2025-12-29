@@ -69,6 +69,8 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         nextMatch: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
         status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
         isActive: { type: Boolean, default: true },
+        scoliaSerialNumber: { type: String, default: null },
+        scoliaAccessToken: { type: String, default: null },
     }],
     tournamentSettings: {
         status: { type: String, enum: ['pending', 'active', 'finished', 'group-stage', 'knockout'], required: true, default: 'pending' },

@@ -42,14 +42,17 @@ export default function DeleteTournamentModal({
     }
   }, [isOpen])
 
+  const [skipNotification, setSkipNotification] = React.useState(false)
+
   const handleConfirm = () => {
-    if (hasPlayers && playersWithEmailCount > 0) {
+    if (hasPlayers && playersWithEmailCount > 0 && !skipNotification) {
       onConfirm({ subject, message })
     } else {
       onConfirm()
     }
     setSubject("Torna törölve")
     setMessage("Sajnálattal értesítünk, hogy ez a torna törölve lett.")
+    setSkipNotification(false)
   }
 
   if (!isOpen) return null
@@ -99,7 +102,22 @@ export default function DeleteTournamentModal({
             </div>
 
             {hasPlayers && playersWithEmailCount > 0 && (
-              <div className="space-y-4 py-4">
+              <div className="flex items-center space-x-2 py-2">
+                <input
+                  type="checkbox"
+                  id="skip-notification"
+                  checked={skipNotification}
+                  onChange={(e) => setSkipNotification(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="skip-notification" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Ne küldjön értesítést (Csendes törlés)
+                </Label>
+              </div>
+            )}
+
+            {hasPlayers && playersWithEmailCount > 0 && !skipNotification && (
+              <div className="space-y-4 py-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="space-y-2">
                   <Label htmlFor="email-subject">Email tárgy</Label>
                   <Input

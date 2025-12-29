@@ -54,6 +54,8 @@ export interface TournamentBoard {
     nextMatch?: string | MatchDocument;
     status: 'idle' | 'waiting' | 'playing';
     isActive: boolean;
+    scoliaSerialNumber?: string;
+    scoliaAccessToken?: string;
 }
 
 export interface TournamentSettings {
@@ -137,6 +139,8 @@ export interface TournamentBoardDocument {
     nextMatch?: Types.ObjectId;
     status: 'idle' | 'waiting' | 'playing';
     isActive: boolean;
+    scoliaSerialNumber?: string;
+    scoliaAccessToken?: string;
 }
 
 export interface WaitingListPlayerDocument {

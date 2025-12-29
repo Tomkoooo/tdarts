@@ -1,12 +1,17 @@
-"use client"
-
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/Button"
-import { IconDeviceDesktop } from "@tabler/icons-react"
+import { IconDeviceDesktop, IconSettings } from "@tabler/icons-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/Label"
+import { Input } from "@/components/ui/Input"
+import axios from "axios"
+import { showErrorToast } from "@/lib/toastUtils"
+import toast from "react-hot-toast"
 
 interface TournamentBoardsViewProps {
   tournament: any
@@ -52,10 +57,55 @@ const statusMap: Record<
 
 const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
 
-export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) {
+export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
+  const [tournament, setTournament] = useState(initialTournament);
   const boards = tournament?.boards || []
   const tournamentId = tournament?.tournamentId
   const tournamentPassword = tournament?.tournamentSettings?.password
+
+  // Board Edit State
+  const [editingBoard, setEditingBoard] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ name: '', scoliaSerialNumber: '', scoliaAccessToken: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync state if prop changes
+  if (initialTournament !== tournament && initialTournament?.updatedAt !== tournament?.updatedAt) {
+      setTournament(initialTournament);
+  }
+
+  const handleEditClick = (board: any) => {
+      setEditingBoard(board);
+      setEditForm({ 
+          name: board.name || '', 
+          scoliaSerialNumber: board.scoliaSerialNumber || '', 
+          scoliaAccessToken: board.scoliaAccessToken || '' 
+      });
+  };
+
+  const handleSaveBoard = async () => {
+      if (!editingBoard) return;
+      setIsSaving(true);
+      try {
+          const response = await axios.patch(`/api/tournaments/${tournamentId}/boards/${editingBoard.boardNumber}`, editForm);
+          if (response.data.success) {
+              toast.success("Tábla beállításai mentve!");
+              setEditingBoard(null);
+              // Update local state
+              setTournament(response.data.tournament);
+          }
+      } catch (error: any) {
+          console.error("Failed to save board settings:", error);
+           showErrorToast('Hiba történt a mentés során.', {
+            error: error?.response?.data?.error,
+            context: 'Tábla szerkesztése',
+            errorName: 'Mentés sikertelen',
+          });
+      } finally {
+          setIsSaving(false);
+      }
+  };
+
+  const canEdit = userClubRole === 'admin' || userClubRole === 'moderator';
 
   if (boards.length === 0) {
     return (
@@ -68,6 +118,7 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
   }
 
   return (
+    <>
     <div className="grid gap-4 md:grid-cols-2">
       {boards.map((board: any, idx: number) => {
         const statusKey = board.status || "idle"
@@ -79,10 +130,20 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
         return (
           <Card
             key={board.boardNumber || idx}
-            className={cn("shadow-md shadow-black/25", statusInfo.cardClass)}
+            className={cn("shadow-md shadow-black/25 relative group", statusInfo.cardClass)}
           >
+             {canEdit && (
+                 <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    onClick={() => handleEditClick(board)}
+                 >
+                     <IconSettings className="h-4 w-4" />
+                 </Button>
+             )}
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 pr-8">
                 <CardTitle className="text-lg font-semibold text-foreground">
                   {board.name && board.name !== `Tábla ${board.boardNumber}`
                     ? board.name
@@ -183,6 +244,43 @@ export function TournamentBoardsView({ tournament }: TournamentBoardsViewProps) 
         )
       })}
     </div>
+    
+    <Dialog open={!!editingBoard} onOpenChange={(open) => !open && setEditingBoard(null)}>
+        <DialogContent>
+            <DialogHeader><DialogTitle>Tábla beállítása</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+                 <div className="space-y-2">
+                     <Label>Tábla neve</Label>
+                     <Input 
+                        value={editForm.name} 
+                        onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))} 
+                     />
+                 </div>
+                 <div className="space-y-2">
+                     <Label>Scolia Szériaszám</Label>
+                     <Input 
+                        value={editForm.scoliaSerialNumber} 
+                        onChange={(e) => setEditForm(prev => ({ ...prev, scoliaSerialNumber: e.target.value }))}
+                        placeholder="Pl. SCO-12345"
+                     />
+                 </div>
+                 <div className="space-y-2">
+                     <Label>Scolia Access Token</Label>
+                     <Input 
+                        value={editForm.scoliaAccessToken} 
+                        onChange={(e) => setEditForm(prev => ({ ...prev, scoliaAccessToken: e.target.value }))}
+                        type="password"
+                        placeholder="Titkos hozzáférési kulcs"
+                     />
+                 </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setEditingBoard(null)}>Mégse</Button>
+                <Button onClick={handleSaveBoard} disabled={isSaving}>Mentés</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   )
 }
 

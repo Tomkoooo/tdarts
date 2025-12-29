@@ -9,6 +9,8 @@ export const BoardSchema = new mongoose.Schema<BoardDocument>({
   boardNumber: { type: Number },
   status: { type: String, enum: ['idle', 'waiting', 'playing'], default: 'idle' },
   waitingPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
+  scoliaSerialNumber: { type: String, default: null },
+  scoliaAccessToken: { type: String, default: null },
   updatedAt: { type: Date, default: Date.now },
 }, { collection: 'boards' });
 
