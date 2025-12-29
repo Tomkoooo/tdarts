@@ -47,6 +47,8 @@ interface Board {
   status: string;
   currentMatch?: string;
   nextMatch?: string;
+  scoliaSerialNumber?: string;
+  scoliaAccessToken?: string;
 }
 
 interface Match {
@@ -450,7 +452,6 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         startingScore={localMatchStartingScore}
         onBack={() => setLocalMatchActive(false)}
         onRematch={handleRematch}
-        matchId={localMatchId}
       />
     );
   }
@@ -1163,6 +1164,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         onBack={handleBackToMatches}
         onMatchFinished={loadMatches}
         clubId={tournamentData?.clubId?._id || tournamentData?.clubId}
+        scoliaConfig={selectedBoard ? {
+             serialNumber: selectedBoard.scoliaSerialNumber,
+             accessToken: selectedBoard.scoliaAccessToken
+        } : undefined}
       />
     );
   }

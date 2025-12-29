@@ -927,7 +927,319 @@
       }
     },
     {
+      "id": 8,
+      "title": "Scolia Autoscoring Integráció",
+      "icon": "IconTarget",
+      "description": "Automatikus pontszámítás Scolia táblákkal",
+      "content": {
+        "sections": [
+          {
+            "type": "text",
+            "content": "A tDarts platform támogatja a Scolia autoscoring integrációt, amely lehetővé teszi az automatikus pontszám érzékelést Scolia dartstáblákon. Ez kiküszöböli a manuális pontszám bevitelt és professzionális versenyélményt nyújt."
+          },
+          {
+            "type": "subsection",
+            "title": "Mi az a Scolia?",
+            "content": [
+              "A Scolia egy intelligens dartstábla rendszer, amely automatikusan érzékeli a dobásokat.",
+              "WebSocket kapcsolaton keresztül valós időben küldi az adatokat a tDarts platformnak.",
+              "Minden egyes nyíl dobását külön érzékeli (pontszám és szorzó).",
+              "A rendszer automatikusan összesíti a dobásokat és beküldi a teljes fordulót."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Scolia használata helyi meccseken",
+            "content": [
+              "A helyi meccsek esetén a Scolia beállítások a játék közben konfigurálhatók."
+            ],
+            "subsections": [
+              {
+                "title": "Beállítás lépései",
+                "content": [
+                  "1. Indíts el egy helyi meccset",
+                  "2. Kattints a Beállítások (⚙️) ikonra a jobb felső sarokban",
+                  "3. Görgess le a 'Scolia Autoscoring' szekcióhoz",
+                  "4. Add meg a Scolia Szériaszámot (pl. SCO-12345)",
+                  "5. Add meg a Scolia Access Token-t (Hozzáférési Token)",
+                  "6. Kapcsold be a 'Scolia engedélyezése' kapcsolót",
+                  "7. Kattints a 'Mentés' gombra"
+                ]
+              },
+              {
+                "title": "Használat játék közben",
+                "content": [
+                  "Miután engedélyezted a Scoliát:",
+                  "• Dobj a nyilakkal - a Scolia automatikusan érzékeli minden dobást",
+                  "• 3 nyíl után (vagy kiszálló/bust esetén) a pontszám automatikusan beküldésre kerül",
+                  "• A scoreboard azonnal frissül",
+                  "• Továbbra is lehetőséged van manuális pontszám bevitelre, ha szükséges"
+                ]
+              },
+              {
+                "title": "Scolia kikapcsolása",
+                "content": [
+                  "Ha ki szeretnéd kapcsolni a Scoliát:",
+                  "1. Nyisd meg a Beállításokat (⚙️ ikon)",
+                  "2. Kapcsold ki a 'Scolia engedélyezése' kapcsolót",
+                  "3. Mentsd el a beállításokat",
+                  "4. A manuális pontszám bevitel folytatódik"
+                ]
+              }
+            ],
+            "note": {
+              "type": "info",
+              "content": "A helyi meccsek Scolia beállításai a böngésződben kerülnek tárolásra, így következő alkalommal nem kell újra megadni őket."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Scolia használata verseny meccseken",
+            "content": [
+              "Verseny meccsek esetén a Scolia beállításokat a tábla szintjén kell konfigurálni az admin felületen.",
+              "Így a játékosoknak nem kell semmit beállítaniuk - minden automatikusan működik."
+            ],
+            "subsections": [
+              {
+                "title": "Admin beállítás (Verseny szervezők részére)",
+                "content": [
+                  "1. Navigálj a Control Center-be (Admin Dashboard)",
+                  "2. Válaszd ki a versenyt",
+                  "3. Menj a 'Táblák' fülre",
+                  "4. Húzd az egeret a tábla kártya fölé - megjelenik a Beállítások (⚙️) ikon a jobb felső sarokban",
+                  "5. Kattints a Beállítások ikonra",
+                  "6. Add meg a következő adatokat:",
+                  "   • Tábla neve (opcionális egyedi név)",
+                  "   • Scolia Szériaszám",
+                  "   • Scolia Access Token",
+                  "7. Kattints a 'Mentés' gombra"
+                ]
+              },
+              {
+                "title": "Játékos élmény",
+                "content": [
+                  "Amikor egy verseny meccs betöltődik egy Scolia-val felszerelt táblán:",
+                  "• A rendszer automatikusan csatlakozik a Scoliához a tábla mentett beállításaival",
+                  "• A játékosoknak semmit nem kell konfigurálniuk",
+                  "• Dobnak a nyilakkal, és a pontszámok automatikusan rögzítésre kerülnek",
+                  "• A scoreboard valós időben frissül minden néző számára",
+                  "• Ha a Scolia leáll vagy megszakad a kapcsolat, a manuális pontszám bevitel továbbra is elérhető"
+                ]
+              },
+              {
+                "title": "Kapcsolat állapot",
+                "content": [
+                  "A rendszer vizuális visszajelzést ad a kapcsolat állapotáról:",
+                  "• Csatlakozva - A Scolia aktív és érzékeli a dobásokat",
+                  "• Lecsatlakozva - Manuális pontszám bevitel szükséges",
+                  "• A böngésző konzolban részletes kapcsolati logok találhatók ([Scolia] előtaggal)"
+                ]
+              }
+            ],
+            "note": {
+              "type": "important",
+              "content": "A verseny táblák Scolia beállításai az adatbázisban kerülnek tárolásra, így minden meccs automatikusan használja őket az adott táblán."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Hogyan működik a rendszer?",
+            "content": [
+              "A Scolia intelligens pufferelést használ az egyes nyíl dobások csoportosítására:"
+            ],
+            "subsections": [
+              {
+                "title": "Dobás pufferelés",
+                "content": [
+                  "1. nyíl: 60 → Puffer: [60]",
+                  "2. nyíl: 60 → Puffer: [60, 60]",
+                  "3. nyíl: 60 → Puffer: [60, 60, 60] → Beküldés: 180"
+                ]
+              },
+              {
+                "title": "Automatikus beküldés eseményei",
+                "content": [
+                  "• 3 nyíl eldobva - Normál forduló befejezése",
+                  "• Kiszálló érzékelve - A maradék pontszám pontosan 0-ra csökken",
+                  "• Bust érzékelve - A maradék pontszám 0 alá megy vagy 1-re csökken"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Hibaelhárítás",
+            "content": [
+              "Ha problémáid vannak a Scolia kapcsolattal, kövesd ezeket a lépéseket:"
+            ],
+            "subsections": [
+              {
+                "title": "A Scolia nem csatlakozik",
+                "content": [
+                  "Ellenőrizd:",
+                  "• A szériaszám és access token helyesek-e",
+                  "• A Scolia tábla be van-e kapcsolva és csatlakozik-e a hálózathoz",
+                  "• A böngésző konzolban vannak-e hibaüzenetek ([Scolia] Error)",
+                  "",
+                  "Megoldások:",
+                  "• Ellenőrizd a hitelesítő adatokat a Scolia ügyfélszolgálattal",
+                  "• Ellenőrizd a hálózati kapcsolatot",
+                  "• Próbáld meg kikapcsolni és újra bekapcsolni a Scoliát"
+                ]
+              },
+              {
+                "title": "A pontszámok nem rögzítődnek",
+                "content": [
+                  "Ellenőrizd:",
+                  "• A kapcsolat állapotát (a konzolban 'Connected' üzenetnek kell megjelennie)",
+                  "• A dobások érzékelését (konzol log: [Scolia] Throw detected)",
+                  "• A puffer beküldését (konzol log a dobás beküldéséről)",
+                  "",
+                  "Megoldások:",
+                  "• Győződj meg róla, hogy az aktív Scolia táblára dobsz",
+                  "• Ellenőrizd, hogy a tábla a megfelelő módban van-e",
+                  "• Ha szükséges, térj át manuális pontszám bevitelre"
+                ]
+              },
+              {
+                "title": "Duplikált pontszámok",
+                "content": [
+                  "Probléma: A pontszám kétszer kerül rögzítésre (Scolia + manuális bevitel)",
+                  "",
+                  "Megoldás:",
+                  "• Ne adj meg manuálisan pontszámokat, amikor a Scolia engedélyezve van",
+                  "• Várj az automatikus beküldésre minden forduló után",
+                  "• Ha egy pontszám nem rögzítődik, kapcsold ki a Scoliát manuális bevitel előtt"
+                ]
+              },
+              {
+                "title": "Kapcsolat megszakad játék közben",
+                "content": [
+                  "Mi történik:",
+                  "• A Scolia lecsatlakozik a meccs közben",
+                  "• A manuális pontszám bevitel azonnal elérhetővé válik",
+                  "• A játék állapota megmarad",
+                  "",
+                  "Megoldás:",
+                  "• Folytasd manuális pontszám bevitellel",
+                  "• Próbáld meg újra engedélyezni a Scoliát a beállításokban",
+                  "• Ellenőrizd a hálózat stabilitását"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Legjobb gyakorlatok",
+            "content": [
+              "Verseny szervezők számára:",
+              "• Konfiguráld előre az összes táblát a verseny kezdete előtt",
+              "• Teszteld a kapcsolatokat minden Scolia táblával a meccsek előtt",
+              "• Legyen tartalék hitelesítő adatod problémák esetére",
+              "• Képezd ki a személyzetet a manuális felülírási eljárásokra",
+              "• Figyeld a kapcsolat állapotát a meccsek alatt",
+              "",
+              "Játékosok számára:",
+              "• Várj az automatikus beküldésre - ne siess a manuális pontszám bevitellel",
+              "• Ellenőrizd, hogy a helyes pontszám került-e rögzítésre",
+              "• Azonnal jelezd a problémákat a verseny személyzetnek",
+              "• Ismerd a manuális tartalék megoldást, ha a Scolia leáll",
+              "",
+              "Helyi játék esetén:",
+              "• Mentsd el biztonságosan a hitelesítő adataidat",
+              "• Teszteld a kapcsolatot fontos meccsek előtt",
+              "• Tartsd elérhetően a manuális opciót - ne hagyatkozz 100%-ban a Scoliára"
+            ],
+            "note": {
+              "type": "warning",
+              "content": "Az access token-ek érzékeny adatok - kezeld őket jelszóként! Csak adminisztrátorok/moderátorok konfigurálhatják a táblákat."
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": 9,
+      "title": "PWA - Alkalmazás Telepítése",
+      "icon": "IconDeviceMobile",
+      "description": "Mobilalkalmazásként való használat",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Mi az a PWA?",
+            "content": [
+              "A tDarts Progressive Web App (PWA) technológiával készült, ami azt jelenti, hogy telepítheted a telefonodra vagy tabletedre, és úgy használhatod, mint egy natív alkalmazást.",
+              "Nincs szükség App Store vagy Google Play letöltésre - közvetlenül a böngészőből telepítheted."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Telepítés Android eszközökre",
+            "content": [
+              "1. Nyisd meg a tdarts.sironic.hu oldalt Chrome böngészőben",
+              "2. Koppints a böngésző menü gombra (3 pont jobb felül)",
+              "3. Válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; vagy &ldquo;Alkalmazás telepítése&rdquo; opciót",
+              "4. Erősítsd meg a telepítést",
+              "5. A tDarts ikon megjelenik a kezdőképernyőn"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Telepítés iOS eszközökre (iPhone, iPad)",
+            "content": [
+              "1. Nyisd meg a tdarts.sironic.hu oldalt Safari böngészőben",
+              "2. Koppints a megosztás gombra (négyzet felfelé mutató nyíllal)",
+              "3. Görgess le és válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; opciót",
+              "4. Add meg az alkalmazás nevét (pl. tDarts)",
+              "5. Koppints a &ldquo;Hozzáadás&rdquo; gombra",
+              "6. A tDarts ikon megjelenik a kezdőképernyőn"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "PWA Előnyei",
+            "content": [
+              "Teljes képernyős élmény: Nincs böngésző címsor, több hely a tartalomnak",
+              "Gyorsabb betöltés: Az alkalmazás gyorsítótárazza a gyakran használt elemeket",
+              "Offline működés: Alapvető funkciók offline is elérhetők",
+              "Natív élmény: Úgy viselkedik, mint egy telepített alkalmazás",
+              "Automatikus frissítések: Mindig a legfrissebb verziót használod",
+              "Kisebb adatforgalom: Optimalizált betöltés és gyorsítótárazás"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "PWA Használati Esetek",
+            "content": [
+              "Eredményrögzítés tableten: Telepítsd a tabletre és használd teljes képernyős módban a verseny helyszínén.",
+              "Gyors hozzáférés: Egy koppintással nyithatod meg az alkalmazást a kezdőképernyőről.",
+              "Verseny követés: Játékosként kövesd a verseny állását offline is.",
+              "Moderátori feladatok: Gyors hozzáférés a verseny kezeléséhez.",
+              "Landscape mód: Tableten fekvő módban optimalizált megjelenítés az eredményrögzítéshez.",
+              "Helyi meccs offline: A /board oldal és a helyi meccs funkciók offline is működnek PWA telepítés után."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Teljes képernyős mód",
+            "content": [
+              "PWA módban az alkalmazás automatikusan teljes képernyőn nyílik meg.",
+              "Nincs böngésző címsor vagy navigációs gombok - tiszta, professzionális megjelenés.",
+              "Ideális verseny helyszínén használt tabletekhez.",
+              "A képernyő teljes területe kihasználható az eredményrögzítéshez.",
+              "Landscape (fekvő) módban optimalizált elrendezés nagy számokkal és gombokkal."
+            ],
+            "note": {
+              "type": "tip",
+              "content": "Verseny helyszínén használt fix tableteknél telepítsd PWA-ként, így gyorsabb és professzionálisabb lesz az élmény!"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",

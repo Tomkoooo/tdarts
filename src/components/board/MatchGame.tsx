@@ -5,6 +5,11 @@ import { useSocket } from '@/hooks/useSocket';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/Label';
+import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/Button';
 
 interface PlayerData {
   playerId: {
@@ -17,6 +22,8 @@ interface PlayerData {
   highestCheckout?: number;
   oneEightiesCount?: number;
 }
+
+import { useScolia } from '@/hooks/useScolia';
 
 interface Scorer {
   playerId: string;
@@ -56,9 +63,13 @@ interface MatchGameProps {
   onBack: () => void;
   onMatchFinished?: () => void;
   clubId?: string;
+  scoliaConfig?: {
+      serialNumber?: string;
+      accessToken?: string;
+  };
 }
 
-const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId }) => {
+const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId, scoliaConfig }) => {
   // Helper to format full names as initials + last name (e.g., "D. S. Erika")
   const formatName = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
@@ -124,6 +135,19 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   // Arrow count for checkout
   const [arrowCount, setArrowCount] = useState<number>(3);
 
+  // Scolia States
+  const [isScoliaEnabled, setIsScoliaEnabled] = useState(false);
+  const [scoliaSerial, setScoliaSerial] = useState(scoliaConfig?.serialNumber || '');
+  const [scoliaToken, setScoliaToken] = useState(scoliaConfig?.accessToken || '');
+  
+  useEffect(() => {
+      if (scoliaConfig?.serialNumber && scoliaConfig?.accessToken) {
+          setIsScoliaEnabled(true);
+          setScoliaSerial(scoliaConfig.serialNumber);
+          setScoliaToken(scoliaConfig.accessToken);
+      }
+  }, [scoliaConfig]);
+
   const chalkboardRef = useRef<HTMLDivElement>(null);
   const quickAccessScores = [180, 140, 100, 95, 85, 81, 80, 60, 45, 41, 40, 26];
 
@@ -131,6 +155,40 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
   const { socket, isConnected } = useSocket({ 
     matchId: match._id, 
     clubId 
+  });
+
+   // Buffer for Scolia
+   const scoliaBuffer = useRef<number[]>([]);
+
+  // Function to submit buffer
+  const submitScoliaBuffer = () => {
+      if (scoliaBuffer.current.length === 0) return;
+      const total = scoliaBuffer.current.reduce((a, b) => a + b, 0);
+      handleThrow(total); 
+      scoliaBuffer.current = [];
+  };
+
+   const { isConnected: scoliaConnected, reconnect: reconnectScolia } = useScolia({
+      serialNumber: scoliaSerial,
+      accessToken: scoliaToken,
+      isEnabled: isScoliaEnabled,
+      onThrow: (score) => {
+          // Same logic as LocalMatchGame
+          const currentPlayerData = currentPlayer === 1 ? player1 : player2;
+          const currentScore = currentPlayerData.score;
+          
+          const currentBufferSum = scoliaBuffer.current.reduce((a, b) => a + b, 0);
+          const newBufferSum = currentBufferSum + score;
+          scoliaBuffer.current.push(score);
+          
+          const remaining = currentScore - newBufferSum;
+          
+          if (remaining <= 0 || remaining === 1) { // Checkout or Bust
+              submitScoliaBuffer();
+          } else if (scoliaBuffer.current.length === 3) {
+              submitScoliaBuffer();
+          }
+      }
   });
 
   // Calculate the correct starting player for the next leg
@@ -1080,6 +1138,17 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               {editingThrow ? (editScoreInput || '0') : (scoreInput || '0')}
           </div>
           </div>
+          
+          {/* Scolia Status Indicator */}
+          {isScoliaEnabled && (
+            <div className="flex flex-col items-center justify-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${scoliaConnected ? 'bg-success animate-pulse' : 'bg-error'}`} />
+              <span className="text-[10px] text-base-content/70">
+                {scoliaConnected ? 'Scolia' : 'Offline'}
+              </span>
+            </div>
+          )}
+          
           <button
             onClick={() => {
               setTempLegsToWin(legsToWin);
@@ -1183,62 +1252,111 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         </div>
 
       {/* Settings Modal */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <div className="flex w-full justify-between items-center mb-4">
-              <h3 className="text-lg font-bold ">Meccs beállítások</h3>
-              <button
-                  onClick={() => {
-                    if (window.confirm('Biztosan ki szeretnél lépni a meccsből? A jelenlegi állás nem kerül mentésre.')) {
-                      onBack();
-                    }
-                  }}
-                  className="btn btn-error btn-outline btn-sm"
-                >
-                  Kilépés a meccsből
-                </button>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Nyert legek száma</label>
-              <select name="" id="" onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} defaultValue={tempLegsToWin} className="select select-bordered w-full">
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Meccs beállítások</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Legs to Win */}
+            <div className="space-y-2">
+              <Label>Nyert legek száma</Label>
+              <select 
+                onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
+                value={tempLegsToWin} 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-foreground" 
+              >
                 {Array.from({ length: 20 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>{i + 1}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Best of {tempLegsToWin * 2 - 1}</p>
+              <p className="text-xs text-muted-foreground">Best of {tempLegsToWin * 2 - 1}</p>
             </div>
 
             {/* Starting Player - only if no throws have been made */}
             {player1.allThrows.length === 0 && player2.allThrows.length === 0 && player1.score === initialScore && player2.score === initialScore && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Kezdő játékos</label>
+              <div className="space-y-2">
+                <Label>Kezdő játékos</Label>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    type="button"
+                    variant={tempStartingPlayer === 1 ? 'default' : 'outline'}
                     onClick={() => setTempStartingPlayer(1)}
-                    className={`btn flex-1 ${tempStartingPlayer === 1 ? 'btn-primary' : 'btn-outline'}`}
+                    className="flex-1"
                   >
                     {player1.name}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={tempStartingPlayer === 2 ? 'default' : 'outline'}
                     onClick={() => setTempStartingPlayer(2)}
-                    className={`btn flex-1 ${tempStartingPlayer === 2 ? 'btn-primary' : 'btn-outline'}`}
+                    className="flex-1"
                   >
                     {player2.name}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-ghost  flex-1" 
-                onClick={() => setShowSettingsModal(false)}
-              >
-                Mégse
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
+            {/* Scolia Configuration */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Scolia Autoscoring</Label>
+                {scoliaConnected && (
+                  <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full">Csatlakozva</span>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="scolia-serial">Scolia Szériaszám</Label>
+                  <Input
+                    id="scolia-serial"
+                    type="text"
+                    placeholder="SCO-12345"
+                    value={scoliaSerial}
+                    onChange={(e) => setScoliaSerial(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="scolia-token">Scolia Access Token</Label>
+                  <Input
+                    id="scolia-token"
+                    type="password"
+                    placeholder="Hozzáférési Token"
+                    value={scoliaToken}
+                    onChange={(e) => setScoliaToken(e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="scolia-enable">Scolia engedélyezése</Label>
+                  <Switch
+                    id="scolia-enable"
+                    checked={isScoliaEnabled}
+                    onCheckedChange={setIsScoliaEnabled}
+                  />
+                </div>
+                
+                {isScoliaEnabled && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => reconnectScolia()}
+                    disabled={!scoliaSerial || !scoliaToken}
+                    className="w-full"
+                  >
+                    🔄 Újracsatlakozás
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2 pt-4">
+              <Button 
                 onClick={async () => {
                   setIsSavingSettings(true);
                   try {
@@ -1269,27 +1387,41 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                 }}
                 disabled={isSavingSettings}
               >
-                {isSavingSettings ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Mentés"
-                )}
-              </button>
+                {isSavingSettings ? 'Mentés...' : 'Mentés'}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setShowSettingsModal(false)}
+              >
+                Mégse
+              </Button>
+              
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (window.confirm('Biztosan ki szeretnél lépni a meccsből? A jelenlegi állás nem kerül mentésre.')) {
+                    onBack();
+                  }
+                }}
+              >
+                Kilépés a meccsből
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
 
       {/* Leg Confirmation Dialog with Arrow Count */}
-      {showLegConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-3">Leg vége?</h3>
-            <p className="mb-4">
+      <Dialog open={showLegConfirmation} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Leg vége?</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="font-medium">
               {pendingLegWinner === 1 ? player1.name : player2.name} nyerte ezt a leg-et!
             </p>
             
@@ -1299,23 +1431,25 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
               
               return (
-                <div className="mb-4">
-                  <p className="text-sm mb-2">
-                    Kiszálló: {lastThrow} - Hány nyílból?
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
                   </p>
                   <div className="flex gap-2 justify-center">
                     {possibleArrowCounts.map((count) => (
-                      <button
+                      <Button
                         key={count}
                         onClick={() => setArrowCount(count)}
-                        className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                        variant={arrowCount === count ? "default" : "outline"}
+                        size="sm"
+                        className="min-w-[80px]"
                       >
                         {count} nyíl
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   {possibleArrowCounts.length === 1 && (
-                    <p className="text-xs text-gray-500 mt-1 text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       Csak {possibleArrowCounts[0]} nyíl lehetséges
                     </p>
                   )}
@@ -1323,39 +1457,36 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               );
             })()}
             
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-error flex-1" 
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="destructive" 
+                className="flex-1" 
                 onClick={cancelLegEnd}
                 disabled={isSavingLeg}
               >
                 Visszavonás
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
+              </Button>
+              <Button 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white" 
                 onClick={confirmLegEnd}
                 disabled={isSavingLeg}
               >
-                {isSavingLeg ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Igen"
-                )}
-              </button>
+                {isSavingLeg ? 'Mentés...' : 'Igen'}
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Match Confirmation Dialog */}
-      {showMatchConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-200 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-3">Meccs vége?</h3>
-            <p className="mb-4">
+      <Dialog open={showMatchConfirmation} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Meccs vége?</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="font-medium">
               {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset!
             </p>
             
@@ -1365,23 +1496,25 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
               
               return (
-                <div className="mb-4">
-                  <p className="text-sm mb-2">
-                    Utolsó kiszálló: {lastThrow} - Hány nyílból?
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Utolsó kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
                   </p>
                   <div className="flex gap-2 justify-center">
                     {possibleArrowCounts.map((count) => (
-                      <button
+                      <Button
                         key={count}
                         onClick={() => setArrowCount(count)}
-                        className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
+                        variant={arrowCount === count ? "default" : "outline"}
+                        size="sm"
+                        className="min-w-[80px]"
                       >
                         {count} nyíl
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   {possibleArrowCounts.length === 1 && (
-                    <p className="text-xs text-gray-500 mt-1 text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       Csak {possibleArrowCounts[0]} nyíl lehetséges
                     </p>
                   )}
@@ -1389,32 +1522,26 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               );
             })()}
             
-            <div className="flex gap-2">
-              <button 
-                className="btn btn-error flex-1" 
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="destructive" 
+                className="flex-1" 
                 onClick={cancelMatchEnd}
                 disabled={isSavingMatch}
               >
                 Visszavonás
-              </button>
-              <button 
-                className="btn btn-success flex-1" 
+              </Button>
+              <Button 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white" 
                 onClick={confirmMatchEnd}
                 disabled={isSavingMatch}
               >
-                {isSavingMatch ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Mentés...
-                  </>
-                ) : (
-                  "Igen"
-                )}
-              </button>
+                {isSavingMatch ? 'Mentés...' : 'Igen'}
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

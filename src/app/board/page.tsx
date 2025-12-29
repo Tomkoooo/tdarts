@@ -95,7 +95,6 @@ const BoardPage: React.FC = () => {
         startingScore={localMatchStartingScore}
         onBack={() => setLocalMatchActive(false)}
         onRematch={handleRematch}
-        matchId={localMatchId}
       />
     );
   }
