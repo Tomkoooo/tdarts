@@ -19,6 +19,7 @@ export interface SearchFilters {
     showFinished?: boolean;
     page?: number;
     limit?: number;
+    year?: number;
 }
 
 
@@ -765,5 +766,67 @@ export class SearchService {
         c.results.forEach(x => suggestions.add(x.name));
 
         return Array.from(suggestions).slice(0, 10).filter(Boolean);
+    }
+
+    /**
+     * Get Season Top Players (Historical Leaderboard)
+     */
+    static async getSeasonTopPlayers(year: number, limit: number = 10, skip: number = 0): Promise<{ results: any[], total: number }> {
+        await connectMongo();
+
+        const matchStage = {
+            'previousSeasons.year': year
+        };
+
+        const pipeline: any[] = [
+            { $match: matchStage },
+            { $unwind: '$previousSeasons' },
+            { $match: { 'previousSeasons.year': year } },
+            { $sort: { 'previousSeasons.stats.mmr': -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'userRef',
+                    foreignField: '_id',
+                    as: 'user',
+                }
+            },
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+        ];
+
+        // Parallel count
+        const countPipeline: any[] = [
+            { $match: matchStage },
+            { $count: 'total' }
+        ];
+
+        const [results, countRes] = await Promise.all([
+            PlayerModel.aggregate(pipeline),
+            PlayerModel.aggregate(countPipeline)
+        ]);
+
+        const total = countRes[0]?.total || 0;
+
+        const mappedResults = results.map((data: any, index: number) => {
+            const stats = data.previousSeasons.stats;
+            // Map to standard player structure but identifying it's historical
+            return {
+                _id: data._id,
+                name: data.name,
+                type: 'player',
+                userRef: data.user,
+                stats: stats,
+                mmr: stats.mmr,
+                mmrTier: this.getMMRTier(stats.mmr),
+                globalRank: skip + index + 1,
+                honors: data.honors, // Include honors
+                isHistorical: true,
+                seasonYear: year
+            };
+        });
+
+        return { results: mappedResults, total };
     }
 }

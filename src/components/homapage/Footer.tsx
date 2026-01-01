@@ -12,9 +12,9 @@ export default function Footer() {
           {/* Column 1: Legal & Info */}
           <div className="flex flex-col space-y-4">
             <h3 className="font-bold text-lg mb-2">Információk</h3>
-            <Link href="/privacy" className="hover:text-primary transition-colors text-muted-foreground">
+            <a href="gdpr.pdf" className="hover:text-primary transition-colors text-muted-foreground">
               Adatkezelési tájékoztató
-            </Link>
+            </a>
             <Link href="/terms" className="hover:text-primary transition-colors text-muted-foreground">
               Általános Szerződési Feltételek
             </Link>
@@ -38,12 +38,12 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="text-primary hover:underline font-medium"
                 >
-                  Sironic Kft.
+                  Sironic Rendszerház
                 </Link>
               </p>
               
               <div className="mt-4 p-4 bg-muted rounded-lg border border-border">
-                <p className="text-sm font-semibold mb-2 text-foreground">Próbáld ki az OAC portált is!</p>
+                <p className="text-sm font-semibold mb-2 text-foreground">Tudj meg többet az Országos Amatőr Ligáról!</p>
                 <Button 
                   variant="outline"
                   className="w-full"

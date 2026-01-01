@@ -7,6 +7,13 @@ import { Separator } from "@/components/ui/separator"
 import { Card } from "@/components/ui/Card"
 import { BadgeCheck } from "lucide-react"
 import { IconTrash } from "@tabler/icons-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface FilterBarProps {
     activeTab: string;
@@ -18,7 +25,10 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiveQuery, onClearQuery }: FilterBarProps) {
-    if (activeTab === 'players') return null; // No filters for players
+    // Removed: if (activeTab === 'players') return null;
+
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: currentYear - 2023 }, (_, i) => currentYear - i); // [2025, 2024] etc.
 
     return (
         <div className="flex flex-col gap-4 mb-6">
@@ -38,6 +48,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
             )}
 
             {/* Stacked Filter Controls */}
+            {(activeTab === 'tournaments' || activeTab === 'players') && (
             <Card className="p-4 bg-base-100 border-base-200 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex flex-wrap gap-8 items-center">
@@ -60,6 +71,27 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                         <Label htmlFor="all" className="cursor-pointer">Összes</Label>
                                     </div>
                                 </RadioGroup>
+                            </div>
+                        )}
+
+                        {/* Player Year Filter */}
+                        {activeTab === 'players' && (
+                            <div className="flex flex-col gap-2">
+                                <Label className="text-sm font-semibold">Szezon</Label>
+                                <Select 
+                                    value={filters.year ? String(filters.year) : String(currentYear)} 
+                                    onValueChange={(val) => onFilterChange('year', val === String(currentYear) ? undefined : Number(val))}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Válassz évet" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={String(currentYear)}>Jelenlegi Szezon</SelectItem>
+                                        {years.slice(1).map(year => (
+                                            <SelectItem key={year} value={String(year)}>{year}-es Szezon</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         )}
 
@@ -91,7 +123,9 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                             </>
                         )}
 
-                        {/* Verified Toggle (All except Players) */}
+                        {/* Verified Toggle (Tournaments Only) */}
+                        {activeTab === 'tournaments' && (
+                        <>
                         <Separator orientation="vertical" className="hidden md:block h-10" />
                         <div className="flex flex-col gap-2">
                              <Label className="text-sm font-semibold flex items-center gap-1.5">
@@ -114,11 +148,13 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                 </Label>
                             </div>
                         </div>
+                        </>
+                        )}
 
                     </div>
 
-                    {/* Clear Filters Button (Show if any filter is active OR query exists) */}
-                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || hasActiveQuery) && (
+                    {/* Clear Filters Button */}
+                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || hasActiveQuery) && (
                          <Button 
                             variant="ghost" 
                             size="icon" 
@@ -128,6 +164,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     tournamentType: undefined,
                                     isVerified: undefined,
                                     city: undefined,
+                                    year: undefined,
                                     page: 1
                                 });
                                 if (onClearQuery) onClearQuery();
@@ -140,6 +177,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                     )}
                 </div>
             </Card>
+            )}
         </div>
     )
 }

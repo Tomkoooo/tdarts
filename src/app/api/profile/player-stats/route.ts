@@ -74,7 +74,8 @@ export async function GET(request: NextRequest) {
         highestCheckout: history.stats.highestCheckout || 0,
         average: history.stats.average || 0
       },
-      finalPosition: history.position
+      finalPosition: history.position,
+      mmrChange: history.mmrChange
     }));
 
     // Get recent matches
@@ -92,16 +93,17 @@ export async function GET(request: NextRequest) {
     .limit(5);
 
     const matchHistory = recentMatches.map(match => {
-      const isPlayer1 = match.player1.playerId?._id?.toString() === player._id.toString();
+      const p1Id = match.player1?.playerId?._id?.toString() || match.player1?.playerId?.toString();
+      const isPlayer1 = p1Id === player._id.toString();
       const opponent = isPlayer1 ? match.player2 : match.player1;
       const playerData = isPlayer1 ? match.player1 : match.player2;
       
       return {
         _id: match._id,
-        opponent: opponent.playerId?.name || 'Ismeretlen',
-        player1Score: match.player1.legsWon || 0,
-        player2Score: match.player2.legsWon || 0,
-        won: playerData.legsWon > (isPlayer1 ? match.player2.legsWon : match.player1.legsWon),
+        opponent: opponent?.playerId?.name || 'Ismeretlen',
+        player1Score: match.player1?.legsWon || 0,
+        player2Score: match.player2?.legsWon || 0,
+        won: (playerData?.legsWon || 0) > (isPlayer1 ? (match.player2?.legsWon || 0) : (match.player1?.legsWon || 0)),
         date: match.createdAt,
         legs: match.legs?.length || 0
       };
@@ -122,7 +124,8 @@ export async function GET(request: NextRequest) {
         tournamentHistory: player.tournamentHistory || [],
         mmr: mmr,
         mmrTier: getMMRTier(mmr),
-        globalRank: globalRank
+        globalRank: globalRank,
+        previousSeasons: player.previousSeasons || []
       },
       tournamentHistory,
       matchHistory,

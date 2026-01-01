@@ -18,7 +18,15 @@ export async function POST(request: Request) {
                 resultsData = await SearchService.searchTournaments(query || '', filters);
                 break;
             case 'players':
-                resultsData = await SearchService.searchPlayers(query || '', filters);
+                if (filters?.year && filters.year < new Date().getFullYear()) {
+                    resultsData = await SearchService.getSeasonTopPlayers(
+                        Number(filters.year), 
+                        filters.limit || 10, 
+                        ((filters.page || 1) - 1) * (filters.limit || 10)
+                    );
+                } else {
+                    resultsData = await SearchService.searchPlayers(query || '', filters);
+                }
                 break;
             case 'clubs':
                 resultsData = await SearchService.searchClubs(query || '', filters);

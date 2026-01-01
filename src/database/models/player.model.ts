@@ -39,6 +39,37 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         },
         date: { type: Date, default: Date.now },
         verified: { type: Boolean, default: false }, // Indicates if tournament was verified (OAC)
+        mmrChange: { type: Number },
+    }],
+    // Historical Data & Honors
+    honors: [{
+        title: { type: String, required: true },
+        year: { type: Number, required: true },
+        type: { type: String, enum: ['rank', 'tournament', 'special'], default: 'special' }, // e.g. "Top 1 2025", "3x Winner"
+        description: { type: String }
+    }],
+    previousSeasons: [{
+        year: { type: Number, required: true },
+        stats: {
+            tournamentsPlayed: { type: Number, default: 0 },
+            matchesPlayed: { type: Number, default: 0 },
+            legsWon: { type: Number, default: 0 },
+            legsLost: { type: Number, default: 0 },
+            oneEightiesCount: { type: Number, default: 0 },
+            highestCheckout: { type: Number, default: 0 },
+            avg: { type: Number, default: 0 },
+            averagePosition: { type: Number, default: 0 },
+            bestPosition: { type: Number, default: 999 },
+            totalMatchesWon: { type: Number, default: 0 },
+            totalMatchesLost: { type: Number, default: 0 },
+            totalLegsWon: { type: Number, default: 0 },
+            totalLegsLost: { type: Number, default: 0 },
+            total180s: { type: Number, default: 0 },
+            mmr: { type: Number, default: 800 },
+            oacMmr: { type: Number, default: 800 },
+        },
+        snapshotDate: { type: Date, default: Date.now },
+        tournamentHistory: { type: Array, default: [] }
     }]
 }, {collection: 'players'});
 

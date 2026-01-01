@@ -4064,24 +4064,26 @@ export class TournamentService {
                             player.stats.bestPosition = placement;
                         }
 
-                        // 6. UPDATE TOURNAMENT HISTORY ENTRY
-                        const tournamentHistoryEntry = {
-                            tournamentId: tournament.tournamentId,
-                            tournamentName: tournament.tournamentSettings?.name || 'Unknown Tournament',
-                            position: placement,
-                            eliminatedIn: this.getEliminationText(placement, format),
-                            stats: {
-                                matchesWon: stats.matchesWon,
-                                matchesLost: stats.matchesPlayed - stats.matchesWon,
-                                legsWon: stats.legsWon,
-                                legsLost: stats.legsPlayed - stats.legsWon,
-                                oneEightiesCount: stats.oneEighties,
-                                highestCheckout: stats.highestCheckout,
-                                average: stats.average,
-                            },
-                            date: new Date(),
-                            verified: tournament.verified || false
-                        };
+                         // 6. UPDATE TOURNAMENT HISTORY ENTRY
+                         const mmrChange = player.stats.mmr - currentMMR;
+                         const tournamentHistoryEntry = {
+                             tournamentId: tournament.tournamentId,
+                             tournamentName: tournament.tournamentSettings?.name || 'Unknown Tournament',
+                             position: placement,
+                             eliminatedIn: this.getEliminationText(placement, format),
+                             stats: {
+                                 matchesWon: stats.matchesWon,
+                                 matchesLost: stats.matchesPlayed - stats.matchesWon,
+                                 legsWon: stats.legsWon,
+                                 legsLost: stats.legsPlayed - stats.legsWon,
+                                 oneEightiesCount: stats.oneEighties,
+                                 highestCheckout: stats.highestCheckout,
+                                 average: stats.average,
+                             },
+                             date: new Date(),
+                             verified: tournament.verified || false,
+                             mmrChange: mmrChange
+                         };
 
                         if (isNewTournament) {
                             player.tournamentHistory.push(tournamentHistoryEntry);

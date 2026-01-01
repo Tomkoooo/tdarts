@@ -64,6 +64,7 @@ export default function SearchPage() {
         tournamentType: (searchParams.get("tournamentType") as any) || undefined,
         city: searchParams.get("city") || undefined,
         isVerified: searchParams.get("verified") === "true" || undefined,
+        year: Number(searchParams.get("year")) || undefined,
         page: Number(searchParams.get("page")) || 1,
         limit: 10
     })

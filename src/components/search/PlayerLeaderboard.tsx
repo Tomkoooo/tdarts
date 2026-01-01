@@ -2,8 +2,10 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
-import { IconTrophy, IconUser, IconChartBar } from "@tabler/icons-react"
+import { Badge } from "@/components/ui/Badge"
+import { IconTrophy, IconUser, IconChartBar, IconMedal } from "@tabler/icons-react"
 import PlayerStatsModal from "@/components/player/PlayerStatsModal"
+import { cn } from "@/lib/utils"
 
 interface PlayerLeaderboardProps {
     players: any[];
@@ -45,6 +47,24 @@ export function PlayerLeaderboard({ players }: PlayerLeaderboardProps) {
                                 {player.stats?.mmr >= 1000 && (
                                      <IconTrophy className="w-4 h-4 text-warning fill-warning" />
                                 )}
+                            </div>
+                            <div className="flex flex-wrap gap-2 mb-1">
+                                {player.honors?.map((honor: any, i: number) => (
+                                    <Badge 
+                                        key={`${honor.title}-${honor.year}-${i}`} 
+                                        variant="secondary" 
+                                        className={cn(
+                                        "gap-1 text-[10px] font-bold uppercase tracking-wider py-0 h-5",
+                                        honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
+                                        honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
+                                        "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                        )}
+                                    >
+                                        {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
+                                        {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
+                                        {honor.title}
+                                    </Badge>
+                                ))}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <span>{player.userRef ? 'Regisztrált játékos' : 'Vendég játékos'}</span>

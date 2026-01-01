@@ -88,7 +88,34 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
                 <Badge variant="outline" className="gap-1 text-xs font-semibold uppercase tracking-wide">
                   <span className={cn("text-sm", mmrTier.color)}>{mmrTier.name}</span>
                   <span className="font-mono text-muted-foreground">• {mmr}</span>
+                  {player.tournamentHistory && player.tournamentHistory.length > 0 && player.tournamentHistory[player.tournamentHistory.length - 1].mmrChange !== undefined && (
+                    <span className={cn(
+                      "ml-1 font-mono text-[10px]",
+                      player.tournamentHistory[player.tournamentHistory.length - 1].mmrChange! >= 0 ? "text-emerald-400" : "text-rose-400"
+                    )}>
+                      {player.tournamentHistory[player.tournamentHistory.length - 1].mmrChange! >= 0 ? "+" : ""}
+                      {player.tournamentHistory[player.tournamentHistory.length - 1].mmrChange}
+                    </span>
+                  )}
                 </Badge>
+                {/* Honors / Titles */}
+                {player.honors?.map((honor, i) => (
+                  <Badge 
+                    key={`${honor.title}-${honor.year}-${i}`} 
+                    variant="secondary" 
+                    className={cn(
+                      "gap-1 text-[10px] font-bold uppercase tracking-wider",
+                      honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
+                      honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
+                      "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                    )}
+                    title={honor.description}
+                  >
+                    {honor.type === 'rank' && <IconMedal className="h-3 w-3" />}
+                    {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" />}
+                    {honor.title}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>

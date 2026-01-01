@@ -16,6 +16,38 @@ export interface TournamentHistory {
     };
     date: Date;
     verified: boolean;
+    mmrChange?: number;
+}
+
+export interface PlayerHonor {
+    title: string;
+    year: number;
+    type: 'rank' | 'tournament' | 'special';
+    description?: string;
+}
+
+export interface PlayerSeasonStats {
+    year: number;
+    stats: {
+        tournamentsPlayed: number;
+        matchesPlayed: number;
+        legsWon: number;
+        legsLost: number;
+        avg: number;
+        oneEightiesCount: number;
+        highestCheckout: number;
+        averagePosition: number;
+        bestPosition: number;
+        totalMatchesWon: number;
+        totalMatchesLost: number;
+        totalLegsWon: number;
+        totalLegsLost: number;
+        total180s: number;
+        mmr: number;
+        oacMmr: number;
+    };
+    snapshotDate: Date;
+    tournamentHistory?: TournamentHistory[];
 }
 
 export interface PlayerStatistics {
@@ -71,6 +103,10 @@ export interface PlayerDocument {
      * Tournament history with detailed results
      */
     tournamentHistory?: TournamentHistory[];
+    
+    // Historical
+    honors?: PlayerHonor[];
+    previousSeasons?: PlayerSeasonStats[];
 }
 
 export interface Player {
@@ -96,4 +132,8 @@ export interface Player {
     };
     tournamentHistory?: TournamentHistory[];
     statistics?: PlayerStatistics;
+    
+    // Historical
+    honors?: PlayerHonor[];
+    previousSeasons?: PlayerSeasonStats[];
 }

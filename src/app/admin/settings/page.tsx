@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { YearWrapCard } from "@/components/admin/YearWrapCard"
 
 interface SystemInfo {
   version: string
@@ -376,6 +377,9 @@ export default function AdminSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Danger Zone */}
+      <YearWrapCard />
     </div>
   )
 }
