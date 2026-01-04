@@ -577,6 +577,68 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setEditScoreInput('');
   };
 
+  // Keyboard Support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input field (like settings)
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement || 
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (editingThrow) {
+        if (e.key === 'Enter') {
+          handleSaveEdit();
+        } else if (e.key === 'Escape') {
+          handleCancelEdit();
+        } else if (/^[0-9]$/.test(e.key)) {
+          handleNumberInput(parseInt(e.key));
+        } else if (e.key === 'Backspace') {
+          setEditScoreInput(prev => prev.slice(0, -1));
+        }
+        return;
+      }
+
+      // Normal scoring mode
+      // Prevent shortcut interference when modals are open
+      if (showLegConfirmation || showMatchConfirmation || showSettingsModal) {
+        return;
+      }
+
+      if (/^[0-9]$/.test(e.key)) {
+        handleNumberInput(parseInt(e.key));
+      } else if (e.key === 'Backspace') {
+        setScoreInput(prev => prev.slice(0, -1));
+      } else if (e.key === 'Enter') {
+        const score = parseInt(scoreInput);
+        if (!isNaN(score) && score >= 0 && score <= 180) {
+          handleThrow(score);
+          setScoreInput('');
+        }
+      } else if (e.key === 'Escape') {
+        handleBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    editingThrow, 
+    editScoreInput, 
+    scoreInput, 
+    showLegConfirmation, 
+    showMatchConfirmation, 
+    showSettingsModal,
+    handleSaveEdit, 
+    handleCancelEdit, 
+    handleBack, 
+    handleNumberInput,
+    handleThrow
+  ]);
+
   // Calculate possible arrow counts based on checkout score
   const getPossibleArrowCounts = (checkoutScore: number): number[] => {
     if (checkoutScore <= 40) {

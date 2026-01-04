@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { LeagueModel } from '@/database/models/league.model';
+import '@/database/models/club.model'; // Ensure Club model is registered
 import { AuthService } from '@/database/services/auth.service';
 
 export async function GET(request: NextRequest) {

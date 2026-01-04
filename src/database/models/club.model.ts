@@ -30,6 +30,16 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     updatedAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },
     verified: { type: Boolean, default: false },
+    billingInfo: {
+      type: { type: String, enum: ['individual', 'company'], default: null },
+      name: { type: String, default: null },
+      taxId: { type: String, default: null },
+      country: { type: String, default: 'HU' },
+      city: { type: String, default: null },
+      zip: { type: String, default: null },
+      address: { type: String, default: null },
+      email: { type: String, default: null },
+    },
   },
   { collection: 'clubs', timestamps: true }
 );

@@ -1,4 +1,5 @@
 import { Document, Types } from 'mongoose';
+import { BillingInfo } from './club.interface';
 
 // Plain types (API, DTO, stb.)
 export interface TournamentPlayer {
@@ -121,6 +122,9 @@ export interface Tournament {
     isCancelled?: boolean;
     isSandbox?: boolean;
     verified?: boolean;
+    paymentStatus?: 'none' | 'pending' | 'paid';
+    stripeSessionId?: string;
+    billingInfoSnapshot?: BillingInfo;
 }
 
 // Document types (Mongoose)
@@ -165,6 +169,9 @@ export interface TournamentDocument extends Document, Omit<Tournament, '_id' | '
     boards: TournamentBoardDocument[];
     clubId: Types.ObjectId;
     league?: Types.ObjectId; // Optional reference to League
+    paymentStatus?: 'none' | 'pending' | 'paid';
+    stripeSessionId?: string;
+    billingInfoSnapshot?: BillingInfo;
 }
 
 // Manual groups (API DTOs)

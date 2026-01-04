@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop, IconChartBar } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -144,6 +144,12 @@ const NavbarNew = () => {
                       <Link href="/profile" className="cursor-pointer w-full flex items-center">
                         <IconUser className="mr-2 h-4 w-4" />
                         Profil
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile#player-stats" className="cursor-pointer w-full flex items-center">
+                        <IconChartBar className="mr-2 h-4 w-4" />
+                        Statisztika
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

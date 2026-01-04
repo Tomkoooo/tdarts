@@ -45,9 +45,9 @@ export async function POST(req: NextRequest) {
         let restoredCount = 0;
 
         for (const player of players) {
-            // STRATEGY: Re-calculate everything from ALL tournamentHistory (including archived)
+            // STRATEGY: Replay tournament history chronologically with incremental stat updates
             
-            // 1. Gather ALL history
+            // 1. Gather ALL history from current and archived seasons
             const currentHistory = [...(player.tournamentHistory || [])];
             const archivedHistories = (player.previousSeasons || []).flatMap((ps: any) => 
                 (ps.tournamentHistory || []).map((t: any) => ({ ...t, _fromArchive: ps.year }))
@@ -55,104 +55,127 @@ export async function POST(req: NextRequest) {
             
             const fullHistory = [...currentHistory, ...archivedHistories];
             
-            // Sort chronologically for MMR replay
+            // Sort chronologically for accurate MMR replay
             fullHistory.sort((a: any, b: any) => new Date(a.date || a.startDate).getTime() - new Date(b.date || b.startDate).getTime());
 
-            // 2. Initialize counters for current season (for displays/averages)
-            // We'll target the year being "restored" or the current one if not specified
+            // 2. Reset player to baseline state (as if starting fresh)
+            let currentMMR = 800;
+            let globalAvg = 0;
+            let globalAvgPos = 0;
+            let globalTournaments = 0;
+            let globalMatchesWon = 0;
+            let globalMatchesLost = 0;
+            let globalLegsWon = 0;
+            let globalLegsLost = 0;
+            let global180s = 0;
+            let globalHighCheckout = 0;
+            let globalBestPos = 999;
+
+            // Track target year stats separately
             const targetYear = year;
             let yearTournaments = 0;
             let yearAvgSum = 0;
-            let yearAvgCount = 0;
             let yearPosSum = 0;
-            let bestPosYear = 999;
-            
-            // 3. Initialize counters for LIFETIME
-            let lifeTournaments = 0;
-            let lifeMatchesWon = 0;
-            let lifeMatchesLost = 0;
-            let lifeLegsWon = 0;
-            let lifeLegsLost = 0;
-            let life180s = 0;
-            let lifeHighCheckout = 0;
-            
-            // RESET MMR to Base (800) before replaying ENTIRE career
-            let currentMMR = 800; 
+            let yearBestPos = 999;
 
-            // 4. Replay and Aggregate
+            // 3. Replay each tournament with incremental stat updates
             for (const t of fullHistory) {
                 const tDate = new Date(t.date || t.startDate);
-                const isTargetYear = tDate.getFullYear() === targetYear;
+                const tYear = tDate.getFullYear();
+                const isTargetYear = tYear === targetYear;
 
-                lifeTournaments++;
+                if (!t.stats) {
+                    console.warn(`Tournament ${t.tournamentId} missing stats, skipping MMR calc`);
+                    continue;
+                }
+
+                // === INCREMENTAL STAT UPDATES (like finishTournament) ===
                 
+                // Update weighted average (incremental)
+                if (globalTournaments > 0) {
+                    globalAvg = ((globalAvg * globalTournaments) + (t.stats.average || 0)) / (globalTournaments + 1);
+                    globalAvgPos = ((globalAvgPos * globalTournaments) + t.position) / (globalTournaments + 1);
+                } else {
+                    globalAvg = t.stats.average || 0;
+                    globalAvgPos = t.position;
+                }
+
+                // Update counters
+                globalTournaments++;
+                globalMatchesWon += t.stats.matchesWon || 0;
+                globalMatchesLost += t.stats.matchesLost || 0;
+                globalLegsWon += t.stats.legsWon || 0;
+                globalLegsLost += t.stats.legsLost || 0;
+                global180s += t.stats.oneEightiesCount || (t.stats as any).total180s || 0;
+                
+                if ((t.stats.highestCheckout || 0) > globalHighCheckout) {
+                    globalHighCheckout = t.stats.highestCheckout;
+                }
+                if (t.position < globalBestPos) {
+                    globalBestPos = t.position;
+                }
+
+                // Track year-specific stats
                 if (isTargetYear) {
                     yearTournaments++;
-                    if (t.position < bestPosYear) bestPosYear = t.position;
+                    yearAvgSum += t.stats.average || 0;
                     yearPosSum += t.position;
+                    if (t.position < yearBestPos) yearBestPos = t.position;
                 }
 
-                if (t.stats) {
-                    // Lifetime aggregation
-                    lifeMatchesWon += t.stats.matchesWon || 0;
-                    lifeMatchesLost += t.stats.matchesLost || 0;
-                    lifeLegsWon += t.stats.legsWon || 0;
-                    lifeLegsLost += t.stats.legsLost || 0;
-                    life180s += t.stats.oneEightiesCount || (t.stats as any).total180s || 0;
-                    if ((t.stats.highestCheckout || 0) > lifeHighCheckout) lifeHighCheckout = t.stats.highestCheckout;
+                // === MMR CALCULATION (with current global stats as context) ===
+                const tSize = tournamentSizeMap.get(t.tournamentId) || 12;
+                const matchesTotal = (t.stats.matchesWon || 0) + (t.stats.matchesLost || 0);
+                const legsTotal = (t.stats.legsWon || 0) + (t.stats.legsLost || 0);
 
-                    if (isTargetYear && t.stats.average > 0) {
-                        yearAvgSum += t.stats.average;
-                        yearAvgCount++;
-                    }
+                const matchWinRate = matchesTotal > 0 ? (t.stats.matchesWon / matchesTotal) : 0;
+                const legWinRate = legsTotal > 0 ? (t.stats.legsWon / legsTotal) : 0;
 
-                    // MMR RECALCULATION
-                    const tSize = tournamentSizeMap.get(t.tournamentId) || 12;
-                    const matchesTotal = (t.stats.matchesWon || 0) + (t.stats.matchesLost || 0);
-                    const legsTotal = (t.stats.legsWon || 0) + (t.stats.legsLost || 0);
+                const newMMR = MMRService.calculateMMRChange(
+                    currentMMR,
+                    t.position,
+                    tSize,
+                    matchWinRate,
+                    legWinRate,
+                    t.stats.average || 40,
+                    45 // Baseline average
+                );
 
-                    const matchWinRate = matchesTotal > 0 ? (t.stats.matchesWon / matchesTotal) : 0;
-                    const legWinRate = legsTotal > 0 ? (t.stats.legsWon / legsTotal) : 0;
+                // Store MMR change and update current MMR
+                t.mmrChange = newMMR - currentMMR;
+                currentMMR = newMMR;
 
-                    const newMMR = MMRService.calculateMMRChange(
-                        currentMMR,
-                        t.position,
-                        tSize,
-                        matchWinRate,
-                        legWinRate,
-                        t.stats.average || 40,
-                        45 
-                    );
-
-                    // UPDATE mmrChange in the history entry
-                    t.mmrChange = newMMR - currentMMR;
-                    currentMMR = newMMR;
-                }
+                // OAC MMR would also be calculated here if verified tournaments
+                // For now, keeping it simple
             }
 
-            // 5. Derived Season Averages
-            const finalYearAvg = yearAvgCount > 0 ? Number((yearAvgSum / yearAvgCount).toFixed(2)) : 0;
+            // 4. Calculate final derived stats
+            const finalYearAvg = yearTournaments > 0 ? Number((yearAvgSum / yearTournaments).toFixed(2)) : 0;
             const finalYearAvgPos = yearTournaments > 0 ? Number((yearPosSum / yearTournaments).toFixed(2)) : 0;
 
-            // 6. Redistribute History back to Current and Archives
-            // Any entry belonging to targetYear (or later if we are restoring) should stay in currentHistory?
-            // Actually, the original logic for "Restore" was to move data BACK from archive.
-            
-            // Filter entries back to their original locations, but with updated mmrChange
+            // 5. Redistribute History back to Current and Archives (with updated mmrChange)
             player.tournamentHistory = fullHistory
-                .filter(t => !t._fromArchive || t._fromArchive === targetYear)
+                .filter(t => {
+                    // Only include tournaments from targetYear or later in current history
+                    const tYear = new Date(t.date || t.startDate).getFullYear();
+                    return !t._fromArchive || tYear >= targetYear;
+                })
                 .map(t => {
                     //eslint-disable-next-line
                     const { _fromArchive, ...cleanT } = t;
                     return cleanT;
                 });
 
-            // Update archives with fixed history
+            // Update archives with fixed mmrChange
             if (player.previousSeasons) {
                 player.previousSeasons.forEach((ps: any) => {
-                    if (ps.year !== targetYear) {
+                    // Only keep archives for years before the target year
+                    if (ps.year < targetYear) {
                         ps.tournamentHistory = fullHistory
-                            .filter(t => t._fromArchive === ps.year)
+                            .filter(t => {
+                                const tYear = new Date(t.date || t.startDate).getFullYear();
+                                return tYear === ps.year;
+                            })
                             .map(t => {
                                 //eslint-disable-next-line
                                 const { _fromArchive, ...cleanT } = t;
@@ -161,33 +184,33 @@ export async function POST(req: NextRequest) {
                     }
                 });
                 
-                // Remove the targetYear archive entry as we "restored" it to main history
-                player.previousSeasons = player.previousSeasons.filter((ps: any) => ps.year !== targetYear);
+                // Remove archive entries for targetYear and later (they're in current history now)
+                player.previousSeasons = player.previousSeasons.filter((ps: any) => ps.year < targetYear);
             }
 
-            // 7. Update Player Stats Summary
+            // 6. Update Player Stats (final state after all tournaments)
             player.stats = {
-                tournamentsPlayed: lifeTournaments,
-                matchesPlayed: lifeMatchesWon + lifeMatchesLost,
-                legsWon: lifeLegsWon,
-                legsLost: lifeLegsLost,
-                oneEightiesCount: life180s,
-                highestCheckout: lifeHighCheckout,
-                avg: finalYearAvg, 
-                averagePosition: finalYearAvgPos, 
-                bestPosition: bestPosYear === 999 ? 0 : bestPosYear,
-                totalMatchesWon: lifeMatchesWon,
-                totalMatchesLost: lifeMatchesLost,
-                totalLegsWon: lifeLegsWon,
-                totalLegsLost: lifeLegsLost,
-                total180s: life180s,
-                mmr: currentMMR, 
-                oacMmr: (player.stats as any).oacMmr || 800, 
+                tournamentsPlayed: globalTournaments,
+                matchesPlayed: globalMatchesWon + globalMatchesLost,
+                legsWon: globalLegsWon,
+                legsLost: globalLegsLost,
+                oneEightiesCount: global180s,
+                highestCheckout: globalHighCheckout,
+                avg: finalYearAvg, // Use target year average for display
+                averagePosition: finalYearAvgPos, // Use target year position for display
+                bestPosition: globalBestPos,
+                totalMatchesWon: globalMatchesWon,
+                totalMatchesLost: globalMatchesLost,
+                totalLegsWon: globalLegsWon,
+                totalLegsLost: globalLegsLost,
+                total180s: global180s,
+                mmr: currentMMR,
+                oacMmr: (player.stats as any).oacMmr || 800,
             };
 
-            // Remove Honors for this year
+            // Remove Honors for targetYear and later
             if (player.honors) {
-                player.honors = player.honors.filter((h: any) => h.year !== targetYear);
+                player.honors = player.honors.filter((h: any) => h.year < targetYear);
             }
 
             await player.save();

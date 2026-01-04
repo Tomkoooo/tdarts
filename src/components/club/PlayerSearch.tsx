@@ -16,6 +16,7 @@ interface PlayerSearchProps {
   isForTournament?: boolean
   excludePlayerIds?: string[]
   excludedPlayers?: any[] // Optional: list of player objects to exclude
+  excludeGuests?: boolean // Optional: exclude guest players (those without userRef/username)
 }
 
 export default function PlayerSearch({
@@ -27,6 +28,7 @@ export default function PlayerSearch({
   isForTournament = false,
   excludePlayerIds = [],
   excludedPlayers = [],
+  excludeGuests = false,
 }: PlayerSearchProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [results, setResults] = useState<any[]>([])
@@ -186,7 +188,13 @@ export default function PlayerSearch({
         }
 
         // Filter out excluded players using the helper function
-        combined = combined.filter((player) => !isPlayerExcluded(player))
+        combined = combined.filter((player) => {
+          if (excludeGuests) {
+            const isGuest = !player.userRef && !player.username;
+            if (isGuest) return false;
+          }
+          return !isPlayerExcluded(player);
+        });
 
         setResults(combined)
       } catch (error) {

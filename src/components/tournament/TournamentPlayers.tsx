@@ -12,6 +12,8 @@ import {
   IconBellOff,
   IconPlus,
   IconCopyCheck,
+  IconMedal,
+  IconTrophy,
 } from "@tabler/icons-react"
 import { toast } from "react-hot-toast"
 
@@ -539,6 +541,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               clubId={tournament?.clubId?._id || tournament?.clubId}
               isForTournament
               excludedPlayers={localPlayers}
+              excludeGuests={tournament?.verified}
+              showAddGuest={!tournament?.verified}
             />
           </CardContent>
         </Card>
@@ -662,6 +666,26 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                           {statusMeta.label}
                         </Badge>
                       )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {console.log(player)}
+                         {player.playerReference?.honors?.map((honor: any, i: number) => (
+                                    <Badge 
+                                        key={`${honor.title}-${honor.year}-${i}`} 
+                                        variant="secondary" 
+                                        className={cn(
+                                        "gap-1 text-[10px] font-bold uppercase tracking-wider py-0 h-5",
+                                        honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
+                                        honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
+                                        "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                        )}
+                                    >
+                                        {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
+                                        {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
+                                        {honor.title}
+                                    </Badge>
+                                ))}
+                      
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       {player.tournamentStanding && (

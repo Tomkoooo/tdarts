@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { IconTrophy, IconClock, IconX, IconChartBar } from '@tabler/icons-react';
+import { IconTrophy, IconClock, IconChartBar, IconSword, IconTarget, IconLoader2, IconAlertCircle } from '@tabler/icons-react';
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 
 interface Throw {
   score: number;
@@ -106,193 +110,187 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  const wins = matches.filter(m => m.winnerId === playerId).length;
+  const losses = matches.filter(m => m.winnerId !== playerId && m.status === 'finished').length;
+  const winRate = matches.length > 0 ? Math.round((wins / matches.length) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-base-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
+      <DialogContent className="flex h-[90vh] max-w-4xl flex-col overflow-hidden bg-background p-0 shadow-2xl border-muted/20 sm:rounded-2xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
-          <div className="flex-1 min-w-0 w-full sm:w-auto">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold truncate text-primary">
-              {playerName} meccsei
-            </h3>
-            <p className="text-xs sm:text-sm text-base-content/70">
-              {matches.length} meccs • {matches.filter(m => m.winnerId === playerId).length} győzelem • {matches.filter(m => m.winnerId !== playerId && m.status === 'finished').length} vereség
-            </p>
+        <header className="relative flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-center sm:justify-between border-b border-muted/10">
+          <div className="space-y-3">
+            <DialogHeader className="p-0 text-left">
+              <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase leading-none">
+                {playerName}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-[9px] font-black h-5 px-2 bg-primary/5 text-primary border-primary/20 uppercase tracking-tighter">
+                Esemény Meccsei
+              </Badge>
+              <Badge variant="outline" className="text-[9px] font-black h-5 px-2 uppercase tracking-widest opacity-40">
+                {tournamentCode}
+              </Badge>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="btn btn-circle btn-ghost btn-xs sm:btn-sm flex-shrink-0"
-              aria-label="Bezárás"
-            >
-              <IconX size={16} />
-            </button>
+          <div className="flex flex-col items-end">
+            <Badge variant="outline" className="rounded-lg border-primary/20 bg-primary/5 px-4 py-2 text-base font-black text-primary gap-2 shadow-sm">
+              <IconSword size={18} />
+              {matches.length} lejátszott meccs
+            </Badge>
           </div>
-        </div>
+        </header>
 
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <span className="loading loading-spinner loading-lg"></span>
+        {loading ? (
+          <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+            <IconLoader2 size={48} className="animate-spin text-primary/50" />
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Meccsek betöltése...</p>
           </div>
-        )}
-
-        {error && (
-          <div className="alert alert-error mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{error}</span>
+        ) : error ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center">
+              <IconAlertCircle size={32} className="text-rose-500" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-foreground">Hiba történt</p>
+              <p className="text-xs text-muted-foreground max-w-xs">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchPlayerMatches}>Újrapróbálás</Button>
           </div>
-        )}
+        ) : (
+          <div className="flex-1 overflow-y-auto px-6 pb-8 pt-6 space-y-8 custom-scrollbar">
+            {/* Quick Stats Summary */}
+            <section className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+              <StatCard label="Győzelmek" value={wins} icon={<IconTrophy size={14} />} variant="amber" />
+              <StatCard label="Vereségek" value={losses} icon={<IconSword size={14} />} variant="rose" />
+              <StatCard label="Győzelmi Arány" value={`${winRate}%`} icon={<IconTarget size={14} />} variant="primary" />
+            </section>
 
-        {!loading && !error && matches.length === 0 && (
-          <div className="alert alert-info">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>Még nincsenek rögzített meccsek ehhez a játékoshoz.</span>
-          </div>
-        )}
+            {/* Match List */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Mérkőzések Listája</h3>
+              </div>
 
-        {!loading && !error && matches.length > 0 && (
-          <div className="space-y-3 sm:space-y-4 md:space-y-6">
-            {matches.map((match, matchIndex) => {
-              const isPlayerWinner = match.winnerId === playerId;
-              const opponent = playerId === match.player1?.playerId?._id ? match.player2 : match.player1;
-              const isPlayer1 = playerId === match.player1?.playerId?._id;
-              
-              return (
-                <div key={match._id} className="card bg-base-200 shadow-lg">
-                  <div className="card-body p-3 sm:p-4 md:p-5">
-                    {/* Match Header */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-accent/20 flex-shrink-0">
-                          <span className="text-sm sm:text-base font-bold text-accent">{matchIndex + 1}</span>
-                        </div>
-                        <div>
-                          <h4 className="text-sm sm:text-base md:text-lg font-bold">
-                            vs {opponent?.playerId?.name}
-                          </h4>
-                          <div className="text-xs sm:text-sm text-base-content/60 space-y-1">
-                            <div className="flex items-center gap-2">
-                              {match.groupName && (
-                                <>
-                                  <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs">
+              <div className="grid gap-4">
+                {matches.length > 0 ? matches.map((match, matchIndex) => {
+                  const isPlayerWinner = match.winnerId === playerId;
+                  const isPlayer1 = playerId === match.player1?.playerId?._id;
+                  const opponent = isPlayer1 ? match.player2 : match.player1;
+                  
+                  return (
+                    <Card key={match._id} className="bg-card border-muted/10 overflow-hidden hover:border-primary/20 transition-all">
+                      <CardContent className="p-0">
+                        <div className="flex flex-col sm:flex-row items-stretch">
+                          {/* Result Indicator */}
+                          <div className={cn(
+                            "w-full sm:w-1.5 min-h-[4px] sm:min-h-full",
+                            match.status !== 'finished' ? "bg-amber-500" : (isPlayerWinner ? "bg-emerald-500" : "bg-rose-500")
+                          )} />
+                          
+                          <div className="flex-1 p-4 sm:p-5 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                            <div className="space-y-2 flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] font-black text-muted-foreground/40 uppercase">#{matchIndex + 1}</span>
+                                {match.groupName && (
+                                  <Badge variant="secondary" className="text-[9px] font-bold bg-primary/5 text-primary border-primary/10 px-1.5 h-4.5">
                                     {match.groupName}
-                                  </span>
-                                </>
-                              )}
-                              {match.round && (
-                                <span className="bg-accent/20 text-accent px-2 py-0.5 rounded text-xs">
-                                  {match.round}
-                                </span>
-                              )}
-                              {/* Match Score */}
-                              {match.status === 'finished' && (
-                                <div className="badge badge-outline font-bold">
-                                  {isPlayer1 ? `${match.player1?.legsWon} - ${match.player2?.legsWon}` : `${match.player2?.legsWon} - ${match.player1?.legsWon}`}
+                                  </Badge>
+                                )}
+                                {match.round && (
+                                  <Badge variant="secondary" className="text-[9px] font-bold bg-muted text-muted-foreground px-1.5 h-4.5">
+                                    {match.round}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <h4 className="text-base font-black truncate tracking-tight uppercase">vs {opponent?.playerId?.name}</h4>
+                                <div className="text-lg font-black font-mono tracking-tighter shrink-0 text-primary bg-primary/5 px-2 rounded">
+                                  {isPlayer1 ? `${match.player1?.legsWon}-${match.player2?.legsWon}` : `${match.player2?.legsWon}-${match.player1?.legsWon}`}
                                 </div>
-                              )}
+                              </div>
+                              
+                              <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase opacity-60">
+                                <span className="flex items-center gap-1">
+                                  <IconClock size={10} />
+                                  {new Date(match.createdAt).toLocaleDateString('hu-HU')}
+                                </span>
+                                {match.status === 'finished' ? (
+                                  <span className={cn(isPlayerWinner ? "text-emerald-500" : "text-rose-500")}>
+                                    {isPlayerWinner ? "Győzelem" : "Vereség"}
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-500">Folyamatban</span>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {isPlayerWinner ? (
-                                <>
-                                  <IconTrophy size={12} className="text-warning" />
-                                  <span className="text-success font-semibold">Győzelem</span>
-                                </>
-                              ) : match.status === 'finished' ? (
-                                <>
-                                  <span className="text-error font-semibold">Vereség</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="text-warning font-semibold">Folyamatban</span>
-                                </>
-                              )}
+
+                            <div className="flex flex-col sm:items-end gap-3 w-full sm:w-auto">
+                              <div className="flex gap-4 sm:justify-end">
+                                <div className="text-center">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Átlag</p>
+                                  <p className="text-sm font-black">{match.average ? match.average.toFixed(1) : "—"}</p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Kiszálló</p>
+                                  <p className="text-sm font-black">{match.checkout || "—"}</p>
+                                </div>
+                              </div>
+                              
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-[9px] font-black h-8 px-3 tracking-widest uppercase gap-1.5 border-muted/20 hover:bg-primary/5 hover:text-primary hover:border-primary/30"
+                                onClick={() => onShowDetailedStats && onShowDetailedStats(match._id)}
+                                disabled={!match.legs || match.legs.length === 0}
+                              >
+                                <IconChartBar size={12} />
+                                Részletek
+                              </Button>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <IconClock size={14} className="shrink-0" />
-                          <span>{new Date(match.createdAt).toLocaleDateString('hu-HU')}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Match Summary */}
-                    <div className="rounded-lg bg-muted/30 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span className="font-semibold text-foreground">
-                            {match.legs ? `${match.legs.length} leg` : "0 leg"}
-                          </span>
-                          {match.status === "finished" && (
-                            <span className="text-xs">
-                              • {isPlayerWinner ? "Győzelem" : "Vereség"}
-                            </span>
-                          )}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (match._id && onShowDetailedStats) {
-                              onShowDetailedStats(match._id)
-                            }
-                          }}
-                          disabled={!match.legs || match.legs.length === 0}
-                          className="gap-1"
-                        >
-                          <IconChartBar size={14} />
-                          Statisztikák
-                        </Button>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                        <div>
-                          <span className="font-medium text-foreground">Átlag:</span>
-                          <span className="ml-2">
-                            {match.average ? match.average.toFixed(1) : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-foreground">Checkout:</span>
-                          <span className="ml-2">
-                            {match.checkout || "—"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Match Status */}
-                    {match.status !== 'finished' && (
-                      <div className="mt-3 p-2 bg-warning/10 border  rounded-lg">
-                        <div className="text-sm text-warning">
-                          <IconClock size={14} className="inline mr-1" />
-                          Meccs folyamatban...
-                        </div>
-                      </div>
-                    )}
+                      </CardContent>
+                    </Card>
+                  );
+                }) : (
+                  <div className="p-12 text-center border border-dashed border-muted/20 rounded-xl">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground/30 tracking-widest text-center">Nincs mérkőzés adat</p>
                   </div>
-                </div>
-              );
-            })}
+                )}
+              </div>
+            </section>
           </div>
         )}
-
-        {/* Footer */}
-        <div className="mt-4 flex justify-end pt-3 sm:mt-6 sm:pt-4">
-          <Button onClick={onClose} className="w-full sm:w-auto">
+        
+        <div className="p-6 border-t border-muted/10 bg-muted/5 flex justify-end">
+          <Button onClick={onClose} variant="secondary" className="text-[10px] font-black uppercase tracking-widest px-8">
             Bezárás
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
+
+function StatCard({ label, value, icon, variant }: { label: string, value: string | number, icon: React.ReactNode, variant: 'primary' | 'rose' | 'amber' }) {
+  const variants = {
+    primary: "border-primary/20 bg-primary/5 text-primary",
+    rose: "border-rose-500/20 bg-rose-500/5 text-rose-600",
+    amber: "border-amber-500/20 bg-amber-500/5 text-amber-600",
+  };
+  
+  return (
+    <div className={cn("p-4 rounded-xl border transition-all", variants[variant])}>
+      <div className="flex items-center justify-between mb-2 opacity-70">
+        <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+        {icon}
+      </div>
+      <div className="text-xl font-black tracking-tighter">{value}</div>
+    </div>
+  );
+}
 
 export default PlayerMatchesModal;

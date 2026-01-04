@@ -155,11 +155,12 @@ export default function SearchPage() {
         }
 
         fetchData()
-    }, [debouncedQuery, activeTab, filters, searchParams, pathname, router]) 
+    }, [debouncedQuery, activeTab, filters]) // Removed searchParams, pathname, router to prevent duplicate fetches
 
-    // --- Handlers ---
     const handleTabChange = (tab: string) => {
         setActiveTab(tab)
+        setResults([]) // Clear results when switching tabs
+        setPagination(prev => ({ ...prev, page: 1 })) // Reset pagination
         
         // Reset filters if no query is present 
         if (!query) {
@@ -178,14 +179,17 @@ export default function SearchPage() {
              params.delete('type');
              params.delete('tournamentType');
              params.delete('verified');
+             params.delete('page'); // Also clear page param
              
              router.replace(`${pathname}?${params.toString()}`, { scroll: false });
         } else {
+             setFilters(prev => ({ ...prev, page: 1 }))
              updateUrl({ tab, page: 1 })
         }
     }
 
     const handleFilterChange = (key: string, value: any) => {
+        setResults([]) // Clear results when filters change
         setFilters(prev => ({ ...prev, [key]: value, page: 1 })) 
         const urlKey = key === 'isVerified' ? 'verified' : key
         updateUrl({ [urlKey]: value, page: 1 })
@@ -193,6 +197,8 @@ export default function SearchPage() {
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value)
+        setResults([]) // Clear results when search query changes
+        setFilters(prev => ({ ...prev, page: 1 })) // Reset to first page
     }
 
     const loadMore = () => {

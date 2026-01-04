@@ -161,7 +161,18 @@ export class SearchService {
             const aMMR = a.stats?.mmr ?? 800;
             const bMMR = b.stats?.mmr ?? 800;
             if (bMMR !== aMMR) return bMMR - aMMR;
-            return a.name.localeCompare(b.name);
+            
+            // Tie-breaker: letter-starting names before digit-starting names
+            const nameA = a.name || "";
+            const nameB = b.name || "";
+            const aStartsDigit = /^\d/.test(nameA);
+            const bStartsDigit = /^\d/.test(nameB);
+            
+            if (aStartsDigit !== bStartsDigit) {
+                return aStartsDigit ? 1 : -1;
+            }
+            
+            return nameA.localeCompare(nameB);
         });
 
         const slicedPlayers = sortedPlayers.slice(skip, skip + limit);
@@ -184,7 +195,8 @@ export class SearchService {
                 stats: stats,
                 mmr: mmr,
                 mmrTier: this.getMMRTier(mmr),
-                globalRank: globalRank || null
+                globalRank: globalRank || null,
+                honors: player.honors || [] // Include honors for badge display
             };
         });
 
@@ -539,7 +551,18 @@ export class SearchService {
             const aMMR = a.stats?.mmr ?? 800;
             const bMMR = b.stats?.mmr ?? 800;
             if (bMMR !== aMMR) return bMMR - aMMR;
-            return a._id.toString().localeCompare(b._id.toString()); // Stable sort
+            
+            // Consistent tie-breaker with searchPlayers
+            const nameA = a.name || "";
+            const nameB = b.name || "";
+            const aStartsDigit = /^\d/.test(nameA);
+            const bStartsDigit = /^\d/.test(nameB);
+            
+            if (aStartsDigit !== bStartsDigit) {
+                return aStartsDigit ? 1 : -1;
+            }
+            
+            return nameA.localeCompare(nameB);
         });
     }
 
@@ -782,7 +805,20 @@ export class SearchService {
             { $match: matchStage },
             { $unwind: '$previousSeasons' },
             { $match: { 'previousSeasons.year': year } },
-            { $sort: { 'previousSeasons.stats.mmr': -1 } },
+            {
+                $addFields: {
+                    isNumericName: {
+                        $regexMatch: { input: "$name", regex: /^\d/ }
+                    }
+                }
+            },
+            { 
+                $sort: { 
+                    'previousSeasons.stats.mmr': -1,
+                    isNumericName: 1,
+                    name: 1
+                } 
+            },
             { $skip: skip },
             { $limit: limit },
             {

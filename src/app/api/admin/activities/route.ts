@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       UserModel.countDocuments({ createdAt: { $gte: oneDayAgo } }),
       ClubModel.countDocuments({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }),
-      FeedbackModel.find({ createdAt: { $gte: oneDayAgo } }).select('message user').populate('user', 'name'),
+      FeedbackModel.find({ createdAt: { $gte: oneDayAgo } }).select('message userId').populate('userId', 'name'),
       LogModel.countDocuments({ level: 'error', timestamp: { $gte: oneDayAgo } }),
       // For specific club names if needed, or just count. User asked for "REMZ events and 10 other clubs". 
       // Let's get a few club names.
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     // 5. Feedback (Specific names)
     newFeedback.forEach((fb: any) => {
-      const name = fb.user?.name || 'Egy felhasználó';
+      const name = fb.userId?.name || 'Egy felhasználó';
       addActivity(`${name} visszajelzést küldött`, 'feedback');
     });
 

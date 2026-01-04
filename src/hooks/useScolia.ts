@@ -42,8 +42,12 @@ export const useScolia = ({ serialNumber, accessToken, isEnabled, onThrow }: Use
     }, []);
 
     const connect = useCallback(() => {
-        if (!isEnabled || !serialNumber || !accessToken) {
-            addLog('warning', 'Cannot connect: Missing credentials or disabled');
+        if (!isEnabled) {
+            return;
+        }
+        
+        if (!serialNumber || !accessToken) {
+            addLog('warning', 'Cannot connect: Missing credentials');
             return;
         }
 
@@ -136,7 +140,7 @@ export const useScolia = ({ serialNumber, accessToken, isEnabled, onThrow }: Use
         return () => {
             disconnect();
         };
-    }, [isEnabled, serialNumber, accessToken]);
+    }, [isEnabled, serialNumber, accessToken, connect, disconnect]);
 
     const handleMessage = (message: any) => {
         if (message.type === 'THROW_DETECTED') {

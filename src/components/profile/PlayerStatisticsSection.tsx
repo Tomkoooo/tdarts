@@ -89,7 +89,9 @@ export function PlayerStatisticsSection({
   const playerStats = React.useMemo(() => initialPlayerStats || { hasPlayer: false } as any, [initialPlayerStats]);
   
   const previousSeasons = React.useMemo(() => playerStats?.player?.previousSeasons || [], [playerStats]);
+  console.log(playerStats)
   const honors = React.useMemo(() => playerStats?.player?.honors || [], [playerStats]);
+  console.log(honors)
   const currentYear = React.useMemo(() => new Date().getFullYear(), []);
   
   const availableYears = React.useMemo(() => {
@@ -312,7 +314,7 @@ export function PlayerStatisticsSection({
   }
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
+    <Card id="player-stats" className="border-none shadow-none bg-transparent">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0 pb-7 px-0">
         <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-2xl font-bold">
@@ -535,7 +537,7 @@ export function PlayerStatisticsSection({
                         <h4 className="text-xs font-black tracking-tight">{tournament.tournamentName || tournament.name}</h4>
                       </div>
                       <div className="flex items-center gap-2">
-                         <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{tournament.position}.</Badge>
+                         <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{tournament.finalPosition || tournament.position}.</Badge>
                          {tournament.mmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                 {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} MMR

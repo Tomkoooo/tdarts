@@ -125,10 +125,12 @@ export async function GET(request: NextRequest) {
         mmr: mmr,
         mmrTier: getMMRTier(mmr),
         globalRank: globalRank,
-        previousSeasons: player.previousSeasons || []
+        previousSeasons: player.previousSeasons || [],
+        honors: player.honors || []
       },
       tournamentHistory,
       matchHistory,
+ 
       summary: {
         totalTournaments: tournamentHistory.length,
         totalMatches: matchHistory.length,

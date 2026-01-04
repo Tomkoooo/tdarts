@@ -124,6 +124,7 @@
   --input: 0 38% 21%;
   --ring: 8 80% 32%;
   --radius: 0.5rem;
+  scroll-behavior: smooth;
 }
 
 @layer base {

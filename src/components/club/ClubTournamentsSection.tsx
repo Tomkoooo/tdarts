@@ -100,14 +100,14 @@ export function ClubTournamentsSection({
               className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6 border-warning text-warning hover:bg-warning/10"
             >
               <IconTrophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-              <span className="hidden xs:inline">OAC Verseny</span>
-              <span className="xs:hidden">OAC</span>
+              <span className="hidden xs:inline">Új OAC Verseny</span>
+              <span className="xs:hidden">Új OAC verseny</span>
             </Button>
           )}
           <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
             <IconPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             <span className="hidden xs:inline">{viewMode === 'sandbox' ? "Teszt verseny" : "Új verseny"}</span>
-            <span className="xs:hidden">{viewMode === 'sandbox' ? "Teszt" : "Új"}</span>
+            <span className="xs:hidden">{viewMode === 'sandbox' ? "Teszt" : "Új verseny"}</span>
           </Button>
         </div>
       )}

@@ -1,5 +1,16 @@
 import { Types, Document } from 'mongoose';
 
+export interface BillingInfo {
+  type: 'individual' | 'company';
+  name: string;
+  taxId?: string;
+  country: string;
+  city: string;
+  zip: string;
+  address: string;
+  email: string;
+}
+
 export interface Club {
   _id: string;
   name: string;
@@ -27,6 +38,7 @@ export interface Club {
   updatedAt: Date;
   isActive: boolean;
   verified: boolean;
+  billingInfo?: BillingInfo;
   // Tournaments (minimal info for list)
   tournaments?: { 
     _id: string; 

@@ -442,6 +442,66 @@ export const useDartGame = ({
         });
     }, []);
 
+    const editThrow = useCallback((playerIdx: 1 | 2, throwIdx: number, newScore: number) => {
+        setGameState(prev => {
+            const isP1 = playerIdx === 1;
+            const player = isP1 ? prev.player1 : prev.player2;
+            
+            if (throwIdx < 0 || throwIdx >= player.allThrows.length) return prev;
+            
+            const newAllThrows = [...player.allThrows];
+            newAllThrows[throwIdx] = newScore;
+            
+            // Recalculate score from start
+            let calculatedScore = initialScore;
+            for (const t of newAllThrows) {
+                calculatedScore -= t;
+            }
+            
+            if (calculatedScore < 0) {
+                toast.error('Érvénytelen szerkesztés: a pontszám nem lehet negatív!');
+                return prev;
+            }
+            
+            const newTotalThrows = newAllThrows.length;
+            const newAvg = newTotalThrows > 0 
+                ? Math.round((newAllThrows.reduce((a, b) => a + b, 0) / newTotalThrows) * 100) / 100
+                : 0;
+                
+            const newStats: PlayerStats = {
+                ...player.stats,
+                totalThrows: newTotalThrows,
+                average: newAvg,
+                highestCheckout: newAllThrows.reduce((max, t, idx) => {
+                    // Check if this throw was a checkout (only for the last throw of the leg)
+                    // But in this simple hook, we don't know if history is multi-leg or not easily.
+                    // Actually allThrows is reset every leg.
+                    // So any throw that leads to 0 is a checkout.
+                    // Wait, if I edit an intermediate throw to hit 0, it becomes the new checkout.
+                    let tempScore = initialScore;
+                    for(let i=0; i<=idx; i++) tempScore -= newAllThrows[i];
+                    if (tempScore === 0) return Math.max(max, t);
+                    return max;
+                }, 0)
+            };
+
+            const updatedPlayer = {
+                ...player,
+                score: calculatedScore,
+                allThrows: newAllThrows,
+                stats: newStats
+            };
+
+            const newState = {
+                ...prev,
+                [isP1 ? 'player1' : 'player2']: updatedPlayer,
+                winner: calculatedScore === 0 ? (isP1 ? 'player1' : 'player2') as 'player1' | 'player2' : prev.winner
+            };
+
+            return newState;
+        });
+    }, [initialScore]);
+
     const resetGame = useCallback(() => {
         setGameState({
             player1: createInitialPlayer("1"),
@@ -461,6 +521,7 @@ export const useDartGame = ({
       setGameState,
       handleThrow,
       undoThrow,
+      editThrow,
       resetGame,
       startNextLeg
   };

@@ -4,6 +4,11 @@ import { ClubService } from '@/database/services/club.service';
 import { SubscriptionService } from '@/database/services/subscription.service';
 import { TournamentDocument } from '@/interface/tournament.interface';
 import { Document } from 'mongoose';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-12-18.acacia' as any,
+});
 
 export async function POST(
   request: NextRequest,
@@ -37,6 +42,13 @@ export async function POST(
     const isAuthorized = await AuthorizationService.checkAdminOrModerator(userId, clubId);
     if (!isAuthorized) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Save billing info to club if provided and requested
+    if (payload.billingInfo && payload.saveBillingInfo) {
+      await ClubService.updateClub(clubId, userId, {
+        billingInfo: payload.billingInfo
+      } as any);
     }
 
     // Check subscription limits (Skip for sandbox tournaments)
@@ -146,16 +158,53 @@ export async function POST(
         },
         createdAt: now,
         updatedAt: now,
-        isActive: true,
-        isDeleted: false,
         isArchived: false,
         isCancelled: false,
         isSandbox: payload.isSandbox || false,
         verified: payload.verified || false,
+        paymentStatus: payload.verified ? 'pending' : 'none',
+        billingInfoSnapshot: payload.billingInfo || undefined,
+        isActive: !payload.verified, // Inactive until paid if OAC
     } as Partial<Omit<TournamentDocument, keyof Document>>;
 
-    
     const newTournament = await TournamentService.createTournament(tournament);
+
+    // If OAC, create Stripe session
+    if (payload.verified) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'huf',
+              product_data: {
+                name: `OAC Tournament Verification - ${payload.name}`,
+                description: 'Hitelesített OAC verseny létrehozási díj',
+              },
+              unit_amount: 3810, // 3000 + 27% VAT = 3810 HUF (zero-decimal currency)
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${baseUrl}/api/payments/verify?session_id={CHECKOUT_SESSION_ID}&tournamentId=${newTournament._id}`,
+        cancel_url: `${baseUrl}/clubs/${clubId}`,
+        metadata: {
+          tournamentId: newTournament._id.toString(),
+          clubId: clubId,
+        }
+      });
+
+      // Update tournament with session ID
+      const { TournamentModel } = await import('@/database/models/tournament.model');
+      await TournamentModel.findByIdAndUpdate(newTournament._id, {
+        stripeSessionId: session.id
+      });
+
+      return NextResponse.json({ checkoutUrl: session.url });
+    }
     
     console.log('Created tournament boards:', JSON.stringify(newTournament.boards, null, 2));
     console.log('================================');

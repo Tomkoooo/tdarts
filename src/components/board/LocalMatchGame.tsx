@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/Label';
+import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/switch';
 import { useDartGame } from '@/hooks/useDartGame';
 import { useScolia } from '@/hooks/useScolia';
 
@@ -21,6 +24,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     gameState, 
     handleThrow: gameHandleThrow, 
     undoThrow, 
+    editThrow,
     startNextLeg,
     setGameState 
   } = useDartGame({
@@ -112,6 +116,13 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       onThrow: handleScoliaThrow
   });
 
+  // Auto-scroll chalkboard
+  useEffect(() => {
+    if (chalkboardRef.current) {
+      chalkboardRef.current.scrollTop = chalkboardRef.current.scrollHeight;
+    }
+  }, [player1.allThrows.length, player2.allThrows.length]);
+
   // --- Handlers ---
   const handleThrow = (score: number) => {
     gameHandleThrow(score);
@@ -131,9 +142,15 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
   };
 
   const handleSaveEdit = () => {
-    // This would need implementation in useDartGame hook
-    setEditingThrow(null);
-    setEditScoreInput('');
+    if (!editingThrow) return;
+    const score = parseInt(editScoreInput);
+    if (!isNaN(score) && score >= 0 && score <= 180) {
+      editThrow(editingThrow.player, editingThrow.throwIndex, score);
+      setEditingThrow(null);
+      setEditScoreInput('');
+    } else {
+      toast.error('Érvénytelen pontszám! (0-180)');
+    }
   };
 
   const handleCancelEdit = () => {
@@ -141,9 +158,72 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     setEditScoreInput('');
   };
 
+
   const handleBack = () => {
-    onBack();
+    undoThrow();
   };
+
+  // Keyboard Support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input field (like settings)
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement || 
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (editingThrow) {
+        if (e.key === 'Enter') {
+          handleSaveEdit();
+        } else if (e.key === 'Escape') {
+          handleCancelEdit();
+        } else if (/^[0-9]$/.test(e.key)) {
+          handleNumberInput(parseInt(e.key));
+        } else if (e.key === 'Backspace') {
+          setEditScoreInput(prev => prev.slice(0, -1));
+        }
+        return;
+      }
+
+      // Normal scoring mode
+      // Prevent shortcut interference when modals are open
+      if (showLegConfirmation || showMatchConfirmation || showSettingsModal) {
+        return;
+      }
+
+      if (/^[0-9]$/.test(e.key)) {
+        handleNumberInput(parseInt(e.key));
+      } else if (e.key === 'Backspace') {
+        setScoreInput(prev => prev.slice(0, -1));
+      } else if (e.key === 'Enter') {
+        const score = parseInt(scoreInput);
+        if (!isNaN(score) && score >= 0 && score <= 180) {
+          handleThrow(score);
+          setScoreInput('');
+        }
+      } else if (e.key === 'Escape') {
+        handleBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    editingThrow, 
+    editScoreInput, 
+    scoreInput, 
+    showLegConfirmation, 
+    showMatchConfirmation, 
+    showSettingsModal,
+    handleSaveEdit, 
+    handleCancelEdit, 
+    handleBack, 
+    handleNumberInput,
+    handleThrow
+  ]);
 
   const confirmLegEnd = () => {
     startNextLeg();
@@ -425,9 +505,9 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         <section className="h-[6dvh] landscape:h-[15dvh] bg-gradient-to-b from-base-300 to-base-200 flex items-center justify-between px-2 sm:px-4">
           <button
             onClick={() => handleBack()}
-            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border"
+            className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border uppercase tracking-widest"
           >
-            BACK
+            UNDO
           </button>
           <div className="flex flex-col items-center flex-1">
             {editingThrow && (
@@ -541,208 +621,211 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       </div>
 
       {/* Settings Modal */}
-      {showSettingsModal && (
-        <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Meccs beállítások</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Nyert legek száma</label>
-                <select 
-                  onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
-                  value={tempLegsToWin} 
-                  className="select select-bordered w-full"
-                >
-                  {Array.from({ length: 20 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>{i + 1}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted-foreground mt-1">Best of {tempLegsToWin * 2 - 1}</p>
-              </div>
-              
-              <div className="space-y-2 pt-4 border-t">
-                <label className="block text-sm font-medium mb-2">Scolia Autoscoring</label>
-                <input
-                  type="text"
-                  placeholder="Scolia Szériaszám"
-                  value={scoliaSerial}
-                  onChange={(e) => setScoliaSerial(e.target.value)}
-                  className="w-full bg-gray-800 text-white border border-gray-600 rounded-md px-3 py-2"
-                />
-                <input
-                  type="password"
-                  placeholder="Hozzáférési Token"
-                  value={scoliaToken}
-                  onChange={(e) => setScoliaToken(e.target.value)}
-                  className="w-full bg-gray-800 text-white border border-gray-600 rounded-md px-3 py-2"
-                />
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Meccs beállítások</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Nyert legek száma</Label>
+              <select 
+                onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
+                value={tempLegsToWin} 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
+              >
+                {Array.from({ length: 20 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">Best of {tempLegsToWin * 2 - 1}</p>
+            </div>
+            
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-base font-semibold">Scolia Autoscoring</Label>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="scolia-serial">Scolia Szériaszám</Label>
+                  <Input
+                    id="scolia-serial"
+                    placeholder="Scolia Szériaszám"
+                    value={scoliaSerial}
+                    onChange={(e) => setScoliaSerial(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="scolia-token">Hozzáférési Token</Label>
+                  <Input
+                    id="scolia-token"
+                    type="password"
+                    placeholder="Hozzáférési Token"
+                    value={scoliaToken}
+                    onChange={(e) => setScoliaToken(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="scolia-enable">Scolia engedélyezése</Label>
+                  <Switch
                     id="scolia-enable"
                     checked={isScoliaEnabled}
-                    onChange={(e) => setIsScoliaEnabled(e.target.checked)}
-                    className="w-4 h-4"
+                    onCheckedChange={setIsScoliaEnabled}
                   />
-                  <label htmlFor="scolia-enable" className="text-sm">Scolia engedélyezése</label>
                 </div>
               </div>
+            </div>
+            
+            <div className="flex flex-col gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleSaveLegsToWin}
+              >
+                Beállítások mentése
+              </Button>
               
-              <div className="space-y-2 pt-2 border-t">
+              <Button 
+                variant="default" 
+                className="w-full" 
+                onClick={handleRestartWithNewSettings}
+              >
+                Újraindítás új beállításokkal
+              </Button>
+              
+              {onRematch && (
                 <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleSaveLegsToWin}
-                >
-                  Beállítások mentése
-                </Button>
-                
-                <Button 
-                  variant="default" 
-                  className="w-full" 
-                  onClick={handleRestartWithNewSettings}
-                >
-                  Újraindítás új beállításokkal
-                </Button>
-                
-                {onRematch && (
-                  <Button 
-                    variant="secondary" 
-                    className="w-full" 
-                    onClick={() => {
-                      setShowSettingsModal(false);
-                      onRematch();
-                    }}
-                  >
-                    Újraindítás (ugyanazokkal a beállításokkal)
-                  </Button>
-                )}
-                
-                <Button 
-                  variant="destructive" 
+                  variant="secondary" 
                   className="w-full" 
                   onClick={() => {
                     setShowSettingsModal(false);
-                    onBack();
+                    onRematch();
                   }}
                 >
-                  Kilépés
+                  Újraindítás (ugyanazokkal a beállításokkal)
                 </Button>
-              </div>
+              )}
+              
+              <Button 
+                variant="destructive" 
+                className="w-full" 
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  onBack();
+                }}
+              >
+                Kilépés
+              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Leg Confirmation Dialog */}
-      {showLegConfirmation && (
-        <Dialog open={showLegConfirmation} onOpenChange={() => {}}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Leg vége?</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p>
-                Játékos {pendingLegWinner} nyerte ezt a leg-et!
-              </p>
+      <Dialog open={showLegConfirmation} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Leg vége?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="font-medium">
+              Játékos {pendingLegWinner} nyerte ezt a leg-et!
+            </p>
+            
+            {(() => {
+              const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+              const possibleArrowCounts = getPossibleArrowCounts(lastThrow || 0);
               
-              {(() => {
-                const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-                const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
-                
-                return (
-                  <div>
-                    <p className="text-sm mb-2">
-                      Kiszálló: {lastThrow} - Hány nyílból?
-                    </p>
-                    <div className="flex gap-2 justify-center">
-                      {possibleArrowCounts.map((count) => (
-                        <button
-                          key={count}
-                          onClick={() => setArrowCount(count)}
-                          className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
-                        >
-                          {count} nyíl
-                        </button>
-                      ))}
-                    </div>
-                    {possibleArrowCounts.length === 1 && (
-                      <p className="text-xs text-muted-foreground mt-1 text-center">
-                        Csak {possibleArrowCounts[0]} nyíl lehetséges
-                      </p>
-                    )}
+              return (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {possibleArrowCounts.map((count) => (
+                      <Button
+                        key={count}
+                        onClick={() => setArrowCount(count)}
+                        variant={arrowCount === count ? "default" : "outline"}
+                        size="sm"
+                        className="min-w-[80px]"
+                      >
+                        {count} nyíl
+                      </Button>
+                    ))}
                   </div>
-                );
-              })()}
-              
-              <div className="flex gap-2">
-                <Button variant="destructive" className="flex-1" onClick={cancelLegEnd}>
-                  Visszavonás
-                </Button>
-                <Button className="flex-1" onClick={confirmLegEnd}>
-                  Igen
-                </Button>
-              </div>
+                  {possibleArrowCounts.length === 1 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Csak {possibleArrowCounts[0]} nyíl lehetséges
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            
+            <div className="flex gap-2 pt-2">
+              <Button variant="destructive" className="flex-1" onClick={cancelLegEnd}>
+                Visszavonás
+              </Button>
+              <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={confirmLegEnd}>
+                Igen
+              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Match Confirmation Dialog */}
-      {showMatchConfirmation && (
-        <Dialog open={showMatchConfirmation} onOpenChange={() => {}}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Meccs vége?</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p>
-                Játékos {pendingMatchWinner} nyerte a meccset!
-              </p>
+      <Dialog open={showMatchConfirmation} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Meccs vége?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="font-medium">
+              Játékos {pendingMatchWinner} nyerte a meccset!
+            </p>
+            
+            {(() => {
+              const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+              const possibleArrowCounts = getPossibleArrowCounts(lastThrow || 0);
               
-              {(() => {
-                const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-                const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
-                
-                return (
-                  <div>
-                    <p className="text-sm mb-2">
-                      Utolsó kiszálló: {lastThrow} - Hány nyílból?
-                    </p>
-                    <div className="flex gap-2 justify-center">
-                      {possibleArrowCounts.map((count) => (
-                        <button
-                          key={count}
-                          onClick={() => setArrowCount(count)}
-                          className={`btn btn-sm ${arrowCount === count ? 'btn-primary' : 'btn-outline'}`}
-                        >
-                          {count} nyíl
-                        </button>
-                      ))}
-                    </div>
-                    {possibleArrowCounts.length === 1 && (
-                      <p className="text-xs text-muted-foreground mt-1 text-center">
-                        Csak {possibleArrowCounts[0]} nyíl lehetséges
-                      </p>
-                    )}
+              return (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Utolsó kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {possibleArrowCounts.map((count) => (
+                      <Button
+                        key={count}
+                        onClick={() => setArrowCount(count)}
+                        variant={arrowCount === count ? "default" : "outline"}
+                        size="sm"
+                        className="min-w-[80px]"
+                      >
+                        {count} nyíl
+                      </Button>
+                    ))}
                   </div>
-                );
-              })()}
-              
-              <div className="flex gap-2">
-                <Button variant="destructive" className="flex-1" onClick={cancelMatchEnd}>
-                  Visszavonás
-                </Button>
-                <Button className="flex-1" onClick={confirmMatchEnd}>
-                  Igen
-                </Button>
-              </div>
+                  {possibleArrowCounts.length === 1 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Csak {possibleArrowCounts[0]} nyíl lehetséges
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            
+            <div className="flex gap-2 pt-2">
+              <Button variant="destructive" className="flex-1" onClick={cancelMatchEnd}>
+                Visszavonás
+              </Button>
+              <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={confirmMatchEnd}>
+                Igen
+              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

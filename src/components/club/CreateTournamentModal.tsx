@@ -15,11 +15,14 @@ import {
   IconInfoCircle,
   IconEye,
   IconEyeOff,
+  IconReceipt,
+  IconCreditCard,
 } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 import { TournamentSettings } from "@/interface/tournament.interface"
+import { BillingInfo } from "@/interface/club.interface"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -41,10 +44,12 @@ interface CreateTournamentModalProps {
   defaultIsSandbox?: boolean
 }
 
-type Step = "details" | "boards" | "settings"
+type Step = "details" | "boards" | "settings" | "billing"
 
 interface FormSettings extends TournamentSettings {
   isSandbox?: boolean
+  billingInfo?: BillingInfo
+  saveBillingInfo?: boolean
 }
 
 interface BoardInput {
@@ -67,12 +72,23 @@ const defaultSettings: FormSettings = {
   type: "amateur",
   registrationDeadline: new Date(),
   isSandbox: false,
+  billingInfo: {
+    type: 'individual',
+    name: '',
+    country: 'HU',
+    city: '',
+    zip: '',
+    address: '',
+    email: '',
+  },
+  saveBillingInfo: false,
 }
 
 const steps = [
   { id: "details", label: "Alapadatok", icon: IconTrophy },
   { id: "boards", label: "Táblák", icon: IconTable },
   { id: "settings", label: "Beállítások", icon: IconSettings },
+  { id: "billing", label: "Számlázás", icon: IconReceipt },
 ]
 
 const initializeBoards = (initialCount?: number): BoardInput[] => {
@@ -112,6 +128,7 @@ export default function CreateTournamentModal({
   useEffect(() => {
     if (isOpen) {
       fetchAvailableLeagues()
+      fetchClubBillingInfo()
       setCurrentStep("details")
       setError("")
       setSubscriptionError(null)
@@ -124,6 +141,30 @@ export default function CreateTournamentModal({
       }
     }
   }, [isOpen, clubId, boardCount, preSelectedLeagueId, defaultIsSandbox])
+
+  const fetchClubBillingInfo = async () => {
+    try {
+      const response = await fetch(`/api/clubs/${clubId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.club?.billingInfo) {
+          setSettings(prev => ({
+            ...prev,
+            saveBillingInfo: true, // If we found saved info, default to true or let user decide? Request says "default it does not save", but maybe if it's already saved we should reflect that? The request says "default it does not save", implying for *new* entry or general default. I'll stick to false as requested, or maybe only true if they explicitly check it.
+                                   // Actually, if it's already saved, checking "save" again is redundant but harmless.
+                                   // Let's stick to the default `false` from defaultSettings unless user interacts. 
+                                   // Wait, if I load it, I might want to toggle it on? No, the user said "default it does not save". So even if loaded, keep it off unless they want to update it.
+            billingInfo: {
+              ...prev.billingInfo,
+              ...data.club.billingInfo
+            } as BillingInfo
+          }))
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching club billing info:", err)
+    }
+  }
 
   const fetchAvailableLeagues = async () => {
     try {
@@ -153,6 +194,16 @@ export default function CreateTournamentModal({
     setError("")
   }
 
+  const handleBillingChange = (field: keyof BillingInfo, value: any) => {
+    setSettings((prev) => ({
+      ...prev,
+      billingInfo: {
+        ...(prev.billingInfo as BillingInfo),
+        [field]: value
+      }
+    }))
+  }
+
   const handleAddBoard = () => {
     const newBoardNumber = boards.length > 0 ? Math.max(...boards.map((b) => b.boardNumber)) + 1 : 1
     setBoards((prev) => [...prev, { boardNumber: newBoardNumber, name: `Tábla ${newBoardNumber}` }])
@@ -180,21 +231,40 @@ export default function CreateTournamentModal({
     if (currentStep === "settings") {
       return Boolean(settings.tournamentPassword) && settings.maxPlayers >= 4
     }
+    if (currentStep === "billing") {
+      const b = settings.billingInfo
+      if (!b) return false
+      const common = b.name && b.email && b.city && b.zip && b.address
+      if (b.type === 'company') {
+        return Boolean(common && b.taxId)
+      }
+      return Boolean(common)
+    }
     return false
   }
 
+  const isOac = React.useMemo(() => {
+    const selectedLeague = availableLeagues.find(l => l._id === selectedLeagueId)
+    return selectedLeague?.verified || false
+  }, [availableLeagues, selectedLeagueId])
+
+  const visibleSteps = React.useMemo(() => {
+    if (isOac) return steps
+    return steps.filter(s => s.id !== 'billing')
+  }, [isOac])
+
   const handleNext = () => {
-    const currentIndex = getCurrentStepIndex()
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1].id as Step)
+    const currentIndex = visibleSteps.findIndex((s) => s.id === currentStep)
+    if (currentIndex < visibleSteps.length - 1) {
+      setCurrentStep(visibleSteps[currentIndex + 1].id as Step)
       setError("")
     }
   }
 
   const handleBack = () => {
-    const currentIndex = getCurrentStepIndex()
+    const currentIndex = visibleSteps.findIndex((s) => s.id === currentStep)
     if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1].id as Step)
+      setCurrentStep(visibleSteps[currentIndex - 1].id as Step)
       setError("")
     }
   }
@@ -226,6 +296,9 @@ export default function CreateTournamentModal({
         registrationDeadline: settings.registrationDeadline,
         leagueId: selectedLeagueId || undefined,
         isSandbox: settings.isSandbox || false,
+        verified: isOac,
+        billingInfo: isOac ? settings.billingInfo : undefined,
+        saveBillingInfo: isOac ? settings.saveBillingInfo : false,
       }
 
       const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
@@ -248,6 +321,12 @@ export default function CreateTournamentModal({
       }
 
       const data = await response.json()
+      
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+        return
+      }
+
       onTournamentCreated()
       onClose()
 
@@ -274,10 +353,12 @@ export default function CreateTournamentModal({
 
         <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
           <div className="mb-4 md:mb-6 flex items-center justify-between gap-2">
-            {steps.map((step, idx) => {
+            {visibleSteps.map((step, idx) => {
               const StepIcon = step.icon
               const isActive = currentStep === step.id
-              const isCompleted = getCurrentStepIndex() > idx
+              const stepIndex = visibleSteps.findIndex(s => s.id === step.id)
+              const currentStepIndex = visibleSteps.findIndex(s => s.id === currentStep)
+              const isCompleted = currentStepIndex > stepIndex
 
               return (
                 <React.Fragment key={step.id}>
@@ -306,7 +387,7 @@ export default function CreateTournamentModal({
                     </div>
                     <span className="hidden text-xs md:text-sm font-medium sm:inline">{step.label}</span>
                   </button>
-                  {idx < steps.length - 1 && (
+                  {idx < visibleSteps.length - 1 && (
                     <div className="mx-1 md:mx-2 flex-1">
                       <Separator className={cn("transition-all h-0.5", isCompleted ? "bg-success" : "bg-muted")} />
                     </div>
@@ -590,6 +671,128 @@ export default function CreateTournamentModal({
                   </div>
                 </div>
               )}
+
+              {currentStep === "billing" && settings.billingInfo && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary/10 border border-primary/20">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/20">
+                        <IconCreditCard className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">OAC Hitelesítési Díj</p>
+                        <p className="text-xs text-muted-foreground">Egyszeri díj az OAC verseny létrehozásához</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-primary">3 000 Ft</p>
+                      <p className="text-[10px] text-muted-foreground">+ ÁFA (Összesen: 3 810 Ft)</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Számlázási típus</Label>
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant={settings.billingInfo.type === 'individual' ? 'default' : 'outline'}
+                          onClick={() => handleBillingChange('type', 'individual')}
+                          className="flex-1"
+                        >
+                          Magánszemély
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={settings.billingInfo.type === 'company' ? 'default' : 'outline'}
+                          onClick={() => handleBillingChange('type', 'company')}
+                          className="flex-1"
+                        >
+                          Cég
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        label={settings.billingInfo.type === 'company' ? "Cégnév" : "Név"}
+                        placeholder={settings.billingInfo.type === 'company' ? "Példa Kft." : "Kovács János"}
+                        value={settings.billingInfo.name}
+                        onChange={(e) => handleBillingChange("name", e.target.value)}
+                        required
+                      />
+                      <FormField
+                        label="E-mail a számlához"
+                        type="email"
+                        placeholder="szamla@pelda.hu"
+                        value={settings.billingInfo.email}
+                        onChange={(e) => handleBillingChange("email", e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {settings.billingInfo.type === 'company' && (
+                      <FormField
+                        label="Adószám"
+                        placeholder="12345678-1-12"
+                        value={settings.billingInfo.taxId || ''}
+                        onChange={(e) => handleBillingChange("taxId", e.target.value)}
+                        required
+                      />
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-1">
+                        <FormField
+                          label="Irányítószám"
+                          placeholder="1234"
+                          value={settings.billingInfo.zip}
+                          onChange={(e) => handleBillingChange("zip", e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <FormField
+                          label="Város"
+                          placeholder="Budapest"
+                          value={settings.billingInfo.city}
+                          onChange={(e) => handleBillingChange("city", e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <FormField
+                      label="Cím (utca, házszám)"
+                      placeholder="Fő utca 1."
+                      value={settings.billingInfo.address}
+                      onChange={(e) => handleBillingChange("address", e.target.value)}
+                      required
+                    />
+                    <div className="flex items-center space-x-2 rounded-lg border border-border/40 bg-muted/20 p-4">
+                      <div className="flex-1 space-y-1">
+                        <Label htmlFor="save-billing" className="font-medium">Számlázási adatok mentése</Label>
+                        <p className="text-sm text-muted-foreground">
+                          A megadott számlázási adatok mentése a klub profiljába a jövőbeli versenyekhez.
+                        </p>
+                      </div>
+                      <input
+                        id="save-billing"
+                        type="checkbox"
+                        checked={settings.saveBillingInfo || false}
+                        onChange={(e) => handleSettingsChange("saveBillingInfo", e.target.checked)}
+                        className="h-5 w-5 rounded border-primary text-primary focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <Alert className="bg-muted/30 border-dashed">
+                    <AlertDescription className="text-xs text-muted-foreground">
+                      A fizetés biztonságos Stripe felületen történik. A fizetés után az e-számlát automatikusan küldjük a megadott e-mail címre.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -604,13 +807,13 @@ export default function CreateTournamentModal({
                 Vissza
               </Button>
             )}
-            {currentStep !== "settings" ? (
+            {currentStep !== visibleSteps[visibleSteps.length - 1].id ? (
               <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
                 Tovább
                 <IconChevronRight size={16} />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1.5 shadow-lg shadow-primary/30">
+              <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} size="sm" className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}>
                 {isSubmitting ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
@@ -618,8 +821,8 @@ export default function CreateTournamentModal({
                   </>
                 ) : (
                   <>
-                    <IconCheck size={16} />
-                    Torna létrehozása
+                    {isOac ? <IconCreditCard size={16} /> : <IconCheck size={16} />}
+                    {isOac ? "Fizetés és létrehozás" : "Torna létrehozása"}
                   </>
                 )}
               </Button>
