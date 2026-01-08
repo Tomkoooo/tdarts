@@ -135,6 +135,25 @@ export default function CreateTournamentModal({
     }
   }, [isOpen, clubId, boardCount, preSelectedLeagueId, defaultIsSandbox])
 
+  const isOac = React.useMemo(() => {
+    const selectedLeague = availableLeagues.find(l => l._id === selectedLeagueId)
+    return selectedLeague?.verified || false
+  }, [availableLeagues, selectedLeagueId])
+
+  useEffect(() => {
+    if (isOac) {
+      const minDate = new Date("2026-01-15T00:00:00");
+      setSettings(prev => ({
+        ...prev,
+        isSandbox: false, // OAC tournaments cannot be sandbox
+        ...(prev.startDate < minDate ? {
+          startDate: minDate,
+          registrationDeadline: minDate
+        } : {})
+      }));
+    }
+  }, [isOac]);
+
   const fetchClubBillingInfo = async () => {
     try {
       const response = await fetch(`/api/clubs/${clubId}`)
@@ -236,10 +255,6 @@ export default function CreateTournamentModal({
     return false
   }
 
-  const isOac = React.useMemo(() => {
-    const selectedLeague = availableLeagues.find(l => l._id === selectedLeagueId)
-    return selectedLeague?.verified || false
-  }, [availableLeagues, selectedLeagueId])
 
   const visibleSteps = React.useMemo(() => {
     if (isOac) return steps
@@ -419,6 +434,7 @@ export default function CreateTournamentModal({
                       minute: "2-digit",
                     }).replace(" ", "T")}
                     onChange={(event) => handleSettingsChange("startDate", new Date(event.target.value))}
+                    min={isOac ? "2026-01-15T00:00" : undefined}
                     icon={<IconCalendar className="h-5 w-5" />}
                     required
                   />
@@ -433,6 +449,7 @@ export default function CreateTournamentModal({
                       minute: "2-digit",
                     }).replace(" ", "T")}
                     onChange={(event) => handleSettingsChange("registrationDeadline", new Date(event.target.value))}
+                    min={isOac ? "2026-01-15T00:00" : undefined}
                     icon={<IconCalendar className="h-5 w-5" />}
                   />
                   <FormField
@@ -599,7 +616,7 @@ export default function CreateTournamentModal({
                             // If we are in OAC mode (locked selection), show all (or specifically verified)
                             // If we are NOT in OAC mode, hide verified leagues
                             if (lockLeagueSelection) return true;
-                            return !league.verified;
+                            return !league.verified || league.name.includes("OAC 2026");
                           })
                           .map((league) => (
                           <option key={league._id} value={league._id}>
@@ -635,7 +652,7 @@ export default function CreateTournamentModal({
                       type="checkbox"
                       checked={settings.isSandbox || false}
                       onChange={(e) => handleSettingsChange("isSandbox", e.target.checked)}
-                      disabled={lockLeagueSelection} // Disable for OAC tournaments
+                      disabled={lockLeagueSelection || isOac} // Disable for OAC tournaments
                       className="h-5 w-5 rounded border-warning text-warning focus:ring-warning disabled:cursor-not-allowed disabled:opacity-50"
                     />
                   </div>
@@ -789,24 +806,45 @@ export default function CreateTournamentModal({
                   </Button>
                 )}
                 {currentStep !== visibleSteps[visibleSteps.length - 1].id ? (
+                  <div className="flex flex-col items-end gap-1">
                   <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
                     Tovább
                     <IconChevronRight size={16} />
+                    
                   </Button>
-                ) : (
-                  <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} size="sm" className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}>
-                    {isSubmitting ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                        Létrehozás...
-                      </>
-                    ) : (
-                      <>
-                        {isOac ? <IconCreditCard size={16} /> : <IconCheck size={16} />}
-                        {isOac ? "Fizetés és létrehozás" : "Torna létrehozása"}
-                      </>
+                    {isOac && process.env.NEXT_PUBLIC_ENABLE_OAC !== 'true' && (
+                      <span className="text-[10px] font-bold text-destructive uppercase tracking-tight">
+                        Az OAC versenyindítás jelenleg szünetel
+                      </span>
                     )}
-                  </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-end gap-1">
+                  
+                    <Button 
+                      onClick={handleSubmit} 
+                      disabled={!canProceed() || isSubmitting || (isOac && process.env.NEXT_PUBLIC_ENABLE_OAC !== 'true')} 
+                      size="sm" 
+                      className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                          Létrehozás...
+                        </>
+                      ) : (
+                        <>
+                          {isOac ? <IconCreditCard size={16} /> : <IconCheck size={16} />}
+                          {isOac ? "Fizetés és létrehozás" : "Torna létrehozása"}
+                        </>
+                      )}
+                    </Button>
+                      {isOac && process.env.NEXT_PUBLIC_ENABLE_OAC !== 'true' && (
+                      <span className="text-[10px] font-bold text-destructive uppercase tracking-tight">
+                        Az OAC versenyindítás jelenleg szünetel
+                      </span>
+                    )}
+                  </div>
                 )}
               </>
             )}

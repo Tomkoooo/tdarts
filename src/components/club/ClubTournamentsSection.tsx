@@ -151,7 +151,7 @@ export function ClubTournamentsSection({
 
       {(userRole === 'admin' || userRole === 'moderator') && (
         <div className="flex gap-2">
-          {isVerified && onCreateOacTournament && (
+          {isVerified && onCreateOacTournament && viewMode === 'active' && (
             <Button 
               onClick={onCreateOacTournament} 
               size="sm" 
@@ -165,8 +165,8 @@ export function ClubTournamentsSection({
           )}
           <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
             <IconPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            <span className="hidden xs:inline">{viewMode === 'sandbox' ? "Teszt verseny" : "Új verseny"}</span>
-            <span className="xs:hidden">{viewMode === 'sandbox' ? "Teszt" : "Új verseny"}</span>
+            <span className="hidden xs:inline">{viewMode === 'sandbox' ? "Új teszt verseny" : "Új verseny"}</span>
+            <span className="xs:hidden">{viewMode === 'sandbox' ? "Új teszt verseny" : "Új verseny"}</span>
           </Button>
         </div>
       )}
