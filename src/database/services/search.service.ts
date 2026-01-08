@@ -355,12 +355,7 @@ export class SearchService {
         
         pipeline.push({
             $addFields: {
-                isVerified: { 
-                    $or: [
-                        { $eq: ['$leagueData.verified', true] },
-                        { $eq: ['$club.verified', true] }
-                    ] 
-                },
+                isVerified: { $eq: ['$verified', true] },
                 isOac: { $eq: ['$leagueData.pointSystemType', 'remiz_christmas'] },
                 // City extraction
                 city: {
