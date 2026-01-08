@@ -7,7 +7,9 @@ import {
   IconCoin,
   IconChevronRight,
   IconEdit,
-  IconTrash
+  IconTrash,
+  IconShieldCheck,
+  IconFileInvoice
 } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
@@ -35,6 +37,10 @@ interface ClubTournamentCardProps {
       name: string
     } | string
     isSandbox?: boolean
+    verified?: boolean
+    isVerified?: boolean
+    isOac?: boolean
+    invoiceId?: string
   }
   userRole?: 'admin' | 'moderator' | 'member' | 'none'
   onDelete?: () => void
@@ -89,10 +95,15 @@ export default function ClubTournamentCard({
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <IconTrophy className="w-4 h-4 text-primary" />
                 <span className="truncate">
-                  {typeof tournament.clubId === 'object' && tournament.clubId?.name 
-                    ? tournament.clubId.name 
-                    : 'Torna részletei'}
+                 { tournament.verified ? '' : 'Torna részletei'}
                 </span>
+                {(tournament.verified || tournament.isVerified) && (
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 flex items-center gap-1">
+                    <IconShieldCheck className="w-3 h-3" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Hitelesített</span>
+                  </Badge>
+                )}
+
               </div>
               <h3 className="text-lg font-semibold text-foreground leading-tight line-clamp-2">
                 {tournament.tournamentSettings?.name}
@@ -162,13 +173,38 @@ export default function ClubTournamentCard({
         </CardContent>
 
         <CardFooter className="mt-auto flex items-center justify-between pt-4">
-          <div className="text-xs text-muted-foreground">
-            ID: {tournament.tournamentId}
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] text-muted-foreground opacity-60">
+              ID: {tournament.tournamentId}
+            </div>
+            {(userRole === 'admin' || userRole === 'moderator') && tournament.invoiceId && (
+              <div className="text-[10px] text-primary flex items-center gap-1 font-medium bg-primary/5 px-1.5 py-0.5 rounded">
+                Számla: {tournament.invoiceId}
+              </div>
+            )}
+             {(userRole === 'admin' || userRole === 'moderator') && tournament.invoiceId && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 gap-1.5 text-xs hover:bg-primary/10 transition-all"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(`/api/tournaments/${tournament.tournamentId}/invoice`, '_blank');
+                }}
+              >
+                <IconFileInvoice className="w-3.5 h-3.5" />
+                Számla
+              </Button>
+            )}
           </div>
-          <Button variant="ghost" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
-            Részletek
-            <IconChevronRight className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+           
+            <Button variant="ghost" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
+              Részletek
+              <IconChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </CardFooter>
 
         {/* Action buttons - only visible on hover and for admins/moderators */}
@@ -185,7 +221,7 @@ export default function ClubTournamentCard({
                 <IconEdit className="w-4 h-4" />
               </Button>
             )}
-            {onDelete && status === 'pending' && (
+            {onDelete && status === 'pending' && !(tournament.verified || tournament.isVerified) && (
               <Button
                 variant="ghost"
                 size="icon"

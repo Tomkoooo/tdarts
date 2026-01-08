@@ -288,33 +288,57 @@ export function PlayerStatisticsSection({
     })).reverse();
   }, [activeHistory]);
 
+  if (isLoading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0 pb-7">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="h-9 w-[160px]" />
+        </div>
+        
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[300px] w-full rounded-xl" />
+          <Skeleton className="h-[300px] w-full rounded-xl" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-48" />
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-48" />
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Early returns move AFTER hooks
   if (!playerStats?.hasPlayer) {
     return null;
   }
 
-  if (isLoading) {
-    return (
-      <Card className="border-muted/20 shadow-sm bg-card/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconTrophy className="w-5 h-5" />
-            Játékos statisztikák
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
-    <Card id="player-stats" className="border-none shadow-none bg-transparent">
+    <Card className="border-none shadow-none bg-transparent">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0 pb-7 px-0">
         <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-2xl font-bold">

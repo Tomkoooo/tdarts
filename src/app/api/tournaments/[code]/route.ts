@@ -128,7 +128,7 @@ export async function PUT(
 
         if (existingVerifiedTournament) {
           return NextResponse.json({ 
-            error: 'A klubod már létrehozott egy OAC versenyt ezen a héten (hétfőtől szombatig). Heti egy OAC verseny engedélyezett.' 
+            error: 'A klubod már létrehozott egy OAC versenyt ezen a héten (hétfőtől vasárnapig). Heti egy OAC verseny engedélyezett.' 
           }, { status: 400 });
         }
       }

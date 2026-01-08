@@ -124,6 +124,8 @@ export interface Tournament {
     verified?: boolean;
     paymentStatus?: 'none' | 'pending' | 'paid';
     stripeSessionId?: string;
+    invoiceId?: string;
+
     billingInfoSnapshot?: BillingInfo;
 }
 
@@ -171,6 +173,8 @@ export interface TournamentDocument extends Document, Omit<Tournament, '_id' | '
     league?: Types.ObjectId; // Optional reference to League
     paymentStatus?: 'none' | 'pending' | 'paid';
     stripeSessionId?: string;
+    invoiceId?: string;
+
     billingInfoSnapshot?: BillingInfo;
 }
 

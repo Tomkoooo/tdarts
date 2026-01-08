@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { ClubService } from '@/database/services/club.service';
 import { SubscriptionService } from '@/database/services/subscription.service';
-import { TournamentDocument } from '@/interface/tournament.interface';
-import { Document } from 'mongoose';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
@@ -126,7 +124,7 @@ export async function POST(
 
             if (existingVerifiedTournament) {
                 return NextResponse.json({ 
-                    error: 'A klubod már létrehozott egy OAC versenyt ezen a héten (hétfőtől szombatig). Heti egy OAC verseny engedélyezett.' 
+                    error: 'A klubod már létrehozott egy OAC versenyt ezen a héten (hétfőtől vasárnapig). Heti egy OAC verseny engedélyezett.' 
                 }, { status: 400 });
             }
         }
@@ -134,13 +132,13 @@ export async function POST(
 
     // Tournament alapértelmezett értékek
     const now = new Date();
-    const tournament = {
+    const tournamentPayload = {
         clubId: club._id,
-        league: payload.leagueId || undefined, // Optional league assignment
+        league: payload.leagueId || undefined, 
         tournamentPlayers: [],
         groups: [],
         knockout: [],
-        boards: payload.boards || [], // Boards are now part of tournament
+        boards: payload.boards || [],
         tournamentSettings: {
             status: 'pending',
             name: payload.name,
@@ -164,13 +162,12 @@ export async function POST(
         verified: payload.verified || false,
         paymentStatus: payload.verified ? 'pending' : 'none',
         billingInfoSnapshot: payload.billingInfo || undefined,
-        isActive: !payload.verified, // Inactive until paid if OAC
-    } as Partial<Omit<TournamentDocument, keyof Document>>;
+        isActive: !payload.verified, 
+    };
 
-    const newTournament = await TournamentService.createTournament(tournament);
-
-    // If OAC, create Stripe session
+    // If OAC, create Stripe session first and DEFER tournament creation
     if (payload.verified) {
+      const { PendingTournamentModel } = await import('@/database/models/pendingTournament.model');
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       
       const session = await stripe.checkout.sessions.create({
@@ -183,28 +180,30 @@ export async function POST(
                 name: `OAC Tournament Verification - ${payload.name}`,
                 description: 'Hitelesített OAC verseny létrehozási díj',
               },
-              unit_amount: 3810, // 3000 + 27% VAT = 3810 HUF (zero-decimal currency)
+              unit_amount: 381000, 
             },
             quantity: 1,
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/api/payments/verify?session_id={CHECKOUT_SESSION_ID}&tournamentId=${newTournament._id}`,
+        success_url: `${baseUrl}/api/payments/verify?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/clubs/${clubId}`,
         metadata: {
-          tournamentId: newTournament._id.toString(),
           clubId: clubId,
         }
       });
 
-      // Update tournament with session ID
-      const { TournamentModel } = await import('@/database/models/tournament.model');
-      await TournamentModel.findByIdAndUpdate(newTournament._id, {
-        stripeSessionId: session.id
+      // Save payload to pending tournaments
+      await PendingTournamentModel.create({
+        stripeSessionId: session.id,
+        payload: tournamentPayload
       });
 
       return NextResponse.json({ checkoutUrl: session.url });
     }
+    
+    // Regular Tournament Creation (Immediate)
+    const newTournament = await TournamentService.createTournament(tournamentPayload as any);
     
     console.log('Created tournament boards:', JSON.stringify(newTournament.boards, null, 2));
     console.log('================================');
@@ -215,7 +214,6 @@ export async function POST(
             const { LeagueService } = await import('@/database/services/league.service');
             const { AuthorizationService } = await import('@/database/services/authorization.service');
             
-            // Get user ID from request (you'll need to implement this based on your auth)
             const userId = await AuthorizationService.getUserIdFromRequest(request);
             if (userId) {
                 await LeagueService.attachTournamentToLeague(payload.leagueId, newTournament._id.toString(), userId);
@@ -223,7 +221,6 @@ export async function POST(
             }
         } catch (error) {
             console.error('Error attaching tournament to league:', error);
-            // Don't fail tournament creation if league attachment fails
         }
     }
     

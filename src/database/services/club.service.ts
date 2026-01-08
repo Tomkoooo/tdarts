@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { ClubDocument } from '@/interface/club.interface';
+import { ClubDocument, BillingInfo } from '@/interface/club.interface';
 import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
@@ -83,6 +83,7 @@ export class ClubService {
         phone?: string;
         website?: string;
       };
+      billingInfo?: BillingInfo;
     }
   ): Promise<ClubDocument> {
     await connectMongo();
@@ -111,6 +112,7 @@ export class ClubService {
     if (updates.description) club.description = updates.description;
     if (updates.location) club.location = updates.location;
     if (updates.contact) club.contact = { ...club.contact, ...updates.contact };
+    if (updates.billingInfo) club.billingInfo = { ...club.billingInfo, ...updates.billingInfo };
     //TODO: update the boards from the club.
     await club.save();
     return club;
@@ -401,7 +403,7 @@ export class ClubService {
 
     // Lekérjük a klubhoz tartozó tornákat külön
     const tournaments = await TournamentModel.find({ clubId: club._id })
-      .select('_id tournamentId tournamentSettings code tournamentPlayers isSandbox isDeleted')
+      .select('_id tournamentId tournamentSettings code tournamentPlayers isSandbox isDeleted invoiceId verified')
 
     // Válasz: minden szereplőhöz role mező
     // For members, always include name, userRef, and username ("vendég" if not registered)
@@ -451,6 +453,8 @@ export class ClubService {
         tournamentPlayers: t.tournamentPlayers || [],
         isSandbox: t.isSandbox,
         isDeleted: t.isDeleted,
+        invoiceId: t.invoiceId,
+        verified: t.verified,
       })),
     };
     return result;

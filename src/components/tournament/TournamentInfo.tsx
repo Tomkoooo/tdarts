@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus } from '@tabler/icons-react';
+import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus, IconFileInvoice } from '@tabler/icons-react';
 import EditTournamentModal from './EditTournamentModal';
+import { toast } from 'react-hot-toast';
 
 interface TournamentInfoProps {
   tournament: any;
@@ -13,6 +14,19 @@ interface TournamentInfoProps {
 const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, userRole, userId }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const notifiedRef = useRef(false);
+
+  const canEdit = userRole === 'admin' || userRole === 'moderator';
+
+  useEffect(() => {
+    if (canEdit && tournament.invoiceId && !notifiedRef.current) {
+      toast.success('A verseny hitelesítési számlája elérhető és letölthető a torna oldalán és az admin felületen.', {
+        duration: 6000,
+        icon: <IconFileInvoice className="text-primary w-5 h-5" />
+      });
+      notifiedRef.current = true;
+    }
+  }, [canEdit, tournament.invoiceId]);
 
   // Description with clickable https links
   const rawDescription: string = tournament.tournamentSettings?.description || '-';
@@ -27,8 +41,6 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
     : '-';
   const isDescriptionLong = description.length > 100;
   const displayDescription = isDescriptionExpanded ? description : description.substring(0, 100);
-
-  const canEdit = userRole === 'admin' || userRole === 'moderator';
 
   return (
     <>
@@ -107,6 +119,20 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
             <IconScreenShare className="w-5 h-5" />
             Élő követés
           </Link>
+        )}
+        
+        {/* Invoice Download Button for Admins */}
+        {canEdit && tournament.invoiceId && (
+          <button
+            onClick={() => {
+              window.open(`/api/tournaments/${tournament._id}/invoice`, '_blank');
+            }}
+            className="btn btn-outline btn-md flex items-center gap-2 ml-auto"
+            title="Számla letöltése"
+          >
+            <IconFileInvoice className="w-5 h-5" />
+            Számla
+          </button>
         )}
       </div>
 

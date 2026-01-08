@@ -918,7 +918,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {validTournaments.map((tournament: any) => (
-            <Card key={tournament._id} className="border-none bg-card/60">
+            <Card key={tournament._id} className="border-none bg-transparent">
               <CardContent className="space-y-3">
                 <TournamentCard
                   tournament={{
@@ -1395,11 +1395,9 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                 onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                 placeholder="Liga neve"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Leírás</Label>
+               <Label>Leírás</Label>
               <textarea
-                className="min-h-[80px] w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="min-h-[80px] w-full border rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
                 value={formData.description}
                 onChange={(event) => setFormData({ ...formData, description: event.target.value })}
                 placeholder="Liga leírása"

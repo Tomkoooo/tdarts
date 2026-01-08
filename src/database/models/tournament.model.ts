@@ -100,6 +100,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     verified: { type: Boolean, default: false },
     paymentStatus: { type: String, enum: ['none', 'pending', 'paid'], default: 'none' },
     stripeSessionId: { type: String, default: null },
+    invoiceId: { type: String, default: null },
     billingInfoSnapshot: {
         type: { type: String, enum: ['individual', 'company'], default: null },
         name: { type: String, default: null },

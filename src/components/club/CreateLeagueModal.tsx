@@ -134,8 +134,8 @@ export default function CreateLeagueModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto flex-1 px-1">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+          <div className="grid gap-4 ">
+            <div className="space-y-2 w-full">
               <Label htmlFor="league-name">Liga neve *</Label>
               <Input
                 id="league-name"
@@ -145,9 +145,7 @@ export default function CreateLeagueModal({
                 required
                 maxLength={100}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="league-description">Leírás</Label>
+               <Label htmlFor="league-description">Leírás</Label>
               <Textarea
                 id="league-description"
                 value={formData.description}

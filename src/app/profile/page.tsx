@@ -231,12 +231,12 @@ export default function ProfilePage() {
           />
         )}
 
-        {/* Player Statistics */}
-        <PlayerStatisticsSection
-          playerStats={playerStats}
-          isLoading={isLoadingStats}
-          onViewLegs={handleViewLegs}
-        />
+          {/* Player Statistics */}
+          <PlayerStatisticsSection
+            playerStats={playerStats}
+            isLoading={isLoadingStats}
+            onViewLegs={handleViewLegs}
+          />
 
         {/* League History */}
         <LeagueHistorySection

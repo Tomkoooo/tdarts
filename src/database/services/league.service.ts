@@ -169,7 +169,8 @@ export class LeagueService {
     leagueId: string,
     tournamentId: string,
     userId: string,
-    calculatePoints: boolean = true
+    calculatePoints: boolean = true,
+    isSystemAction: boolean = false
   ): Promise<LeagueDocument> {
     await connectMongo();
 
@@ -178,16 +179,18 @@ export class LeagueService {
       throw new BadRequestError('League not found');
     }
 
-    // Check permissions
-    if (league.verified) {
-      const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
-      if (!isGlobalAdmin) {
-        throw new AuthorizationError('Only global admins can attach tournaments to verified OAC leagues');
-      }
-    } else {
-      const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
-      if (!hasPermission) {
-        throw new AuthorizationError('Only club moderators can attach tournaments to leagues');
+    // Check permissions (skip for system actions)
+    if (!isSystemAction) {
+      if (league.verified) {
+        const isGlobalAdmin = await AuthorizationService.isGlobalAdmin(userId);
+        if (!isGlobalAdmin) {
+          throw new AuthorizationError('Only global admins can attach tournaments to verified OAC leagues');
+        }
+      } else {
+        const hasPermission = await AuthorizationService.hasClubModerationPermission(userId, league.club.toString());
+        if (!hasPermission) {
+          throw new AuthorizationError('Only club moderators can attach tournaments to leagues');
+        }
       }
     }
 

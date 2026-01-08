@@ -23,24 +23,83 @@ export function ClubTournamentsSection({
   onDeleteTournament,
 }: ClubTournamentsSectionProps) {
   const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
+  const [statusFilter, setStatusFilter] = React.useState<string>('all')
+  const [verificationFilter, setVerificationFilter] = React.useState<string>('all')
 
   // Filter tournaments
   const filteredTournaments = React.useMemo(() => {
     return tournaments.filter(t => {
       const isDeleted = t.isDeleted === true;
       const isSandbox = t.isSandbox === true;
+      const verified = t.verified === true || t.isVerified === true;
+      const status = t.tournamentSettings?.status || 'pending';
 
-      if (viewMode === 'deleted') return isDeleted;
-      
-      // If we are not in deleted mode, hide deleted tournaments
-      if (isDeleted) return false;
+      // View Mode Filter
+      if (viewMode === 'deleted') {
+        if (!isDeleted) return false;
+      } else if (isDeleted) {
+        return false;
+      } else if (viewMode === 'sandbox') {
+        if (!isSandbox) return false;
+      } else if (viewMode === 'active') {
+        if (isSandbox) return false;
+      }
 
-      if (viewMode === 'sandbox') return isSandbox;
-      if (viewMode === 'active') return !isSandbox;
+      // Status Filter
+      if (statusFilter !== 'all' && status !== statusFilter) return false;
+
+      // Verification Filter
+      if (verificationFilter === 'verified' && !verified) return false;
+      if (verificationFilter === 'unverified' && verified) return false;
       
-      return !isSandbox && !isDeleted;
+      return true;
     })
-  }, [tournaments, viewMode])
+  }, [tournaments, viewMode, statusFilter, verificationFilter])
+
+  // Group tournaments by date (Newest first)
+  const groupedTournaments = React.useMemo(() => {
+    const groups: { [key: string]: any[] } = {}
+    
+    // Sort all tournaments by date DESC (newest at the top)
+    const sorted = [...filteredTournaments].sort((a, b) => 
+      new Date(b.tournamentSettings.startDate).getTime() - 
+      new Date(a.tournamentSettings.startDate).getTime()
+    )
+
+    sorted.forEach(tournament => {
+      const date = new Date(tournament.tournamentSettings.startDate)
+      const dateKey = date.toDateString()
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
+      }
+      groups[dateKey].push(tournament)
+    })
+      
+    return groups
+  }, [filteredTournaments])
+
+  const sortedDateKeys = React.useMemo(() => {
+    return Object.keys(groupedTournaments).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    )
+  }, [groupedTournaments])
+
+  const formatDateHeader = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const isToday = date.getTime() === today.getTime()
+
+    if (isToday) return 'Ma'
+    
+    return date.toLocaleDateString('hu-HU', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      weekday: 'long'
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -113,11 +172,79 @@ export function ClubTournamentsSection({
       )}
       </div>
 
-      <TournamentList
-        tournaments={filteredTournaments}
-        userRole={userRole}
-        onDeleteTournament={onDeleteTournament}
-      />
+      {/* Filters */}
+      <div className="grid grid-cols-1 sm:flex sm:items-end flex-wrap gap-4 bg-card/40 p-4 rounded-xl border border-border/50 backdrop-blur-sm">
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Állapot</label>
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+          >
+            <option value="all">Összes állapot</option>
+            <option value="pending">Várakozó</option>
+            <option value="group-stage">Csoportkör</option>
+            <option value="knockout">Kieséses</option>
+            <option value="finished">Befejezett</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Hitelesítés</label>
+          <select 
+            value={verificationFilter}
+            onChange={(e) => setVerificationFilter(e.target.value)}
+            className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+          >
+            <option value="all">Összes típus</option>
+            <option value="verified">Hitelesített (OAC)</option>
+            <option value="unverified">Nem hitelesített</option>
+          </select>
+        </div>
+
+        {(statusFilter !== 'all' || verificationFilter !== 'all') && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              setStatusFilter('all');
+              setVerificationFilter('all');
+            }}
+            className="text-xs h-9"
+          >
+            Szűrők törlése
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-10">
+        {sortedDateKeys.length > 0 ? (
+          sortedDateKeys.map(dateKey => (
+            <div key={dateKey} className="space-y-4">
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-bold text-primary whitespace-nowrap">
+                  {formatDateHeader(dateKey)}
+                </h3>
+                <div className="flex-1 h-px bg-border/50"></div>
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/30 px-2 py-1 rounded">
+                  {groupedTournaments[dateKey].length} verseny
+                </span>
+              </div>
+              <TournamentList
+                tournaments={groupedTournaments[dateKey]}
+                userRole={userRole}
+                onDeleteTournament={onDeleteTournament}
+              />
+            </div>
+          ))
+        ) : (
+          <TournamentList
+            tournaments={[]}
+            userRole={userRole}
+            onDeleteTournament={onDeleteTournament}
+          />
+        )}
+      </div>
     </div>
   )
 }

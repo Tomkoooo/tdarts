@@ -172,5 +172,201 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
             throw error;
         }
     }
+
+    /**
+     * Send email notification for new club registration
+     */
+    static async sendClubRegistrationEmail(
+        email: string,
+        data: {
+            clubName: string;
+            password: string;
+            loginUrl: string;
+            clubUrl: string;
+            profileUrl: string;
+            howItWorksUrl: string;
+        }
+    ): Promise<boolean> {
+        try {
+            const subject = `🎯 Üdvözlünk a tDarts-ban, ${data.clubName}!`;
+            
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 32px; font-weight: bold; color: #ef4444; margin-bottom: 10px; }
+        .title { font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 20px; }
+        .content { font-size: 16px; color: #4b5563; margin-bottom: 30px; }
+        .highlight { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .cta-button { display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; text-align: center; margin: 20px 0; }
+        .footer { text-align: center; font-size: 14px; color: #9ca3af; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+        .link-list { margin: 20px 0; padding: 0; list-style: none; }
+        .link-list li { margin-bottom: 10px; }
+        .link-list a { color: #ef4444; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">tDarts</div>
+            <div class="title">Sikeres regisztráció!</div>
+        </div>
+        
+        <div class="content">
+            <p>Kedves <strong>${data.clubName}</strong>!</p>
+            
+            <p>Örömmel értesítünk, hogy létrehoztuk a klubod tDarts fiókját és rögzítettük az egyesületet a rendszerünkben. Az OAC liga is hozzáadásra került a klubodhoz.</p>
+            
+            <div class="highlight">
+                <strong>Bejelentkezési adatok:</strong><br>
+                Email: ${email}<br>
+                Jelszó: ${data.password}
+            </div>
+            
+            <p>Kérjük, az alábbi linkeken érheted el a legfontosabb funkciókat:</p>
+            
+            <ul class="link-list">
+                <li>🔗 <a href="${data.loginUrl}">Bejelentkezés</a></li>
+                <li>🛡️ <a href="${data.clubUrl}">Klub Dashboard (Helyszínek, bajnokságok kezelése)</a></li>
+                <li>👤 <a href="${data.profileUrl}">Fiók és Jelszó szerkesztése</a></li>
+                <li>📖 <a href="${data.howItWorksUrl}">Hogyan működik? (Útmutató)</a></li>
+            </ul>
+            
+            <p>Javasoljuk, hogy az első bejelentkezés után változtasd meg a jelszavadat a profiloldaladon.</p>
+            
+            <div style="text-align: center;">
+                <a href="${data.loginUrl}" class="cta-button">
+                    Bejelentkezés →
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} tDarts - Magyar Darts Versenyrendszer</p>
+        </div>
+    </div>
+</body>
+</html>
+            `.trim();
+
+            const text = `
+Üdvözlünk a tDarts-ban, ${data.clubName}!
+
+Létrehoztuk a klubod tDarts fiókját és az egyesületet a rendszerünkben. Az OAC liga is elérhető.
+
+Bejelentkezési adatok:
+Email: ${email}
+Jelszó: ${data.password}
+
+Hasznos linkek:
+Bejelentkezés: ${data.loginUrl}
+Klub kezelése: ${data.clubUrl}
+Profil szerkesztése: ${data.profileUrl}
+Útmutató: ${data.howItWorksUrl}
+
+Üdvözlettel,
+tDarts Csapat
+            `.trim();
+
+            return await sendEmail({
+                to: [email],
+                subject,
+                text,
+                html
+            });
+        } catch (error) {
+            console.error('Failed to send club registration email:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Send email notification for existing club verification
+     */
+    static async sendClubVerificationEmail(
+        email: string,
+        data: {
+            clubName: string;
+            clubUrl: string;
+        }
+    ): Promise<boolean> {
+        try {
+            const subject = `🎯 Klub verifikáció és OAC Liga - ${data.clubName}`;
+            
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 32px; font-weight: bold; color: #ef4444; margin-bottom: 10px; }
+        .title { font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 20px; }
+        .content { font-size: 16px; color: #4b5563; margin-bottom: 30px; }
+        .cta-button { display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; text-align: center; margin: 20px 0; }
+        .footer { text-align: center; font-size: 14px; color: #9ca3af; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo"> tDarts</div>
+            <div class="title">Klubod verifikálva!</div>
+        </div>
+        
+        <div class="content">
+            <p>Kedves <strong>${data.clubName}</strong>!</p>
+            
+            <p>Örömmel értesítünk, hogy a már meglévő klubodat verifikáltuk a rendszerben, és hozzáadtuk az OAC országos ligát a választható versenyek közé.</p>
+            
+            <p>Mostantól jogosult vagy OAC verifikált versenyeket indítani.</p>
+            
+            <div style="text-align: center;">
+                <a href="${data.clubUrl}" class="cta-button">
+                    Klub Dashboard →
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} tDarts - Magyar Darts Versenyrendszer</p>
+        </div>
+    </div>
+</body>
+</html>
+            `.trim();
+
+            const text = `
+Kedves ${data.clubName}!
+
+Klubodat verifikáltuk a rendszerben, és hozzáadtuk az OAC országos ligát.
+Mostantól jogosult vagy OAC verifikált versenyeket indítani.
+
+Klub Dashboard: ${data.clubUrl}
+
+Üdvözlettel,
+tDarts Csapat
+            `.trim();
+
+            return await sendEmail({
+                to: [email],
+                subject,
+                text,
+                html
+            });
+        } catch (error) {
+            console.error('Failed to send club verification email:', error);
+            throw error;
+        }
+    }
 }
 

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
+import { toast } from "react-hot-toast"
 import {
   IconCalendar,
   IconCheck,
   IconChevronRight,
-  IconExternalLink,
   IconMapPin,
   IconPlus,
   IconSettings,
@@ -19,7 +19,6 @@ import {
   IconCreditCard,
 } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 
 import { TournamentSettings } from "@/interface/tournament.interface"
 import { BillingInfo } from "@/interface/club.interface"
@@ -118,11 +117,6 @@ export default function CreateTournamentModal({
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>("")
   const [error, setError] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [subscriptionError, setSubscriptionError] = useState<{
-    currentCount: number
-    maxAllowed: number
-    planName: string
-  } | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
@@ -131,7 +125,6 @@ export default function CreateTournamentModal({
       fetchClubBillingInfo()
       setCurrentStep("details")
       setError("")
-      setSubscriptionError(null)
       setBoards(initializeBoards(boardCount))
       setBoards(initializeBoards(boardCount))
       setSettings(() => ({ ...defaultSettings, boardCount: initializeBoards(boardCount).length, isSandbox: defaultIsSandbox }))
@@ -271,7 +264,6 @@ export default function CreateTournamentModal({
 
   const handleSubmit = async () => {
     setError("")
-    setSubscriptionError(null)
     setIsSubmitting(true)
 
     try {
@@ -309,14 +301,9 @@ export default function CreateTournamentModal({
 
       if (!response.ok) {
         const errorData = await response.json()
-        if (errorData.subscriptionError) {
-          setSubscriptionError({
-            currentCount: errorData.currentCount,
-            maxAllowed: errorData.maxAllowed,
-            planName: errorData.planName,
-          })
-        }
-        setError(errorData.error || "Hiba történt a torna létrehozása során")
+        const errorMsg = errorData.error || "Hiba történt a torna létrehozása során"
+        setError(errorMsg)
+        toast.error(errorMsg)
         return
       }
 
@@ -334,7 +321,9 @@ export default function CreateTournamentModal({
         router.push(`/tournaments/${data.tournamentId || data.code}`)
       }
     } catch (err: any) {
-      setError(err.message || "Hiba történt a torna létrehozása során")
+      const errorMsg = err.message || "Hiba történt a torna létrehozása során"
+      setError(errorMsg)
+      toast.error(errorMsg)
       console.error("Create tournament error:", err)
     } finally {
       setIsSubmitting(false)
@@ -397,34 +386,8 @@ export default function CreateTournamentModal({
             })}
           </div>
 
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2">
-                    <p className="font-medium">{error}</p>
-                    {subscriptionError && (
-                      <div className="text-sm">
-                        <p>
-                          Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span>
-                        </p>
-                        <p>
-                          Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  {subscriptionError && (
-                    <Link href="/#pricing" onClick={onClose} className="shrink-0">
-                      <Button size="sm" className="gap-2">
-                        <IconExternalLink className="h-4 w-4" /> Csomagok
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+
+          {/* Error Alert removed as per user request to show it in footer */}
 
           <Card className="bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-primary/10">
             <CardContent className="pt-6">
@@ -631,7 +594,14 @@ export default function CreateTournamentModal({
                         className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Válassz ligát</option>
-                        {availableLeagues.map((league) => (
+                        {availableLeagues
+                          .filter(league => {
+                            // If we are in OAC mode (locked selection), show all (or specifically verified)
+                            // If we are NOT in OAC mode, hide verified leagues
+                            if (lockLeagueSelection) return true;
+                            return !league.verified;
+                          })
+                          .map((league) => (
                           <option key={league._id} value={league._id}>
                             {league.name}{league.verified ? ' (OAC Liga)' : ''}
                           </option>
@@ -802,30 +772,43 @@ export default function CreateTournamentModal({
             Mégse
           </Button>
           <div className="flex items-center gap-2">
-            {getCurrentStepIndex() > 0 && (
-              <Button variant="outline" size="sm" onClick={handleBack} disabled={isSubmitting} className="md:size-default">
-                Vissza
-              </Button>
-            )}
-            {currentStep !== visibleSteps[visibleSteps.length - 1].id ? (
-              <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
-                Tovább
-                <IconChevronRight size={16} />
-              </Button>
+            {error ? (
+              <div className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                 <span className="text-sm font-semibold text-destructive max-w-[250px] md:max-w-xs text-right leading-tight">
+                   {error}
+                 </span>
+                 <Button onClick={() => setError("")} size="sm" variant="secondary">
+                   OK
+                 </Button>
+              </div>
             ) : (
-              <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} size="sm" className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}>
-                {isSubmitting ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                    Létrehozás...
-                  </>
-                ) : (
-                  <>
-                    {isOac ? <IconCreditCard size={16} /> : <IconCheck size={16} />}
-                    {isOac ? "Fizetés és létrehozás" : "Torna létrehozása"}
-                  </>
+              <>
+                {getCurrentStepIndex() > 0 && (
+                  <Button variant="outline" size="sm" onClick={handleBack} disabled={isSubmitting} className="md:size-default">
+                    Vissza
+                  </Button>
                 )}
-              </Button>
+                {currentStep !== visibleSteps[visibleSteps.length - 1].id ? (
+                  <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
+                    Tovább
+                    <IconChevronRight size={16} />
+                  </Button>
+                ) : (
+                  <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} size="sm" className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}>
+                    {isSubmitting ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                        Létrehozás...
+                      </>
+                    ) : (
+                      <>
+                        {isOac ? <IconCreditCard size={16} /> : <IconCheck size={16} />}
+                        {isOac ? "Fizetés és létrehozás" : "Torna létrehozása"}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </DialogFooter>
