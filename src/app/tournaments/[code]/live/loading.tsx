@@ -1,42 +1,54 @@
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { IconLoader2 } from '@tabler/icons-react';
+
 export default function LiveLoading() {
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-base-200 rounded-2xl p-8 shadow-xl text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <Card className="max-w-md w-full shadow-xl">
+        <CardHeader className="text-center pb-2">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconLoader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
-          <h1 className="text-2xl font-bold text-base-content mb-2">
-            Élő Közvetítés Betöltése
-          </h1>
-          <p className="text-base-content/70">
-            Ellenőrizzük a funkció elérhetőségét...
-          </p>
-        </div>
+          <CardTitle className="text-xl">Élő Közvetítés Betöltése</CardTitle>
+          <CardDescription>
+            Kérjük várj, amíg betöltjük az adatokat...
+          </CardDescription>
+        </CardHeader>
 
-        <div className="space-y-4">
-          <div className="flex justify-center">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+        <CardContent className="space-y-6 pt-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Tournament adatok</span>
+                <IconLoader2 className="h-3 w-3 animate-spin" />
+              </div>
+              <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                <div className="h-full bg-primary/50 w-1/3 animate-[shimmer_2s_infinite]"></div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Jogosultság ellenőrzés</span>
+                <IconLoader2 className="h-3 w-3 animate-spin" />
+              </div>
+              <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                <div className="h-full bg-primary/50 w-2/3 animate-[shimmer_2s_infinite_0.2s]"></div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Kapcsolódás a szerverhez</span>
+                <IconLoader2 className="h-3 w-3 animate-spin" />
+              </div>
+              <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                <div className="h-full bg-primary/50 w-1/2 animate-[shimmer_2s_infinite_0.4s]"></div>
+              </div>
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Tournament adatok betöltése</span>
-              <span className="loading loading-spinner loading-xs"></span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Feature flag ellenőrzés</span>
-              <span className="loading loading-spinner loading-xs"></span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Socket kapcsolat inicializálás</span>
-              <span className="loading loading-spinner loading-xs"></span>
-            </div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-} 
+}

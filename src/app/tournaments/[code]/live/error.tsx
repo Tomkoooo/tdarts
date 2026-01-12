@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { IconAlertTriangle, IconRefresh, IconArrowLeft } from '@tabler/icons-react';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,27 +17,23 @@ export default function LiveError({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-base-200 rounded-2xl p-8 shadow-xl text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-error rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-error-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <Card className="max-w-md w-full shadow-xl">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconAlertTriangle className="h-8 w-8 text-destructive" />
           </div>
-          <h1 className="text-2xl font-bold text-base-content mb-2">
-            Hiba Történt
-          </h1>
-          <p className="text-base-content/70 mb-6">
+          <CardTitle className="text-xl">Hiba Történt</CardTitle>
+          <CardDescription>
             Nem sikerült betölteni az élő követési oldalt. 
             Kérjük próbáld újra.
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        <div className="space-y-4">
-          <div className="bg-base-100 p-4 rounded-lg">
-            <h3 className="font-semibold text-base-content mb-2">Lehetséges okok:</h3>
-            <ul className="text-sm text-base-content/70 space-y-1 text-left">
+        <CardContent className="space-y-6">
+          <div className="bg-muted p-4 rounded-lg">
+            <h3 className="font-semibold text-sm mb-2">Lehetséges okok:</h3>
+            <ul className="text-sm text-muted-foreground space-y-1 text-left">
               <li>• A torna nem létezik vagy törölve lett</li>
               <li>• Nincs jogosultságod az oldal megtekintéséhez</li>
               <li>• Hálózati kapcsolat problémák</li>
@@ -43,27 +42,28 @@ export default function LiveError({ error, reset }: ErrorProps) {
           </div>
 
           <div className="flex gap-3">
-            <button 
+            <Button 
               onClick={reset}
-              className="btn btn-primary flex-1"
+              className="flex-1 gap-2"
             >
+              <IconRefresh className="w-4 h-4" />
               Újra Próbálkozás
-            </button>
-            <Link
-              href="/tournaments"
-              className="btn btn-outline flex-1"
-            >
-              Vissza a Tornákhoz
-            </Link>
+            </Button>
+            <Button asChild variant="outline" className="flex-1 gap-2">
+              <Link href="/tournaments">
+                <IconArrowLeft className="w-4 h-4" />
+                Darts
+              </Link>
+            </Button>
           </div>
-        </div>
 
-        <div className="mt-6 pt-6">
-          <p className="text-xs text-base-content/50">
-            Ha a probléma továbbra is fennáll, kérjük vedd fel a kapcsolatot az adminisztrátorral.
-          </p>
-        </div>
-      </div>
+          <div className="pt-2">
+            <p className="text-xs text-muted-foreground text-center">
+              Ha a probléma továbbra is fennáll, kérjük vedd fel a kapcsolatot az adminisztrátorral.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-} 
+}

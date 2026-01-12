@@ -129,7 +129,7 @@ export class FeatureFlagService {
         return false;
       }
 
-      return club.subscriptionModel === 'pro';
+      return club.subscriptionModel === 'enterprise';
     } catch (error) {
       console.error('Error checking club subscription:', error);
       return false;

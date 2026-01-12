@@ -120,17 +120,12 @@ export default function TournamentCard({
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <IconTrophy className="w-4 h-4 text-primary" />
-              <div className="flex items-center gap-1 min-w-0">
-                <span className="truncate">
-                  {typeof tournament.clubId === 'object' && tournament.clubId?.name 
-                    ? tournament.clubId.name 
-                    : (tournament.verified || tournament.isVerified) ? '' : 'Torna részletei'}
-                </span>
-                {typeof tournament.clubId === 'object' && tournament.clubId?.verified && (
-                  <IconShieldCheck className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                )}
-              </div>
-              {(tournament.verified || tournament.isVerified) && (
+              <span className="truncate">
+                {typeof tournament.clubId === 'object' && tournament.clubId?.name 
+                  ? tournament.clubId.name 
+                  : tournament.verified ? '' : 'Torna részletei'}
+              </span>
+              {(tournament.verified) && (
                 <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 flex items-center gap-1">
                   <IconShieldCheck className="w-3 h-3" />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Hitelesített</span>
