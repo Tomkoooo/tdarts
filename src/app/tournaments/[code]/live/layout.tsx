@@ -2,6 +2,10 @@ import { redirect } from 'next/navigation';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { connectMongo } from '@/lib/mongoose';
 import { TournamentModel } from '@/database/models/tournament.model';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { IconAlertTriangle, IconHome, IconMail } from '@tabler/icons-react';
+import Link from 'next/link';
 
 interface LiveLayoutProps {
   children: React.ReactNode;
@@ -29,27 +33,22 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
     if (!isSocketEnabled) {
       // Return static page for clubs without live match following
       return (
-        <div className="min-h-screen bg-base-100 flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-base-200 rounded-2xl p-8 shadow-xl text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-warning rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-warning-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
+        <div className="min-h-screen bg-background flex items-center justify-center p-6">
+          <Card className="max-w-md w-full shadow-lg">
+            <CardHeader className="text-center pb-2">
+              <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <IconAlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
               </div>
-              <h1 className="text-2xl font-bold text-base-content mb-2">
-                Élő Meccs Követés Nem Elérhető
-              </h1>
-              <p className="text-base-content/70 mb-6">
+              <CardTitle className="text-xl">Élő Meccs Követés Nem Elérhető</CardTitle>
+              <CardDescription>
                 Ez a klub jelenleg nem rendelkezik élő meccs követési funkcióval. 
                 A funkció használatához pro előfizetés szükséges.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-base-100 p-4 rounded-lg">
-                <h3 className="font-semibold text-base-content mb-2">Pro Előfizetés Előnyei:</h3>
-                <ul className="text-sm text-base-content/70 space-y-1 text-left">
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-muted p-4 rounded-lg">
+                <h3 className="font-semibold text-sm mb-2">Pro Előfizetés Előnyei:</h3>
+                <ul className="text-sm text-muted-foreground space-y-1 text-left">
                   <li>• Élő meccs követés real-time</li>
                   <li>• Dobásonkénti statisztikák</li>
                   <li>• Speciális elemző eszközök</li>
@@ -58,28 +57,28 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
               </div>
 
               <div className="flex gap-3">
-                <a 
-                  href={`/tournaments/${code}`}
-                  className="btn btn-primary flex-1"
-                >
-                  Vissza a Tornához
-                </a>
-                <a 
-                  href="/contact"
-                  className="btn btn-outline flex-1"
-                >
-                  Kapcsolat
-                </a>
+                <Button asChild className="flex-1">
+                  <Link href={`/tournaments/${code}`}>
+                    <IconHome className="w-4 h-4 mr-2" />
+                    Vissza a Tornához
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="flex-1">
+                  <Link href="/contact">
+                    <IconMail className="w-4 h-4 mr-2" />
+                    Kapcsolat
+                  </Link>
+                </Button>
               </div>
-            </div>
 
-            <div className="mt-6 pt-6">
-              <p className="text-xs text-base-content/50">
-                Ha már pro előfizető vagy, de továbbra is ezt az üzenetet látod, 
-                kérjük vedd fel a kapcsolatot az adminisztrátorral.
-              </p>
-            </div>
-          </div>
+              <div className="pt-2">
+                <p className="text-xs text-muted-foreground text-center">
+                  Ha már pro előfizető vagy, de továbbra is ezt az üzenetet látod, 
+                  kérjük vedd fel a kapcsolatot az adminisztrátorral.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       );
     }
@@ -92,29 +91,27 @@ export default async function LiveLayout({ children, params }: LiveLayoutProps) 
     
     // Fallback error page
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-base-200 rounded-2xl p-8 shadow-xl text-center">
-          <div className="w-16 h-16 bg-error rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-error-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-base-content mb-2">
-            Hiba Történt
-          </h1>
-          <p className="text-base-content/70 mb-6">
-            Nem sikerült betölteni az élő követési oldalt. 
-            Kérjük próbáld újra később.
-          </p>
-          
-          <a 
-            href={`/tournaments/${code}`}
-            className="btn btn-primary"
-          >
-            Vissza a Tornához
-          </a>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full shadow-lg border-destructive/20">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconAlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl">Hiba Történt</CardTitle>
+            <CardDescription>
+              Nem sikerült betölteni az élő követési oldalt. 
+              Kérjük próbáld újra később.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button asChild>
+              <Link href={`/tournaments/${code}`}>
+                Vissza a Tornához
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
-} 
+}

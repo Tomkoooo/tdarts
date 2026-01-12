@@ -124,7 +124,7 @@ export default function TournamentCard({
                   ? tournament.clubId.name 
                   : tournament.verified ? '' : 'Torna részletei'}
               </span>
-              {(tournament.isVerified || tournament.verified) && (
+              {(tournament.verified) && (
                 <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 flex items-center gap-1">
                   <IconShieldCheck className="w-3 h-3" />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Hitelesített</span>

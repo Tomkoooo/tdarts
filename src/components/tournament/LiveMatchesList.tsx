@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { getLiveMatches } from '@/lib/socketApi';
 import { Badge } from '@/components/ui/Badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { IconDeviceGamepad2, IconTrophy, IconClock } from '@tabler/icons-react';
 
 interface LiveMatchesListProps {
   tournamentCode: string;
@@ -33,42 +36,29 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
   const { socket, isConnected } = useSocket({ tournamentId: tournamentCode });
 
   useEffect(() => {
-    console.log('🔌 LiveMatchesList useEffect triggered:', {
-      tournamentCode,
-      isConnected,
-      socketConnected: socket.connected
-    });
-
     // Join tournament room - use socket directly to avoid dependency issues
     if (socket.connected) {
-      console.log('📡 LiveMatchesList joining tournament room:', tournamentCode);
       socket.emit('join-tournament', tournamentCode);
-    } else {
-      console.log('❌ LiveMatchesList socket not connected, cannot join room');
     }
     
     // Fetch active matches from API
     fetchLiveMatches();
     
     // Socket event handlers
-    function onMatchStarted(data: any) {
-      console.log('🎯 Match started event received:', data);
-      
+    function onMatchStarted() {
       // When a new match starts, fetch fresh data from database
       fetchLiveMatches();
     }
 
     function onMatchFinished(matchId: string) {
-
       setLiveMatches(prev => prev.filter(match => match._id !== matchId));
     }
 
     function onMatchUpdate(data: { matchId: string; state: any }) {
-
       // Update only the real-time data (scores, current leg) from socket
       setLiveMatches(prev => prev.map(match => {
         if (match._id === data.matchId) {
-          const updatedMatch = {
+          return {
             ...match,
             currentLeg: data.state.currentLeg,
             player1Remaining: data.state.currentLegData?.player1Remaining || match.player1Remaining,
@@ -77,26 +67,18 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
             player2LegsWon: data.state.player2LegsWon || match.player2LegsWon || 0,
             lastUpdate: new Date().toISOString()
           };
-
-          return updatedMatch;
         }
         return match;
       }));
     }
 
     function onLegComplete() {
-
       // When a leg is completed, refresh data from database to get updated leg counts
       fetchLiveMatches();
     }
 
-    // Set up event listeners
-    console.log('🔌 Setting up socket event listeners for tournament:', tournamentCode);
-    console.log('🔌 Socket connected:', socket.connected);
-    
     // Socket connection handler
     const handleSocketConnect = () => {
-      console.log('🔌 LiveMatchesList socket connected, joining tournament room:', tournamentCode);
       socket.emit('join-tournament', tournamentCode);
     };
 
@@ -113,23 +95,19 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
       socket.off('match-update', onMatchUpdate);
       socket.off('leg-complete', onLegComplete);
     };
-  }, [tournamentCode, socket.connected]); // Removed emit dependency
+  }, [tournamentCode, socket.connected]);
 
   const fetchLiveMatches = async () => {
     try {
       setIsLoading(true);
-      console.log('🔄 Fetching live matches for tournament:', tournamentCode);
       
       // Always fetch from database first for complete and accurate data
       const response = await fetch(`/api/tournaments/${tournamentCode}/live-matches`);
       const data = await response.json();
-
-      console.log('📊 Live matches API response:', data);
       
       if (data.success) {
         // Ensure player data is properly structured with real names
         const processedMatches = data.matches.map((match: any) => {
-          
           return {
             _id: match._id,
             status: match.status || 'ongoing',
@@ -152,13 +130,11 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
         setLiveMatches(processedMatches);
       }
       
-      // Optionally get additional real-time data from external socket server (but don't replace database data)
+      // Optionally get additional real-time data from external socket server
       try {
         const socketData = await getLiveMatches();
-        
         if (socketData.success && socketData.matches.length > 0) {
-          console.log('Socket data available for real-time updates:', socketData.matches);
-          // We could use this for real-time score updates, but keep database as primary source
+           // Logic to merge socket data if needed, currently skipped to rely on DB
         }
       } catch (socketError) {
         console.log('Socket data not available, using database only:', socketError);
@@ -176,68 +152,129 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     onMatchSelect(match._id, match);
   };
 
+  // Sync internal state with props, important for direct link handling
+  useEffect(() => {
+    if (selectedMatchId) {
+      setSelectedMatch(selectedMatchId);
+    }
+  }, [selectedMatchId]);
+
   if (isLoading) {
     return (
-      <div className="live-matches-list bg-base-100 p-6 rounded-lg">
-        <div className="flex items-center justify-center py-8">
-          <div className="loading loading-spinner loading-lg"></div>
-          <span className="ml-2">Betöltés...</span>
-        </div>
+      <div className="flex flex-col gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-24 w-full animate-pulse rounded-xl bg-muted/50" />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="live-matches-list bg-base-100 p-6 rounded-lg">
-      {/* Connection Status */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-success' : 'bg-destructive'}`}></div>
-        <span className="text-sm">{isConnected ? 'Connected' : 'Disconnected'}</span>
+    <div className="flex flex-col h-full bg-card rounded-xl border shadow-sm overflow-hidden">
+      <div className="p-4 border-b bg-muted/30">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-lg flex items-center gap-2">
+            <IconDeviceGamepad2 className="w-5 h-5 text-primary" />
+            Aktív meccsek
+          </h3>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "flex h-2 w-2 rounded-full",
+              isConnected ? "bg-green-500" : "bg-red-500"
+            )} />
+            <span className="text-xs text-muted-foreground hidden sm:inline-block">
+              {isConnected ? 'Élő kapcsolat' : 'Kapcsolódás...'}
+            </span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Válassz egy meccset a részletes követéshez
+        </p>
       </div>
 
-      <h3 className="text-xl font-bold mb-4">Aktív meccsek</h3>
-      
-      {liveMatches.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-base-content/70">Nincs aktív meccs</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {liveMatches.map((match) => (
-            <div
-              key={match._id}
-              className={`cursor-pointer rounded-xl border border-border/50 bg-card/80 p-4 transition hover:bg-card/90 ${
-                selectedMatch === match._id ? "ring-2 ring-primary" : ""
-              }`}
-              onClick={() => handleMatchSelect(match)}
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-medium text-foreground">
-                  {match.player1?.name || "Betöltés…"} vs {match.player2?.name || "Betöltés…"}
-                </span>
-                <Badge variant="outline" className="rounded-full border-primary/40 text-xs text-primary">
-                  LIVE
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Leg {match.currentLeg}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">
-                    {match.player1LegsWon || 0} - {match.player2LegsWon || 0}
-                  </span>
-                  <span className="font-mono text-xs">
-                    {match.player1Remaining} - {match.player2Remaining}
-                  </span>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Utolsó frissítés: {match.lastUpdate ? new Date(match.lastUpdate).toLocaleTimeString('hu-HU') : 'ismeretlen'}
-              </div>
+      <ScrollArea className="flex-1 h-[400px] lg:h-[500px]">
+        <div className="p-4 space-y-3">
+          {liveMatches.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+              <IconTrophy className="w-12 h-12 mb-3 opacity-20" />
+              <p>Jelenleg nincs élő meccs</p>
+              <p className="text-xs mt-1">A meccsek automatikusan megjelennek itt</p>
             </div>
-          ))}
+          ) : (
+            liveMatches.map((match) => (
+              <div
+                key={match._id}
+                onClick={() => handleMatchSelect(match)}
+                className={cn(
+                  "group relative overflow-hidden rounded-lg border p-4 transition-all hover:shadow-md cursor-pointer",
+                  selectedMatch === match._id 
+                    ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                    : "bg-card hover:border-primary/50"
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Badge 
+                    variant={selectedMatch === match._id ? "default" : "secondary"}
+                    className="text-[10px] uppercase font-bold tracking-wider"
+                  >
+                    Leg {match.currentLeg}
+                  </Badge>
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <IconClock className="w-3 h-3" />
+                    <span>
+                      {match.lastUpdate ? new Date(match.lastUpdate).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  {/* Player 1 */}
+                  <div className="flex-1 text-center">
+                    <div className="text-sm font-semibold truncate px-1" title={match.player1?.name}>
+                      {match.player1?.name || "Játékos 1"}
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold font-mono my-1",
+                      match.player1Remaining <= 100 ? "text-primary" : "text-foreground"
+                    )}>
+                      {match.player1Remaining}
+                    </div>
+                    <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
+                      {match.player1LegsWon || 0} leg
+                    </div>
+                  </div>
+
+                  {/* VS Divider */}
+                  <div className="flex flex-col items-center justify-center text-muted-foreground/30 text-xs font-black">
+                    VS
+                  </div>
+
+                  {/* Player 2 */}
+                  <div className="flex-1 text-center">
+                    <div className="text-sm font-semibold truncate px-1" title={match.player2?.name}>
+                      {match.player2?.name || "Játékos 2"}
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold font-mono my-1",
+                      match.player2Remaining <= 100 ? "text-primary" : "text-foreground"
+                    )}>
+                      {match.player2Remaining}
+                    </div>
+                    <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
+                      {match.player2LegsWon || 0} leg
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selection Indicator */}
+                {selectedMatch === match._id && (
+                  <div className="absolute inset-y-0 left-0 w-1 bg-primary" />
+                )}
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </ScrollArea>
     </div>
   );
 };

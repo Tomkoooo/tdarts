@@ -1,196 +1,156 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import LiveMatchViewer from '@/components/tournament/LiveMatchViewer';
 import LiveMatchesList from '@/components/tournament/LiveMatchesList';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { IconShare, IconDeviceTv, IconArrowLeft } from '@tabler/icons-react';
+import toast from 'react-hot-toast';
 
-const LiveStreamingPage = () => {
+const LiveStreamingContent = () => {
   const { code } = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
-  const [showMatchList, setShowMatchList] = useState<boolean>(true);
-  const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isMobileView, setIsMobileView] = useState(false);
 
+  // Check valid matchId from URL on mount
   useEffect(() => {
-    const checkPermission = async () => {
-      try {
-        const response = await fetch(`/api/tournaments/${code}`);
-        const data = await response.json();
-        
-        if (data && data.clubId) {
-          // Check feature flag or subscription
-          // Assuming featureFlags are populated on clubId
-          const hasAccess = data.clubId.featureFlags?.liveMatchFollowing || 
-                           ['pro', 'enterprise'].includes(data.clubId.subscriptionModel);
-          setIsAllowed(!!hasAccess);
-        } else {
-          setIsAllowed(false);
-        }
-      } catch (error) {
-        console.error('Error checking permission:', error);
-        setIsAllowed(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (code) {
-      checkPermission();
+    const matchId = searchParams.get('matchId');
+    if (matchId) {
+      setSelectedMatchId(matchId);
     }
-  }, [code]);
+  }, [searchParams]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-base-100 via-base-200 to-base-300 flex items-center justify-center">
-        <div className="loading loading-spinner loading-lg text-primary"></div>
-      </div>
-    );
-  }
-
-  if (isAllowed === false) {
-    return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-base-100 via-base-200 to-base-300 flex items-center justify-center p-4">
-        <div className="glass-card max-w-md text-center p-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-error/20 flex items-center justify-center">
-            <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold mb-2 text-base-content">Hozzáférés Megtagadva</h2>
-          <p className="text-base-content/70 mb-6">
-            Ez a funkció csak a Pro és Enterprise csomagokban érhető el. Kérjük, lépj kapcsolatba a klub adminisztrátorával.
-          </p>
-          <Link href="/" className="btn btn-primary">Vissza a főoldalra</Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!selectedMatchId) {
-    console.log("No match selected");
-  }
+  // Handle mobile responsiveness check
+  useEffect(() => {
+    const checkMobile = () => setIsMobileView(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleMatchSelect = (matchId: string, match: any) => {
     setSelectedMatchId(matchId);
     setSelectedMatch(match);
-    setShowMatchList(false); // Hide match list when match is selected
+    
+    // Update URL without full reload
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('matchId', matchId);
+    router.push(`?${newParams.toString()}`, { scroll: false });
   };
 
   const handleBackToMatches = () => {
-    setShowMatchList(true);
     setSelectedMatchId(null);
     setSelectedMatch(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('matchId');
+    router.push(`?${newParams.toString()}`, { scroll: false });
   };
 
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success('Link másolva a vágólapra!');
+    } catch (err) {
+      toast.error('Nem sikerült másolni a linket.');
+      console.log(err)
+    }
+  };
+
+  // Logic: Show main header ONLY if (Desktop) OR (Mobile AND No Match Selected)
+  // This hides the top header when viewing a match on mobile, letting the specific match viewer header take over.
+  const showMainHeader = !isMobileView || !selectedMatchId;
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-base-100 via-base-200 to-base-300">
-
-
+    <div className="min-h-screen bg-background text-foreground">
+      
+      {/* Global Header */}
+      {showMainHeader && (
+        <div className="border-b bg-card sticky top-0 z-10">
+          <div className="container mx-auto py-3 px-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+               <Link href={`/tournaments/${code}`} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-muted">
+                <IconArrowLeft className="w-5 h-5" />
+               </Link>
+               <div>
+                 <h1 className="text-lg font-bold flex items-center gap-2">
+                   <IconDeviceTv className="w-5 h-5 text-primary" />
+                   tDarts Live
+                 </h1>
+               </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Desktop Share Button */}
+              {selectedMatchId && !isMobileView && (
+                <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+                  <IconShare className="w-4 h-4" />
+                  <span>Megosztás</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
-      <div className="container mx-auto p-6">
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold mb-2 text-base-content">
-           Élő Meccsek Követése
-          </h2>
-          <p className="text-base-content/70">
-            Kövesd a meccseket dobásonkénti frissítésekkel
-          </p>
-        </div>
-        
-        {showMatchList ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Live Matches List */}
-            <div className="glass-card">
-              <LiveMatchesList 
-                tournamentCode={code as string} 
-                onMatchSelect={handleMatchSelect}
-                selectedMatchId={selectedMatchId}
-              />
+      <div className={`container mx-auto ${isMobileView ? (selectedMatchId ? 'p-0' : 'p-4') : 'p-6'}`}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-80px)]">
+          
+          {/* Matches List: Visible on Desktop, OR Mobile when no match selected */}
+          {(!selectedMatchId || !isMobileView) && (
+            <div className={`col-span-1 lg:col-span-4 h-full overflow-hidden ${selectedMatchId && !isMobileView ? 'hidden lg:block' : ''}`}>
+               <LiveMatchesList 
+                 tournamentCode={code as string} 
+                 onMatchSelect={handleMatchSelect} 
+                 selectedMatchId={selectedMatchId}
+               />
             </div>
-            
-            {/* Live Match Viewer */}
-            <div className="glass-card">
-              <div className="text-center py-8">
-                <div className="mb-6">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2 text-base-content">Élő Meccs Követő</h3>
-                  <p className="text-base-content/70 mb-6">
-                    Válassz ki egy meccset a bal oldali listából a követés megkezdéséhez.
-                  </p>
-                </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-success">
-                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                  <span>Socket kapcsolat aktív</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="glass-card">
-            {/* Back to matches button */}
-            <div className="flex justify-start mb-4">
-              <button
-                className="btn btn-sm btn-outline"
-                onClick={handleBackToMatches}
-              >
-                ← Vissza a meccsekhez
-              </button>
-            </div>
-            
-            {/* Live Match Viewer */}
-            {selectedMatch && (
+          )}
+          
+          {/* Match Viewer: Visible when match selected */}
+          {selectedMatchId ? (
+            <div className="col-span-1 lg:col-span-8 h-full overflow-y-auto">
               <LiveMatchViewer
-                onBack={handleBackToMatches}
-                matchId={selectedMatch._id}
+                matchId={selectedMatchId}
                 tournamentCode={code as string}
-                player1={selectedMatch.player1}
-                player2={selectedMatch.player2}
+                player1={selectedMatch?.player1}
+                player2={selectedMatch?.player2}
+                onBack={handleBackToMatches}
+                onShare={handleShare}
               />
-            )}
-          </div>
-        )}
-        
-        {/* Instructions */}
-        <div className="mt-8 glass-card">
-          <h2 className="text-xl font-bold mb-4 text-center text-base-content">Használati útmutató</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                1
-              </div>
-              <p className="text-base-content/80">Nyisd meg egy másik böngészőablakot a MatchGame oldalon</p>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                2
-              </div>
-              <p className="text-base-content/80">Kezdj el játszani egy meccset</p>
+          ) : (
+             /* Desktop Placeholder */
+            <div className="hidden lg:flex col-span-8 bg-muted/10 border-2 border-dashed border-muted rounded-xl items-center justify-center flex-col text-muted-foreground gap-4">
+               <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center">
+                 <IconDeviceTv className="w-10 h-10 opacity-40" />
+               </div>
+               <div className="text-center">
+                 <h3 className="font-semibold text-lg">Válassz egy meccset</h3>
+                 <p className="text-sm opacity-70">A bal oldali listából választhatsz.</p>
+               </div>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                3
-              </div>
-              <p className="text-base-content/80">Ezen az oldalon követheted a dobásokat real-time</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                4
-              </div>
-              <p className="text-base-content/80">A Socket.IO kapcsolat állapota a zöld/piros pont jelzi</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default LiveStreamingPage; 
+export default function LiveStreamingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="loading loading-spinner text-primary"></div>
+      </div>
+    }>
+      <LiveStreamingContent />
+    </Suspense>
+  );
+}
