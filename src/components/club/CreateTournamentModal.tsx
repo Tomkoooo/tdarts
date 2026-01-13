@@ -449,7 +449,7 @@ export default function CreateTournamentModal({
                       minute: "2-digit",
                     }).replace(" ", "T")}
                     onChange={(event) => handleSettingsChange("registrationDeadline", new Date(event.target.value))}
-                    min={isOac ? "2026-01-15T00:00" : undefined}
+                    min={isOac ? "2026-02-01T00:00" : undefined}
                     icon={<IconCalendar className="h-5 w-5" />}
                   />
                   <FormField
@@ -465,6 +465,7 @@ export default function CreateTournamentModal({
                       label="Nevezési díj (Ft)"
                       placeholder="0"
                       min={0}
+                      max={isOac ? 3000 : undefined}
                       value={settings.entryFee ?? ''}
                       onChange={(event) => handleSettingsChange("entryFee", event.target.value === '' ? '' : Number(event.target.value))}
                     />

@@ -40,6 +40,22 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
       address: { type: String, default: null },
       email: { type: String, default: null },
     },
+    landingPage: {
+      primaryColor: { type: String },
+      secondaryColor: { type: String },
+      backgroundColor: { type: String },
+      foregroundColor: { type: String },
+      cardColor: { type: String },
+      cardForegroundColor: { type: String },
+      logo: { type: String }, // URL or Media ID
+      coverImage: { type: String },
+      aboutText: { type: String },
+      aboutImages: [{ type: String }],
+      gallery: [{ type: String }],
+      template: { type: String, enum: ['classic', 'modern'], default: 'classic' },
+      showMembers: { type: Boolean, default: true },
+      showTournaments: { type: Boolean, default: true },
+    },
   },
   { collection: 'clubs', timestamps: true }
 );

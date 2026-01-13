@@ -39,6 +39,22 @@ export interface Club {
   isActive: boolean;
   verified: boolean;
   billingInfo?: BillingInfo;
+  landingPage?: {
+    primaryColor: string;
+    secondaryColor: string;
+    backgroundColor?: string;
+    foregroundColor?: string;
+    cardColor?: string;
+    cardForegroundColor?: string;
+    logo?: string;
+    coverImage?: string;
+    aboutText?: string;
+    aboutImages?: string[];
+    gallery?: string[];
+    template: 'classic' | 'modern';
+    showMembers: boolean;
+    showTournaments: boolean;
+  };
   // Tournaments (minimal info for list)
   tournaments?: { 
     _id: string; 

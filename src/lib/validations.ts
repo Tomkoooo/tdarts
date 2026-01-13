@@ -234,7 +234,7 @@ export function conditionalRequired<T>(condition: boolean, validator: z.ZodType<
  */
 export const fileValidator = z
   .instanceof(File)
-  .refine((file) => file.size <= 5 * 1024 * 1024, "A fájl mérete maximum 5MB lehet")
+  .refine((file) => file.size <= 15 * 1024 * 1024, "A fájl mérete maximum 15MB lehet")
   .refine(
     (file) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type),
     "Csak JPEG, PNG és WebP formátumú képek engedélyezettek"

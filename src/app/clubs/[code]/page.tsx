@@ -14,7 +14,6 @@ import ClubTournamentsSection from "@/components/club/ClubTournamentsSection"
 import ClubLeaguesSection from "@/components/club/ClubLeaguesSection"
 import ClubSettingsSection from "@/components/club/ClubSettingsSection"
 import CreateTournamentModal from "@/components/club/CreateTournamentModal"
-import EditClubModal from "@/components/club/EditClubModal"
 import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 
@@ -34,9 +33,11 @@ export default function ClubDetailPage() {
     isOpen: boolean
     leagueId: string | null
   }>({ isOpen: false, leagueId: null })
-  const [isEditClubModalOpen, setIsEditClubModalOpen] = React.useState(false)
   const [clubShareModal, setClubShareModal] = React.useState(false)
   const [isClubLoading, setIsClubLoading] = React.useState(true)
+  const [posts, setPosts] = React.useState<any[]>([])
+  const [postsTotal, setPostsTotal] = React.useState(0)
+  const [postsPage, setPostsPage] = React.useState(1)
   const [deleteTournamentModal, setDeleteTournamentModal] = React.useState<{
     isOpen: boolean
     tournamentId: string | null
@@ -74,6 +75,16 @@ export default function ClubDetailPage() {
       try {
         const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`)
         setClub(clubResponse.data)
+        
+        // Fetch posts
+        try {
+            const postsResponse = await axios.get(`/api/clubs/${clubResponse.data._id}/posts?page=1&limit=3`)
+            setPosts(postsResponse.data.posts)
+            setPostsTotal(postsResponse.data.total)
+        } catch (e) {
+            console.error("Failed to fetch posts", e)
+        }
+
         setIsClubLoading(false)
 
         // Only fetch user role if user is logged in
@@ -243,6 +254,18 @@ export default function ClubDetailPage() {
     }
   }
 
+  const handleLoadMorePosts = async () => {
+    if (!club) return
+    const nextPage = postsPage + 1
+    try {
+        const res = await axios.get(`/api/clubs/${club._id}/posts?page=${nextPage}&limit=3`)
+        setPosts([...posts, ...res.data.posts])
+        setPostsPage(nextPage)
+    } catch (e) {
+        console.error("Failed to load more posts", e)
+    }
+  }
+
   // Get default page and league ID from URL
   const getDefaultPage = (): 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' => {
     const page = searchParams.get('page')
@@ -291,12 +314,18 @@ export default function ClubDetailPage() {
       <ClubLayout
         userRole={userRole}
         clubName={club.name}
+        landingPage={club.landingPage}
         summary={
           <ClubSummarySection
             club={club}
             code={code}
             user={user}
             onShareClick={() => setClubShareModal(true)}
+            aboutText={club.landingPage?.aboutText}
+            gallery={club.landingPage?.gallery}
+            posts={posts}
+            postsTotal={postsTotal}
+            onLoadMorePosts={handleLoadMorePosts}
           />
         }
         players={
@@ -333,7 +362,6 @@ export default function ClubDetailPage() {
               club={club}
               userRole={userRole}
               userId={user?._id}
-              onEditClub={() => setIsEditClubModalOpen(true)}
               onCreateTournament={() => {
                 setDefaultIsSandbox(false)
                 setIsCreateTournamentModalOpen(true)
@@ -349,13 +377,6 @@ export default function ClubDetailPage() {
       />
 
       {/* Modals */}
-      <EditClubModal
-        userId={user?._id}
-        isOpen={isEditClubModalOpen}
-        onClose={() => setIsEditClubModalOpen(false)}
-        club={club}
-        onClubUpdated={fetchClub}
-      />
       <CreateTournamentModal
         isOpen={isCreateTournamentModalOpen}
         onClose={() => setIsCreateTournamentModalOpen(false)}

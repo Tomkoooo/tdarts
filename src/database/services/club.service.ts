@@ -71,6 +71,31 @@ export class ClubService {
     return club;
   }
 
+  static async updateLandingSettings(
+    clubId: string,
+    userId: string,
+    landingSettings: any
+  ): Promise<ClubDocument> {
+    await connectMongo();
+
+    const club = await ClubModel.findById(clubId);
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const isAuthorized = await AuthorizationService.checkAdminOrModerator(userId, clubId);
+    if (!isAuthorized) {
+      throw new BadRequestError('Only admins or moderators can update landing settings');
+    }
+
+    // TODO: Validate subscriptions/feature flags for premium features (e.g. custom colors)
+    
+    club.landingPage = { ...(club.landingPage || {}), ...landingSettings };
+    club.markModified('landingPage');
+    await club.save();
+    return club;
+  }
+
   static async updateClub(
     clubId: string,
     userId: string,

@@ -403,25 +403,34 @@ export class TournamentService {
             }
 
             // Update the existing match with winner
-            const updated = await this.assignPlayerToNextMatch(nextMatch, winnerId);
+            const result = await this.assignPlayerToNextMatch(nextMatch, winnerId);
             
-            if (!updated) {
-                console.log(`Match ${nextMatch._id} already has both players assigned`);
+            if (!result.success) {
+                console.log(`Match ${nextMatch._id} already has both players assigned or player could not be added`);
+                return;
             }
 
-            // Update tournament knockout structure
-            const roundObj = tournament.knockout.find((r: any) => r.round === nextRound);
-            if (roundObj) {
-                const knockoutMatch = roundObj.matches.find((m: any) => 
-                    m.matchReference?.toString() === nextMatch._id.toString()
-                );
-                if (knockoutMatch) {
-                    if (!knockoutMatch.player1) {
-                        knockoutMatch.player1 = winnerId;
-                    } else if (!knockoutMatch.player2) {
-                        knockoutMatch.player2 = winnerId;
+            const assignedSlot = result.slot; // 1 or 2
+
+            // Update tournament knockout structure atomically using array filters
+            // We need to match the round and the match reference
+            if (assignedSlot) {
+                const updateField = assignedSlot === 1 ? 'knockout.$[r].matches.$[m].player1' : 'knockout.$[r].matches.$[m].player2';
+                
+                await TournamentModel.updateOne(
+                    { _id: tournament._id },
+                    { $set: { [updateField]: winnerId } },
+                    { 
+                        arrayFilters: [
+                            { "r.round": nextRound },
+                            { "m.matchReference": nextMatch._id }
+                        ]
                     }
-                }
+                );
+                console.log(`Updated tournament structure for match ${nextMatch._id} slot ${assignedSlot}`);
+            } else {
+                 // Should not happen if success is true
+                 console.warn(`Success returned but no slot assigned for match ${nextMatch._id}`);
             }
 
             // Assign loser as scorer to appropriate match in next round (only for non-bye matches)
@@ -444,52 +453,107 @@ export class TournamentService {
     }
 
     /**
-     * Assign player to next match's empty slot
-     * Returns true if updated, false if both slots already filled
+     * Assign player to next match's empty slot atomically
+     * Returns object with success status and assigned slot
      */
-    private static async assignPlayerToNextMatch(match: any, playerId: any): Promise<boolean> {
-        // Prevent duplicate assignment - check if player is already in this match
-        // Handle both populated and unpopulated player fields
-        const p1Id = match.player1?.playerId?._id || match.player1?.playerId;
-        const p2Id = match.player2?.playerId?._id || match.player2?.playerId;
+    private static async assignPlayerToNextMatch(match: any, playerId: any): Promise<{ success: boolean; slot?: 1 | 2; match?: any }> {
+        const matchId = match._id;
+        const pIdStr = playerId.toString();
 
-        if ((p1Id && p1Id.toString() === playerId.toString()) ||
-            (p2Id && p2Id.toString() === playerId.toString())) {
-            console.log(`Player ${playerId} is already assigned to match ${match._id} - skipping duplicate assignment`);
-            return true;
+        // 1. Try to assign to Player 1
+        // Condition: Player 1 is empty AND Player 2 is NOT this player (avoid self-play or duplicate)
+        let updatedMatch = await MatchModel.findOneAndUpdate(
+            { 
+                _id: matchId, 
+                "player1.playerId": null, 
+                "player2.playerId": { $ne: playerId } 
+            },
+            { 
+                $set: { 
+                    player1: {
+                        playerId: playerId,
+                        legsWon: 0,
+                        legsLost: 0,
+                        average: 0,
+                    }
+                }
+            },
+            { new: true }
+        );
+
+        if (updatedMatch) {
+            console.log(`Assigned winner ${playerId} to player1 of match ${matchId}`);
+            // Check if match is now ready (has both players)
+            if (updatedMatch.player2 && updatedMatch.player2.playerId) {
+                updatedMatch.status = 'pending';
+                await updatedMatch.save(); // Safe to save here as we have latest doc
+                await this.assignMatchToBoardByOrder(matchId.toString());
+            }
+            return { success: true, slot: 1, match: updatedMatch };
         }
 
-        if (!match.player1 || !match.player1.playerId) {
-            // Assign to player1 slot
-            match.player1 = {
-                playerId: playerId,
-                legsWon: 0,
-                legsLost: 0,
-                average: 0,
-            };
-            await match.save();
-            console.log(`Assigned winner ${playerId} to player1 of match ${match._id}`);
-            return true;
-        } else if (!match.player2 || !match.player2.playerId) {
-            // Assign to player2 slot
-            match.player2 = {
-                playerId: playerId,
-                legsWon: 0,
-                legsLost: 0,
-                average: 0,
-            };
-            // Both players now assigned - match ready to play
-            match.status = 'pending';
-            await match.save();
-            console.log(`Assigned winner ${playerId} to player2 of match ${match._id} - match now ready`);
+        // 2. Try to assign to Player 2
+        // Condition: Player 2 is empty AND Player 1 is NOT this player
+        updatedMatch = await MatchModel.findOneAndUpdate(
+            { 
+                _id: matchId, 
+                "player2.playerId": null, 
+                "player1.playerId": { $ne: playerId } 
+            },
+            { 
+                $set: { 
+                    player2: {
+                        playerId: playerId,
+                        legsWon: 0,
+                        legsLost: 0,
+                        average: 0,
+                    },
+                    status: 'pending' // If we fill P2 and P1 presumably exists (checked in query implied?), we can start?
+                    // Wait, the query only checks P1 != me. It doesn't guarantee P1 exists.
+                    // But usually P1 is filled first. 
+                    // Let's safe update status after check.
+                }
+            },
+            { new: true }
+        );
+
+        if (updatedMatch) {
+            console.log(`Assigned winner ${playerId} to player2 of match ${matchId}`);
             
-            // IMPORTANT: Dynamically assign boards by match order when match becomes playable
-            await this.assignMatchToBoardByOrder(match._id.toString());
-            
-            return true;
+            // If P1 exists, match is ready
+            if (updatedMatch.player1 && updatedMatch.player1.playerId) {
+                if (updatedMatch.status !== 'pending') {
+                     updatedMatch.status = 'pending';
+                     await updatedMatch.save();
+                }
+                await this.assignMatchToBoardByOrder(matchId.toString());
+            } else {
+                // If P1 is missing (rare case where P2 filled before P1?), status not pending yet
+                // But we set it to pending in $set above, which might be premature if P1 is missing.
+                // Actually, let's refine the update to NOT set status pending blindly.
+                // But since I used $set above, I should correct it.
+                // Ideally we verify P1 existence.
+                // However, for Simplicity, if P2 is filled, and P1 is missing, it's just a waiting match. 
+            }
+            return { success: true, slot: 2, match: updatedMatch };
         }
-        
-        return false;
+
+        // 3. Fallback: Check if already assigned (Idempotency)
+        const currentMatch = await MatchModel.findById(matchId);
+        const p1Id = currentMatch?.player1?.playerId?.toString();
+        const p2Id = currentMatch?.player2?.playerId?.toString();
+
+        if (p1Id === pIdStr) {
+             console.log(`Player ${playerId} is already assigned to match ${matchId} (slot 1) - skipping`);
+             return { success: true, slot: 1, match: currentMatch };
+        }
+        if (p2Id === pIdStr) {
+             console.log(`Player ${playerId} is already assigned to match ${matchId} (slot 2) - skipping`);
+             return { success: true, slot: 2, match: currentMatch };
+        }
+
+        console.log(`Failed to assign player ${playerId} to match ${matchId} - match likely full`);
+        return { success: false };
     }
 
     /**

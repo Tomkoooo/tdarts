@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 
 interface ClubLayoutProps {
   userRole: 'admin' | 'moderator' | 'member' | 'none'
@@ -13,7 +14,22 @@ interface ClubLayoutProps {
   tournaments: React.ReactNode
   leagues: React.ReactNode
   settings?: React.ReactNode
-  defaultPage?: 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings'
+  defaultPage?: 'summary' | 'players' | 'tournaments' | 'leagues' | 'settings' | 'website'
+  landingPage?: {
+    primaryColor?: string
+    secondaryColor?: string
+    logo?: string
+    coverImage?: string
+    backgroundColor?: string
+    foregroundColor?: string
+    cardColor?: string
+    cardForegroundColor?: string
+    aboutText?: string
+    template?: string
+    gallery?: string[]
+    showMembers?: boolean
+    showTournaments?: boolean
+  }
 }
 
 export default function ClubLayout({
@@ -25,6 +41,7 @@ export default function ClubLayout({
   leagues,
   settings,
   defaultPage = 'summary',
+  landingPage,
 }: ClubLayoutProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -56,19 +73,183 @@ export default function ClubLayout({
     tabs.push({ key: 'settings', label: 'Beállítások', icon: IconSettings })
   }
 
+  // Helper to convert hex to HSL object
+  const hexToHSL = (hex: string) => {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 4) {
+      r = parseInt("0x" + hex[1] + hex[1]);
+      g = parseInt("0x" + hex[2] + hex[2]);
+      b = parseInt("0x" + hex[3] + hex[3]);
+    } else if (hex.length === 7) {
+      r = parseInt("0x" + hex[1] + hex[2]);
+      g = parseInt("0x" + hex[3] + hex[4]);
+      b = parseInt("0x" + hex[5] + hex[6]);
+    }
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const cmin = Math.min(r, g, b),
+          cmax = Math.max(r, g, b),
+          delta = cmax - cmin;
+    let h = 0, s = 0, l = 0;
+
+    if (delta === 0) h = 0;
+    else if (cmax === r) h = ((g - b) / delta) % 6;
+    else if (cmax === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+
+    l = (cmax + cmin) / 2;
+    s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+    s = +(s * 100).toFixed(1);
+    l = +(l * 100).toFixed(1);
+
+    return { h, s, l };
+  }
+
+  // Generate CSS variables from landingPage settings
+  const getCustomThemeStyles = () => {
+    console.log("landingPage", landingPage);
+    if (!landingPage) return '';
+
+    let styles = '';
+    
+    // Primary Color Theme Derivation
+    if (landingPage.primaryColor) {
+        const primary = hexToHSL(landingPage.primaryColor);
+        // Calculate foreground contrast
+        const primaryFg = primary.l > 45 ? '0 0% 0%' : '0 0% 100%';
+
+        styles += `
+            --color-primary: ${landingPage.primaryColor} !important;
+            --primary: ${primary.h} ${primary.s}% ${primary.l}% !important;
+            --primary-foreground: ${primaryFg} !important;
+            --ring: ${primary.h} ${primary.s}% ${primary.l}% !important;
+            --color-ring: ${landingPage.primaryColor} !important;
+
+            /* Derive theme backgrounds from Primary Hue to create a cohesive look */
+            /* Using standard saturation/lightness rations from the dark theme */
+            --background: ${primary.h} 50% 6% !important;
+            --color-background: hsl(${primary.h}, 50%, 6%) !important;
+
+            --card: ${primary.h} 30% 18% !important;
+            --color-card: hsl(${primary.h}, 30%, 18%) !important;
+            
+            --popover: ${primary.h} 30% 18% !important;
+            --color-popover: hsl(${primary.h}, 30%, 18%) !important;
+
+            --muted: ${primary.h} 20% 30% !important;
+            --color-muted: hsl(${primary.h}, 20%, 30%) !important;
+
+            --border: ${primary.h} 30% 20% !important;
+            --color-border: hsl(${primary.h}, 30%, 20%) !important;
+            
+            --input: ${primary.h} 30% 20% !important;
+            --color-input: hsl(${primary.h}, 30%, 20%) !important;
+        `;
+    }
+
+    // Secondary Color (Explicit override)
+    if (landingPage.secondaryColor) {
+        const secondary = hexToHSL(landingPage.secondaryColor);
+        const secondaryFg = secondary.l > 45 ? '0 0% 0%' : '0 0% 100%';
+        
+        styles += `
+            --color-secondary: ${landingPage.secondaryColor} !important;
+            --secondary: ${secondary.h} ${secondary.s}% ${secondary.l}% !important;
+            --secondary-foreground: ${secondaryFg} !important;
+        `;
+    }
+
+    // Advanced Overrides
+    if (landingPage.backgroundColor) {
+        const bg = hexToHSL(landingPage.backgroundColor);
+        styles += `
+            --background: ${bg.h} ${bg.s}% ${bg.l}% !important;
+            --color-background: ${landingPage.backgroundColor} !important;
+        `;
+    }
+
+    if (landingPage.foregroundColor) {
+        const fg = hexToHSL(landingPage.foregroundColor);
+        styles += `
+            --foreground: ${fg.h} ${fg.s}% ${fg.l}% !important;
+            --color-foreground: ${landingPage.foregroundColor} !important;
+        `;
+    }
+
+    if (landingPage.cardColor) {
+        const card = hexToHSL(landingPage.cardColor);
+        styles += `
+            --card: ${card.h} ${card.s}% ${card.l}% !important;
+            --color-card: ${landingPage.cardColor} !important;
+            --popover: ${card.h} ${card.s}% ${card.l}% !important;
+            --color-popover: ${landingPage.cardColor} !important;
+        `;
+    }
+
+    if (landingPage.cardForegroundColor) {
+        const cardFg = hexToHSL(landingPage.cardForegroundColor);
+        styles += `
+            --card-foreground: ${cardFg.h} ${cardFg.s}% ${cardFg.l}% !important;
+            --color-card-foreground: ${landingPage.cardForegroundColor} !important;
+            --popover-foreground: ${cardFg.h} ${cardFg.s}% ${cardFg.l}% !important;
+            --color-popover-foreground: ${landingPage.cardForegroundColor} !important;
+        `;
+    }
+
+    return styles;
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="relative flex h-48 flex-col justify-end overflow-hidden backdrop-blur-md pb-12 bg-white/10 md:h-64 md:pb-16">
+    <div className="min-h-screen bg-background club-layout-container">
+      {landingPage && (
+        <style jsx global>{`
+          .club-layout-container {
+            ${getCustomThemeStyles()}
+          }
+          /* Apply overriding styles to specific elements if CSS variables aren't enough */
+          .club-hero-bg {
+            background-color: ${landingPage?.primaryColor || 'var(--color-primary)'};
+          }
+        `}</style>
+      )}
+      
+      <div className={`relative flex h-48 flex-col justify-end overflow-hidden pb-12 md:h-64 md:pb-16 ${
+          landingPage?.coverImage ? '' : 'backdrop-blur-md bg-white/10'
+      }`}>
+        {landingPage?.coverImage ? (
+             <>
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                    <ImageWithSkeleton 
+                        src={landingPage.coverImage} 
+                        alt="Cover" 
+                        className="h-full w-full object-cover"
+                        containerClassName="w-full h-full"
+                    />
+                    <div className="absolute inset-0 bg-black/40" />
+                </div>
+             </>
+        ) : (
+            <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/10 to-primary/5" />
+        )}
+
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-6 md:pb-10">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 backdrop-blur md:h-16 md:w-16">
-              <svg className="h-6 w-6 text-primary md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 backdrop-blur md:h-16 md:w-16 overflow-hidden border-2 border-white/20">
+              {landingPage?.logo ? (
+                  <ImageWithSkeleton src={landingPage.logo} alt="Club Logo" className="h-full w-full object-cover" containerClassName="h-full w-full" />
+              ) : (
+                  <svg className="h-6 w-6 text-primary md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                  </svg>
+              )}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground drop-shadow md:text-5xl">{clubName}</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Versenyek, játékosok, ligák – minden egy helyen.</p>
+              <h1 className="text-3xl font-bold text-foreground drop-shadow-md md:text-5xl" style={landingPage?.coverImage ? { color: 'white' } : {}}>{clubName}</h1>
+              <p className="mt-2 text-sm text-muted-foreground" style={landingPage?.coverImage ? { color: 'rgba(255,255,255,0.8)' } : {}}>Versenyek, játékosok, ligák – minden egy helyen.</p>
             </div>
           </div>
         </div>
@@ -105,9 +286,11 @@ export default function ClubLayout({
               {leagues}
             </TabsContent>
             {(userRole === 'admin' || userRole === 'moderator') && (
-              <TabsContent value="settings" className="mt-0">
-                {settings}
-              </TabsContent>
+              <>
+                <TabsContent value="settings" className="mt-0">
+                  {settings}
+                </TabsContent>
+              </>
             )}
           </div>
         </Tabs>

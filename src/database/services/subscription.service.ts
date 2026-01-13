@@ -1,48 +1,46 @@
-import { connectMongo } from '@/lib/mongoose';
-import { ClubModel } from '@/database/models/club.model';
-import { TournamentModel } from '@/database/models/tournament.model';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { connectMongo } from "@/lib/mongoose";
+import { ClubModel } from "../models/club.model";
+import { BadRequestError } from "@/middleware/errorHandle";
+import { TournamentModel } from "../models/tournament.model";
 
 export interface SubscriptionPlan {
+  id: string;
   name: string;
-  monthlyTournaments: number; // -1 means unlimited
+  monthlyTournaments: number; // -1 for unlimited
+  allowNonSandbox: boolean;
+  allowVerified: boolean;
   features: string[];
-  allowNonSandbox: boolean; // If false, can only create sandbox tournaments
-  allowVerified: boolean; // If false, cannot create verified/OAC tournaments
 }
 
-/**
- * Subscription plan configuration
- * Easy to modify for different tier restrictions
- * 
- * To restrict free tier to sandbox-only: set allowNonSandbox to false
- * To prevent a tier from creating OAC tournaments: set allowVerified to false
- */
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   free: {
+    id: 'free',
     name: 'Ingyenes',
     monthlyTournaments: 1,
-    allowNonSandbox: true, // Change to false to restrict to sandbox-only
-    allowVerified: true, // OAC tournaments are allowed (they don't count towards limit)
-    features: ['Havi 1 verseny/klub', 'Korlátlan felhasználó']
+    allowNonSandbox: false,
+    allowVerified: false,
+    features: ['1 verseny / hó', 'Csak Sandbox versenyek']
   },
   basic: {
-    name: 'Alap',
-    monthlyTournaments: 2,
+    id: 'basic',
+    name: 'Basic',
+    monthlyTournaments: 3,
     allowNonSandbox: true,
-    allowVerified: true,
-    features: ['Havi 2 verseny/klub', 'Korlátlan felhasználó', 'Liga indítási lehetőség']
+    allowVerified: false,
+    features: ['3 verseny / hó', 'Sandbox & Valódi versenyek']
   },
   pro: {
+    id: 'pro',
     name: 'Pro',
-    monthlyTournaments: 4,
+    monthlyTournaments: 10,
     allowNonSandbox: true,
     allowVerified: true,
-    features: ['Havi 4 verseny/klub', 'Korlátlan felhasználó', 'Liga indítási lehetőség', 'Részletes leg statisztikák']
+    features: ['10 verseny / hó', 'Sandbox & Valódi versenyek', 'OAC versenyek engedélyezése']
   },
   enterprise: {
+    id: 'enterprise',
     name: 'Enterprise',
-    monthlyTournaments: -1, // -1 means unlimited
+    monthlyTournaments: -1,
     allowNonSandbox: true,
     allowVerified: true,
     features: ['Korlátlan havi verseny', 'Korlátlan felhasználó', 'Elő meccs követés', 'Liga indítási lehetőség', 'Részletes leg statisztikák']

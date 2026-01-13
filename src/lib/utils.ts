@@ -126,3 +126,18 @@ export const roundRobin = (numPlayers: number) => {
 
     return matches;
 }
+
+/**
+ * Extracts MongoDB ObjectIDs from media API URLs in a string
+ * Pattern: /api/media/[24-character hex ID]
+ */
+export const extractMediaIds = (html: string): string[] => {
+    if (!html) return [];
+    const regex = /\/api\/media\/([a-f0-9]{24})/g;
+    const ids: string[] = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+        ids.push(match[1]);
+    }
+    return ids;
+};
