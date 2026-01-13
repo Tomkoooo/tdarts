@@ -46,3 +46,37 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+// POST - Új announcement létrehozása (admin only)
+export async function POST(request: NextRequest) {
+    try {
+        const token = await request.cookies.get('token')?.value;
+        if (!token) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+        const user = await AuthService.verifyToken(token);
+        if (!user || !user.isAdmin) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const body = await request.json();
+        const announcement = await AnnouncementService.createAnnouncement(body);
+
+        return NextResponse.json({
+            success: true,
+            announcement
+        }, { status: 201 });
+    } catch (error: any) {
+        console.error('Create admin announcement error:', error);
+        return NextResponse.json(
+            { success: false, error: error.message || 'Failed to create announcement' },
+            { status: 500 }
+        );
+    }
+}
