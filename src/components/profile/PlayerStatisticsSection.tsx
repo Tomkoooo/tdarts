@@ -557,7 +557,9 @@ export function PlayerStatisticsSection({
                   <div className="flex justify-between items-start mb-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-primary/40 font-mono">{tournament.year || currentYear}</span>
+                        <span className="text-[10px] font-bold text-secondary font-mono">
+                          {new Date(tournament.startDate || tournament.date).getFullYear()}
+                        </span>
                         <h4 className="text-xs font-black tracking-tight">{tournament.tournamentName || tournament.name}</h4>
                       </div>
                       <div className="flex items-center gap-2">
@@ -570,8 +572,8 @@ export function PlayerStatisticsSection({
                       </div>
                     </div>
                     <Link href={`/tournaments/${tournament.tournamentId}`}>
-                       <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                         <IconTarget size={14} />
+                       <Button variant="outline" size="sm" className="">
+                         Megnyitás
                        </Button>
                     </Link>
                   </div>

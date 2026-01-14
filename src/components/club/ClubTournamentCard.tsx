@@ -200,7 +200,7 @@ export default function ClubTournamentCard({
           </div>
           <div className="flex items-center gap-2">
            
-            <Button variant="ghost" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
+            <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
               Részletek
               <IconChevronRight className="w-4 h-4" />
             </Button>
