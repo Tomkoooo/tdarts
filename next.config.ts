@@ -51,15 +51,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/globals.css',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      {
         source: '/api/(.*)',
         headers: [
           {

@@ -21,12 +21,26 @@ const BoardPage: React.FC = () => {
   const [localMatchStartingScore, setLocalMatchStartingScore] = useState<number>(501);
   const [localMatchActive, setLocalMatchActive] = useState<boolean>(false);
   const [localMatchId, setLocalMatchId] = useState<string>("");
+  const [isOnline, setIsOnline] = React.useState(true);
   const router = useRouter();
+
+  React.useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOnline) return;
     
     if (!tournamentCode.trim()) {
       setError("Kérlek add meg a torna kódot!");
@@ -146,6 +160,7 @@ const BoardPage: React.FC = () => {
                   onChange={(e) => setTournamentCode(e.target.value.toUpperCase())}
                   maxLength={4}
                   autoFocus
+                  disabled={!isOnline}
                 />
                 <p className="text-xs text-muted-foreground">4 karakteres kód</p>
               </div>
@@ -161,6 +176,7 @@ const BoardPage: React.FC = () => {
                   className="h-14"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={!isOnline}
                 />
                 <p className="text-xs text-muted-foreground">Kérd el a szervezőtől</p>
               </div>
@@ -169,9 +185,11 @@ const BoardPage: React.FC = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={!tournamentCode.trim() || tournamentCode.length !== 4 || !password.trim() || loading}
+                disabled={!tournamentCode.trim() || tournamentCode.length !== 4 || !password.trim() || loading || !isOnline}
               >
-                {loading ? (
+                {!isOnline ? (
+                  'Offline mód'
+                ) : loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
                     Csatlakozás...

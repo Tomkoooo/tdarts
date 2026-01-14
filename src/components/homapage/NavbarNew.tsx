@@ -27,6 +27,21 @@ const NavbarNew = () => {
   const { user } = useUserContext();
   const { logout } = useLogout();
   const pathname = usePathname();
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,7 +60,7 @@ const NavbarNew = () => {
   const navItems = [
     { name: "Versenyek", icon: IconTournament, href: "/search?tab=tournaments" },
     { name: "Klubok", icon: IconUsers, href: "/search?tab=clubs" },
-    { name: "Tábla", icon: IconDeviceDesktop, href: "/board" },
+    { name: isOnline ? "Tábla" : "Helyi Tábla (Offline)", icon: IconDeviceDesktop, href: "/board" },
     { name: "Keresés", icon: IconSearch, href: "/search" },
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
   ];
@@ -81,6 +96,11 @@ const NavbarNew = () => {
             <span className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
               tDarts
             </span>
+            {!isOnline && (
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wider animate-pulse border border-destructive/20">
+                Offline
+              </span>
+            )}
           </Link>
 
           {/* Desktop Navigation */}
@@ -269,6 +289,12 @@ const NavbarNew = () => {
                         <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconUser className="w-4 h-4" />
                           Profil
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" className="w-full justify-start gap-2">
+                        <Link href="/profile#player-stats" className="cursor-pointer w-full flex items-center">
+                          <IconChartBar className="h-4 w-4" />
+                          Statisztika
                         </Link>
                       </Button>
                       <Button 
