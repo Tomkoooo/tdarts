@@ -54,6 +54,11 @@ export interface Club {
     template: 'classic' | 'modern';
     showMembers: boolean;
     showTournaments: boolean;
+    seo?: {
+      title?: string;
+      description?: string;
+      keywords?: string;
+    };
   };
   // Tournaments (minimal info for list)
   tournaments?: { 

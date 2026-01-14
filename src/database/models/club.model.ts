@@ -55,6 +55,11 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
       template: { type: String, enum: ['classic', 'modern'], default: 'classic' },
       showMembers: { type: Boolean, default: true },
       showTournaments: { type: Boolean, default: true },
+      seo: {
+        title: { type: String, maxlength: 100 },
+        description: { type: String, maxlength: 200 },
+        keywords: { type: String, maxlength: 500 },
+      },
     },
   },
   { collection: 'clubs', timestamps: true }

@@ -38,9 +38,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
       coverImage: club.landingPage?.coverImage || "",
       aboutText: club.landingPage?.aboutText || club.description || "",
       template: club.landingPage?.template || "classic",
-      gallery: club.landingPage?.gallery || [],
       showMembers: club.landingPage?.showMembers ?? true,
       showTournaments: club.landingPage?.showTournaments ?? true,
+      "seo.title": club.landingPage?.seo?.title || "",
+      "seo.description": club.landingPage?.seo?.description || "",
+      "seo.keywords": club.landingPage?.seo?.keywords || "",
     }
   })
 
@@ -57,9 +59,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
         coverImage: club.landingPage?.coverImage || "",
         aboutText: club.landingPage?.aboutText || club.description || "",
         template: club.landingPage?.template || "classic",
-        gallery: club.landingPage?.gallery || [],
         showMembers: club.landingPage?.showMembers ?? true,
         showTournaments: club.landingPage?.showTournaments ?? true,
+        "seo.title": club.landingPage?.seo?.title || "",
+        "seo.description": club.landingPage?.seo?.description || "",
+        "seo.keywords": club.landingPage?.seo?.keywords || "",
     });
   }, [club, reset]);
 
@@ -316,6 +320,27 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                     onChange={(val) => setValue("aboutText", val)} 
                     placeholder="Írj a klubról..." 
                   />
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-medium mb-3">SEO Beállítások</h3>
+                  <div className="space-y-4">
+                      <div>
+                        <Label>Meta Title (SEO Cím)</Label>
+                        <Input {...register("seo.title")} placeholder="Keresőmotorokban megjelenő cím" />
+                        <p className="text-[10px] text-muted-foreground mt-1">Alapértelmezett: a klub neve. Maximális hossz: 100 karakter.</p>
+                      </div>
+                      <div>
+                        <Label>Meta Description (SEO Leírás)</Label>
+                        <Input {...register("seo.description")} placeholder="Rövid leírás a keresőknek" />
+                        <p className="text-[10px] text-muted-foreground mt-1">Alapértelmezett: a klub leírása. Maximális hossz: 200 karakter.</p>
+                      </div>
+                      <div>
+                        <Label>Kulcsszavak (Keywords)</Label>
+                        <Input {...register("seo.keywords")} placeholder="darts, tornák, klub, helyszín..." />
+                        <p className="text-[10px] text-muted-foreground mt-1">Vesszővel elválasztva.</p>
+                      </div>
+                  </div>
               </div>
 
               <div className="flex justify-end">
