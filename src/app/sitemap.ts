@@ -2,8 +2,11 @@ import { MetadataRoute } from 'next';
 import { ClubService } from '@/database/services/club.service';
 import { TournamentService } from '@/database/services/tournament.service';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 86400; // 24 hours
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.sironic.hu';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.hu';
   
   // Static pages
   const staticPages = [
@@ -30,6 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic club pages
   let clubPages: MetadataRoute.Sitemap = [];
   try {
+    // We fetch clubs but with a timeout to avoid hanging if DB is slow or unreachable (though force-dynamic helps)
     const clubs = await ClubService.getAllClubs();
     clubPages = clubs.map((club: { _id: string; updatedAt?: Date }) => ({
       url: `${baseUrl}/clubs/${club._id}`,

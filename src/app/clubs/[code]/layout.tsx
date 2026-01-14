@@ -12,7 +12,7 @@ interface LayoutProps {
 function getAbsoluteUrl(path: string): string {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `${process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.sironic.hu"}${path}`;
+  return `${process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"}${path}`;
 }
 
 export async function generateMetadata({
