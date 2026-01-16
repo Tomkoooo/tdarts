@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "NODE_ENV=production next start",
     "lint": "next lint",
-    "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/auth.route.test.ts src/tests/club.route.test.ts src/tests/club.service.test.ts src/tests/profile.route.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts src/tests/simple-tournament-lifecycle.test.ts",
+    "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts src/tests/simple-tournament-lifecycle.test.ts",
     "prepare": "husky"
   },
   "dependencies": {

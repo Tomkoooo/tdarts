@@ -32,4 +32,10 @@ export interface UserDocument extends Omit<IUser, '_id'>, mongoose.Document{
   //methods
   generateVerifyEmailCode(): Promise<string>;
   matchPassword(password: string): Promise<boolean>;
+  generateResetPasswordCode(): Promise<string>;
+  generateTwoFactorAuthCode(): Promise<string>;
+  verifyEmail(code: string): Promise<void>;
+  resetPassword(newPassword: string, code: string): Promise<void>;
+  verifyTwoFactorAuth(code: string): Promise<boolean>;
+  updateLastLogin(): Promise<void>;
 }
