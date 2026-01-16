@@ -14,8 +14,12 @@ import { UserModel } from '@/database/models/user.model';
 import { ClubModel } from '@/database/models/club.model';
 import { NextRequest } from 'next/server';
 import { Types } from 'mongoose';
+import { AuthorizationError } from '@/middleware/errorHandle';
+
+import { AuthorizationService } from '@/database/services/authorization.service';
 
 jest.mock('@/database/services/club.service');
+jest.mock('@/database/services/authorization.service');
 
 describe('Club Routes', () => {
   beforeAll(async () => {
@@ -141,8 +145,8 @@ describe('Club Routes', () => {
       expect(json).toMatchObject({ error: 'userId and updates are required' });
     }, 20000);
 
-    it('should return 500 if update fails, missing admin permission or club not found', async () => {
-      (ClubService.updateClub as jest.Mock).mockRejectedValue(new Error('Only admins can update club details'));
+    it('should return 403 if update fails due to missing permission', async () => {
+      (ClubService.updateClub as jest.Mock).mockRejectedValue(new AuthorizationError('Only admins can update club details'));
 
       const request = new NextRequest('http://localhost:3000/api/clubs', {
         method: 'POST',
@@ -156,8 +160,8 @@ describe('Club Routes', () => {
       const json = await response.json();
       console.log(response)
 
-      expect(response.status).toBe(500);
-      expect(json).toMatchObject({ error: 'Internal server error' });
+      expect(response.status).toBe(403);
+      expect(json).toMatchObject({ error: 'Only admins can update club details' });
     }, 20000);
   });
 
@@ -175,34 +179,35 @@ describe('Club Routes', () => {
         isActive: true,
       };
       (ClubService.addMember as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/addMember`, {
         method: 'POST',
         body: JSON.stringify({
           userId: new Types.ObjectId().toString(),
-          requesterId: mockClub.admin[0],
         }),
       });
 
-      const response = await addMember(request, { params: { clubId: mockClub._id } });
+      const response = await addMember(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing userId or requesterId', async () => {
+    it('should return 400 for missing userId', async () => {
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(new Types.ObjectId().toString());
       const clubId = new Types.ObjectId().toString();
       const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/addMember`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
 
-      const response = await addMember(request, { params: { clubId } });
+      const response = await addMember(request, { params: Promise.resolve({ clubId }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'userId and requesterId are required' });
+      expect(json).toMatchObject({ error: 'userId is required' });
     }, 20000);
   });
 
@@ -220,34 +225,35 @@ describe('Club Routes', () => {
         isActive: true,
       };
       (ClubService.removeMember as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/removeMember`, {
         method: 'POST',
         body: JSON.stringify({
           userId: new Types.ObjectId().toString(),
-          requesterId: mockClub.admin[0],
         }),
       });
 
-      const response = await removeMember(request, { params: { clubId: mockClub._id } });
+      const response = await removeMember(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing userId or requesterId', async () => {
+    it('should return 400 for missing userId', async () => {
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(new Types.ObjectId().toString());
       const clubId = new Types.ObjectId().toString();
       const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/removeMember`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
 
-      const response = await removeMember(request, { params: { clubId } });
+      const response = await removeMember(request, { params: Promise.resolve({ clubId }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'userId and requesterId are required' });
+      expect(json).toMatchObject({ error: 'userId is required' });
     }, 20000);
   });
 
@@ -265,34 +271,35 @@ describe('Club Routes', () => {
         isActive: true,
       };
       (ClubService.addModerator as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/addModerator`, {
         method: 'POST',
         body: JSON.stringify({
           userId: new Types.ObjectId().toString(),
-          requesterId: mockClub.admin[0],
         }),
       });
 
-      const response = await addModerator(request, { params: { clubId: mockClub._id } });
+      const response = await addModerator(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing userId or requesterId', async () => {
+    it('should return 400 for missing userId', async () => {
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(new Types.ObjectId().toString());
       const clubId = new Types.ObjectId().toString();
       const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/addModerator`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
 
-      const response = await addModerator(request, { params: { clubId } });
+      const response = await addModerator(request, { params: Promise.resolve({ clubId }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'userId and requesterId are required' });
+      expect(json).toMatchObject({ error: 'userId is required' });
     }, 20000);
   });
 
@@ -310,34 +317,35 @@ describe('Club Routes', () => {
         isActive: true,
       };
       (ClubService.removeModerator as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/removeModerator`, {
         method: 'POST',
         body: JSON.stringify({
           userId: new Types.ObjectId().toString(),
-          requesterId: mockClub.admin[0],
         }),
       });
 
-      const response = await removeModerator(request, { params: { clubId: mockClub._id } });
+      const response = await removeModerator(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing userId or requesterId', async () => {
+    it('should return 400 for missing userId', async () => {
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(new Types.ObjectId().toString());
       const clubId = new Types.ObjectId().toString();
       const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/removeModerator`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
 
-      const response = await removeModerator(request, { params: { clubId } });
+      const response = await removeModerator(request, { params: Promise.resolve({ clubId }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'userId and requesterId are required' });
+      expect(json).toMatchObject({ error: 'userId is required' });
     }, 20000);
   });
 
@@ -355,34 +363,35 @@ describe('Club Routes', () => {
         isActive: true,
       };
       (ClubService.addTournamentPlayer as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/addTournamentPlayer`, {
         method: 'POST',
         body: JSON.stringify({
           playerName: 'Guest Player',
-          requesterId: mockClub.admin[0],
         }),
       });
 
-      const response = await addTournamentPlayer(request, { params: { clubId: mockClub._id } });
+      const response = await addTournamentPlayer(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing playerName or requesterId', async () => {
+    it('should return 400 for missing playerName', async () => {
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(new Types.ObjectId().toString());
       const clubId = new Types.ObjectId().toString();
       const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/addTournamentPlayer`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
 
-      const response = await addTournamentPlayer(request, { params: { clubId } });
+      const response = await addTournamentPlayer(request, { params: Promise.resolve({ clubId }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'playerName and requesterId are required' });
+      expect(json).toMatchObject({ error: 'playerName is required' });
     }, 20000);
   });
 
@@ -400,34 +409,35 @@ describe('Club Routes', () => {
         isActive: true,
       };
       (ClubService.removeTournamentPlayer as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/removeTournamentPlayer`, {
         method: 'POST',
         body: JSON.stringify({
           playerName: 'Guest Player',
-          requesterId: mockClub.admin[0],
         }),
       });
 
-      const response = await removeTournamentPlayer(request, { params: { clubId: mockClub._id } });
+      const response = await removeTournamentPlayer(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing playerName or requesterId', async () => {
+    it('should return 400 for missing playerName', async () => {
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(new Types.ObjectId().toString());
       const clubId = new Types.ObjectId().toString();
       const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/removeTournamentPlayer`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
 
-      const response = await removeTournamentPlayer(request, { params: { clubId } });
+      const response = await removeTournamentPlayer(request, { params: Promise.resolve({ clubId }) });
       const json = await response.json();
 
       expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'playerName and requesterId are required' });
+      expect(json).toMatchObject({ error: 'playerName is required' });
     }, 20000);
   });
 
@@ -445,34 +455,20 @@ describe('Club Routes', () => {
         isActive: false,
       };
       (ClubService.deactivateClub as jest.Mock).mockResolvedValue(mockClub);
-
+      (AuthorizationService.getUserIdFromRequest as jest.Mock).mockResolvedValue(mockClub.admin[0]);
+      
       const request = new NextRequest(`http://localhost:3000/api/clubs/${mockClub._id}/deactivate`, {
         method: 'POST',
-        body: JSON.stringify({
-          requesterId: mockClub.admin[0],
-        }),
+        body: JSON.stringify({}),
       });
 
-      const response = await deactivateClub(request, { params: { clubId: mockClub._id } });
+      const response = await deactivateClub(request, { params: Promise.resolve({ clubId: mockClub._id }) });
       const json = await response.json();
 
       expect(response.status).toBe(200);
       expect(json).toMatchObject(mockClub);
     }, 20000);
 
-    it('should return 400 for missing requesterId', async () => {
-      const clubId = new Types.ObjectId().toString();
-      const request = new NextRequest(`http://localhost:3000/api/clubs/${clubId}/deactivate`, {
-        method: 'POST',
-        body: JSON.stringify({}),
-      });
-
-      const response = await deactivateClub(request, { params: { clubId } });
-      const json = await response.json();
-
-      expect(response.status).toBe(400);
-      expect(json).toMatchObject({ error: 'requesterId is required' });
-    }, 20000);
   });
 
   describe('GET /api/clubs/user/role', () => {

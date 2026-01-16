@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { errorHandle } from '@/middleware/errorHandle';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ clubId: string }> }) {
   try {
@@ -22,10 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ clu
     const club = await ClubService.removeModerator(clubId, userId, requesterId);
     return NextResponse.json(club, { status: 200 });
   } catch (error) {
-    if (error instanceof BadRequestError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error removing moderator:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const { status, body } = errorHandle(error);
+    return NextResponse.json(body, { status });
   }
 }

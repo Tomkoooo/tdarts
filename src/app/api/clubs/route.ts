@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { errorHandle } from '@/middleware/errorHandle';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,11 +12,8 @@ export async function GET(req: NextRequest) {
     const club = await ClubService.getClub(clubId);
     return NextResponse.json(club, { status: 200 });
   } catch (error) {
-    if (error instanceof BadRequestError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error fetching club:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const { status, body } = errorHandle(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -30,10 +27,7 @@ export async function POST(req: NextRequest) {
     const club = await ClubService.updateClub(updates._id, userId, updates);
     return NextResponse.json(club, { status: 200 });
   } catch (error) {
-    if (error instanceof BadRequestError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error updating club:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const { status, body } = errorHandle(error);
+    return NextResponse.json(body, { status });
   }
 }

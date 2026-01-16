@@ -31,4 +31,5 @@ export interface UserDocument extends Omit<IUser, '_id'>, mongoose.Document{
   isVerified: boolean;
   //methods
   generateVerifyEmailCode(): Promise<string>;
+  matchPassword(password: string): Promise<boolean>;
 }

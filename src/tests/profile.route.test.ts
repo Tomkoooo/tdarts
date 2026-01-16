@@ -44,6 +44,7 @@ describe('Profile Routes', () => {
           name: 'New Name',
           username: 'new_user',
           password: 'newpassword123',
+          confirmPassword: 'newpassword123',
         }),
       });
 

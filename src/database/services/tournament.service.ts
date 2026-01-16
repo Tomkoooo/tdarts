@@ -969,9 +969,12 @@ export class TournamentService {
                 console.log(`Match ${match._id}: hasPlayer1=${!!hasPlayer1}, hasPlayer2=${!!hasPlayer2}, isBye=${isByeMatch}`);
                 
                 if (isByeMatch) {
-                    // Get the existing player
+                    // Get the existing player - check for null before accessing playerId
                     console.log(`Match ${match._id}: hasPlayer1=${!!hasPlayer1}, hasPlayer2=${!!hasPlayer2}, match.player1=${match.player1}, match.player2=${match.player2}`);
-                    const existingPlayerId = hasPlayer1 ? match.player1.playerId : match.player2.playerId;
+                    
+                    // Get the player ID safely
+                    const existingPlayerId = hasPlayer1 && match.player1 ? match.player1.playerId : 
+                                            (hasPlayer2 && match.player2 ? match.player2.playerId : null);
                     
                     if (existingPlayerId) {
                         match.winnerId = existingPlayerId;
@@ -995,6 +998,8 @@ export class TournamentService {
                         } catch (error) {
                             console.error(`Error auto-advancing bye match ${match._id}:`, error);
                         }
+                    } else {
+                        console.warn(`Match ${match._id}: Bye match but no player found - skipping`);
                     }
                 }
             }
@@ -3486,12 +3491,7 @@ export class TournamentService {
                 throw new BadRequestError('Only club admins or moderators can finish tournaments');
             }
 
-            console.log('=== FINISH TOURNAMENT DEBUG ===');
-            console.log('Tournament ID:', tournament._id);
-            console.log('Tournament Code:', tournament.tournamentId);
-            console.log('Tournament Settings:', JSON.stringify(tournament.tournamentSettings, null, 2));
-            console.log('Tournament Players Count:', tournament.tournamentPlayers?.length || 0);
-            console.log('==============================');
+
 
             const format = tournament.tournamentSettings?.format || 'group_knockout';
             const tournamentPlayers = tournament.tournamentPlayers || [];
@@ -3559,6 +3559,10 @@ export class TournamentService {
                         // Handle both populated and non-populated matchReference
                         const matchRefObj = typeof matchRef === 'object' ? matchRef : null;
                         if (!matchRefObj || !(matchRefObj as any).winnerId) {
+                            console.log(`DEBUG: Incomplete match found in Round ${roundIndex + 1}`);
+                            console.log(`DEBUG: Match Ref ID: ${matchRef && (matchRef as any)._id ? (matchRef as any)._id : matchRef}`);
+                            console.log(`DEBUG: Match Status: ${matchRefObj ? (matchRefObj as any).status : 'N/A'}`);
+                            console.log(`DEBUG: Player 1: ${match.player1}, Player 2: ${match.player2}`);
                             throw new BadRequestError(`Incomplete match in round ${roundIndex + 1} - all matches must be finished`);
                         }
 
@@ -3636,15 +3640,15 @@ export class TournamentService {
                                 throw new BadRequestError(`Incomplete match in round ${roundIndex + 1}`);
                             }
 
+                            // Skip bye matches (missing players or missing playerIds)
+                            if (!match.player1 || !(match.player1 as any).playerId || !match.player2 || !(match.player2 as any).playerId) {
+                                continue;
+                            }
+
                             // Handle both populated and non-populated matchReference
                             const matchRefObj = typeof matchRef === 'object' ? matchRef : null;
                             if (!matchRefObj || !(matchRefObj as any).winnerId) {
                                 throw new BadRequestError(`Incomplete match in round ${roundIndex + 1}`);
-                            }
-
-                            // Skip bye matches (only one player or missing players)
-                            if (!match.player1 || !match.player2) {
-                                continue;
                             }
 
                             const winnerId = (matchRefObj as any).winnerId.toString();
