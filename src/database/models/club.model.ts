@@ -16,6 +16,10 @@ const clubSchema = new mongoose.Schema<ClubDocument>(
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
     admin: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    tournamentPlayers: [{
+      name: { type: String, required: true },
+      // Add other fields if necessary
+    }],
     subscriptionModel: { 
       type: String, 
       enum: ['free', 'basic', 'pro', 'enterprise'], 

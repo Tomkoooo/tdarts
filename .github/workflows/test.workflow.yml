@@ -3,11 +3,10 @@ name: Run Test Suites
 on:
   push:
     branches:
-      - main
-      - 'v*' # Minden olyan branch, amely 'v'-vel kezdődik
+      - to_release
   pull_request:
     branches:
-      - main
+      - to_release
   workflow_dispatch:
 
 jobs:

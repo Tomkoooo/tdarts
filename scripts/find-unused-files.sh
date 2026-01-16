@@ -74,55 +74,76 @@ echo ""
 
 # 4. Find unused API endpoints (not called from frontend)
 echo -e "${YELLOW}🔍 Checking for potentially unused API endpoints...${NC}"
-echo "  (This may take a while...)"
+echo "  (Using improved detection for dynamic routes and concatenation)"
 echo ""
 
 unused_apis=0
 find src/app/api -type f -name "route.ts" 2>/dev/null | while read api_file; do
   # Extract API path from file location
+  # e.g., src/app/api/tournaments/[code]/matches/route.ts -> /tournaments/[code]/matches
   api_path=$(echo "$api_file" | sed 's|src/app/api||' | sed 's|/route\.ts$||')
   
-  # Convert dynamic segments to search patterns
-  # [code] -> (code|{code}|${code})
-  # [id] -> (id|{id}|${id})
-  
-  # Extract the base path without dynamic segments for initial search
-  api_path_static=$(echo "$api_path" | sed 's|\[[^]]*\]|[^/'"'"'"\`]*|g')
-  
-  # Get the path segments to build flexible search patterns
-  # For /tournaments/[code]/reopen, we want to match:
-  # - /api/tournaments/*/reopen
-  # - /api/tournaments/${code}/reopen
-  # - /api/tournaments/{code}/reopen
-  # - tournaments/${tournamentCode}/reopen (without /api prefix)
-  
-  # Build search pattern that matches the structure
-  search_pattern=$(echo "$api_path" | sed 's|\[[^]]*\]|[^/'"'"'"\`]*|g')
-  
-  # Also search for the endpoint name (last segment)
-  endpoint_name=$(echo "$api_path" | awk -F'/' '{print $NF}' | sed 's|\[[^]]*\]||')
-  
-  # Search for API calls in various formats:
-  # 1. Direct path: '/api/tournaments/code/reopen'
-  # 2. Template literal: `/api/tournaments/${code}/reopen`
-  # 3. String concatenation: '/api/tournaments/' + code + '/reopen'
-  # 4. Axios/fetch calls
+  # 1. Direct match with relaxed dynamic segments
+  # This handles template literals like `/api/tournaments/${code}/matches`
+  # and simple concatenation on the same line.
+  search_pattern=$(echo "$api_path" | sed 's|\[[^]]*\]|.*|g')
   
   call_count=$(grep -riE \
-    -e "axios\.(get|post|put|delete|patch).*['\"\`].*api$search_pattern" \
-    -e "fetch.*['\"\`].*api$search_pattern" \
-    -e "['\"\`]/api$search_pattern" \
-    -e "['\"\`].*api.*$search_pattern" \
+    -e "['\"\`].*api$search_pattern" \
+    -e "['\"\`].*$api_path" \
     src --include="*.ts" --include="*.tsx" 2>/dev/null | \
     grep -v "$api_file" | \
     grep -v "node_modules" | \
     wc -l | tr -d ' ')
   
-  if [ "$call_count" -eq 0 ]; then
-    echo -e "${RED}  - $api_file${NC}"
-    echo -e "    ${BLUE}Path: /api$api_path${NC}"
-    ((unused_apis++))
+  if [ "$call_count" -gt 0 ]; then
+    continue
   fi
+
+  # 2. Segment-based match (more robust for multi-line or complex concatenation)
+  # Extract static segments (filter out [something])
+  # e.g., /tournaments/[code]/matches -> tournaments, matches
+  segments=$(echo "$api_path" | tr '/' '\n' | grep -v '^\[' | grep -v '^$')
+  segment_count=$(echo "$segments" | wc -l | tr -d ' ')
+  
+  if [ "$segment_count" -gt 0 ]; then
+    # Start with a list of all files
+    matching_files=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null)
+    
+    # Progressively filter files that contain each segment
+    while read -r segment; do
+      if [ -n "$matching_files" ]; then
+        matching_files=$(echo "$matching_files" | xargs grep -l "$segment" 2>/dev/null)
+      fi
+    done <<< "$segments"
+    
+    # Remove the api_file itself from the results
+    matching_files=$(echo "$matching_files" | grep -v "$api_file")
+    
+    file_count=$(echo "$matching_files" | grep -v "^$" | wc -l | tr -d ' ')
+    
+    if [ "$file_count" -gt 0 ]; then
+      # If we found files containing all segments, consider it "potentially used"
+      # But only if it's not too common (e.g., skip if more than 50 files match, as it might be generic terms)
+      if [ "$file_count" -lt 50 ]; then
+        continue
+      fi
+    fi
+  fi
+
+  # 3. Special case for very short paths or common names
+  # If it's a top-level route like /api/logs, just check for "api/logs" or "/logs"
+  if [ "$segment_count" -eq 1 ]; then
+    last_segment=$(echo "$api_path" | awk -F'/' '{print $NF}')
+    if grep -riQ "api/$last_segment" src --include="*.ts" --include="*.tsx" | grep -v "$api_file" | grep -v "node_modules" > /dev/null; then
+      continue
+    fi
+  fi
+
+  # If we reached here, it's likely unused
+  echo -e "${RED}  - $api_file${NC}"
+  echo -e "    ${BLUE}Path: /api$api_path${NC}"
+  ((unused_apis++))
 done
 echo ""
 

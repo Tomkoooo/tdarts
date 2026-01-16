@@ -38,6 +38,7 @@ export interface Club {
   updatedAt: Date;
   isActive: boolean;
   verified: boolean;
+  tournamentPlayers?: Array<{ name: string }>;
   billingInfo?: BillingInfo;
   landingPage?: {
     primaryColor: string;
@@ -91,5 +92,6 @@ export interface ClubDocument extends Document, Omit<Club, '_id' | 'members' | '
   members: Types.ObjectId[]; // Player ref
   admin: Types.ObjectId[]; // User ref
   moderators: Types.ObjectId[]; // User ref
+  tournamentPlayers: Array<{ name: string }>;
   toJSON: () => Club;
 }

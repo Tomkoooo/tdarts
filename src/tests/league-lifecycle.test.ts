@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
 
 // Configuration
 const BASE_URL = 'http://localhost:3000/api';
@@ -170,7 +172,7 @@ const playCompleteTournament = async (authenticatedAxios: any, leagueId?: string
   const tournamentPayload = {
     name: `League Test Tournament - ${Date.now()}`,
     description: `Automated league test tournament with ${LEAGUE_CONFIG.playerCount} players`,
-    startDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    startDate: new Date().toISOString(),
     maxPlayers: LEAGUE_CONFIG.playerCount,
     format: 'group_knockout',
     startingScore: 501,
@@ -180,8 +182,9 @@ const playCompleteTournament = async (authenticatedAxios: any, leagueId?: string
     entryFee: 1000,
     location: 'Test Location',
     type: 'amateur',
-    registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-    leagueId: leagueId // Attach to league if provided
+    registrationDeadline: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    leagueId: leagueId, // Attach to league if provided
+    isSandbox: true,
   };
 
   const createResponse = await authenticatedAxios.post(
@@ -466,6 +469,24 @@ const playCompleteTournament = async (authenticatedAxios: any, leagueId?: string
 
 // League Lifecycle Test
 describe('League Lifecycle Test', () => {
+  let mongoServer: MongoMemoryServer;
+
+  beforeAll(async () => {
+    // Disconnect any existing connection first
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    
+    // Start in-memory MongoDB
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+  }, 30000);
+
+  afterAll(async () => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
+  });
   test('Complete League Lifecycle with Multiple Tournaments', async () => {
     jest.setTimeout(600000); // 10 minutes
     

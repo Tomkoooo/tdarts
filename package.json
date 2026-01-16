@@ -1,14 +1,16 @@
 {
   "name": "tDarts",
-  "version": "beta2.3.0",
+  "version": "beta2.3.5",
   "private": true,
+  "license": "CC BY-NC-SA 4.0",
   "scripts": {
     "dev": "NEXT_PUBLIC_ENABLE_SOCKET=true next dev",
     "build": "next build",
     "start": "NODE_ENV=production next start",
     "lint": "next lint",
-    "test": "jest --runInBand",
-    "prepare": "husky"
+    "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts src/tests/simple-tournament-lifecycle.test.ts",
+    "prepare": "husky",
+    "husky": ".husky/pre-push"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",

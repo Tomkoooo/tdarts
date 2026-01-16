@@ -29,6 +29,7 @@ describe('Auth Routes', () => {
         body: JSON.stringify({
           email: 'test@example.com',
           password: 'password123',
+          confirmPassword: 'password123',
           username: 'test_user',
           name: 'Test User',
         }),
@@ -62,7 +63,15 @@ describe('Auth Routes', () => {
   describe('POST /api/auth/login', () => {
     it('should login a user', async () => {
       const mockToken = 'mocked-jwt-token';
-      (AuthService.login as jest.Mock).mockResolvedValue(mockToken);
+      const mockUser = {
+        _id: 'user_id',
+        username: 'test_user',
+        name: 'Test User',
+        email: 'test@example.com',
+        isVerified: true,
+        isAdmin: false,
+      };
+      (AuthService.login as jest.Mock).mockResolvedValue({ token: mockToken, user: mockUser });
 
       const request = new Request('http://localhost:3000/api/auth/login', {
         method: 'POST',

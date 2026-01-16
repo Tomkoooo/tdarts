@@ -60,6 +60,7 @@ export class ClubService {
       admin: [creatorId], // creator is admin
       members: [], // No initial members, they are added through other flows
       moderators: [],
+      tournamentPlayers: [],
       isActive: true,
     });
 
@@ -85,7 +86,7 @@ export class ClubService {
 
     const isAuthorized = await AuthorizationService.checkAdminOrModerator(userId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins or moderators can update landing settings');
+      throw new AuthorizationError('Only admins or moderators can update landing settings');
     }
 
     // TODO: Validate subscriptions/feature flags for premium features (e.g. custom colors)
@@ -120,7 +121,7 @@ export class ClubService {
 
     const isAuthorized = await AuthorizationService.checkAdminOnly(userId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins can update club details');
+      throw new AuthorizationError('Only admins can update club details');
     }
 
     if (updates.name && updates.name !== club.name) {
@@ -225,7 +226,7 @@ export class ClubService {
     }
     const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins can add moderators');
+      throw new AuthorizationError('Only admins can add moderators');
     }
     
     // the id from the request refers to the player collection and in the player collection we refer to the user if it's registered
@@ -268,7 +269,7 @@ export class ClubService {
     }
     const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins can add admins');
+      throw new AuthorizationError('Only admins can add admins');
     }
     
     // Only allow if userId is a registered user and has a player entry with userRef
@@ -321,17 +322,31 @@ export class ClubService {
       // Check if requester has admin or moderator permissions
       const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
       if (!isAuthorized) {
-        throw new BadRequestError('Only admins or moderators can remove members');
+        throw new AuthorizationError('Only admins or moderators can remove members');
       }
     }
 
-    if (club.admin.includes(new Types.ObjectId(userId)) && club.admin.length === 1) {
-      throw new BadRequestError('Cannot remove the last admin');
+    // userId is a Player ID - need to get the User ID for moderators/admin filtering
+    const player = await PlayerModel.findById(userId);
+    let userRefId: Types.ObjectId | null = null;
+    
+    if (player && player.userRef) {
+      userRefId = new Types.ObjectId(player.userRef);
+      
+      // Check if this is the last admin
+      if (club.admin.includes(userRefId) && club.admin.length === 1) {
+        throw new BadRequestError('Cannot remove the last admin');
+      }
     }
 
+    // Remove from members array (Player ID)
     club.members = club.members.filter((id: Types.ObjectId) => !id.equals(userId));
-    club.moderators = club.moderators.filter((id: Types.ObjectId) => !id.equals(userId));
-    club.admin = club.admin.filter((id: Types.ObjectId) => !id.equals(userId));
+    
+    // Remove from moderators and admin arrays (User ID) - only if player has userRef
+    if (userRefId) {
+      club.moderators = club.moderators.filter((id: Types.ObjectId) => !id.equals(userRefId));
+      club.admin = club.admin.filter((id: Types.ObjectId) => !id.equals(userRefId));
+    }
 
     await club.save();
     return club;
@@ -345,14 +360,24 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    const playerUserRef = await PlayerModel.findOne({ _id: userId }).select('userRef');
+    // userId is a Player ID from the members array
+    const player = await PlayerModel.findById(userId);
+    if (!player) {
+      throw new BadRequestError('Player not found');
+    }
+    
+    if (!player.userRef) {
+      throw new BadRequestError('Player is not a registered user (no userRef)');
+    }
 
     const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins can remove moderators');
+      throw new AuthorizationError('Only admins can remove moderators');
     }
 
-    club.moderators = club.moderators.filter((_id: Types.ObjectId) => !_id.equals(playerUserRef.userRef));
+    // Only remove from moderators array (User ref) - demote to regular member
+    club.moderators = club.moderators.filter((_id: Types.ObjectId) => !_id.equals(player.userRef));
+    
     await club.save();
     return club;
   }
@@ -367,7 +392,7 @@ export class ClubService {
 
     const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins or moderators can add tournament players');
+      throw new AuthorizationError('Only admins or moderators can add tournament players');
     }
 
     if (club.tournamentPlayers.some((p: any) => p.name.toLowerCase() === playerName.toLowerCase())) {
@@ -389,7 +414,7 @@ export class ClubService {
 
     const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins or moderators can remove tournament players');
+      throw new AuthorizationError('Only admins or moderators can remove tournament players');
     }
 
     club.tournamentPlayers = club.tournamentPlayers.filter((p: any) => p.name.toLowerCase() !== playerName.toLowerCase());
@@ -407,7 +432,7 @@ export class ClubService {
 
     const isAuthorized = await AuthorizationService.checkAdminOnly(requesterId, clubId);
     if (!isAuthorized) {
-      throw new BadRequestError('Only admins can deactivate clubs');
+      throw new AuthorizationError('Only admins can deactivate clubs');
     }
 
     club.isActive = false;
@@ -511,54 +536,43 @@ export class ClubService {
     await connectMongo();
 
     const userObjectId = new Types.ObjectId(userId);
-      
-    // Aggregation pipeline to efficiently determine user role
-    const result = await ClubModel.aggregate([
-      { $match: { _id: new Types.ObjectId(clubId) } },
-      {
-        $project: {
-          userRole: {
-            $cond: {
-              if: { $in: [userObjectId, '$admin'] },
-              then: 'admin',
-              else: {
-                $cond: {
-                  if: { $in: [userObjectId, '$moderators'] },
-                  then: 'moderator',
-                  else: {
-                    $cond: {
-                      if: { $in: [userObjectId, '$members'] },
-                      then: 'member',
-                      else: 'none'
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    ]);
+    const clubObjectId = new Types.ObjectId(clubId);
 
-    if (result.length === 0) {
+    // Get the club to check admin/moderators (User IDs) and members (Player IDs)
+    const club = await ClubModel.findById(clubObjectId).select('admin moderators members');
+    if (!club) {
       throw new BadRequestError('Club not found');
     }
 
-    let userRole = result[0].userRole;
-
-    // Check if user is a global admin (isAdmin: true) - only for global admins, not regular users
-    if (userRole === 'none') {
-      const { UserModel } = await import('../models/user.model');
-      const user = await UserModel.findById(userId).select('isAdmin');
-      
-      // Only give admin access to users who are ACTUALLY global admins (isAdmin: true)
-      if (user?.isAdmin === true) {
-        console.log('Global admin detected, granting admin access to club:', clubId);
-        userRole = 'admin';
-      }
+    // Check Admin (User ID)
+    if (club.admin.some((id: Types.ObjectId) => id.equals(userObjectId))) {
+      return 'admin';
     }
 
-    return userRole;
+    // Check Moderator (User ID)
+    if (club.moderators.some((id: Types.ObjectId) => id.equals(userObjectId))) {
+      return 'moderator';
+    }
+
+    // Check Member (Player ID)
+    // Find if the user has a player profile
+    // We need to check if ANY of the club members is a player linked to this user
+    const player = await PlayerModel.findOne({ userRef: userObjectId });
+    
+    if (player && club.members.some((id: Types.ObjectId) => id.equals(player._id))) {
+      return 'member';
+    }
+    
+    const { UserModel } = await import('../models/user.model');
+    const user = await UserModel.findById(userId).select('isAdmin');
+    
+    // Only give admin access to users who are ACTUALLY global admins (isAdmin: true)
+    if (user?.isAdmin === true) {
+      console.log('Global admin detected, granting admin access to club:', clubId);
+      return 'admin';
+    }
+
+    return 'none';
   }
 
   static async searchUsers(query: string): Promise<{ _id: string; name: string; username: string }[]> {

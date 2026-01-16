@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { errorHandle } from '@/middleware/errorHandle';
+import { AuthorizationService } from '@/database/services/authorization.service';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ clubId: string }> }) {
   try {
-    const { AuthorizationService } = await import('@/database/services/authorization.service');
     const requesterId = await AuthorizationService.getUserIdFromRequest(req);
     
     if (!requesterId) {
@@ -20,10 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ clu
     const club = await ClubService.addMember(clubId, userId, requesterId);
     return NextResponse.json(club, { status: 200 });
   } catch (error) {
-    if (error instanceof BadRequestError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error adding member:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const { status, body } = errorHandle(error);
+    return NextResponse.json(body, { status });
   }
 }

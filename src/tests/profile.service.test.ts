@@ -1,8 +1,13 @@
 import { ProfileService } from '@/database/services/profile.service';
 import { UserModel } from '@/database/models/user.model';
-import { BadRequestError } from '@/middleware/errorHandle';
+import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 
+jest.mock('@/database/services/auth.service', () => ({
+  AuthService: {
+    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+  },
+}));
 describe('ProfileService', () => {
   beforeAll(async () => {
     await connectToDatabase();
@@ -54,7 +59,7 @@ describe('ProfileService', () => {
       ProfileService.updateProfile(user._id.toString(), {
         email: 'existing@example.com',
       })
-    ).rejects.toThrow(BadRequestError);
+    ).rejects.toThrow(ValidationError);
     await expect(
       ProfileService.updateProfile(user._id.toString(), {
         email: 'existing@example.com',
