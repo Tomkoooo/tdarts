@@ -242,10 +242,13 @@ export default function ClubSummarySection({
       {/* About Section */}
       {(aboutText || club.description) && (
         <Card className="border-border/40 bg-card/80">
-            <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-4 text-foreground">Rólunk</h3>
-                <div className="prose dark:prose-invert max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: aboutText || club.description }} />
-            </CardContent>
+          <CardContent className="p-6">
+            <h3 className="text-xl font-semibold mb-4 text-foreground">Rólunk</h3>
+            <div 
+              className="prose dark:prose-invert max-w-none text-muted-foreground break-words overflow-hidden" 
+              dangerouslySetInnerHTML={{ __html: aboutText || club.description }} 
+            />
+          </CardContent>
         </Card>
       )}
 

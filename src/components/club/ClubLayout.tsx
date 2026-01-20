@@ -217,7 +217,7 @@ export default function ClubLayout({
         `}</style>
       )}
       
-      <div className={`relative flex h-48 flex-col justify-end overflow-hidden pb-12 md:h-64 md:pb-16 ${
+      <div className={`relative flex h-48 flex-col justify-end overflow-hidden pb-8 md:pb-0  md:h-64${
           landingPage?.coverImage ? '' : 'backdrop-blur-md bg-white/10'
       }`}>
         {landingPage?.coverImage ? (
@@ -238,7 +238,7 @@ export default function ClubLayout({
 
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-6 md:pb-10">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 backdrop-blur md:h-16 md:w-16 overflow-hidden border-2 border-white/20">
+            <div className="flex w-48 items-center justify-center rounded-full bg-primary/20 backdrop-blur overflow-hidden border-2 border-white/20">
               {landingPage?.logo ? (
                   <ImageWithSkeleton src={landingPage.logo} alt="Club Logo" className="h-full w-full object-cover" containerClassName="h-full w-full" />
               ) : (
