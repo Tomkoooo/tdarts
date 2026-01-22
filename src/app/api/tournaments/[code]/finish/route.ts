@@ -24,7 +24,10 @@ export async function POST(
     const user = await AuthService.verifyToken(token);
     const requesterId = user._id.toString();
 
-    const result = await TournamentService.finishTournament(code, requesterId);
+    const body = await request.json().catch(() => ({}));
+    const { thirdPlacePlayerId } = body;
+
+    const result = await TournamentService.finishTournament(code, requesterId, thirdPlacePlayerId);
 
     if (result) {
       return NextResponse.json({ success: true });

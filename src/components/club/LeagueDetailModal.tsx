@@ -762,7 +762,7 @@ interface TournamentsTabProps {
   clubId: string;
   leagueId: string;
   onTournamentAttached: () => void;
-  pointSystemType?: 'platform' | 'remiz_christmas';
+  pointSystemType?: 'platform' | 'remiz_christmas' | 'ontour';
 }
 
 function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournamentAttached, pointSystemType = 'platform' }: TournamentsTabProps) {
@@ -1440,16 +1440,19 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             <select
               id="point-system-type"
               value={formData.pointSystemType || 'platform'}
-              onChange={(e) => setFormData({ ...formData, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' | 'ontour'}))}
               className="w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               <option value="platform">Platform pontszámítás</option>
               <option value="remiz_christmas">Remiz Christmas Series pontszámítás</option>
+              <option value="ontour">Dartsbarlang onTour pontszámítás</option>
             </select>
             <p className="text-xs text-muted-foreground">
               {formData.pointSystemType === 'remiz_christmas' 
                 ? 'Fix pontrendszer: 20 pont részvétel, csoport pontok a csoport mérete és győzelmek alapján, helyezési pontok a végső helyezés alapján.'
-                : 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
+                : formData.pointSystemType === 'ontour' 
+                ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont' 
+                :'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
             </p>
           </div>
 

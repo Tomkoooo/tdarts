@@ -48,6 +48,8 @@ export default function TournamentStatusChanger({
   const [isManualGroupsDialogOpen, setIsManualGroupsDialogOpen] = useState(false)
   const [isKnockoutDialogOpen, setIsKnockoutDialogOpen] = useState(false)
   const [isCancelKnockoutDialogOpen, setIsCancelKnockoutDialogOpen] = useState(false)
+  const [isThirdPlaceDialogOpen, setIsThirdPlaceDialogOpen] = useState(false)
+  const [selectedThirdPlaceId, setSelectedThirdPlaceId] = useState<string | null>(null)
 
   const [knockoutMode, setKnockoutMode] = useState<KnockoutMode>("automatic")
   const [groupsMode, setGroupsMode] = useState<GroupsMode>("automatic")
@@ -201,12 +203,54 @@ export default function TournamentStatusChanger({
     })
   }
 
-  const handleFinishTournament = () => {
+  const semiFinalLosers = useMemo(() => {
+    if (!tournament?.knockout || tournament.knockout.length < 2) return []
+
+    // Semi-final is the round before the final
+    const semiFinalRound = tournament.knockout[tournament.knockout.length - 2]
+    const losers: Array<{ _id: string; name: string }> = []
+
+    semiFinalRound.matches.forEach((match: any) => {
+      const matchRef = match.matchReference
+      // Ensure match is finished and has both players (not a bye)
+      if (matchRef && matchRef.winnerId && match.player1 && match.player2) {
+        const winnerId = matchRef.winnerId.toString()
+        const p1Id = (match.player1 as any)._id?.toString() || match.player1?.toString()
+        const p2Id = (match.player2 as any)._id?.toString() || match.player2?.toString()
+        const loserId = p1Id === winnerId ? p2Id : p1Id
+
+        const player = tournament.tournamentPlayers.find((tp) => {
+          const tpId = (tp.playerReference as any)?._id?.toString() || tp.playerReference?.toString()
+          return tpId === loserId
+        })
+
+        if (player) {
+          losers.push({
+            _id: loserId,
+            name: (player.playerReference as any)?.name || "Névtelen játékos",
+          })
+        }
+      }
+    })
+
+    return losers
+  }, [tournament])
+
+  const handleFinishTournament = (thirdPlaceId?: string) => {
+    // If not already showing the third place dialog and we have semi-final losers
+    if (!isThirdPlaceDialogOpen && semiFinalLosers.length === 2 && !thirdPlaceId) {
+      setIsThirdPlaceDialogOpen(true)
+      return
+    }
+
     handleApiRequest("finish", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/finish`)
+      const response = await axios.post(`/api/tournaments/${tournamentCode}/finish`, {
+        thirdPlacePlayerId: thirdPlaceId,
+      })
       if (!response?.data?.success) {
         throw new Error(response?.data?.error || "Nem sikerült befejezni a tornát.")
       }
+      setIsThirdPlaceDialogOpen(false)
     })
   }
 
@@ -348,7 +392,7 @@ export default function TournamentStatusChanger({
             {(tournamentStatus === "knockout" ||
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
-              <Button variant="outline" className="flex-1 min-w-[200px]" onClick={handleFinishTournament}>
+              <Button variant="outline" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
                 Torna befejezése
               </Button>
             )}
@@ -728,6 +772,64 @@ export default function TournamentStatusChanger({
                 </span>
               ) : (
                 "Knockout visszavonása"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isThirdPlaceDialogOpen} onOpenChange={setIsThirdPlaceDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>3. hely kiválasztása</DialogTitle>
+            <DialogDescription>
+              A torna befejezése előtt kiválaszthatod, ki legyen a 3. helyezett. Ha nem választasz senkit, mindkét
+              elődöntőben kiesett játékos 4. helyezést kap.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid gap-2">
+              {semiFinalLosers.map((player) => (
+                <Button
+                  key={player._id}
+                  variant={selectedThirdPlaceId === player._id ? "default" : "outline"}
+                  className="justify-start text-left h-auto py-3 px-4"
+                  onClick={() => setSelectedThirdPlaceId(player._id)}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{player.name}</span>
+                    <span className="text-xs text-muted-foreground">Jelölés 3. helyre</span>
+                  </div>
+                </Button>
+              ))}
+              <Button
+                variant={selectedThirdPlaceId === null ? "default" : "outline"}
+                className="justify-start text-left h-auto py-3 px-4"
+                onClick={() => setSelectedThirdPlaceId(null)}
+              >
+                <div className="flex flex-col">
+                  <span className="font-semibold">Nincs különbség</span>
+                  <span className="text-xs text-muted-foreground">Mindkét játékos 4. helyezett lesz</span>
+                </div>
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={() => setIsThirdPlaceDialogOpen(false)}>
+              Mégse
+            </Button>
+            <Button
+              onClick={() => handleFinishTournament(selectedThirdPlaceId || undefined)}
+              disabled={action === "finish"}
+            >
+              {action === "finish" ? (
+                <span className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Befejezés...
+                </span>
+              ) : (
+                "Torna befejezése"
               )}
             </Button>
           </DialogFooter>

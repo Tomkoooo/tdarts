@@ -49,13 +49,13 @@ export class MMRService {
         // 3. Dynamic placement weight based on tournament size
         // Larger tournaments = placement matters more (60-75% weight)
         // Smaller tournaments = performance matters more (60% placement)
-        let placementWeight = 0.60; // Base weight for small tournaments (8 or less)
+        let placementWeight = 0.40; // Base weight for small tournaments (8 or less)
         if (totalParticipants >= 64) {
-            placementWeight = 0.75; // 75% for very large tournaments
-        } else if (totalParticipants >= 32) {
-            placementWeight = 0.70; // 70% for large tournaments
+            placementWeight = 0.70; // 75% for very large tournaments
+        } else if (totalParticipants >= 33) {
+            placementWeight = 0.50; // 70% for large tournaments
         } else if (totalParticipants >= 16) {
-            placementWeight = 0.65; // 65% for medium tournaments
+            placementWeight = 0.40; // 65% for medium tournaments
         }
         
         // Remaining weight distributed among performance metrics
@@ -85,20 +85,6 @@ export class MMRService {
         
         // 7. Calculate new MMR
         const newMMR = Math.max(0, currentMMR + scaledMMRChange);
-        
-        console.log(`MMR Calculation:
-            Current MMR: ${currentMMR}
-            Placement: ${placement}/${totalParticipants}
-            Placement Factor: ${placementFactor.toFixed(3)}
-            Placement Weight: ${(placementWeight * 100).toFixed(0)}%
-            Match Win Rate: ${matchWinRate.toFixed(3)} (weight: ${(matchWeight * 100).toFixed(1)}%)
-            Leg Win Rate: ${legWinRate.toFixed(3)} (weight: ${(legWeight * 100).toFixed(1)}%)
-            Score Performance: ${scorePerformance.toFixed(3)} (weight: ${(scoreWeight * 100).toFixed(1)}%)
-            Overall Performance: ${overallPerformance.toFixed(3)}
-            Tournament Size Factor: ${tournamentSizeFactor.toFixed(2)}x
-            MMR Change: ${scaledMMRChange.toFixed(2)}
-            New MMR: ${newMMR.toFixed(2)}
-        `);
         
         return Math.round(newMMR);
     }

@@ -3478,7 +3478,7 @@ export class TournamentService {
         }
     }
 
-    static async finishTournament(tournamentCode: string, requesterId: string): Promise<boolean> {
+    static async finishTournament(tournamentCode: string, requesterId: string, thirdPlacePlayerId?: string): Promise<boolean> {
         try {
             const tournament = await TournamentService.getTournament(tournamentCode);
             if (!tournament) {
@@ -3583,7 +3583,14 @@ export class TournamentService {
                                 // Final round: winner gets 1st, loser gets 2nd
                                 playerStandings.set(winnerId, 1);
                                 playerStandings.set(loserId, 2);
-            } else {
+                            } else if (roundIndex === tournament.knockout.length - 2 && thirdPlacePlayerId) {
+                                // Semi-final round and thirdPlacePlayerId provided
+                                if (loserId === thirdPlacePlayerId) {
+                                    playerStandings.set(loserId, 3);
+                                } else {
+                                    playerStandings.set(loserId, 4);
+                                }
+                            } else {
                                 // Other rounds: losers get position equal to players in this round
                                 playerStandings.set(loserId, positionForThisRound);
                             }
@@ -3613,11 +3620,11 @@ export class TournamentService {
                         }
                     }
                 }
-
                 // Assign positions to players eliminated in group stage
                 checkedInPlayers.forEach((player: any) => {
                     const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
-                    if (playerId && !playersInKnockout.has(playerId)) {
+                    console.log(playerId)
+                    if (playerId && !playersInKnockout.has(playerId.toString())) {
                         // Player was eliminated in group stage - gets position N (total players)
                         playerStandings.set(playerId, totalPlayers);
                     }
@@ -3640,8 +3647,10 @@ export class TournamentService {
                                 throw new BadRequestError(`Incomplete match in round ${roundIndex + 1}`);
                             }
 
+                            console.log('Match has player1?: ', !match.player1, (match.player1 as any).playerId, 'Match has player2: ', !match.player2, (!match.player1 as any).playerId)
                             // Skip bye matches (missing players or missing playerIds)
-                            if (!match.player1 || !(match.player1 as any).playerId || !match.player2 || !(match.player2 as any).playerId) {
+                            if (!match.player1|| !match.player2) {
+                                console.log('continue')
                                 continue;
                             }
 
@@ -3651,19 +3660,29 @@ export class TournamentService {
                                 throw new BadRequestError(`Incomplete match in round ${roundIndex + 1}`);
                             }
 
+                            console.log('processing elimination')
+
                             const winnerId = (matchRefObj as any).winnerId.toString();
                             const player1Id = typeof match.player1 === 'object' ? 
                                 (match.player1 as any)._id?.toString() : match.player1?.toString();
                             const player2Id = typeof match.player2 === 'object' ? 
                                 (match.player2 as any)._id?.toString() : match.player2?.toString();
                             const loserId = winnerId === player1Id ? player2Id : player1Id;
-
-                            if (loserId && !playerStandings.has(loserId)) {
+                            console.log('found loser: ', loserId)
+                            if (loserId && !playerStandings.has(loserId.toString())) {
                                 if (isFinalRound) {
                                     // Final round: winner gets 1st, loser gets 2nd
                                     playerStandings.set(winnerId, 1);
                                     playerStandings.set(loserId, 2);
+                                } else if (roundIndex === tournament.knockout.length - 2 && thirdPlacePlayerId) {
+                                    // Semi-final round and thirdPlacePlayerId provided
+                                    if (loserId === thirdPlacePlayerId) {
+                                        playerStandings.set(loserId, 3);
+                                    } else {
+                                        playerStandings.set(loserId, 4);
+                                    }
                                 } else {
+                                    console.log('Knockout round:', loserId, ' => ', positionForThisRound)
                                     // Other rounds: losers get position equal to players in this round
                                     playerStandings.set(loserId, positionForThisRound);
                                 }
@@ -3984,17 +4003,6 @@ export class TournamentService {
             }
             /* eslint-enable @typescript-eslint/no-unused-vars */
 
-            // === 4. LOG RESULTS ===
-            console.log('=== TOURNAMENT STATS SUMMARY ===');
-            for (const [playerId, stats] of playerStats) {
-                console.log(`Player ${playerId}:`);
-                console.log(`  Matches: ${stats.matchesWon}W / ${stats.matchesPlayed - stats.matchesWon}L (${stats.matchesPlayed} total)`);
-                console.log(`  Legs: ${stats.legsWon}W / ${stats.legsPlayed - stats.legsWon}L (${stats.legsPlayed} total)`);
-                console.log(`  Tournament Average: ${stats.average.toFixed(2)} (from ${stats.tournamentMatches} matches)`);
-                console.log(`  180s: ${stats.oneEighties}, Highest Checkout: ${stats.highestCheckout}`);
-            }
-            console.log('===============================');
-
             // Step 7: Update tournament players with final standings
             tournament.tournamentPlayers = tournament.tournamentPlayers.map((player: any) => {
                 const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString();
@@ -4076,7 +4084,6 @@ export class TournamentService {
                                 matchesWon: stats.matchesWon
                             });
                             player.stats.oacMmr = nextOacMmr;
-                            console.log(`Player ${player.name} OAC MMR: ${currentOacMmr} → ${nextOacMmr} (${nextOacMmr - currentOacMmr >= 0 ? '+' : ''}${nextOacMmr - currentOacMmr})`);
                         }
 
                         // 4. GLOBAL MMR CALCULATION
@@ -4093,7 +4100,6 @@ export class TournamentService {
                             tournamentAverageScore
                         );
                         player.stats.mmr = Math.ceil(nextMMR);
-                        console.log(`Player ${player.name} Global MMR: ${currentMMR} → ${player.stats.mmr} (${player.stats.mmr - currentMMR >= 0 ? '+' : ''}${player.stats.mmr - currentMMR})`);
 
                         // 5. UPDATE GLOBAL STATS INCREMENTALLY (No all-time loops)
                         const isNewTournament = existingHistoryIndex === -1;
@@ -4167,13 +4173,6 @@ export class TournamentService {
             }
 
             // Step 10: Update tournament status to finished and reset boards
-            console.log('=== DATABASE UPDATE DEBUG ===');
-            console.log('Updating tournament with ID:', tournament._id);
-            console.log('Current tournament status:', tournament.tournamentSettings?.status);
-            console.log('Current tournamentPlayers count:', tournament.tournamentPlayers?.length || 0);
-            console.log('Sample tournamentPlayer:', JSON.stringify(tournament.tournamentPlayers?.[0], null, 2));
-            console.log('Updated tournamentPlayers:', JSON.stringify(tournament.tournamentPlayers.slice(0, 2), null, 2)); // Show first 2 players
-            console.log('================================');
 
             // Reset all boards to idle status (boards are now part of tournament)
             // Handle both new (tournament.boards) and legacy (club.boards) approaches
@@ -5154,10 +5153,11 @@ export class TournamentService {
                                     (th: any) => th.tournamentId === tournament.tournamentId
                                 );
                                 
-                                const mmrChange = 0;
+                                let mmrChange = 0;
                                 if (tournamentHistoryIndex !== undefined && tournamentHistoryIndex !== -1 && player.tournamentHistory) {
                                     
                                     // Remove tournament from history
+                                    mmrChange = player.tournamentHistory[tournamentHistoryIndex].mmrChange
                                     player.tournamentHistory.splice(tournamentHistoryIndex, 1);
                                     console.log(`Removed tournament ${tournament.tournamentId} from player ${playerId} history`);
                                 }
@@ -5183,7 +5183,7 @@ export class TournamentService {
                                     player.stats.oneEightiesCount = Math.max(0, (player.stats.oneEightiesCount || 0) - (tournamentPlayer.total180s || 0));
                                     
                                     // Subtract MMR change
-                                    player.stats.mmr = Math.max(0, (player.stats.mmr || 800) + mmrChange);
+                                    player.stats.mmr = Math.max(0, (player.stats.mmr || 800) + (mmrChange*-1));
                                     
                                     // Recalculate average from remaining tournament history
                                     if (player.tournamentHistory && player.tournamentHistory.length > 0) {

@@ -44,10 +44,11 @@ export class FeatureFlagService {
       if (process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'false') {
         return true;
       }
-
+      console.log(club.subscriptionModel, featureName)
       // Speciális kezelés a detailedStatistics feature-hez
       if (featureName === 'detailedStatistics') {
-        return club.subscriptionModel === 'pro';
+        console.log(`DEBUG: Club ${clubId} subscriptionModel: ${club.subscriptionModel}`);
+        return club.subscriptionModel !== 'free' && !!club.subscriptionModel;
       }
 
       // Speciális kezelés a leagues feature-hez - csak prémium előfizetéseknek
@@ -81,7 +82,8 @@ export class FeatureFlagService {
     const envEnabled = this.isEnvFeatureEnabled(featureName);
     
     // Ha ENV alapú flag false, akkor adatbázist sem ellenőrizzük
-    if (!envEnabled) {
+    // KIVÉVE: detailedStatistics - ezt mindig ellenőrizzük az adatbázisban ha van clubId
+    if (!envEnabled && featureName !== 'detailedStatistics') {
       return false;
     }
 
@@ -92,6 +94,7 @@ export class FeatureFlagService {
 
     // Klub specifikus ellenőrzés
     const clubEnabled = await this.isClubFeatureEnabled(clubId, featureName);
+    console.log(clubEnabled)
     return clubEnabled;
   }
 

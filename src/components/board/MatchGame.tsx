@@ -863,7 +863,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       setIsSavingMatch(false);
       return;
     } finally {
-      setIsSavingMatch(false);
+      // Don't enable saving match here, only on error
+      // This prevents double clicks while redirects/refreshes are happening
     }
 
     // Inform server to cleanup

@@ -36,12 +36,12 @@ export const showErrorToast = (message: string, options: ErrorToastOptions = {})
 
     toast.error(
       (t) => (
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground">{message}</span>
+        <div className="flex flex-col gap-2 text-black">
+          <span className="text-sm font-medium">{message}</span>
           <Button
             variant="outline"
             size="sm"
-            className="w-full gap-2"
+            className="w-full gap-2 text-white"
             onClick={() => {
               window.location.href = reportUrl.toString();
               toast.dismiss(t.id);

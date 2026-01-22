@@ -30,6 +30,7 @@ import {
   IconSparkles,
   IconAlertTriangle,
   IconChartLine,
+  IconLock,
 } from "@tabler/icons-react"
 
 type Throw = {
@@ -264,22 +265,34 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                 Vissza
               </Button>
             )}
-            {!isFeatureFlagLoading && isDetailedStatsEnabled && (
+            {!isFeatureFlagLoading && (
               <Button
                 variant={showDetailedStats ? "default" : "outline"}
                 size="sm"
-                onClick={() => setShowDetailedStats((prev) => !prev)}
-                className="gap-2"
+                onClick={() => {
+                  if (isDetailedStatsEnabled) {
+                    setShowDetailedStats((prev) => !prev)
+                  } else {
+                    // Optionally show a toast or just rely on the badge/icon
+                  }
+                }}
+                className={cn("gap-2", !isDetailedStatsEnabled && "opacity-50 cursor-not-allowed")}
+                disabled={!isDetailedStatsEnabled}
               >
-                <IconSparkles className="h-4 w-4" />
+                {isDetailedStatsEnabled ? (
+                  <IconSparkles className="h-4 w-4" />
+                ) : (
+                  <IconLock className="h-4 w-4 text-primary/40" />
+                )}
                 {showDetailedStats ? "Grafikonok elrejtése" : "Részletes grafikonok"}
               </Button>
             )}
           </div>
 
           {!isFeatureFlagLoading && !isDetailedStatsEnabled && (
-            <Badge variant="outline" className="text-xs">
-              Pro előfizetéssel érhető el a teljes statisztika
+            <Badge variant="outline" className="text-xs bg-primary/5 text-primary/60 border-primary/20 gap-1.5 px-3 py-1">
+              <IconLock size={12} />
+              Pro funkció
             </Badge>
           )}
         </div>
@@ -312,12 +325,18 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                   <IconTarget className="h-4 w-4" />
                   Legek
                 </TabsTrigger>
-                {isDetailedStatsEnabled && (
-                  <TabsTrigger value="stats" className="gap-2">
+                <TabsTrigger 
+                  value="stats" 
+                  disabled={!isDetailedStatsEnabled}
+                  className={cn("gap-2", !isDetailedStatsEnabled && "opacity-50")}
+                >
+                  {isDetailedStatsEnabled ? (
                     <IconChartLine className="h-4 w-4" />
-                    Statisztikák
-                  </TabsTrigger>
-                )}
+                  ) : (
+                    <IconLock className="h-4 w-4" />
+                  )}
+                  Statisztikák
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="legs" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
