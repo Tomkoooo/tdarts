@@ -65,10 +65,10 @@ interface PlayerMatchesModalProps {
   onShowDetailedStats?: (matchId: string) => void;
 }
 
-const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  playerId, 
+const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
+  isOpen,
+  onClose,
+  playerId,
   playerName, 
   tournamentCode,
   onShowDetailedStats,
@@ -226,7 +226,6 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
                                 )}
                               </div>
                             </div>
-
                             <div className="flex flex-col sm:items-end gap-3 w-full sm:w-auto">
                               <div className="flex gap-4 sm:justify-end">
                                 <div className="text-center">

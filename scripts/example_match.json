@@ -1,0 +1,689 @@
+{
+    "_id": {
+        "$oid": "69712b9a48005f6b0c15550c"
+    },
+    "boardReference": 5,
+    "tournamentRef": {
+        "$oid": "69688606fb45567d46c87707"
+    },
+    "type": "knockout",
+    "round": 1,
+    "bracketPosition": 4,
+    "player1": {
+        "playerId": {
+            "$oid": "6960a203ddc446d0bed021d6"
+        },
+        "legsWon": 1,
+        "legsLost": 4,
+        "average": 50.26,
+        "highestCheckout": 60,
+        "oneEightiesCount": 0
+    },
+    "player2": {
+        "playerId": {
+            "$oid": "691c8b63e64531d7be273c8c"
+        },
+        "legsWon": 3,
+        "legsLost": 1,
+        "average": 56.05,
+        "highestCheckout": 48,
+        "oneEightiesCount": 2
+    },
+    "scorer": {
+        "$oid": "694eb26c64e3537cf3c39150"
+    },
+    "status": "finished",
+    "legs": [
+        {
+            "legNumber": 1,
+            "player1Score": 423,
+            "player2Score": 501,
+            "player1Throws": [
+                {
+                    "score": 95,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 100,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 36,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 13,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 40,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 11,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 8,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                }
+            ],
+            "player2Throws": [
+                {
+                    "score": 81,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 29,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 70,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 55,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 41,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 40,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 41,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 65,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 34,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": true
+                }
+            ],
+            "winnerId": {
+                "$oid": "691c8b63e64531d7be273c8c"
+            },
+            "checkoutScore": 45,
+            "checkoutDarts": 3,
+            "winnerArrowCount": 3,
+            "loserRemainingScore": 78,
+            "doubleAttempts": 9,
+            "player1TotalDarts": 27,
+            "player2TotalDarts": 30,
+            "createdAt": {
+                "$date": "2026-01-21T19:52:13.718Z"
+            }
+        },
+        {
+            "legNumber": 2,
+            "player1Score": 481,
+            "player2Score": 501,
+            "player1Throws": [
+                {
+                    "score": 22,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 55,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 65,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 62,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 53,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 29,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 21,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 22,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 21,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 71,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 0,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 0,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                }
+            ],
+            "player2Throws": [
+                {
+                    "score": 100,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 59,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 25,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 63,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 41,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 91,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 0,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 0,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 0,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 13,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 4,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": true
+                }
+            ],
+            "winnerId": {
+                "$oid": "691c8b63e64531d7be273c8c"
+            },
+            "checkoutScore": 4,
+            "checkoutDarts": 3,
+            "winnerArrowCount": 3,
+            "loserRemainingScore": 20,
+            "doubleAttempts": 7,
+            "player1TotalDarts": 39,
+            "player2TotalDarts": 39,
+            "createdAt": {
+                "$date": "2026-01-21T19:59:35.467Z"
+            }
+        },
+        {
+            "legNumber": 3,
+            "player1Score": 501,
+            "player2Score": 406,
+            "player1Throws": [
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 140,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 85,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 40,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 41,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": true
+                }
+            ],
+            "player2Throws": [
+                {
+                    "score": 52,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 44,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 28,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 59,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 59,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 44,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                }
+            ],
+            "winnerId": {
+                "$oid": "6960a203ddc446d0bed021d6"
+            },
+            "checkoutScore": 60,
+            "checkoutDarts": 3,
+            "winnerArrowCount": 3,
+            "loserRemainingScore": 95,
+            "doubleAttempts": 9,
+            "player1TotalDarts": 24,
+            "player2TotalDarts": 24,
+            "createdAt": {
+                "$date": "2026-01-21T20:03:38.167Z"
+            }
+        },
+        {
+            "legNumber": 4,
+            "player1Score": 353,
+            "player2Score": 501,
+            "player1Throws": [
+                {
+                    "score": 121,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 26,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 55,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 46,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                }
+            ],
+            "player2Throws": [
+                {
+                    "score": 180,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 26,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 99,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 100,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 48,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 48,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": true
+                }
+            ],
+            "winnerId": {
+                "$oid": "691c8b63e64531d7be273c8c"
+            },
+            "checkoutScore": 48,
+            "checkoutDarts": 3,
+            "winnerArrowCount": 3,
+            "loserRemainingScore": 148,
+            "doubleAttempts": 8,
+            "player1TotalDarts": 18,
+            "player2TotalDarts": 18,
+            "createdAt": {
+                "$date": "2026-01-21T20:06:45.945Z"
+            }
+        },
+        {
+            "legNumber": 5,
+            "player1Score": 353,
+            "player2Score": 501,
+            "player1Throws": [
+                {
+                    "score": 121,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 60,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 26,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 55,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 45,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 46,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                }
+            ],
+            "player2Throws": [
+                {
+                    "score": 180,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 26,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 99,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 100,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 48,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": false
+                },
+                {
+                    "score": 48,
+                    "darts": 3,
+                    "isDouble": false,
+                    "isCheckout": true
+                }
+            ],
+            "winnerId": {
+                "$oid": "691c8b63e64531d7be273c8c"
+            },
+            "checkoutScore": 48,
+            "checkoutDarts": 3,
+            "winnerArrowCount": 3,
+            "loserRemainingScore": 148,
+            "doubleAttempts": 8,
+            "player1TotalDarts": 18,
+            "player2TotalDarts": 18,
+            "createdAt": {
+                "$date": "2026-01-21T20:06:54.707Z"
+            }
+        }
+    ],
+    "manualOverride": true,
+    "manualChangeType": "admin_state_change",
+    "createdAt": {
+        "$date": "2026-01-21T19:40:10.883Z"
+    },
+    "updatedAt": {
+        "$date": "2026-01-21T20:06:55.062Z"
+    },
+    "__v": 5,
+    "scorerSource": {
+        "type": "group_loser",
+        "playerId": {
+            "$oid": "694eb26c64e3537cf3c39150"
+        }
+    },
+    "legsToWin": 3,
+    "startingPlayer": 2,
+    "winnerId": {
+        "$oid": "691c8b63e64531d7be273c8c"
+    },
+    "overrideTimestamp": {
+        "$date": "2026-01-21T20:06:55.058Z"
+    },
+    "previousState": {
+        "player1LegsWon": 1,
+        "player2LegsWon": 4,
+        "winnerId": {
+            "$oid": "691c8b63e64531d7be273c8c"
+        },
+        "status": "finished"
+    }
+}

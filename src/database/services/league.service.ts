@@ -488,7 +488,13 @@ export class LeagueService {
           tournament,
           position,
         );
-      } else {
+      } else if (league.pointSystemType === 'ontour') {
+        points = await this.calculateOntourPoints(
+          tournamentPlayer,
+          tournament,
+          position,
+        );
+      }else {
         points = this.calculatePlayerPointsForTournament(
           position,
           eliminatedIn,
@@ -551,6 +557,57 @@ export class LeagueService {
     const tournamentPoints = leaguePlayer.tournamentPoints.reduce((sum: number, tp: any) => sum + tp.points, 0);
     const adjustmentPoints = leaguePlayer.manualAdjustments.reduce((sum: number, adj: any) => sum + adj.points, 0);
     return tournamentPoints + adjustmentPoints;
+  }
+
+  /* Calculate total points based on the dartbarlang ontour point system */
+
+  private static async calculateOntourPoints(
+    tournamentPlayer: any,
+    tournament: TournamentDocument,
+    position: number
+  ) {
+    /*
+      winner: 45p
+      runner up: 32p
+      third: 24p
+      fourth: 20p
+      8. placement: 16p
+      16. placement: 10p
+      32. placement: 4p
+      48. placement: 2p
+    */
+    let tournamentPoint: number;
+    switch (position) {
+      case 1:
+        tournamentPoint = 45;
+        break;
+      case 2:
+        tournamentPoint = 32;
+        break;
+      case 3:
+        tournamentPoint = 24;
+        break;
+      case 4:
+        tournamentPoint = 20;
+        break;
+      case 8:
+        tournamentPoint = 16;
+        break;
+      case 16:
+        tournamentPoint = 10;
+        break;
+      case 32:
+        tournamentPoint = 4;
+        break;
+      case 48:
+        tournamentPoint = 2;
+        break;
+      default:
+        tournamentPoint = 0;
+        break;
+    }
+
+    return tournamentPoint;
   }
 
   /**
