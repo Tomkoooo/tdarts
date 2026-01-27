@@ -238,8 +238,8 @@ export default function ClubDetailPage() {
     if (!club) return
     try {
       // Fetch the verified OAC league for this club
-      const response = await axios.get(`/api/clubs/${club._id}/leagues`)
-      const oacLeague = response.data.leagues?.find((l: any) => l.verified)
+      const response = await axios.get(`/api/clubs/${club._id}/leagues/check-oac`)
+      const oacLeague = response.data.oacLeague
       if (oacLeague) {
         setOacTournamentConfig({ isOpen: true, leagueId: oacLeague._id })
       } else {

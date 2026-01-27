@@ -438,7 +438,89 @@ export class MatchService {
             throw new BadRequestError('Cannot finish match - no legs have been played. Please save legs using finishLeg first.');
         }
 
-        // Determine winner based on legs won
+        // --- MATCH INTEGRITY CHECKS ---
+        if (match.legs && match.legs.length > 0) {
+            // 1. Remove duplicate legs (same content but different legNumber)
+            const uniqueLegs: any[] = [];
+            const seenLegContent = new Set<string>();
+
+            for (const leg of match.legs) {
+                // Create a unique signature for the leg content (ignoring legNumber, timestamps, keys that vary)
+                const signatureObj = {
+                    p1Score: leg.player1Score,
+                    p2Score: leg.player2Score,
+                    p1Throws: leg.player1Throws.map((t: any) => ({ s: t.score, d: t.darts })),
+                    p2Throws: leg.player2Throws.map((t: any) => ({ s: t.score, d: t.darts })),
+                    winner: leg.winnerId?.toString()
+                };
+                const signature = JSON.stringify(signatureObj);
+
+                if (!seenLegContent.has(signature)) {
+                    seenLegContent.add(signature);
+                    uniqueLegs.push(leg);
+                } else {
+                    console.log(`MatchService: Detected duplicate leg content in match ${matchId}. Removing duplicate.`);
+                }
+            }
+
+            // 2. Validate leg count against game rules (e.g. Best of X)
+            // If match has legsToWin (e.g. 3), then max legs expected is unclear but
+            // if someone WON legsToWin, no further legs should exist.
+            if (match.legsToWin) {
+                const legsToWin = match.legsToWin;
+                let p1Wins = 0;
+                let p2Wins = 0;
+                const validLegs: any[] = [];
+
+                for (const leg of uniqueLegs) {
+                    validLegs.push(leg);
+                    
+                    if (leg.winnerId?.toString() === match.player1.playerId.toString()) {
+                        p1Wins++;
+                    } else if (leg.winnerId?.toString() === match.player2.playerId.toString()) {
+                        p2Wins++;
+                    }
+
+                    // If someone reached the win condition, STOP accepting more legs
+                    if (p1Wins >= legsToWin || p2Wins >= legsToWin) {
+                        if (validLegs.length < uniqueLegs.length) {
+                            console.log(`MatchService: Match ${matchId} has extra legs after win condition (${p1Wins}-${p2Wins}, goal ${legsToWin}). Truncating ${uniqueLegs.length - validLegs.length} extra legs.`);
+                        }
+                        break;
+                    }
+                }
+                match.legs = validLegs;
+            } else {
+                match.legs = uniqueLegs;
+            }
+        }
+        // ------------------------------
+
+        // Recalculate legs won from the CLEANED legs (source of truth)
+        let calculatedP1LegsWon = 0;
+        let calculatedP2LegsWon = 0;
+        
+        if (match.legs) {
+            match.legs.forEach((leg: any) => {
+                if (leg.winnerId?.toString() === match.player1.playerId.toString()) {
+                    calculatedP1LegsWon++;
+                } else if (leg.winnerId?.toString() === match.player2.playerId.toString()) {
+                    calculatedP2LegsWon++;
+                }
+            });
+        }
+
+        // Determine winner based on legs won (using calculated or provided? 
+        // If not manual finish, we should trust our calculated legs.)
+        // If manual finish is allowed, we might accept the provided values, but for integrity, consistency is better.
+        // Let's rely on CALCULATED values if legs exist, unless it's a manual override without legs.
+        
+        // Use calculated values for non-manual finishes source of truth
+        if (!matchData.isManual && !matchData.allowManualFinish) {
+             matchData.player1LegsWon = calculatedP1LegsWon;
+             matchData.player2LegsWon = calculatedP2LegsWon;
+        }
+
         const newWinner = matchData.player1LegsWon > matchData.player2LegsWon ? 1 : 2;
         const newWinnerId = newWinner === 1 ? match.player1.playerId : match.player2.playerId;
 
@@ -465,7 +547,7 @@ export class MatchService {
 
         // Track manual changes with detailed information
         if (isManualOverride) {
-            // Log previous state for auditing - use the values captured BEFORE update
+            // Log previous state for audit
             match.previousState = {
                 player1LegsWon: oldP1Legs || 0,
                 player2LegsWon: oldP2Legs || 0,
@@ -476,12 +558,10 @@ export class MatchService {
             match.manualOverride = true;
             match.overrideTimestamp = new Date();
             
-            // Set adminId if available
             if (matchData.adminId) {
                 match.manualChangedBy = matchData.adminId as any;
             }
             
-            // Determine the type of manual change
             if (isWinnerChange) {
                 match.manualChangeType = 'winner_override';
             } else if (oldStatus === 'finished') {
@@ -502,16 +582,14 @@ export class MatchService {
             }
             
             // Fallback calculation for older matches
-            // If throw objects have darts field, sum them
             if (throws[0] && typeof throws[0] === 'object' && 'darts' in throws[0]) {
                 return throws.reduce((sum: number, t: any) => sum + (t.darts || 3), 0);
             }
             
-            // Last fallback: assume all throws are 3 darts
             return throws.length * 3;
         };
 
-        // Calculate match-wide statistics from ALL saved legs
+        // Calculate match-wide statistics from ALL saved (and validated) legs
         let player1TotalScore = 0;
         let player1TotalDarts = 0;
         let player1OneEighties = 0;
@@ -523,39 +601,33 @@ export class MatchService {
         let player2HighestCheckout = 0;
 
         // Process all legs to calculate stats
-        for (const leg of match.legs) {
-            // Player 1 stats from this leg
-            if (leg.player1Score) player1TotalScore += leg.player1Score;
-            if (leg.player1Throws) {
-                // Calculate darts for this leg
-                player1TotalDarts += calculateLegDarts(leg.player1Throws, 1, leg);
+        if (match.legs) {
+            for (const leg of match.legs) {
+                // Player 1 stats from this leg
+                if (leg.player1Score) player1TotalScore += leg.player1Score;
+                if (leg.player1Throws) {
+                    player1TotalDarts += calculateLegDarts(leg.player1Throws, 1, leg);
+                    leg.player1Throws.forEach((t: any) => {
+                        if (t.score === 180) player1OneEighties++;
+                    });
+                }
                 
-                // Count 180s from throws
-                leg.player1Throws.forEach((t: any) => {
-                    if (t.score === 180) player1OneEighties++;
-                });
-            }
-            
-            // Track highest checkout for player 1
-            if (leg.winnerId?.toString() === match.player1.playerId.toString() && leg.checkoutScore) {
-                player1HighestCheckout = Math.max(player1HighestCheckout, leg.checkoutScore);
-            }
+                if (leg.winnerId?.toString() === match.player1.playerId.toString() && leg.checkoutScore) {
+                    player1HighestCheckout = Math.max(player1HighestCheckout, leg.checkoutScore);
+                }
 
-            // Player 2 stats from this leg
-            if (leg.player2Score) player2TotalScore += leg.player2Score;
-            if (leg.player2Throws) {
-                // Calculate darts for this leg
-                player2TotalDarts += calculateLegDarts(leg.player2Throws, 2, leg);
+                // Player 2 stats from this leg
+                if (leg.player2Score) player2TotalScore += leg.player2Score;
+                if (leg.player2Throws) {
+                    player2TotalDarts += calculateLegDarts(leg.player2Throws, 2, leg);
+                    leg.player2Throws.forEach((t: any) => {
+                        if (t.score === 180) player2OneEighties++;
+                    });
+                }
                 
-                // Count 180s from throws
-                leg.player2Throws.forEach((t: any) => {
-                    if (t.score === 180) player2OneEighties++;
-                });
-            }
-            
-            // Track highest checkout for player 2
-            if (leg.winnerId?.toString() === match.player2.playerId.toString() && leg.checkoutScore) {
-                player2HighestCheckout = Math.max(player2HighestCheckout, leg.checkoutScore);
+                if (leg.winnerId?.toString() === match.player2.playerId.toString() && leg.checkoutScore) {
+                    player2HighestCheckout = Math.max(player2HighestCheckout, leg.checkoutScore);
+                }
             }
         }
 
@@ -675,6 +747,118 @@ export class MatchService {
                 }
             }
         }
+
+        return match;
+    }
+
+    static async undoLastLeg(matchId: string) {
+        await connectMongo();
+        const match = await MatchModel.findById(matchId);
+        if (!match) throw new BadRequestError('Match not found');
+
+        if (!match.legs || match.legs.length === 0) {
+            throw new BadRequestError('No legs to undo');
+        }
+
+        console.log(`Undoing last leg for match ${matchId}. Current leg count: ${match.legs.length}`);
+
+        // Remove the last leg
+        match.legs.pop();
+
+        // Revert status and winner
+        match.status = 'ongoing';
+        match.winnerId = undefined;
+
+        // Helper function to calculate darts
+        const calculateLegDarts = (throws: any[], playerNum: 1 | 2, leg: any): number => {
+            if (!throws || throws.length === 0) return 0;
+            const storedDarts = playerNum === 1 ? leg.player1TotalDarts : leg.player2TotalDarts;
+            if (storedDarts !== undefined && storedDarts !== null) return storedDarts;
+            if (throws[0] && typeof throws[0] === 'object' && 'darts' in throws[0]) {
+                return throws.reduce((sum: number, t: any) => sum + (t.darts || 3), 0);
+            }
+            return throws.length * 3;
+        };
+
+        // Recalculate match-wide statistics from the remaining legs
+        let player1TotalScore = 0;
+        let player1TotalDarts = 0;
+        let player1OneEighties = 0;
+        let player1HighestCheckout = 0;
+        let p1LegsWon = 0;
+
+        let player2TotalScore = 0;
+        let player2TotalDarts = 0;
+        let player2OneEighties = 0;
+        let player2HighestCheckout = 0;
+        let p2LegsWon = 0;
+
+        // Process all remaining legs to calculate stats
+        for (const leg of match.legs) {
+            const isP1Winner = leg.winnerId?.toString() === match.player1.playerId.toString();
+            if (isP1Winner) p1LegsWon++; else p2LegsWon++;
+
+            // Player 1 stats
+            if (leg.player1Score) player1TotalScore += leg.player1Score;
+            if (leg.player1Throws) {
+                player1TotalDarts += calculateLegDarts(leg.player1Throws, 1, leg);
+                leg.player1Throws.forEach((t: any) => {
+                    if (t.score === 180) player1OneEighties++;
+                });
+            }
+            if (isP1Winner && leg.checkoutScore) {
+                player1HighestCheckout = Math.max(player1HighestCheckout, leg.checkoutScore);
+            }
+
+            // Player 2 stats
+            if (leg.player2Score) player2TotalScore += leg.player2Score;
+            if (leg.player2Throws) {
+                player2TotalDarts += calculateLegDarts(leg.player2Throws, 2, leg);
+                leg.player2Throws.forEach((t: any) => {
+                    if (t.score === 180) player2OneEighties++;
+                });
+            }
+            if (!isP1Winner && leg.checkoutScore) {
+                player2HighestCheckout = Math.max(player2HighestCheckout, leg.checkoutScore);
+            }
+        }
+
+        // Update match stats
+        match.player1.legsWon = p1LegsWon;
+        match.player1.legsLost = p2LegsWon;
+        match.player1.highestCheckout = player1HighestCheckout;
+        match.player1.oneEightiesCount = player1OneEighties;
+        match.player1.average = player1TotalDarts > 0 ? 
+            Math.round((player1TotalScore / player1TotalDarts) * 3 * 100) / 100 : 0;
+
+        match.player2.legsWon = p2LegsWon;
+        match.player2.legsLost = p1LegsWon;
+        match.player2.highestCheckout = player2HighestCheckout;
+        match.player2.oneEightiesCount = player2OneEighties;
+        match.player2.average = player2TotalDarts > 0 ? 
+            Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
+
+        await match.save();
+
+        // Update tournament player statistics
+        await this.updateTournamentPlayerStats(
+            match.tournamentRef.toString(),
+            match.player1.playerId.toString(),
+            {
+                highestCheckout: player1HighestCheckout,
+                oneEightiesCount: player1OneEighties,
+                average: match.player1.average
+            }
+        );
+        await this.updateTournamentPlayerStats(
+            match.tournamentRef.toString(),
+            match.player2.playerId.toString(),
+            {
+                highestCheckout: player2HighestCheckout,
+                oneEightiesCount: player2OneEighties,
+                average: match.player2.average
+            }
+        );
 
         return match;
     }
