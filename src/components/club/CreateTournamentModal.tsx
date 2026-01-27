@@ -345,8 +345,6 @@ export default function CreateTournamentModal({
     }
   }
 
-  console.log(isOac, process.env.NEXT_PUBLIC_OAC_ENABLED)
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -815,18 +813,13 @@ export default function CreateTournamentModal({
                     <IconChevronRight size={16} />
                     
                   </Button>
-                    {isOac && process.env.NEXT_PUBLIC_ENABLE_OAC !== 'true' && (
-                      <span className="text-[10px] font-bold text-destructive uppercase tracking-tight">
-                        Az OAC versenyindítás jelenleg szünetel
-                      </span>
-                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-end gap-1">
                   
                     <Button 
                       onClick={handleSubmit} 
-                      disabled={!canProceed() || isSubmitting || (isOac && process.env.NEXT_PUBLIC_ENABLE_OAC !== 'true')} 
+                      disabled={!canProceed() || isSubmitting} 
                       size="sm" 
                       className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}
                     >
@@ -842,11 +835,6 @@ export default function CreateTournamentModal({
                         </>
                       )}
                     </Button>
-                      {isOac && process.env.NEXT_PUBLIC_ENABLE_OAC !== 'true' && (
-                      <span className="text-[10px] font-bold text-destructive uppercase tracking-tight">
-                        Az OAC versenyindítás jelenleg szünetel
-                      </span>
-                    )}
                   </div>
                 )}
               </>
