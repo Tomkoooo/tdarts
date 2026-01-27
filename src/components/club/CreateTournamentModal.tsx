@@ -345,6 +345,8 @@ export default function CreateTournamentModal({
     }
   }
 
+  console.log(isOac, process.env.NEXT_PUBLIC_OAC_ENABLED)
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent

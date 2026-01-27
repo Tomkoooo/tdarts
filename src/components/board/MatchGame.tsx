@@ -667,29 +667,20 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     const newPlayer1Legs = pendingLegWinner === 1 ? player1.legsWon + 1 : player1.legsWon;
     const newPlayer2Legs = pendingLegWinner === 2 ? player2.legsWon + 1 : player2.legsWon;
     
-    // Update legs won
+    // Update legs won locally
     if (pendingLegWinner === 1) {
       setPlayer1(prev => ({ ...prev, legsWon: newPlayer1Legs }));
     } else {
       setPlayer2(prev => ({ ...prev, legsWon: newPlayer2Legs }));
     }
-    
-    // Check if match is won
-    if (newPlayer1Legs >= legsToWin || newPlayer2Legs >= legsToWin) {
-      setPendingMatchWinner(pendingLegWinner);
-      setShowMatchConfirmation(true);
-      setShowLegConfirmation(false);
-      setIsSavingLeg(false);
-      return;
-    }
 
     // Send checkout throw to socket
     if (isConnected) {
-      const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
+      const lastThrowScore = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
       socket.emit('throw', {
         matchId: match._id,
         playerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        score: lastThrow,
+        score: lastThrowScore,
         isCheckout: true,
         remainingScore: 0,
         legNumber: currentLeg,
@@ -697,8 +688,8 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
         arrowCount: arrowCount
       });
     }
-
-    // Save leg to API - simplified, only send throws and arrow count
+    
+    // Save leg to API
     try {
       const response = await fetch(`/api/matches/${match._id}/finish-leg`, {
         method: 'POST',
@@ -720,7 +711,42 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           context: 'Leg mentése',
           errorName: 'Leg mentése sikertelen',
         });
+        setIsSavingLeg(false);
+        return;
       }
+
+      // If leg saved successfully, check if match is won
+      if (newPlayer1Legs >= legsToWin || newPlayer2Legs >= legsToWin) {
+        setPendingMatchWinner(pendingLegWinner);
+        setShowMatchConfirmation(true);
+        setShowLegConfirmation(false);
+        setPendingLegWinner(null);
+        return;
+      }
+
+      // If match continues, finalize leg locally
+      if (isConnected) {
+        socket.emit('leg-complete', {
+          matchId: match._id,
+          legNumber: currentLeg,
+          winnerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
+          tournamentCode: window.location.pathname.split('/')[2]
+        });
+      }
+
+      // Reset for next leg
+      setPlayer1(prev => ({ ...prev, score: initialScore, allThrows: [] }));
+      setPlayer2(prev => ({ ...prev, score: initialScore, allThrows: [] }));
+      
+      const nextLegStartingPlayer = legStartingPlayer === 1 ? 2 : 1;
+      setLegStartingPlayer(nextLegStartingPlayer);
+      setCurrentPlayer(nextLegStartingPlayer);
+      setCurrentLeg(prev => prev + 1);
+      setScoreInput('');
+      
+      setShowLegConfirmation(false);
+      setPendingLegWinner(null);
+
     } catch (error: any) {
       console.error('Error saving leg:', error);
       showErrorToast('Hiba történt a leg mentése során!', {
@@ -731,30 +757,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     } finally {
       setIsSavingLeg(false);
     }
-
-    // Send leg completion to socket
-    if (isConnected) {
-      socket.emit('leg-complete', {
-        matchId: match._id,
-        legNumber: currentLeg,
-        winnerId: pendingLegWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-        tournamentCode: window.location.pathname.split('/')[2]
-      });
-    }
-
-    // Reset for next leg
-    setPlayer1(prev => ({ ...prev, score: initialScore, allThrows: [] }));
-    setPlayer2(prev => ({ ...prev, score: initialScore, allThrows: [] }));
-    
-    // Switch starting player for next leg
-    const nextLegStartingPlayer = legStartingPlayer === 1 ? 2 : 1;
-    setLegStartingPlayer(nextLegStartingPlayer);
-    setCurrentPlayer(nextLegStartingPlayer);
-    setCurrentLeg(prev => prev + 1);
-    setScoreInput('');
-    
-    setShowLegConfirmation(false);
-    setPendingLegWinner(null);
   };
 
   const confirmMatchEnd = async () => {
@@ -763,66 +765,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     console.log("confirmMatchEnd - Winner:", pendingMatchWinner);
     
     setIsSavingMatch(true);
-    
-    const hasThrows = player1.allThrows.length > 0 || player2.allThrows.length > 0;
-    
-    // If there are throws, save the final leg first
-    if (hasThrows) {
-      console.log('Saving final leg before finishing match...');
-      
-      // Send final checkout throw to socket
-      if (isConnected) {
-        const lastThrow = pendingMatchWinner === 1 
-          ? (player1.allThrows.length > 0 ? player1.allThrows[player1.allThrows.length - 1] : 0)
-          : (player2.allThrows.length > 0 ? player2.allThrows[player2.allThrows.length - 1] : 0);
-          
-        socket.emit('throw', {
-          matchId: match._id,
-          playerId: pendingMatchWinner === 1 ? match.player1.playerId._id : match.player2.playerId._id,
-          score: lastThrow,
-          isCheckout: true,
-          remainingScore: 0,
-          legNumber: currentLeg,
-          tournamentCode: window.location.pathname.split('/')[2],
-          arrowCount: arrowCount
-        });
-      }
-      
-      // Save final leg
-      try {
-        const legResponse = await fetch(`/api/matches/${match._id}/finish-leg`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            winner: pendingMatchWinner,
-            player1Throws: player1.allThrows,
-            player2Throws: player2.allThrows,
-            winnerArrowCount: arrowCount
-          })
-        });
-        
-        if (!legResponse.ok) {
-          const errorData = await legResponse.json();
-          console.error('Error saving final leg:', errorData);
-          showErrorToast('Hiba történt az utolsó leg mentése során!', {
-            error: errorData?.error,
-            context: 'Meccs lezárása',
-            errorName: 'Leg mentése sikertelen',
-          });
-          setIsSavingMatch(false);
-          return;
-        }
-      } catch (error: any) {
-        console.error('Error saving final leg:', error);
-        showErrorToast('Hiba történt az utolsó leg mentése során!', {
-          error: error?.message,
-          context: 'Meccs lezárása',
-          errorName: 'Leg mentése sikertelen',
-        });
-        setIsSavingMatch(false);
-        return;
-      }
-    }
     
     try {
       // Use current legs won from state
@@ -886,8 +828,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     onBack();
   };
 
-
-
   const cancelLegEnd = () => {
     if (isSavingLeg) return;
     
@@ -904,7 +844,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
           average: (prev.stats.totalThrows - 1) > 0 ? 
-            Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
+            Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1) * 100) / 100 : 0
         }
       }));
       // Keep player 1 as current player
@@ -919,7 +859,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
           ...prev.stats,
           totalThrows: Math.max(0, prev.stats.totalThrows - 1),
           average: (prev.stats.totalThrows - 1) > 0 ? 
-            Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1)) : 0
+            Math.round(((prev.stats.totalThrows * prev.stats.average) - lastThrow) / (prev.stats.totalThrows - 1) * 100) / 100 : 0
         }
       }));
       // Keep player 2 as current player
@@ -931,37 +871,52 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     setArrowCount(3);
   };
 
-  const cancelMatchEnd = () => {
+  const cancelMatchEnd = async () => {
     if (isSavingMatch) return;
     
-    const playerWhoJustThrew = pendingMatchWinner;
-    
-    // Undo the last throw, revert leg count, and keep the same player
-    if (playerWhoJustThrew === 1 && player1.allThrows.length > 0) {
-      const lastThrow = player1.allThrows[player1.allThrows.length - 1];
-      setPlayer1(prev => ({
-        ...prev,
-        score: prev.score + lastThrow,
-        legsWon: Math.max(0, prev.legsWon - 1), // Revert leg count
-        allThrows: prev.allThrows.slice(0, -1),
-      }));
-      // Keep player 1 as current player
-      setCurrentPlayer(1);
-    } else if (playerWhoJustThrew === 2 && player2.allThrows.length > 0) {
-      const lastThrow = player2.allThrows[player2.allThrows.length - 1];
-      setPlayer2(prev => ({
-        ...prev,
-        score: prev.score + lastThrow,
-        legsWon: Math.max(0, prev.legsWon - 1), // Revert leg count
-        allThrows: prev.allThrows.slice(0, -1),
-      }));
-      // Keep player 2 as current player
-      setCurrentPlayer(2);
+    setIsSavingMatch(true);
+    try {
+      // Call API to undo the last saved leg
+      const response = await fetch(`/api/matches/${match._id}/undo-leg`, {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+         throw new Error('Nem sikerült törölni az utolsó leget a szerverről.');
+      }
+
+      const playerWhoJustThrew = pendingMatchWinner;
+      
+      // Revert local state
+      if (playerWhoJustThrew === 1 && player1.allThrows.length > 0) {
+        const lastThrow = player1.allThrows[player1.allThrows.length - 1];
+        setPlayer1(prev => ({
+          ...prev,
+          score: prev.score + lastThrow,
+          legsWon: Math.max(0, prev.legsWon - 1),
+          allThrows: prev.allThrows.slice(0, -1),
+        }));
+        setCurrentPlayer(1);
+      } else if (playerWhoJustThrew === 2 && player2.allThrows.length > 0) {
+        const lastThrow = player2.allThrows[player2.allThrows.length - 1];
+        setPlayer2(prev => ({
+          ...prev,
+          score: prev.score + lastThrow,
+          legsWon: Math.max(0, prev.legsWon - 1),
+          allThrows: prev.allThrows.slice(0, -1),
+        }));
+        setCurrentPlayer(2);
+      }
+      
+      setShowMatchConfirmation(false);
+      setPendingMatchWinner(null);
+      setArrowCount(3);
+    } catch (error: any) {
+      console.error('Error undoing leg:', error);
+      toast.error('Hiba történt a visszavonás során!');
+    } finally {
+      setIsSavingMatch(false);
     }
-    
-    setShowMatchConfirmation(false);
-    setPendingMatchWinner(null);
-    setArrowCount(3);
   };
 
   const handleSaveLegsToWin = async () => {
@@ -1552,38 +1507,6 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
             <p className="font-medium">
               {pendingMatchWinner === 1 ? player1.name : player2.name} nyerte a meccset!
             </p>
-            
-            {/* Arrow count selection for final leg */}
-            {(() => {
-              const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
-              const possibleArrowCounts = getPossibleArrowCounts(lastThrow);
-              
-              return (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Utolsó kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    {possibleArrowCounts.map((count) => (
-                      <Button
-                        key={count}
-                        onClick={() => setArrowCount(count)}
-                        variant={arrowCount === count ? "default" : "outline"}
-                        size="sm"
-                        className="min-w-[80px]"
-                      >
-                        {count} nyíl
-                      </Button>
-                    ))}
-                  </div>
-                  {possibleArrowCounts.length === 1 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Csak {possibleArrowCounts[0]} nyíl lehetséges
-                    </p>
-                  )}
-                </div>
-              );
-            })()}
             
             <div className="flex gap-2 pt-2">
               <Button 
