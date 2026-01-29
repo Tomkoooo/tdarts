@@ -64,14 +64,19 @@ export async function GET(request: NextRequest) {
         subscriptionEnabled: process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED === 'true',
         socketEnabled: !!process.env.NEXT_PUBLIC_ENABLE_SOCKET,
         leaguesEnabled: !!process.env.NEXT_PUBLIC_ENABLE_LEAGUES,
-        detailedStatisticsEnabled: !!process.env.NEXT_PUBLIC_ENABLE_DETAILEDSTATISTICS
-        
+        detailedStatisticsEnabled: !!process.env.NEXT_PUBLIC_ENABLE_DETAILEDSTATISTICS,
+        oacCreationEnabled: process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === 'true'
       },
       environment: {
-        emailUsername: process.env.EMAIL_USER || 'N/A',
+        baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
         nodeEnv: process.env.NODE_ENV || 'N/A',
         subscriptionEnabled: process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED || 'false',
-        socketServerUrl: process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'N/A'
+        socketServerUrl: process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'N/A',
+        disableSocketLogs: process.env.NEXT_PUBLIC_DISABLE_SOCKET_LOGS || 'false',
+        enableSocket: process.env.NEXT_PUBLIC_ENABLE_SOCKET || 'false',
+        enableLeagues: process.env.NEXT_PUBLIC_ENABLE_LEAGUES || 'false',
+        enableDetailedStatistics: process.env.NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS || 'false',
+        enableOacCreation: process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION || 'false'
       }
     };
 

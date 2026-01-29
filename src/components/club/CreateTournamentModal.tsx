@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation"
 import { TournamentSettings } from "@/interface/tournament.interface"
 import { BillingInfo } from "@/interface/club.interface"
 import { cn } from "@/lib/utils"
+import { FeatureFlagService } from "@/lib/featureFlags"
 import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormField } from "@/components/ui/form-field"
@@ -109,6 +110,7 @@ export default function CreateTournamentModal({
   defaultIsSandbox = false,
 }: CreateTournamentModalProps) {
   const router = useRouter()
+  const isOacCreationEnabled = FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')
 
   const [currentStep, setCurrentStep] = useState<Step>("details")
   const [settings, setSettings] = useState<FormSettings>(defaultSettings)
@@ -816,10 +818,9 @@ export default function CreateTournamentModal({
                   </div>
                 ) : (
                   <div className="flex flex-col items-end gap-1">
-                  
                     <Button 
                       onClick={handleSubmit} 
-                      disabled={!canProceed() || isSubmitting} 
+                      disabled={!canProceed() || isSubmitting || (isOac && !isOacCreationEnabled)} 
                       size="sm" 
                       className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}
                     >
@@ -835,6 +836,11 @@ export default function CreateTournamentModal({
                         </>
                       )}
                     </Button>
+                     {isOac && !isOacCreationEnabled && (
+                      <span className="text-xs font-medium text-destructive mb-1 animate-pulse">
+                        OAC létrehozás jelenleg nem elérhető!
+                      </span>
+                    )}
                   </div>
                 )}
               </>

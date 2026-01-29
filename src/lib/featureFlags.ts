@@ -1,10 +1,9 @@
-import { ClubModel } from '@/database/models/club.model';
-
 export interface FeatureFlags {
   liveMatchFollowing: boolean;
   advancedStatistics: boolean;
   premiumTournaments: boolean;
   leagues: boolean;
+  oacCreation: boolean;
   // További flag-ek ide jöhetnek
 }
 
@@ -19,15 +18,27 @@ export class FeatureFlagService {
     }
 
     // Egyedi feature flag ellenőrzése
-    const envVarName = `NEXT_PUBLIC_ENABLE_${featureName.toUpperCase()}`;
-    const envValue = process.env[envVarName];
-    
-    // Ha nincs definiálva, akkor alapértelmezetten false
-    if (envValue === undefined) {
-      return false;
+    // FIGYELEM: Client oldalon a process.env[dynamicKey] nem működik!
+    // Explicit módon kell hivatkozni a változókra.
+    switch (featureName) {
+      case 'LIVE_MATCH_FOLLOWING':
+        return process.env.NEXT_PUBLIC_ENABLE_LIVE_MATCH_FOLLOWING === 'true';
+      case 'ADVANCED_STATISTICS':
+        return process.env.NEXT_PUBLIC_ENABLE_ADVANCED_STATISTICS === 'true';
+      case 'PREMIUM_TOURNAMENTS':
+        return process.env.NEXT_PUBLIC_ENABLE_PREMIUM_TOURNAMENTS === 'true';
+      case 'LEAGUES':
+        return process.env.NEXT_PUBLIC_ENABLE_LEAGUES === 'true';
+      case 'SOCKET':
+        return process.env.NEXT_PUBLIC_ENABLE_SOCKET === 'true';
+      case 'OAC_CREATION':
+        return process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === 'true' || process.env.NEXT_PUBLIC_ENABLE_OAC_CREATION === undefined;
+      case 'DETAILED_STATISTICS':
+        return process.env.NEXT_PUBLIC_ENABLE_DETAILED_STATISTICS === 'true';
+      default:
+        // Fallback logikát lehetne ide tenni, de client oldalon ez korlátozott
+        return false;
     }
-    
-    return envValue.toLowerCase() === 'true';
   }
 
   /**
@@ -35,6 +46,9 @@ export class FeatureFlagService {
    */
   static async isClubFeatureEnabled(clubId: string, featureName: string): Promise<boolean> {
     try {
+      // Dynamic import to keep this file client-safe
+      const { ClubModel } = await import('@/database/models/club.model');
+      
       const club = await ClubModel.findById(clubId).select('featureFlags subscriptionModel');
       if (!club) {
         return false;
@@ -127,6 +141,7 @@ export class FeatureFlagService {
 
     // Klub specifikus ellenőrzés - subscriptionModel === 'pro'
     try {
+      const { ClubModel } = await import('@/database/models/club.model');
       const club = await ClubModel.findById(clubId).select('subscriptionModel');
       if (!club) {
         return false;
@@ -138,4 +153,5 @@ export class FeatureFlagService {
       return false;
     }
   }
-} 
+}
+ 

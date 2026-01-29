@@ -37,6 +37,7 @@ interface PlayerStatsData {
     name: string
     stats: {
         mmr: number
+        oacMmr: number
         totalMatchesWon: number
         totalMatchesLost: number
         totalLegsWon: number
@@ -376,13 +377,33 @@ export function PlayerStatisticsSection({
       <CardContent className="space-y-8 px-0">
         {/* Summary Stats - Flatter Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Aktuális MMR' : 'Szezon végi MMR'}
-            value={selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.stats.mmr : (activeStats.mmr || 800)}
-            subtext={selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : 'Archivált'}
-            icon={<IconTarget className="w-4 h-4" />}
-            variant="primary"
-          />
+          <div className={cn("p-5 rounded-xl border transition-all hover:bg-opacity-10", "border-primary/20 bg-primary/5 text-primary")}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                {selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Aktuális MMR' : 'Szezon végi MMR'}
+              </span>
+              <div className="opacity-50"><IconTarget className="w-4 h-4" /></div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-black text-primary ">
+                  {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.stats.mmr : (activeStats.mmr || 800)}
+                </div>
+                <span className="text-[10px] font-bold uppercase opacity-60">MMR</span>
+              </div>
+              {((selectedSeason === 'current' || selectedSeason === 'all-time') && playerStats.player.stats.oacMmr !== 800) && (
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="text-lg font-black text-primary">
+                    {playerStats.player.stats.oacMmr}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase text-primary/70">OAC MMR</span>
+                </div>
+              )}
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-tighter mt-1 opacity-60">
+              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : 'Archivált'}
+            </div>
+          </div>
           <StatCard 
             label={selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Rangsor' : 'Végezte'}
             value={selectedSeason === 'current' || selectedSeason === 'all-time' ? `#${playerStats.player.globalRank || '—'}` : '—'}
@@ -567,6 +588,11 @@ export function PlayerStatisticsSection({
                          {tournament.mmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                 {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} MMR
+                            </span>
+                         )}
+                         {tournament.oacMmrChange !== undefined && (
+                            <span className={cn("text-[10px] font-bold", tournament.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
+                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} OAC MMR
                             </span>
                          )}
                       </div>

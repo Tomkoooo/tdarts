@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export interface TournamentHistory {
     tournamentId: string;
     tournamentName: string;
+    isVerified: boolean;
     position: number;
     eliminatedIn: string;
     stats: {
@@ -17,6 +18,7 @@ export interface TournamentHistory {
     date: Date;
     verified: boolean;
     mmrChange?: number;
+    oacMmrChange?: number;
 }
 
 export interface PlayerHonor {

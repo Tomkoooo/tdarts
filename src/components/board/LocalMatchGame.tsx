@@ -254,10 +254,14 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     setPendingMatchWinner(null);
   };
 
-  const getPossibleArrowCounts = (checkout: number): number[] => {
-    if (checkout <= 60) return [1, 2, 3];
-    if (checkout <= 100) return [2, 3];
-    return [3];
+  const getPossibleArrowCounts = (checkoutScore: number): number[] => {
+    if (checkoutScore <= 40 || checkoutScore === 50 || (checkoutScore < 100 && checkoutScore % 3 === 0)) {
+      return [1, 2, 3]; // 1-40: 1-3 nyíl lehetséges
+    } else if (checkoutScore <= 98 || checkoutScore === 100 || checkoutScore === 101 || checkoutScore === 104 || checkoutScore === 107 || checkoutScore === 110) {
+      return [2, 3]; // 41-98: 2-3 nyíl lehetséges
+    } else {
+      return [3]; // 99-180: csak 3 nyíl lehetséges
+    }
   };
 
   const handleSaveLegsToWin = () => {

@@ -98,11 +98,7 @@ export default function TournamentCard({
   }
 
 
-  const getDetailsLink = () => {
-    if (tournament.isOac && typeof tournament.clubId === 'object' && tournament.league) {
-       // OAC tournaments link to the league view in the club page
-       return `/clubs/${tournament.clubId._id}?page=leagues&league=${tournament.league}`
-    }
+  const getDetailsLink = () => {  
     return `/tournaments/${tournamentId}`
   }
 

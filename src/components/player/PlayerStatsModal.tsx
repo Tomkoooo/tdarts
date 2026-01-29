@@ -10,6 +10,7 @@ import {
   IconLoader2,
   IconHistory,
   IconSword,
+  IconShieldCheck,
 } from "@tabler/icons-react"
 import axios from "axios"
 
@@ -246,11 +247,17 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                )}
             </div>
           </div>
-          <div className="flex flex-col items-end">
+          <div className="flex gap-3">
                 <Badge variant="outline" className="rounded-lg border-primary/20 bg-primary/5 px-4 py-2 text-base font-black text-primary gap-2 shadow-sm">
                   <IconTarget size={18} />
                   {displayPlayer.stats?.mmr || 800} MMR
                 </Badge>
+                {displayPlayer.stats.oacMmr !== 800 && (
+                    <Badge variant="outline" className="rounded-lg border-blue-500/20 bg-blue-500/5 px-4 py-2 text-base font-black text-blue-500 gap-2 shadow-sm">
+                        <IconTarget size={18} />
+                        {displayPlayer.stats.oacMmr} OAC MMR
+                    </Badge>
+                )}
           </div>
         </header>
 
@@ -342,6 +349,12 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                                 {history.mmrChange !== undefined && (
                                     <span className={cn("text-[10px] font-black", history.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                         {history.mmrChange >= 0 ? "+" : ""}{history.mmrChange}
+                                    </span>
+                                )}
+                                {history.isVerified && history.oacMmrChange && (
+                                    <span className={cn("text-[10px] font-black flex items-center gap-1", history.oacMmrChange >= 0 ? "text-blue-300" : "text-red-300")}>
+                                      <IconShieldCheck className={cn("h-4 w-4", history.oacMmrChange >= 0 ? "text-blue-300" : "text-red-300")} />
+                                        {history.oacMmrChange >= 0 ? "+" : ""}{history.oacMmrChange}
                                     </span>
                                 )}
                                 <IconChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen ? "rotate-180 text-primary" : "")} />

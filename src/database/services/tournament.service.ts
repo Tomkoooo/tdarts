@@ -3556,6 +3556,11 @@ export class TournamentService {
                             continue;
                         }
 
+                        // Skip bye matches (only one player)
+                        if (!match.player1 || !match.player2) {
+                            continue;
+                        }
+
                         // Handle both populated and non-populated matchReference
                         const matchRefObj = typeof matchRef === 'object' ? matchRef : null;
                         if (!matchRefObj || !(matchRefObj as any).winnerId) {
@@ -3564,11 +3569,6 @@ export class TournamentService {
                             console.log(`DEBUG: Match Status: ${matchRefObj ? (matchRefObj as any).status : 'N/A'}`);
                             console.log(`DEBUG: Player 1: ${match.player1}, Player 2: ${match.player2}`);
                             throw new BadRequestError(`Incomplete match in round ${roundIndex + 1} - all matches must be finished`);
-                        }
-
-                        // Skip bye matches (only one player)
-                        if (!match.player1 || !match.player2) {
-                            continue;
                         }
 
                         const winnerId = (matchRefObj as any).winnerId.toString();
@@ -4072,7 +4072,9 @@ export class TournamentService {
                         }
 
                         const currentOacMmr = player.stats.oacMmr || OacMmrService.BASE_OAC_MMR;
-                        if (tournament.verified) {
+                        let oacMmrChange = 0;
+                        
+                        if (tournament.verified && totalPlayers >= 16) {
                             const nextOacMmr = OacMmrService.calculateMMRChange({
                                 currentOacMmr,
                                 placement,
@@ -4083,6 +4085,7 @@ export class TournamentService {
                                 highestCheckout: stats.highestCheckout,
                                 matchesWon: stats.matchesWon
                             });
+                            oacMmrChange = nextOacMmr - currentOacMmr;
                             player.stats.oacMmr = nextOacMmr;
                         }
 
@@ -4141,6 +4144,7 @@ export class TournamentService {
                          // 6. UPDATE TOURNAMENT HISTORY ENTRY
                          const mmrChange = player.stats.mmr - currentMMR;
                          const tournamentHistoryEntry = {
+                            isVerified: tournament.verified || false,
                              tournamentId: tournament.tournamentId,
                              tournamentName: tournament.tournamentSettings?.name || 'Unknown Tournament',
                              position: placement,
@@ -4156,7 +4160,8 @@ export class TournamentService {
                              },
                              date: new Date(),
                              verified: tournament.verified || false,
-                             mmrChange: mmrChange
+                             mmrChange: mmrChange,
+                             oacMmrChange: oacMmrChange
                          };
 
                         if (isNewTournament) {

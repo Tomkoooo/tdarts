@@ -50,11 +50,12 @@ export async function GET(request: NextRequest) {
 
     // Get MMR tier
     const getMMRTier = (mmr: number) => {
-      if (mmr >= 1600) return { name: 'Elit', color: 'text-error' };
-      if (mmr >= 1400) return { name: 'Mester', color: 'text-warning' };
-      if (mmr >= 1200) return { name: 'Haladó', color: 'text-info' };
-      if (mmr >= 1000) return { name: 'Középhaladó', color: 'text-success' };
-      if (mmr >= 800) return { name: 'Kezdő+', color: 'text-primary' };
+      if (mmr >= 1200) return { name: 'Elit', color: 'text-error' };
+      if (mmr >= 1100) return { name: 'Mester', color: 'text-warning' };
+      if (mmr >= 1000) return { name: 'Haladó', color: 'text-info' };
+      if (mmr >= 900) return { name: 'Középhaladó', color: 'text-success' };
+      if (mmr >= 800) return {name: "Átlagos", color: "text-primary"}
+      if (mmr < 800) return { name: 'Kezdő+', color: 'text-primary' };
       return { name: 'Kezdő', color: 'text-base-content' };
     };
 
@@ -75,7 +76,9 @@ export async function GET(request: NextRequest) {
         average: history.stats.average || 0
       },
       finalPosition: history.position,
-      mmrChange: history.mmrChange
+      mmrChange: history.mmrChange,
+      oacMmrChange: history.oacMmrChange,
+      isVerified: history.isVerified
     }));
 
     // Get recent matches

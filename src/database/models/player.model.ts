@@ -24,6 +24,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         oacMmr: { type: Number, default: 800 }, // OAC National MMR - starts at 800
     },
     tournamentHistory: [{
+        isVerified: { type: Boolean, default: false },
         tournamentId: { type: String, required: true },
         tournamentName: { type: String, required: true },
         position: { type: Number, required: true },
@@ -40,6 +41,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         date: { type: Date, default: Date.now },
         verified: { type: Boolean, default: false }, // Indicates if tournament was verified (OAC)
         mmrChange: { type: Number },
+        oacMmrChange: {type: Number}
     }],
     // Historical Data & Honors
     honors: [{
