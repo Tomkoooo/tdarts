@@ -45,16 +45,51 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     fetchLiveMatches();
     
     // Socket event handlers
-    function onMatchStarted() {
-      // When a new match starts, fetch fresh data from database
-      fetchLiveMatches();
+    function onMatchStarted(data: { matchId: string; matchData: any }) {
+      console.log('🎮 New match started:', data);
+      // When a new match starts, add it to the list immediately
+      if (data.matchData) {
+        const newMatch: LiveMatch = {
+          _id: data.matchId,
+          status: 'ongoing',
+          currentLeg: 1,
+          player1Remaining: 501,
+          player2Remaining: 501,
+          player1: {
+            _id: data.matchData.player1?.playerId?._id || data.matchData.player1?._id,
+            name: data.matchData.player1?.playerId?.name || data.matchData.player1?.name || 'Player 1'
+          },
+          player2: {
+            _id: data.matchData.player2?.playerId?._id || data.matchData.player2?._id,
+            name: data.matchData.player2?.playerId?.name || data.matchData.player2?.name || 'Player 2'
+          },
+          player1LegsWon: 0,
+          player2LegsWon: 0,
+          lastUpdate: new Date().toISOString()
+        };
+        
+        setLiveMatches(prev => {
+          // Check if match already exists to avoid duplicates
+          const exists = prev.some(m => m._id === data.matchId);
+          if (exists) {
+            return prev;
+          }
+          return [...prev, newMatch];
+        });
+      } else {
+        // Fallback: fetch from database if matchData not provided
+        fetchLiveMatches();
+      }
     }
 
-    function onMatchFinished(matchId: string) {
-      setLiveMatches(prev => prev.filter(match => match._id !== matchId));
+    function onMatchFinished(data: { matchId: string }) {
+      console.log('🏁 Match finished:', data.matchId);
+      // Remove the finished match from the list
+      setLiveMatches(prev => prev.filter(match => match._id !== data.matchId));
     }
 
     function onMatchUpdate(data: { matchId: string; state: any }) {
+      console.log('📊 Match update:', data.matchId);
       // Update only the real-time data (scores, current leg) from socket
       setLiveMatches(prev => prev.map(match => {
         if (match._id === data.matchId) {
@@ -73,12 +108,14 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
     }
 
     function onLegComplete() {
+      console.log('🏆 Leg completed');
       // When a leg is completed, refresh data from database to get updated leg counts
       fetchLiveMatches();
     }
 
     // Socket connection handler
     const handleSocketConnect = () => {
+      console.log('🔌 Socket connected, joining tournament:', tournamentCode);
       socket.emit('join-tournament', tournamentCode);
     };
 

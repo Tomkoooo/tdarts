@@ -320,15 +320,15 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
           <div className="grid grid-cols-[1fr_auto_1fr] divide-x divide-border">
             
             {/* Player 1 (Left) */}
-            <div className={`p-4 flex flex-col items-center relative transition-colors ${matchState.currentLegData.currentPlayer === 1 ? 'bg-primary/5' : ''}`}>
+            <div className={`p-2 sm:p-4 flex flex-col items-center relative transition-colors ${matchState.currentLegData.currentPlayer === 1 ? 'bg-primary/5' : ''}`}>
                {/* Name */}
-               <div className="flex items-center gap-2 mb-3 w-full justify-center px-1">
-                 {getCurrentLegStarter() === 1 && <IconPencil size={12} className="text-muted-foreground flex-shrink-0" />}
-                 <span className="font-bold text-base sm:text-lg text-center truncate leading-tight">{getPlayer1Name()}</span>
+               <div className="flex items-center gap-1 mb-2 w-full justify-center px-1 max-w-full">
+                 {getCurrentLegStarter() === 1 && <IconPencil size={10} className="text-muted-foreground flex-shrink-0" />}
+                 <span className="font-bold text-sm sm:text-lg text-center truncate leading-none max-w-full">{getPlayer1Name()}</span>
                </div>
                
                {/* Big Score */}
-               <div className="text-5xl sm:text-7xl font-bold tracking-tighter tabular-nums mb-4 text-primary">
+               <div className="text-4xl sm:text-7xl font-bold tracking-tighter tabular-nums mb-2 sm:mb-4 text-primary leading-none">
                  {matchState.currentLegData.player1Remaining}
                </div>
 
@@ -339,22 +339,22 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
             </div>
 
             {/* Middle Stats (Center) */}
-            <div className="w-16 sm:w-24 bg-muted/5 flex flex-col items-center py-4 justify-start pt-12">
-               <div className="text-[10px] uppercase text-muted-foreground tracking-wider font-bold text-center leading-tight mb-1 opacity-70">
+            <div className="w-12 sm:w-24 bg-muted/5 flex flex-col items-center py-2 sm:py-4 justify-start pt-8 sm:pt-12">
+               <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground tracking-wider font-bold text-center leading-tight mb-1 opacity-70">
                  tDarts
                </div>
             </div>
 
             {/* Player 2 (Right) */}
-            <div className={`p-4 flex flex-col items-center relative transition-colors ${matchState.currentLegData.currentPlayer === 2 ? 'bg-primary/5' : ''}`}>
+            <div className={`p-2 sm:p-4 flex flex-col items-center relative transition-colors ${matchState.currentLegData.currentPlayer === 2 ? 'bg-primary/5' : ''}`}>
                {/* Name */}
-               <div className="flex items-center gap-2 mb-3 w-full justify-center px-1">
-                 <span className="font-bold text-base sm:text-lg text-center truncate leading-tight">{getPlayer2Name()}</span>
-                 {getCurrentLegStarter() === 2 && <IconPencil size={12} className="text-muted-foreground flex-shrink-0" />}
+               <div className="flex items-center gap-1 mb-2 w-full justify-center px-1 max-w-full">
+                 <span className="font-bold text-sm sm:text-lg text-center truncate leading-none max-w-full">{getPlayer2Name()}</span>
+                 {getCurrentLegStarter() === 2 && <IconPencil size={10} className="text-muted-foreground flex-shrink-0" />}
                </div>
                
                {/* Big Score */}
-               <div className="text-5xl sm:text-7xl font-bold tracking-tighter tabular-nums mb-4 text-primary">
+               <div className="text-4xl sm:text-7xl font-bold tracking-tighter tabular-nums mb-2 sm:mb-4 text-primary leading-none">
                  {matchState.currentLegData.player2Remaining}
                </div>
 

@@ -91,8 +91,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   React.useEffect(() => {
     console.log(tournament)
     if(tournament.tournamentSettings.status === 'finished') {
-      //if the tournament is finished sort by tournament position
-      setLocalPlayers(players.sort((a: any, b: any) => a.tournamentStanding - b.tournamentStanding))
+      // If the tournament is finished, sort by tournament position (ascending)
+      setLocalPlayers([...players].sort((a: any, b: any) => {
+        const posA = a.tournamentStanding ?? Number.MAX_SAFE_INTEGER
+        const posB = b.tournamentStanding ?? Number.MAX_SAFE_INTEGER
+        return posA - posB
+      }))
     } else {
       // Sort alphabetically by player name when tournament is not finished
       setLocalPlayers([...players].sort((a: any, b: any) => {
