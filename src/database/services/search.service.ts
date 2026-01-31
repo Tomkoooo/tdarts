@@ -20,6 +20,7 @@ export interface SearchFilters {
     page?: number;
     limit?: number;
     year?: number;
+    rankingType?: 'oacMmr' | 'leaguePoints'; // New filter for player ranking in OAC mode
 }
 
 
@@ -64,12 +65,16 @@ export class SearchService {
     const tournamentCountResult = await TournamentModel.aggregate(tournamentPipeline);
     counts.tournaments = tournamentCountResult[0]?.total || 0;
 
-        // 2. Players Count (Only if generic filters aren't restrictive to other types)
-        if (!filters.city && !filters.isVerified && !filters.isOac && !filters.tournamentType) {
-            const playerQuery: any = {};
-            if (regex) playerQuery.name = regex;
-            counts.players = await PlayerModel.countDocuments(playerQuery);
-        }
+    // 2. Players Count
+    const playerQuery: any = {};
+    if (regex) playerQuery.name = regex;
+    
+    if (filters.isOac) {
+         // Consistent with searchPlayers logic: check for verified tournament history
+         playerQuery['tournamentHistory.isVerified'] = true;
+    }
+
+    counts.players = await PlayerModel.countDocuments(playerQuery);
 
         // 3. Clubs Count
         const clubQuery = this.buildClubQuery(query, filters);
@@ -142,6 +147,11 @@ export class SearchService {
     static async searchPlayers(query: string, filters: SearchFilters = {}): Promise<{ results: any[], total: number }> {
         await connectMongo();
 
+        // OAC SPECIAL LOGIC: "League Points" Ranking
+        if (filters.isOac && filters.rankingType === 'leaguePoints') {
+             return this.searchPlayersByLeaguePoints(query, filters);
+        }
+
         const page = filters.page || 1;
         const limit = filters.limit || 10;
         const skip = (page - 1) * limit;
@@ -149,6 +159,12 @@ export class SearchService {
 
         const queryObj: any = {};
         if (regex) queryObj.name = regex;
+
+        if (filters.isOac) {
+            // Requirement: "only want to list those who was once part of a verified tournament"
+            // We check 'tournamentHistory' array for at least one item where isVerified is true
+            queryObj['tournamentHistory.isVerified'] = true;
+        }
 
         const total = await PlayerModel.countDocuments(queryObj);
 
@@ -158,8 +174,15 @@ export class SearchService {
         const allPlayers = await PlayerModel.find(queryObj).populate('userRef', 'name email');
         
         const sortedPlayers = allPlayers.sort((a, b) => {
-            const aMMR = a.stats?.mmr ?? 800;
-            const bMMR = b.stats?.mmr ?? 800;
+            let aMMR = a.stats?.mmr ?? 800;
+            let bMMR = b.stats?.mmr ?? 800;
+
+            // OAC Mode: Sort by OAC MMR default
+            if (filters.isOac) {
+                 aMMR = a.stats?.oacMmr ?? 800;
+                 bMMR = b.stats?.oacMmr ?? 800;
+            }
+
             if (bMMR !== aMMR) return bMMR - aMMR;
             
             // Tie-breaker: letter-starting names before digit-starting names
@@ -193,9 +216,10 @@ export class SearchService {
                 type: 'player',
                 userRef: player.userRef,
                 stats: stats,
-                mmr: mmr,
-                mmrTier: this.getMMRTier(mmr),
+                mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
+                mmrTier: this.getMMRTier(filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr),
                 globalRank: globalRank || null,
+                oacMmr: player.stats?.oacMmr ?? 800, // Explicitly return OAC MMR for display
                 honors: player.honors || [] // Include honors for badge display
             };
         });
@@ -213,7 +237,14 @@ export class SearchService {
         const limit = filters.limit || 10;
         const skip = (page - 1) * limit;
 
+
         const queryObj = this.buildClubQuery(query, filters);
+        
+        // Ensure OAC filter is applied if active (verified only)
+        if (filters.isOac) {
+            queryObj.verified = true;
+        }
+
         const total = await ClubModel.countDocuments(queryObj);
 
         // Aggregate to sort by tournament count
@@ -279,6 +310,12 @@ export class SearchService {
         const skip = (page - 1) * limit;
 
         const queryObj = this.buildLeagueQuery(query, filters);
+
+        // Ensure OAC filter is applied if active (verified only)
+        if (filters.isOac) {
+            queryObj.verified = true;
+        }
+
         const total = await LeagueModel.countDocuments(queryObj);
 
         const leagues = await LeagueModel.find(queryObj)
@@ -312,6 +349,122 @@ export class SearchService {
 
 
     // --- HELPERS ---
+
+    /**
+     * Search Players sorted by League Points (Aggregation)
+     */
+    private static async searchPlayersByLeaguePoints(query: string, filters: SearchFilters): Promise<{ results: any[], total: number }> {
+        const { LeagueModel } = await import('../models/league.model');
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+        const regex = query ? new RegExp(query, 'i') : null;
+
+        // 1. First find players matching the name query (if any)
+        // If query is present, we only want to aggregate points for those players.
+        if (regex) {
+             // We need to look up players first to get their IDs? 
+             // Or can we filter after lookup? 
+             // Ideally we filter first if possible. 
+             // LeagueModel stores players as array of objects { player: ObjectId, ... }
+             // Only way to search by name is $lookup player first.
+        }
+
+        const pipeline: any[] = [];
+
+        // 1. Initial Match: Only verified leagues
+        pipeline.push({ $match: { verified: true, isActive: true } });
+        
+        // 2. Unwind players
+        pipeline.push({ $unwind: '$players' });
+
+        // 3. Group by Player to sum points
+        // We need to calculate total points for each player across all verified leagues.
+        // League schema: players: [{ player: Ref, tournamentPoints: [...], manualAdjustments: [...] }]
+        // We need to sum tournamentPoints.points + manualAdjustments.points
+        
+        pipeline.push({
+            $project: {
+                player: '$players.player',
+                leagueName: '$name',
+                points: {
+                    $add: [
+                        { $reduce: { input: '$players.tournamentPoints', initialValue: 0, in: { $add: ['$$value', '$$this.points'] } } },
+                        { $reduce: { input: '$players.manualAdjustments', initialValue: 0, in: { $add: ['$$value', '$$this.points'] } } }
+                    ]
+                }
+            }
+        });
+
+        pipeline.push({
+            $group: {
+                _id: '$player',
+                totalLeaguePoints: { $sum: '$points' },
+                leagues: { $push: '$leagueName' } // Optional: track which leagues
+            }
+        });
+
+        // 4. Lookup Player Details
+        pipeline.push({
+            $lookup: {
+                from: 'players',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'playerInfo'
+            }
+        });
+        pipeline.push({ $unwind: '$playerInfo' });
+
+        // 5. Apply Name Filter (if query exists)
+        if (regex) {
+             pipeline.push({ $match: { 'playerInfo.name': regex } });
+        }
+
+        // 6. Sort by Points
+        pipeline.push({ $sort: { totalLeaguePoints: -1, 'playerInfo.name': 1 } });
+
+        // 7. Pagination (Facet for count and results)
+        const facetPipeline = [
+             {
+                 $facet: {
+                     metadata: [{ $count: 'total' }],
+                     results: [{ $skip: skip }, { $limit: limit }]
+                 }
+             }
+        ];
+        
+        // Merge facet into main pipeline
+        pipeline.push(...facetPipeline);
+
+        const aggregationResult = await LeagueModel.aggregate(pipeline);
+        
+        const result = aggregationResult[0];
+        const total = result.metadata[0]?.total || 0;
+        const rawResults = result.results || [];
+
+        // 8. Transform to standard format
+        const formattedResults = rawResults.map((item: any, index: number) => ({
+             _id: item.playerInfo._id,
+             name: item.playerInfo.name,
+             type: 'player',
+             userRef: item.playerInfo.userRef,
+             stats: {
+                 ...item.playerInfo.stats,
+                 oacMmr: item.playerInfo.stats?.oacMmr ?? 800,
+                 // Add league points to stats or root? 
+                 leaguePoints: item.totalLeaguePoints
+             },
+             mmr: item.playerInfo.stats?.oacMmr ?? 800, // Show OAC MMR as main MMR in this view? or specific?
+             // Actually request says: show rankings based on oacMmr AND leaguePoints.
+             // If we are here, we are ranking by leaguePoints.
+             leaguePoints: item.totalLeaguePoints, 
+             rankingType: 'leaguePoints',
+             globalRank: skip + index + 1,
+             honors: item.playerInfo.honors || []
+        }));
+
+        return { results: formattedResults, total };
+    }
 
     private static buildTournamentPipeline(query: string, filters: SearchFilters, countOnly: boolean = false): any[] {
         const pipeline: any[] = [];
@@ -356,7 +509,11 @@ export class SearchService {
         pipeline.push({
             $addFields: {
                 isVerified: { $eq: ['$verified', true] },
-                isOac: { $eq: ['$leagueData.pointSystemType', 'remiz_christmas'] },
+                isOac: { $eq: ['$leagueData.pointSystemType', 'remiz_christmas'] }, // Only remiz_christmas is strictly OAC? Wait, "isOac" usually means verified context.
+                // The prompt says "isOac=true i get listed only verified tournaments...".
+                // We should align 'isOac' property for the frontend.
+                // NOTE: 'oac' flag in search result usually just purely informational or derived. 
+                // Let's keep existing derivation but allow filter to enforce verified.
                 // City extraction
                 city: {
                     $trim: {
@@ -440,7 +597,7 @@ export class SearchService {
             matchStage['tournamentSettings.type'] = filters.tournamentType;
         }
 
-        if (filters.isVerified) {
+        if (filters.isVerified || filters.isOac) {
              matchStage.isVerified = true;
         }
 
@@ -478,6 +635,10 @@ export class SearchService {
             q.location = new RegExp(filters.city, 'i');
         }
 
+        if (filters.isOac) {
+            q.verified = true;
+        }
+
         if (filters.isVerified) {
             q.verified = true;
         }
@@ -491,6 +652,10 @@ export class SearchService {
 
         if (regex) {
             q.name = regex;
+        }
+
+        if (filters.isOac) {
+            q.verified = true;
         }
 
         if (filters.isVerified) {
@@ -568,116 +733,159 @@ export class SearchService {
     static async getPopularCities(limit: number = 10, showFinished: boolean = false, query?: string, filters: SearchFilters = {}): Promise<{city: string, count: number}[]> {
         await connectMongo();
 
-        // 1. Start with base match
-        const matchStage: any = {
-            isDeleted: { $ne: true },
-            isArchived: { $ne: true },
-            isSandbox: { $ne: true },
-            'tournamentSettings.location': { $exists: true, $ne: '' }
-        };
+        // 1. Determine Source based on Filters.type (Tab)
+        // If type is 'clubs', we aggregate from ClubModel. Otherwise default to TournamentModel (standard behavior).
+        const searchType = filters.type || 'tournaments';
 
-        const andConditions: any[] = [];
+        if (searchType === 'clubs') {
+             // Club City Aggregation
+             const matchStage: any = {
+                 location: { $exists: true, $ne: '' }
+             };
+             
+             if (query) {
+                 const regex = new RegExp(query, 'i');
+                 matchStage.$or = [{ name: regex }, { location: regex }];
+             }
 
-        // 2. Apply Text Search (if exists) - similar to buildTournamentPipeline
-        if (query) {
-            const regex = new RegExp(query, 'i');
-             andConditions.push({
-                $or: [
-                    { 'tournamentSettings.name': regex },
-                    { 'tournamentSettings.description': regex },
-                    { 'tournamentSettings.location': regex }
-                ]
-            });
-        }
+             if (filters.isOac || filters.isVerified) {
+                 matchStage.verified = true;
+             }
+             
+             const cities = await ClubModel.aggregate([
+                 { $match: matchStage },
+                 {
+                     $project: {
+                         // Simple trim for clubs usually, or same extraction logic?
+                         // Clubs location usually is "City, Address" or just "City"
+                         city: { $trim: { input: { $arrayElemAt: [{ $split: ['$location', ','] }, 0] } } } 
+                     }
+                 },
+                 { $group: { _id: '$city', count: { $sum: 1 } } },
+                 { $sort: { count: -1 } },
+                 { $limit: limit }
+             ]);
+             
+             return cities.map(c => ({ city: c._id, count: c.count }));
 
-        // 3. Apply Filters (Status, etc)
-        // If filters.status is set, assume we want cities for THAT status.
-        // If showFinished is FALSE (legacy default), we default to upcoming.
-        // But if filters are passed, we respect them primarily.
+        } else {
+            // Tournament City Aggregation (Existing Logic with Refinements)
+            
+            // 1. Start with base match
+            const matchStage: any = {
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                isSandbox: { $ne: true },
+                'tournamentSettings.location': { $exists: true, $ne: '' }
+            };
 
-        // Status Logic
-        if (filters.status) {
-            if (filters.status === 'upcoming') {
-                 const now = new Date();
-                 now.setHours(0, 0, 0, 0);
-                 andConditions.push({
-                     $or: [
-                        { 'tournamentSettings.status': 'pending', 'tournamentSettings.startDate': { $gte: now } }
-                     ]
-                 });
-            } else if (filters.status === 'active') {
-                 andConditions.push({ 'tournamentSettings.status': { $in: ['group-stage', 'knockout'] } });
+            const andConditions: any[] = [];
+
+            // 2. Apply Text Search
+            if (query) {
+                const regex = new RegExp(query, 'i');
+                andConditions.push({
+                    $or: [
+                        { 'tournamentSettings.name': regex },
+                        { 'tournamentSettings.description': regex },
+                        { 'tournamentSettings.location': regex }
+                    ]
+                });
             }
-            // if 'all', no restriction
-        } else if (!showFinished) {
-             // Legacy fallback if no filters passed: Default to upcoming/active
-             const now = new Date();
-             now.setHours(0, 0, 0, 0);
-             matchStage['tournamentSettings.status'] = { $in: ['pending', 'group-stage', 'knockout'] };
-             matchStage['tournamentSettings.startDate'] = { $gte: now };
-        }
 
-        if (filters.tournamentType) {
-            matchStage['tournamentSettings.type'] = filters.tournamentType;
-        }
+            // 3. Apply Filters
+            
+            // OAC / Verified Logic
+            if(filters.isOac || filters.isVerified) {
+                 // We need to filter for verified tournaments.
+                 // Unlike buildTournamentPipeline, we don't have extensive Lookups here easily.
+                 // But wait, we can't easily filter by 'isVerified' field without lookup?
+                 // Or we can rely on `verified` field if it exists on tournament (it does, boolean).
+                 matchStage.verified = true;
+            }
 
-        if (andConditions.length > 0) {
-            matchStage.$and = andConditions;
-        }
+            // Status Logic
+            if (filters.status) {
+                if (filters.status === 'upcoming') {
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    andConditions.push({
+                        $or: [
+                            { 'tournamentSettings.status': 'pending', 'tournamentSettings.startDate': { $gte: now } }
+                        ]
+                    });
+                } else if (filters.status === 'active') {
+                    andConditions.push({ 'tournamentSettings.status': { $in: ['group-stage', 'knockout'] } });
+                }
+            } else if (!showFinished) {
+                // Legacy fallback
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                matchStage['tournamentSettings.status'] = { $in: ['pending', 'group-stage', 'knockout'] };
+                matchStage['tournamentSettings.startDate'] = { $gte: now };
+            }
 
-        // Aggregate cities
-        const popularCities = await TournamentModel.aggregate([
-            {
-                $match: matchStage
-            },
-            {
-                $project: {
-                    // Reuse the city extraction logic
-                    city: {
-                        $trim: {
-                            input: {
-                                $let: {
-                                    vars: {
-                                        firstPart: { $arrayElemAt: [{ $split: ['$tournamentSettings.location', ','] }, 0] }
-                                    },
-                                    in: {
-                                        $cond: {
-                                            if: { $regexMatch: { input: '$$firstPart', regex: /^\d+\s/ } },
-                                            then: { $trim: { input: { $arrayElemAt: [{ $split: ['$$firstPart', ' '] }, 1] } } },
-                                            else: '$$firstPart'
+            if (filters.tournamentType) {
+                matchStage['tournamentSettings.type'] = filters.tournamentType;
+            }
+
+            if (andConditions.length > 0) {
+                matchStage.$and = andConditions;
+            }
+
+            // Aggregate cities
+            const popularCities = await TournamentModel.aggregate([
+                {
+                    $match: matchStage
+                },
+                {
+                    $project: {
+                        // Reuse the city extraction logic
+                        city: {
+                            $trim: {
+                                input: {
+                                    $let: {
+                                        vars: {
+                                            // Extract city heuristic
+                                            zipMatch: { 
+                                                $regexFind: { 
+                                                    input: '$tournamentSettings.location', 
+                                                    regex: /\b\d{4}\s+([^\s,]+)/ 
+                                                } 
+                                            },
+                                            commaSplit: { $arrayElemAt: [{ $split: ['$tournamentSettings.location', ','] }, 0] }
+                                        },
+                                        in: {
+                                            $cond: {
+                                                if: { $ne: ['$$zipMatch', null] },
+                                                then: { $arrayElemAt: ['$$zipMatch.captures', 0] },
+                                                else: '$$commaSplit'
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                },
+                {
+                    $group: {
+                        _id: '$city',
+                        count: { $sum: 1 }
+                    }
+                },
+                {
+                    $sort: { count: -1 }
+                },
+                {
+                    $limit: limit
                 }
-            },
-            {
-                $group: {
-                    _id: { $toLower: '$city' }, // Group by lowercase to avoid duplicates case-sensitively
-                    originalName: { $first: '$city' }, // Keep one original casing
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $match: {
-                    _id: { $ne: '' } // Exclude empty cities
-                }
-            },
-            {
-                $sort: { count: -1 }
-            },
-            {
-                $limit: limit
-            }
-        ]);
+            ]);
 
-        return popularCities.map(c => ({
-            city: c.originalName,
-            count: c.count
-        }));
+            return popularCities.map(c => ({ city: c._id, count: c.count }));
+        }
     }
+
 
     /**
      * Get Active Tournaments (Ongoing)

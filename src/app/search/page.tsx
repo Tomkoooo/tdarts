@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/Input"
 import { IconSearch, IconLoader2 } from "@tabler/icons-react"
 import type { SearchFilters } from "@/database/services/search.service"
 import { Button } from "@/components/ui/Button"
+import Link from "next/link"
+import { IconArrowLeft } from "@tabler/icons-react"
 
 // Define interfaces locally to avoid server-code import issues if any
 interface TabCounts {
@@ -64,7 +66,9 @@ export default function SearchPage() {
         tournamentType: (searchParams.get("tournamentType") as any) || undefined,
         city: searchParams.get("city") || undefined,
         isVerified: searchParams.get("verified") === "true" || undefined,
+        isOac: searchParams.get("isOac") === "true" || undefined,
         year: Number(searchParams.get("year")) || undefined,
+        rankingType: (searchParams.get("rankingType") as "oacMmr" | "leaguePoints") || undefined,
         page: Number(searchParams.get("page")) || 1,
         limit: 10
     })
@@ -179,6 +183,10 @@ export default function SearchPage() {
              params.delete('type');
              params.delete('tournamentType');
              params.delete('verified');
+             // params.delete('isOac'); // Keep isOac if present
+             params.delete('rankingType'); // Clear detailed filters but maybe keep isOac context? 
+             // Requirement: "If i search or change filters i still be under the isOac param."
+             // So we DO NOT delete 'isOac'.
              params.delete('page'); // Also clear page param
              
              router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -225,20 +233,36 @@ export default function SearchPage() {
             {/* Header / Search Bar Area */}
             <div className=" z-40 backdrop-blur-md border-b border-border">
                 <div className="container mx-auto px-4 py-4 space-y-4">
-                    <div className="relative max-w-2xl mx-auto">
-                        <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                        <Input 
-                            value={query}
-                            onChange={handleSearch}
-                            placeholder="Keress versenyeket, játékosokat, klubokat..." 
-                            className="pl-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
-                        />
-                         {isLoading && (
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
-                            </div>
-                        )}
+                    <div className="flex gap-3 w-full justify-center">
+                        <div className="relative w-[80%] items-center flex">
+                            <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                            <Input
+                                value={query}
+                                onChange={handleSearch}
+                                placeholder="Keress versenyeket, játékosokat, klubokat..."
+                                className="pl-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
+                            />
+                             {isLoading && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                    <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
+                                </div>
+                            )}
+                        
+                        </div>
+                        <div className="flex  justify-center items-center gap-2">
+                            <label className="flex items-center gap-2 cursor-pointer bg-card px-4 py-2 rounded-full border border-border shadow-sm hover:bg-muted/50 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={!!filters.isOac}
+                                    onChange={(e) => handleFilterChange('isOac', e.target.checked || undefined)}
+                                    className="toggle toggle-sm toggle-primary"
+                                />
+                                <span className="text-sm font-bold text-foreground">OAC Találatok</span>
+                            </label>
+                        </div>
                     </div>
+                    
+                   
 
                     <div className="max-w-4xl mx-auto">
                         <SearchTabs 
@@ -276,8 +300,27 @@ export default function SearchPage() {
                          </div>
                     )}
 
+                    {/* Persistent "Back to Portal" Link for OAC Mode */}
+                    {filters.isOac && (
+                        <div className="fixed bottom-6 left-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                             <Link href="https://amatordarts.hu" target="_blank" rel="noopener noreferrer">
+                                <Button variant="secondary" size="sm" className="shadow-lg border-primary/20 bg-background/80 backdrop-blur hover:bg-primary hover:text-primary-foreground transition-all gap-2 group rounded-full px-4 h-12">
+                                     <IconArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                                     <span className="font-bold tracking-wide">Vissza a portál oldalra</span>
+                                </Button>
+                             </Link>
+                        </div>
+                    )}
+
                     {activeTab === 'tournaments' && <TournamentList tournaments={results} />}
-                    {activeTab === 'players' && <PlayerLeaderboard players={results} />}
+                    {activeTab === 'players' && (
+                        <PlayerLeaderboard 
+                            players={results} 
+                            isOac={!!filters.isOac} 
+                            rankingType={filters.rankingType || (filters.isOac ? 'oacMmr' : undefined)}
+                            onRankingChange={(type) => handleFilterChange('rankingType', type)}
+                        />
+                    )}
                     {activeTab === 'clubs' && <ClubList clubs={results} />}
                     {activeTab === 'leagues' && <LeagueList leagues={results} />}
 

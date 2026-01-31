@@ -26,9 +26,10 @@ interface PlayerStatsModalProps {
   player: Player | null
   clubId?: string
   onClose: () => void
+  isOacContext?: boolean
 }
 
-const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) => {
+const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, isOacContext }) => {
   const [playerStats, setPlayerStats] = React.useState<Player | null>(null)
   const [matchHistory, setMatchHistory] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -125,10 +126,13 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
   // Determine active data
   const { activeStats, activeHistory } = React.useMemo(() => {
     if (!displayPlayer) return { activeStats: {} as any, activeHistory: [] };
+    
+    let history = [];
+    let stats = {};
+
     if (selectedSeason === 'all-time') {
-      return {
-        activeStats: allTimeStats,
-        activeHistory: [
+        stats = allTimeStats;
+        history = [
             ...(displayPlayer.tournamentHistory || []).map(t => ({...t, year: currentYear})),
             ...previousSeasons.flatMap((s: any) => (s.tournamentHistory || []).map((t: any) => ({
                 ...t,
@@ -136,28 +140,29 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                 date: t.date || (t as any).startDate,
                 year: s.year
             })))
-        ].sort((a, b) => new Date(b.date || (b as any).startDate).getTime() - new Date(a.date || (a as any).startDate).getTime())
-      };
+        ].sort((a, b) => new Date(b.date || (b as any).startDate).getTime() - new Date(a.date || (a as any).startDate).getTime());
     } else if (selectedSeason === 'current') {
-      return {
-        activeStats: displayPlayer.stats || {},
-        activeHistory: (displayPlayer.tournamentHistory || []).map(t => ({...t, year: currentYear}))
-      };
+        stats = displayPlayer.stats || {};
+        history = (displayPlayer.tournamentHistory || []).map(t => ({...t, year: currentYear}));
     } else {
-      const yearNum = parseInt(selectedSeason);
-      const seasonData = previousSeasons.find((s: any) => s.year === yearNum);
-      const stats = seasonData?.stats || {};
-      return {
-        activeStats: stats,
-        activeHistory: (seasonData?.tournamentHistory || []).map((t: any) => ({
+        const yearNum = parseInt(selectedSeason);
+        const seasonData = previousSeasons.find((s: any) => s.year === yearNum);
+        stats = seasonData?.stats || {};
+        history = (seasonData?.tournamentHistory || []).map((t: any) => ({
             ...t,
             tournamentName: t.tournamentName || (t as any).name,
             date: t.date || (t as any).startDate,
             year: yearNum
-        })).reverse()
-      };
+        })).reverse();
     }
-  }, [selectedSeason, displayPlayer, allTimeStats, previousSeasons, currentYear]);
+
+    // OAC Filter logic
+    if (isOacContext) {
+        history = history.filter((t: any) => t.verified || t.isVerified);
+    }
+
+    return { activeStats: stats, activeHistory: history };
+  }, [selectedSeason, displayPlayer, allTimeStats, previousSeasons, currentYear, isOacContext]);
 
   if (!player || !displayPlayer) return null;
 
