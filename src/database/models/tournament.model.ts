@@ -89,6 +89,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         type: { type: String, enum: ['amateur', 'open'], default: 'amateur' },
         registrationDeadline: { type: Date, default: null },
         coverImage: { type: String, default: null },
+        reminderSent: { type: Boolean, default: false },
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

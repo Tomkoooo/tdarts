@@ -25,6 +25,7 @@ export function ClubTournamentsSection({
   const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [verificationFilter, setVerificationFilter] = React.useState<string>('all')
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
 
   // Filter tournaments
   const filteredTournaments = React.useMemo(() => {
@@ -60,11 +61,12 @@ export function ClubTournamentsSection({
   const groupedTournaments = React.useMemo(() => {
     const groups: { [key: string]: any[] } = {}
     
-    // Sort all tournaments by date DESC (newest at the top)
-    const sorted = [...filteredTournaments].sort((a, b) => 
-      new Date(b.tournamentSettings.startDate).getTime() - 
-      new Date(a.tournamentSettings.startDate).getTime()
-    )
+    // Sort all tournaments by date (respecting sortOrder)
+    const sorted = [...filteredTournaments].sort((a, b) => {
+      const timeA = new Date(a.tournamentSettings.startDate).getTime();
+      const timeB = new Date(b.tournamentSettings.startDate).getTime();
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    })
 
     sorted.forEach(tournament => {
       const date = new Date(tournament.tournamentSettings.startDate)
@@ -77,13 +79,15 @@ export function ClubTournamentsSection({
     })
       
     return groups
-  }, [filteredTournaments])
+  }, [filteredTournaments, sortOrder])
 
   const sortedDateKeys = React.useMemo(() => {
-    return Object.keys(groupedTournaments).sort(
-      (a, b) => new Date(b).getTime() - new Date(a).getTime()
-    )
-  }, [groupedTournaments])
+    return Object.keys(groupedTournaments).sort((a, b) => {
+      const timeA = new Date(a).getTime();
+      const timeB = new Date(b).getTime();
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    })
+  }, [groupedTournaments, sortOrder])
 
   const formatDateHeader = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -202,13 +206,26 @@ export function ClubTournamentsSection({
           </select>
         </div>
 
-        {(statusFilter !== 'all' || verificationFilter !== 'all') && (
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Rendezés</label>
+          <select 
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+          >
+            <option value="desc">Legújabb elöl</option>
+            <option value="asc">Legrégebbi elöl</option>
+          </select>
+        </div>
+
+        {(statusFilter !== 'all' || verificationFilter !== 'all' || sortOrder !== 'desc') && (
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => {
               setStatusFilter('all');
               setVerificationFilter('all');
+              setSortOrder('desc');
             }}
             className="text-xs h-9"
           >

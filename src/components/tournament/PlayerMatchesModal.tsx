@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 
 interface Throw {
   score: number;
@@ -119,19 +120,26 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
       <DialogContent className="flex h-[90vh] max-w-4xl flex-col overflow-hidden bg-background p-0 shadow-2xl border-muted/20 sm:rounded-2xl">
         {/* Header */}
         <header className="relative flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-center sm:justify-between border-b border-muted/10">
-          <div className="space-y-3">
-            <DialogHeader className="p-0 text-left">
-              <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase leading-none">
-                {playerName}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="text-[9px] font-black h-5 px-2 bg-primary/5 text-primary border-primary/20 uppercase tracking-tighter">
-                Esemény Meccsei
-              </Badge>
-              <Badge variant="outline" className="text-[9px] font-black h-5 px-2 uppercase tracking-widest opacity-40">
-                {tournamentCode}
-              </Badge>
+          <div className="flex items-center gap-4">
+            <SmartAvatar 
+              playerId={playerId} 
+              name={playerName} 
+              size="xl"
+            />
+            <div className="space-y-3">
+              <DialogHeader className="p-0 text-left">
+                <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase leading-none">
+                  {playerName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="text-[9px] font-black h-5 px-2 bg-primary/5 text-primary border-primary/20 uppercase tracking-tighter">
+                  Esemény Meccsei
+                </Badge>
+                <Badge variant="outline" className="text-[9px] font-black h-5 px-2 uppercase tracking-widest opacity-40">
+                  {tournamentCode}
+                </Badge>
+              </div>
             </div>
           </div>
           <div className="flex flex-col items-end">

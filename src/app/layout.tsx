@@ -121,6 +121,7 @@ export default async function RootLayout({
         email: user.email,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        profilePicture: user.profilePicture,
       };
       console.log("Layout - JWT user found:", initialUser._id);
     } catch (error) {
@@ -169,6 +170,7 @@ export default async function RootLayout({
               email: user.email,
               isVerified: user.isVerified,
               isAdmin: user.isAdmin,
+              profilePicture: user.profilePicture,
             };
           }
         } catch (error) {

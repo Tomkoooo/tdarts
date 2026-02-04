@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/Card"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
+import { SmartAvatar } from "@/components/ui/smart-avatar"
 
 interface PlayerStatsModalProps {
   player: Player | null
@@ -236,33 +237,40 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
         className="flex h-[90vh] max-w-4xl flex-col overflow-hidden bg-background p-0 shadow-2xl border-muted/20 sm:rounded-2xl"
       >
         <header className="relative flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-center sm:justify-between border-b border-muted/10">
-          <div className="space-y-3">
-            <DialogHeader className="p-0 text-left">
-              <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase">{displayPlayer.name}</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-wrap gap-2">
-               {honors.map((h, i) => (
-                    <Badge key={i} variant="secondary" className="text-[9px] font-black h-5 px-2 bg-amber-500/10 text-amber-600 border-amber-500/20 uppercase tracking-tighter gap-1">
-                        <IconMedal size={10} />
-                        {h.title}
-                    </Badge>
-               ))}
-               {!honors.length && (
+          <div className="flex items-center gap-4">
+            <SmartAvatar 
+              playerId={displayPlayer._id} 
+              name={displayPlayer.name} 
+              size="xl"
+            />
+            <div className="space-y-3">
+              <DialogHeader className="p-0 text-left">
+                <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase">{displayPlayer.name}</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-wrap gap-2">
+                {honors.map((h, i) => (
+                  <Badge key={i} variant="secondary" className="text-[9px] font-black h-5 px-2 bg-amber-500/10 text-amber-600 border-amber-500/20 uppercase tracking-tighter gap-1">
+                    <IconMedal size={10} />
+                    {h.title}
+                  </Badge>
+                ))}
+                {!honors.length && (
                   <Badge variant="outline" className="text-[9px] font-bold h-5 px-2 uppercase tracking-widest opacity-40">Kihívó</Badge>
-               )}
+                )}
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
-                <Badge variant="outline" className="rounded-lg border-primary/20 bg-primary/5 px-4 py-2 text-base font-black text-primary gap-2 shadow-sm">
-                  <IconTarget size={18} />
-                  {displayPlayer.stats?.mmr || 800} MMR
-                </Badge>
-                {displayPlayer.stats.oacMmr !== 800 && (
-                    <Badge variant="outline" className="rounded-lg border-blue-500/20 bg-blue-500/5 px-4 py-2 text-base font-black text-blue-500 gap-2 shadow-sm">
-                        <IconTarget size={18} />
-                        {displayPlayer.stats.oacMmr} OAC MMR
-                    </Badge>
-                )}
+            <Badge variant="outline" className="rounded-lg border-primary/20 bg-primary/5 px-4 py-2 text-base font-black text-primary gap-2 shadow-sm">
+              <IconTarget size={18} />
+              {displayPlayer.stats?.mmr || 800} MMR
+            </Badge>
+            {displayPlayer.stats.oacMmr !== 800 && (
+              <Badge variant="outline" className="rounded-lg border-blue-500/20 bg-blue-500/5 px-4 py-2 text-base font-black text-blue-500 gap-2 shadow-sm">
+                <IconTarget size={18} />
+                {displayPlayer.stats.oacMmr} OAC MMR
+              </Badge>
+            )}
           </div>
         </header>
 

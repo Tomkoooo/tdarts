@@ -102,26 +102,21 @@ export class TournamentPlayerService {
                 throw new BadRequestError('Tournament not found');
             }
             
-            // Calculate free spots after removal
-            // const freeSpots = maxPlayers - (currentPlayers - 1);
-            
-            // Trigger notifications if spots become available
-            // Note: notifySubscribersAboutAvailableSpots is in TournamentService. 
-            // We might need to move it or call it from there. 
-            // For now, let's assume we can import it or move it to a shared service.
-            // Since we are splitting, let's keep it simple and maybe skip notification here for now 
-            // OR import TournamentService (circular dependency risk).
-            // Best approach: Move notification logic to a NotificationService or keep it in TournamentService and call it.
-            // But TournamentService depends on this service? No, this is a new service.
-            // Let's comment out notification for now and mark as TODO or move it.
-            
-            /*
-            if (freeSpots > 0 && freeSpots <= 10) {
-                // Run notification in background (don't await to avoid blocking)
-                this.notifySubscribersAboutAvailableSpots(tournamentId, freeSpots)
-                    .catch(err => console.error('Failed to notify subscribers:', err));
+            // Re-fetch tournament to get accurate player count
+            const updatedTournament = await TournamentModel.findOne({ tournamentId: tournamentId });
+            if (updatedTournament) {
+                const maxPlayers = updatedTournament.tournamentSettings.maxPlayers;
+                const currentPlayers = updatedTournament.tournamentPlayers.length;
+                const freeSpots = Math.max(0, maxPlayers - currentPlayers);
+                
+                if (freeSpots > 0 && freeSpots <= 10) {
+                    // Trigger notifications if spots become available
+                    // Use dynamic import to avoid circular dependencies
+                    const { TournamentService } = await import('@/database/services/tournament.service');
+                    TournamentService.notifySubscribersAboutAvailableSpots(tournamentId, freeSpots)
+                        .catch(err => console.error('Failed to notify subscribers:', err));
+                }
             }
-            */
             
             return true;
         } catch (err) {

@@ -72,7 +72,9 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
         },
         snapshotDate: { type: Date, default: Date.now },
         tournamentHistory: { type: Array, default: [] }
-    }]
+    }],
+    profilePicture: { type: String, default: null },
+    publicConsent: { type: Boolean, default: false }
 }, {collection: 'players'});
 
 export const PlayerModel = mongoose.models.Player || mongoose.model<PlayerDocument>("Player", PlayerSchema);

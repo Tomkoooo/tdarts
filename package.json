@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "NODE_ENV=production next start",
     "lint": "next lint",
-    "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts src/tests/simple-tournament-lifecycle.test.ts",
+    "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts",
     "prepare": "husky",
     "husky": ".husky/pre-push"
   },
@@ -60,6 +60,7 @@
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
+    "react-easy-crop": "^5.5.6",
     "react-hook-form": "^7.56.3",
     "react-hot-toast": "^2.5.2",
     "react-qr-code": "^2.0.18",

@@ -11,6 +11,15 @@ export interface FeedbackDocument extends Document {
   userAgent?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'pending' | 'in-progress' | 'resolved' | 'rejected' | 'closed';
+  messages: {
+    sender: string; // userId or 'system' or 'admin' 
+    content: string;
+    createdAt: Date;
+    isInternal?: boolean;
+    attachment?: string;
+  }[];
+  isReadByUser: boolean;
+  isReadByAdmin: boolean;
   assignedTo?: string; // userId
   adminNotes?: string;
   resolution?: string;
@@ -102,6 +111,26 @@ const feedbackSchema = new Schema<FeedbackDocument>({
     type: Schema.Types.ObjectId, 
     ref: 'User' 
   },
+  
+  // New fields for ticketing system
+  messages: {
+    type: [{
+      sender: { type: Schema.Types.ObjectId, ref: 'User' },
+      content: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+      isInternal: { type: Boolean, default: false },
+      attachment: { type: String }
+    }],
+    default: []
+  },
+  isReadByUser: {
+    type: Boolean,
+    default: true
+  },
+  isReadByAdmin: {
+    type: Boolean,
+    default: false
+  },
 
   history: {
     type: [{
@@ -120,6 +149,8 @@ feedbackSchema.index({ category: 1 });
 feedbackSchema.index({ assignedTo: 1 });
 feedbackSchema.index({ createdAt: 1 });
 feedbackSchema.index({ email: 1 });
+feedbackSchema.index({ userId: 1 }); // Index for user tickets
+feedbackSchema.index({ isReadByAdmin: 1 }); // For admin dashboard
 
 // Prevent model re-compilation in development
 export const FeedbackModel = mongoose.models.Feedback || mongoose.model<FeedbackDocument>('Feedback', feedbackSchema);

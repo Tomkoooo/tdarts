@@ -10,6 +10,8 @@ const updateProfileSchema = z.object({
   username: z.string().min(1, 'Username is required').optional(),
   password: z.string().min(6, 'Password must be at least 6 characters long').optional(),
   confirmPassword: z.string().optional(),
+  profilePicture: z.string().nullable().optional(),
+  publicConsent: z.boolean().optional(),
 }).refine((data) => {
   if (data.password && !data.confirmPassword) {
     return false;

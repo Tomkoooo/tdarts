@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop, IconChartBar } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop, IconChartBar, IconTicket } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
@@ -9,7 +9,7 @@ import IconDart from "./icons/IconDart";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Separator } from "@/components/ui/separator";
 
 import {
@@ -65,10 +65,7 @@ const NavbarNew = () => {
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
   ];
 
-  const getUserInitials = () => {
-    if (!user?.name) return user?.username?.charAt(0).toUpperCase() || "U";
-    return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+
 
   return (
     <nav
@@ -147,9 +144,11 @@ const NavbarNew = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                      </Avatar>
+                      <SmartAvatar 
+                        playerId={user._id} 
+                        name={user.name || user.username} 
+                        size="sm"
+                      />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -167,9 +166,15 @@ const NavbarNew = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile#player-stats" className="cursor-pointer w-full flex items-center">
+                      <Link href="/profile?tab=stats" className="cursor-pointer w-full flex items-center">
                         <IconChartBar className="mr-2 h-4 w-4" />
                         Statisztika
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile?tab=tickets" className="cursor-pointer w-full flex items-center">
+                        <IconTicket className="mr-2 h-4 w-4" />
+                        Hibajegyek
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -241,9 +246,11 @@ const NavbarNew = () => {
                   {/* User Info Mobile */}
                   {user && (
                     <div className="mb-6 flex items-center gap-3 rounded-md bg-muted/50 p-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                      </Avatar>
+                      <SmartAvatar 
+                        playerId={user._id} 
+                        name={user.name || user.username} 
+                        size="md"
+                      />
                       <div className="overflow-hidden">
                         <p className="font-medium truncate">{user.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{user.username}</p>
@@ -292,9 +299,15 @@ const NavbarNew = () => {
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
-                        <Link href="/profile#player-stats" className="cursor-pointer w-full flex items-center">
+                        <Link href="/profile?tab=stats" className="cursor-pointer w-full flex items-center">
                           <IconChartBar className="h-4 w-4" />
                           Statisztika
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" className="w-full justify-start gap-2">
+                        <Link href="/profile?tab=tickets" className="cursor-pointer w-full flex items-center">
+                          <IconTicket className="h-4 w-4" />
+                          Hibajegyek
                         </Link>
                       </Button>
                       <Button 

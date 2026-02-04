@@ -66,6 +66,14 @@ export async function PATCH(
     if (resolution !== undefined) updates.resolution = resolution;
     if (priority !== undefined) updates.priority = priority;
 
+    // First, get the current feedback to check for status changes
+    const currentFeedback = await FeedbackService.getFeedbackById(id);
+    if (!currentFeedback) {
+      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+    }
+
+    const statusChanged = status && status !== currentFeedback.status;
+
     // History Entry
     const historyEntry = {
         action: 'update',
@@ -75,7 +83,7 @@ export async function PATCH(
     };
     
     // Explicit actions for history
-    if (status) historyEntry.details = `Status changed to ${status}`;
+    if (statusChanged) historyEntry.details = `Status changed to ${status}`;
     if (customEmailMessage) {
         historyEntry.action = 'reply';
         historyEntry.details = 'Sent email reply';
@@ -90,51 +98,107 @@ export async function PATCH(
       user._id.toString()
     );
 
+    // Add custom message to messages array if provided
+    if (customEmailMessage && customEmailMessage.trim()) {
+      await FeedbackService.addMessage(
+        id,
+        {
+          sender: user._id.toString(),
+          content: customEmailMessage.trim(),
+          isInternal: false
+        },
+        false // isUserAction = false (this is an admin message)
+      );
+    }
+
+    // Add status change as a system message in chat
+    if (statusChanged) {
+      const statusLabels: Record<string, string> = {
+        'pending': 'Függőben',
+        'in-progress': 'Folyamatban',
+        'resolved': 'Megoldva',
+        'rejected': 'Elutasítva',
+        'closed': 'Lezárva'
+      };
+      await FeedbackService.addMessage(
+        id,
+        {
+          content: `Státusz megváltozott: ${statusLabels[status] || status}`,
+          isInternal: false
+        },
+        false // isUserAction = false
+      );
+    }
+
     // Email Handling
     try {
       if (emailNotification !== 'none') {
-        const isCustom = emailNotification === 'custom';
-        const subject = isCustom ? (customEmailSubject || `Válasz a visszajelzésre: ${updatedFeedback.title}`) : `Visszajelzés Frissítés: ${updatedFeedback.title}`;
+        const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
         
-        let htmlContent = '';
+        const isCustom = emailNotification === 'custom';
+        const defaultSubject = isCustom ? `Válasz a visszajelzésre: ${updatedFeedback.title}` : `Visszajelzés Frissítés: ${updatedFeedback.title}`;
+        const subject = isCustom ? (customEmailSubject || defaultSubject) : defaultSubject;
+        
+        let emailHtml = '';
+        let emailText = '';
 
         if (isCustom && customEmailMessage) {
-            htmlContent = `
-                <h2>Frissítés a visszajelzéssel kapcsolatban</h2>
-                <p>${customEmailMessage.replace(/\n/g, '<br>')}</p>
-                <br>
-                <hr>
-                <p><small>Referencia szám: ${updatedFeedback._id}</small></p>
-                <p><small>Ez egy automatikus üzenet, kérjük ne válaszoljon rá.</small></p>
+          // Use database template for custom messages
+          const template = await EmailTemplateService.getRenderedTemplate('feedback_admin_reply', {
+            customSubject: subject,
+            customMessage: customEmailMessage,
+            feedbackId: String(updatedFeedback._id),
+            feedbackTitle: updatedFeedback.title,
+            feedbackStatus: status || updatedFeedback.status,
+            feedbackResolution: resolution || '',
+            adminNotes: adminNotes || '',
+          });
+
+          if (template) {
+            emailHtml = template.html;
+            emailText = template.text;
+          } else {
+            // Fallback
+            console.warn('Using fallback email template for feedback_admin_reply');
+            emailHtml = `
+              <h2>Frissítés a visszajelzéssel kapcsolatban</h2>
+              <p>${customEmailMessage.replace(/\n/g, '<br>')}</p>
+              <br>
+              <hr>
+              <p><small>Referencia szám: ${updatedFeedback._id}</small></p>
+              <p><small>Ez egy automatikus üzenet, kérjük ne válaszoljon rá.</small></p>
             `;
+            emailText = `Frissítés a visszajelzéssel kapcsolatban\n\n${customEmailMessage}\n\nReferencia szám: ${updatedFeedback._id}`;
+          }
         } else if (emailNotification === 'status' && status) {
-             const statusLabels: Record<string, string> = {
-                'pending': 'Függőben',
-                'in-progress': 'Folyamatban',
-                'resolved': 'Megoldva',
-                'rejected': 'Elutasítva',
-                'closed': 'Lezárva'
-            };
-            
-            htmlContent = `
-                <h2>Visszajelzés Státuszváltozás</h2>
-                <p><strong>Referencia szám:</strong> ${updatedFeedback._id}</p>
-                <p><strong>Cím:</strong> ${updatedFeedback.title}</p>
-                <p><strong>Új Státusz:</strong> ${statusLabels[status] || status}</p>
-                ${resolution ? `<p><strong>Megoldás:</strong> ${resolution}</p>` : ''}
-                ${adminNotes ? `<p><strong>Admin megjegyzés:</strong> ${adminNotes}</p>` : ''}
-                <br>
-                <p>Köszönjük, hogy segített minket a szolgáltatás fejlesztésében!</p>
-            `;
+          const statusLabels: Record<string, string> = {
+            'pending': 'Függőben',
+            'in-progress': 'Folyamatban',
+            'resolved': 'Megoldva',
+            'rejected': 'Elutasítva',
+            'closed': 'Lezárva'
+          };
+          
+          emailHtml = `
+            <h2>Visszajelzés Státuszváltozás</h2>
+            <p><strong>Referencia szám:</strong> ${updatedFeedback._id}</p>
+            <p><strong>Cím:</strong> ${updatedFeedback.title}</p>
+            <p><strong>Új Státusz:</strong> ${statusLabels[status] || status}</p>
+            ${resolution ? `<p><strong>Megoldás:</strong> ${resolution}</p>` : ''}
+            ${adminNotes ? `<p><strong>Admin megjegyzés:</strong> ${adminNotes}</p>` : ''}
+            <br>
+            <p>Köszönjük, hogy segített minket a szolgáltatás fejlesztésében!</p>
+          `;
+          emailText = `Visszajelzés Státuszváltozás\n\nReferencia szám: ${updatedFeedback._id}\nCím: ${updatedFeedback.title}\nÚj Státusz: ${statusLabels[status] || status}`;
         }
         
-        if (htmlContent) {
-             await sendEmail({
-              to: [updatedFeedback.email],
-              subject: subject,
-              text: subject, 
-              html: htmlContent
-            });
+        if (emailHtml) {
+          await sendEmail({
+            to: [updatedFeedback.email],
+            subject: subject,
+            text: emailText || subject, 
+            html: emailHtml
+          });
         }
       }
     } catch (emailError) {

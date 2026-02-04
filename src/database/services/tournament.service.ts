@@ -4717,6 +4717,17 @@ export class TournamentService {
         tournament.waitingList.splice(playerIndex, 1);
 
         await tournament.save();
+
+        // Trigger notifications if spots are within threshold
+        const maxPlayers = tournament.tournamentSettings.maxPlayers;
+        const currentPlayers = tournament.tournamentPlayers.length;
+        const freeSpots = Math.max(0, maxPlayers - currentPlayers);
+        
+        if (freeSpots <= 10) {
+            // We call it even if spots decreased, as per user request "no matter the change"
+            this.notifySubscribersAboutAvailableSpots(tournamentCode, freeSpots)
+                .catch(err => console.error('Failed to notify subscribers:', err));
+        }
     }
 
     // --- NOTIFICATION MANAGEMENT ---
@@ -5263,6 +5274,97 @@ export class TournamentService {
         } catch (error: any) {
             console.error('Error reopening tournament:', error);
             throw new Error(`Hiba történt a torna újranyitása során: ${error.message}`);
+        }
+    }
+
+    /**
+     * Check for tournaments starting today and send reminder emails
+     * This is intended to be called by a trigger (e.g., when someone visits the site)
+     */
+    static async checkAndSendTournamentReminders(): Promise<void> {
+        await connectMongo();
+        
+        const now = new Date();
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        // Find tournaments starting today where reminders haven't been sent
+        const tournaments = await TournamentModel.find({
+            'tournamentSettings.date': { $gte: startOfDay, $lte: endOfDay },
+            'tournamentSettings.reminderSent': { $ne: true },
+            'tournamentSettings.status': { $ne: 'finished' }
+        }).populate({
+            path: 'tournamentPlayers.playerReference',
+            populate: {
+                path: 'userRef',
+                select: 'email name username'
+            }
+        });
+
+        if (tournaments.length === 0) {
+            return;
+        }
+
+        const { MailerService } = await import('@/database/services/mailer.service');
+
+        for (const tournament of tournaments) {
+            console.log(`[Reminder] Processing tournament: ${tournament.tournamentSettings.name} (${tournament.tournamentId})`);
+            
+            // Collect recipients
+            const recipients = new Map<string, { email: string, name: string }>();
+            
+            // 1. Add notification subscribers
+            if (tournament.notificationSubscribers) {
+                for (const sub of tournament.notificationSubscribers) {
+                    if (sub.email) {
+                        recipients.set(sub.email.toLowerCase(), { 
+                            email: sub.email, 
+                            name: 'Játékos' 
+                        });
+                    }
+                }
+            }
+            
+            // 2. Add registered players
+            for (const tp of tournament.tournamentPlayers) {
+                const player = (tp as any).playerReference;
+                if (player && player.userRef && (player.userRef as any).email) {
+                    const user = player.userRef as any;
+                    recipients.set(user.email.toLowerCase(), {
+                        email: user.email,
+                        name: user.name || user.username || 'Játékos'
+                    });
+                }
+            }
+            
+            // Send emails
+            const tournamentDateStr = tournament.tournamentSettings.date.toLocaleTimeString('hu-HU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            for (const recipient of recipients.values()) {
+                try {
+                    await MailerService.sendTournamentReminderEmail(recipient.email, {
+                        tournamentName: tournament.tournamentSettings.name,
+                        tournamentCode: tournament.tournamentId,
+                        tournamentDate: tournamentDateStr,
+                        userName: recipient.name
+                    });
+                } catch (err) {
+                    console.error(`[Reminder] Failed to send to ${recipient.email}:`, err);
+                }
+            }
+            
+            // Mark as sent
+            await TournamentModel.updateOne(
+                { _id: tournament._id },
+                { $set: { 'tournamentSettings.reminderSent': true } }
+            );
+            console.log(`[Reminder] Reminders sent for tournament: ${tournament.tournamentId}`);
         }
     }
 }

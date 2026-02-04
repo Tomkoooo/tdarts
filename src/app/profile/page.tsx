@@ -1,28 +1,34 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import { showErrorToast } from "@/lib/toastUtils"
 import axios from "axios"
 import { useUserContext } from "@/hooks/useUser"
 import { useLogout } from "@/hooks/useLogout"
 import ProfileHeader from "@/components/profile/ProfileHeader"
+import ProfileTabs from "@/components/profile/ProfileTabs"
 import CurrentInfoSection from "@/components/profile/CurrentInfoSection"
 import ProfileEditForm from "@/components/profile/ProfileEditForm"
 import EmailVerificationSection from "@/components/profile/EmailVerificationSection"
 import PlayerStatisticsSection from "@/components/profile/PlayerStatisticsSection"
 import LeagueHistorySection from "@/components/profile/LeagueHistorySection"
 import ProfileActionsSection from "@/components/profile/ProfileActionsSection"
+import TicketList from "@/components/profile/TicketList"
+import TicketDetail from "@/components/profile/TicketDetail"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
+import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
 
 export default function ProfilePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, setUser } = useUserContext()
   const { logout } = useLogout()
 
   // State
+  const [activeTab, setActiveTab] = React.useState<'details' | 'stats' | 'tickets'>('details')
   const [isLoading, setIsLoading] = React.useState(false)
   const [needsEmailVerification, setNeedsEmailVerification] = React.useState(false)
   const [playerStats, setPlayerStats] = React.useState<any>(null)
@@ -32,6 +38,25 @@ export default function ProfilePage() {
   const [selectedMatch, setSelectedMatch] = React.useState<any>(null)
   const [leagueHistory, setLeagueHistory] = React.useState<any[]>([])
   const [isLoadingLeagueHistory, setIsLoadingLeagueHistory] = React.useState(false)
+  const [selectedTicket, setSelectedTicket] = React.useState<any>(null)
+  const [ticketToastDismissed, setTicketToastDismissed] = React.useState(false)
+  const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets()
+
+  // Initialize tab from URL params
+  React.useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'stats' || tab === 'tickets' || tab === 'details') {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
+
+  // Check for dismissed ticket toast
+  React.useEffect(() => {
+    const dismissed = localStorage.getItem('ticketToastDismissed');
+    if (dismissed) {
+      setTicketToastDismissed(true);
+    }
+  }, []);
 
   // Redirect if not logged in
   React.useEffect(() => {
@@ -174,6 +199,24 @@ export default function ProfilePage() {
     setSelectedMatch(null)
   }
 
+  // Handle tab change
+  const handleTabChange = (tab: 'details' | 'stats' | 'tickets') => {
+    setActiveTab(tab)
+    // Update URL without triggering navigation
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', tab)
+    window.history.pushState({}, '', url)
+  }
+
+  const handleDismissTicketToast = () => {
+    setTicketToastDismissed(true);
+    localStorage.setItem('ticketToastDismissed', 'true');
+    // Clear after 1 hour so it can reappear
+    setTimeout(() => {
+      localStorage.removeItem('ticketToastDismissed');
+    }, 60 * 60 * 1000);
+  };
+
   // Handle logout
   const handleLogout = async () => {
     setIsLoading(true)
@@ -207,51 +250,91 @@ export default function ProfilePage() {
         {/* Header */}
         <ProfileHeader />
 
-        {/* Current Information */}
-        <CurrentInfoSection user={user} />
+        {/* Tabs */}
+        <ProfileTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
-        {/* Edit Profile Form */}
-        <ProfileEditForm
-          defaultValues={{
-            email: user.email,
-            name: user.name,
-            username: user.username,
-          }}
-          isLoading={isLoading}
-          onSubmit={onProfileSubmit}
-        />
+        {/* Details Tab */}
+        {activeTab === 'details' && (
+          <>
+            {/* Current Information */}
+            <CurrentInfoSection user={user} />
 
-        {/* Email Verification */}
-        {needsEmailVerification && (
-          <EmailVerificationSection
-            isLoading={isLoading}
-            isResending={isResendingCode}
-            onVerifySubmit={onVerifySubmit}
-            onResendCode={handleResendCode}
-          />
+            {/* Edit Profile Form */}
+            <ProfileEditForm
+              defaultValues={{
+                email: user.email,
+                name: user.name,
+                username: user.username,
+              }}
+              isLoading={isLoading}
+              onSubmit={onProfileSubmit}
+            />
+
+            {/* Email Verification */}
+            {needsEmailVerification && (
+              <EmailVerificationSection
+                isLoading={isLoading}
+                isResending={isResendingCode}
+                onVerifySubmit={onVerifySubmit}
+                onResendCode={handleResendCode}
+              />
+            )}
+
+            {/* Actions */}
+            <ProfileActionsSection
+              isLoading={isLoading}
+              isAdmin={user.isAdmin}
+              onLogout={handleLogout}
+            />
+          </>
         )}
 
-          {/* Player Statistics */}
-          <PlayerStatisticsSection
-            playerStats={playerStats}
-            isLoading={isLoadingStats}
-            onViewLegs={handleViewLegs}
-          />
+        {/* Stats Tab */}
+        {activeTab === 'stats' && (
+          <>
+            {/* Player Statistics */}
+            <PlayerStatisticsSection
+              playerStats={playerStats}
+              isLoading={isLoadingStats}
+              onViewLegs={handleViewLegs}
+            />
 
-        {/* League History */}
-        <LeagueHistorySection
-          leagueHistory={leagueHistory}
-          isLoading={isLoadingLeagueHistory}
-          hasPlayer={playerStats?.hasPlayer || false}
-        />
+            {/* League History */}
+            <LeagueHistorySection
+              leagueHistory={leagueHistory}
+              isLoading={isLoadingLeagueHistory}
+              hasPlayer={playerStats?.hasPlayer || false}
+            />
+          </>
+        )}
 
-        {/* Actions */}
-        <ProfileActionsSection
-          isLoading={isLoading}
-          isAdmin={user.isAdmin}
-          onLogout={handleLogout}
-        />
+        {/* Tickets Tab */}
+        {activeTab === 'tickets' && (
+          selectedTicket ? (
+            <TicketDetail 
+              ticket={selectedTicket} 
+              onBack={() => setSelectedTicket(null)}
+              onUpdate={() => {
+                refreshUnreadCount();
+                // Optionally refresh ticket list
+              }}
+            />
+          ) : (
+            <TicketList 
+              onSelectTicket={setSelectedTicket}
+              onRefresh={refreshUnreadCount}
+            />
+          )
+        )}
       </div>
+
+      {/* Unread Ticket Toast */}
+      {!ticketToastDismissed && activeTab !== 'tickets' && (
+        <UnreadTicketToast 
+          unreadCount={unreadCount} 
+          onDismiss={handleDismissTicketToast}
+        />
+      )}
 
       {/* Legs Modal */}
       {showLegsModal && selectedMatch && (
