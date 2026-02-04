@@ -21,6 +21,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconMenu2,
+  IconMail,
 } from "@tabler/icons-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -77,6 +78,11 @@ const sidebarItems = [
     title: "Todos",
     href: "/admin/todos",
     icon: IconCheck,
+  },
+  {
+    title: "Email Templates",
+    href: "/admin/emails",
+    icon: IconMail,
   },
   {
     title: "Settings",

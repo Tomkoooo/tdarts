@@ -233,7 +233,7 @@ export default function AdminLeaguesPage() {
                         "font-normal",
                         league.pointSystemType === 'remiz_christmas' ? "border-warning/50 text-warning bg-warning/5" : "text-muted-foreground"
                       )}>
-                        {league.pointSystemType === 'remiz_christmas' ? 'Remiz Karácsony' : 'Platform'}
+                        {league.pointSystemType === 'remiz_christmas' ? 'Remiz Karácsony' : league.pointSystemType === 'ontour' ? 'DartsBarlang onTour' : 'Platform'}
                       </Badge>
                     </TableCell>
                     <TableCell>

@@ -22,13 +22,29 @@ export interface UpdateFeedbackData {
   priority?: 'low' | 'medium' | 'high' | 'critical';
   resolvedAt?: Date;
   resolvedBy?: string;
+  isReadByUser?: boolean;
+  isReadByAdmin?: boolean;
 }
 
 export class FeedbackService {
   static async createFeedback(feedbackData: CreateFeedbackData): Promise<FeedbackDocument> {
     await connectMongo();
     
-    const feedback = new FeedbackModel(feedbackData);
+    // Create initial message from description
+    const initialMessage = {
+      sender: feedbackData.userId, // If logged in, otherwise undefined (which is fine, or handled by schema)
+      content: feedbackData.description,
+      createdAt: new Date(),
+      isInternal: false
+    };
+
+    const feedback = new FeedbackModel({
+      ...feedbackData,
+      messages: [initialMessage],
+      isReadByUser: true, // User created it, so they read it
+      isReadByAdmin: false 
+    });
+    
     await feedback.save();
     
     return feedback;
@@ -40,7 +56,8 @@ export class FeedbackService {
     return await FeedbackModel.findById(feedbackId)
       .populate('assignedTo', 'name username')
       .populate('resolvedBy', 'name username')
-      .populate('userId', 'name username');
+      .populate('userId', 'name username')
+      .populate('messages.sender', 'name username profileImage'); // Populate message senders
   }
 
   static async getAllFeedback(filters?: {
@@ -77,6 +94,7 @@ export class FeedbackService {
         .populate('assignedTo', 'name username')
         .populate('resolvedBy', 'name username')
         .populate('userId', 'name username')
+        .populate('messages.sender', 'name username')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -115,7 +133,8 @@ export class FeedbackService {
       { new: true }
     ).populate('assignedTo', 'name username')
      .populate('resolvedBy', 'name username')
-     .populate('userId', 'name username');
+     .populate('userId', 'name username')
+     .populate('messages.sender', 'name username');
     
     if (!updatedFeedback) {
       throw new BadRequestError('Failed to update feedback');
@@ -191,6 +210,57 @@ export class FeedbackService {
     return await FeedbackModel.find({ email })
       .sort({ createdAt: -1 })
       .populate('assignedTo', 'name username')
-      .populate('resolvedBy', 'name username');
+      .populate('resolvedBy', 'name username')
+      .populate('messages.sender', 'name username');
+  }
+
+  static async getFeedbackByUserId(userId: string): Promise<FeedbackDocument[]> {
+    await connectMongo();
+    
+    return await FeedbackModel.find({ userId })
+      .sort({ createdAt: -1 })
+      .populate('assignedTo', 'name username')
+      .populate('resolvedBy', 'name username')
+      .populate('messages.sender', 'name username');
+  }
+
+  static async addMessage(
+    feedbackId: string, 
+    messageData: { sender?: string, content: string, isInternal?: boolean, attachment?: string },
+    isUserAction: boolean
+  ): Promise<FeedbackDocument> {
+    await connectMongo();
+
+    const feedback = await FeedbackModel.findById(feedbackId);
+    if (!feedback) {
+      throw new BadRequestError('Feedback not found');
+    }
+
+    feedback.messages.push({
+      sender: messageData.sender,
+      content: messageData.content,
+      createdAt: new Date(),
+      isInternal: messageData.isInternal || false,
+      attachment: messageData.attachment
+    });
+
+    // Update read status based on who sent the message
+    if (isUserAction) {
+      feedback.isReadByAdmin = false;
+      feedback.isReadByUser = true;
+    } else {
+      feedback.isReadByAdmin = true;
+      feedback.isReadByUser = false;
+    }
+    
+    feedback.updatedAt = new Date();
+
+    await feedback.save();
+    
+    return feedback.populate([
+      { path: 'assignedTo', select: 'name username' },
+      { path: 'resolvedBy', select: 'name username' },
+      { path: 'messages.sender', select: 'name username' }
+    ]);
   }
 }

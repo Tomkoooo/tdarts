@@ -5,6 +5,9 @@ import { AuthService } from '@/database/services/auth.service';
 // GET - Aktív announcement-ok lekérése (nyilvános)
 export async function GET() {
     try {
+        const { TournamentService } = await import('@/database/services/tournament.service');
+        TournamentService.checkAndSendTournamentReminders().catch(err => console.error('Reminder check failed:', err));
+
         const announcements = await AnnouncementService.getActiveAnnouncements();
         
         return NextResponse.json({

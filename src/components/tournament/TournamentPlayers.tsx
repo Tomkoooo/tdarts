@@ -36,6 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
+import { SmartAvatar } from "@/components/ui/smart-avatar"
 
 interface TournamentPlayersProps {
   tournament: any
@@ -85,6 +86,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [isOnWaitingList, setIsOnWaitingList] = useState(
     waitingList.some((p: any) => p.playerReference?.userRef?.toString() === user?._id?.toString())
   )
+  const [isSubscribing, setIsSubscribing] = useState(false)
 
   const code = tournament?.tournamentId
 
@@ -408,6 +410,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
 
   const handleSubscribeToNotifications = async () => {
     if (!user || !code) return
+    setIsSubscribing(true)
     try {
       const response = await axios.post(`/api/tournaments/${code}/notifications`)
       if (response.data.success) {
@@ -420,11 +423,14 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         context: 'Értesítés feliratkozás',
         errorName: 'Értesítés feliratkozás sikertelen',
       })
+    } finally {
+      setIsSubscribing(false)
     }
   }
 
   const handleUnsubscribeFromNotifications = async () => {
     if (!user || !code) return
+    setIsSubscribing(true)
     try {
       const response = await axios.delete(`/api/tournaments/${code}/notifications`)
       if (response.data.success) {
@@ -437,6 +443,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         context: 'Értesítés leiratkozás',
         errorName: 'Értesítés leiratkozás sikertelen',
       })
+    } finally {
+      setIsSubscribing(false)
     }
   }
 
@@ -551,28 +559,44 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       )}
 
 
-      {user && localUserPlayerId && localUserPlayerStatus !== 'none' && (
-        <Alert className="border-primary/40 bg-primary/15 text-white/90 shadow-sm shadow-black/30">
+      {user && (
+        <Alert className="border-indigo-500/40 bg-indigo-500/10 text-white/90 shadow-sm shadow-black/30">
           <AlertDescription className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
-                <p className="text-xs text-white/70">
-                  Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.
-                </p>
+            {localUserPlayerId && localUserPlayerStatus !== 'none' ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
+                  <p className="text-xs text-white/70">
+                    Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.
+                  </p>
+                </div>
+                {localUserPlayerStatus === 'applied' && (
+                  <Button size="sm" variant="warning" onClick={handleSelfWithdraw}>
+                    Jelentkezés visszavonása
+                  </Button>
+                )}
               </div>
-              {isPending ? (
-                <Button size="sm" variant="warning" onClick={handleSelfWithdraw}>
-                  Jelentkezés visszavonása
-                </Button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2 pt-2 border-t border-primary/20">
+            ) : isOnWaitingList ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">A várólistán vagy.</p>
+                  <p className="text-xs text-white/70">
+                    Értesítést kapsz, ha bekerülsz a tornára vagy ha új helyek szabadulnak fel.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            
+            <div className={cn(
+              "flex items-center gap-2 pt-2",
+              (localUserPlayerId && localUserPlayerStatus !== 'none' || isOnWaitingList) ? "border-t border-indigo-500/20" : ""
+            )}>
               <Button
                 size="sm"
                 variant={isSubscribedToNotifications ? "secondary" : "info"}
                 onClick={isSubscribedToNotifications ? handleUnsubscribeFromNotifications : handleSubscribeToNotifications}
                 className="gap-2"
+                disabled={isSubscribing}
               >
                 {isSubscribedToNotifications ? (
                   <>
@@ -587,7 +611,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 )}
               </Button>
               <p className="text-xs text-white/70">
-                Kapj email értesítést a torna fontosabb eseményeiről.
+                {isSubscribedToNotifications 
+                  ? "Email értesítést kapsz a felszabaduló helyekről."
+                  : "Iratkozz fel a felszabaduló helyek értesítéseire!"}
               </p>
             </div>
           </AlertDescription>
@@ -661,13 +687,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   )}
                 >
                   <div className="flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-foreground">{name}</p>
-                      {statusMeta?.label && (
-                        <Badge variant={statusMeta.variant} className="rounded-full px-2 py-0 text-[11px] capitalize">
-                          {statusMeta.label}
-                        </Badge>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <SmartAvatar 
+                        playerId={player.playerReference?._id || player._id} 
+                        name={name} 
+                        size="md"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">{name}</p>
+                        {statusMeta?.label && (
+                          <Badge variant={statusMeta.variant} className="rounded-full px-2 py-0 text-[11px] capitalize">
+                            {statusMeta.label}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {console.log(player)}
@@ -770,14 +803,21 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   key={waitingPlayer.playerReference?._id || index}
                   className="flex items-start justify-between gap-3 rounded-xl bg-muted/20 px-4 py-3 shadow-sm shadow-black/15"
                 >
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">{name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Felvéve: {waitingPlayer.addedAt ? new Date(waitingPlayer.addedAt).toLocaleDateString("hu-HU") : "Ismeretlen"}
-                    </p>
-                    {waitingPlayer.note && (
-                      <p className="mt-1 text-xs text-muted-foreground/80">Megjegyzés: {waitingPlayer.note}</p>
-                    )}
+                  <div className="flex items-center gap-3">
+                    <SmartAvatar 
+                      playerId={waitingPlayer.playerReference?._id} 
+                      name={name} 
+                      size="md"
+                    />
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-foreground">{name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Felvéve: {waitingPlayer.addedAt ? new Date(waitingPlayer.addedAt).toLocaleDateString("hu-HU") : "Ismeretlen"}
+                      </p>
+                      {waitingPlayer.note && (
+                        <p className="mt-1 text-xs text-muted-foreground/80">Megjegyzés: {waitingPlayer.note}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-xs text-muted-foreground">
                     <Badge variant="outline" className="rounded-full border-none bg-warning/15 px-3 py-0 text-warning">
@@ -800,8 +840,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     )}
                   </div>
                 </div>
-              )}
-            )}
+              )
+            })}
           </CardContent>
         </Card>
       )}
@@ -915,4 +955,4 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   )
 }
 
-export default TournamentPlayers 
+export default TournamentPlayers

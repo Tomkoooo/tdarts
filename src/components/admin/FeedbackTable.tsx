@@ -19,15 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/Label"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import {
@@ -53,9 +44,7 @@ import {
 } from "@tabler/icons-react"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
-
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import AdminTicketDetail from "@/components/admin/AdminTicketDetail"
 
 interface FeedbackHistory {
   action: string
@@ -75,32 +64,7 @@ interface Feedback {
   createdAt: string
   user?: { name: string; username: string }
   history?: FeedbackHistory[]
-}
-
-// Helper to auto-linkify text
-const LinkifiedText = ({ text }: { text: string }) => {
-  if (!text) return null
-  const parts = text.split(/(https?:\/\/[^\s]+)/g)
-  return (
-    <span>
-      {parts.map((part, i) =>
-        part.match(/^https?:\/\//) ? (
-          <a
-            key={i}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary underline hover:text-primary/80 transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {part}
-          </a>
-        ) : (
-             part
-        )
-      )}
-    </span>
-  )
+  isReadByAdmin: boolean
 }
 
 export default function FeedbackTable() {
@@ -116,13 +80,6 @@ export default function FeedbackTable() {
   
   // Edit state
   const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null)
-  const [editForm, setEditForm] = useState({
-      status: "",
-      priority: "",
-      category: "",
-      customEmailMessage: "",
-      emailNotification: "status" // 'none', 'status', 'custom'
-  })
 
   const limit = 10
 
@@ -173,25 +130,6 @@ export default function FeedbackTable() {
 
   const openEditModal = (feedback: Feedback) => {
       setEditingFeedback(feedback)
-      setEditForm({
-          status: feedback.status,
-          priority: feedback.priority,
-          category: feedback.category,
-          customEmailMessage: "",
-          emailNotification: "status"
-      })
-  }
-
-  const handleUpdate = async () => {
-      if (!editingFeedback) return
-      try {
-          await axios.patch(`/api/admin/feedback/${editingFeedback._id}`, editForm)
-          toast.success("Visszajelzés frissítve")
-          setEditingFeedback(null)
-          fetchData()
-      } catch {
-          toast.error("Hiba a frissítés során")
-      }
   }
   
   const getStatusBadge = (status: string) => {
@@ -332,7 +270,15 @@ export default function FeedbackTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium truncate max-w-[200px] sm:max-w-[300px]" title={item.title}>{item.title}</span>
+                      <div className="flex items-center gap-2">
+                        {!item.isReadByAdmin && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                            <span className="px-1.5 py-0.5 text-[10px] bg-accent/20 text-accent rounded-full font-medium">Új</span>
+                          </div>
+                        )}
+                        <span className="font-medium truncate max-w-[200px] sm:max-w-[300px]" title={item.title}>{item.title}</span>
+                      </div>
                       <span className="text-xs text-muted-foreground">{item.email}</span>
                     </div>
                   </TableCell>
@@ -404,141 +350,16 @@ export default function FeedbackTable() {
         </div>
       </div>
       
-      <Dialog open={!!editingFeedback} onOpenChange={(open) => !open && setEditingFeedback(null)}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-y-scroll">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle>Visszajelzés Kezelése</DialogTitle>
-            <DialogDescription>
-              Státusz frissítése, válasz küldése és előzmények megtekintése.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="flex-1 p-6 pt-2">
-            <div className="grid gap-6">
-                {/* 1. Feedback Detail */}
-                {editingFeedback && (
-                <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">Beküldő: {editingFeedback.email}</span>
-                        <span className="text-xs text-muted-foreground">
-                        {format(new Date(editingFeedback.createdAt), "yyyy. MM. dd. HH:mm", { locale: hu })}
-                        </span>
-                    </div>
-                    <div className="space-y-1">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase">Cím</span>
-                         <p className="font-medium">{editingFeedback.title}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase">Leírás</span>
-                        <p className="text-sm whitespace-pre-wrap"><LinkifiedText text={editingFeedback.description} /></p>
-                    </div>
-                </div>
-                )}
-                
-                {/* 2. Controls */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label>Státusz</Label>
-                        <Select value={editForm.status} onValueChange={(v) => setEditForm({...editForm, status: v})}>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Státusz" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="pending">Függőben</SelectItem>
-                            <SelectItem value="in-progress">Folyamatban</SelectItem>
-                            <SelectItem value="resolved">Megoldva</SelectItem>
-                            <SelectItem value="rejected">Elutasítva</SelectItem>
-                            <SelectItem value="closed">Lezárva</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <Label>Prioritás</Label>
-                        <Select value={editForm.priority} onValueChange={(v) => setEditForm({...editForm, priority: v})}>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Prioritás" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="low">Alacsony</SelectItem>
-                            <SelectItem value="medium">Közepes</SelectItem>
-                            <SelectItem value="high">Magas</SelectItem>
-                            <SelectItem value="critical">Kritikus</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                {/* 3. Email Options */}
-                <div className="space-y-3 border-t pt-4">
-                    <Label className="text-base font-semibold">Email Értesítés</Label>
-                    <RadioGroup 
-                        value={editForm.emailNotification} 
-                        onValueChange={(v) => setEditForm({...editForm, emailNotification: v})}
-                        className="flex flex-col gap-3"
-                    >
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="none" id="none" />
-                            <Label htmlFor="none">Nincs értesítés (Csak státusz frissítés)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="status" id="status" />
-                            <Label htmlFor="status">Státusz levél küldése (Sablon)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="custom" id="custom" />
-                            <Label htmlFor="custom">Egyéni válasz írása</Label>
-                        </div>
-                    </RadioGroup>
-
-                    {editForm.emailNotification === 'custom' && (
-                        <div className="pl-6 mt-2 animate-in fade-in slide-in-from-top-2">
-                            <textarea
-                                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                placeholder="Írd ide a válaszod..."
-                                value={editForm.customEmailMessage}
-                                onChange={(e) => setEditForm({...editForm, customEmailMessage: e.target.value})}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                 {/* 4. History (Traceability) */}
-                 {editingFeedback?.history && editingFeedback.history.length > 0 && (
-                    <div className="space-y-3 border-t pt-4">
-                        <Label className="text-base font-semibold">Előzmények</Label>
-                        <div className="space-y-4 relative pl-4 border-l">
-                            {editingFeedback.history.map((event, i) => (
-                                <div key={i} className="relative">
-                                    <span className="absolute -left-[21px] top-1 bg-background border rounded-full w-2.5 h-2.5" />
-                                    <div className="text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium capitalize">{event.action.replace('_', ' ')}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {format(new Date(event.date), "yyyy. MM. dd. HH:mm")}
-                                            </span>
-                                        </div>
-                                        <p className="text-muted-foreground text-xs mt-0.5">{event.details}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-            </div>
-          </ScrollArea>
-          
-          <DialogFooter className="p-6 pt-2 border-t mt-auto">
-            <Button type="button" variant="secondary" onClick={() => setEditingFeedback(null)}>
-                Mégse
-            </Button>
-            <Button type="submit" onClick={handleUpdate}>
-                {editForm.emailNotification === 'none' ? 'Mentés' : 'Mentés & Küldés'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Admin Ticket Detail Modal */}
+      {editingFeedback && (
+        <AdminTicketDetail
+          ticket={editingFeedback as any}
+          onBack={() => setEditingFeedback(null)}
+          onUpdate={() => {
+            fetchData();
+          }}
+        />
+      )}
     </div>
   )
 }

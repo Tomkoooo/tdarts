@@ -220,7 +220,8 @@ export class SearchService {
                 mmrTier: this.getMMRTier(filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr),
                 globalRank: globalRank || null,
                 oacMmr: player.stats?.oacMmr ?? 800, // Explicitly return OAC MMR for display
-                honors: player.honors || [] // Include honors for badge display
+                honors: player.honors || [], // Include honors for badge display
+                profilePicture: player.profilePicture
             };
         });
 
@@ -460,7 +461,8 @@ export class SearchService {
              leaguePoints: item.totalLeaguePoints, 
              rankingType: 'leaguePoints',
              globalRank: skip + index + 1,
-             honors: item.playerInfo.honors || []
+             honors: item.playerInfo.honors || [],
+             profilePicture: item.playerInfo.profilePicture
         }));
 
         return { results: formattedResults, total };

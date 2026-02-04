@@ -3,15 +3,6 @@ import { UserDocument as IUserDocument } from '@/interface/user.interface';
 import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
-import { sendEmail } from '@/lib/mailer';
-
-interface MailOptions {
-  from?: string;
-  to: string[];
-  subject: string;
-  text: string;
-  html?: string;
-}
 
 export class AuthService {
   static async register(user: {
@@ -72,27 +63,13 @@ export class AuthService {
 
   static async sendVerificationEmail(user: IUserDocument): Promise<string> {
     const verificationCode = await user.generateVerifyEmailCode();
-    const mailOptions: MailOptions = {
-      to: [user.email],
-      subject: 'TDarts Email Verifikáció',
-      text: '',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
-          <h2 style="color: #cc3333;">${user.email === user.email ? 'Új email cím verifikáció' : 'Üdvözöljük a TDarts-ban!'}</h2>
-          <p>Kérjük, erősítse meg email címét az alábbi verifikációs kóddal:</p>
-          <h3 style="color: #cc3333;">${verificationCode}</h3>
-          <p>Adja meg ezt a kódot a TDarts weboldalon az email cím megerősítéséhez.</p>
-          <p>Ha nem Ön kezdeményezte ezt a műveletet, kérjük, hagyja figyelmen kívül ezt az emailt.</p>
-          <p>Üdvözlettel,<br>TDarts Csapat</p>
-        </div>
-      `,
-    };
-    const emailSent = await sendEmail(mailOptions);
-    if (!emailSent) {
-      throw new BadRequestError('Failed to send verification email', 'auth', {
-        email: user.email
-      });
-    }
+    const { MailerService } = await import('@/database/services/mailer.service');
+    
+    await MailerService.sendVerificationEmail(user.email, {
+      userName: user.name || user.username || 'Játékos',
+      verificationCode
+    });
+    
     return verificationCode;
   }
 
@@ -128,27 +105,11 @@ export class AuthService {
     }
     const resetCode = await user.generateResetPasswordCode();
 
-    const mailOptions: MailOptions = {
-      to: [email],
-      subject: 'TDarts Jelszó Visszaállítás',
-      text: '',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
-          <h2 style="color: #cc3333;">Jelszó visszaállítás</h2>
-          <p>Kérjük, használja az alábbi kódot a jelszó visszaállításához:</p>
-          <h3 style="color: #cc3333;">${resetCode}</h3>
-          <p>Adja meg ezt a kódot a TDarts weboldalon az új jelszó megadásához.</p>
-          <p>Ha nem Ön kérte a jelszó visszaállítást, kérjük, hagyja figyelmen kívül ezt az emailt.</p>
-          <p>Üdvözlettel,<br>TDarts Csapat</p>
-        </div>
-      `,
-    };
-    const emailSent = await sendEmail(mailOptions);
-    if (!emailSent) {
-      throw new BadRequestError('Failed to send reset password email', 'auth', {
-        email
-      });
-    }
+    const { MailerService } = await import('@/database/services/mailer.service');
+    await MailerService.sendPasswordResetEmail(email, {
+      userName: user.name || user.username || 'Játékos',
+      resetCode
+    });
   }
 
   static async resetPassword(email: string, code: string, newPassword: string): Promise<void> {

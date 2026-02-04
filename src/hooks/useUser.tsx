@@ -9,6 +9,7 @@ export interface SimplifiedUser {
   email: string;
   isVerified: boolean;
   isAdmin: boolean;
+  profilePicture?: string;
 }
 
 interface UserContextType {

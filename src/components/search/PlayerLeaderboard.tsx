@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
@@ -7,6 +6,7 @@ import { IconTrophy, IconUser, IconChartBar, IconMedal, IconListNumbers } from "
 import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SmartAvatar } from "@/components/ui/smart-avatar"
 
 interface PlayerLeaderboardProps {
     players: any[];
@@ -67,12 +67,11 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                     {player.globalRank || '#'}
                                 </div>
                                 
-                                <Avatar className="h-12 w-12 border-2 border-base-100 shadow-sm">
-                                    <AvatarImage src={player.image} />
-                                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                                        {player.name ? player.name.substring(0, 2).toUpperCase() : '??'}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <SmartAvatar 
+                                    playerId={player._id} 
+                                    name={player.name} 
+                                    size="lg"
+                                />
 
                                 <div className="flex-grow min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
@@ -160,3 +159,5 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
         </div>
     )
 }
+
+export default PlayerLeaderboard;

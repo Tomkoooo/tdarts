@@ -14,8 +14,32 @@ export class MailerService {
         }
     ): Promise<boolean> {
         try {
+            const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
+            
             const tournamentUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.sironic.hu'}/tournaments/${data.tournamentCode}`;
             
+            // Try to get template from database
+            const template = await EmailTemplateService.getRenderedTemplate('tournament_spot_available', {
+                tournamentName: data.tournamentName,
+                tournamentCode: data.tournamentCode,
+                freeSpots: data.freeSpots,
+                userName: data.userName,
+                tournamentUrl,
+                currentYear: new Date().getFullYear(),
+            });
+
+            if (template) {
+                // Use template from database
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html
+                });
+            }
+
+            // Fallback to hardcoded template if database template not found
+            console.warn('Using fallback email template for tournament_spot_available');
             const subject = `🎯 Szabad hely a ${data.tournamentName} tornán!`;
             
             const html = `
@@ -188,6 +212,31 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
         }
     ): Promise<boolean> {
         try {
+            const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
+            
+            // Try to get template from database
+            const template = await EmailTemplateService.getRenderedTemplate('club_registration', {
+                clubName: data.clubName,
+                email,
+                password: data.password,
+                loginUrl: data.loginUrl,
+                clubUrl: data.clubUrl,
+                profileUrl: data.profileUrl,
+                howItWorksUrl: data.howItWorksUrl,
+                currentYear: new Date().getFullYear(),
+            });
+
+            if (template) {
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html
+                });
+            }
+
+            // Fallback to hardcoded template
+            console.warn('Using fallback email template for club_registration');
             const subject = `🎯 Üdvözlünk a tDarts-ban, ${data.clubName}!`;
             
             const html = `
@@ -297,6 +346,26 @@ tDarts Csapat
         }
     ): Promise<boolean> {
         try {
+            const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
+            
+            // Try to get template from database
+            const template = await EmailTemplateService.getRenderedTemplate('club_verification', {
+                clubName: data.clubName,
+                clubUrl: data.clubUrl,
+                currentYear: new Date().getFullYear(),
+            });
+
+            if (template) {
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html
+                });
+            }
+
+            // Fallback to hardcoded template
+            console.warn('Using fallback email template for club_verification');
             const subject = `🎯 Klub verifikáció és OAC Liga - ${data.clubName}`;
             
             const html = `
@@ -365,6 +434,148 @@ tDarts Csapat
             });
         } catch (error) {
             console.error('Failed to send club verification email:', error);
+            throw error;
+        }
+    }
+    /**
+     * Send email notification for tournament day reminder
+     */
+    static async sendTournamentReminderEmail(
+        email: string,
+        data: {
+            tournamentName: string;
+            tournamentCode: string;
+            tournamentDate: string;
+            userName: string;
+        }
+    ): Promise<boolean> {
+        try {
+            const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
+            const tournamentUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.sironic.hu'}/tournaments/${data.tournamentCode}`;
+            
+            const template = await EmailTemplateService.getRenderedTemplate('tournament_reminder', {
+                tournamentName: data.tournamentName,
+                tournamentDate: data.tournamentDate,
+                tournamentUrl,
+                userName: data.userName,
+                currentYear: new Date().getFullYear(),
+            });
+
+            if (template) {
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html
+                });
+            }
+
+            // Fallback
+            return await sendEmail({
+                to: [email],
+                subject: `🎯 Emlékeztető: Ma versenyed van! - ${data.tournamentName}`,
+                text: `Kedves ${data.userName}!\n\nEmlékeztetni szeretnénk, hogy ma kerül megrendezésre a ${data.tournamentName} verseny!\n\nIdőpont: ${data.tournamentDate}\nTovábbi részletek: ${tournamentUrl}\n\nSok sikert a versenyen!\ntDarts Csapat`,
+            });
+        } catch (error) {
+            console.error('Failed to send tournament reminder email:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Send email verification code
+     */
+    static async sendVerificationEmail(
+        email: string,
+        data: {
+            userName: string;
+            verificationCode: string;
+        }
+    ): Promise<boolean> {
+        try {
+            const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
+            
+            const template = await EmailTemplateService.getRenderedTemplate('email_verification', {
+                userName: data.userName,
+                verificationCode: data.verificationCode,
+                currentYear: new Date().getFullYear(),
+            });
+
+            if (template) {
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html
+                });
+            }
+
+            // Fallback
+            return await sendEmail({
+                to: [email],
+                subject: '🎯 TDarts Email Verifikáció',
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
+                        <h2 style="color: #cc3333;">Email Verifikáció</h2>
+                        <p>Kedves ${data.userName}!</p>
+                        <p>Kérjük, erősítse meg email címét az alábbi verifikációs kóddal:</p>
+                        <h3 style="color: #cc3333;">${data.verificationCode}</h3>
+                        <p>Üdvözlettel,<br>TDarts Csapat</p>
+                    </div>
+                `,
+                text: `Kedves ${data.userName}!\n\nVerifikációs kódod: ${data.verificationCode}`
+            });
+        } catch (error) {
+            console.error('Failed to send verification email:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Send password reset code
+     */
+    static async sendPasswordResetEmail(
+        email: string,
+        data: {
+            userName: string;
+            resetCode: string;
+        }
+    ): Promise<boolean> {
+        try {
+            const { EmailTemplateService } = await import('@/database/services/emailtemplate.service');
+            
+            const template = await EmailTemplateService.getRenderedTemplate('password_reset', {
+                userName: data.userName,
+                resetCode: data.resetCode,
+                currentYear: new Date().getFullYear(),
+            });
+
+            if (template) {
+                return await sendEmail({
+                    to: [email],
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html
+                });
+            }
+
+            // Fallback
+            return await sendEmail({
+                to: [email],
+                subject: '🎯 TDarts Jelszó Visszaállítás',
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
+                        <h2 style="color: #cc3333;">Jelszó visszaállítás</h2>
+                        <p>Kedves ${data.userName}!</p>
+                        <p>Kérjük, használja az alábbi kódot a jelszó visszaállításához:</p>
+                        <h3 style="color: #cc3333;">${data.resetCode}</h3>
+                        <p>Üdvözlettel,<br>TDarts Csapat</p>
+                    </div>
+                `,
+                text: `Kedves ${data.userName}!\n\nJelszó visszaállító kódod: ${data.resetCode}`
+            });
+        } catch (error) {
+            console.error('Failed to send password reset email:', error);
             throw error;
         }
     }

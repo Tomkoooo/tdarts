@@ -7,6 +7,7 @@ import InfiniteCarousel from '@/components/homapage/InfiniteCarousel';
 import FeaturesSectionNew from '@/components/homapage/FeaturesSectionNew';
 import PricingSection from '@/components/homapage/PricingSection';
 import AnnouncementToast from '@/components/common/AnnouncementToast';
+import { useUnreadTickets, UnreadTicketToast } from '@/hooks/useUnreadTickets';
 
 interface Announcement {
   _id: string;
@@ -24,6 +25,15 @@ interface Announcement {
 const HomePage = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set());
+  const { unreadCount } = useUnreadTickets();
+  const [ticketToastDismissed, setTicketToastDismissed] = useState(false);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem('ticketToastDismissed');
+    if (dismissed) {
+      setTicketToastDismissed(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -55,6 +65,15 @@ const HomePage = () => {
     announcement => !closedAnnouncements.has(announcement._id)
   );
 
+  const handleDismissTicketToast = () => {
+    setTicketToastDismissed(true);
+    localStorage.setItem('ticketToastDismissed', 'true');
+    // Clear after 1 hour so it can reappear
+    setTimeout(() => {
+      localStorage.removeItem('ticketToastDismissed');
+    }, 60 * 60 * 1000);
+  };
+
   return (
     <div className="min-h-screen relative">
       {/* Parallax Background */}
@@ -85,6 +104,14 @@ const HomePage = () => {
             </div>
           ))}
         </div>
+
+      {/* Unread Ticket Toast */}
+      {!ticketToastDismissed && (
+        <UnreadTicketToast 
+          unreadCount={unreadCount} 
+          onDismiss={handleDismissTicketToast}
+        />
+      )}
       
       {/* Main Content */}
       <main className="relative z-10">

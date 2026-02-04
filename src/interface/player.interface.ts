@@ -109,6 +109,8 @@ export interface PlayerDocument {
     // Historical
     honors?: PlayerHonor[];
     previousSeasons?: PlayerSeasonStats[];
+    profilePicture?: string;
+    publicConsent?: boolean;
 }
 
 export interface Player {
@@ -138,4 +140,6 @@ export interface Player {
     // Historical
     honors?: PlayerHonor[];
     previousSeasons?: PlayerSeasonStats[];
+    profilePicture?: string;
+    publicConsent?: boolean;
 }

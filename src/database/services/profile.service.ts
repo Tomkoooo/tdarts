@@ -4,6 +4,7 @@ import { UserDocument as IUserDocument } from '@/interface/user.interface';
 import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';
+import { MediaService } from '@/database/services/media.service';
 
 export class ProfileService {
   static async updateProfile(
@@ -13,6 +14,8 @@ export class ProfileService {
       name?: string;
       username?: string;
       password?: string;
+      profilePicture?: string | null;
+      publicConsent?: boolean;
     }
   ): Promise<IUserDocument> {
     await connectMongo();
@@ -52,23 +55,52 @@ export class ProfileService {
     if (updates.password) {
       user.password = updates.password; // A UserModel feltételezi, hogy a jelszó hash-elése a save() metódusban történik
     }
+    
+    // Handle Profile Picture and Media Cleanup
+    if (updates.profilePicture !== undefined) {
+      const oldPictureUrl = user.profilePicture;
+      const newPictureUrl = updates.profilePicture;
+
+      // Only clean up if the picture actually changed
+      if (oldPictureUrl !== newPictureUrl) {
+        user.profilePicture = newPictureUrl;
+
+        // If there was an old picture, decrement its usage
+        if (oldPictureUrl && oldPictureUrl.startsWith('/api/media/')) {
+          const mediaId = oldPictureUrl.split('/').pop();
+          if (mediaId) {
+            try {
+              await MediaService.deleteMedia(mediaId);
+              console.log(`Decremented usage for media: ${mediaId}`);
+            } catch (err) {
+              console.error(`Failed to cleanup old media ${mediaId}:`, err);
+            }
+          }
+        }
+      }
+    }
 
     await user.save();
 
-    // Ha a név változott, frissítsük a kapcsolt player dokumentumot is
-    if (updates.name) {
+    // Ha a név vagy kép változott, frissítsük a kapcsolt player dokumentumot is
+    if (updates.name || updates.profilePicture !== undefined || updates.publicConsent !== undefined) {
       try {
         const linkedPlayer = await PlayerModel.findOne({ userRef: userId });
         if (linkedPlayer) {
+          const playerUpdates: any = {};
+          if (updates.name) playerUpdates.name = updates.name;
+          if (updates.profilePicture !== undefined) playerUpdates.profilePicture = updates.profilePicture;
+          if (updates.publicConsent !== undefined) playerUpdates.publicConsent = updates.publicConsent;
+          
           await PlayerModel.findByIdAndUpdate(
             linkedPlayer._id,
-            { name: updates.name },
+            playerUpdates,
             { new: true }
           );
-          console.log(`Updated player name for user ${userId} to: ${updates.name}`);
+          console.log(`Updated player data for user ${userId}`);
         }
       } catch (error) {
-        console.error('Error updating linked player name:', error);
+        console.error('Error updating linked player data:', error);
         // Don't throw error to prevent user update from failing
       }
     }
