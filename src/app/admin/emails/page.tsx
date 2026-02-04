@@ -63,6 +63,8 @@ export default function EmailTemplatesPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testRecipient, setTestRecipient] = useState('');
 
   const [editedSubject, setEditedSubject] = useState('');
   const [editedHtmlContent, setEditedHtmlContent] = useState('');
@@ -127,6 +129,34 @@ export default function EmailTemplatesPage() {
       showErrorToast('Hálózati hiba történt');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendTestEmail = async () => {
+    if (!selectedTemplate) return;
+    if (!testRecipient) {
+      showErrorToast('Kérjük, adj meg egy email címet');
+      return;
+    }
+
+    setSendingTest(true);
+    try {
+      const response = await fetch(`/api/admin/email-templates/${selectedTemplate._id}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientEmail: testRecipient }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        showSuccessToast('Teszt email elküldve');
+      } else {
+        showErrorToast(data.message || 'Hiba történt a küldés során');
+      }
+    } catch {
+      showErrorToast('Hálózati hiba történt');
+    } finally {
+      setSendingTest(false);
     }
   };
 
@@ -383,6 +413,41 @@ export default function EmailTemplatesPage() {
                         {selectedTemplate.textContent}
                       </pre>
                     )}
+                  </div>
+
+                  {/* Test Email Section */}
+                  <div className="pt-6 border-t border-border">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-primary" />
+                      Teszt email küldése
+                    </h3>
+                    <div className="flex items-end gap-3 max-w-md">
+                      <div className="flex-1">
+                        <label className="block text-xs text-muted-foreground mb-1">Címzett email</label>
+                        <input
+                          type="email"
+                          value={testRecipient}
+                          onChange={(e) => setTestRecipient(e.target.value)}
+                          placeholder="vmi@pelda.hu"
+                          className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-primary focus:border-primary"
+                        />
+                      </div>
+                      <button
+                        onClick={sendTestEmail}
+                        disabled={sendingTest || !testRecipient}
+                        className="px-4 py-2 text-sm bg-primary/10 text-primary border border-primary/20 rounded-md hover:bg-primary/20 flex items-center gap-2 disabled:opacity-50 transition-colors"
+                      >
+                        {sendingTest ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        ) : (
+                          <Mail className="w-4 h-4" />
+                        )}
+                        Küldés
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      A teszt emailt a fent látható módon rendereljük, minta adatokkal feltöltve.
+                    </p>
                   </div>
 
                   {/* Metadata */}
