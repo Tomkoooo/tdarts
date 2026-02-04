@@ -3,26 +3,34 @@ import { connectMongo } from '@/lib/mongoose';
 import { EmailTemplateModel } from '@/database/models/emailtemplate.model';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
 import { sendEmail } from '@/lib/mailer';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { AuthService } from '@/database/services/auth.service';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user || !(session.user as any).isAdmin) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
+   // Check authentication
+      const token = req.cookies.get('token')?.value;
+      if (!token) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+  
+      const user = await AuthService.verifyToken(token);
+      if (!user || !user.isAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+  
 
     const { recipientEmail } = await req.json();
     if (!recipientEmail) {
       return NextResponse.json({ success: false, message: 'Recipient email is required' }, { status: 400 });
     }
 
+    const {id} = await params;
+
     await connectMongo();
-    const template = await EmailTemplateModel.findById(params.id);
+    const template = await EmailTemplateModel.findById(id);
 
     if (!template) {
       return NextResponse.json({ success: false, message: 'Template not found' }, { status: 404 });
