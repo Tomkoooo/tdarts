@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import axios from "axios";
 
 // Socket inicializálása a különálló socket serverhez
-const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.sironic.hu';
+const socketServerUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://socket.tdarts.hu';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 if (!socketServerUrl) {
