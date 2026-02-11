@@ -71,6 +71,7 @@ const defaultSettings: FormSettings = {
   tournamentPassword: "",
   type: "amateur",
   registrationDeadline: new Date(),
+  participationMode: 'individual',
   isSandbox: false,
   billingInfo: {
     type: 'individual',
@@ -308,6 +309,7 @@ export default function CreateTournamentModal({
         verified: isOac,
         billingInfo: isOac ? settings.billingInfo : undefined,
         saveBillingInfo: isOac ? settings.saveBillingInfo : false,
+        participationMode: settings.participationMode || 'individual',
       }
 
       const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
@@ -603,6 +605,25 @@ export default function CreateTournamentModal({
                         Válaszd ki a torna formátumát. A csoportkör + kieséses formátum először csoportkört játszik, majd kieséses szakasz következik.
                       </p>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-foreground font-medium">
+                        Nevezési mód
+                      </Label>
+                      <select
+                        value={settings.participationMode || 'individual'}
+                        onChange={(event) => handleSettingsChange("participationMode", event.target.value)}
+                         className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200"
+                      >
+                        <option value="individual">Egyéni</option>
+                        <option value="pair">Páros</option>
+                        <option value="team" disabled>Csapat (fejlesztés alatt)</option>
+                      </select>
+                      <p className="text-sm text-muted-foreground">
+                        Egyéni, páros vagy csapatverseny.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-foreground font-medium">
                         Ligához csatolás {lockLeagueSelection && <span className="text-xs text-warning">(OAC liga - rögzített)</span>}

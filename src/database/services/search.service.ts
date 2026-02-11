@@ -213,7 +213,7 @@ export class SearchService {
             return {
                 _id: player._id,
                 name: player.name,
-                type: 'player',
+                type: player.type || 'individual',
                 userRef: player.userRef,
                 stats: stats,
                 mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
@@ -447,7 +447,7 @@ export class SearchService {
         const formattedResults = rawResults.map((item: any, index: number) => ({
              _id: item.playerInfo._id,
              name: item.playerInfo.name,
-             type: 'player',
+             type: item.playerInfo.type || 'individual',
              userRef: item.playerInfo.userRef,
              stats: {
                  ...item.playerInfo.stats,

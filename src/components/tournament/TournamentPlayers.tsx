@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react"
 import axios from "axios"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   IconCheck,
   IconMail,
@@ -21,6 +22,7 @@ import PlayerSearch from "@/components/club/PlayerSearch"
 import PlayerNotificationModal from "@/components/tournament/PlayerNotificationModal"
 import PlayerMatchesModal from "@/components/tournament/PlayerMatchesModal"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
+import TeamRegistrationModal from "@/components/tournament/TeamRegistrationModal"
 import { useUserContext } from "@/hooks/useUser"
 import {
   Card,
@@ -45,6 +47,7 @@ interface TournamentPlayersProps {
   userPlayerStatus: 'applied' | 'checked-in' | 'none'
   userPlayerId: string | null
   status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout'
+  onRefresh?: () => void
 }
 
 const playerStatusBadge: Record<string, { label?: string; variant: "default" | "outline" | "secondary" | "destructive" }> = {
@@ -60,6 +63,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   userPlayerStatus,
   userPlayerId,
   status,
+  onRefresh,
 }) => {
   const { user } = useUserContext()
 
@@ -83,12 +87,32 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [isSubscribedToNotifications, setIsSubscribedToNotifications] = useState(
     tournament?.notificationSubscribers?.some((sub: any) => sub.userRef?.toString() === user?._id?.toString()) || false
   )
-  const [isOnWaitingList, setIsOnWaitingList] = useState(
-    waitingList.some((p: any) => p.playerReference?.userRef?.toString() === user?._id?.toString())
-  )
+  const [isOnWaitingList, setIsOnWaitingList] = useState(() => {
+    if (!user?._id) return false
+    return (tournament?.waitingList || []).some((p: any) => {
+      const playerRef = p.playerReference
+      if (!playerRef) return false
+      
+      // Check individual userRef
+      if (playerRef.userRef?.toString() === user._id) return true
+      
+      // Check team members
+      if (playerRef.members && Array.isArray(playerRef.members)) {
+        return playerRef.members.some((m: any) => {
+          const memberUserRef = m.userRef?._id?.toString() || m.userRef?.toString()
+          return memberUserRef === user._id
+        })
+      }
+      return false
+    })
+  })
   const [isSubscribing, setIsSubscribing] = useState(false)
+  const [showTeamRegistrationModal, setShowTeamRegistrationModal] = useState(false)
+  const [isModeratorRegistration, setIsModeratorRegistration] = useState(false)
 
   const code = tournament?.tournamentId
+  const participationMode = tournament?.tournamentSettings?.participationMode || 'individual'
+  const router = useRouter()
 
   React.useEffect(() => {
     console.log(tournament)
@@ -114,7 +138,22 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       tournament?.notificationSubscribers?.some((sub: any) => sub.userRef?.toString() === user?._id?.toString()) || false
     )
     setIsOnWaitingList(
-      (tournament?.waitingList || []).some((p: any) => p.playerReference?.userRef?.toString() === user?._id?.toString())
+      (tournament?.waitingList || []).some((p: any) => {
+        const playerRef = p.playerReference
+        if (!playerRef) return false
+        
+        // Check individual userRef
+        if (playerRef.userRef?.toString() === user?._id) return true
+        
+        // Check team members
+        if (playerRef.members && Array.isArray(playerRef.members)) {
+          return playerRef.members.some((m: any) => {
+            const memberUserRef = m.userRef?._id?.toString() || m.userRef?.toString()
+            return memberUserRef === user?._id
+          })
+        }
+        return false
+      })
     )
   }, [players, userPlayerStatus, userPlayerId, tournament?.waitingList, tournament?.notificationSubscribers, user?._id])
 
@@ -142,29 +181,25 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         const newPlayer = {
           _id: response.data.playerId,
           playerReference: {
-            _id: response.data.playerId,
-            name: player.name,
-            userRef: player.userRef,
+            name: payload.name || player.name,
+            _id: player._id,
+            userRef: payload.userRef,
           },
-          status: 'applied',
+          status: 'applied'
         }
-        setLocalPlayers((prev) => [...prev, newPlayer])
-        toast.success(`${player.name || 'Játékos'} sikeresen hozzáadva!`)
-      } else {
-        
-        showErrorToast('Nem sikerült hozzáadni a játékost.', {
-          error: response.data?.error,
-          context: 'Torna játékos hozzáadása',
-          errorName: 'Játékos hozzáadása sikertelen',
-        })
+        setLocalPlayers([...localPlayers, newPlayer])
+        // Update user status locally if it was the current user
+        if (payload.userRef === user?._id || (player._id && userPlayerId === player._id)) {
+           setLocalUserPlayerStatus('applied')
+           setLocalUserPlayerId(newPlayer._id)
+        }
+        toast.success("Játékos sikeresen hozzáadva")
+        if (onRefresh) onRefresh()
+        router.refresh()
       }
     } catch (error: any) {
-      
-      showErrorToast('Nem sikerült hozzáadni a játékost.', {
-        error: error?.response?.data?.error,
-        context: 'Torna játékos hozzáadása',
-        errorName: 'Játékos hozzáadása sikertelen',
-      })
+      console.error("Error adding player:", error)
+      toast.error(error.response?.data?.error || "Hiba történt a játékos hozzáadása közben")
     }
   }
 
@@ -540,20 +575,39 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {allowAdminActions && (userClubRole === 'admin' || userClubRole === 'moderator') && (
         <Card className="border-dashed">
           <CardHeader>
-            <CardTitle className="text-base">Játékos hozzáadása</CardTitle>
+            <CardTitle className="text-base">
+              {participationMode === 'pair' || participationMode === 'team' 
+                ? (participationMode === 'pair' ? 'Páros hozzáadása' : 'Csapat hozzáadása')
+                : 'Játékos hozzáadása'}
+            </CardTitle>
             <CardDescription>
-              Keress rá egy játékosra vagy vedd fel kézzel a tornára.
+              {participationMode === 'pair' || participationMode === 'team'
+                ? 'Kattints a gombra páros/csapat hozzáadásához.'
+                : 'Keress rá egy játékosra vagy vedd fel kézzel a tornára.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PlayerSearch
-              onPlayerSelected={handleAddPlayer}
-              clubId={tournament?.clubId?._id || tournament?.clubId}
-              isForTournament
-              excludedPlayers={localPlayers}
-              excludeGuests={tournament?.verified}
-              showAddGuest={!tournament?.verified}
-            />
+            {participationMode === 'pair' || participationMode === 'team' ? (
+              <Button 
+                onClick={() => {
+                  setIsModeratorRegistration(true);
+                  setShowTeamRegistrationModal(true);
+                }} 
+                className="w-full gap-2"
+              >
+                <IconUsers className="h-4 w-4" />
+                {participationMode === 'pair' ? 'Páros hozzáadása' : 'Csapat hozzáadása'}
+              </Button>
+            ) : (
+              <PlayerSearch
+                onPlayerSelected={handleAddPlayer}
+                clubId={tournament?.clubId?._id || tournament?.clubId}
+                isForTournament
+                excludedPlayers={localPlayers}
+                excludeGuests={tournament?.verified}
+                showAddGuest={!tournament?.verified}
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -562,7 +616,35 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {user && (
         <Alert className="border-indigo-500/40 bg-indigo-500/10 text-white/90 shadow-sm shadow-black/30">
           <AlertDescription className="flex flex-col gap-3">
-            {localUserPlayerId && localUserPlayerStatus !== 'none' ? (
+            {isOnWaitingList ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">A várólistán vagy.</p>
+                  <p className="text-xs text-white/70">
+                    Értesítést kapsz, ha bekerülsz a tornára vagy ha új helyek szabadulnak fel.
+                  </p>
+                </div>
+                {/* Find the waiting entry ID to allow withdrawal */}
+                <Button 
+                  size="sm" 
+                  variant="warning" 
+                  onClick={() => {
+                    const waitingEntry = (tournament?.waitingList || []).find((p: any) => {
+                      const pr = p.playerReference
+                      if (!pr) return false
+                      if (pr.userRef?.toString() === user?._id || pr.userRef?._id?.toString() === user?._id) return true
+                      if (pr.members?.some((m: any) => (m.userRef?._id?.toString() || m.userRef?.toString()) === user?._id)) return true
+                      return false
+                    })
+                    if (waitingEntry?.playerReference?._id) {
+                      handleRemoveFromWaitingList(waitingEntry.playerReference._id)
+                    }
+                  }}
+                >
+                  Leiratkozás a várólistáról
+                </Button>
+              </div>
+            ) : localUserPlayerId && localUserPlayerStatus !== 'none' ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
@@ -575,15 +657,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     Jelentkezés visszavonása
                   </Button>
                 )}
-              </div>
-            ) : isOnWaitingList ? (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">A várólistán vagy.</p>
-                  <p className="text-xs text-white/70">
-                    Értesítést kapsz, ha bekerülsz a tornára vagy ha új helyek szabadulnak fel.
-                  </p>
-                </div>
               </div>
             ) : null}
             
@@ -623,9 +696,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {allowPlayerRegistration && localUserPlayerStatus === 'none' && !isOnWaitingList && !tournament?.isSandbox && (
         <div className="flex flex-wrap items-center gap-3">
           {user ? (
-            <Button onClick={handleSelfSignUp} disabled={!hasFreeSpots}>
-              Jelentkezés a tornára
-            </Button>
+          participationMode === 'pair' || participationMode === 'team' ? (
+              <Button onClick={() => {
+                setIsModeratorRegistration(false);
+                setShowTeamRegistrationModal(true);
+              }} disabled={!hasFreeSpots} className="gap-2">
+                <IconUsers className="h-4 w-4" />
+                {participationMode === 'pair' ? 'Páros nevezés' : 'Csapat nevezés'}
+              </Button>
+            ) : (
+              <Button onClick={handleSelfSignUp} disabled={!hasFreeSpots}>
+                Jelentkezés a tornára
+              </Button>
+            )
           ) : (
             <Button asChild>
               <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}?tab=players`)}`}>
@@ -693,12 +776,41 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                         name={name} 
                         size="md"
                       />
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{name}</p>
-                        {statusMeta?.label && (
-                          <Badge variant={statusMeta.variant} className="rounded-full px-2 py-0 text-[11px] capitalize">
-                            {statusMeta.label}
-                          </Badge>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{name}</p>
+                          {player.playerReference?.type === 'pair' && (
+                            <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
+                              <IconUsers className="h-3 w-3" />
+                              PÁROS
+                            </Badge>
+                          )}
+                          {player.playerReference?.type === 'team' && (
+                            <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0 bg-purple-500/10 text-purple-600 border-purple-500/20">
+                              <IconUsers className="h-3 w-3" />
+                              CSAPAT
+                            </Badge>
+                          )}
+                          {statusMeta?.label && (
+                            <Badge variant={statusMeta.variant} className="rounded-full px-2 py-0 text-[11px] capitalize">
+                              {statusMeta.label}
+                            </Badge>
+                          )}
+                        </div>
+                        {/* Show team members if this is a team/pair */}
+                        {(player.playerReference?.type === 'pair' || player.playerReference?.type === 'team') && 
+                         player.playerReference?.members && 
+                         Array.isArray(player.playerReference.members) && 
+                         player.playerReference.members.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                            <span className="font-medium">Tagok:</span>
+                            {player.playerReference.members.map((member: any, idx: number) => (
+                              <span key={member._id || idx}>
+                                {member.name || member}
+                                {idx < player.playerReference.members.length - 1 && ', '}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -951,6 +1063,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TeamRegistrationModal
+        isOpen={showTeamRegistrationModal}
+        onClose={() => setShowTeamRegistrationModal(false)}
+        tournamentCode={code}
+        tournamentName={tournament?.tournamentSettings?.name || tournament?.name || "Torna"}
+        clubId={tournament?.clubId?._id || tournament?.clubId}
+        onSuccess={() => {
+          setShowTeamRegistrationModal(false)
+          if (onRefresh) onRefresh()
+          router.refresh()
+        }}
+        isModeratorMode={isModeratorRegistration}
+      />
     </div>
   )
 }

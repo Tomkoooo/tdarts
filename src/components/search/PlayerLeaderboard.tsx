@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
-import { IconTrophy, IconUser, IconChartBar, IconMedal, IconListNumbers } from "@tabler/icons-react"
+import { IconTrophy, IconUser, IconChartBar, IconMedal, IconListNumbers, IconSword } from "@tabler/icons-react"
 import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -99,7 +99,13 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                         ))}
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <span>{player.userRef ? 'Regisztrált játékos' : 'Vendég játékos'}</span>
+                                        {(player.type === 'pair' || player.type === 'team') && (
+                                            <Badge variant="outline" className="gap-1 text-[9px] font-black h-5 px-2 bg-indigo-500/5 text-indigo-500 border-indigo-500/20 uppercase tracking-tighter">
+                                                <IconSword size={10} />
+                                                {player.type === 'pair' ? 'Páros' : 'Csapat'}
+                                            </Badge>
+                                        )}
+                                        <span>{player.userRef ? 'Regisztrált játékos' : (player.type === 'pair' || player.type === 'team' ? '' : 'Vendég játékos')}</span>
                                         {isOac && rankingType === 'leaguePoints' && player.leagues && (
                                             <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                                                 {player.leagues.length} ligában aktív

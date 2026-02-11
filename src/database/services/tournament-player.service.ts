@@ -2,23 +2,68 @@ import { TournamentModel } from '@/database/models/tournament.model';
 import { PlayerModel } from '../models/player.model';
 import { connectMongo } from '@/lib/mongoose';
 import { BadRequestError } from '@/middleware/errorHandle';
-import { TournamentPlayer } from '@/interface/tournament.interface';
 
 export class TournamentPlayerService {
     static async getPlayerStatusInTournament(tournamentId: string, userId: string): Promise<string | undefined> {
         await connectMongo();
         const tournament = await TournamentModel.findOne({ tournamentId: tournamentId })
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                populate: { path: 'members' }
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                populate: { path: 'members' }
+            });
+
         if (!tournament) {
             throw new BadRequestError('Tournament not found');
         }
-        const player = await PlayerModel.findOne({ userRef: userId });
+
+        const playerProfile = await PlayerModel.findOne({ userRef: userId });
+        if (!playerProfile) return undefined;
+
+        // Check if in main player list
         const playerStatus = tournament.tournamentPlayers.find(
-            (p: TournamentPlayer) => {
-                const playerRefId = p.playerReference?.toString() || p.playerReference?.toString();
-                return playerRefId === player?._id?.toString();
+            (p: any) => {
+                const pr = p.playerReference;
+                if (!pr) return false;
+                
+                // Direct match (individual)
+                if (pr._id?.toString() === playerProfile._id.toString()) return true;
+                
+                // Team member check
+                if (pr.type === 'pair' || pr.type === 'team') {
+                    return pr.members?.some((m: any) => 
+                        (m._id?.toString() || m.toString()) === playerProfile._id.toString()
+                    );
+                }
+                return false;
             }
         );
-        return playerStatus?.status;
+
+        if (playerStatus) return playerStatus.status;
+
+        // Check if on waiting list
+        const waitingStatus = tournament.waitingList.find(
+            (p: any) => {
+                const pr = p.playerReference;
+                if (!pr) return false;
+                
+                // Direct match (individual)
+                if (pr._id?.toString() === playerProfile._id.toString()) return true;
+                
+                // Team member check
+                if (pr.type === 'pair' || pr.type === 'team') {
+                    return pr.members?.some((m: any) => 
+                        (m._id?.toString() || m.toString()) === playerProfile._id.toString()
+                    );
+                }
+                return false;
+            }
+        );
+
+        return waitingStatus ? 'applied' : undefined;
     }
 
     //method to add, remove and update tournament players status, the rquest takes the player._id form the player collection

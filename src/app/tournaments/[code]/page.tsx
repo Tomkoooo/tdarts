@@ -124,10 +124,58 @@ const TournamentPage = () => {
         setUserClubRole(roleData.userClubRole || 'none')
         setUserPlayerStatus(roleData.userPlayerStatus || 'none')
 
-        const userPlayer = tournamentData.tournamentPlayers?.find((p: any) =>
-          p.playerReference?.userRef === user._id || p.playerReference?._id?.toString() === user._id,
-        )
+        // Check if user is in main players list
+        let userPlayer = tournamentData.tournamentPlayers?.find((p: any) => {
+          const playerRef = p.playerReference
+          if (!playerRef) return false
+          
+          // Check if individual player
+          if (playerRef.userRef === user._id || playerRef._id?.toString() === user._id) return true
+          
+          // Check if team member
+          if (playerRef.members && Array.isArray(playerRef.members)) {
+             return playerRef.members.some((m: any) => 
+               m.userRef === user._id || 
+               m._id?.toString() === user._id ||
+               (typeof m.userRef === 'object' && m.userRef?._id?.toString() === user._id)
+             )
+          }
+          return false
+        })
+
+        // If not in main list, check waiting list
+        if (!userPlayer) {
+           const userInWaitlist = tournamentData.waitingList?.find((p: any) => {
+              const playerRef = p.playerReference
+              if (!playerRef) return false
+              
+              if (playerRef.userRef === user._id || playerRef._id?.toString() === user._id) return true
+              
+              if (playerRef.members && Array.isArray(playerRef.members)) {
+                 return playerRef.members.some((m: any) => 
+                   m.userRef === user._id || 
+                   m._id?.toString() === user._id ||
+                   (typeof m.userRef === 'object' && m.userRef?._id?.toString() === user._id)
+                 )
+              }
+              return false
+           })
+           
+           if (userInWaitlist) {
+              // Treated as 'applied' for UI purposes (or we could add 'waiting' status if supported)
+              userPlayer = userInWaitlist
+              if (roleData.userPlayerStatus === 'none') {
+                  setUserPlayerStatus('applied')
+              }
+           }
+        }
+        
         setUserPlayerId(userPlayer ? userPlayer.playerReference?._id || userPlayer.playerReference : null)
+        
+        // If we found the user is in a team/registered but status says 'none' (backend might be laggy or logic diff), force it
+        if (userPlayer && roleData.userPlayerStatus === 'none') {
+           setUserPlayerStatus('applied') // Or checked-in if derived from userPlayer
+        }
       } else {
         setUserClubRole('none')
         setUserPlayerStatus('none')
@@ -170,19 +218,57 @@ const TournamentPage = () => {
         const roleData = userRoleRes.data
         setUserClubRole(roleData.userClubRole || 'none')
         setUserPlayerStatus(roleData.userPlayerStatus || 'none')
+        
+        // Same logic for silent refresh
+        let userPlayer = tournamentData.tournamentPlayers?.find((p: any) => {
+          const playerRef = p.playerReference
+          if (!playerRef) return false
+          
+          if (playerRef.userRef === user._id || playerRef._id?.toString() === user._id) return true
+          
+          if (playerRef.members && Array.isArray(playerRef.members)) {
+             return playerRef.members.some((m: any) => 
+               m.userRef === user._id || 
+               m._id?.toString() === user._id ||
+               (typeof m.userRef === 'object' && m.userRef?._id?.toString() === user._id)
+             )
+          }
+          return false
+        })
 
-        const userPlayer = tournamentData.tournamentPlayers?.find((p: any) =>
-          p.playerReference?.userRef === user._id || p.playerReference?._id?.toString() === user._id,
-        )
+        if (!userPlayer) {
+           const userInWaitlist = tournamentData.waitingList?.find((p: any) => {
+              const playerRef = p.playerReference
+              if (!playerRef) return false
+              
+              if (playerRef.userRef === user._id || playerRef._id?.toString() === user._id) return true
+              
+              if (playerRef.members && Array.isArray(playerRef.members)) {
+                 return playerRef.members.some((m: any) => 
+                   m.userRef === user._id || 
+                   m._id?.toString() === user._id ||
+                   (typeof m.userRef === 'object' && m.userRef?._id?.toString() === user._id)
+                 )
+              }
+              return false
+           })
+           
+           if (userInWaitlist) {
+              userPlayer = userInWaitlist
+              if (roleData.userPlayerStatus === 'none') {
+                  setUserPlayerStatus('applied')
+              }
+           }
+        }
+        
         setUserPlayerId(userPlayer ? userPlayer.playerReference?._id || userPlayer.playerReference : null)
-      } else {
-        setUserClubRole('none')
-        setUserPlayerStatus('none')
-        setUserPlayerId(null)
+
+        if (userPlayer && roleData.userPlayerStatus === 'none') {
+           setUserPlayerStatus('applied') 
+        }
       }
-    } catch (err: any) {
-      // Silent failure - just log to console
-      console.error('Silent refresh error:', err)
+    } catch (err) {
+      console.error('Silent refresh failed', err)
     }
   }, [code, user])
 
@@ -444,6 +530,7 @@ const TournamentPage = () => {
               userPlayerStatus={userPlayerStatus}
               userPlayerId={userPlayerId}
               status={tournament.tournamentSettings?.status}
+              onRefresh={fetchAll}
             />
           </TabsContent>
 

@@ -51,6 +51,8 @@ export async function GET(
       };
     });
 
+    const teams = await PlayerService.findTeamsForPlayer(playerId);
+
     return NextResponse.json({
       success: true,
       player: {
@@ -61,9 +63,18 @@ export async function GET(
         stats: player.stats || {},
         tournamentHistory: player.tournamentHistory || [],
         previousSeasons: player.previousSeasons || [],
-        honors: player.honors || []
+        honors: player.honors || [],
+        type: player.type || 'individual',
+        members: player.members || []
       },
-      matchHistory
+      matchHistory,
+      teams: teams.map(t => ({
+        _id: t._id,
+        name: t.name,
+        type: t.type,
+        members: t.members,
+        stats: t.stats
+      }))
     });
 
   } catch (error) {

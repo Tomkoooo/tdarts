@@ -4,6 +4,7 @@ import { PlayerModel } from '@/database/models/player.model';
 import { MatchModel } from '@/database/models/match.model';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '@/database/models/user.model';
+import { PlayerService } from '@/database/services/player.service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -112,6 +113,9 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Get user's teams
+    const teams = await PlayerService.findTeamsForPlayer(player._id.toString());
+
     // Ensure stats has mmr field (same as search service)
     const stats = { ...playerStats };
     stats.mmr = mmr;
@@ -121,7 +125,7 @@ export async function GET(request: NextRequest) {
       player: {
         _id: player._id,
         name: player.name,
-        type: 'player',
+        type: player.type || 'individual',
         userRef: player.userRef,
         stats: stats,
         tournamentHistory: player.tournamentHistory || [],
@@ -143,7 +147,14 @@ export async function GET(request: NextRequest) {
         totalLegsWon: player.stats.totalLegsWon,
         totalLegsLost: player.stats.totalLegsLost,
         legWinRate: player.stats.totalLegsWon > 0 ? Math.round((player.stats.totalLegsWon / (player.stats.totalLegsWon + player.stats.totalLegsLost)) * 100) : 0,
-      }
+      },
+      teams: teams.map(t => ({
+        _id: t._id,
+        name: t.name,
+        type: t.type,
+        members: t.members,
+        stats: t.stats
+      }))
     };
 
     return NextResponse.json({ success: true, data: playerData });

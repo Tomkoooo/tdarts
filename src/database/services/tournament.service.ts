@@ -148,8 +148,15 @@ export class TournamentService {
             isArchived: { $ne: true }
         })
             .populate('clubId')
-            .populate('tournamentPlayers.playerReference')
-            .populate('waitingList.playerReference')
+            .populate('clubId')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                populate: { path: 'members', model: 'Player' }
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                populate: { path: 'members', model: 'Player' }
+            })
             .populate('waitingList.addedBy', 'name username')
             .populate('notificationSubscribers.userRef', 'name username email')
             .populate('groups.matches')
@@ -189,8 +196,15 @@ export class TournamentService {
                 isArchived: { $ne: true }
             })
               .populate('clubId')
-            .populate('tournamentPlayers.playerReference')
-            .populate('waitingList.playerReference')
+              .populate('clubId')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                populate: { path: 'members', model: 'Player' }
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                populate: { path: 'members', model: 'Player' }
+            })
             .populate('waitingList.addedBy', 'name username')
             .populate('notificationSubscribers.userRef', 'name username email')
             .populate('groups.matches')

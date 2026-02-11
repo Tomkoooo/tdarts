@@ -87,6 +87,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
         entryFee: { type: Number, default: 0 },
         location: { type: String, default: null },
         type: { type: String, enum: ['amateur', 'open'], default: 'amateur' },
+        participationMode: { type: String, enum: ['individual', 'pair', 'team'], default: 'individual' },
         registrationDeadline: { type: Date, default: null },
         coverImage: { type: String, default: null },
         reminderSent: { type: Boolean, default: false },

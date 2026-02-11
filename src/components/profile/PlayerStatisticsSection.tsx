@@ -11,12 +11,16 @@ import {
   IconChartBar,
   IconHistory,
   IconMedal,
+  IconUsers,
 } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/Badge"
 import { cn } from "@/lib/utils"
+import { SmartAvatar } from "@/components/ui/smart-avatar"
+import PlayerStatsModal from "@/components/player/PlayerStatsModal"
+import { Player } from "@/interface/player.interface"
 import {
   LineChart,
   Line,
@@ -61,6 +65,7 @@ interface PlayerStatsData {
   }
   tournamentHistory: any[]
   matchHistory: any[]
+  teams?: any[]
   summary: {
     totalTournaments: number
     winRate: number
@@ -85,6 +90,7 @@ export function PlayerStatisticsSection({
   onViewLegs,
 }: PlayerStatisticsSectionProps) {
   const [selectedSeason, setSelectedSeason] = React.useState<string>('current');
+  const [selectedTeam, setSelectedTeam] = React.useState<Player | null>(null);
 
   // Move all hooks to the top
   const playerStats = React.useMemo(() => initialPlayerStats || { hasPlayer: false } as any, [initialPlayerStats]);
@@ -562,6 +568,38 @@ export function PlayerStatisticsSection({
                     </div>
                 </>
             )}
+
+            {/* My Teams Section */}
+            {playerStats.teams && playerStats.teams.length > 0 && (
+                <>
+                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
+                        <IconUsers size={16} className="text-primary" />
+                        Párosaim / Csapataim
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {playerStats.teams.map((team: any) => (
+                            <div 
+                                key={team._id} 
+                                className="group flex items-center justify-between p-3 bg-card border border-muted/10 rounded-lg hover:border-primary/20 transition-all cursor-pointer"
+                                onClick={() => setSelectedTeam(team)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <SmartAvatar playerId={team._id} name={team.name} size="sm" />
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-bold">{team.name}</span>
+                                        <span className="text-[10px] text-muted-foreground uppercase opacity-60">
+                                            {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
+                                        </span>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <IconChartBar size={16} className="text-primary" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -639,6 +677,13 @@ export function PlayerStatisticsSection({
           </div>
         </div>
       </CardContent>
+
+      {selectedTeam && (
+          <PlayerStatsModal 
+              player={selectedTeam}
+              onClose={() => setSelectedTeam(null)}
+          />
+      )}
     </Card>
   )
 }

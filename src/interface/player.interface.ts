@@ -76,6 +76,8 @@ export interface PlayerDocument {
      * Játékos neve (regisztrált: user neve, guest: megadott név)
      */
     name: string;
+    type?: 'individual' | 'pair' | 'team';
+    members?: string[] | PlayerDocument[];
     /**
      * Indicates if this is a registered user
      */
@@ -116,6 +118,8 @@ export interface PlayerDocument {
 export interface Player {
     _id: string;
     name: string;
+    type?: 'individual' | 'pair' | 'team';
+    members?: Partial<Player>[];
     stats: {
         tournamentsPlayed: number;
         matchesPlayed: number;

@@ -438,6 +438,54 @@
     },
     {
       "id": 3,
+      "title": "Páros és Csapat versenyek",
+      "icon": "IconSword",
+      "description": "Hogyan működnek a többszereplős formátumok",
+      "content": {
+        "sections": [
+          {
+            "type": "text",
+            "content": "A tDarts platform támogatja a páros és csapatos versenyeket is. Ezekben a formátumokban a játékosok nem egyénileg, hanem egy egységként versenyeznek, saját közös MMR-rel és statisztikákkal."
+          },
+          {
+            "type": "subsection",
+            "title": "Verseny létrehozása (Kluboknak)",
+            "content": [
+              "Verseny létrehozásakor a 'Részvételi mód' (Participation Mode) beállításnál választható ki a formátum:",
+              "• Egyéni: Hagyományos 1v1 verseny.",
+              "• Páros: 2 fős csapatok versenye.",
+              "• Csapat: Többfős csapatok (jelenleg szintén 2 főre optimalizálva)."
+            ],
+            "note": {
+              "type": "info",
+              "content": "A részvételi mód meghatározza, hogyan jelentkezhetnek a játékosok a tornára."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Nevezés párosként (Játékosoknak)",
+            "content": [
+              "1. Kattints a 'Páros nevezés' gombra a torna oldalán.",
+              "2. Add meg a páros/csapat nevét.",
+              "3. Válaszd ki a társadat a kereső segítségével (regisztrált vagy vendég játékos is lehet).",
+              "4. A nevezés után a páros bekerül a jelentkezési listára."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Hogyan működik a rendszer?",
+            "content": [
+              "• A páros egy 'virtuális játékosként' szerepel a sorsolásban.",
+              "• A párosnak saját MMR-je van, ami a tagok egyéni MMR-vel nem azonos, de abból számítódik.",
+              "• A meccsek során a páros statisztikái (átlag, 180, kiszálló) közösen rögzülnek.",
+              "• A tagok profiljában a 'Statisztika' fülön megjelenik, hogy mely párosoknak/csapatoknak a tagjai."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
       "title": "Eredményrögzítés",
       "icon": "IconTarget",
       "description": "Játékosok számára - Eredményrögzítés",
@@ -515,7 +563,7 @@
       }
     },
     {
-      "id": 4,
+      "id": 5,
       "title": "Megosztás",
       "icon": "IconShare",
       "description": "Klubok és versenyek megosztása QR kóddal és linkekkel",
@@ -565,7 +613,7 @@
       }
     },
     {
-      "id": 5,
+      "id": 6,
       "title": "MMR Rangsor Rendszer",
       "icon": "IconChartLine",
       "description": "Teljesítmény alapú játékos rangsor",
@@ -648,7 +696,7 @@
       }
     },
     {
-      "id": 6,
+      "id": 7,
       "title": "Liga kezelés",
       "icon": "IconTrophy",
       "description": "Verseny ligák létrehozása és kezelése",
@@ -717,7 +765,7 @@
       }
     },
     {
-      "id": 7,
+      "id": 8,
       "title": "Helyi meccs - Offline játék",
       "icon": "IconPlayerPlay",
       "description": "Helyi meccs indítása adatbázis kapcsolat nélkül",
@@ -847,87 +895,7 @@
       }
     },
     {
-      "id": 8,
-      "title": "PWA - Alkalmazás Telepítése",
-      "icon": "IconDeviceMobile",
-      "description": "Mobilalkalmazásként való használat",
-      "content": {
-        "sections": [
-          {
-            "type": "subsection",
-            "title": "Mi az a PWA?",
-            "content": [
-              "A tDarts Progressive Web App (PWA) technológiával készült, ami azt jelenti, hogy telepítheted a telefonodra vagy tabletedre, és úgy használhatod, mint egy natív alkalmazást.",
-              "Nincs szükség App Store vagy Google Play letöltésre - közvetlenül a böngészőből telepítheted."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Telepítés Android eszközökre",
-            "content": [
-              "1. Nyisd meg a tdarts.sironic.hu oldalt Chrome böngészőben",
-              "2. Koppints a böngésző menü gombra (3 pont jobb felül)",
-              "3. Válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; vagy &ldquo;Alkalmazás telepítése&rdquo; opciót",
-              "4. Erősítsd meg a telepítést",
-              "5. A tDarts ikon megjelenik a kezdőképernyőn"
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Telepítés iOS eszközökre (iPhone, iPad)",
-            "content": [
-              "1. Nyisd meg a tdarts.sironic.hu oldalt Safari böngészőben",
-              "2. Koppints a megosztás gombra (négyzet felfelé mutató nyíllal)",
-              "3. Görgess le és válaszd a &ldquo;Hozzáadás a kezdőképernyőhöz&rdquo; opciót",
-              "4. Add meg az alkalmazás nevét (pl. tDarts)",
-              "5. Koppints a &ldquo;Hozzáadás&rdquo; gombra",
-              "6. A tDarts ikon megjelenik a kezdőképernyőn"
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "PWA Előnyei",
-            "content": [
-              "Teljes képernyős élmény: Nincs böngésző címsor, több hely a tartalomnak",
-              "Gyorsabb betöltés: Az alkalmazás gyorsítótárazza a gyakran használt elemeket",
-              "Offline működés: Alapvető funkciók offline is elérhetők",
-              "Natív élmény: Úgy viselkedik, mint egy telepített alkalmazás",
-              "Automatikus frissítések: Mindig a legfrissebb verziót használod",
-              "Kisebb adatforgalom: Optimalizált betöltés és gyorsítótárazás"
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "PWA Használati Esetek",
-            "content": [
-              "Eredményrögzítés tableten: Telepítsd a tabletre és használd teljes képernyős módban a verseny helyszínén.",
-              "Gyors hozzáférés: Egy koppintással nyithatod meg az alkalmazást a kezdőképernyőről.",
-              "Verseny követés: Játékosként kövesd a verseny állását offline is.",
-              "Moderátori feladatok: Gyors hozzáférés a verseny kezeléséhez.",
-              "Landscape mód: Tableten fekvő módban optimalizált megjelenítés az eredményrögzítéshez.",
-              "Helyi meccs offline: A /board oldal és a helyi meccs funkciók offline is működnek PWA telepítés után."
-            ]
-          },
-          {
-            "type": "subsection",
-            "title": "Teljes képernyős mód",
-            "content": [
-              "PWA módban az alkalmazás automatikusan teljes képernyőn nyílik meg.",
-              "Nincs böngésző címsor vagy navigációs gombok - tiszta, professzionális megjelenés.",
-              "Ideális verseny helyszínén használt tabletekhez.",
-              "A képernyő teljes területe kihasználható az eredményrögzítéshez.",
-              "Landscape (fekvő) módban optimalizált elrendezés nagy számokkal és gombokkal."
-            ],
-            "note": {
-              "type": "tip",
-              "content": "Verseny helyszínén használt fix tableteknél telepítsd PWA-ként, így gyorsabb és professzionálisabb lesz az élmény!"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": 8,
+      "id": 9,
       "title": "Scolia Autoscoring Integráció",
       "icon": "IconTarget",
       "description": "Automatikus pontszámítás Scolia táblákkal",
@@ -1159,7 +1127,7 @@
       }
     },
     {
-      "id": 9,
+      "id": 10,
       "title": "PWA - Alkalmazás Telepítése",
       "icon": "IconDeviceMobile",
       "description": "Mobilalkalmazásként való használat",
@@ -1239,7 +1207,7 @@
       }
     },
     {
-      "id": 10,
+      "id": 11,
       "title": "Záró megjegyzés",
       "icon": "IconFlagCheck",
       "description": "Végső információk és támogatás",
