@@ -67,6 +67,7 @@ export interface TournamentSettings {
     endDate?: Date; // Optional end date for tournaments
     maxPlayers: number;
     format: 'group' | 'knockout' | 'group_knockout';
+    participationMode?: 'individual' | 'pair' | 'team';
     startingScore: number;
     tournamentPassword: string;
     knockoutMethod?: 'automatic' | 'manual';

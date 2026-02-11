@@ -11,6 +11,7 @@ import {
   IconHistory,
   IconSword,
   IconShieldCheck,
+  IconUsers,
 } from "@tabler/icons-react"
 import axios from "axios"
 
@@ -18,6 +19,7 @@ import { Player } from "@/interface/player.interface"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/Badge"
 import { Card, CardContent } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
@@ -31,21 +33,47 @@ interface PlayerStatsModalProps {
 }
 
 const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, isOacContext }) => {
+  const [activePlayer, setActivePlayer] = React.useState<Player | null>(player)
+  const [navigationHistory, setNavigationHistory] = React.useState<Player[]>([])
   const [playerStats, setPlayerStats] = React.useState<Player | null>(null)
   const [matchHistory, setMatchHistory] = React.useState<any[]>([])
+  const [teams, setTeams] = React.useState<Player[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [expandedTournament, setExpandedTournament] = React.useState<number | null>(null)
   const [selectedSeason, setSelectedSeason] = React.useState<string>('current')
 
+  // Reset local state when the prop player changes
+  React.useEffect(() => {
+    setActivePlayer(player)
+    setNavigationHistory([])
+  }, [player])
+
+  const navigateToPlayer = (newPlayer: Player) => {
+    if (activePlayer) {
+      setNavigationHistory(prev => [...prev, activePlayer])
+    }
+    setActivePlayer(newPlayer)
+  }
+
+  const navigateBack = () => {
+    const prev = [...navigationHistory]
+    const last = prev.pop()
+    if (last) {
+      setNavigationHistory(prev)
+      setActivePlayer(last)
+    }
+  }
+
   React.useEffect(() => {
     const fetchPlayerStats = async () => {
-      if (!player?._id) return
+      if (!activePlayer?._id) return
       
       setIsLoading(true)
       try {
-        const response = await axios.get(`/api/players/${player._id}/stats`)
+        const response = await axios.get(`/api/players/${activePlayer._id}/stats`)
         setPlayerStats(response.data.player)
         setMatchHistory(response.data.matchHistory || [])
+        setTeams(response.data.teams || [])
         if (response.data.player.tournamentHistory && response.data.player.tournamentHistory.length > 0) {
           setExpandedTournament(0)
         }
@@ -56,26 +84,29 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
           context: 'Játékos statisztika betöltése',
           errorName: 'Statisztika betöltése sikertelen',
         })
-        setPlayerStats(player)
+        setPlayerStats(activePlayer)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchPlayerStats()
-  }, [player])
+  }, [activePlayer?._id])
 
-  const displayPlayer = React.useMemo(() => playerStats || player, [playerStats, player]);
+  const displayPlayer = React.useMemo(() => playerStats || activePlayer, [playerStats, activePlayer]);
+  const isTeam = displayPlayer?.type === 'pair' || displayPlayer?.type === 'team'
+  const members = displayPlayer?.members || []
   const previousSeasons = React.useMemo(() => displayPlayer?.previousSeasons || [], [displayPlayer]);
   const honors = React.useMemo(() => displayPlayer?.honors || [], [displayPlayer]);
   const currentYear = React.useMemo(() => new Date().getFullYear(), []);
 
   const availableYears = React.useMemo(() => {
+    if (!displayPlayer) return []
     return Array.from(new Set([
         currentYear.toString(),
         ...previousSeasons.map((s: any) => s.year.toString())
     ])).sort((a, b) => b.localeCompare(a));
-  }, [currentYear, previousSeasons]);
+  }, [currentYear, previousSeasons, displayPlayer]);
   
   // Calculate All Time Stats
   const allTimeStats = React.useMemo(() => {
@@ -245,9 +276,26 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
             />
             <div className="space-y-3">
               <DialogHeader className="p-0 text-left">
-                <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase">{displayPlayer.name}</DialogTitle>
+                <div className="flex items-center gap-2">
+                  {navigationHistory.length > 0 && (
+                    <button 
+                      onClick={navigateBack}
+                      className="p-1 hover:bg-muted/50 rounded-full transition-colors -ml-1"
+                      title="Vissza"
+                    >
+                      <IconChevronDown size={24} className="rotate-90 text-primary" />
+                    </button>
+                  )}
+                  <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase">{displayPlayer.name}</DialogTitle>
+                </div>
               </DialogHeader>
               <div className="flex flex-wrap gap-2">
+                {isTeam && (
+                  <Badge className="text-[10px] font-black h-5 px-2 bg-indigo-500/10 text-indigo-600 border-indigo-500/20 uppercase tracking-tighter gap-1">
+                    <IconSword size={10} />
+                    {displayPlayer.type === 'pair' ? 'Páros' : 'Csapat'}
+                  </Badge>
+                )}
                 {honors.map((h, i) => (
                   <Badge key={i} variant="secondary" className="text-[9px] font-black h-5 px-2 bg-amber-500/10 text-amber-600 border-amber-500/20 uppercase tracking-tighter gap-1">
                     <IconMedal size={10} />
@@ -398,6 +446,87 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 )}
                 </div>
               </section>
+
+              {/* Duo/Team Members */}
+              {isTeam && members.length > 0 && (
+                <section className="space-y-4 md:col-span-2">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2 border-t border-muted/10 pt-6">
+                    <IconUsers size={14} className="text-primary" />
+                    Tagok statisztikái
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {members.map((member: any) => (
+                      <Card key={member._id} className="bg-card border-muted/10 hover:border-primary/30 transition-all group">
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <SmartAvatar 
+                              playerId={member._id} 
+                              name={member.name} 
+                              size="md"
+                            />
+                            <div>
+                              <p className="text-sm font-bold">{member.name}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
+                                {member.stats?.mmr || 800} MMR
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="bg-primary/10 text-primary hover:bg-primary hover:text-white border-0"
+                            onClick={() => navigateToPlayer(member)}
+                          >
+                            Megtekintés
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* My Teams (for individuals) */}
+              {!isTeam && teams.length > 0 && (
+                <section className="space-y-4 md:col-span-2">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2 border-t border-muted/10 pt-6">
+                    <IconUsers size={14} className="text-primary" />
+                    Párosaim / Csapataim
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {teams.map((team: any) => (
+                      <Card 
+                        key={team._id} 
+                        className="bg-card border-muted/10 hover:border-primary/30 transition-all group cursor-pointer"
+                        onClick={() => navigateToPlayer(team)}
+                      >
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <SmartAvatar 
+                              playerId={team._id} 
+                              name={team.name} 
+                              size="md"
+                            />
+                            <div>
+                              <p className="text-sm font-bold">{team.name}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
+                                {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white border-0 transition-all"
+                          >
+                            Megtekintés
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </section>
+              )}
           </div>
         </div>
         )}

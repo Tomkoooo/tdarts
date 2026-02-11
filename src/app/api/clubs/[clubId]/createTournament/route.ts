@@ -153,6 +153,7 @@ export async function POST(
             location: payload.location || null,
             type: payload.type || 'amateur',
             registrationDeadline: payload.registrationDeadline ? new Date(payload.registrationDeadline) : null,
+            participationMode: payload.participationMode || 'individual',
         },
         createdAt: now,
         updatedAt: now,

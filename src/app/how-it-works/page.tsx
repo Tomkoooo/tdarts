@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { 
   IconUserPlus, 
   IconBuilding, 
@@ -15,9 +15,11 @@ import {
   IconArrowRight,
   IconCheck,
   IconFlagCheck,
-  IconDeviceMobile
+  IconDeviceMobile,
+  IconSword
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import howItWorksData from '@/data/how-it-works.json';
 import ContentRenderer from '@/components/how-it-works/ContentRenderer';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -34,54 +36,55 @@ const iconMap: { [key: string]: any } = {
   IconChartLine,
   IconPlayerPlay,
   IconFlagCheck,
-  IconDeviceMobile
+  IconDeviceMobile,
+  IconSword
 };
 
 // Modern color palette with gradients
 const stepColors = [
-  { 
+  {
     gradient: 'from-blue-500 to-cyan-500',
     bg: 'bg-gradient-to-br from-blue-500/10 to-cyan-500/10',
     icon: 'text-blue-400',
     border: 'border-blue-500/30',
     glow: 'shadow-blue-500/20'
   },
-  { 
+  {
     gradient: 'from-emerald-500 to-teal-500',
     bg: 'bg-gradient-to-br from-emerald-500/10 to-teal-500/10',
     icon: 'text-emerald-400',
     border: 'border-emerald-500/30',
     glow: 'shadow-emerald-500/20'
   },
-  { 
+  {
     gradient: 'from-purple-500 to-pink-500',
     bg: 'bg-gradient-to-br from-purple-500/10 to-pink-500/10',
     icon: 'text-purple-400',
     border: 'border-purple-500/30',
     glow: 'shadow-purple-500/20'
   },
-  { 
+  {
     gradient: 'from-amber-500 to-orange-500',
     bg: 'bg-gradient-to-br from-amber-500/10 to-orange-500/10',
     icon: 'text-amber-400',
     border: 'border-amber-500/30',
     glow: 'shadow-amber-500/20'
   },
-  { 
+  {
     gradient: 'from-cyan-500 to-blue-500',
     bg: 'bg-gradient-to-br from-cyan-500/10 to-blue-500/10',
     icon: 'text-cyan-400',
     border: 'border-cyan-500/30',
     glow: 'shadow-cyan-500/20'
   },
-  { 
+  {
     gradient: 'from-pink-500 to-rose-500',
     bg: 'bg-gradient-to-br from-pink-500/10 to-rose-500/10',
     icon: 'text-pink-400',
     border: 'border-pink-500/30',
     glow: 'shadow-pink-500/20'
   },
-  { 
+  {
     gradient: 'from-indigo-500 to-purple-500',
     bg: 'bg-gradient-to-br from-indigo-500/10 to-purple-500/10',
     icon: 'text-indigo-400',
@@ -90,9 +93,37 @@ const stepColors = [
   },
 ];
 
-const HowItWorksPage = () => {
-  const [activeStep, setActiveStep] = useState<number | null>(null);
+const HowItWorksContent = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const stepParam = searchParams.get('step');
+
+  const [activeStep, setActiveStep] = useState<number | null>(
+    stepParam !== null ? parseInt(stepParam) : null
+  );
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Update URL when step changes
+  const handleStepChange = (step: number | null) => {
+    setActiveStep(step);
+    const params = new URLSearchParams(searchParams.toString());
+    if (step !== null) {
+      params.set('step', step.toString());
+    } else {
+      params.delete('step');
+    }
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  // Sync state if URL changes (e.g. back button)
+  useEffect(() => {
+    const step = searchParams.get('step');
+    if (step !== null) {
+      setActiveStep(parseInt(step));
+    } else {
+      setActiveStep(null);
+    }
+  }, [searchParams]);
 
   const filteredSteps = howItWorksData.steps.filter(step =>
     step.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -171,7 +202,7 @@ const HowItWorksPage = () => {
                 return (
                   <Card
                     key={step.id}
-                    onClick={() => setActiveStep(step.id)}
+                    onClick={() => handleStepChange(step.id)}
                     className={cn(
                       "group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl border-2",
                       color.border,
@@ -227,7 +258,7 @@ const HowItWorksPage = () => {
             {/* Back Button */}
             <Button
               variant="ghost"
-              onClick={() => setActiveStep(null)}
+              onClick={() => handleStepChange(null)}
               className="gap-2 -ml-2"
             >
               <IconArrowRight className="w-4 h-4 rotate-180" />
@@ -275,7 +306,7 @@ const HowItWorksPage = () => {
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
+                    onClick={() => handleStepChange(Math.max(0, activeStep - 1))}
                     disabled={activeStep === 0}
                     className="gap-2"
                   >
@@ -287,7 +318,7 @@ const HowItWorksPage = () => {
                     {howItWorksData.steps.map((_, index) => (
                       <button
                         key={index}
-                        onClick={() => setActiveStep(index)}
+                        onClick={() => handleStepChange(index)}
                         className={cn(
                           "h-2 rounded-full transition-all",
                           activeStep === index 
@@ -301,7 +332,7 @@ const HowItWorksPage = () => {
 
                   <Button
                     size="lg"
-                    onClick={() => setActiveStep(Math.min(howItWorksData.steps.length - 1, activeStep + 1))}
+                    onClick={() => handleStepChange(Math.min(howItWorksData.steps.length - 1, activeStep + 1))}
                     disabled={activeStep === howItWorksData.steps.length - 1}
                     className="gap-2"
                   >
@@ -350,6 +381,14 @@ const HowItWorksPage = () => {
         </Card>
       </div>
     </div>
+  );
+};
+
+const HowItWorksPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HowItWorksContent />
+    </Suspense>
   );
 };
 

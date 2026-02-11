@@ -170,10 +170,47 @@ export class PlayerService {
   }
 
   static async findPlayerById(playerId: string): Promise<import('@/interface/player.interface').PlayerDocument | null> {
-    let player = await PlayerModel.findById(playerId);
+    let player = await PlayerModel.findById(playerId).populate('members');
     if (!player) {
-      player = await PlayerModel.findOne({ userRef: playerId });
+      player = await PlayerModel.findOne({ userRef: playerId }).populate('members');
     }
     return player;
+  }
+
+  static async findTeamsForPlayer(playerId: string): Promise<import('@/interface/player.interface').PlayerDocument[]> {
+    // Find players of type 'pair' or 'team' where this player is a member
+    return await PlayerModel.find({
+      type: { $in: ['pair', 'team'] },
+      members: playerId
+    }).populate('members');
+  }
+
+
+  static async findOrCreateTeam(name: string, m1: string, m2: string) {
+    // Check if team with same name and same members exists
+    // (Order of members shouldn't matter for existence check, but exact name match is good enough for now or complex query)
+    // Actually, usually team name is unique per tournament or globally?
+    // Let's assume team name + members combo.
+    
+    // Sort members to ensure consistency
+    const members = [m1, m2].sort();
+
+    const existingTeam = await PlayerModel.findOne({
+      type: 'pair',
+      name: name,
+      members: { $all: members, $size: 2 }
+    });
+
+    if (existingTeam) return existingTeam;
+
+    const newTeam = new PlayerModel({
+      name: name,
+      type: 'pair',
+      members: members,
+      isRegistered: false // Teams are virtual players
+    });
+
+    await newTeam.save();
+    return newTeam;
   }
 } 

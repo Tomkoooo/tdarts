@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 const PlayerSchema = new mongoose.Schema<PlayerDocument>({
     userRef: { type: mongoose.Types.ObjectId, ref: "User", required: false },
     name: { type: String, required: true },
+    type: { type: String, enum: ['individual', 'pair', 'team'], default: 'individual' },
+    members: [{ type: mongoose.Types.ObjectId, ref: 'Player' }],
     isRegistered: { type: Boolean, default: false }, // Indicates if this is a registered user
     stats: {
         tournamentsPlayed: { type: Number, default: 0 },

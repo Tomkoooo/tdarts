@@ -638,6 +638,223 @@ TDarts Csapat`,
     isActive: true,
     isDefault: true,
   },
+  {
+    key: 'team_invitation',
+    name: 'Team Invitation',
+    description: 'Sent when a player invites someone to form a team for a tournament',
+    category: 'tournament',
+    subject: '🎯 {inviterName} meghívott egy csapatba - {tournamentName}',
+    variables: ['inviterName', 'inviteeName', 'teamName', 'tournamentName', 'tournamentUrl', 'acceptUrl', 'declineUrl', 'currentYear'],
+    textContent: `Kedves {inviteeName}!
+
+{inviterName} meghívott, hogy társként vegyél részt a {tournamentName} tornán.
+
+Csapat név: {teamName}
+Torna: {tournamentName}
+
+Ha elfogadod a meghívást, klikkelj ide: {acceptUrl}
+Ha elutasítod a meghívást, klikkelj ide: {declineUrl}
+
+További információk a tornáról: {tournamentUrl}
+
+Üdvözlettel,
+tDarts Csapat
+© {currentYear} tDarts - Magyar Darts Versenyrendszer`,
+    htmlContent: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 32px; font-weight: bold; color: #ef4444; margin-bottom: 10px; }
+        .title { font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 20px; }
+        .content { font-size: 16px; color: #4b5563; margin-bottom: 30px; }
+        .highlight { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .cta-button { display: inline-block; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; text-align: center; margin: 10px 5px; }
+        .btn-accept { background-color: #10b981; }
+        .btn-decline { background-color: #ef4444; }
+        .footer { text-align: center; font-size: 14px; color: #9ca3af; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎯 tDarts</div>
+            <div class="title">Csapat Meghívó</div>
+        </div>
+        
+        <div class="content">
+            <p>Kedves <strong>{inviteeName}</strong>!</p>
+            
+            <p><strong>{inviterName}</strong> meghívott, hogy társként vegyél részt a <strong>{tournamentName}</strong> tornán.</p>
+            
+            <div class="highlight">
+                <strong>Csapat név:</strong> {teamName}<br>
+                <strong>Torna:</strong> {tournamentName}
+            </div>
+            
+            <p>Kérjük, válaszd ki, hogy elfogadod-e a meghívást:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{acceptUrl}" class="cta-button btn-accept">
+                    ✓ Elfogadom
+                </a>
+                <a href="{declineUrl}" class="cta-button btn-decline">
+                    ✗ Elutasítom
+                </a>
+            </div>
+            
+            <p style="font-size: 14px; color: #6b7280;">
+                További információk a tornáról: <a href="{tournamentUrl}" style="color: #ef4444;">{tournamentUrl}</a>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>© {currentYear} tDarts - Magyar Darts Versenyrendszer</p>
+        </div>
+    </div>
+</body>
+</html>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'team_invitation_accepted',
+    name: 'Team Invitation Accepted',
+    description: 'Sent to the inviter when their team invitation is accepted',
+    category: 'tournament',
+    subject: '✅ {accepterName} elfogadta a csapat meghívót - {teamName}',
+    variables: ['inviterName', 'accepterName', 'teamName', 'tournamentName', 'tournamentUrl', 'currentYear'],
+    textContent: `Kedves {inviterName}!
+
+Jó hírünk van! {accepterName} elfogadta a meghívást a csapatba.
+
+Csapat név: {teamName}
+Torna: {tournamentName}
+
+Most már párosban nevez registered a tornára. További részletek: {tournamentUrl}
+
+Sok sikert a versenyen!
+tDarts Csapat
+© {currentYear} tDarts - Magyar Darts Versenyrendszer`,
+    htmlContent: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 32px; font-weight: bold; color: #ef4444; margin-bottom: 10px; }
+        .title { font-size: 24px; font-weight: bold; color: #10b981; margin-bottom: 20px; }
+        .content { font-size: 16px; color: #4b5563; margin-bottom: 30px; }
+        .highlight { background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .cta-button { display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; text-align: center; margin: 20px 0; }
+        .footer { text-align: center; font-size: 14px; color: #9ca3af; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎯 tDarts</div>
+            <div class="title">✅ Meghívás Elfogadva!</div>
+        </div>
+        
+        <div class="content">
+            <p>Kedves <strong>{inviterName}</strong>!</p>
+            
+            <p>Jó hírünk van! <strong>{accepterName}</strong> elfogadta a meghívást a csapatba.</p>
+            
+            <div class="highlight">
+                <strong>Csapat név:</strong> {teamName}<br>
+                <strong>Torna:</strong> {tournamentName}
+            </div>
+            
+            <p>Most már párosban neveztetek a tornára. Sok sikert kívánunk a versenyen!</p>
+            
+            <div style="text-align: center;">
+                <a href="{tournamentUrl}" class="cta-button">
+                    Torna adatlapja →
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© {currentYear} tDarts - Magyar Darts Versenyrendszer</p>
+        </div>
+    </div>
+</body>
+</html>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'team_invitation_declined',
+    name: 'Team Invitation Declined',
+    description: 'Sent to the inviter when their team invitation is declined',
+    category: 'tournament',
+    subject: '❌ {declinerName} elutasította a csapat meghívót',
+    variables: ['inviterName', 'declinerName', 'teamName', 'tournamentName', 'currentYear'],
+    textContent: `Kedves {inviterName}!
+
+Sajnálattal értesítünk, hogy {declinerName} elutasította a meghívást a csapatba.
+
+Csapat név: {teamName}
+Torna: {tournamentName}
+
+Kereshetsz másik társat a tornára.
+
+tDarts Csapat
+© {currentYear} tDarts - Magyar Darts Versenyrendszer`,
+    htmlContent: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 32px; font-weight: bold; color: #ef4444; margin-bottom: 10px; }
+        .title { font-size: 24px; font-weight: bold; color: #ef4444; margin-bottom: 20px; }
+        .content { font-size: 16px; color: #4b5563; margin-bottom: 30px; }
+        .highlight { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { text-align: center; font-size: 14px; color: #9ca3af; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎯 tDarts</div>
+            <div class="title">❌ Meghívás Elutasítva</div>
+        </div>
+        
+        <div class="content">
+            <p>Kedves <strong>{inviterName}</strong>!</p>
+            
+            <p>Sajnálattal értesítünk, hogy <strong>{declinerName}</strong> elutasította a meghívást a csapatba.</p>
+            
+            <div class="highlight">
+                <strong>Csapat név:</strong> {teamName}<br>
+                <strong>Torna:</strong> {tournamentName}
+            </div>
+            
+            <p>Kereshetsz másik társat a tornára.</p>
+        </div>
+        
+        <div class="footer">
+            <p>© {currentYear} tDarts - Magyar Darts Versenyrendszer</p>
+        </div>
+    </div>
+</body>
+</html>`,
+    isActive: true,
+    isDefault: true,
+  },
 ];
 
 async function seedEmailTemplates() {
