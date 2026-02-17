@@ -1,0 +1,201 @@
+{
+    "Common": {
+        "welcome": "Welcome",
+        "home": "Home",
+        "tournaments": "Tournaments",
+        "clubs": "Clubs",
+        "players": "Players",
+        "search": "Search",
+        "profile": "Profile",
+        "view": "View",
+        "later": "Later"
+    },
+    "Index": {
+        "title": "tDarts - The Darts Tournament Manager"
+    },
+    "Hero": {
+        "badge": "Professional Darts Tournament Platform",
+        "subtitle_badge": "Tournament Platform",
+        "subtitle": "The next generation darts tournament platform. Tournament search, club creation, real-time results, and full customization.",
+        "features": {
+            "organize": "Organize tournaments in minutes",
+            "results": "Real-time results",
+            "pairing": "Automatic pairing",
+            "stats": "Detailed statistics"
+        },
+        "cta_start": "Get Started",
+        "cta_create": "Create Tournament",
+        "stats_labels": {
+            "clubs": "Active Clubs",
+            "clubs_sub": "countrywide",
+            "tournaments": "Tournaments",
+            "tournaments_sub": "monthly",
+            "realtime": "Real-time",
+            "realtime_sub": "tracking"
+        },
+        "trust": {
+            "free": "Free registration",
+            "no_hidden": "No hidden costs",
+            "support": "24/7 support"
+        }
+    },
+    "Features": {
+        "badge": "Features",
+        "title": "Why tDarts?",
+        "description": "The most modern darts tournament platform with all the features you can imagine. Simple, fast, professional.",
+        "items": {
+            "search": {
+                "title": "Tournament Search",
+                "description": "Easily find tournaments by location, level, and time. Filter results and apply with one click.",
+                "badge": "Popular"
+            },
+            "draw": {
+                "title": "Tournament Announcement",
+                "description": "Create your own tournaments with custom rules and formats. Automatic group assignment and pairing.",
+                "badge": "New"
+            },
+            "club": {
+                "title": "Club Management",
+                "description": "Found or join darts clubs, organize community events. Full membership management."
+            },
+            "stats": {
+                "title": "Statistical Tracking",
+                "description": "Detailed statistics for every player: averages, 180s, highest checkouts, form graphs.",
+                "badge": "Pro"
+            },
+            "realtime": {
+                "title": "Real-time Tracking",
+                "description": "Follow matches and results live. Automatic updates and notifications."
+            },
+            "custom": {
+                "title": "Full Customization",
+                "description": "All tournament formats supported: 501, 301, Cricket, and custom rules. Customizable boards."
+            },
+            "qr": {
+                "title": "QR Code Connection",
+                "description": "Players can join with QR code and password, without registration. Quick and simple."
+            },
+            "tablet": {
+                "title": "Tablet Support",
+                "description": "Supports tablets placed at the boards. Optimized scoring interface and touch control."
+            },
+            "secure": {
+                "title": "Password Protected",
+                "description": "Every tournament is protected with its own password. Secure access and data protection."
+            }
+        },
+        "cta": {
+            "title": "Ready to start?",
+            "description": "Find out how the system works and create your first tournament in minutes.",
+            "how_it_works": "How it works?",
+            "register": "Free Registration"
+        }
+    },
+    "Pricing": {
+        "badge": "Pricing",
+        "title": "Choose the Perfect Package",
+        "description": "Pricing suitable for clubs and tournament organizers of all sizes",
+        "popular": "Most Popular",
+        "period": "USD/mo",
+        "period_alt": "/mo",
+        "cta_free": "Start Now",
+        "cta_test": "Test Mode",
+        "test_note": "* The site is currently operating in test mode. The subscription model will be available soon.",
+        "packages": {
+            "free": {
+                "name": "Free",
+                "description": "Basic features for small teams"
+            },
+            "basic": {
+                "name": "Basic",
+                "description": "Perfect choice for trying out the system"
+            },
+            "pro": {
+                "name": "Pro",
+                "description": "Excellent for active clubs"
+            },
+            "enterprise": {
+                "name": "Enterprise",
+                "description": "Unlimited access for larger organizations"
+            }
+        },
+        "features": {
+            "one_tournament": "1 tournament per month/club",
+            "two_tournaments": "2 tournaments per month/club",
+            "four_tournaments": "4 tournaments per month/club",
+            "unlimited_tournaments": "Unlimited monthly tournaments",
+            "unlimited_users": "Unlimited users",
+            "live_tracking": "Live match tracking",
+            "league_start": "League starting capability",
+            "detailed_stats": "Detailed leg statistics"
+        }
+    },
+    "Navbar": {
+        "tournaments": "Tournaments",
+        "clubs": "Clubs",
+        "board": "Board",
+        "board_offline": "Local Board (Offline)",
+        "search": "Search",
+        "how_it_works": "How it works",
+        "my_club": "My Club",
+        "feedback": "Feedback",
+        "profile": "Profile",
+        "stats": "Statistics",
+        "tickets": "Tickets",
+        "admin": "Admin",
+        "logout": "Logout",
+        "login": "Login",
+        "register": "Register",
+        "offline": "Offline"
+    },
+    "Footer": {
+        "legal_title": "Information",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "contact": "Contact / Feedback",
+        "all_rights_reserved": "All rights reserved.",
+        "network_title": "Network",
+        "maintainer": "Maintained by: ",
+        "sironic": "Sironic System House",
+        "oac_info": "Find out more about the National Amateur League!",
+        "oac_button": "OAL - Amateur Darts",
+        "partners_title": "Our Partners",
+        "partners_note": "Our featured partners who support the development of Hungarian darts."
+    },
+    "Carousel": {
+        "management": "World-class Tournament Management",
+        "targeting": "Precise Target Tracking",
+        "results": "Professional Results",
+        "experience": "Excellent User Experience",
+        "speed": "Lightning Fast Processing",
+        "platform": "Championship Level Platform"
+    },
+    "Announcements": {
+        "auto_close": "Will close automatically in {seconds} seconds"
+    },
+    "Tickets": {
+        "toast_title": "New reply received",
+        "unread_messages": "{count} unread messages"
+    },
+    "Metadata": {
+        "title": "tDarts - Darts Tournament Management System",
+        "description": "The best darts tournament management system. Create clubs, organize tournaments, live tracking and statistics.",
+        "keywords": "darts, tournament, competition, club, statistics, live tracking",
+        "og_title": "tDarts - Darts Tournament System",
+        "twitter_description": "The best darts tournament management system"
+    },
+    "NotFound": {
+        "title": "Page not found",
+        "description": "The page you are looking for does not exist or has been moved.",
+        "help_text": "Check the URL or use the navigation menus to reach the relevant page.",
+        "back_home": "Home",
+        "search_tournaments": "Search Tournaments",
+        "need_help": "Do you need help?",
+        "common_pages": "Common pages:",
+        "useful_links": "Useful links:",
+        "how_it_works": "How it works",
+        "login": "Login",
+        "register": "Register",
+        "club_search": "Search Club"
+    }
+}

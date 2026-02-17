@@ -51,6 +51,7 @@
     "motion": "^12.12.1",
     "next": "15.3.6",
     "next-auth": "^4.24.11",
+    "next-intl": "^4.8.3",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
     "npm": "^11.4.1",

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { IconX, IconInfoCircle, IconCircleDashedCheck, IconAlertTriangle, IconAlertOctagon } from '@tabler/icons-react';
 import { Button } from "@/components/ui/Button";
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
 
 interface Announcement {
   _id: string;
@@ -20,6 +22,8 @@ interface AnnouncementToastProps {
 }
 
 const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onClose }) => {
+  const t = useTranslations('Announcements');
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(announcement.duration);
 
@@ -102,7 +106,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       if (announcement.buttonAction.startsWith('http')) {
         window.open(announcement.buttonAction, '_blank');
       } else if (announcement.buttonAction.startsWith('/')) {
-        window.location.href = announcement.buttonAction;
+        router.push(announcement.buttonAction);
       }
     }
   };
@@ -178,7 +182,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
 
           {/* Time left indicator */}
           <div className="mt-3 text-xs text-base-content/50">
-            {Math.ceil(timeLeft / 1000)} másodperc múlva automatikusan bezáródik
+            {t('auto_close', { seconds: Math.ceil(timeLeft / 1000) })}
           </div>
         </div>
       </div>

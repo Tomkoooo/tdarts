@@ -1,22 +1,9 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import createMiddleware from 'next-intl/middleware';
+import {routing} from './i18n/routing';
 
-export function middleware(request: NextRequest) {
-  // Add pathname to headers for server-side access
-  const response = NextResponse.next()
-  response.headers.set('x-pathname', request.nextUrl.pathname)
-  return response
-}
+export default createMiddleware(routing);
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
-}
+  // Match only internationalized pathnames
+  matcher: ['/', '/(hu|en|nl)/:path*']
+};

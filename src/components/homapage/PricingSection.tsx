@@ -4,68 +4,71 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const PricingSection = () => {
+  const t = useTranslations('Pricing');
+
   const packages = [
     {
-      name: 'Ingyenes',
+      name: t('packages.free.name'),
       price: '0 Ft',
-      period: '/hó',
-      description: 'Alapvető funkciók kis csapatoknak',
+      period: t('period_alt'),
+      description: t('packages.free.description'),
       features: [
-        { text: 'Havi 1 verseny/klub', included: true },
-        { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Élő meccs követés', included: false },
-        { text: 'Liga indítási lehetőség', included: false },
-        { text: 'Részletes leg statisztikák', included: false },
+        { text: t('features.one_tournament'), included: true },
+        { text: t('features.unlimited_users'), included: true },
+        { text: t('features.live_tracking'), included: false },
+        { text: t('features.league_start'), included: false },
+        { text: t('features.detailed_stats'), included: false },
       ],
       popular: false,
       icon: IconStar,
       variant: 'outline' as const
     },
     {
-      name: 'Alap',
+      name: t('packages.basic.name'),
       price: '0',
-      period: ' Ft/hó',
-      description: 'Tökéletes választás a rendszer kipróbálására',
+      period: ` ${t('period')}`,
+      description: t('packages.basic.description'),
       features: [
-        { text: 'Havi 2 verseny/klub', included: true },
-        { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Élő meccs követés', included: false },
-        { text: 'Liga indítási lehetőség', included: true },
-        { text: 'Részletes leg statisztikák', included: false },
+        { text: t('features.two_tournaments'), included: true },
+        { text: t('features.unlimited_users'), included: true },
+        { text: t('features.live_tracking'), included: false },
+        { text: t('features.league_start'), included: true },
+        { text: t('features.detailed_stats'), included: false },
       ],
       popular: false,
       icon: IconTrophy,
       variant: 'outline' as const
     },
     {
-      name: 'Pro',
+      name: t('packages.pro.name'),
       price: '0',
-      period: ' Ft/hó',
-      description: 'Kiválló aktív kluboknak',
+      period: ` ${t('period')}`,
+      description: t('packages.pro.description'),
       features: [
-        { text: 'Havi 4 verseny/klub', included: true },
-        { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Élő meccs követés', included: false },
-        { text: 'Liga indítási lehetőség', included: true },
-        { text: 'Részletes leg statisztikák', included: true },
+        { text: t('features.four_tournaments'), included: true },
+        { text: t('features.unlimited_users'), included: true },
+        { text: t('features.live_tracking'), included: false },
+        { text: t('features.league_start'), included: true },
+        { text: t('features.detailed_stats'), included: true },
       ],
       popular: true,
       icon: IconCrown,
       variant: 'default' as const
     },
     {
-      name: 'Enterprise',
+      name: t('packages.enterprise.name'),
       price: '0',
-      period: ' Ft/hó',
-      description: 'Korlátlan hozzáférés nagyobb szervezeteknek',
+      period: ` ${t('period')}`,
+      description: t('packages.enterprise.description'),
       features: [
-        { text: 'Korlátlan havi verseny', included: true },
-        { text: 'Korlátlan felhasználó', included: true },
-        { text: 'Élő meccs követés', included: true },
-        { text: 'Liga indítási lehetőség', included: true },
-        { text: 'Részletes leg statisztikák', included: true },
+        { text: t('features.unlimited_tournaments'), included: true },
+        { text: t('features.unlimited_users'), included: true },
+        { text: t('features.live_tracking'), included: true },
+        { text: t('features.league_start'), included: true },
+        { text: t('features.detailed_stats'), included: true },
       ],
       popular: false,
       icon: IconInfinity,
@@ -83,15 +86,15 @@ const PricingSection = () => {
         <div className="text-center mb-16 sm:mb-20 space-y-4">
           <Badge variant="secondary" className="mb-4">
             <IconSparkles className="w-4 h-4 mr-2" />
-            Árazás
+            {t('badge')}
           </Badge>
           
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">
-            Válaszd ki a Tökéletes Csomagot
+            {t('title')}
           </h2>
           
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Minden méretű klub és verseny szervezőnek megfelelő árazás
+            {t('description')}
           </p>
         </div>
 
@@ -114,7 +117,7 @@ const PricingSection = () => {
               {pkg.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                     <Badge className="bg-primary text-primary-foreground shadow-lg">
-                    Legnépszerűbb
+                    {t('popular')}
                     </Badge>
                 </div>
               )}
@@ -163,7 +166,7 @@ const PricingSection = () => {
                     size="lg" 
                     className="w-full"
                   >
-                {pkg.name === 'Ingyenes' ? 'Kezdés Most' : 'Teszt Üzem'}
+                {pkg.name === t('packages.free.name') ? t('cta_free') : t('cta_test')}
                   </Button>
                 </CardFooter>
               </Card>
@@ -174,7 +177,7 @@ const PricingSection = () => {
         {/* Bottom Note */}
         <div className="text-center mt-12 space-y-2">
           <p className="text-sm text-muted-foreground">
-            * Egyelőre teszt üzemben működik az oldal. Az előfizetői model hamarosan elérhető lesz.
+            {t('test_note')}
           </p>
         </div>
       </div>
@@ -186,4 +189,5 @@ const PricingSection = () => {
   );
 };
 
-export default PricingSection; 
+export default PricingSection;
+ 

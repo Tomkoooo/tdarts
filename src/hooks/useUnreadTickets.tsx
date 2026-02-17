@@ -38,7 +38,11 @@ interface UnreadTicketToastProps {
   onDismiss: () => void;
 }
 
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
+
 export function UnreadTicketToast({ unreadCount, onDismiss }: UnreadTicketToastProps) {
+  const t = useTranslations();
   if (unreadCount === 0) return null;
 
   return (
@@ -48,22 +52,22 @@ export function UnreadTicketToast({ unreadCount, onDismiss }: UnreadTicketToastP
           <Ticket className="w-5 h-5 text-accent" />
         </div>
         <div className="flex-1">
-          <div className="font-semibold text-sm">Új válasz érkezett</div>
+          <div className="font-semibold text-sm">{t('Tickets.toast_title')}</div>
           <div className="text-xs text-gray-400 mt-0.5">
-            {unreadCount} olvasatlan üzenet{unreadCount > 1 ? 'ed' : ''}
+            {t('Tickets.unread_messages', { count: unreadCount })}
           </div>
           <div className="flex gap-2 mt-3">
-            <a
+            <Link
               href="/profile?tab=tickets"
               className="text-xs px-3 py-1.5 bg-accent hover:bg-accent/80 rounded-md transition-colors"
             >
-              Megtekintés
-            </a>
+              {t('Common.view')}
+            </Link>
             <button
               onClick={onDismiss}
               className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors"
             >
-              Később
+              {t('Common.later')}
             </button>
           </div>
         </div>

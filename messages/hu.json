@@ -1,0 +1,201 @@
+{
+    "Common": {
+        "welcome": "Üdvözöljük",
+        "home": "Kezdőlap",
+        "tournaments": "Versenyek",
+        "clubs": "Klubok",
+        "players": "Játékosok",
+        "search": "Keresés",
+        "profile": "Profil",
+        "view": "Megtekintés",
+        "later": "Később"
+    },
+    "Index": {
+        "title": "tDarts - A darts versenykezelő"
+    },
+    "Hero": {
+        "badge": "Professzionális Darts Tournament Platform",
+        "subtitle_badge": "Verseny Platform",
+        "subtitle": "A következő generációs darts verseny platform. Versenykeresés, klub létrehozás, valós idejű eredmények és teljes testreszabhatóság.",
+        "features": {
+            "organize": "Verseny szervezés percek alatt",
+            "results": "Valós idejű eredmények",
+            "pairing": "Automatikus párosítás",
+            "stats": "Részletes statisztikák"
+        },
+        "cta_start": "Kezdés Most",
+        "cta_create": "Verseny Létrehozása",
+        "stats_labels": {
+            "clubs": "Aktív Klub",
+            "clubs_sub": "országszerte",
+            "tournaments": "Verseny",
+            "tournaments_sub": "havonta",
+            "realtime": "Valós Idejű",
+            "realtime_sub": "követés"
+        },
+        "trust": {
+            "free": "Ingyenes regisztráció",
+            "no_hidden": "Nincs rejtett költség",
+            "support": "24/7 támogatás"
+        }
+    },
+    "Features": {
+        "badge": "Funkciók",
+        "title": "Miért tDarts?",
+        "description": "A legmodernebb darts verseny platform minden funkcióval, amit csak elképzelhetsz. Egyszerű, gyors, professzionális.",
+        "items": {
+            "search": {
+                "title": "Verseny Keresés",
+                "description": "Könnyedén találj versenyt lokáció, szint és időpont alapján. Szűrd az eredményeket és jelentkezz egy kattintással.",
+                "badge": "Népszerű"
+            },
+            "draw": {
+                "title": "Verseny Kiírás",
+                "description": "Hozz létre saját versenyeket egyedi szabályokkal és formátumokkal. Automatikus csoportbeosztás és párosítás.",
+                "badge": "Új"
+            },
+            "club": {
+                "title": "Klub Kezelés",
+                "description": "Alapíts vagy csatlakozz darts klubokhoz, szervezz közösségi eseményeket. Teljes tagság kezelés."
+            },
+            "stats": {
+                "title": "Statisztikai Követés",
+                "description": "Részletes statisztikák minden játékoshoz: átlagok, 180-ak, legmagasabb kiszállók, form grafikon.",
+                "badge": "Pro"
+            },
+            "realtime": {
+                "title": "Valós Idejű Követés",
+                "description": "Kövesd élőben a meccseket és eredményeket. Automatikus frissítés és értesítések."
+            },
+            "custom": {
+                "title": "Teljes Testreszabás",
+                "description": "Minden versenyforma támogatva: 501, 301, Cricket és egyedi szabályok. Testre szabható táblák."
+            },
+            "qr": {
+                "title": "QR Kódos Csatlakozás",
+                "description": "Játékosok QR kóddal és jelszóval csatlakozhatnak, regisztráció nélkül. Gyors és egyszerű."
+            },
+            "tablet": {
+                "title": "Tablet Támogatás",
+                "description": "Támogatja a táblákhoz kihelyezett tableteket. Optimalizált író felület és érintésvezérlés."
+            },
+            "secure": {
+                "title": "Jelszó Védett",
+                "description": "Minden torna saját jelszóval védett. Biztonságos hozzáférés és adatvédelem."
+            }
+        },
+        "cta": {
+            "title": "Készen állsz az indulásra?",
+            "description": "Tudd meg hogyan működik a rendszer, és hozd létre az első tornádat percek alatt.",
+            "how_it_works": "Hogyan Működik?",
+            "register": "Ingyenes Regisztráció"
+        }
+    },
+    "Pricing": {
+        "badge": "Árazás",
+        "title": "Válaszd ki a Tökéletes Csomagot",
+        "description": "Minden méretű klub és verseny szervezőnek megfelelő árazás",
+        "popular": "Legnépszerűbb",
+        "period": "Ft/hó",
+        "period_alt": "/hó",
+        "cta_free": "Kezdés Most",
+        "cta_test": "Teszt Üzem",
+        "test_note": "* Egyelőre teszt üzemben működik az oldal. Az előfizetői model hamarosan elérhető lesz.",
+        "packages": {
+            "free": {
+                "name": "Ingyenes",
+                "description": "Alapvető funkciók kis csapatoknak"
+            },
+            "basic": {
+                "name": "Alap",
+                "description": "Tökéletes választás a rendszer kipróbálására"
+            },
+            "pro": {
+                "name": "Pro",
+                "description": "Kiválló aktív kluboknak"
+            },
+            "enterprise": {
+                "name": "Enterprise",
+                "description": "Korlátlan hozzáférés nagyobb szervezeteknek"
+            }
+        },
+        "features": {
+            "one_tournament": "Havi 1 verseny/klub",
+            "two_tournaments": "Havi 2 verseny/klub",
+            "four_tournaments": "Havi 4 verseny/klub",
+            "unlimited_tournaments": "Korlátlan havi verseny",
+            "unlimited_users": "Korlátlan felhasználó",
+            "live_tracking": "Élő meccs követés",
+            "league_start": "Liga indítási lehetőség",
+            "detailed_stats": "Részletes leg statisztikák"
+        }
+    },
+    "Navbar": {
+        "tournaments": "Versenyek",
+        "clubs": "Klubok",
+        "board": "Tábla",
+        "board_offline": "Helyi Tábla (Offline)",
+        "search": "Keresés",
+        "how_it_works": "Hogyan működik",
+        "my_club": "Saját klub",
+        "feedback": "Visszajelzés",
+        "profile": "Profil",
+        "stats": "Statisztika",
+        "tickets": "Hibajegyek",
+        "admin": "Admin",
+        "logout": "Kijelentkezés",
+        "login": "Bejelentkezés",
+        "register": "Regisztráció",
+        "offline": "Offline"
+    },
+    "Footer": {
+        "legal_title": "Információk",
+        "privacy": "Adatkezelési tájékoztató",
+        "terms": "Általános Szerződési Feltételek",
+        "contact": "Kapcsolat / Visszajelzés",
+        "all_rights_reserved": "Minden jog fenntartva.",
+        "network_title": "Hálózat",
+        "maintainer": "Fenntartó: ",
+        "sironic": "Sironic Rendszerház",
+        "oac_info": "Tudj meg többet az Országos Amatőr Ligáról!",
+        "oac_button": "OAC - Amatőr Darts",
+        "partners_title": "Partnereink",
+        "partners_note": "Kiemelt partnereink, akik támogatják a magyar darts fejlődését."
+    },
+    "Carousel": {
+        "management": "Világszínvonalú Versenykezelés",
+        "targeting": "Precíz Célkövetés",
+        "results": "Professzionális Eredmények",
+        "experience": "Kiváló Felhasználói Élmény",
+        "speed": "Villámgyors Feldolgozás",
+        "platform": "Bajnoki Szintű Platform"
+    },
+    "Announcements": {
+        "auto_close": "{seconds} másodperc múlva automatikusan bezáródik"
+    },
+    "Tickets": {
+        "toast_title": "Új válasz érkezett",
+        "unread_messages": "{count} olvasatlan üzeneted"
+    },
+    "Metadata": {
+        "title": "tDarts - Darts Tournament Levezető Rendszer",
+        "description": "A legjobb darts tournament levezető rendszer. Klubok létrehozása, versenyek szervezése, élő követés és statisztikák.",
+        "keywords": "darts, tournament, verseny, klub, statisztika, élő követés",
+        "og_title": "tDarts - Darts Tournament Rendszer",
+        "twitter_description": "A legjobb darts tournament levezető rendszer"
+    },
+    "NotFound": {
+        "title": "Oldal nem található",
+        "description": "A keresett oldal nem létezik vagy áthelyezésre került.",
+        "help_text": "Ellenőrizd az URL-t vagy használd a navigációs menüket a megfelelő oldal eléréséhez.",
+        "back_home": "Főoldal",
+        "search_tournaments": "Versenyek Keresése",
+        "need_help": "Segítségre van szükséged?",
+        "common_pages": "Gyakori oldalak:",
+        "useful_links": "Hasznos linkek:",
+        "how_it_works": "Hogyan működik",
+        "login": "Bejelentkezés",
+        "register": "Regisztráció",
+        "club_search": "Klub keresése"
+    }
+}

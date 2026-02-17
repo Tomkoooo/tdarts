@@ -2,11 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop, IconChartBar, IconTicket } from "@tabler/icons-react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link, usePathname } from "@/i18n/routing";
 import { useUserContext } from "@/hooks/useUser";
 import { useLogout } from "@/hooks/useLogout";
 import IconDart from "./icons/IconDart";
-import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SmartAvatar } from "@/components/ui/smart-avatar";
@@ -21,7 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+import { useTranslations } from "next-intl";
+
 const NavbarNew = () => {
+  const t = useTranslations('Navbar');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useUserContext();
@@ -58,11 +60,11 @@ const NavbarNew = () => {
   // const isAdminPage = pathname?.startsWith('/admin'); // User requested normal navbar on admin pages
 
   const navItems = [
-    { name: "Versenyek", icon: IconTournament, href: "/search?tab=tournaments" },
-    { name: "Klubok", icon: IconUsers, href: "/search?tab=clubs" },
-    { name: isOnline ? "Tábla" : "Helyi Tábla (Offline)", icon: IconDeviceDesktop, href: "/board" },
-    { name: "Keresés", icon: IconSearch, href: "/search" },
-    { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
+    { name: t('tournaments'), icon: IconTournament, href: "/search?tab=tournaments" },
+    { name: t('clubs'), icon: IconUsers, href: "/search?tab=clubs" },
+    { name: isOnline ? t('board') : t('board_offline'), icon: IconDeviceDesktop, href: "/board" },
+    { name: t('search'), icon: IconSearch, href: "/search" },
+    { name: t('how_it_works'), icon: IconHelp, href: "/how-it-works" },
   ];
 
 
@@ -95,7 +97,7 @@ const NavbarNew = () => {
             </span>
             {!isOnline && (
               <span className="ml-2 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wider animate-pulse border border-destructive/20">
-                Offline
+                {t('offline')}
               </span>
             )}
           </Link>
@@ -131,13 +133,13 @@ const NavbarNew = () => {
                 <Link href="/myclub">
                   <Button variant={pathname === "/myclub" ? "secondary" : "ghost"} size="sm">
                     <IconDart className="w-4 h-4 mr-2" />
-                    <span className="hidden xl:inline">Saját klub</span>
+                    <span className="hidden xl:inline">{t('my_club')}</span>
                   </Button>
                 </Link>
                 <Link href="/feedback">
                   <Button variant={pathname === "/feedback" ? "secondary" : "ghost"} size="sm">
                     <IconBug className="w-4 h-4 mr-2" />
-                    <span className="hidden xl:inline">Visszajelzés</span>
+                    <span className="hidden xl:inline">{t('feedback')}</span>
                   </Button>
                 </Link>
                 
@@ -162,25 +164,25 @@ const NavbarNew = () => {
                     <DropdownMenuItem asChild>
                       <Link href="/profile" className="cursor-pointer w-full flex items-center">
                         <IconUser className="mr-2 h-4 w-4" />
-                        Profil
+                        {t('profile')}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/profile?tab=stats" className="cursor-pointer w-full flex items-center">
                         <IconChartBar className="mr-2 h-4 w-4" />
-                        Statisztika
+                        {t('stats')}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/profile?tab=tickets" className="cursor-pointer w-full flex items-center">
                         <IconTicket className="mr-2 h-4 w-4" />
-                        Hibajegyek
+                        {t('tickets')}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/myclub" className="cursor-pointer w-full flex items-center">
                         <IconDart className="mr-2 h-4 w-4" />
-                        Saját klub
+                        {t('my_club')}
                       </Link>
                     </DropdownMenuItem>
                     {user.isAdmin && (
@@ -189,7 +191,7 @@ const NavbarNew = () => {
                         <DropdownMenuItem asChild>
                           <Link href="/admin" className="cursor-pointer w-full flex items-center">
                             <IconSettings className="mr-2 h-4 w-4" />
-                            Admin
+                            {t('admin')}
                           </Link>
                         </DropdownMenuItem>
                       </>
@@ -200,7 +202,7 @@ const NavbarNew = () => {
                       onClick={() => logout()}
                     >
                       <IconLogout className="mr-2 h-4 w-4" />
-                      Kijelentkezés
+                      {t('logout')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -209,12 +211,12 @@ const NavbarNew = () => {
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/auth/login">
-                    Bejelentkezés
+                    {t('login')}
                   </Link>
                 </Button>
                 <Button size="sm" asChild>
                   <Link href="/auth/register">
-                    Regisztráció
+                    {t('register')}
                   </Link>
                 </Button>
               </div>
@@ -295,19 +297,19 @@ const NavbarNew = () => {
                       >
                         <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconUser className="w-4 h-4" />
-                          Profil
+                          {t('profile')}
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
                         <Link href="/profile?tab=stats" className="cursor-pointer w-full flex items-center">
                           <IconChartBar className="h-4 w-4" />
-                          Statisztika
+                          {t('stats')}
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
                         <Link href="/profile?tab=tickets" className="cursor-pointer w-full flex items-center">
                           <IconTicket className="h-4 w-4" />
-                          Hibajegyek
+                          {t('tickets')}
                         </Link>
                       </Button>
                       <Button 
@@ -317,7 +319,7 @@ const NavbarNew = () => {
                       >
                          <Link href="/myclub" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconDart className="w-4 h-4" />
-                          Saját klub
+                          {t('my_club')}
                         </Link>
                       </Button>
                        <Button 
@@ -327,7 +329,7 @@ const NavbarNew = () => {
                       >
                         <Link href="/feedback" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconBug className="w-4 h-4" />
-                          Visszajelzés
+                          {t('feedback')}
                         </Link>
                       </Button>
                       {user.isAdmin && (
@@ -338,7 +340,7 @@ const NavbarNew = () => {
                         >
                           <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
                             <IconSettings className="w-4 h-4" />
-                            Admin
+                            {t('admin')}
                           </Link>
                         </Button>
                       )}
@@ -352,19 +354,19 @@ const NavbarNew = () => {
                         }}
                       >
                         <IconLogout className="w-4 h-4" />
-                        Kijelentkezés
+                        {t('logout')}
                       </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Button className="w-full" asChild>
                         <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                          Bejelentkezés
+                          {t('login')}
                         </Link>
                       </Button>
                       <Button variant="outline" className="w-full" asChild>
                         <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
-                          Regisztráció
+                          {t('register')}
                         </Link>
                       </Button>
                     </div>
