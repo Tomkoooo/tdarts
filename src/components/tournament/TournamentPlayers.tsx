@@ -216,17 +216,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== playerId))
         toast.success(t('Tournament.players.successfully_removed'))
       } else {
-        showErrorToast('Nem sikerült eltávolítani a játékost.', {
+        showErrorToast(t('Tournament.players.error_remove'), {
           error: response.data?.error,
-          context: 'Játékos eltávolítása',
-          errorName: 'Játékos eltávolítása sikertelen',
+          context: t('Tournament.players.remove_player'),
+          errorName: t('Tournament.players.error_remove'),
         })
       }
     } catch (error: any) {
-      showErrorToast('Nem sikerült eltávolítani a játékost.', {
+      showErrorToast(t('Tournament.players.error_remove'), {
         error: error?.response?.data?.error,
-        context: 'Játékos eltávolítása',
-        errorName: 'Játékos eltávolítása sikertelen',
+        context: t('Tournament.players.remove_player'),
+        errorName: t('Tournament.players.error_remove'),
       })
     }
   }
@@ -244,17 +244,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         )
         toast.success(t('Tournament.players.successfully_checked_in'))
       } else {
-        showErrorToast('Nem sikerült check-inelni a játékost.', {
+        showErrorToast(t('Tournament.players.error_check_in'), {
           error: response.data?.error,
-          context: 'Játékos check-in',
-          errorName: 'Check-in sikertelen',
+          context: t('Tournament.common.check_in'),
+          errorName: t('Tournament.players.error_check_in'),
         })
       }
     } catch (error: any) {
-      showErrorToast('Nem sikerült check-inelni a játékost.', {
+      showErrorToast(t('Tournament.players.error_check_in'), {
         error: error?.response?.data?.error,
-        context: 'Játékos check-in',
-        errorName: 'Check-in sikertelen',
+        context: t('Tournament.common.check_in'),
+        errorName: t('Tournament.players.error_check_in'),
       })
     }
   }
@@ -281,17 +281,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalUserPlayerId(response.data.playerId)
         toast.success(t('Tournament.registration.sign_up_success'))
       } else {
-        showErrorToast('Nem sikerült jelentkezni a tornára.', {
+        showErrorToast(t('Tournament.registration.error_sign_up'), {
           error: response.data?.error,
-          context: 'Saját jelentkezés',
-          errorName: 'Jelentkezés sikertelen',
+          context: t('Tournament.registration.sign_up'),
+          errorName: t('Tournament.registration.error_sign_up'),
         })
       }
     } catch (error: any) {
-      showErrorToast('Nem sikerült jelentkezni a tornára.', {
+      showErrorToast(t('Tournament.registration.error_sign_up'), {
         error: error?.response?.data?.error,
-        context: 'Saját jelentkezés',
-        errorName: 'Jelentkezés sikertelen',
+        context: t('Tournament.registration.sign_up'),
+        errorName: t('Tournament.registration.error_sign_up'),
       })
     }
   }
@@ -308,17 +308,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalUserPlayerId(null)
         toast.success(t('Tournament.registration.withdraw_success'))
       } else {
-        showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
+        showErrorToast(t('Tournament.registration.error_withdraw'), {
           error: response.data?.error,
-          context: 'Jelentkezés visszavonása',
-          errorName: 'Visszavonás sikertelen',
+          context: t('Tournament.registration.withdraw'),
+          errorName: t('Tournament.registration.error_withdraw'),
         })
       }
     } catch (error: any) {
-      showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
+      showErrorToast(t('Tournament.registration.error_withdraw'), {
         error: error?.response?.data?.error,
-        context: 'Jelentkezés visszavonása',
-        errorName: 'Visszavonás sikertelen',
+        context: t('Tournament.registration.withdraw'),
+        errorName: t('Tournament.registration.error_withdraw'),
       })
     }
   }

@@ -45,6 +45,7 @@ import {
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import AdminTicketDetail from "@/components/admin/AdminTicketDetail"
+import { useTranslations } from "next-intl"
 
 interface FeedbackHistory {
   action: string
@@ -68,6 +69,7 @@ interface Feedback {
 }
 
 export default function FeedbackTable() {
+  const t = useTranslations("Admin.feedback")
   const [data, setData] = useState<Feedback[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -103,7 +105,7 @@ export default function FeedbackTable() {
       }
     } catch {
       console.error("Error fetching feedback")
-      toast.error("Nem sikerült betölteni a visszajelzéseket")
+      toast.error(t("toasts.fetch_error"))
     } finally {
       setLoading(false)
     }
@@ -118,13 +120,13 @@ export default function FeedbackTable() {
   }, [search, statusFilter, priorityFilter, categoryFilter])
 
   const deleteFeedback = async (id: string) => {
-    if (!confirm("Biztosan törölni szeretnéd?")) return
+    if (!confirm(t("actions.confirm_delete"))) return
     try {
       await axios.delete(`/api/admin/feedback/${id}`)
-      toast.success("Visszajelzés törölve")
+      toast.success(t("toasts.delete_success"))
       fetchData()
     } catch {
-      toast.error("Hiba a törlés során")
+      toast.error(t("toasts.delete_error"))
     }
   }
 
@@ -140,14 +142,7 @@ export default function FeedbackTable() {
       rejected: "bg-rose-500/10 text-rose-500 hover:bg-rose-500/20",
       closed: "bg-slate-500/10 text-slate-500 hover:bg-slate-500/20",
     }
-    const labels: Record<string, string> = {
-      pending: "Függőben",
-      "in-progress": "Folyamatban",
-      resolved: "Megoldva",
-      rejected: "Elutasítva",
-      closed: "Lezárva",
-    }
-    return <Badge className={styles[status] || ""}>{labels[status] || status}</Badge>
+    return <Badge className={styles[status] || ""}>{t(`statuses.${status}` as any)}</Badge>
   }
 
   const getPriorityIcon = (priority: string) => {
@@ -157,7 +152,7 @@ export default function FeedbackTable() {
       high: "text-amber-500",
       critical: "text-rose-500",
     }
-    return <span className={`capitalize font-medium ${colors[priority]}`}>{priority}</span>
+    return <span className={`capitalize font-medium ${colors[priority]}`}>{t(`priorities.${priority}` as any)}</span>
   }
   
   const getCategoryIcon = (category: string) => {
@@ -178,10 +173,10 @@ export default function FeedbackTable() {
               category: 'other', 
               dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // +1 week
           });
-          toast.success("Teendő létrehozva a visszajelzésből!");
+          toast.success(t("toasts.todo_success"));
       } catch(e: any) {
           console.error(e)
-          toast.error(e.response?.data?.error || "Hiba a teendő létrehozásakor");
+          toast.error(e.response?.data?.error || t("toasts.todo_error"));
       }
   }
 
@@ -189,7 +184,7 @@ export default function FeedbackTable() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
         <Input
-          placeholder="Keresés címben, leírásban..."
+          placeholder={t("search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -197,36 +192,36 @@ export default function FeedbackTable() {
         <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
              <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Kategória" />
+              <SelectValue placeholder={t("filters.category")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Összes Kat.</SelectItem>
-              <SelectItem value="bug">Hiba</SelectItem>
-              <SelectItem value="feature">Funkció</SelectItem>
-              <SelectItem value="improvement">Javítás</SelectItem>
+              <SelectItem value="all">{t("filters.all_categories")}</SelectItem>
+              <SelectItem value="bug">{t("categories.bug")}</SelectItem>
+              <SelectItem value="feature">{t("categories.feature")}</SelectItem>
+              <SelectItem value="improvement">{t("categories.improvement")}</SelectItem>
             </SelectContent>
           </Select>
            <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Státusz" />
+              <SelectValue placeholder={t("filters.status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Összes Stát.</SelectItem>
-              <SelectItem value="pending">Függőben</SelectItem>
-              <SelectItem value="in-progress">Folyamatban</SelectItem>
-              <SelectItem value="resolved">Megoldva</SelectItem>
+              <SelectItem value="all">{t("filters.all_statuses")}</SelectItem>
+              <SelectItem value="pending">{t("statuses.pending")}</SelectItem>
+              <SelectItem value="in-progress">{t("statuses.in-progress")}</SelectItem>
+              <SelectItem value="resolved">{t("statuses.resolved")}</SelectItem>
             </SelectContent>
           </Select>
            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
             <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Prioritás" />
+              <SelectValue placeholder={t("filters.priority")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Összes Prio.</SelectItem>
-              <SelectItem value="low">Alacsony</SelectItem>
-              <SelectItem value="medium">Közepes</SelectItem>
-              <SelectItem value="high">Magas</SelectItem>
-              <SelectItem value="critical">Kritikus</SelectItem>
+              <SelectItem value="all">{t("filters.all_priorities")}</SelectItem>
+              <SelectItem value="low">{t("priorities.low")}</SelectItem>
+              <SelectItem value="medium">{t("priorities.medium")}</SelectItem>
+              <SelectItem value="high">{t("priorities.high")}</SelectItem>
+              <SelectItem value="critical">{t("priorities.critical")}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" onClick={() => fetchData()}>
@@ -239,25 +234,25 @@ export default function FeedbackTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">Kat.</TableHead>
-              <TableHead>Cím & Beküldő</TableHead>
-              <TableHead>Prioritás</TableHead>
-              <TableHead>Státusz</TableHead>
-              <TableHead>Dátum</TableHead>
-              <TableHead className="text-right">Műveletek</TableHead>
+              <TableHead className="w-[50px]">{t("table.category")}</TableHead>
+              <TableHead>{t("table.title_sender")}</TableHead>
+              <TableHead>{t("table.priority")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
+              <TableHead>{t("table.date")}</TableHead>
+              <TableHead className="text-right">{t("table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
               <TableCell colSpan={6} className="h-24 text-center">
-                  Betöltés...
+                  {t("table.loading")}
                 </TableCell>
               </TableRow>
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
-                  Nincs találat.
+                  {t("table.no_results")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -274,7 +269,7 @@ export default function FeedbackTable() {
                         {!item.isReadByAdmin && (
                           <div className="flex items-center gap-1.5">
                             <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                            <span className="px-1.5 py-0.5 text-[10px] bg-accent/20 text-accent rounded-full font-medium">Új</span>
+                            <span className="px-1.5 py-0.5 text-[10px] bg-accent/20 text-accent rounded-full font-medium">{t("table.new_badge")}</span>
                           </div>
                         )}
                         <span className="font-medium truncate max-w-[200px] sm:max-w-[300px]" title={item.title}>{item.title}</span>
@@ -291,28 +286,28 @@ export default function FeedbackTable() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Menü</span>
+                          <span className="sr-only">{t("table.menu_sr")}</span>
                           <IconDots className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Műveletek</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t("table.actions")}</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item._id)}>
-                          ID másolása
+                          {t("actions.copy_id")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => createTodoFromFeedback(item)}>
                              <IconListCheck className="mr-2 h-4 w-4" />
-                             Teendő Létrehozása
+                             {t("actions.create_todo")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEditModal(item)}>
                              <IconEdit className="mr-2 h-4 w-4" />
-                             Szerkesztés
+                             {t("actions.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => deleteFeedback(item._id)} className="text-destructive">
                              <IconTrash className="mr-2 h-4 w-4" />
-                             Törlés
+                             {t("actions.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -326,7 +321,7 @@ export default function FeedbackTable() {
 
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {total} visszajelzés összesen • {page} / {totalPages} oldal
+          {t("pagination.info", { total, current: page, total_pages: totalPages })}
         </div>
         <div className="space-x-2">
           <Button
@@ -336,7 +331,7 @@ export default function FeedbackTable() {
             disabled={page === 1}
           >
             <IconArrowLeft className="h-4 w-4" />
-            Előző
+            {t("pagination.prev")}
           </Button>
           <Button
             variant="outline"
@@ -344,7 +339,7 @@ export default function FeedbackTable() {
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
-            Következő
+            {t("pagination.next")}
             <IconArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>

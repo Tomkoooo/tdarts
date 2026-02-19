@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations, useFormatter } from "next-intl"
 import {
   IconCalendar,
   IconMapPin,
@@ -73,6 +73,7 @@ const formatDescription = (text: string) => {
 
 export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: TournamentOverviewProps) {
   const t = useTranslations()
+  const format = useFormatter()
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   const canEdit = userRole === "admin" || userRole === "moderator"
@@ -104,7 +105,13 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
       icon: <IconCalendar className="h-4 w-4" />,
       label: t('Tournament.overview.details.start'),
       value: tournament.tournamentSettings?.startDate
-        ? new Date(tournament.tournamentSettings.startDate).toLocaleString("hu-HU")
+        ? format.dateTime(new Date(tournament.tournamentSettings.startDate), {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
         : "–",
     },
     {
@@ -122,7 +129,11 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
       label: t('Tournament.overview.details.entry_fee'),
       value:
         typeof tournament.tournamentSettings?.entryFee === "number"
-          ? `${tournament.tournamentSettings.entryFee.toLocaleString("hu-HU")} Ft`
+          ? format.number(tournament.tournamentSettings.entryFee, {
+              style: 'currency',
+              currency: 'HUF',
+              maximumFractionDigits: 0
+            })
           : "–",
     },
     {
@@ -144,7 +155,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <CardTitle className="text-2xl font-semibold text-foreground">
-                {tournament.tournamentSettings?.name || "Torna"}
+                {tournament.tournamentSettings?.name || t('Tournament.common.default_name')}
               </CardTitle>
               <Badge variant="outline" className={statusBadgeClass[status] || "bg-warning/10 text-warning border-warning/20"}>
                 {statusLabel[status] || statusLabel.pending}
@@ -276,7 +287,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
                   className="flex items-center gap-2 font-medium text-primary hover:text-primary/80"
                 >
                   <IconExternalLink className="h-4 w-4" />
-                  Weboldal megnyitása
+                  {t('Tournament.overview.website_label')}
                 </Link>
               )}
             </div>

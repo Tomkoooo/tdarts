@@ -2,9 +2,11 @@
 
 import { useUserContext } from "@/hooks/useUser"
 import { ProfilePictureUpload } from "./ProfilePictureUpload"
+import { useTranslations } from "next-intl"
 
 export function ProfileHeader() {
   const { user, setUser } = useUserContext()
+  const t = useTranslations("Profile.header")
 
   const handleUploadSuccess = (url: string) => {
     if (user) {
@@ -19,14 +21,13 @@ export function ProfileHeader() {
         onUploadSuccess={handleUploadSuccess}
       />
       <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mt-4 mb-2">
-        Profil kezelés
+        {t("title")}
       </h1>
       <p className="text-muted-foreground text-base">
-        Kezeld a fiókod beállításait és preferenciáit
+        {t("subtitle")}
       </p>
     </div>
   )
 }
 
 export default ProfileHeader
-

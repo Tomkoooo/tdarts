@@ -16,6 +16,7 @@ import type { SearchFilters } from "@/database/services/search.service"
 import { Button } from "@/components/ui/Button"
 import { Link } from "@/i18n/routing"
 import { IconArrowLeft } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 // Define interfaces locally to avoid server-code import issues if any
 interface TabCounts {
@@ -29,6 +30,7 @@ export default function SearchPage() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const pathname = usePathname()
+    const t = useTranslations('Search')
 
     // --- State ---
     const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "tournaments")
@@ -239,8 +241,8 @@ export default function SearchPage() {
                             <Input
                                 value={query}
                                 onChange={handleSearch}
-                                placeholder="Keress versenyeket, játékosokat, klubokat..."
-                                className="pl-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
+                                placeholder={t('placeholder')}
+                                className="px-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
                             />
                              {isLoading && (
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -257,7 +259,7 @@ export default function SearchPage() {
                                     onChange={(e) => handleFilterChange('isOac', e.target.checked || undefined)}
                                     className="toggle toggle-sm toggle-primary"
                                 />
-                                <span className="text-sm font-bold text-foreground">OAC Találatok</span>
+                                <span className="text-sm font-bold text-foreground">{t('oac_toggle')}</span>
                             </label>
                         </div>
                     </div>
@@ -292,10 +294,10 @@ export default function SearchPage() {
                     {activeTab === 'tournaments' && (
                          <div className="mb-6">
                               <h2 className="text-2xl font-bold text-primary-foreground inline-block">
-                                   {debouncedQuery ? 'Keresési Találatok' : (filters.status === 'all' ? 'Összes Torna' : 'Közelgő Tornák')}
+                                   {debouncedQuery ? t('results_title') : (filters.status === 'all' ? t('all_tournaments') : t('upcoming_tournaments'))}
                               </h2>
                               {debouncedQuery && results.length === 0 && (
-                                   <p className="text-muted-foreground mt-1">Nincs találat a keresési feltételeknek megfelelően.</p>
+                                   <p className="text-muted-foreground mt-1">{t('no_results')}</p>
                               )}
                          </div>
                     )}
@@ -306,7 +308,7 @@ export default function SearchPage() {
                              <Link href="https://amatordarts.hu" target="_blank" rel="noopener noreferrer">
                                 <Button variant="secondary" size="sm" className="shadow-lg border-primary/20 bg-background/80 backdrop-blur hover:bg-primary hover:text-primary-foreground transition-all gap-2 group rounded-full px-4 h-12">
                                      <IconArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                     <span className="font-bold tracking-wide">Vissza a portál oldalra</span>
+                                     <span className="font-bold tracking-wide">{t('back_to_portal')}</span>
                                 </Button>
                              </Link>
                         </div>
@@ -338,10 +340,10 @@ export default function SearchPage() {
                                     <>
                                         {[...Array(5)].map((_, i) => (
                                             <div key={i} className="h-64 bg-card rounded-lg animate-pulse" />
-                                        ))}                      Betöltés...
+                                        ))}                      {t('loading')}
                                     </>
                                 ) : (
-                                    'További találatok betöltése'
+                                    t('load_more')
                                 )}
                              </Button>
                         </div>

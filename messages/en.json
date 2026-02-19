@@ -39,6 +39,38 @@
             "support": "24/7 support"
         }
     },
+    "HowItWorks": {
+        "hero": {
+            "badge": "Guide and Documentation",
+            "title_part1": "How Does",
+            "title_part2": "tDarts Platform Work?",
+            "subtitle": "Complete guide from registration to starting tournaments. Everything you need to know about using tDarts.",
+            "search_placeholder": "Search through topics..."
+        },
+        "grid": {
+            "title": "Choose a Topic",
+            "items_count": "{count} topics available",
+            "details_btn": "Details",
+            "no_results": "No results found",
+            "no_results_desc": "Try using a different search term"
+        },
+        "detail": {
+            "back_btn": "Back to Topics",
+            "prev_btn": "Previous",
+            "next_btn": "Next",
+            "aria_jump": "Jump to {title} topic"
+        },
+        "loading": "Loading..."
+    },
+    "ContentRenderer": {
+        "notes": {
+            "info": "Info:",
+            "warning": "Warning:",
+            "tip": "Tip:",
+            "important": "Important:",
+            "default": "Note:"
+        }
+    },
     "Features": {
         "badge": "Features",
         "title": "Why tDarts?",
@@ -176,6 +208,110 @@
     "Tickets": {
         "toast_title": "New reply received",
         "unread_messages": "{count} unread messages"
+    },
+    "Auth": {
+        "login": {
+            "title": "Login",
+            "subtitle": "Sign in to your tDarts account",
+            "email_label": "Email Address",
+            "email_placeholder": "email@example.com",
+            "password_label": "Password",
+            "password_placeholder": "••••••••",
+            "show_password": "Show password",
+            "hide_password": "Hide password",
+            "forgot_password": "Forgot password?",
+            "submit": "Login",
+            "submitting": "Logging in...",
+            "google": "Login with Google",
+            "separator": "or",
+            "no_account": "Don't have an account?",
+            "register_link": "Register here",
+            "success": "Successful login!",
+            "error_generic": "An error occurred during login"
+        },
+        "register": {
+            "title": "Registration",
+            "subtitle": "Create your tDarts account",
+            "username_label": "Username",
+            "username_placeholder": "user123",
+            "name_label": "Full Name",
+            "name_placeholder": "John Doe",
+            "email_label": "Email Address",
+            "email_placeholder": "email@example.com",
+            "password_label": "Password",
+            "password_placeholder": "••••••••",
+            "confirm_password_label": "Confirm Password",
+            "show_password": "Show password",
+            "hide_password": "Hide password",
+            "submit": "Register",
+            "submitting": "Registering...",
+            "google": "Register with Google",
+            "separator": "or",
+            "has_account": "Already have an account?",
+            "login_link": "Log in here",
+            "error_generic": "An error occurred during registration",
+            "error_google": "An error occurred during Google registration",
+            "loading": "Registration in progress...",
+            "success": "Registration successful! Check your email for the verification code."
+        },
+        "forgot_password": {
+            "title": "Password Reset",
+            "subtitle": "Enter your email address for the reset code",
+            "email_label": "Email Address",
+            "email_placeholder": "email@example.com",
+            "submit": "Send code",
+            "submitting": "Sending...",
+            "back_to_login": "Back to login",
+            "loading": "Sending email...",
+            "success": "Password reset email sent!",
+            "error_generic": "An error occurred while sending the email"
+        },
+        "reset_password": {
+            "title": "Set New Password",
+            "subtitle": "Enter the code and your new password",
+            "email_label": "Email Address",
+            "email_placeholder": "email@example.com",
+            "code_label": "Reset code",
+            "code_placeholder": "6 character code",
+            "new_password_label": "New password",
+            "new_password_placeholder": "Minimum 8 characters",
+            "confirm_password_label": "Confirm password",
+            "confirm_password_placeholder": "Re-enter password",
+            "submit": "Reset password",
+            "submitting": "Resetting...",
+            "back_to_login": "Back to login",
+            "show_password": "Show password",
+            "hide_password": "Hide password",
+            "loading": "Resetting password...",
+            "success": "Password successfully reset!",
+            "error_generic": "An error occurred while resetting the password"
+        },
+        "verify": {
+            "title": "Email Verification",
+            "subtitle": "Enter the verification code sent to {email}",
+            "code_label": "Verification Code",
+            "code_placeholder": "Code",
+            "submit": "Verify",
+            "submitting": "Verifying...",
+            "loading": "Verification in progress...",
+            "success": "Email successfully verified! Automatic login...",
+            "error_generic": "An error occurred during verification"
+        },
+        "validation": {
+            "email_required": "Email address is required",
+            "email_invalid": "Please enter a valid email address",
+            "password_required": "Password is required",
+            "password_min": "Password must be at least 6 characters long",
+            "username_required": "Username is required",
+            "username_min": "Username must be at least 3 characters long",
+            "username_invalid": "Username can only contain letters, numbers, and underscores",
+            "username_no_spaces": "Username cannot contain spaces",
+            "name_required": "Name is required",
+            "name_min": "Name must be at least 2 characters long",
+            "confirm_password_required": "Password confirmation is required",
+            "passwords_mismatch": "Passwords do not match",
+            "code_required": "Verification code is required"
+        }
     },
     "Metadata": {
         "title": "tDarts - Darts Tournament Management System",

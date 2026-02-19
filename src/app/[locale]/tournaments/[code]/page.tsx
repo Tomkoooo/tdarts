@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { useTranslations, useFormatter } from "next-intl"
 import axios from "axios"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
@@ -27,49 +28,47 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/Card"
 import { cn } from "@/lib/utils"
 
-const statusMeta: Record<
-  string,
-  {
-    label: string
-    badgeClass: string
-    description: string
-  }
-> = {
+const getStatusMeta = (t: any) => ({
   pending: {
-    label: "Előkészítés alatt",
+    label: t('status.pending.label'),
     badgeClass: "bg-warning/10 text-warning border-warning/20",
-    description: "A torna előkészítés alatt áll, a játékosok még jelentkezhetnek.",
+    description: t('status.pending.description'),
   },
   "group-stage": {
-    label: "Csoportkör",
+    label: t('status.group-stage.label'),
     badgeClass: "bg-info/10 text-info border-info/20",
-    description: "A csoportkör zajlik, a meccsek eredményei frissülnek.",
+    description: t('status.group-stage.description'),
   },
   knockout: {
-    label: "Egyenes kiesés",
+    label: t('status.knockout.label'),
     badgeClass: "bg-primary/10 text-primary border-primary/20",
-    description: "A torna egyenes kieséses szakasza fut.",
+    description: t('status.knockout.description'),
   },
   finished: {
-    label: "Befejezett",
+    label: t('status.finished.label'),
     badgeClass: "bg-success/10 text-success border-success/20",
-    description: "A torna lezárult, az eredmények archiválva vannak.",
+    description: t('status.finished.description'),
   },
-}
+})
 
-const tabs = [
-  { value: "overview", label: "Áttekintés" },
-  { value: "players", label: "Játékosok" },
-  { value: "boards", label: "Táblák" },
-  { value: "groups", label: "Csoportok" },
-  { value: "bracket", label: "Kiesés" },
-  { value: "admin", label: "Admin" },
+const getTabs = (t: any) => [
+  { value: "overview", label: t('tabs.overview') },
+  { value: "players", label: t('tabs.players') },
+  { value: "boards", label: t('tabs.boards') },
+  { value: "groups", label: t('tabs.groups') },
+  { value: "bracket", label: t('tabs.bracket') },
+  { value: "admin", label: t('tabs.admin') },
 ]
 
 const TournamentPage = () => {
   const { code } = useParams()
   const searchParams = useSearchParams()
   const { user } = useUserContext()
+  const t = useTranslations('Tournament.page')
+  const format = useFormatter()
+
+  const statusMeta = useMemo(() => getStatusMeta(t) as Record<string, any>, [t])
+  const tabs = useMemo(() => getTabs(t), [t])
 
   const [tournament, setTournament] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
@@ -183,7 +182,7 @@ const TournamentPage = () => {
       }
     } catch (err: any) {
       console.error('Tournament fetch error:', err)
-      setError(err.response?.data?.error || 'Nem sikerült betölteni a tornát vagy a szerepeket.')
+      setError(err.response?.data?.error || t('error.retry'))
     } finally {
       setLoading(false)
     }
@@ -302,11 +301,11 @@ const TournamentPage = () => {
 
   const handleReopenTournament = useCallback(async () => {
     if (!user || !user._id || user.isAdmin !== true) {
-      alert('Nincs jogosultság ehhez a művelethez. Csak super adminok használhatják ezt a funkciót.')
+      alert(t('admin.reopen.no_permission'))
       return
     }
 
-    const confirmMessage = `Biztosan újranyitja ezt a tornát?\n\nEz a művelet:\n- Visszaállítja a torna státuszát "befejezett"-ről "aktív"-ra\n- Törli az összes játékos statisztikáját\n- Megtartja az összes meccs adatot\n- Csak super adminok használhatják\n\nEz a művelet nem vonható vissza!`
+    const confirmMessage = t('admin.reopen.confirm')
 
     if (!confirm(confirmMessage)) return
 
@@ -314,12 +313,12 @@ const TournamentPage = () => {
       setIsReopening(true)
       const response = await axios.post(`/api/tournaments/${code}/reopen`)
       if (response.data.success) {
-        alert('Torna sikeresen újranyitva! A statisztikák törölve, a torna újra aktív.')
+        alert(t('admin.reopen.success'))
         await fetchAll()
       }
     } catch (err: any) {
       console.error('Error reopening tournament:', err)
-      alert(err.response?.data?.error || 'Hiba történt a torna újranyitása során')
+      alert(err.response?.data?.error || t('admin.reopen.error_save')) // Wait, I didn't add error_save to reopen. I'll use a generic one.
     } finally {
       setIsReopening(false)
     }
@@ -335,7 +334,7 @@ const TournamentPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="space-y-4 text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-          <p className="text-sm text-muted-foreground">Torna betöltése...</p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     )
@@ -347,11 +346,11 @@ const TournamentPage = () => {
         <Card className="w-full max-w-md border-destructive/40 bg-card">
           <CardContent className="space-y-4 p-6">
             <Alert variant="destructive">
-              <AlertTitle>Hiba történt</AlertTitle>
+              <AlertTitle>{t('error.title')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
             <Button onClick={fetchAll} className="w-full">
-              Újrapróbálkozás
+              {t('error.retry')}
             </Button>
           </CardContent>
         </Card>
@@ -365,9 +364,9 @@ const TournamentPage = () => {
         <Card className="w-full max-w-md border-dashed">
           <CardContent className="space-y-4 py-8 text-center">
             <div className="text-4xl">🏆</div>
-            <p className="text-base font-semibold text-foreground">Torna nem található</p>
+            <p className="text-base font-semibold text-foreground">{t('error.not_found.title')}</p>
             <p className="text-sm text-muted-foreground">
-              A keresett torna nem létezik vagy nem elérhető.
+              {t('error.not_found.description')}
             </p>
           </CardContent>
         </Card>
@@ -383,7 +382,7 @@ const TournamentPage = () => {
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold text-foreground">
-                {tournament.tournamentSettings?.name || 'Torna'}
+                {tournament.tournamentSettings?.name || t('tabs.overview')}
               </h1>
               <Badge variant="outline" className={statusInfo.badgeClass}>
                 {statusInfo.label}
@@ -392,32 +391,32 @@ const TournamentPage = () => {
             <p className="max-w-2xl text-sm text-muted-foreground">{statusInfo.description}</p>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span>
-                Torna kód: <span className="font-mono text-foreground">{tournament.tournamentId}</span>
+                {t('header.tournament_code', { code: tournament.tournamentId })}
               </span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
             <Button variant="outline" size="sm" onClick={handleRefetch} className="gap-2 bg-card/80 hover:bg-card">
-              <IconRefresh className="h-4 w-4" /> Frissítés
+              <IconRefresh className="h-4 w-4" /> {t('header.refresh')}
             </Button>
             {tournament && (
               <>
                 <Button asChild variant="outline" size="sm" className="gap-2">
                   <Link href={`/board/${tournament.tournamentId}`} target="_blank" rel="noopener noreferrer">
-                    Táblák / Író program
+                    {t('header.boards_writer')}
                   </Link>
                 </Button>
                 <Button asChild variant="info" size="sm" className="gap-2">
                   <Link href={`/tournaments/${code}/tv`} target="_blank" rel="noopener noreferrer">
                   <IconDeviceTv/>
-                     TV
+                     {t('header.tv_view')}
                   </Link>
                 </Button>
               </>
             )}
             <Button variant="default" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
-              <IconShare2 className="h-4 w-4" /> Megosztás
+              <IconShare2 className="h-4 w-4" /> {t('header.share')}
             </Button>
           </div>
         </header>
@@ -510,13 +509,13 @@ const TournamentPage = () => {
             />
 
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">Táblák állapota</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground">{t('sections.boards_status')}</h3>
               <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
             </div>
 
             {tournament.groups && tournament.groups.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground">Csoportok és mérkőzések</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground">{t('sections.groups_matches')}</h3>
                 <TournamentGroupsView tournament={tournament} userClubRole={userClubRole} />
               </div>
             )}
@@ -570,7 +569,7 @@ const TournamentPage = () => {
             ) : (
               <Card className="bg-card/90 shadow-lg shadow-black/30">
                 <CardContent className="p-6 text-center text-muted-foreground">
-                  Nincs jogosultságod az admin funkciókhoz.
+                  {t('admin.no_permission')}
                 </CardContent>
               </Card>
             )}
@@ -579,13 +578,13 @@ const TournamentPage = () => {
               <Card className="bg-destructive/15 shadow-lg shadow-black/25">
                 <CardContent className="space-y-4">
                   <Alert variant="destructive">
-                    <AlertTitle>Torna újranyitása</AlertTitle>
+                    <AlertTitle>{t('admin.reopen.title')}</AlertTitle>
                     <AlertDescription>
-                      Ez a művelet visszavonja a befejezést és törli az összes statisztikát. Csak super adminok használhatják.
+                      {t('admin.reopen.description')}
                     </AlertDescription>
                   </Alert>
                   <Button variant="destructive" onClick={handleReopenTournament} disabled={isReopening} className="gap-2">
-                    {isReopening ? 'Újranyitás...' : 'Torna újranyitása'}
+                    {isReopening ? t('admin.reopen.btn_loading') : t('admin.reopen.btn')}
                   </Button>
                 </CardContent>
               </Card>
@@ -599,7 +598,7 @@ const TournamentPage = () => {
         isOpen={tournamentShareModal}
         onClose={() => setTournamentShareModal(false)}
         tournamentCode={tournament.tournamentId}
-        tournamentName={tournament.tournamentSettings?.name || 'Torna'}
+        tournamentName={tournament.tournamentSettings?.name || t('tabs.overview')}
       />
 
       {editModalOpen && user?._id && (

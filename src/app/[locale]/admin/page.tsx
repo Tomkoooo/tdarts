@@ -18,8 +18,7 @@ import {
   IconCheck
 } from "@tabler/icons-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { format } from "date-fns"
-import { hu } from "date-fns/locale"
+
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -28,6 +27,7 @@ import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
 import { useUserContext } from "@/hooks/useUser"
 import { IconPlus, IconCommand } from "@tabler/icons-react"
+import { useTranslations, useFormatter } from "next-intl"
 
 // --- Interfaces ---
 interface DashboardStats {
@@ -75,6 +75,8 @@ interface ActivityItem {
 
 export default function AdminDashboardPage() {
   const { user } = useUserContext()
+  const t = useTranslations("Admin.dashboard")
+  const format = useFormatter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -116,7 +118,7 @@ export default function AdminDashboardPage() {
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error)
-      toast.error(error.response?.data?.error || "Hiba történt az adatok betöltése során")
+      toast.error(error.response?.data?.error || t("error_loading"))
     } finally {
       setLoading(false)
       setIsRefreshing(false)
@@ -132,7 +134,7 @@ export default function AdminDashboardPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="size-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-          <p className="text-sm text-muted-foreground animate-pulse">Betöltés...</p>
+          <p className="text-sm text-muted-foreground animate-pulse">{t("loading")}</p>
         </div>
       </div>
     )
@@ -149,7 +151,7 @@ export default function AdminDashboardPage() {
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
             <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-bold font-mono tabular-nums">{value.toLocaleString()}</h3>
+              <h3 className="text-2xl font-bold font-mono tabular-nums">{format.number(value)}</h3>
               <span className={cn("text-xs font-medium flex items-center", change >= 0 ? "text-emerald-500" : "text-rose-500")}>
                 {change >= 0 ? <IconTrendingUp className="size-3 mr-0.5" /> : <IconTrendingDown className="size-3 mr-0.5" />}
                 {change}%
@@ -158,7 +160,7 @@ export default function AdminDashboardPage() {
             {count24h !== undefined && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <IconClock className="size-3" />
-                <span>+{count24h} in last 24h</span>
+                <span>{t("stats.last_24h", { count: count24h })}</span>
               </div>
             )}
           </div>
@@ -175,7 +177,7 @@ export default function AdminDashboardPage() {
       <CardHeader className="pb-3 shrink-0">
         <CardTitle className="flex items-center gap-2 text-base">
           <IconActivity className="size-4 text-primary" />
-          Friss Tevékenységek
+          {t("activities.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-y-auto min-h-[300px] max-h-[400px]">
@@ -201,7 +203,7 @@ export default function AdminDashboardPage() {
         ) : (
           <div className="flex items-center justify-center h-48 text-muted-foreground text-sm flex-col gap-2">
             <IconActivity className="size-8 opacity-20" />
-            <p>Nincs friss tevékenység</p>
+            <p>{t("activities.no_data")}</p>
           </div>
         )}
       </CardContent>
@@ -213,7 +215,7 @@ export default function AdminDashboardPage() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base text-rose-500">
           <IconAlertTriangle className="size-4" />
-          Figyelmeztetések
+          {t("alerts.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -223,8 +225,8 @@ export default function AdminDashboardPage() {
               <IconServer className="size-5 text-rose-500" />
             </div>
             <div>
-              <p className="font-semibold text-rose-600 dark:text-rose-400 text-sm">Rendszerhibák</p>
-              <p className="text-xs text-rose-600/70 dark:text-rose-400/70">Az elmúlt 24 órában</p>
+              <p className="font-semibold text-rose-600 dark:text-rose-400 text-sm">{t("alerts.errors")}</p>
+              <p className="text-xs text-rose-600/70 dark:text-rose-400/70">{t("alerts.errors_desc")}</p>
             </div>
           </div>
           <Badge variant="destructive" className="text-lg font-mono ml-4">{alerts?.errors24h || 0}</Badge>
@@ -236,8 +238,8 @@ export default function AdminDashboardPage() {
               <IconMessageCircle className="size-5 text-amber-500" />
             </div>
             <div>
-              <p className="font-semibold text-amber-600 dark:text-amber-400 text-sm">Visszajelzések</p>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70">Olvasatlan üzenetek</p>
+              <p className="font-semibold text-amber-600 dark:text-amber-400 text-sm">{t("alerts.feedback")}</p>
+              <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{t("alerts.feedback_desc")}</p>
             </div>
           </div>
           <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-mono ml-4">{alerts?.pendingFeedback || 0}</Badge>
@@ -299,18 +301,18 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 sticky top-0 z-10 bg-background/80 backdrop-blur-xl py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-border/40 mb-6">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-            Szia, {user?.name?.split(" ")[0] || user?.username || "Admin"}! 👋
+            {t("title", { name: user?.name?.split(" ")[0] || user?.username || "Admin" })}
           </h1>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
-            A rendszer jelenleg <span className="text-emerald-500 font-medium">stabilan</span> üzemel.
+            {t("system_stable")}
             <span className="hidden sm:inline-block opacity-50">|</span>
             <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-muted/50 px-2 py-0.5 rounded border border-border/50">
               <IconCommand className="size-3" /> K
-              <span className="opacity-70">keresés</span>
+              <span className="opacity-70">{t("search_hint")}</span>
             </span>
             <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-muted/50 px-2 py-0.5 rounded border border-border/50">
               <IconCommand className="size-3" /> J
-              <span className="opacity-70">menü</span>
+              <span className="opacity-70">{t("menu_hint")}</span>
             </span>
           </p>
         </div>
@@ -321,24 +323,24 @@ export default function AdminDashboardPage() {
              <Button size="sm" className="hidden sm:flex" variant="outline" asChild>
                 <Link href="/admin/announcements">
                   <IconMessageCircle className="size-4 mr-2" />
-                  Új Hír
+                  {t("quick_access.new_post")}
                 </Link>
              </Button>
              <Button size="sm" className="w-full sm:w-auto" asChild>
                 <Link href="/admin/tournaments">
                   <IconPlus className="size-4 mr-2" />
-                  Verseny Létrehozása
+                  {t("quick_access.create_tournament")}
                 </Link>
              </Button>
            </div>
 
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 shrink-0">
             <span className="text-xs text-muted-foreground px-2 py-1 font-mono hidden sm:inline-block">
-              {format(lastUpdate, "HH:mm:ss", { locale: hu })}
+              {format.dateTime(lastUpdate, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
             <Button size="sm" variant="ghost" onClick={fetchDashboardData} disabled={isRefreshing} className="h-8 w-8 p-0">
               <IconRefresh className={cn("size-4", isRefreshing && "animate-spin")} />
-              <span className="sr-only">Frissítés</span>
+              <span className="sr-only">{t("refresh")}</span>
             </Button>
           </div>
         </div>
@@ -347,7 +349,7 @@ export default function AdminDashboardPage() {
       {/* Mini Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MiniStatCard 
-          title="Felhasználók" 
+          title={t("stats.users")} 
           value={stats?.totalUsers || 0} 
           change={stats?.userGrowth || 0} 
           count24h={stats?.newUsersLast24h}
@@ -355,7 +357,7 @@ export default function AdminDashboardPage() {
           colorClass="bg-blue-500"
         />
         <MiniStatCard 
-          title="Klubok" 
+          title={t("stats.clubs")} 
           value={stats?.totalClubs || 0} 
           change={stats?.clubGrowth || 0} 
           count24h={stats?.newClubsLast24h}
@@ -363,7 +365,7 @@ export default function AdminDashboardPage() {
           colorClass="bg-violet-500"
         />
         <MiniStatCard 
-          title="Versenyek" 
+          title={t("stats.tournaments")} 
           value={stats?.totalTournaments || 0} 
           change={stats?.tournamentGrowth || 0} 
           count24h={stats?.newTournamentsLast24h}
@@ -371,7 +373,7 @@ export default function AdminDashboardPage() {
           colorClass="bg-amber-500"
         />
         <MiniStatCard 
-          title="Nyitott Hibák" 
+          title={t("stats.errors")} 
           value={stats?.totalErrors || 0} 
           change={stats?.errorGrowth || 0} 
           count24h={stats?.errorsLast24h}
@@ -395,14 +397,14 @@ export default function AdminDashboardPage() {
         {/* Right Column: Key Charts */}
         <div className="space-y-6 xl:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SimpleChart title="Felhasználói aktivitás (Havi)" data={userChartData} color="#3b82f6" />
-            <SimpleChart title="Versenyek száma (Havi)" data={tournamentChartData} color="#f59e0b" />
+            <SimpleChart title={t("charts.users")} data={userChartData} color="#3b82f6" />
+            <SimpleChart title={t("charts.tournaments")} data={tournamentChartData} color="#f59e0b" />
           </div>
           
           <Card className="backdrop-blur-sm bg-card/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Gyorselérés</CardTitle>
-              <CardDescription>A leggyakrabban használt adminisztrációs felületek</CardDescription>
+              <CardTitle className="text-lg">{t("quick_access.title")}</CardTitle>
+              <CardDescription>{t("quick_access.desc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -410,37 +412,37 @@ export default function AdminDashboardPage() {
                   <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                      <IconUsers className="size-5" />
                   </div>
-                  <span className="text-xs font-semibold">Felhasználók</span>
+                  <span className="text-xs font-semibold">{t("quick_access.users")}</span>
                 </Link>
                 <Link href="/admin/tournaments" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
                   <div className="p-2 rounded-full bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors">
                      <IconTrophy className="size-5" />
                   </div>
-                  <span className="text-xs font-semibold">Versenyek</span>
+                  <span className="text-xs font-semibold">{t("quick_access.tournaments")}</span>
                 </Link>
                 <Link href="/admin/clubs" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
                   <div className="p-2 rounded-full bg-violet-500/10 text-violet-500 group-hover:bg-violet-500 group-hover:text-white transition-colors">
                      <IconBuilding className="size-5" />
                   </div>
-                  <span className="text-xs font-semibold">Klubok</span>
+                  <span className="text-xs font-semibold">{t("quick_access.clubs")}</span>
                 </Link>
                 <Link href="/admin/todos" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
                    <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                      <IconCheck className="size-5" />
                   </div>
-                  <span className="text-xs font-semibold">Teendők</span>
+                  <span className="text-xs font-semibold">{t("quick_access.todos")}</span>
                 </Link>
                 <Link href="/admin/announcements" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
                    <div className="p-2 rounded-full bg-pink-500/10 text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-colors">
                      <IconMessageCircle className="size-5" />
                   </div>
-                  <span className="text-xs font-semibold">Hírek</span>
+                  <span className="text-xs font-semibold">{t("quick_access.news")}</span>
                 </Link>
                 <Link href="/admin/settings" className="group flex flex-col items-center justify-center p-4 rounded-xl bg-muted/30 hover:bg-muted hover:scale-105 transition-all text-center gap-2 border border-transparent hover:border-primary/20">
                    <div className="p-2 rounded-full bg-slate-500/10 text-slate-500 group-hover:bg-slate-500 group-hover:text-white transition-colors">
                      <IconServer className="size-5" />
                   </div>
-                  <span className="text-xs font-semibold">Beállítások</span>
+                  <span className="text-xs font-semibold">{t("quick_access.settings")}</span>
                 </Link>
               </div>
             </CardContent>

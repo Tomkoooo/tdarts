@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { Badge } from "@/components/ui/Badge"
+import { useTranslations } from "next-intl"
 
 interface CurrentInfoSectionProps {
   user: {
@@ -17,12 +18,14 @@ interface CurrentInfoSectionProps {
 }
 
 export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
+  const t = useTranslations("Profile.info")
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconUser className="w-5 h-5" />
-          Jelenlegi információk
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -30,7 +33,7 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
           <div className="space-y-2">
             <Label htmlFor="current-email" className="flex items-center gap-2">
               <IconMail className="w-4 h-4" />
-              Email cím
+              {t("email")}
             </Label>
             <div className="relative">
               <Input
@@ -43,12 +46,12 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
                 {user.isVerified ? (
                   <Badge variant="default" className="bg-success/10 text-success border-success/20">
                     <IconCircleCheck className="w-3 h-3 mr-1" />
-                    Ellenőrzött
+                    {t("verified")}
                   </Badge>
                 ) : (
                   <Badge variant="destructive" className="bg-destructive/10">
                     <IconCircleX className="w-3 h-3 mr-1" />
-                    Nem ellenőrzött
+                    {t("not_verified")}
                   </Badge>
                 )}
               </div>
@@ -58,7 +61,7 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
           <div className="space-y-2">
             <Label htmlFor="current-name" className="flex items-center gap-2">
               <IconUser className="w-4 h-4" />
-              Teljes név
+              {t("name")}
             </Label>
             <Input
               id="current-name"
@@ -70,7 +73,7 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="current-username" className="flex items-center gap-2">
               <IconUser className="w-4 h-4" />
-              Felhasználónév
+              {t("username")}
             </Label>
             <Input
               id="current-username"

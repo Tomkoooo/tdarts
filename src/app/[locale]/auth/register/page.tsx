@@ -7,6 +7,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useUserContext } from '@/hooks/useUser';
 import ParallaxBackground from '@/components/homapage/ParallaxBackground';
+import { useTranslations } from 'next-intl';
 
 // Regisztrációs oldal, amely a regisztrációt és az email verifikációt kezeli
 export default function RegisterPage() {
@@ -17,6 +18,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setUser } = useUserContext();
+  const tr = useTranslations('Auth.register');
+  const tv = useTranslations('Auth.verify');
 
   // Get redirect parameter from URL
   useEffect(() => {
@@ -43,22 +46,21 @@ export default function RegisterPage() {
           },
         }),
         {
-          loading: 'Regisztráció folyamatban...',
+          loading: tr('loading'),
           success: () => {
             setRegisteredEmail(data.email); // Átváltás a verifikációs űrlapra
-            return 'Sikeres regisztráció! Ellenőrizd az email címedet a verifikációs kódért.';
+            return tr('success');
           },
           error: (error) => {
             console.error('Registration error:', error);
             if (error.response && error.response.data.error) {
               return error.response.data.error; // Szerver válaszból származó hiba
             }
-            return 'Hiba történt a regisztráció során'; // Általános hibaüzenet
+            return tr('error_generic'); // Általános hibaüzenet
           },
         }
       );
     } catch (error) {
-      // A toast.promise kezeli a hibákat, így itt nincs szükség további logikára
       console.error('Register error:', error);
     } finally {
       setIsLoading(false);
@@ -76,9 +78,7 @@ export default function RegisterPage() {
             'Content-Type': 'application/json',
           },
         }).then(async (verifyResponse) => {
-          // After successful email verification, automatically log in the user
           if (verifyResponse.data.user) {
-            // Set user in context
             setUser({
               _id: verifyResponse.data.user._id,
               username: verifyResponse.data.user.username,
@@ -88,7 +88,6 @@ export default function RegisterPage() {
               isVerified: verifyResponse.data.user.isVerified,
             });
             
-            // Navigate to redirect path or default to home
             if (redirectPath) {
               router.push(redirectPath);
             } else {
@@ -97,21 +96,20 @@ export default function RegisterPage() {
           }
         }),
         {
-          loading: 'Verifikáció folyamatban...',
+          loading: tv('loading'),
           success: () => {
-            return 'Email sikeresen verifikálva! Automatikus bejelentkezés...';
+            return tv('success');
           },
           error: (error) => {
             console.error('Verification error:', error);
             if (error.response && error.response.data.error) {
               return error.response.data.error; // Szerver válaszból származó hiba
             }
-            return 'Hiba történt a verifikáció során'; // Általános hibaüzenet
+            return tv('error_generic'); // Általános hibaüzenet
           },
         }
       );
     } catch (error) {
-      // A toast.promise kezeli a hibákat, így itt nincs szükség további logikára
       console.error('Verify email error:', error);
     } finally {
       setIsLoading(false);

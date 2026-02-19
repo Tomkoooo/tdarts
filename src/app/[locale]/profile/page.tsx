@@ -20,8 +20,11 @@ import TicketDetail from "@/components/profile/TicketDetail"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
+import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export default function ProfilePage() {
+  const t = useTranslations("Profile")
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, setUser } = useUserContext()
@@ -39,6 +42,8 @@ export default function ProfilePage() {
   const [leagueHistory, setLeagueHistory] = React.useState<any[]>([])
   const [isLoadingLeagueHistory, setIsLoadingLeagueHistory] = React.useState(false)
   const [selectedTicket, setSelectedTicket] = React.useState<any>(null)
+  const [tickets, setTickets] = React.useState<any[]>([])
+  const [isLoadingTickets, setIsLoadingTickets] = React.useState(false)
   const [ticketToastDismissed, setTicketToastDismissed] = React.useState(false)
   const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets()
 
@@ -66,6 +71,7 @@ export default function ProfilePage() {
       setNeedsEmailVerification(!user.isVerified)
       loadPlayerStats()
       loadLeagueHistory()
+      loadTickets()
     }
   }, [user, router])
 
@@ -81,6 +87,42 @@ export default function ProfilePage() {
       console.error('Error loading player stats:', error)
     } finally {
       setIsLoadingStats(false)
+    }
+  }
+
+  // Load tickets
+  const loadTickets = async () => {
+    setIsLoadingTickets(true)
+    try {
+      const response = await axios.get('/api/profile/tickets')
+      if (response.data.success) {
+        setTickets(response.data.data)
+      }
+    } catch (error) {
+      console.error('Error loading tickets:', error)
+    } finally {
+      setIsLoadingTickets(false)
+    }
+  }
+
+  // Handle reply to ticket
+  const handleReplyToTicket = async (ticket: any, content: string) => {
+    setIsLoading(true)
+    try {
+      if (ticket.status === 'closed') {
+        toast.error(t("tickets.toasts.closed_error"))
+        return
+      }
+      const response = await axios.post(`/api/profile/tickets/${ticket.id}/reply`, { content })
+      if (response.data.success) {
+        setSelectedTicket(response.data.data)
+        // Update the ticket in the list as well
+        setTickets(tickets.map(tk => tk.id === ticket.id ? response.data.data : tk))
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("tickets.toasts.reply_error"))
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -119,7 +161,7 @@ export default function ProfilePage() {
           headers: { "Content-Type": "application/json" },
         }),
         {
-          loading: "Profil frissítése folyamatban...",
+          loading: t("toasts.updating"),
           success: () => {
             setUser({
               ...user!,
@@ -129,9 +171,9 @@ export default function ProfilePage() {
               isVerified: data.email && data.email !== user!.email ? false : user!.isVerified,
             })
             setNeedsEmailVerification(data.email !== user!.email && !!data.email)
-            return "Profil sikeresen frissítve!"
+            return t("toasts.update_success")
           },
-          error: (error) => error.response?.data.error || "Hiba történt a profil frissítése során",
+          error: (error) => error.response?.data.error || t("toasts.update_error"),
         }
       )
     } catch (error) {
@@ -145,22 +187,16 @@ export default function ProfilePage() {
   const onVerifySubmit = async (data: { code: string }) => {
     setIsLoading(true)
     try {
-      await toast.promise(
-        axios.post("/api/profile/verify-email", data, {
-          headers: { "Content-Type": "application/json" },
-        }),
-        {
-          loading: "Email verifikáció folyamatban...",
-          success: () => {
-            setUser({ ...user!, isVerified: true })
-            setNeedsEmailVerification(false)
-            return "Email sikeresen ellenőrizve!"
-          },
-          error: (error) => error.response?.data.error || "Hiba történt az email ellenőrzése során",
-        }
-      )
-    } catch (error) {
-      console.error("Verify email error:", error)
+      const response = await axios.post("/api/profile/verify-email", data, {
+        headers: { "Content-Type": "application/json" },
+      })
+      if (response.data.success) {
+        setUser({ ...user!, isVerified: true })
+        setNeedsEmailVerification(false)
+        toast.success(t("toasts.verification_success"))
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("toasts.verification_error"))
     } finally {
       setIsLoading(false)
     }
@@ -170,18 +206,10 @@ export default function ProfilePage() {
   const handleResendCode = async () => {
     setIsResendingCode(true)
     try {
-      await toast.promise(
-        axios.post("/api/profile/resend-verification", {}, {
-          headers: { "Content-Type": "application/json" },
-        }),
-        {
-          loading: "Ellenőrző kód újraküldése...",
-          success: "Ellenőrző kód sikeresen újraküldve!",
-          error: (error) => error.response?.data.error || "Hiba történt az ellenőrző kód újraküldése során",
-        }
-      )
-    } catch (error) {
-      console.error("Resend verification code error:", error)
+      await axios.post("/api/profile/resend-verification")
+      toast.success(t("toasts.resend_success"))
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("toasts.resend_error"))
     } finally {
       setIsResendingCode(false)
     }
@@ -221,15 +249,11 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     setIsLoading(true)
     try {
-      await logout()
-      toast.success("Sikeresen kijelentkeztél")
-    } catch (error: any) {
-      console.error("Logout error:", error)
-      showErrorToast("Hiba történt a kijelentkezés során", {
-        error: error?.message,
-        context: "Profil kijelentkezés",
-        errorName: "Kijelentkezés sikertelen",
-      })
+      await axios.post("/api/auth/logout")
+      toast.success(t("toasts.logout_success"))
+      window.location.href = "/"
+    } catch (error) {
+      toast.error(t("toasts.logout_error"))
     } finally {
       setIsLoading(false)
     }
@@ -314,15 +338,25 @@ export default function ProfilePage() {
             <TicketDetail 
               ticket={selectedTicket} 
               onBack={() => setSelectedTicket(null)}
+              onSendMessage={(content) => handleReplyToTicket(selectedTicket, content)}
               onUpdate={() => {
                 refreshUnreadCount();
-                // Optionally refresh ticket list
+                loadTickets();
               }}
+              isLoading={isLoading}
             />
           ) : (
             <TicketList 
-              onSelectTicket={setSelectedTicket}
-              onRefresh={refreshUnreadCount}
+              tickets={tickets}
+              onSelectTicket={(ticketId) => {
+                const ticket = tickets.find(t => t.id === ticketId)
+                setSelectedTicket(ticket)
+              }}
+              onCreateTicket={() => router.push('/contact')}
+              onRefresh={() => {
+                refreshUnreadCount();
+                loadTickets();
+              }}
             />
           )
         )}

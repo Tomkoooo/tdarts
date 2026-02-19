@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import { 
   IconUserPlus, 
   IconBuilding, 
@@ -16,15 +16,18 @@ import {
   IconCheck,
   IconFlagCheck,
   IconDeviceMobile,
-  IconSword
+  IconSword,
+  IconX
 } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { useRouter, useSearchParams } from 'next/navigation';
-import howItWorksData from '@/data/how-it-works.json';
+import howItWorksHu from '@/data/how-it-works/hu.json';
+import howItWorksEn from '@/data/how-it-works/en.json';
 import ContentRenderer from '@/components/how-it-works/ContentRenderer';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { useTranslations, useLocale } from 'next-intl';
 
 // Icon mapping
 const iconMap: { [key: string]: any } = {
@@ -40,7 +43,6 @@ const iconMap: { [key: string]: any } = {
   IconSword
 };
 
-// Modern color palette with gradients
 const stepColors = [
   {
     gradient: 'from-blue-500 to-cyan-500',
@@ -97,13 +99,18 @@ const HowItWorksContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const stepParam = searchParams.get('step');
+  const t = useTranslations('HowItWorks');
+  const locale = useLocale();
+
+  const howItWorksData = useMemo(() => {
+    return locale === 'hu' ? howItWorksHu : howItWorksEn;
+  }, [locale]);
 
   const [activeStep, setActiveStep] = useState<number | null>(
     stepParam !== null ? parseInt(stepParam) : null
   );
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Update URL when step changes
   const handleStepChange = (step: number | null) => {
     setActiveStep(step);
     const params = new URLSearchParams(searchParams.toString());
@@ -115,7 +122,6 @@ const HowItWorksContent = () => {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
-  // Sync state if URL changes (e.g. back button)
   useEffect(() => {
     const step = searchParams.get('step');
     if (step !== null) {
@@ -125,7 +131,7 @@ const HowItWorksContent = () => {
     }
   }, [searchParams]);
 
-  const filteredSteps = howItWorksData.steps.filter(step =>
+  const filteredSteps = howItWorksData.steps.filter((step: any) =>
     step.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     step.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -141,35 +147,31 @@ const HowItWorksContent = () => {
         
         <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24">
           <div className="text-center space-y-6">
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
               <IconBook className="w-4 h-4" />
-              <span>Útmutató és Dokumentáció</span>
+              <span>{t('hero.badge')}</span>
             </div>
 
-            {/* Title */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
               <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
-                Hogyan Működik a
+                {t('hero.title_part1')}
               </span>
               <br />
               <span className="bg-gradient-to-r from-primary via-primary to-primary/60 bg-clip-text text-transparent">
-                tDarts Platform?
+                {t('hero.title_part2')}
               </span>
             </h1>
 
-            {/* Subtitle */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Teljes körű útmutató a regisztrációtól a versenyindításig. Minden, amit tudnod kell a tDarts használatához.
+              {t('hero.subtitle')}
             </p>
 
-            {/* Search Bar */}
             <div className="max-w-2xl mx-auto pt-4">
               <div className="relative">
                 <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Keress a témakörök között..."
+                  placeholder={t('hero.search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card/50 backdrop-blur-xl border border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none text-base"
@@ -183,19 +185,18 @@ const HowItWorksContent = () => {
       {/* Main Content */}
       <div className="mx-auto max-w-7xl px-4 py-12 md:py-16">
         {activeStep === null ? (
-          /* Grid View - All Topics */
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold">Válassz témakört</h2>
+                <h2 className="text-2xl md:text-3xl font-bold">{t('grid.title')}</h2>
                 <p className="text-muted-foreground mt-1">
-                  {filteredSteps.length} témakör érhető el
+                  {t('grid.items_count', { count: filteredSteps.length })}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredSteps.map((step) => {
+              {filteredSteps.map((step: any) => {
                 const Icon = iconMap[step.icon];
                 const color = stepColors[step.id % stepColors.length];
                 
@@ -211,7 +212,6 @@ const HowItWorksContent = () => {
                     )}
                   >
                     <CardContent className="p-6 space-y-4">
-                      {/* Icon */}
                       <div className={cn(
                         "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
                         color.bg
@@ -219,7 +219,6 @@ const HowItWorksContent = () => {
                         <Icon className={cn("w-7 h-7", color.icon)} />
                       </div>
 
-                      {/* Content */}
                       <div className="space-y-2">
                         <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
                           {step.title}
@@ -229,9 +228,8 @@ const HowItWorksContent = () => {
                         </p>
                       </div>
 
-                      {/* Arrow */}
                       <div className="flex items-center text-sm font-medium text-primary">
-                        <span>Részletek</span>
+                        <span>{t('grid.details_btn')}</span>
                         <IconArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
                       </div>
                     </CardContent>
@@ -245,27 +243,24 @@ const HowItWorksContent = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
                   <IconSearch className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Nincs találat</h3>
+                <h3 className="text-xl font-semibold mb-2">{t('grid.no_results')}</h3>
                 <p className="text-muted-foreground">
-                  Próbálj meg más keresési kifejezést használni
+                  {t('grid.no_results_desc')}
                 </p>
               </div>
             )}
           </div>
         ) : (
-          /* Detail View - Single Topic */
           <div className="space-y-6">
-            {/* Back Button */}
             <Button
               variant="ghost"
               onClick={() => handleStepChange(null)}
               className="gap-2 -ml-2"
             >
               <IconArrowRight className="w-4 h-4 rotate-180" />
-              Vissza a témakörökh öz
+              {t('detail.back_btn')}
             </Button>
 
-            {/* Content Card */}
             <Card className={cn(
               "border-2 shadow-2xl",
               currentColor.border,
@@ -273,7 +268,6 @@ const HowItWorksContent = () => {
               "bg-card/50 backdrop-blur-xl"
             )}>
               <CardContent className="p-8 md:p-12 space-y-8">
-                {/* Header */}
                 <div className="flex items-start gap-6">
                   <div className={cn(
                     "w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center shrink-0",
@@ -293,15 +287,12 @@ const HowItWorksContent = () => {
                   </div>
                 </div>
 
-                {/* Divider */}
                 <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-                {/* Content */}
                 <div className="prose prose-lg dark:prose-invert max-w-none">
                   <ContentRenderer content={howItWorksData.steps[activeStep].content} />
                 </div>
 
-                {/* Navigation */}
                 <div className="flex items-center justify-between pt-8 border-t border-border/40">
                   <Button
                     variant="outline"
@@ -311,11 +302,11 @@ const HowItWorksContent = () => {
                     className="gap-2"
                   >
                     <IconArrowRight className="w-4 h-4 rotate-180" />
-                    Előző
+                    {t('detail.prev_btn')}
                   </Button>
 
                   <div className="flex items-center gap-2">
-                    {howItWorksData.steps.map((_, index) => (
+                    {howItWorksData.steps.map((step: any, index: number) => (
                       <button
                         key={index}
                         onClick={() => handleStepChange(index)}
@@ -325,7 +316,7 @@ const HowItWorksContent = () => {
                             ? "w-8 bg-primary" 
                             : "w-2 bg-muted hover:bg-muted-foreground/40"
                         )}
-                        aria-label={`Ugrás a ${howItWorksData.steps[index].title} témához`}
+                        aria-label={t('detail.aria_jump', { title: step.title })}
                       />
                     ))}
                   </div>
@@ -336,7 +327,7 @@ const HowItWorksContent = () => {
                     disabled={activeStep === howItWorksData.steps.length - 1}
                     className="gap-2"
                   >
-                    Következő
+                    {t('detail.next_btn')}
                     <IconArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -361,7 +352,7 @@ const HowItWorksContent = () => {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                {howItWorksData.cta.buttons.map((button, index) => (
+                {howItWorksData.cta.buttons.map((button: any, index: number) => (
                   <Button
                     key={index}
                     variant={button.variant === 'primary' ? 'default' : 'outline'}
@@ -385,8 +376,10 @@ const HowItWorksContent = () => {
 };
 
 const HowItWorksPage = () => {
+  const t = useTranslations('HowItWorks');
+  
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">{t('loading')}</div>}>
       <HowItWorksContent />
     </Suspense>
   );

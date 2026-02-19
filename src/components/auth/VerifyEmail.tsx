@@ -4,33 +4,34 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconCheck } from '@tabler/icons-react';
-
-// Validációs séma a verifikációs kódhoz
-const verifyEmailSchema = z.object({
-  code: z.string().min(1, 'Verifikációs kód kötelező'),
-});
-
-type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>;
+import { useTranslations } from 'next-intl';
 
 interface VerifyEmailProps {
   email: string; // Az email cím, amelyre a kódot küldték
-  onSubmit?: (data: VerifyEmailFormData) => Promise<void> | void; // Kód beküldésének kezelése
+  onSubmit?: (data: { code: string }) => Promise<void> | void; // Kód beküldésének kezelése
   isLoading?: boolean; // Betöltési állapot
 }
 
 const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = false }) => {
+  const t = useTranslations('Auth.verify');
+  const tv = useTranslations('Auth.validation');
+
+  const verifyEmailSchema = z.object({
+    code: z.string().min(1, tv('code_required')),
+  });
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<VerifyEmailFormData>({
+  } = useForm<{ code: string }>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: {
       code: '',
     },
   });
 
-  const onFormSubmit = async (data: VerifyEmailFormData) => {
+  const onFormSubmit = async (data: { code: string }) => {
     try {
       if (onSubmit) {
         await onSubmit(data);
@@ -45,35 +46,33 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = 
       {/* Fejléc ikonnal és címmel */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border  / 0.3)]">
-            <IconCheck className="w-8 h-8 text-[hsl(var(--primary))] text-glow" />
+          <div className="p-3 rounded-full bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20">
+            <IconCheck className="w-8 h-8 text-primary" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-gradient-red mb-2">
-          Email Verifikáció
+        <h1 className="text-2xl font-bold mb-2">
+          {t('title')}
         </h1>
-        <p className="text-[hsl(var(--muted-foreground))] text-sm">
-          Add meg a(z) {email} címre küldött verifikációs kódot
+        <p className="text-muted-foreground text-sm">
+          {t('subtitle', { email })}
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
         {/* Verifikációs kód mező */}
         <div>
-          <label className="label">
-            <span className="label-text text-[hsl(var(--foreground))] font-medium">
-              Verifikációs kód
-            </span>
+          <label className="block text-sm font-medium mb-2">
+            {t('code_label')}
           </label>
           <input
             {...register('code')}
             type="text"
-            placeholder="Kód"
-            className="input input-bordered w-full bg-[hsl(var(--background) / 0.5)]  / 0.5)] focus: focus:ring-2 focus:ring-[hsl(var(--primary) / 0.2)] transition-all duration-200"
+            placeholder={t('code_placeholder')}
+            className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             disabled={isLoading}
           />
           {errors.code && (
-            <p className="text-[hsl(var(--destructive))] text-sm mt-1">
+            <p className="text-destructive text-sm mt-1">
               {errors.code.message}
             </p>
           )}
@@ -82,19 +81,19 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, onSubmit, isLoading = 
         {/* Küldés gomb */}
         <button
           type="submit"
-          className="btn btn-primary glass-button w-full"
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground h-10 px-4 py-2 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
           disabled={isLoading}
         >
           {isLoading ? (
-            <div className="flex items-center space-x-2">
-              <span className="loading loading-spinner w-4 h-4"></span>
-              <span>Verifikálás...</span>
-            </div>
+            <>
+              <span className="animate-spin">⏳</span>
+              <span>{t('submitting')}</span>
+            </>
           ) : (
-            <div className="flex items-center space-x-2">
+            <>
               <IconCheck className="w-5 h-5" />
-              <span>Verifikálás</span>
-            </div>
+              <span>{t('submit')}</span>
+            </>
           )}
         </button>
       </form>

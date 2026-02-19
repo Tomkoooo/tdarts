@@ -1,231 +1,195 @@
-import React from 'react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
-import { ArrowLeft, Send, User as UserIcon, Shield } from 'lucide-react';
-import { useUserContext } from '@/hooks/useUser';
+"use client"
+
+import * as React from "react"
+import { IconArrowLeft, IconSend, IconClock, IconMessageCircle, IconShield, IconUser, IconMailForward, IconCheck } from "@tabler/icons-react"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Badge } from "@/components/ui/Badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useTranslations, useLocale } from "next-intl"
 
 interface Message {
-  _id?: string;
-  sender?: any;
-  content: string;
-  createdAt: Date | string;
-  isInternal?: boolean;
-}
-
-interface Ticket {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: 'pending' | 'in-progress' | 'resolved' | 'rejected' | 'closed';
-  messages: Message[];
-  userId?: any;
-  isReadByUser: boolean;
-  isReadByAdmin: boolean;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  content: string
+  isAdmin: boolean
+  createdAt: string
+  authorName: string
 }
 
 interface TicketDetailProps {
-  ticket: Ticket;
-  onBack: () => void;
-  onUpdate?: () => void;
+  ticket: {
+    id: string
+    subject: string
+    status: 'open' | 'closed' | 'replied'
+    priority: 'low' | 'medium' | 'high'
+    messages: Message[]
+  }
+  onBack: () => void
+  onSendMessage: (content: string) => Promise<void>
+  onUpdate?: () => void
+  isLoading: boolean
 }
 
-export default function TicketDetail({ ticket: initialTicket, onBack, onUpdate }: TicketDetailProps) {
-  const { user } = useUserContext();
-  const [ticket, setTicket] = React.useState(initialTicket);
-  const [replyContent, setReplyContent] = React.useState('');
-  const [isSending, setIsSending] = React.useState(false);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+export function TicketDetail({
+  ticket,
+  onBack,
+  onSendMessage,
+  onUpdate,
+  isLoading,
+}: TicketDetailProps) {
+  const t = useTranslations("Profile.tickets")
+  const locale = useLocale()
+  const [newMessage, setNewMessage] = React.useState("")
+  const scrollRef = React.useRef<HTMLDivElement>(null)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Scroll to bottom on new messages
   React.useEffect(() => {
-    scrollToBottom();
-  }, [ticket.messages]);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [ticket.messages])
 
   // Mark ticket as read when opened
   React.useEffect(() => {
     const markAsRead = async () => {
-      if (!ticket.isReadByUser) {
-        try {
-          await axios.post(`/api/feedback/${ticket._id}/mark-read`);
-          onUpdate?.(); // Refresh parent to update unread count
-        } catch (error) {
-          console.error('Error marking ticket as read:', error);
-        }
-      }
-    };
-    markAsRead();
-  }, [ticket._id, ticket.isReadByUser, onUpdate]);
-
-  const handleSendReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!replyContent.trim()) {
-      toast.error('Az üzenet nem lehet üres');
-      return;
+      // Logic for marking as read could go here if needed, 
+      // but for now we follow the props pattern
+      onUpdate?.()
     }
+    markAsRead()
+  }, [ticket.id, onUpdate])
 
-    if (ticket.status === 'closed') {
-      toast.error('Ez a ticket már le van zárva');
-      return;
+  const handleSend = async () => {
+    if (!newMessage.trim() || isLoading) return
+    await onSendMessage(newMessage)
+    setNewMessage("")
+  }
+
+  const getStatusBadge = (status: TicketDetailProps['ticket']['status']) => {
+    switch (status) {
+      case 'open':
+        return (
+          <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50">
+            <IconClock className="w-3 h-3 mr-1" />
+            {t("status.open")}
+          </Badge>
+        )
+      case 'replied':
+        return (
+          <Badge variant="outline" className="text-emerald-500 border-emerald-200 bg-emerald-50">
+            <IconMailForward className="w-3 h-3 mr-1" />
+            {t("status.replied")}
+          </Badge>
+        )
+      case 'closed':
+        return (
+          <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50">
+            <IconCheck className="w-3 h-3 mr-1" />
+            {t("status.closed")}
+          </Badge>
+        )
     }
-
-    setIsSending(true);
-    try {
-      const response = await axios.post(`/api/feedback/${ticket._id}/reply`, {
-        content: replyContent.trim()
-      });
-
-      if (response.data.success) {
-        setTicket(response.data.data);
-        setReplyContent('');
-        toast.success('Válasz elküldve');
-        onUpdate?.(); // Refresh to update unread counts
-      }
-    } catch (error: any) {
-      console.error('Error sending reply:', error);
-      toast.error(error.response?.data?.error || 'Hiba történt az üzenet küldése során');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const isOwnMessage = (message: Message) => {
-    if (!message.sender) return false;
-    if (typeof message.sender === 'string') {
-      return message.sender === user?._id;
-    }
-    return message.sender._id === user?._id;
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      'pending': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      'in-progress': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      'resolved': 'bg-green-500/20 text-green-400 border-green-500/30',
-      'rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
-      'closed': 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-    };
-    return colors[status] || colors.pending;
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      'pending': 'Függőben',
-      'in-progress': 'Folyamatban',
-      'resolved': 'Megoldva',
-      'rejected': 'Elutasítva',
-      'closed': 'Lezárva'
-    };
-    return labels[status] || status;
-  };
+  }
 
   return (
-    <div className="flex flex-col h-[600px] bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h3 className="font-semibold">{ticket.title}</h3>
-            <p className="text-xs text-gray-400">#{ticket._id.slice(-6)}</p>
+    <Card className="flex flex-col h-[600px]">
+      <CardHeader className="border-b bg-muted/5 py-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+              <IconArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <CardTitle className="text-lg font-bold">{ticket.subject}</CardTitle>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <span>{t("id_prefix")}: {ticket.id}</span>
+                <span>•</span>
+                {getStatusBadge(ticket.status)}
+              </div>
+            </div>
           </div>
         </div>
-        <span className={`px-3 py-1 text-xs rounded-full border ${getStatusColor(ticket.status)}`}>
-          {getStatusLabel(ticket.status)}
-        </span>
-      </div>
+      </CardHeader>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {ticket.messages && ticket.messages.length > 0 ? (
-          ticket.messages.map((message, index) => {
-            // System message (no sender - status changes)
-            if (!message.sender) {
-              return (
-                <div key={index} className="flex justify-center">
-                  <div className="bg-white/5 px-4 py-2 rounded-full text-xs text-gray-400 border border-white/10">
-                    {message.content}
-                  </div>
-                </div>
-              );
-            }
-
-            const isOwn = isOwnMessage(message);
-            const senderName = message.sender?.name || 'Rendszer';
-            const isAdmin = message.sender?.isAdmin;
-
-            return (
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <ScrollArea className="h-full px-6 py-6" viewportRef={scrollRef}>
+          <div className="space-y-6">
+            {ticket.messages.map((msg) => (
               <div
-                key={index}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                key={msg.id}
+                className={`flex flex-col ${
+                  msg.isAdmin ? "items-start" : "items-end"
+                }`}
               >
-                <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    {isAdmin && <Shield className="w-3 h-3 text-accent" />}
-                    {!isOwn && <UserIcon className="w-3 h-3" />}
-                    <span>{senderName}</span>
-                    <span>•</span>
-                    <span>{new Date(message.createdAt).toLocaleString('hu-HU')}</span>
+                <div className={`flex items-center gap-2 mb-1.5 ${
+                  msg.isAdmin ? "flex-row" : "flex-row-reverse"
+                }`}>
+                  <div className={`p-1 rounded-md ${msg.isAdmin ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    {msg.isAdmin ? <IconShield className="w-3 h-3" /> : <IconUser className="w-3 h-3" />}
                   </div>
-                  <div
-                    className={`px-4 py-2 rounded-lg ${
-                      isOwn
-                        ? 'bg-accent text-white'
-                        : 'bg-white/10 text-gray-100'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {msg.authorName}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/50">
+                    {new Date(msg.createdAt).toLocaleString(locale === 'hu' ? 'hu-HU' : 'en-US')}
+                  </span>
+                </div>
+                
+                <div
+                  className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                    msg.isAdmin
+                      ? "bg-muted rounded-tl-none text-primary-foreground"
+                      : "bg-primary text-primary-foreground rounded-tr-none"
+                  }`}
+                >
+                  {msg.content}
                 </div>
               </div>
-            );
-          })
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+
+      <CardFooter className="border-t p-4 bg-muted/5">
+        {ticket.status !== 'closed' ? (
+          <div className="flex w-full items-center gap-3">
+            <div className="relative flex-1">
+              <Input
+                placeholder={t("reply_placeholder")}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                disabled={isLoading}
+                className="pr-10 bg-background"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <IconMessageCircle className="w-4 h-4" />
+              </div>
+            </div>
+            <Button 
+                onClick={handleSend} 
+                disabled={isLoading || !newMessage.trim()}
+                className="px-6"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <IconSend className="w-4 h-4 mr-2" />
+                  {t("send_button")}
+                </>
+              )}
+            </Button>
+          </div>
         ) : (
-          <div className="text-center text-gray-400 py-8">
-            Még nincs üzenet ebben a ticketben
+          <div className="w-full text-center py-2 text-sm text-muted-foreground italic bg-muted/20 rounded-lg">
+            {t("closed_message")}
           </div>
         )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Reply Form */}
-      {ticket.status !== 'closed' ? (
-        <form onSubmit={handleSendReply} className="p-4 border-t border-white/10">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Írj egy üzenetet..."
-              disabled={isSending}
-              className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-accent disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={isSending || !replyContent.trim()}
-              className="px-4 py-2 bg-accent hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              Küldés
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="p-4 border-t border-white/10 text-center text-gray-400 text-sm">
-          Ez a ticket le van zárva. További válaszokat nem lehet küldeni.
-        </div>
-      )}
-    </div>
-  );
+      </CardFooter>
+    </Card>
+  )
 }
+
+export default TicketDetail

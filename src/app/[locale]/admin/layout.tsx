@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/Button"
 import { useUserContext } from "@/hooks/useUser"
 import axios from "axios"
+import { useTranslations } from "next-intl"
 import {
   IconUsers,
   IconBuilding,
@@ -35,57 +36,57 @@ interface AdminLayoutProps {
 
 const sidebarItems = [
   {
-    title: "Dashboard",
+    title: "sidebar.dashboard",
     href: "/admin",
     icon: IconLayoutDashboard,
   },
   {
-    title: "Users",
+    title: "sidebar.users",
     href: "/admin/users",
     icon: IconUsers,
   },
   {
-    title: "Clubs",
+    title: "sidebar.clubs",
     href: "/admin/clubs",
     icon: IconBuilding,
   },
   {
-    title: "Tournaments",
+    title: "sidebar.tournaments",
     href: "/admin/tournaments",
     icon: IconTrophy,
   },
   {
-    title: "Leagues",
+    title: "sidebar.leagues",
     href: "/admin/leagues",
     icon: IconMedal,
   },
   {
-    title: "Feedback",
+    title: "sidebar.feedback",
     href: "/admin/feedback",
     icon: IconMessageCircle,
   },
   {
-    title: "Errors",
+    title: "sidebar.errors",
     href: "/admin/errors",
     icon: IconAlertTriangle,
   },
   {
-    title: "Announcements",
+    title: "sidebar.announcements",
     href: "/admin/announcements",
     icon: IconSpeakerphone,
   },
   {
-    title: "Todos",
+    title: "sidebar.todos",
     href: "/admin/todos",
     icon: IconCheck,
   },
   {
-    title: "Email Templates",
+    title: "sidebar.emails",
     href: "/admin/emails",
     icon: IconMail,
   },
   {
-    title: "Settings",
+    title: "sidebar.settings",
     href: "/admin/settings",
     icon: IconSettings,
   },
@@ -93,6 +94,7 @@ const sidebarItems = [
 
 function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: { isCollapsed?: boolean; onNavigate?: () => void; onToggleCollapse?: () => void }) {
   const pathname = usePathname()
+  const t = useTranslations("Admin.layout")
 
   return (
     <nav className="flex flex-col gap-1.5 p-2 h-[calc(100vh-4rem)]">
@@ -117,7 +119,7 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
             )}
           >
             <Icon className={cn("h-5 w-5 flex-shrink-0")} />
-            {!isCollapsed && <span className="truncate">{item.title}</span>}
+            {!isCollapsed && <span className="truncate">{t(item.title as any)}</span>}
           </Link>
         )
       })}
@@ -139,7 +141,7 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
                 ) : (
                 <>
                     <IconChevronLeft className="h-5 w-5" />
-                    <span className="truncate">Collapse</span>
+                    <span className="truncate">{t("sidebar.collapse")}</span>
                 </>
                 )}
             </Button>
@@ -157,6 +159,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { isOpen: isCommandOpen, setIsOpen: setCommandOpen } = useCommandPalette()
+  const t = useTranslations("Admin.layout")
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -197,7 +200,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="h-16 w-16 rounded-2xl" />
-          <p className="text-sm text-muted-foreground">Admin jogosultság ellenőrzése...</p>
+          <p className="text-sm text-muted-foreground">{t("status.checking")}</p>
         </div>
       </div>
     )
@@ -243,10 +246,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                  <Image src="/tdarts_fav.svg" alt="tDarts" width={32} height={32} className="rounded-md" />
                <div className="flex flex-col items-start">
                  <div className="flex items-center gap-3 mb-2">
-                   <span className="font-bold text-xl tracking-tight">tDarts Admin</span>
+                   <span className="font-bold text-xl tracking-tight">{t("sidebar.title")}</span>
                  </div>
                  <p className="text-sm text-muted-foreground">
-                   Szia, {user?.name?.split(' ')[0] || 'Admin'}! 👋
+                   {t("status.welcome", { name: user?.name?.split(' ')[0] || 'Admin' })}
                  </p>
                </div>
             </div>

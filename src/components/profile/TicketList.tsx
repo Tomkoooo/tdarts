@@ -1,169 +1,141 @@
 "use client"
 
-import React from 'react';
-import axios from 'axios';
-import { MessageSquare, Clock, CheckCircle2, XCircle, Circle } from 'lucide-react';
-import { LoadingScreen } from '@/components/ui/loading-spinner';
+import * as React from "react"
+import { IconMessageCircle, IconPlus, IconAlertCircle, IconClock, IconCheck, IconMailForward } from "@tabler/icons-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { useTranslations, useLocale } from "next-intl"
 
 interface Ticket {
-  _id: string;
-  title: string;
-  category: string;
-  status: 'pending' | 'in-progress' | 'resolved' | 'rejected' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  isReadByUser: boolean;
-  createdAt: string;
-  updatedAt: string;
-  messages: any[];
+  id: string
+  subject: string
+  status: 'open' | 'closed' | 'replied'
+  priority: 'low' | 'medium' | 'high'
+  createdAt: string
+  updatedAt: string
 }
 
 interface TicketListProps {
-  onSelectTicket: (ticket: Ticket) => void;
-  onRefresh?: () => void;
+  tickets: Ticket[]
+  onSelectTicket: (ticketId: string) => void
+  onCreateTicket: () => void
+  onRefresh?: () => void
 }
 
-export default function TicketList({ onSelectTicket }: TicketListProps) {
-  const [tickets, setTickets] = React.useState<Ticket[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+export function TicketList({
+  tickets,
+  onSelectTicket,
+  onCreateTicket,
+  onRefresh,
+}: TicketListProps) {
+  const t = useTranslations("Profile.tickets")
+  const locale = useLocale()
 
-  React.useEffect(() => {
-    loadTickets();
-  }, []);
-
-  const loadTickets = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get('/api/profile/tickets');
-      if (response.data.success) {
-        setTickets(response.data.data);
-      }
-    } catch (err: any) {
-      console.error('Error loading tickets:', err);
-      setError(err.response?.data?.error || 'Nem sikerült betölteni a ticketeket');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
+  const getStatusBadge = (status: Ticket['status']) => {
     switch (status) {
-      case 'resolved':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'rejected':
+      case 'open':
+        return (
+          <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50">
+            <IconClock className="w-3 h-3 mr-1" />
+            {t("status.open")}
+          </Badge>
+        )
+      case 'replied':
+        return (
+          <Badge variant="outline" className="text-emerald-500 border-emerald-200 bg-emerald-50">
+            <IconMailForward className="w-3 h-3 mr-1" />
+            {t("status.replied")}
+          </Badge>
+        )
       case 'closed':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'in-progress':
-        return <Clock className="w-4 h-4 text-blue-500" />;
-      default:
-        return <Circle className="w-4 h-4 text-yellow-500" />;
+        return (
+          <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50">
+            <IconCheck className="w-3 h-3 mr-1" />
+            {t("status.closed")}
+          </Badge>
+        )
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      'pending': 'Függőben',
-      'in-progress': 'Folyamatban',
-      'resolved': 'Megoldva',
-      'rejected': 'Elutasítva',
-      'closed': 'Lezárva'
-    };
-    return labels[status] || status;
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const colors: Record<string, string> = {
-      'low': 'text-gray-400',
-      'medium': 'text-yellow-400',
-      'high': 'text-orange-400',
-      'critical': 'text-red-400'
-    };
-    return colors[priority] || 'text-gray-400';
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingScreen text="Ticketek betöltése..." />
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-400">{error}</p>
-        <button
-          onClick={loadTickets}
-          className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          Újrapróbálás
-        </button>
-      </div>
-    );
-  }
-
-  if (tickets.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-400">
-        <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p className="text-lg">Még nincs egyetlen ticketed sem</p>
-        <p className="text-sm mt-2">Küldj be egy visszajelzést, hogy ticketet hozz létre!</p>
-      </div>
-    );
+  const getPriorityBadge = (priority: Ticket['priority']) => {
+    switch (priority) {
+      case 'high':
+        return <Badge variant="destructive" className="bg-destructive/10 text-destructive">{t("priority.high")}</Badge>
+      case 'medium':
+        return <Badge variant="default" className="bg-warning/10 text-warning border-warning/20">{t("priority.medium")}</Badge>
+      case 'low':
+        return <Badge variant="secondary">{t("priority.low")}</Badge>
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-semibold">Ticketek ({tickets.length})</h3>
-      </div>
-
-      <div className="space-y-3">
-        {tickets.map((ticket) => (
-          <button
-            key={ticket._id}
-            onClick={() => onSelectTicket(ticket)}
-            className="w-full text-left bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10 transition-all group"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  {getStatusIcon(ticket.status)}
-                  <span className="text-sm text-gray-400">{getStatusLabel(ticket.status)}</span>
-                  {!ticket.isReadByUser && (
-                    <span className="px-2 py-0.5 text-xs bg-accent text-white rounded-full">
-                      Új válasz
-                    </span>
-                  )}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="flex items-center gap-2">
+          <IconMessageCircle className="w-5 h-5" />
+          {t("title")}
+        </CardTitle>
+        <Button size="sm" onClick={onCreateTicket}>
+          <IconPlus className="w-4 h-4 mr-1" />
+          {t("new_ticket")}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {tickets.length > 0 ? (
+            tickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                onClick={() => onSelectTicket(ticket.id)}
+                className="group relative p-4 rounded-xl border border-muted/20 bg-card hover:bg-muted/5 transition-all cursor-pointer overflow-hidden"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <h4 className="font-bold text-primary-foreground group-hover:text-primary transition-colors">
+                        {ticket.subject}
+                      </h4>
+                      {getStatusBadge(ticket.status)}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{t("id_prefix")}: {ticket.id}</span>
+                      <span>•</span>
+                      <span>
+                        {t("updated_at", { date: new Date(ticket.updatedAt).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US') })}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {getPriorityBadge(ticket.priority)}
+                  </div>
                 </div>
                 
-                <h4 className="font-medium truncate group-hover:text-accent transition-colors">
-                  {ticket.title}
-                </h4>
-                
-                <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" />
-                    {ticket.messages?.length || 0} üzenet
-                  </span>
-                  <span>•</span>
-                  <span>{new Date(ticket.updatedAt).toLocaleDateString('hu-HU')}</span>
-                  <span>•</span>
-                  <span className={getPriorityColor(ticket.priority)}>
-                    {ticket.priority}
-                  </span>
-                </div>
+                {/* Decorative background element */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 group-hover:bg-primary/10 transition-colors" />
               </div>
-
-              <div className="text-gray-400 group-hover:text-white transition-colors">
-                →
-              </div>
+            ))
+          ) : (
+            <div className="py-12 text-center border-2 border-dashed border-muted/10 rounded-2xl">
+              <IconAlertCircle className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+              <p className="text-muted-foreground font-medium">
+                {t("empty")}
+              </p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mt-4 text-primary hover:text-primary hover:bg-primary/5"
+                onClick={onCreateTicket}
+              >
+                {t("new_ticket_desc")}
+              </Button>
             </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
+
+export default TicketList

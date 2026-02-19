@@ -6,6 +6,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUserContext } from '@/hooks/useUser';
+import { useTranslations } from 'next-intl';
 
 const Login: React.FC = () => {
   const router = useRouter();
@@ -13,14 +14,14 @@ const Login: React.FC = () => {
   const { setUser } = useUserContext();
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
-  // Get redirect parameter from URL
   useEffect(() => {
-    // NextAuth uses 'callbackUrl', custom logic uses 'redirect'. Check both.
     const redirect = searchParams.get('redirect') || searchParams.get('callbackUrl');
     if (redirect) {
       setRedirectPath(redirect);
     }
   }, [searchParams]);
+
+  const t = useTranslations('Auth.login');
 
   const handleLogin = async (data: { email: string; password: string }) => {
     console.log('Login data:', data);
@@ -32,7 +33,7 @@ const Login: React.FC = () => {
         },
       }),
       {
-        loading: 'Bejelentkezés...',
+        loading: t('submitting'),
         success: (response) => {
           // Extract the user from the response and set it in the context
           const user = response.data.user;
@@ -52,14 +53,14 @@ const Login: React.FC = () => {
             router.push('/search'); // Navigate to the home page
           }
           
-          return 'Sikeres bejelentkezés!';
+          return t('success');
         },
         error: (error: any) => {
           console.error('Login error:', error);
           if (error.response && error.response.data.error) {
             return error.response.data.error; // Error from the server response
           } else {
-            return 'Hiba történt a bejelentkezés során'; // General error message
+            return t('error_generic'); // General error message
           }
         },
       }

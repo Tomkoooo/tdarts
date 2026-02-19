@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { IconFilter } from "@tabler/icons-react"
 import PlayerCard from "@/components/player/PlayerCard"
 import Pagination from "@/components/common/Pagination"
-import { useTranslations } from "next-intl"
+import { useTranslations, useFormatter } from "next-intl"
 
 
 interface InitialViewProps {
@@ -57,6 +57,7 @@ export function InitialView({
   hasActiveQuery,
 }: InitialViewProps) {
   const t = useTranslations('Search.initial_view')
+  const format = useFormatter()
 
   // Return early if loading
   if (loading) {
@@ -311,8 +312,8 @@ export function InitialView({
                       <div className="flex items-center gap-2">
                         <IconCalendar className="size-4" />
                         <span>
-                          {new Date(league.startDate).toLocaleDateString('hu-HU')} - 
-                          {league.endDate ? new Date(league.endDate).toLocaleDateString('hu-HU') : t('ongoing')}
+                          {format.dateTime(new Date(league.startDate))} - 
+                          {league.endDate ? format.dateTime(new Date(league.endDate)) : t('ongoing')}
                         </span>
                       </div>
                     </div>

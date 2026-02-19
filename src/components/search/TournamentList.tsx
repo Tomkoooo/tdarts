@@ -1,6 +1,6 @@
 import TournamentCard from "@/components/tournament/TournamentCard"
 import { IconCalendar } from "@tabler/icons-react"
-import { useTranslations } from "next-intl"
+import { useTranslations, useFormatter } from "next-intl"
 
 interface TournamentListProps {
     tournaments: any[];
@@ -8,6 +8,7 @@ interface TournamentListProps {
 
 export function TournamentList({ tournaments }: TournamentListProps) {
     const tResults = useTranslations('Search.tournament_results')
+    const format = useFormatter()
     
     if (!tournaments || tournaments.length === 0) {
         return (
@@ -60,11 +61,11 @@ export function TournamentList({ tournaments }: TournamentListProps) {
         } else if (targetDate.getTime() === tomorrow.getTime()) {
           return tResults('tomorrow')
         } else {
-          return targetDate.toLocaleDateString('hu-HU', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          return format.dateTime(targetDate, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
           })
         }
     }

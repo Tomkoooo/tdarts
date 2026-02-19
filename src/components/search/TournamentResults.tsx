@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchFiltersPanel } from "@/components/search/SearchFilters"
 import TournamentCard from "@/components/tournament/TournamentCard"
-import { useTranslations } from "next-intl"
+import { useTranslations, useFormatter } from "next-intl"
 
 interface Tournament {
   _id: string
@@ -47,6 +47,7 @@ export function TournamentResults({
   onFilterChange
 }: TournamentResultsProps) {
   const t = useTranslations('Search.tournament_results')
+  const format = useFormatter()
   const [view, setView] = React.useState<'list' | 'calendar'>('list')
 
   // Group tournaments by date
@@ -97,11 +98,11 @@ export function TournamentResults({
     } else if (targetDate.getTime() === tomorrow.getTime()) {
       return t('tomorrow')
     } else {
-      return targetDate.toLocaleDateString('hu-HU', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return format.dateTime(targetDate, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       })
     }
   }
@@ -237,9 +238,9 @@ export function TournamentResults({
                              )}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            🕐 {new Date(tournament.tournamentSettings.startDate).toLocaleTimeString('hu-HU', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
+                            🕐 {format.dateTime(new Date(tournament.tournamentSettings.startDate), {
+                              hour: '2-digit',
+                              minute: '2-digit'
                             })}
                           </div>
                           <div className="text-xs text-muted-foreground">

@@ -18,6 +18,7 @@ import {
   IconProgress,
   IconCircleX
 } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 
 interface Todo {
   _id: string;
@@ -61,6 +62,7 @@ interface CreateTodoData {
 }
 
 export default function TodoManager() {
+  const t = useTranslations("Admin.todos");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [stats, setStats] = useState<TodoStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,7 +136,7 @@ export default function TodoManager() {
   };
 
   const handleDeleteTodo = async (todoId: string) => {
-    if (!confirm('Biztosan törölni szeretnéd ezt a todo-t?')) return;
+    if (!confirm(t('toasts.delete_confirm'))) return;
 
     try {
       await axios.delete(`/api/admin/todos/${todoId}`);
@@ -147,32 +149,30 @@ export default function TodoManager() {
   const getPriorityConfig = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return { color: 'bg-error text-error-content', icon: IconAlertCircle, label: 'Kritikus' };
+        return { color: 'bg-error text-error-content', icon: IconAlertCircle, label: t('priorities.critical') };
       case 'high':
-        return { color: 'bg-warning text-warning-content', icon: IconAlertCircle, label: 'Magas' };
+        return { color: 'bg-warning text-warning-content', icon: IconAlertCircle, label: t('priorities.high') };
       case 'medium':
-        return { color: 'bg-info text-info-content', icon: IconAlertCircle, label: 'Közepes' };
+        return { color: 'bg-info text-info-content', icon: IconAlertCircle, label: t('priorities.medium') };
       case 'low':
-        return { color: 'bg-success text-success-content', icon: IconAlertCircle, label: 'Alacsony' };
+        return { color: 'bg-success text-success-content', icon: IconAlertCircle, label: t('priorities.low') };
       default:
-        return { color: 'bg-base-300 text-base-content', icon: IconAlertCircle, label: 'Ismeretlen' };
+        return { color: 'bg-base-300 text-base-content', icon: IconAlertCircle, label: priority };
     }
   };
-
-
 
   const getCategoryConfig = (category: string) => {
     switch (category) {
       case 'bug':
-        return { emoji: '', label: 'Hiba', color: 'bg-error/10 text-error' };
+        return { emoji: '', label: t('categories.bug'), color: 'bg-error/10 text-error' };
       case 'feature':
-        return { emoji: '', label: 'Új funkció', color: 'bg-primary/10 text-primary' };
+        return { emoji: '', label: t('categories.feature'), color: 'bg-primary/10 text-primary' };
       case 'improvement':
-        return { emoji: '', label: 'Fejlesztés', color: 'bg-info/10 text-info' };
+        return { emoji: '', label: t('categories.improvement'), color: 'bg-info/10 text-info' };
       case 'maintenance':
-        return { emoji: '', label: 'Karbantartás', color: 'bg-warning/10 text-warning' };
+        return { emoji: '', label: t('categories.maintenance'), color: 'bg-warning/10 text-warning' };
       default:
-        return { emoji: '', label: 'Egyéb', color: 'bg-base-300/10 text-base-content' };
+        return { emoji: '', label: t('categories.other'), color: 'bg-base-300/10 text-base-content' };
     }
   };
 
@@ -253,7 +253,7 @@ export default function TodoManager() {
           {todo.dueDate && (
             <div className={`flex items-center gap-1 ${isOverdue ? 'text-error font-bold' : ''}`}>
               <IconCalendar size={14} />
-              {new Date(todo.dueDate).toLocaleDateString('hu-HU')}
+              {new Date(todo.dueDate).toLocaleDateString()}
             </div>
           )}
           {todo.assignedTo && (
@@ -296,7 +296,7 @@ export default function TodoManager() {
           {todosInColumn.length === 0 ? (
             <div className="text-center py-8 text-base-content/40">
               <Icon size={48} className="mx-auto mb-2 opacity-20" />
-              <p className="text-sm">Nincs {title.toLowerCase()}</p>
+              <p className="text-sm">{t('kanban.empty', { status: title.toLowerCase() })}</p>
             </div>
           ) : (
             todosInColumn.map(todo => (
@@ -316,7 +316,7 @@ export default function TodoManager() {
             <div className="w-16 h-16   rounded-full"></div>
             <div className="w-16 h-16    rounded-full animate-spin absolute top-0"></div>
           </div>
-          <p className="text-base-content/60">Todo-k betöltése...</p>
+          <p className="text-base-content/60">{t('loading')}</p>
         </div>
       </div>
     );
@@ -329,19 +329,19 @@ export default function TodoManager() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-primary/20 to-primary/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{stats.total}</div>
-            <div className="text-sm text-base-content/70 font-medium">Összes Todo</div>
+            <div className="text-sm text-base-content/70 font-medium">{t('stats.total')}</div>
           </div>
           <div className="bg-gradient-to-br from-warning/20 to-warning/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-warning mb-2">{stats.pending}</div>
-            <div className="text-sm text-base-content/70 font-medium">Függőben</div>
+            <div className="text-sm text-base-content/70 font-medium">{t('stats.pending')}</div>
           </div>
           <div className="bg-gradient-to-br from-info/20 to-info/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-info mb-2">{stats.inProgress}</div>
-            <div className="text-sm text-base-content/70 font-medium">Folyamatban</div>
+            <div className="text-sm text-base-content/70 font-medium">{t('stats.in_progress')}</div>
           </div>
           <div className="bg-gradient-to-br from-success/20 to-success/5   rounded-xl p-6 text-center">
             <div className="text-4xl font-bold text-success mb-2">{stats.completed}</div>
-            <div className="text-sm text-base-content/70 font-medium">Befejezve</div>
+            <div className="text-sm text-base-content/70 font-medium">{t('stats.completed')}</div>
           </div>
         </div>
       )}
@@ -356,14 +356,14 @@ export default function TodoManager() {
               className={`btn btn-sm gap-2 ${viewMode === 'kanban' ? 'btn-primary' : 'btn-ghost'}`}
             >
               <IconLayoutKanban size={18} />
-              Kanban
+              {t('toolbar.view_kanban')}
             </button>
             <button
               onClick={() => setViewMode('list')}
               className={`btn btn-sm gap-2 ${viewMode === 'list' ? 'btn-primary' : 'btn-ghost'}`}
             >
               <IconList size={18} />
-              Lista
+              {t('toolbar.view_list')}
             </button>
           </div>
 
@@ -374,11 +374,11 @@ export default function TodoManager() {
               value={filters.priority}
               onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
             >
-              <option value="">Minden prioritás</option>
-              <option value="critical">Kritikus</option>
-              <option value="high">Magas</option>
-              <option value="medium">Közepes</option>
-              <option value="low">Alacsony</option>
+              <option value="">{t('toolbar.all_priorities')}</option>
+              <option value="critical">{t('priorities.critical')}</option>
+              <option value="high">{t('priorities.high')}</option>
+              <option value="medium">{t('priorities.medium')}</option>
+              <option value="low">{t('priorities.low')}</option>
             </select>
 
             <select
@@ -386,18 +386,18 @@ export default function TodoManager() {
               value={filters.category}
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
             >
-              <option value="">Minden kategória</option>
-              <option value="bug">Hiba</option>
-              <option value="feature">Új funkció</option>
-              <option value="improvement">Fejlesztés</option>
-              <option value="maintenance">Karbantartás</option>
-              <option value="other">Egyéb</option>
+              <option value="">{t('toolbar.all_categories')}</option>
+              <option value="bug">{t('categories.bug')}</option>
+              <option value="feature">{t('categories.feature')}</option>
+              <option value="improvement">{t('categories.improvement')}</option>
+              <option value="maintenance">{t('categories.maintenance')}</option>
+              <option value="other">{t('categories.other')}</option>
             </select>
 
             <div className="relative">
               <input
                 type="text"
-                placeholder="Keresés..."
+                placeholder={t('toolbar.search_placeholder')}
                 className="input input-ed input-sm w-full pl-10"
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
@@ -412,7 +412,7 @@ export default function TodoManager() {
             className="btn btn-primary btn-sm gap-2 whitespace-nowrap"
           >
             <IconPlus size={18} />
-            Új Todo
+            {t('toolbar.new_btn')}
           </button>
         </div>
       </div>
@@ -422,25 +422,25 @@ export default function TodoManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <KanbanColumn
             status="pending"
-            title="Függőben"
+            title={t('kanban.pending')}
             icon={IconClock}
             color="bg-amber-200/20  -amber-200/40"
           />
           <KanbanColumn
             status="in-progress"
-            title="Folyamatban"
+            title={t('kanban.in_progress')}
             icon={IconProgress}
             color="bg-sky-200/20  -sky-200/40"
           />
           <KanbanColumn
             status="completed"
-            title="Befejezve"
+            title={t('kanban.completed')}
             icon={IconCircleCheck}
             color="bg-emerald-200/20  -emerald-200/40"
           />
           <KanbanColumn
             status="cancelled"
-            title="Törölve"
+            title={t('kanban.cancelled')}
             icon={IconCircleX}
             color="bg-muted/40  -muted/60"
           />
@@ -450,12 +450,12 @@ export default function TodoManager() {
       {/* List View */}
       {viewMode === 'list' && (
         <div className="bg-base-100   rounded-xl p-6">
-          <h3 className="text-lg font-bold mb-4">Todo-k ({filteredTodos.length})</h3>
+          <h3 className="text-lg font-bold mb-4">{t('list.count', { count: filteredTodos.length })}</h3>
           
           {filteredTodos.length === 0 ? (
             <div className="text-center py-12">
               <IconList size={64} className="mx-auto mb-4 text-base-content/20" />
-              <p className="text-base-content/60">Nincsenek todo-k a kiválasztott szűrőkkel</p>
+              <p className="text-base-content/60">{t('list.empty')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -472,7 +472,7 @@ export default function TodoManager() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold">Új Todo létrehozása</h3>
+              <h3 className="text-2xl font-bold">{t('dialog.create_title')}</h3>
               <button
                 onClick={() => setShowCreateForm(false)}
                 className="btn btn-ghost btn-sm btn-circle"
@@ -484,55 +484,55 @@ export default function TodoManager() {
             <div className="p-6 space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Cím *</span>
+                  <span className="label-text font-bold">{t('dialog.title_label')}</span>
                 </label>
                 <input
                   type="text"
                   className="input input-ed w-full"
                   value={newTodo.title}
                   onChange={(e) => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Todo címe..."
+                  placeholder={t('dialog.title_placeholder')}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-bold">Kategória</span>
+                    <span className="label-text font-bold">{t('dialog.category_label')}</span>
                   </label>
                   <select
                     className="select select-ed w-full"
                     value={newTodo.category}
                     onChange={(e) => setNewTodo(prev => ({ ...prev, category: e.target.value as any }))}
                   >
-                    <option value="bug">Hiba</option>
-                    <option value="feature">Új funkció</option>
-                    <option value="improvement">Fejlesztés</option>
-                    <option value="maintenance">Karbantartás</option>
-                    <option value="other">Egyéb</option>
+                    <option value="bug">{t('categories.bug')}</option>
+                    <option value="feature">{t('categories.feature')}</option>
+                    <option value="improvement">{t('categories.improvement')}</option>
+                    <option value="maintenance">{t('categories.maintenance')}</option>
+                    <option value="other">{t('categories.other')}</option>
                   </select>
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-bold">Prioritás</span>
+                    <span className="label-text font-bold">{t('dialog.priority_label')}</span>
                   </label>
                   <select
                     className="select select-ed w-full"
                     value={newTodo.priority}
                     onChange={(e) => setNewTodo(prev => ({ ...prev, priority: e.target.value as any }))}
                   >
-                    <option value="low">Alacsony</option>
-                    <option value="medium">Közepes</option>
-                    <option value="high">Magas</option>
-                    <option value="critical">Kritikus</option>
+                    <option value="low">{t('priorities.low')}</option>
+                    <option value="medium">{t('priorities.medium')}</option>
+                    <option value="high">{t('priorities.high')}</option>
+                    <option value="critical">{t('priorities.critical')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Határidő</span>
+                  <span className="label-text font-bold">{t('dialog.due_date_label')}</span>
                 </label>
                 <input
                   type="date"
@@ -544,24 +544,24 @@ export default function TodoManager() {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Leírás</span>
+                  <span className="label-text font-bold">{t('dialog.desc_label')}</span>
                 </label>
                 <textarea
                   className="textarea textarea-ed w-full h-32"
                   value={newTodo.description}
                   onChange={(e) => setNewTodo(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Részletes leírás..."
+                  placeholder={t('dialog.desc_placeholder')}
                 />
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Címkék</span>
+                  <span className="label-text font-bold">{t('dialog.tags_label')}</span>
                 </label>
                 <input
                   type="text"
                   className="input input-ed w-full"
-                  placeholder="Címke hozzáadása (Enter)"
+                  placeholder={t('dialog.tags_placeholder')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -604,13 +604,13 @@ export default function TodoManager() {
                 disabled={!newTodo.title.trim()}
               >
                 <IconPlus size={18} />
-                Létrehozás
+                {t('dialog.actions.create')}
               </button>
               <button
                 onClick={() => setShowCreateForm(false)}
                 className="btn btn-ghost"
               >
-                Mégse
+                {t('dialog.actions.cancel')}
               </button>
             </div>
           </div>
@@ -622,7 +622,7 @@ export default function TodoManager() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-base-100   p-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold">Todo szerkesztése</h3>
+              <h3 className="text-2xl font-bold">{t('dialog.edit_title')}</h3>
               <button
                 onClick={() => setEditingTodo(null)}
                 className="btn btn-ghost btn-sm btn-circle"
@@ -634,7 +634,7 @@ export default function TodoManager() {
             <div className="p-6 space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Cím</span>
+                  <span className="label-text font-bold">{t('dialog.title_label')}</span>
                 </label>
                 <input
                   type="text"
@@ -647,57 +647,57 @@ export default function TodoManager() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-bold">Státusz</span>
+                    <span className="label-text font-bold">{t('dialog.status_label')}</span>
                   </label>
                   <select
                     className="select select-ed w-full"
                     value={editingTodo.status}
                     onChange={(e) => setEditingTodo(prev => prev ? { ...prev, status: e.target.value as any } : null)}
                   >
-                    <option value="pending">Függőben</option>
-                    <option value="in-progress">Folyamatban</option>
-                    <option value="completed">Kész</option>
-                    <option value="cancelled">Törölve</option>
+                    <option value="pending">{t('statuses.pending')}</option>
+                    <option value="in-progress">{t('statuses.in-progress')}</option>
+                    <option value="completed">{t('statuses.completed')}</option>
+                    <option value="cancelled">{t('statuses.cancelled')}</option>
                   </select>
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-bold">Prioritás</span>
+                    <span className="label-text font-bold">{t('dialog.priority_label')}</span>
                   </label>
                   <select
                     className="select select-ed w-full"
                     value={editingTodo.priority}
                     onChange={(e) => setEditingTodo(prev => prev ? { ...prev, priority: e.target.value as any } : null)}
                   >
-                    <option value="low">Alacsony</option>
-                    <option value="medium">Közepes</option>
-                    <option value="high">Magas</option>
-                    <option value="critical">Kritikus</option>
+                    <option value="low">{t('priorities.low')}</option>
+                    <option value="medium">{t('priorities.medium')}</option>
+                    <option value="high">{t('priorities.high')}</option>
+                    <option value="critical">{t('priorities.critical')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Kategória</span>
+                  <span className="label-text font-bold">{t('dialog.category_label')}</span>
                 </label>
                 <select
                   className="select select-ed w-full"
                   value={editingTodo.category}
                   onChange={(e) => setEditingTodo(prev => prev ? { ...prev, category: e.target.value as any } : null)}
                 >
-                  <option value="bug">Hiba</option>
-                  <option value="feature">Új funkció</option>
-                  <option value="improvement">Fejlesztés</option>
-                  <option value="maintenance">Karbantartás</option>
-                  <option value="other">Egyéb</option>
+                  <option value="bug">{t('categories.bug')}</option>
+                  <option value="feature">{t('categories.feature')}</option>
+                  <option value="improvement">{t('categories.improvement')}</option>
+                  <option value="maintenance">{t('categories.maintenance')}</option>
+                  <option value="other">{t('categories.other')}</option>
                 </select>
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-bold">Leírás</span>
+                  <span className="label-text font-bold">{t('dialog.desc_label')}</span>
                 </label>
                 <textarea
                   className="textarea textarea-ed w-full h-32"
@@ -723,13 +723,13 @@ export default function TodoManager() {
                 className="btn btn-primary flex-1 gap-2"
               >
                 <IconCheck size={18} />
-                Mentés
+                {t('dialog.actions.save')}
               </button>
               <button
                 onClick={() => setEditingTodo(null)}
                 className="btn btn-ghost"
               >
-                Mégse
+                {t('dialog.actions.cancel')}
               </button>
             </div>
           </div>

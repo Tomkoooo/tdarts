@@ -51,6 +51,7 @@ import {
 } from "@tabler/icons-react"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import { useTranslations } from "next-intl"
 
 interface Announcement {
   _id: string
@@ -66,6 +67,7 @@ interface Announcement {
 }
 
 export default function AnnouncementTable() {
+  const t = useTranslations("Admin.announcements")
   const [data, setData] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -108,7 +110,7 @@ export default function AnnouncementTable() {
       }
     } catch (error) {
       console.error("Error fetching announcements:", error)
-      toast.error("Nem sikerült betöltteni a híreket")
+      toast.error(t("toasts.fetch_error"))
     } finally {
       setLoading(false)
     }
@@ -119,13 +121,13 @@ export default function AnnouncementTable() {
   }, [page, search])
 
   const deleteAnnouncement = async (id: string) => {
-    if (!confirm("Biztosan törölni szeretnéd?")) return
+    if (!confirm(t("actions.confirm_delete"))) return
     try {
       await axios.delete(`/api/admin/announcements/${id}`)
-      toast.success("Hír törölve")
+      toast.success(t("toasts.delete_success"))
       fetchData()
     } catch {
-      toast.error("Hiba a törlés során")
+      toast.error(t("toasts.delete_error"))
       try {
           await axios.delete(`/api/announcements/${id}`) 
           fetchData()
@@ -136,10 +138,10 @@ export default function AnnouncementTable() {
   const toggleActive = async (id: string) => {
       try {
           await axios.post(`/api/announcements/${id}/toggle`)
-          toast.success("Státusz frissítve")
+          toast.success(t("toasts.status_success"))
           fetchData()
       } catch {
-          toast.error("Hiba a státusz frissítésekor")
+          toast.error(t("toasts.status_error"))
       }
   }
 
@@ -151,7 +153,7 @@ export default function AnnouncementTable() {
           type: "info",
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // +1 week default
           showButton: false,
-          buttonText: "Részletek",
+          buttonText: t("dialog.form.button_text_placeholder"),
           buttonAction: "",
           duration: 10000
       })
@@ -184,10 +186,10 @@ export default function AnnouncementTable() {
 
           if (editingItem) {
               await axios.patch(`/api/admin/announcements/${editingItem._id}`, payload)
-              toast.success("Hír frissítve")
+              toast.success(t("toasts.update_success"))
           } else {
               await axios.post(`/api/admin/announcements`, payload)
-              toast.success("Hír létrehozva")
+              toast.success(t("toasts.create_success"))
           }
           
           setShowModal(false)
@@ -195,7 +197,7 @@ export default function AnnouncementTable() {
           fetchData()
     } catch (err: any) {
       console.error("Error saving announcement:", err)
-      toast.error(err.response?.data?.error || "Hiba a mentés során")
+      toast.error(err.response?.data?.error || t("toasts.save_error"))
     } finally {
       setIsSaving(false)
     }
@@ -215,7 +217,7 @@ export default function AnnouncementTable() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
         <Input
-          placeholder="Keresés..."
+          placeholder={t("search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -223,7 +225,7 @@ export default function AnnouncementTable() {
         <div className="flex gap-2">
            <Button onClick={openCreateModal}>
                 <IconPlus className="mr-2 size-4" />
-                Új Hír
+                {t("new_btn")}
             </Button>
             <Button variant="outline" size="icon" onClick={() => fetchData()}>
                 <IconRefresh className="size-4" />
@@ -235,24 +237,24 @@ export default function AnnouncementTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Cím</TableHead>
-              <TableHead>Típus</TableHead>
-              <TableHead>Státusz</TableHead>
-              <TableHead>Lejárat</TableHead>
-              <TableHead className="text-right">Műveletek</TableHead>
+              <TableHead>{t("table.title")}</TableHead>
+              <TableHead>{t("table.type")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
+              <TableHead>{t("table.expires")}</TableHead>
+              <TableHead className="text-right">{t("table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
-                  Betöltés...
+                  {t("table.loading")}
                 </TableCell>
               </TableRow>
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
-                  Nincs találat.
+                  {t("table.no_results")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -262,9 +264,9 @@ export default function AnnouncementTable() {
                   <TableCell>{getTypeBadge(item.type)}</TableCell>
                   <TableCell>
                       {item.isActive ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-600 hover:bg-emerald-500/30">Aktív</Badge>
+                          <Badge className="bg-emerald-500/20 text-emerald-600 hover:bg-emerald-500/30">{t("table.active")}</Badge>
                       ) : (
-                          <Badge variant="outline">Inaktív</Badge>
+                          <Badge variant="outline">{t("table.inactive")}</Badge>
                       )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
@@ -274,23 +276,23 @@ export default function AnnouncementTable() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Menü</span>
+                          <span className="sr-only">{t("table.menu_sr")}</span>
                           <IconDots className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Műveletek</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t("table.actions")}</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => toggleActive(item._id)}>
-                            {item.isActive ? <><IconEyeOff className="mr-2 size-4"/> Deaktiválás</> : <><IconEye className="mr-2 size-4"/> Aktiválás</>}
+                            {item.isActive ? <><IconEyeOff className="mr-2 size-4"/> {t("actions.deactivate")}</> : <><IconEye className="mr-2 size-4"/> {t("actions.activate")}</>}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEditModal(item)}>
                              <IconEdit className="mr-2 h-4 w-4" />
-                             Szerkesztés
+                             {t("actions.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => deleteAnnouncement(item._id)} className="text-destructive">
                              <IconTrash className="mr-2 h-4 w-4" />
-                             Törlés
+                             {t("actions.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -304,7 +306,7 @@ export default function AnnouncementTable() {
 
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {total} hír összesen • {page} / {totalPages} oldal
+          {t("pagination.info", { total, current: page, total_pages: totalPages })}
         </div>
         <div className="space-x-2">
           <Button
@@ -313,7 +315,7 @@ export default function AnnouncementTable() {
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
           >
-            Előző
+            {t("pagination.prev")}
           </Button>
           <Button
             variant="outline"
@@ -321,7 +323,7 @@ export default function AnnouncementTable() {
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
-            Következő
+            {t("pagination.next")}
           </Button>
         </div>
       </div>
@@ -331,42 +333,42 @@ export default function AnnouncementTable() {
       <Dialog open={showModal} onOpenChange={(open) => !open && setShowModal(false)}>
         <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle>{editingItem ? "Hír Szerkesztése" : "Új Hír Létrehozása"}</DialogTitle>
+            <DialogTitle>{editingItem ? t("dialog.edit_title") : t("dialog.create_title")}</DialogTitle>
             <DialogDescription>
-              {editingItem ? "Módosítsd a hír részleteit." : "Add meg az új hír adatait."}
+              {editingItem ? t("dialog.edit_desc") : t("dialog.create_desc")}
             </DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="flex-1 px-6 py-4">
             <div className="grid gap-4 pb-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Cím</Label>
+                <Label htmlFor="title">{t("dialog.form.title")}</Label>
                 <Input
                   id="title"
                   value={editForm.title}
                   onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                  placeholder="Hír címe"
+                  placeholder={t("dialog.form.title_placeholder")}
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">Típus</Label>
+                  <Label htmlFor="type">{t("dialog.form.type")}</Label>
                   <Select value={editForm.type} onValueChange={(v: any) => setEditForm({...editForm, type: v})}>
                     <SelectTrigger id="type">
-                      <SelectValue placeholder="Típus" />
+                      <SelectValue placeholder={t("dialog.form.type")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="info">Infó (Kék)</SelectItem>
-                      <SelectItem value="success">Siker (Zöld)</SelectItem>
-                      <SelectItem value="warning">Figyelem (Sárga)</SelectItem>
-                      <SelectItem value="error">Hiba (Piros)</SelectItem>
+                      <SelectItem value="info">{t("dialog.form.types.info")}</SelectItem>
+                      <SelectItem value="success">{t("dialog.form.types.success")}</SelectItem>
+                      <SelectItem value="warning">{t("dialog.form.types.warning")}</SelectItem>
+                      <SelectItem value="error">{t("dialog.form.types.error")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Időtartam (ms)</Label>
+                  <Label htmlFor="duration">{t("dialog.form.duration")}</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -380,7 +382,7 @@ export default function AnnouncementTable() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="expiresAt">Lejárat</Label>
+                <Label htmlFor="expiresAt">{t("dialog.form.expires")}</Label>
                 <Input
                   id="expiresAt"
                   type="datetime-local"
@@ -390,13 +392,13 @@ export default function AnnouncementTable() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="description">Leírás</Label>
+                <Label htmlFor="description">{t("dialog.form.description")}</Label>
                 <textarea
                   id="description"
                   className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={editForm.description}
                   onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                  placeholder="Hír szövege..."
+                  placeholder={t("dialog.form.description_placeholder")}
                 />
               </div>
 
@@ -407,27 +409,27 @@ export default function AnnouncementTable() {
                     checked={editForm.showButton} 
                     onCheckedChange={(checked) => setEditForm({...editForm, showButton: checked === true})}
                   />
-                  <Label htmlFor="showButton" className="cursor-pointer">Gomb megjelenítése</Label>
+                  <Label htmlFor="showButton" className="cursor-pointer">{t("dialog.form.show_button")}</Label>
                 </div>
 
                 {editForm.showButton && (
                   <div className="grid gap-4 animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-2">
-                      <Label htmlFor="buttonText">Gomb felirata</Label>
+                      <Label htmlFor="buttonText">{t("dialog.form.button_text")}</Label>
                       <Input
                         id="buttonText"
                         value={editForm.buttonText}
                         onChange={(e) => setEditForm({...editForm, buttonText: e.target.value})}
-                        placeholder="Pl: Részletek"
+                        placeholder={t("dialog.form.button_text_placeholder")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="buttonAction">Gomb link (URL)</Label>
+                      <Label htmlFor="buttonAction">{t("dialog.form.button_action")}</Label>
                       <Input
                         id="buttonAction"
                         value={editForm.buttonAction}
                         onChange={(e) => setEditForm({...editForm, buttonAction: e.target.value})}
-                        placeholder="Pl: /results vagy https://..."
+                        placeholder={t("dialog.form.button_action_placeholder")}
                       />
                     </div>
                   </div>
@@ -438,10 +440,10 @@ export default function AnnouncementTable() {
 
           <DialogFooter className="p-6 pt-2 border-t">
             <Button type="button" variant="outline" onClick={() => setShowModal(false)} disabled={isSaving}>
-                Mégse
+                {t("actions.cancel")}
             </Button>
             <Button type="submit" onClick={handleUpdate} disabled={isSaving}>
-                {isSaving ? "Mentés..." : (editingItem ? "Mentés" : "Létrehozás")}
+                {isSaving ? t("actions.saving") : (editingItem ? t("actions.save") : t("actions.create"))}
             </Button>
           </DialogFooter>
         </DialogContent>
