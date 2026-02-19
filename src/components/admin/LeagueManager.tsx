@@ -7,7 +7,7 @@ import { z } from 'zod';
 import axios from 'axios';
 import { IconPlus, IconEdit, IconTrash, IconTrophy, IconChartBar, IconUserPlus } from '@tabler/icons-react';
 import PlayerSearch from '../club/PlayerSearch';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 
 // Validációs sémák - Mértani sorozat verzió
 const createLeagueSchema = z.object({

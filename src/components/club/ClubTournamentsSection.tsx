@@ -4,6 +4,7 @@ import * as React from "react"
 import { IconTrophy, IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
 import TournamentList from "./TournamentList"
+import { useTranslations } from "next-intl"
 
 interface ClubTournamentsSectionProps {
   tournaments: any[]
@@ -22,6 +23,7 @@ export function ClubTournamentsSection({
   onCreateOacTournament,
   onDeleteTournament,
 }: ClubTournamentsSectionProps) {
+  const t = useTranslations('Club.tournaments')
   const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [verificationFilter, setVerificationFilter] = React.useState<string>('all')
@@ -95,7 +97,7 @@ export function ClubTournamentsSection({
     today.setHours(0, 0, 0, 0)
     const isToday = date.getTime() === today.getTime()
 
-    if (isToday) return 'Ma'
+    if (isToday) return t('date_header.today')
     
     return date.toLocaleDateString('hu-HU', { 
       year: 'numeric', 
@@ -113,7 +115,7 @@ export function ClubTournamentsSection({
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
               <IconTrophy className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold">Versenyek</h2>
+            <h2 className="text-2xl md:text-3xl font-bold">{t('title')}</h2>
           </div>
           {/* Sandbox Toggle */}
           {/* Sandbox Toggle - Only visible to admins/moderators */}
@@ -127,7 +129,7 @@ export function ClubTournamentsSection({
                     : 'text-muted-foreground hover:text-foreground/80'
                 }`}
               >
-                Éles
+                {t('view_mode.active')}
               </button>
               <button
                 onClick={() => setViewMode('sandbox')}
@@ -137,7 +139,7 @@ export function ClubTournamentsSection({
                     : 'text-muted-foreground hover:text-warning/80'
                 }`}
               >
-                Teszt
+                {t('view_mode.sandbox')}
               </button>
               <button
                 onClick={() => setViewMode('deleted')}
@@ -147,7 +149,7 @@ export function ClubTournamentsSection({
                     : 'text-muted-foreground hover:text-destructive/80'
                 }`}
               >
-                Törölt
+                {t('view_mode.deleted')}
               </button>
             </div>
           )}
@@ -163,14 +165,14 @@ export function ClubTournamentsSection({
               className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6 border-warning text-warning hover:bg-warning/10"
             >
               <IconTrophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-              <span className="hidden xs:inline">Új OAC Verseny</span>
-              <span className="xs:hidden">Új OAC verseny</span>
+              <span className="hidden xs:inline">{t('new_oac')}</span>
+              <span className="xs:hidden">{t('new_oac')}</span>
             </Button>
           )}
           <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
             <IconPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            <span className="hidden xs:inline">{viewMode === 'sandbox' ? "Új teszt verseny" : "Új verseny"}</span>
-            <span className="xs:hidden">{viewMode === 'sandbox' ? "Új teszt verseny" : "Új verseny"}</span>
+            <span className="hidden xs:inline">{viewMode === 'sandbox' ? t('new_test') : t('new_tournament')}</span>
+            <span className="xs:hidden">{viewMode === 'sandbox' ? t('new_test') : t('new_tournament')}</span>
           </Button>
         </div>
       )}
@@ -179,42 +181,42 @@ export function ClubTournamentsSection({
       {/* Filters */}
       <div className="grid grid-cols-1 sm:flex sm:items-end flex-wrap gap-4 bg-card/40 p-4 rounded-xl border border-border/50 backdrop-blur-sm">
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Állapot</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.status')}</label>
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
-            <option value="all">Összes állapot</option>
-            <option value="pending">Várakozó</option>
-            <option value="group-stage">Csoportkör</option>
-            <option value="knockout">Kieséses</option>
-            <option value="finished">Befejezett</option>
+            <option value="all">{t('status_options.all')}</option>
+            <option value="pending">{t('status_options.pending')}</option>
+            <option value="group-stage">{t('status_options.group_stage')}</option>
+            <option value="knockout">{t('status_options.knockout')}</option>
+            <option value="finished">{t('status_options.finished')}</option>
           </select>
         </div>
 
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Hitelesítés</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.verification')}</label>
           <select 
             value={verificationFilter}
             onChange={(e) => setVerificationFilter(e.target.value)}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
-            <option value="all">Összes típus</option>
-            <option value="verified">Hitelesített (OAC)</option>
-            <option value="unverified">Nem hitelesített</option>
+            <option value="all">{t('verification_options.all')}</option>
+            <option value="verified">{t('verification_options.verified')}</option>
+            <option value="unverified">{t('verification_options.unverified')}</option>
           </select>
         </div>
 
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Rendezés</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.sort')}</label>
           <select 
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
-            <option value="desc">Legújabb elöl</option>
-            <option value="asc">Legrégebbi elöl</option>
+            <option value="desc">{t('sort_options.desc')}</option>
+            <option value="asc">{t('sort_options.asc')}</option>
           </select>
         </div>
 
@@ -229,7 +231,7 @@ export function ClubTournamentsSection({
             }}
             className="text-xs h-9"
           >
-            Szűrők törlése
+            {t('filters.clear')}
           </Button>
         )}
       </div>
@@ -244,7 +246,7 @@ export function ClubTournamentsSection({
                 </h3>
                 <div className="flex-1 h-px bg-border/50"></div>
                 <span className="text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/30 px-2 py-1 rounded">
-                  {groupedTournaments[dateKey].length} verseny
+                  {t('tournament_count', { count: groupedTournaments[dateKey].length })}
                 </span>
               </div>
               <TournamentList

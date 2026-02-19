@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/Badge"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 interface CityChipsProps {
     cities: { city: string; count: number }[];
@@ -8,6 +9,7 @@ interface CityChipsProps {
 }
 
 export function CityChips({ cities, selectedCity, onSelectCity }: CityChipsProps) {
+    const t = useTranslations('Search.filter_bar')
     if (!cities?.length) return null;
 
     return (
@@ -21,7 +23,7 @@ export function CityChips({ cities, selectedCity, onSelectCity }: CityChipsProps
                     )}
                     onClick={() => onSelectCity(undefined)}
                 >
-                    Összes
+                    {t('all')}
                 </Badge>
                 {cities.map((item) => (
                     <Badge

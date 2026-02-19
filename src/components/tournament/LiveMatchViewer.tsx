@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { getMatchState } from '@/lib/socketApi';
 import { IconEye, IconArrowLeft, IconPencil, IconShare } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -59,6 +60,8 @@ interface MatchData {
 }
 
 const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCode, player1, player2, onBack, onShare }) => {
+  const t = useTranslations('Tournament.live_viewer');
+  
   const [matchState, setMatchState] = useState<MatchState>({
     currentLeg: 1,
     completedLegs: [],
@@ -231,10 +234,10 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     }
   };
 
-  const renderThrowScore = (t: Throw) => {
-    const isHigh = t.score >= 100 && t.score < 140;
-    const isVeryHigh = t.score >= 140 && t.score < 180;
-    const isMax = t.score === 180;
+  const renderThrowScore = (t_throw: Throw) => {
+    const isHigh = t_throw.score >= 100 && t_throw.score < 140;
+    const isVeryHigh = t_throw.score >= 140 && t_throw.score < 180;
+    const isMax = t_throw.score === 180;
     
     let className = "font-mono text-base sm:text-lg"; 
     if (isMax) className += " text-yellow-500 font-bold text-xl";
@@ -244,8 +247,8 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
 
     return (
       <div className={cn("flex flex-col items-center justify-center h-8", isMax && "animate-pulse")}>
-        <span className={className}>{t.score}</span>
-        {t.isCheckout && (
+        <span className={className}>{t_throw.score}</span>
+        {t_throw.isCheckout && (
           <Badge variant="outline" className="text-[10px] h-3 px-1 border-primary text-primary absolute -mt-6 ml-6 bg-background">
             OUT
           </Badge>
@@ -280,7 +283,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       <div className="flex justify-between items-center p-2 lg:hidden border-b bg-muted/20">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-2 px-2">
           <IconArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Vissza</span>
+          <span className="font-medium">{t('back')}</span>
         </Button>
         {onShare && (
           <Button variant="ghost" size="icon" onClick={onShare}>
@@ -293,7 +296,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       <div className="hidden lg:flex justify-end items-center mb-4 gap-2">
         <Button size="sm" variant="secondary" className="gap-2" onClick={openStreamingPopup}>
           <IconEye className="w-4 h-4" />
-          Streaming Ablak
+          {t('streaming_window')}
         </Button>
       </div>
 
@@ -303,7 +306,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
           {/* Top Bar: Leg Count & Status */}
           <div className="flex justify-center items-center py-3 bg-muted/30 border-b gap-6 text-sm">
              <div className="flex items-center gap-3">
-               <span className="text-muted-foreground uppercase text-xs tracking-wider font-semibold">Legs</span>
+               <span className="text-muted-foreground uppercase text-xs tracking-wider font-semibold">{t('legs')}</span>
                <div className="flex items-center gap-2 text-xl font-bold font-mono">
                   <span>{matchState.player1LegsWon}</span>
                   <span className="text-muted-foreground/30">-</span>

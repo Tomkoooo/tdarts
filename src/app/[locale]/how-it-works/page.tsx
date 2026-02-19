@@ -18,7 +18,7 @@ import {
   IconDeviceMobile,
   IconSword
 } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { useRouter, useSearchParams } from 'next/navigation';
 import howItWorksData from '@/data/how-it-works.json';
 import ContentRenderer from '@/components/how-it-works/ContentRenderer';

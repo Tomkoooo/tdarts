@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { IconTarget } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 interface GroupsDisplayProps {
   tournament: any
@@ -8,6 +9,7 @@ interface GroupsDisplayProps {
 
 
 export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
+  const t = useTranslations("Tournament.tv_views.groups")
   const groups = tournament.groups || []
   const knockout = tournament.knockout || []
   const tournamentStatus = tournament.tournamentSettings?.status || tournament.status
@@ -48,7 +50,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
       const p1Score = p1Obj?.legsWon ?? 0
       const p2Score = p2Obj?.legsWon ?? 0
       
-      const scorerName = match.scorer?.name || (match.scorerSource?.type === 'match_loser' ? 'Előző vesztes' : 'TBD')
+      const scorerName = match.scorer?.name || (match.scorerSource?.type === 'match_loser' ? t('previous_loser') : t('tbd'))
       
       // Status styling
       let statusClass = "border-l-4 border-muted"
@@ -60,7 +62,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
         statusClass = "border-l-4 border-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.2)]"
         bgClass = "bg-green-500/10"
         headerClass = "bg-green-500/20 text-green-400"
-        statusText = "LIVE"
+        statusText = t("live")
       } else if (match.status === 'finished') {
         // Check if it's a bye/walkover (one player missing and 0 score)
         const isBye = (!player1 || !player2) && (p1Score === 0 && p2Score === 0)
@@ -69,16 +71,16 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
            statusClass = "border-l-4 border-muted"
            bgClass = "bg-card/40"
            headerClass = "bg-muted/20 text-muted-foreground"
-           statusText = "ELŐNYERŐ"
+           statusText = t("bye")
         } else {
            statusClass = "border-l-4 border-blue-500"
            bgClass = "bg-card/60"
            headerClass = "bg-blue-500/20 text-blue-400"
-           statusText = "VÉGE"
+           statusText = t("end")
         }
       } else {
         // Waiting status
-        statusText = "VÁR"
+        statusText = t("wait")
         
         // If both players are present, show as ready/warning
         if (player1 && player2) {
@@ -96,7 +98,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
         <div className={`flex flex-col justify-center ${isFinal ? 'w-64 h-36 text-base' : 'w-44 h-24 text-sm'} ${bgClass} ${statusClass} rounded-md shadow-sm overflow-hidden transition-all hover:scale-105 relative`}>
            {/* Header / Status */}
            <div className={`flex justify-between px-3 py-1 text-[10px] font-bold tracking-wider ${headerClass}`}>
-              <span>{match.boardReference ? `TÁBLA ${match.boardReference}` : `#${match.matchNumber || ''}`}</span>
+              <span>{match.boardReference ? `${t("board_numbered", { number: match.boardReference })}` : `#${match.matchNumber || ''}`}</span>
               <span className={match.status === 'ongoing' ? 'animate-pulse' : ''}>{statusText}</span>
            </div>
            
@@ -117,7 +119,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
            {/* Scorer Footer */}
            <div className="px-3 py-1 text-[10px] text-muted-foreground bg-black/10 flex items-center gap-1 truncate border-t border-white/5">
               <IconTarget className="w-3 h-3 opacity-70" />
-              <span className="truncate font-medium">Író: {scorerName}</span>
+              <span className="truncate font-medium">{t("scorer", { name: scorerName })}</span>
            </div>
         </div>
       )
@@ -147,7 +149,7 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
 
              {/* CENTER (Final) */}
              <div className="flex flex-col justify-center items-center px-6 z-10">
-                <div className="mb-2 text-xl font-bold text-yellow-500 tracking-widest uppercase drop-shadow-md">DÖNTŐ</div>
+                <div className="mb-2 text-xl font-bold text-yellow-500 tracking-widest uppercase drop-shadow-md">{t("final")}</div>
                 {finalRound && finalRound.matches && (
                    <CompactMatchCard match={finalRound.matches[0]} isFinal={true} />
                 )}
@@ -184,11 +186,11 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
   return (
     <Card className="h-full bg-card/80 overflow-hidden shadow-none">
       <CardHeader className="pb-3 bg-muted/5">
-        <CardTitle className="text-2xl font-bold text-foreground">Group Standings</CardTitle>
+        <CardTitle className="text-2xl font-bold text-foreground">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-y-auto h-[calc(100%-4.5rem)] p-4">
         {groups.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8 text-xl">No groups created yet</p>
+          <p className="text-muted-foreground text-center py-8 text-xl">{t("no_groups")}</p>
         ) : (
           <div className="flex flex-wrap gap-4 justify-around">{/* Added justify-around for better spacing */}
             {groups.map((group: any, groupIndex: number) => {
@@ -202,14 +204,14 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
                   className="p-3 rounded-lg bg-muted/10 border border-muted/20 min-w-[14rem] max-w-[16rem] flex flex-col shadow-sm"
                 >
                   {/* Header - simplified, no buttons */}
-                  <div className="mb-3 pb-2 border-b border-muted/30">
-                    <h3 className="text-lg font-bold text-primary">
-                      Csoport {groupIndex + 1}
-                    </h3>
-                    <span className="text-xs text-muted-foreground">
-                      Tábla {group.board || groupIndex + 1}
-                    </span>
-                  </div>
+                   <div className="mb-3 pb-2 border-b border-muted/30">
+                     <h3 className="text-lg font-bold text-primary">
+                       {t("group_numbered", { number: groupIndex + 1 })}
+                     </h3>
+                     <span className="text-xs text-muted-foreground">
+                       {t("board_numbered", { number: group.board || groupIndex + 1 })}
+                     </span>
+                   </div>
 
                   {/* Players - always visible, better spacing */}
                   <div className="flex-1 space-y-2">{/* Increased spacing from mb-1 to space-y-2 */}
@@ -233,16 +235,16 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
                               }`}
                             >
                               {player.groupStanding || index + 1}.
-                            </span>
-                            <span className="text-foreground font-medium truncate">
-                              {player.playerReference?.name || "Unknown"}
-                            </span>
-                            {legs > 0 && (
+                             </span>
+                             <span className="text-foreground font-medium truncate">
+                               {player.playerReference?.name || t("unknown")}
+                             </span>
+                             {legs > 0 && (
                               <span className="text-xs text-muted-foreground">({legs})</span>
-                            )}
-                          </div>
-                          <span className="text-muted-foreground font-semibold text-xs">{points}p</span>
-                        </div>
+                             )}
+                           </div>
+                           <span className="text-muted-foreground font-semibold text-xs">{points}{t("points_suffix")}</span>
+                         </div>
                       )
                     })}
                   </div>

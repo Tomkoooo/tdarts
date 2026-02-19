@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { Textarea } from "@/components/ui/textarea"
 import { IconX } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 interface DeleteTournamentModalProps {
   isOpen: boolean
@@ -24,14 +25,21 @@ export default function DeleteTournamentModal({
   hasPlayers,
   playersWithEmailCount,
 }: DeleteTournamentModalProps) {
-  const [subject, setSubject] = React.useState("Torna törölve")
-  const [message, setMessage] = React.useState("Sajnálattal értesítünk, hogy ez a torna törölve lett.")
+  const t = useTranslations('Club.delete_tournament_modal')
+  const [subject, setSubject] = React.useState(t('default_subject'))
+  const [message, setMessage] = React.useState(t('default_message'))
+  const [skipNotification, setSkipNotification] = React.useState(false)
 
   React.useEffect(() => {
     if (isOpen) {
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
       document.body.style.overflow = 'hidden'
       document.body.style.paddingRight = `${scrollbarWidth}px`
+      
+      // Reset defaults when opening
+      setSubject(t('default_subject'))
+      setMessage(t('default_message'))
+      setSkipNotification(false)
     } else {
       document.body.style.overflow = ''
       document.body.style.paddingRight = ''
@@ -40,9 +48,7 @@ export default function DeleteTournamentModal({
       document.body.style.overflow = ''
       document.body.style.paddingRight = ''
     }
-  }, [isOpen])
-
-  const [skipNotification, setSkipNotification] = React.useState(false)
+  }, [isOpen, t])
 
   const handleConfirm = () => {
     if (hasPlayers && playersWithEmailCount > 0 && !skipNotification) {
@@ -50,9 +56,7 @@ export default function DeleteTournamentModal({
     } else {
       onConfirm()
     }
-    setSubject("Torna törölve")
-    setMessage("Sajnálattal értesítünk, hogy ez a torna törölve lett.")
-    setSkipNotification(false)
+    onClose()
   }
 
   if (!isOpen) return null
@@ -68,7 +72,7 @@ export default function DeleteTournamentModal({
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 pointer-events-none">
         <div 
-          className="w-full max-w-[500px] max-h-[90vh] overflow-y-auto bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-xl p-6 pointer-events-auto"
+          className="w-full max-w-[500px] max-h-[90vh] overflow-y-auto bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-xl p-6 pointer-events-auto relative"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -80,25 +84,25 @@ export default function DeleteTournamentModal({
 
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold">Torna törlése</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                Biztosan törölni szeretnéd a <strong>{tournamentName}</strong> tornát?
+              <h2 className="text-lg font-semibold">{t('title')}</h2>
+              <div className="text-sm text-muted-foreground mt-2">
+                <p>{t('confirm_question', { name: tournamentName })}</p>
                 {hasPlayers && playersWithEmailCount > 0 && (
                   <span className="block mt-2">
-                    {playersWithEmailCount} jelentkezőnek email címmel értesítést küldünk.
+                    {t('notification_info', { count: playersWithEmailCount })}
                   </span>
                 )}
                 {hasPlayers && playersWithEmailCount === 0 && (
                   <span className="block mt-2 text-muted-foreground">
-                    Nincs jelentkező email címmel, ezért nem küldünk értesítést.
+                    {t('no_email_notification')}
                   </span>
                 )}
                 {!hasPlayers && (
                   <span className="block mt-2 text-muted-foreground">
-                    Nincsenek jelentkezők, ezért nem küldünk értesítést.
+                    {t('no_players_notification')}
                   </span>
                 )}
-              </p>
+              </div>
             </div>
 
             {hasPlayers && playersWithEmailCount > 0 && (
@@ -111,7 +115,7 @@ export default function DeleteTournamentModal({
                   className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label htmlFor="skip-notification" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Ne küldjön értesítést (Csendes törlés)
+                  {t('skip_notification_label')}
                 </Label>
               </div>
             )}
@@ -119,21 +123,21 @@ export default function DeleteTournamentModal({
             {hasPlayers && playersWithEmailCount > 0 && !skipNotification && (
               <div className="space-y-4 py-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="space-y-2">
-                  <Label htmlFor="email-subject">Email tárgy</Label>
+                  <Label htmlFor="email-subject">{t('email_subject_label')}</Label>
                   <Input
                     id="email-subject"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Torna törölve"
+                    placeholder={t('default_subject')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email-message">Email üzenet</Label>
+                  <Label htmlFor="email-message">{t('email_message_label')}</Label>
                   <Textarea
                     id="email-message"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Sajnálattal értesítünk, hogy ez a torna törölve lett."
+                    placeholder={t('default_message')}
                     rows={5}
                     className="resize-none"
                   />
@@ -143,10 +147,10 @@ export default function DeleteTournamentModal({
 
             <div className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
               <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
-                Mégse
+                {t('cancel')}
               </Button>
               <Button variant="destructive" onClick={handleConfirm} className="w-full sm:w-auto">
-                Törlés
+                {t('delete')}
               </Button>
             </div>
           </div>

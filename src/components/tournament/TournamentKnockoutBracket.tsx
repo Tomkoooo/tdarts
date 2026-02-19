@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useTranslations } from "next-intl";
 import {
   IconAlertTriangle,
   IconChartHistogram,
@@ -131,6 +132,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   clubId,
 }) => {
   const { user } = useUserContext()
+  const t = useTranslations()
   const isAdmin = userClubRole === "admin" || userClubRole === "moderator"
   const fullscreenContainerRef = useRef<HTMLDivElement>(null)
   const [knockoutData, setKnockoutData] = useState<KnockoutRound[]>([])
@@ -377,7 +379,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowGenerateNextRound(false)
-        toast.success("Következő kör sikeresen generálva!")
+        toast.success(t('Tournament.knockout.success_next_round'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült generálni a következő kört.", {
           error: response.data?.error,
@@ -398,7 +400,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleMatchEdit = (match: KnockoutMatch) => {
     if (!match.matchReference || !match.player1 || !match.player2) {
-      showErrorToast("Bye meccseket nem lehet szerkeszteni - automatikusan befejeződnek.", {
+      showErrorToast(t('Tournament.knockout.error_bye_edit'), {
         context: "Meccs szerkesztése",
         errorName: "Szerkesztés sikertelen",
       })
@@ -464,7 +466,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         await fetchKnockoutData()
         setShowMatchEditModal(false)
         setSelectedMatch(null)
-        toast.success("Meccs sikeresen frissítve!")
+        toast.success(t('Tournament.knockout.success_match_updated'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
           error: response.data?.error,
@@ -485,12 +487,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleAddMatch = async () => {
     if (selectedPlayer1 && selectedPlayer2 && selectedPlayer1 === selectedPlayer2) {
-      toast.error("Kérjük válassz ki két különböző játékost.")
+      toast.error(t('Tournament.knockout.error_different_players'))
       return
     }
 
     if ((selectedPlayer1 || selectedPlayer2) && !selectedBoard) {
-      toast.error("Kérjük válassz ki egy táblát ha játékosokat adsz hozzá.")
+      toast.error(t('Tournament.knockout.error_select_board'))
       return
     }
 
@@ -518,7 +520,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowPlayer1Dropdown(false)
         setShowPlayer2Dropdown(false)
         setShowScorerDropdown(false)
-        toast.success("Meccs sikeresen hozzáadva!")
+        toast.success(t('Tournament.knockout.success_match_added'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült hozzáadni a meccset.", {
           error: response.data?.error,
@@ -546,7 +548,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowGenerateEmptyRoundsModal(false)
-        toast.success("Üres körök sikeresen generálva!")
+        toast.success(t('Tournament.knockout.success_empty_rounds'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült generálni az üres köröket.", {
           error: response.data?.error,
@@ -567,7 +569,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleGenerateRandomPairings = async () => {
     if (selectedPlayersForPairing.length < 2) {
-      toast.error("Kérjük válassz ki legalább 2 játékost.")
+      toast.error(t('Tournament.knockout.error_min_players'))
       return
     }
 
@@ -582,7 +584,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         await fetchKnockoutData()
         setShowRandomPairingModal(false)
         setSelectedPlayersForPairing([])
-        toast.success("Párosítások sikeresen generálva!")
+        toast.success(t('Tournament.knockout.success_pairings'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült generálni a párosításokat.", {
           error: response.data?.error,
@@ -639,7 +641,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowPlayer1Dropdown(false)
         setShowPlayer2Dropdown(false)
         setShowScorerDropdown(false)
-        toast.success("Meccs beállítások sikeresen frissítve!")
+        toast.success(t('Tournament.knockout.success_settings_updated'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccs beállításait.", {
           error: response.data?.error,
@@ -669,12 +671,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
     const isNewMatch = !editingMatch.matchReference
     if (isNewMatch && !editPairPlayer1 && !editPairPlayer2) {
-      toast.error("Kérjük válassz ki legalább egy játékost!")
+      toast.error(t('Tournament.knockout.error_select_player'))
       return
     }
 
     if (isNewMatch && (editPairPlayer1 || editPairPlayer2) && !editPairBoard) {
-      toast.error("Kérjük válassz ki egy táblát!")
+      toast.error(t('Tournament.knockout.error_select_board'))
       return
     }
 
@@ -703,7 +705,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
         if (response.data?.success) {
           await fetchKnockoutData()
-          toast.success("Meccs sikeresen létrehozva!")
+          toast.success(t('Tournament.knockout.success_match_created'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
@@ -728,7 +730,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
         if (response.data?.success) {
           await fetchKnockoutData()
-          toast.success("Meccs sikeresen frissítve!")
+          toast.success(t('Tournament.knockout.success_match_updated'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
@@ -752,7 +754,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleViewLegs = (match: KnockoutMatch) => {
     if (!match.matchReference) {
-      toast.error("Bye meccsekhez nincsenek legek.")
+      toast.error(t('Tournament.knockout.error_bye_legs'))
       return
     }
     setSelectedMatchForLegs(match)
@@ -769,7 +771,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       })
       if (response.data?.success) {
         await fetchKnockoutData()
-        toast.success("Meccs sikeresen törölve!")
+        toast.success(t('Tournament.knockout.success_match_deleted'))
         setShowDeleteMatchModal(false)
         setMatchToDelete(null)
       } else {
@@ -796,7 +798,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteLastRound`)
       if (response.data?.success) {
         await fetchKnockoutData()
-        toast.success("Utolsó kör sikeresen törölve!")
+        toast.success(t('Tournament.knockout.success_round_deleted'))
         setShowDeleteLastRoundModal(false)
       } else {
         showErrorToast(response.data?.error || "Nem sikerült törölni az utolsó kört.", {

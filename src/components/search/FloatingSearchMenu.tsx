@@ -5,6 +5,7 @@ import { IconSearch, IconX, IconFilter } from "@tabler/icons-react"
 import { Input } from "@/components/ui/Input"
 import { SearchTabs } from "./SearchTabs"
 import { Button } from "@/components/ui/Button"
+import { useTranslations } from "next-intl"
 
 interface FloatingSearchMenuProps {
     isVisible: boolean;
@@ -29,6 +30,7 @@ export function FloatingSearchMenu({
     onTabChange,
     counts,
 }: FloatingSearchMenuProps) {
+    const t = useTranslations('Search.floating_menu')
     const [isOpen, setIsOpen] = useState(false)
 
     if (!isVisible) return null
@@ -52,7 +54,7 @@ export function FloatingSearchMenu({
                         className="shadow-lg rounded-full h-12 px-4 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                         <IconSearch className="w-5 h-5" />
-                        <span className="hidden sm:inline">Keresés & Szűrők</span>
+                        <span className="hidden sm:inline">{t('title')}</span>
                     </Button>
                 ) : (
                     <div className="bg-background border border-border rounded-2xl shadow-2xl p-4 w-[calc(100vw-2rem)] sm:w-96 max-h-[70vh] overflow-y-auto animate-in slide-in-from-top duration-200">
@@ -60,7 +62,7 @@ export function FloatingSearchMenu({
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <IconFilter className="w-5 h-5 text-primary" />
-                                Keresés & Szűrők
+                                {t('title')}
                             </h3>
                             <Button
                                 variant="ghost"
@@ -78,7 +80,7 @@ export function FloatingSearchMenu({
                             <Input 
                                 value={query}
                                 onChange={onQueryChange}
-                                placeholder="Keresés..." 
+                                placeholder={t('search_placeholder')} 
                                 className="pl-10 h-10"
                             />
                         </div>
@@ -98,7 +100,7 @@ export function FloatingSearchMenu({
                             className="w-full"
                             onClick={() => setIsOpen(false)}
                         >
-                            Bezárás
+                            {t('close')}
                         </Button>
                     </div>
                 )}

@@ -5,6 +5,7 @@ import { IconSearch, IconUserPlus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { Input } from "@/components/ui/Input"
 import { Button } from '@/components/ui/Button'
+import { useTranslations } from 'next-intl'
 
 interface PlayerSearchProps {
   onPlayerSelected: (player: any) => void
@@ -21,7 +22,7 @@ interface PlayerSearchProps {
 
 export default function PlayerSearch({
   onPlayerSelected,
-  placeholder = 'Játékos keresése...',
+  placeholder,
   className = '',
   showAddGuest = true,
   clubId,
@@ -30,6 +31,7 @@ export default function PlayerSearch({
   excludedPlayers = [],
   excludeGuests = false,
 }: PlayerSearchProps) {
+  const t = useTranslations('Club.player_search')
   const [searchTerm, setSearchTerm] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -198,13 +200,13 @@ export default function PlayerSearch({
 
         setResults(combined)
       } catch (error) {
-        console.error('Keresési hiba:', error)
+        console.error(t('error'), error)
         setResults([])
       } finally {
         setIsLoading(false)
       }
     },
-    [clubId, isForTournament, excludePlayerIds, excludedPlayers, addedIds, isPlayerExcluded]
+    [clubId, isForTournament, excludePlayerIds, excludedPlayers, addedIds, isPlayerExcluded, t]
   )
 
   useEffect(() => {
@@ -296,7 +298,7 @@ export default function PlayerSearch({
         <div className="relative z-50 w-full mt-2 shadow-2xl shadow-black/30 bg-background/95 backdrop-blur-xl">
           <div className="max-h-72 overflow-y-auto">
             {isLoading ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">Keresés...</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">{t('searching')}</div>
             ) : results.length > 0 ? (
               results
                 .filter((player) => !isPlayerExcluded(player))
@@ -317,16 +319,16 @@ export default function PlayerSearch({
                         <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
                           {player.username ? (
                             <>
-                              <span>Regisztrált</span>
-                              {player.clubName && <span>• {player.clubName}</span>}
+                              <span>{t('registered')}</span>
+                              {player.clubName && <span>{t('club_member', { clubName: player.clubName })}</span>}
                             </>
                           ) : player.userRef ? (
                             <>
-                              <span>Regisztrált játékos</span>
-                              {player.clubName && <span>• {player.clubName}</span>}
+                              <span>{t('registered_player')}</span>
+                              {player.clubName && <span>{t('club_member', { clubName: player.clubName })}</span>}
                             </>
                           ) : (
-                            <span>Vendég</span>
+                            <span>{t('guest')}</span>
                           )}
                         </div>
                       </div>
@@ -336,7 +338,7 @@ export default function PlayerSearch({
                         disabled={isJustAdded}
                         className={cn('h-8 text-xs px-3', isJustAdded && 'pointer-events-none')}
                       >
-                        {isJustAdded ? 'Hozzáadva' : 'Hozzáadás'}
+                        {isJustAdded ? t('added') : t('add')}
                       </Button>
                       </div>
                       {!isLast && (
@@ -352,14 +354,14 @@ export default function PlayerSearch({
                 onClick={handleAddGuest}
               >
                 <IconUserPlus className="h-4 w-4" />
-                Vendég játékos hozzáadása: {searchTerm}
+                {t('add_guest', { name: searchTerm })}
               </Button>
             ) : (
-              <div className="py-6 text-center text-sm text-muted-foreground">Nincs találat</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">{t('no_results')}</div>
             )}
           </div>
         </div>
       )}
     </div>
   )
-} 
+}

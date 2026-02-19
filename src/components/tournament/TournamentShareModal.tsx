@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo, useState } from "react"
+import { useTranslations } from "next-intl"
 import { QRCodeSVG } from "qrcode.react"
 import { IconPrinter, IconCopy } from "@tabler/icons-react"
 import toast from "react-hot-toast"
@@ -21,6 +22,7 @@ export default function TournamentShareModal({
   tournamentCode,
   tournamentName,
 }: TournamentShareModalProps) {
+  const t = useTranslations()
   const [shareType, setShareType] = useState<'public' | 'auth'>('public')
 
   const shareUrl = useMemo(() => {
@@ -34,7 +36,7 @@ export default function TournamentShareModal({
   const handleCopyLink = () => {
     if (!shareUrl) return
     navigator.clipboard.writeText(shareUrl)
-    toast.success('Link másolva!')
+    toast.success(t('Tournament.share_modal.toast_copied'))
   }
 
   const handlePrint = () => {
@@ -58,7 +60,7 @@ export default function TournamentShareModal({
         <body>
           <div class="container">
             <h1>${tournamentName}</h1>
-            <p>${shareType === 'auth' ? 'Bejelentkezési QR Kód' : 'Nyilvános QR Kód'}</p>
+            <p>${shareType === 'auth' ? t('Tournament.share_modal.qr_label_auth') : t('Tournament.share_modal.qr_label_public')}</p>
             <div class="qr-code">
               <img src="${qrImageUrl}" width="200" height="200" alt="QR Code" />
             </div>
@@ -77,9 +79,9 @@ export default function TournamentShareModal({
       <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 shadow-2xl shadow-black/45">
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         <DialogHeader className="space-y-2">
-          <DialogTitle>Torna megosztása</DialogTitle>
+          <DialogTitle>{t('Tournament.share_modal.title')}</DialogTitle>
           <DialogDescription>
-            Oszd meg a torna linkjét vagy QR-kódját a játékosokkal.
+            {t('Tournament.share_modal.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -91,7 +93,7 @@ export default function TournamentShareModal({
               className="flex-1"
               onClick={() => setShareType('public')}
             >
-              Nyilvános
+              {t('Tournament.share_modal.btn_public')}
             </Button>
             <Button
               variant={shareType === 'auth' ? 'default' : 'outline'}
@@ -99,13 +101,13 @@ export default function TournamentShareModal({
               className="flex-1"
               onClick={() => setShareType('auth')}
             >
-              Bejelentkezéssel
+              {t('Tournament.share_modal.btn_auth')}
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
             {shareType === 'public'
-              ? 'Nyilvános link – bárki megtekintheti a tornát.'
-              : 'Bejelentkezési link – automatikus átirányítás bejelentkezés után.'}
+              ? t('Tournament.share_modal.type_public_desc')
+              : t('Tournament.share_modal.type_auth_desc')}
           </p>
 
           <div className="flex justify-center">
@@ -119,7 +121,7 @@ export default function TournamentShareModal({
             <div className="flex items-start gap-3 rounded-lg bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
               <span className="flex-1 min-w-0 break-all leading-relaxed">{shareUrl}</span>
               <Badge variant="outline" className="shrink-0 whitespace-nowrap px-3 py-1 text-[11px]">
-                {shareType === 'auth' ? 'Bejelentkezés szükséges' : 'Nyilvános'}
+                {shareType === 'auth' ? t('Tournament.share_modal.badge_auth') : t('Tournament.share_modal.badge_public')}
               </Badge>
             </div>
           </div>
@@ -127,10 +129,10 @@ export default function TournamentShareModal({
 
         <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="outline" onClick={handleCopyLink} className="w-full sm:w-auto bg-card/85 hover:bg-card">
-            <IconCopy className="mr-2 h-4 w-4" /> Link másolása
+            <IconCopy className="mr-2 h-4 w-4" /> {t('Tournament.share_modal.btn_copy')}
           </Button>
           <Button onClick={handlePrint} className="w-full sm:w-auto">
-            <IconPrinter className="mr-2 h-4 w-4" /> Nyomtatás
+            <IconPrinter className="mr-2 h-4 w-4" /> {t('Tournament.share_modal.btn_print')}
           </Button>
         </DialogFooter>
         </div>

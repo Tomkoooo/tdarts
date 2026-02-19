@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchFiltersPanel } from "@/components/search/SearchFilters"
 import TournamentCard from "@/components/tournament/TournamentCard"
+import { useTranslations } from "next-intl"
 
 interface Tournament {
   _id: string
@@ -45,6 +46,7 @@ export function TournamentResults({
   filters,
   onFilterChange
 }: TournamentResultsProps) {
+  const t = useTranslations('Search.tournament_results')
   const [view, setView] = React.useState<'list' | 'calendar'>('list')
 
   // Group tournaments by date
@@ -91,9 +93,9 @@ export function TournamentResults({
     targetDate.setHours(0, 0, 0, 0)
 
     if (targetDate.getTime() === today.getTime()) {
-      return 'Ma'
+      return t('today')
     } else if (targetDate.getTime() === tomorrow.getTime()) {
-      return 'Holnap'
+      return t('tomorrow')
     } else {
       return targetDate.toLocaleDateString('hu-HU', { 
         weekday: 'long', 
@@ -110,9 +112,9 @@ export function TournamentResults({
         <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
           <IconCalendar className="w-10 h-10 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-bold mb-2">Nincsenek közelgő versenyek</h3>
+        <h3 className="text-xl font-bold mb-2">{t('no_tournaments')}</h3>
         <p className="text-muted-foreground">
-          Próbáld meg később, vagy keress más kategóriában.
+          {t('no_tournaments_desc')}
         </p>
       </div>
     )
@@ -132,7 +134,7 @@ export function TournamentResults({
                 className="gap-2"
               >
                 <IconFilter className="w-4 h-4" />
-                Szűrők
+                {t('filters')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="start" sideOffset={8}>
@@ -158,7 +160,7 @@ export function TournamentResults({
               className="gap-2"
             >
               <IconList className="w-4 h-4" />
-              Lista
+              {t('list_view')}
             </Button>
             <Button
               variant={view === 'calendar' ? 'default' : 'outline'}
@@ -167,7 +169,7 @@ export function TournamentResults({
               className="gap-2"
             >
               <IconCalendar className="w-4 h-4" />
-              Naptár
+              {t('calendar_view')}
             </Button>
           </div>
         )}
@@ -200,12 +202,12 @@ export function TournamentResults({
                       {formatDateHeader(date)}
                     </span>
                     {isToday && (
-                      <Badge variant="default" className="text-xs">Ma</Badge>
+                      <Badge variant="default" className="text-xs">{t('today_badge')}</Badge>
                     )}
                   </div>
                   
                   <div className="text-xs text-muted-foreground">
-                    {dayTournaments.length} verseny
+                    {t('tournament_count', { count: dayTournaments.length })}
                   </div>
                   
                   <div className="space-y-2">
@@ -267,7 +269,7 @@ export function TournamentResults({
                   </h3>
                   <div className="flex-1 h-px bg-border"></div>
                   <span className="text-sm text-muted-foreground">
-                    {dayTournaments.length} verseny
+                    {t('tournament_count', { count: dayTournaments.length })}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -288,4 +290,3 @@ export function TournamentResults({
 }
 
 export default TournamentResults
-

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/Input"
 import { IconSearch, IconLoader2 } from "@tabler/icons-react"
 import type { SearchFilters } from "@/database/services/search.service"
 import { Button } from "@/components/ui/Button"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { IconArrowLeft } from "@tabler/icons-react"
 
 // Define interfaces locally to avoid server-code import issues if any

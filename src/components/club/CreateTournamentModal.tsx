@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/Label"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { useTranslations } from "next-intl"
 
 interface CreateTournamentModalProps {
   isOpen: boolean
@@ -85,21 +86,6 @@ const defaultSettings: FormSettings = {
   saveBillingInfo: false,
 }
 
-const steps = [
-  { id: "details", label: "Alapadatok", icon: IconTrophy },
-  { id: "boards", label: "Táblák", icon: IconTable },
-  { id: "settings", label: "Beállítások", icon: IconSettings },
-  { id: "billing", label: "Számlázás", icon: IconReceipt },
-]
-
-const initializeBoards = (initialCount?: number): BoardInput[] => {
-  const count = Math.max(1, initialCount ?? 1)
-  return Array.from({ length: count }, (_, idx) => ({
-    boardNumber: idx + 1,
-    name: `Tábla ${idx + 1}`,
-  }))
-}
-
 export default function CreateTournamentModal({
   isOpen,
   onClose,
@@ -110,8 +96,24 @@ export default function CreateTournamentModal({
   lockLeagueSelection = false,
   defaultIsSandbox = false,
 }: CreateTournamentModalProps) {
+  const t = useTranslations('Club.create_tournament_modal')
   const router = useRouter()
   const isOacCreationEnabled = FeatureFlagService.isEnvFeatureEnabled('OAC_CREATION')
+
+  const steps = [
+    { id: "details", label: t('steps.details'), icon: IconTrophy },
+    { id: "boards", label: t('steps.boards'), icon: IconTable },
+    { id: "settings", label: t('steps.settings'), icon: IconSettings },
+    { id: "billing", label: t('steps.billing'), icon: IconReceipt },
+  ]
+
+  const initializeBoards = (initialCount?: number): BoardInput[] => {
+    const count = Math.max(1, initialCount ?? 1)
+    return Array.from({ length: count }, (_, idx) => ({
+      boardNumber: idx + 1,
+      name: t('boards.default_board_name', { number: idx + 1 }),
+    }))
+  }
 
   const [currentStep, setCurrentStep] = useState<Step>("details")
   const [settings, setSettings] = useState<FormSettings>(defaultSettings)
@@ -128,7 +130,6 @@ export default function CreateTournamentModal({
       fetchClubBillingInfo()
       setCurrentStep("details")
       setError("")
-      setBoards(initializeBoards(boardCount))
       setBoards(initializeBoards(boardCount))
       setSettings(() => ({ ...defaultSettings, boardCount: initializeBoards(boardCount).length, isSandbox: defaultIsSandbox }))
       // Set pre-selected league if provided
@@ -165,10 +166,7 @@ export default function CreateTournamentModal({
         if (data.club?.billingInfo) {
           setSettings(prev => ({
             ...prev,
-            saveBillingInfo: true, // If we found saved info, default to true or let user decide? Request says "default it does not save", but maybe if it's already saved we should reflect that? The request says "default it does not save", implying for *new* entry or general default. I'll stick to false as requested, or maybe only true if they explicitly check it.
-                                   // Actually, if it's already saved, checking "save" again is redundant but harmless.
-                                   // Let's stick to the default `false` from defaultSettings unless user interacts. 
-                                   // Wait, if I load it, I might want to toggle it on? No, the user said "default it does not save". So even if loaded, keep it off unless they want to update it.
+            saveBillingInfo: true,
             billingInfo: {
               ...prev.billingInfo,
               ...data.club.billingInfo
@@ -221,7 +219,7 @@ export default function CreateTournamentModal({
 
   const handleAddBoard = () => {
     const newBoardNumber = boards.length > 0 ? Math.max(...boards.map((b) => b.boardNumber)) + 1 : 1
-    setBoards((prev) => [...prev, { boardNumber: newBoardNumber, name: `Tábla ${newBoardNumber}` }])
+    setBoards((prev) => [...prev, { boardNumber: newBoardNumber, name: t('boards.default_board_name', { number: newBoardNumber }) }])
   }
 
   const handleRemoveBoard = (index: number) => {
@@ -262,7 +260,7 @@ export default function CreateTournamentModal({
   const visibleSteps = React.useMemo(() => {
     if (isOac) return steps
     return steps.filter(s => s.id !== 'billing')
-  }, [isOac])
+  }, [isOac, steps])
 
   const handleNext = () => {
     const currentIndex = visibleSteps.findIndex((s) => s.id === currentStep)
@@ -297,7 +295,7 @@ export default function CreateTournamentModal({
         boardCount: boards.length,
         boards: boards.map((b, idx) => ({
           boardNumber: idx + 1,
-          name: b.name || `Tábla ${idx + 1}`,
+          name: b.name || t('boards.default_board_name', { number: idx + 1 }),
           status: "idle",
           isActive: true,
         })),
@@ -320,7 +318,7 @@ export default function CreateTournamentModal({
 
       if (!response.ok) {
         const errorData = await response.json()
-        const errorMsg = errorData.error || "Hiba történt a torna létrehozása során"
+        const errorMsg = errorData.error || t('errors.default')
         setError(errorMsg)
         toast.error(errorMsg)
         return
@@ -340,7 +338,7 @@ export default function CreateTournamentModal({
         router.push(`/tournaments/${data.tournamentId || data.code}`)
       }
     } catch (err: any) {
-      const errorMsg = err.message || "Hiba történt a torna létrehozása során"
+      const errorMsg = err.message || t('errors.default')
       setError(errorMsg)
       toast.error(errorMsg)
       console.error("Create tournament error:", err)
@@ -355,8 +353,8 @@ export default function CreateTournamentModal({
         className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl p-0 shadow-2xl shadow-primary/20"
       >
         <DialogHeader className="bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
-          <DialogTitle className="text-xl md:text-2xl text-foreground">Új torna létrehozása</DialogTitle>
-          <DialogDescription className="text-sm">Hozz létre egy új tornát a klubodban</DialogDescription>
+          <DialogTitle className="text-xl md:text-2xl text-foreground">{t('title')}</DialogTitle>
+          <DialogDescription className="text-sm">{t('subtitle')}</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
@@ -413,23 +411,23 @@ export default function CreateTournamentModal({
               {currentStep === "details" && (
                 <div className="space-y-4">
                   <FormField
-                    label="Torna neve"
-                    placeholder="Pl.: Nyári Darts Bajnokság 2024"
+                    label={t('details.name_label')}
+                    placeholder={t('details.name_placeholder')}
                     value={settings.name}
                     onChange={(event) => handleSettingsChange("name", event.target.value)}
                     icon={<IconTrophy className="h-5 w-5" />}
                     required
                   />
                   <FormField
-                    label="Leírás"
-                    placeholder="Add meg a torna részleteit..."
+                    label={t('details.desc_label')}
+                    placeholder={t('details.desc_placeholder')}
                     value={settings.description}
                     onChange={(event) => handleSettingsChange("description", event.target.value)}
-                    helperText="Opcionális, de segít a játékosoknak megérteni a torna célját."
+                    helperText={t('details.desc_helper')}
                   />
                   <FormField
                     type="datetime-local"
-                    label="Kezdés időpontja"
+                    label={t('details.start_label')}
                     value={new Date(settings.startDate).toLocaleString("sv-SE", {
                       year: "numeric",
                       month: "2-digit",
@@ -444,7 +442,7 @@ export default function CreateTournamentModal({
                   />
                   <FormField
                     type="datetime-local"
-                    label="Nevezési határidő"
+                    label={t('details.deadline_label')}
                     value={new Date(settings.registrationDeadline || settings.startDate).toLocaleString("sv-SE", {
                       year: "numeric",
                       month: "2-digit",
@@ -457,8 +455,8 @@ export default function CreateTournamentModal({
                     icon={<IconCalendar className="h-5 w-5" />}
                   />
                   <FormField
-                    label="Helyszín"
-                    placeholder="Pl.: Budapest, Sport Klub"
+                    label={t('details.location_label')}
+                    placeholder={t('details.location_placeholder')}
                     value={settings.location}
                     onChange={(event) => handleSettingsChange("location", event.target.value)}
                     icon={<IconMapPin className="h-5 w-5" />}
@@ -466,7 +464,7 @@ export default function CreateTournamentModal({
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField
                       type="number"
-                      label="Nevezési díj (Ft)"
+                      label={t('details.fee_label')}
                       placeholder="0"
                       min={0}
                       max={isOac ? 3000 : undefined}
@@ -474,14 +472,14 @@ export default function CreateTournamentModal({
                       onChange={(event) => handleSettingsChange("entryFee", event.target.value === '' ? '' : Number(event.target.value))}
                     />
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Típus</label>
+                      <label className="text-sm font-medium">{t('details.type_label')}</label>
                       <select
                         value={settings.type}
                         onChange={(event) => handleSettingsChange("type", event.target.value)}
                         className="flex h-11 w-full rounded-lg bg-background/90 px-3 py-2 text-sm ring-1 ring-inset ring-white/10 focus:outline-none focus:ring-2 focus:ring-primary/40"
                       >
-                        <option value="amateur">Amatőr</option>
-                        <option value="open">Open</option>
+                        <option value="amateur">{t('details.type_amateur')}</option>
+                        <option value="open">{t('details.type_open')}</option>
                       </select>
                     </div>
                   </div>
@@ -491,14 +489,14 @@ export default function CreateTournamentModal({
               {currentStep === "boards" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Táblák beállítása</h3>
+                    <h3 className="text-lg font-semibold">{t('boards.title')}</h3>
                     <Button onClick={handleAddBoard} variant="outline" className="gap-2">
                       <IconPlus className="h-4 w-4" />
-                      Új tábla
+                      {t('boards.add_board')}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Adj meg annyi táblát, amennyi egyszerre használható lesz a tornán.
+                    {t('boards.description')}
                   </p>
                   <div className="space-y-3">
                     {boards.map((board, index) => (
@@ -508,7 +506,7 @@ export default function CreateTournamentModal({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex-1 space-y-2">
-                            <label className="text-sm font-medium">Tábla {board.boardNumber}</label>
+                            <label className="text-sm font-medium">{t('boards.board_label', { number: board.boardNumber })}</label>
                             <input
                               type="text"
                               value={board.name}
@@ -538,7 +536,7 @@ export default function CreateTournamentModal({
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField
                       type="number"
-                      label="Maximális létszám"
+                      label={t('settings.max_players_label')}
                       placeholder="16"
                       min={0}
                       value={settings.maxPlayers ?? ''}
@@ -548,7 +546,7 @@ export default function CreateTournamentModal({
                     />
                     <FormField
                       type="number"
-                      label="Kezdő pontszám"
+                      label={t('settings.starting_score_label')}
                       placeholder="501"
                       min={0}
                       value={settings.startingScore ?? ''}
@@ -561,12 +559,12 @@ export default function CreateTournamentModal({
                   {/* Tournament Password - Full Width */}
                   <div className="space-y-2">
                     <Label className="text-foreground font-medium">
-                      Torna jelszó
+                      {t('settings.password_label')}
                     </Label>
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
-                        placeholder="Add meg a jelszót a jelszóval védett tornához"
+                        placeholder={t('settings.password_placeholder')}
                         value={settings.tournamentPassword}
                         onChange={(event) => handleSettingsChange("tournamentPassword", event.target.value)}
                         className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200"
@@ -590,43 +588,43 @@ export default function CreateTournamentModal({
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label className="text-foreground font-medium">
-                        Torna formátum
+                        {t('settings.format_label')}
                       </Label>
                       <select
                         value={settings.format}
                         onChange={(event) => handleSettingsChange("format", event.target.value)}
                         className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200"
                       >
-                        <option value="group">Csoportkör</option>
-                        <option value="knockout">Kieséses</option>
-                        <option value="group_knockout">Csoportkör + Kieséses</option>
+                        <option value="group">{t('settings.format_group')}</option>
+                        <option value="knockout">{t('settings.format_knockout')}</option>
+                        <option value="group_knockout">{t('settings.format_group_knockout')}</option>
                       </select>
                       <p className="text-sm text-muted-foreground">
-                        Válaszd ki a torna formátumát. A csoportkör + kieséses formátum először csoportkört játszik, majd kieséses szakasz következik.
+                        {t('settings.format_desc')}
                       </p>
                     </div>
                     
                     <div className="space-y-2">
                       <Label className="text-foreground font-medium">
-                        Nevezési mód
+                        {t('settings.mode_label')}
                       </Label>
                       <select
                         value={settings.participationMode || 'individual'}
                         onChange={(event) => handleSettingsChange("participationMode", event.target.value)}
                          className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200"
                       >
-                        <option value="individual">Egyéni</option>
-                        <option value="pair">Páros</option>
-                        <option value="team" disabled>Csapat (fejlesztés alatt)</option>
+                        <option value="individual">{t('settings.mode_individual')}</option>
+                        <option value="pair">{t('settings.mode_pair')}</option>
+                        <option value="team" disabled>{t('settings.mode_team')}</option>
                       </select>
                       <p className="text-sm text-muted-foreground">
-                        Egyéni, páros vagy csapatverseny.
+                        {t('settings.mode_desc')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <Label className="text-foreground font-medium">
-                        Ligához csatolás {lockLeagueSelection && <span className="text-xs text-warning">(OAC liga - rögzített)</span>}
+                        {t('settings.league_label')} {lockLeagueSelection && <span className="text-xs text-warning">{t('settings.league_oac_fixed')}</span>}
                       </Label>
                       <select
                         value={selectedLeagueId}
@@ -634,7 +632,7 @@ export default function CreateTournamentModal({
                         disabled={lockLeagueSelection}
                         className="flex h-11 w-full rounded-lg bg-muted/20 backdrop-blur-md border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:border-primary/50 focus-visible:bg-muted/30 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <option value="">Válassz ligát</option>
+                        <option value="">{t('settings.league_placeholder')}</option>
                         {availableLeagues
                           .filter(league => {
                             // If we are in OAC mode (locked selection), show all (or specifically verified)
@@ -644,12 +642,12 @@ export default function CreateTournamentModal({
                           })
                           .map((league) => (
                           <option key={league._id} value={league._id}>
-                            {league.name}{league.verified ? ' (OAC Liga)' : ''}
+                            {league.name}{league.verified ? t('settings.league_oac_suffix') : ''}
                           </option>
                         ))}
                       </select>
                       <p className="text-sm text-muted-foreground">
-                        {lockLeagueSelection ? 'Ez egy OAC verseny, a liga automatikusan ki van választva.' : 'Válassz ligát, ha szeretnéd a tornát ligához kötni.'}
+                        {lockLeagueSelection ? t('settings.league_oac_desc') : t('settings.league_normal_desc')}
                       </p>
                     </div>
                   </div>
@@ -657,7 +655,7 @@ export default function CreateTournamentModal({
                     <AlertDescription className="flex items-start gap-3 text-sm">
                       <IconInfoCircle className="h-5 w-5 text-primary" />
                       <span>
-                        A torna jelszó beállítása kötelező, hogy csak meghívott játékosok csatlakozhassanak.
+                        {t('settings.password_alert')}
                       </span>
                     </AlertDescription>
                   </Alert>
@@ -665,11 +663,11 @@ export default function CreateTournamentModal({
                   {/* Sandbox Mode Toggle */}
                   <div className="flex items-center space-x-2 rounded-lg border border-warning/50 bg-warning/10 p-4">
                     <div className="flex-1 space-y-1">
-                      <Label htmlFor="sandbox-mode" className="font-medium text-warning">Sandbox Mód (Teszt)</Label>
+                      <Label htmlFor="sandbox-mode" className="font-medium text-warning">{t('settings.sandbox_label')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        A sandbox versenyek nem jelennek meg a publikus keresőben, és nem számítanak bele a statisztikákba. Ideális rendszer teszteléshez.
+                        {t('settings.sandbox_desc')}
                       </p>
-                      {lockLeagueSelection && <p className="text-xs text-muted-foreground italic">OAC versenyek nem lehetnek sandbox módban.</p>}
+                      {lockLeagueSelection && <p className="text-xs text-muted-foreground italic">{t('settings.sandbox_oac_disabled')}</p>}
                     </div>
                     <input
                       id="sandbox-mode"
@@ -691,19 +689,19 @@ export default function CreateTournamentModal({
                         <IconCreditCard className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground">OAC Hitelesítési Díj</p>
-                        <p className="text-xs text-muted-foreground">Egyszeri díj az OAC verseny létrehozásához</p>
+                        <p className="font-semibold text-foreground">{t('billing.oac_fee_title')}</p>
+                        <p className="text-xs text-muted-foreground">{t('billing.oac_fee_desc')}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-primary">3 000 Ft</p>
-                      <p className="text-[10px] text-muted-foreground">+ ÁFA (Összesen: 3 810 Ft)</p>
+                      <p className="text-[10px] text-muted-foreground">{t('billing.oac_fee_vat')}</p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Számlázási típus</Label>
+                      <Label>{t('billing.type_label')}</Label>
                       <div className="flex gap-4">
                         <Button
                           type="button"
@@ -711,7 +709,7 @@ export default function CreateTournamentModal({
                           onClick={() => handleBillingChange('type', 'individual')}
                           className="flex-1"
                         >
-                          Magánszemély
+                          {t('billing.type_individual')}
                         </Button>
                         <Button
                           type="button"
@@ -719,21 +717,21 @@ export default function CreateTournamentModal({
                           onClick={() => handleBillingChange('type', 'company')}
                           className="flex-1"
                         >
-                          Cég
+                          {t('billing.type_company')}
                         </Button>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
-                        label={settings.billingInfo.type === 'company' ? "Cégnév" : "Név"}
-                        placeholder={settings.billingInfo.type === 'company' ? "Példa Kft." : "Kovács János"}
+                        label={settings.billingInfo.type === 'company' ? t('billing.name_company_label') : t('billing.name_individual_label')}
+                        placeholder={settings.billingInfo.type === 'company' ? t('billing.name_company_placeholder') : t('billing.name_individual_placeholder')}
                         value={settings.billingInfo.name}
                         onChange={(e) => handleBillingChange("name", e.target.value)}
                         required
                       />
                       <FormField
-                        label="E-mail a számlához"
+                        label={t('billing.email_label')}
                         type="email"
                         placeholder="szamla@pelda.hu"
                         value={settings.billingInfo.email}
@@ -744,7 +742,7 @@ export default function CreateTournamentModal({
 
                     {settings.billingInfo.type === 'company' && (
                       <FormField
-                        label="Adószám"
+                        label={t('billing.tax_id_label')}
                         placeholder="12345678-1-12"
                         value={settings.billingInfo.taxId || ''}
                         onChange={(e) => handleBillingChange("taxId", e.target.value)}
@@ -755,7 +753,7 @@ export default function CreateTournamentModal({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="md:col-span-1">
                         <FormField
-                          label="Irányítószám"
+                          label={t('billing.zip_label')}
                           placeholder="1234"
                           value={settings.billingInfo.zip}
                           onChange={(e) => handleBillingChange("zip", e.target.value)}
@@ -764,7 +762,7 @@ export default function CreateTournamentModal({
                       </div>
                       <div className="md:col-span-2">
                         <FormField
-                          label="Város"
+                          label={t('billing.city_label')}
                           placeholder="Budapest"
                           value={settings.billingInfo.city}
                           onChange={(e) => handleBillingChange("city", e.target.value)}
@@ -774,7 +772,7 @@ export default function CreateTournamentModal({
                     </div>
 
                     <FormField
-                      label="Cím (utca, házszám)"
+                      label={t('billing.address_label')}
                       placeholder="Fő utca 1."
                       value={settings.billingInfo.address}
                       onChange={(e) => handleBillingChange("address", e.target.value)}
@@ -782,9 +780,9 @@ export default function CreateTournamentModal({
                     />
                     <div className="flex items-center space-x-2 rounded-lg border border-border/40 bg-muted/20 p-4">
                       <div className="flex-1 space-y-1">
-                        <Label htmlFor="save-billing" className="font-medium">Számlázási adatok mentése</Label>
+                        <Label htmlFor="save-billing" className="font-medium">{t('billing.save_billing_label')}</Label>
                         <p className="text-sm text-muted-foreground">
-                          A megadott számlázási adatok mentése a klub profiljába a jövőbeli versenyekhez.
+                          {t('billing.save_billing_desc')}
                         </p>
                       </div>
                       <input
@@ -799,7 +797,7 @@ export default function CreateTournamentModal({
 
                   <Alert className="bg-muted/30 border-dashed">
                     <AlertDescription className="text-xs text-muted-foreground">
-                      A fizetés biztonságos Stripe felületen történik. A fizetés után az e-számlát automatikusan küldjük a megadott e-mail címre.
+                      {t('billing.stripe_desc')}
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -810,7 +808,7 @@ export default function CreateTournamentModal({
 
         <DialogFooter className="flex flex-col gap-2 bg-gradient-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 sm:flex-row sm:items-center sm:justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="md:size-default">
-            Mégse
+            {t('footer.cancel')}
           </Button>
           <div className="flex items-center gap-2">
             {error ? (
@@ -826,13 +824,13 @@ export default function CreateTournamentModal({
               <>
                 {getCurrentStepIndex() > 0 && (
                   <Button variant="outline" size="sm" onClick={handleBack} disabled={isSubmitting} className="md:size-default">
-                    Vissza
+                    {t('footer.back')}
                   </Button>
                 )}
                 {currentStep !== visibleSteps[visibleSteps.length - 1].id ? (
                   <div className="flex flex-col items-end gap-1">
                   <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
-                    Tovább
+                    {t('footer.next')}
                     <IconChevronRight size={16} />
                     
                   </Button>
@@ -848,18 +846,18 @@ export default function CreateTournamentModal({
                       {isSubmitting ? (
                         <>
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                          Létrehozás...
+                          {t('footer.submitting')}
                         </>
                       ) : (
                         <>
                           {isOac ? <IconCreditCard size={16} /> : <IconCheck size={16} />}
-                          {isOac ? "Fizetés és létrehozás" : "Torna létrehozása"}
+                          {isOac ? t('footer.submit_oac') : t('footer.submit_normal')}
                         </>
                       )}
                     </Button>
                      {isOac && !isOacCreationEnabled && (
                       <span className="text-xs font-medium text-destructive mb-1 animate-pulse">
-                        OAC létrehozás jelenleg nem elérhető!
+                        {t('footer.oac_not_available')}
                       </span>
                     )}
                   </div>
@@ -872,4 +870,3 @@ export default function CreateTournamentModal({
     </Dialog>
   )
 }
-

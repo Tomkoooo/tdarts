@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { IconQrcode, IconCopy, IconLogin, IconMapPin, IconNews, IconPhone, IconMail, IconWorld } from "@tabler/icons-react"
 import axios from "axios"
@@ -13,6 +12,8 @@ import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import PostDetailModal from "@/components/club/PostDetailModal"
 import { Club } from "@/interface/club.interface"
 import { differenceInDays, format } from "date-fns"
+import { useTranslations } from "next-intl"
+import { useRouter } from "@/i18n/routing"
 
 // ... imports
 import ClubGallerySection from "@/components/club/ClubGallerySection"
@@ -46,6 +47,7 @@ export default function ClubSummarySection({
   postsTotal = 0,
   onLoadMorePosts
 }: ClubSummarySectionProps) {
+  const t = useTranslations('Club.summary')
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedPost, setSelectedPost] = React.useState<any>(null)
@@ -71,9 +73,9 @@ export default function ClubSummarySection({
       try {
           const res = await axios.post(`/api/clubs/${club._id}/subscribe`)
           setIsSubscribed(res.data.subscribed)
-          toast.success(res.data.subscribed ? "Feliratkozva a hírekre!" : "Leiratkozva.")
+          toast.success(res.data.subscribed ? t('toast.subscribed') : t('toast.unsubscribed'))
       } catch {
-          toast.error("Hiba történt.")
+          toast.error(t('toast.error'))
       } finally {
           setSubLoading(false)
       }
@@ -95,7 +97,7 @@ export default function ClubSummarySection({
                   })
                   .catch(err => {
                       console.error("Failed to fetch post:", err)
-                      toast.error("A keresett hír nem található.")
+                      toast.error(t('toast.post_not_found'))
                   })
           }
       }
@@ -126,7 +128,7 @@ export default function ClubSummarySection({
   const handleCopyLink = () => {
     const loginLink = `${window.location.origin}/auth/login?redirect=${encodeURIComponent(`/clubs/${code}?page=tournaments`)}`
     navigator.clipboard.writeText(loginLink)
-    toast.success('Bejelentkezési link másolva!')
+    toast.success(t('toast.link_copied'))
   }
 
   const isPostNew = (dateString: string) => {
@@ -178,7 +180,7 @@ export default function ClubSummarySection({
                     onClick={onShareClick}
                   >
                     <IconQrcode className="w-4 h-4 mr-2" />
-                    Megosztás
+                    {t('share')}
                   </Button>
                   <Button
                     variant="outline"
@@ -186,7 +188,7 @@ export default function ClubSummarySection({
                     onClick={handleCopyLink}
                   >
                     <IconCopy className="w-4 h-4 mr-2" />
-                    Link másolása
+                    {t('copy_link')}
                   </Button>
                   <Button
                     variant={isSubscribed ? "secondary" : "default"}
@@ -197,12 +199,12 @@ export default function ClubSummarySection({
                     {isSubscribed ? (
                          <div className="flex items-center">
                             <IconNews className="w-4 h-4 mr-2" />
-                            Feliratkozva
+                            {t('subscribed')}
                          </div>
                       ) : (
                          <div className="flex items-center">
                             <IconNews className="w-4 h-4 mr-2" />
-                            Feliratkozás
+                            {t('subscribe')}
                          </div>
                       )}
                   </Button>
@@ -215,7 +217,7 @@ export default function ClubSummarySection({
                     onClick={handleToggleSubscription}
                   >
                     <IconNews className="w-4 h-4 mr-2" />
-                    Feliratkozás
+                    {t('subscribe')}
                   </Button>
                   <Button
                     variant="outline"
@@ -223,14 +225,14 @@ export default function ClubSummarySection({
                     onClick={onShareClick}
                   >
                     <IconQrcode className="w-4 h-4 mr-2" />
-                    Megosztás
+                    {t('share')}
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => router.push(`/auth/login?redirect=${encodeURIComponent(`/clubs/${code}?page=tournaments`)}`)}
                   >
                     <IconLogin className="w-4 h-4 mr-2" />
-                    Bejelentkezés
+                    {t('login')}
                   </Button>
                 </>
               )}
@@ -243,7 +245,7 @@ export default function ClubSummarySection({
       {(aboutText || club.description) && (
         <Card className="border-border/40 bg-card/80">
           <CardContent className="p-6">
-            <h3 className="text-xl font-semibold mb-4 text-foreground">Rólunk</h3>
+            <h3 className="text-xl font-semibold mb-4 text-foreground">{t('about')}</h3>
             <div 
               className="prose dark:prose-invert max-w-none text-muted-foreground break-words overflow-hidden" 
               dangerouslySetInnerHTML={{ __html: aboutText || club.description }} 
@@ -257,7 +259,7 @@ export default function ClubSummarySection({
 
       {/* Posts Section */}
       <div className="space-y-4">
-         <h3 className="text-xl font-semibold text-foreground px-1">Hírek</h3>
+         <h3 className="text-xl font-semibold text-foreground px-1">{t('news')}</h3>
          {posts && posts.length > 0 ? (
            <div className="space-y-4">
              {posts.map((post) => (
@@ -278,7 +280,7 @@ export default function ClubSummarySection({
                           <div className="flex justify-between items-start mb-2 gap-2">
                              <div className="flex items-center gap-2">
                                 <h4 className="text-lg font-bold line-clamp-1">{post.title}</h4>
-                                {isPostNew(post.createdAt) && <Badge className="bg-blue-600 hover:bg-blue-700 shrink-0">ÚJ</Badge>}
+                                {isPostNew(post.createdAt) && <Badge className="bg-blue-600 hover:bg-blue-700 shrink-0">{t('new_badge')}</Badge>}
                              </div>
                              <span className="text-xs text-muted-foreground whitespace-nowrap">
                                 {format(new Date(post.createdAt), 'yyyy. MM. dd.')}
@@ -289,10 +291,10 @@ export default function ClubSummarySection({
                           
                           <div className="mt-auto flex justify-between items-center pt-2">
                               <span className="text-xs text-muted-foreground">
-                                  Közzétette: {post.authorId?.name || 'Admin'}
+                                  {t('published_by')} {post.authorId?.name || 'Admin'}
                               </span>
                               <Button variant="outline" size="sm" onClick={() => setSelectedPost(post)}>
-                                  Részletek
+                                  {t('details')}
                               </Button>
                           </div>
                       </div>
@@ -304,7 +306,7 @@ export default function ClubSummarySection({
              {posts.length < postsTotal && (
                 <div className="flex justify-center pt-4">
                    <Button variant="secondary" onClick={onLoadMorePosts}>
-                       Korábbi hírek betöltése
+                       {t('load_more_news')}
                    </Button>
                 </div>
              )}
@@ -313,7 +315,7 @@ export default function ClubSummarySection({
             <Card className="p-8 text-center text-muted-foreground border-dashed">
                 <div className="flex flex-col items-center">
                     <IconNews className="h-10 w-10 mb-2 opacity-50" />
-                    <p>Nincsenek még hírek közzétéve.</p>
+                    <p>{t('no_news')}</p>
                 </div>
             </Card>
          )}
@@ -327,7 +329,7 @@ export default function ClubSummarySection({
               {numPlayers}
             </span>
             <span className="text-sm md:text-base text-muted-foreground mt-2">
-              Játékos
+              {t('stats.player')}
             </span>
           </CardContent>
         </Card>
@@ -338,7 +340,7 @@ export default function ClubSummarySection({
               {pastTournaments}
             </span>
             <span className="text-sm md:text-base text-muted-foreground mt-2">
-              Befejezett verseny
+              {t('stats.finished_tournament')}
             </span>
           </CardContent>
         </Card>
@@ -349,7 +351,7 @@ export default function ClubSummarySection({
               {ongoingTournaments + upcomingTournaments}
             </span>
             <span className="text-sm md:text-base text-muted-foreground mt-2">
-              Aktív vagy közelgő
+              {t('stats.active_upcoming')}
             </span>
           </CardContent>
         </Card>
@@ -360,7 +362,7 @@ export default function ClubSummarySection({
               {totalTournamentPlayers}
             </span>
             <span className="text-sm md:text-base text-muted-foreground mt-2">
-              Összes versenyző
+              {t('stats.total_players')}
             </span>
           </CardContent>
         </Card>

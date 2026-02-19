@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconEye, IconEyeOff, IconUser, IconMail, IconLock, IconUserPlus, IconLanguage, IconBrandGoogle } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 
 // Validációs séma az űrlaphoz, az API követelményeinek megfelelően

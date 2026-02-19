@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, usePathname, Link } from "@/i18n/routing"
+import { useSearchParams } from "next/navigation"
 import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
+import { useTranslations } from "next-intl"
 
 interface ClubLayoutProps {
   userRole: 'admin' | 'moderator' | 'member' | 'none'
@@ -43,6 +45,7 @@ export default function ClubLayout({
   defaultPage = 'summary',
   landingPage,
 }: ClubLayoutProps) {
+  const t = useTranslations('Club.layout')
   const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = React.useState<string>(defaultPage)
@@ -63,14 +66,14 @@ export default function ClubLayout({
   }
 
   const tabs = [
-    { key: 'summary', label: 'Áttekintés', icon: IconHome },
-    { key: 'players', label: 'Játékosok', icon: IconUsers },
-    { key: 'tournaments', label: 'Versenyek', icon: IconTrophy },
-    { key: 'leagues', label: 'Ligák', icon: IconMedal },
+    { key: 'summary', label: t('summary'), icon: IconHome },
+    { key: 'players', label: t('players'), icon: IconUsers },
+    { key: 'tournaments', label: t('tournaments'), icon: IconTrophy },
+    { key: 'leagues', label: t('leagues'), icon: IconMedal },
   ]
 
   if (userRole === 'admin' || userRole === 'moderator') {
-    tabs.push({ key: 'settings', label: 'Beállítások', icon: IconSettings })
+    tabs.push({ key: 'settings', label: t('settings'), icon: IconSettings })
   }
 
   // Helper to convert hex to HSL object
@@ -249,7 +252,7 @@ export default function ClubLayout({
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground drop-shadow-md md:text-5xl" style={landingPage?.coverImage ? { color: 'white' } : {}}>{clubName}</h1>
-              <p className="mt-2 text-sm text-muted-foreground" style={landingPage?.coverImage ? { color: 'rgba(255,255,255,0.8)' } : {}}>Versenyek, játékosok, ligák – minden egy helyen.</p>
+              <p className="mt-2 text-sm text-muted-foreground" style={landingPage?.coverImage ? { color: 'rgba(255,255,255,0.8)' } : {}}>{t('subtitle')}</p>
             </div>
           </div>
         </div>

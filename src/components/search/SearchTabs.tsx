@@ -1,5 +1,6 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/Badge"
+import { useTranslations } from "next-intl"
 
 interface SearchTabsProps {
     activeTab: string;
@@ -13,6 +14,7 @@ interface SearchTabsProps {
 }
 
 export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) {
+    const t = useTranslations('Search.tabs')
     return (
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-base-200/50 backdrop-blur-sm rounded-xl">
@@ -20,7 +22,7 @@ export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) 
                     value="tournaments" 
                     className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
                 >
-                    <span className="font-medium">Versenyek</span>
+                    <span className="font-medium">{t('tournaments')}</span>
                     <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
                         {counts.tournaments}
                     </Badge>
@@ -30,7 +32,7 @@ export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) 
                     value="players" 
                     className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground transition-all duration-300"
                 >
-                     <span className="font-medium">Játékosok</span>
+                     <span className="font-medium">{t('players')}</span>
                      <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
                         {counts.players}
                     </Badge>
@@ -40,7 +42,7 @@ export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) 
                     value="clubs" 
                     className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground transition-all duration-300"
                 >
-                     <span className="font-medium">Klubok</span>
+                     <span className="font-medium">{t('clubs')}</span>
                      <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
                         {counts.clubs}
                     </Badge>
@@ -50,7 +52,7 @@ export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) 
                     value="leagues" 
                     className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-info/20 data-[state=active]:text-info-foreground transition-all duration-300"
                 >
-                     <span className="font-medium">Ligák</span>
+                     <span className="font-medium">{t('leagues')}</span>
                      <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
                         {counts.leagues}
                     </Badge>

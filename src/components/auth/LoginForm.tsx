@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock, IconLanguage, IconBrandGoogle } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 
 // Nyelvi szövegek

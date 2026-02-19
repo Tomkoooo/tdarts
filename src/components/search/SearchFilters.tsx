@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button"
 import { Label } from "@/components/ui/Label"
 import { Input } from "@/components/ui/Input"
 import { Separator } from "@/components/ui/separator"
+import { useTranslations } from "next-intl"
 
 interface SearchFilters {
   type: 'tournaments' | 'players' | 'clubs' | 'all'
@@ -36,21 +37,19 @@ export function SearchFiltersPanel({
   onClear,
   context
 }: SearchFiltersProps) {
+  const t = useTranslations('Search.filters_panel')
   
-  // Implicitly handle type based on context if not set correctly (though logic typically handles this upstream)
-  // We use this component assuming the parent has already selected the context/tab.
-
   return (
     <div className="space-y-4 min-w-[300px]">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="font-semibold leading-none">Részletes Szűrők</h4>
+        <h4 className="font-semibold leading-none">{t('title')}</h4>
         <Button
           variant="ghost"
           size="sm"
           onClick={onClear}
           className="h-auto p-0 text-destructive hover:text-destructive hover:bg-transparent"
         >
-          Törlés
+          {t('clear')}
         </Button>
       </div>
       <Separator />
@@ -61,39 +60,39 @@ export function SearchFiltersPanel({
           
           {/* Status */}
           <div className="space-y-1.5">
-            <Label htmlFor="status" className="text-xs">Státusz</Label>
+            <Label htmlFor="status" className="text-xs">{t('status_label')}</Label>
             <select
               id="status"
               className="w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={filters.status || ''}
               onChange={(e) => onFiltersChange({ ...filters, status: e.target.value || undefined })}
             >
-              <option value="">Összes</option>
-              <option value="pending">Várakozás alatt</option>
-              <option value="group-stage">Csoportkör</option>
-              <option value="knockout">Egyenes kiesés</option>
-              <option value="finished">Befejezett</option>
+              <option value="">{t('status_all')}</option>
+              <option value="pending">{t('status_pending')}</option>
+              <option value="group-stage">{t('status_group')}</option>
+              <option value="knockout">{t('status_knockout')}</option>
+              <option value="finished">{t('status_finished')}</option>
             </select>
           </div>
 
           {/* Format */}
           <div className="space-y-1.5">
-            <Label htmlFor="format" className="text-xs">Formátum</Label>
+            <Label htmlFor="format" className="text-xs">{t('format_label')}</Label>
             <select
               id="format"
               className="w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={filters.format || ''}
               onChange={(e) => onFiltersChange({ ...filters, format: e.target.value || undefined })}
             >
-              <option value="">Összes</option>
-              <option value="knockout">Egyenes kiesés</option>
-              <option value="group-knockout">Csoportkör + Kiesés</option>
+              <option value="">{t('format_all')}</option>
+              <option value="knockout">{t('format_knockout')}</option>
+              <option value="group-knockout">{t('format_group_knockout')}</option>
             </select>
           </div>
 
           {/* Tournament Type (Amateur / Open) */}
           <div className="space-y-1.5">
-            <Label className="text-xs">Verseny típusa</Label>
+            <Label className="text-xs">{t('type_label')}</Label>
             <div className="flex gap-2">
                <button
                   onClick={() => onFiltersChange({ ...filters, tournamentType: filters.tournamentType === 'amateur' ? undefined : 'amateur' })}
@@ -105,7 +104,7 @@ export function SearchFiltersPanel({
                      }
                   `}
                >
-                  Amatőr
+                  {t('type_amateur')}
                </button>
                <button
                   onClick={() => onFiltersChange({ ...filters, tournamentType: filters.tournamentType === 'open' ? undefined : 'open' })}
@@ -117,7 +116,7 @@ export function SearchFiltersPanel({
                      }
                   `}
                >
-                  Nyílt
+                  {t('type_open')}
                </button>
             </div>
           </div>
@@ -134,7 +133,7 @@ export function SearchFiltersPanel({
                   onChange={(e) => onFiltersChange({ ...filters, isOac: e.target.checked || undefined })}
                   className="w-3.5 h-3.5 rounded border-gray-300 text-primary focus:ring-primary"
                />
-               <Label htmlFor="popover_isOac" className="text-xs font-normal cursor-pointer">OAC / Hitelesített Verseny</Label>
+               <Label htmlFor="popover_isOac" className="text-xs font-normal cursor-pointer">{t('oac_label')}</Label>
              </div>
           </div>
 
@@ -142,7 +141,7 @@ export function SearchFiltersPanel({
           
            {/* Date Range */}
            <div className="space-y-2">
-             <Label className="text-xs">Dátum intervallum</Label>
+             <Label className="text-xs">{t('date_range_label')}</Label>
              <div className="grid grid-cols-2 gap-2">
                <Input
                  id="dateFrom"
@@ -163,7 +162,7 @@ export function SearchFiltersPanel({
 
           {/* Player Count Range */}
           <div className="space-y-2">
-             <Label className="text-xs">Játékosok száma</Label>
+             <Label className="text-xs">{t('player_count_label')}</Label>
              <div className="grid grid-cols-2 gap-2">
                <Input
                  id="minPlayers"
@@ -191,7 +190,7 @@ export function SearchFiltersPanel({
       {/* Player Specific Filters */}
       {context === 'players' && (
         <div className="space-y-4 py-4 text-center">
-          <p className="text-xs text-muted-foreground">Jelenleg nincsenek részletes szűrők a játékosokhoz.</p>
+          <p className="text-xs text-muted-foreground">{t('no_player_filters')}</p>
         </div>
       )}
 
@@ -200,12 +199,12 @@ export function SearchFiltersPanel({
         <div className="space-y-4">
            {/* Location */}
            <div className="space-y-1.5">
-             <Label htmlFor="location" className="text-xs">Helyszín</Label>
+             <Label htmlFor="location" className="text-xs">{t('location_label')}</Label>
              <Input
                id="location"
                type="text"
                className="h-8 text-xs"
-               placeholder="Pl. Budapest, Debrecen..."
+               placeholder={t('location_placeholder')}
                value={filters.location || ''}
                onChange={(e) => onFiltersChange({ ...filters, location: e.target.value || undefined })}
              />
@@ -223,7 +222,7 @@ export function SearchFiltersPanel({
                    onChange={(e) => onFiltersChange({ ...filters, isVerified: e.target.checked || undefined })}
                    className="w-3.5 h-3.5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <Label htmlFor="popover_club_isVerified" className="text-xs font-normal cursor-pointer">Hitelesített Klub</Label>
+                <Label htmlFor="popover_club_isVerified" className="text-xs font-normal cursor-pointer">{t('verified_club')}</Label>
               </div>
            </div>
         </div>
@@ -241,7 +240,7 @@ export function SearchFiltersPanel({
                   onChange={(e) => onFiltersChange({ ...filters, isVerified: e.target.checked || undefined })}
                   className="w-3.5 h-3.5 rounded border-gray-300 text-primary focus:ring-primary"
                />
-               <Label htmlFor="popover_league_isVerified" className="text-xs font-normal cursor-pointer">Csak OAC Ligák</Label>
+               <Label htmlFor="popover_league_isVerified" className="text-xs font-normal cursor-pointer">{t('oac_leagues_only')}</Label>
              </div>
         </div>
       )}
@@ -250,4 +249,3 @@ export function SearchFiltersPanel({
 }
 
 export default SearchFiltersPanel
-

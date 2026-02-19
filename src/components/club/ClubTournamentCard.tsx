@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import {
   IconTrophy,
   IconCalendar,
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface ClubTournamentCardProps {
   tournament: {
@@ -54,24 +55,26 @@ const statusStyles: Record<string, string> = {
   finished: 'bg-success/10 text-success border-success/20',
 }
 
-const statusLabels: Record<string, string> = {
-  pending: 'Várakozó',
-  'group-stage': 'Csoportkör',
-  knockout: 'Kieséses',
-  finished: 'Befejezett',
-}
-
-const typeLabels: Record<string, string> = {
-  amateur: 'Amatőr',
-  open: 'Open',
-}
-
 export default function ClubTournamentCard({
   tournament,
   userRole = 'none',
   onDelete,
   onEdit,
 }: ClubTournamentCardProps) {
+  const t = useTranslations('Tournament.card')
+
+  const statusLabels: Record<string, string> = {
+    pending: t('status.pending'),
+    'group-stage': t('status.group_stage'),
+    knockout: t('status.knockout'),
+    finished: t('status.finished'),
+  }
+
+  const typeLabels: Record<string, string> = {
+    amateur: t('type.amateur'),
+    open: t('type.open'),
+  }
+
   const status = tournament.tournamentSettings?.status || 'pending'
   const playerCount = tournament.tournamentPlayers?.length || 0
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
@@ -95,12 +98,12 @@ export default function ClubTournamentCard({
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <IconTrophy className="w-4 h-4 text-primary" />
                 <span className="truncate">
-                 { tournament.verified ? '' : 'Torna részletei'}
+                 { tournament.verified ? '' : t('tournament_details')}
                 </span>
                 {(tournament.verified || tournament.isVerified) && (
                   <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 flex items-center gap-1">
                     <IconShieldCheck className="w-3 h-3" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Hitelesített</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('verified')}</span>
                   </Badge>
                 )}
 
@@ -159,15 +162,15 @@ export default function ClubTournamentCard({
           <div className="flex items-center gap-2">
             <IconUsers className="w-4 h-4 text-success" />
             <span>
-              {playerCount} / {maxPlayers || '∞'} játékos
-              {isFull && <span className="ml-1 text-xs text-warning">(Betelt)</span>}
+              {playerCount} / {maxPlayers || '∞'} {t('players')}
+              {isFull && <span className="ml-1 text-xs text-warning">({t('full')})</span>}
             </span>
           </div>
 
           {entryFee > 0 && (
             <div className="flex items-center gap-2">
               <IconCoin className="w-4 h-4 text-warning" />
-              <span>Nevezési díj: {entryFee} Ft</span>
+              <span>{t('entry_fee')}: {entryFee} Ft</span>
             </div>
           )}
         </CardContent>
@@ -179,13 +182,13 @@ export default function ClubTournamentCard({
             </div>
             {(userRole === 'admin' || userRole === 'moderator') && tournament.invoiceId && (
               <div className="text-[10px] text-primary flex items-center gap-1 font-medium bg-primary/5 px-1.5 py-0.5 rounded">
-                Számla: {tournament.invoiceId}
+                {t('invoice_label')} {tournament.invoiceId}
               </div>
             )}
              {(userRole === 'admin' || userRole === 'moderator') && tournament.invoiceId && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-8 px-2 gap-1.5 text-xs hover:bg-primary/10 transition-all"
                 onClick={(e) => {
                   e.preventDefault();
@@ -194,14 +197,14 @@ export default function ClubTournamentCard({
                 }}
               >
                 <IconFileInvoice className="w-3.5 h-3.5" />
-                Számla
+                {t('invoice')}
               </Button>
             )}
           </div>
           <div className="flex items-center gap-2">
-           
+
             <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
-              Részletek
+              {t('details')}
               <IconChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -216,7 +219,7 @@ export default function ClubTournamentCard({
                 size="icon"
                 className=" bg-background/90 backdrop-blur-sm hover:bg-background"
                 onClick={(e) => handleActionClick(e, onEdit)}
-                title="Szerkesztés"
+                title={t('edit')}
               >
                 <IconEdit className="w-4 h-4" />
               </Button>
@@ -227,7 +230,7 @@ export default function ClubTournamentCard({
                 size="icon"
                 className=" bg-background/90 backdrop-blur-sm hover:bg-destructive/20 hover:text-destructive"
                 onClick={(e) => handleActionClick(e, onDelete)}
-                title="Törlés"
+                title={t('delete')}
               >
                 <IconTrash className="w-4 h-4" />
               </Button>
@@ -238,4 +241,3 @@ export default function ClubTournamentCard({
     </Link>
   )
 }
-

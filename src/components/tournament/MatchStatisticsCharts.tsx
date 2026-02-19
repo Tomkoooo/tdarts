@@ -22,6 +22,7 @@ import {
   IconTargetArrow,
   IconTrendingDown,
 } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
@@ -61,95 +62,97 @@ interface MatchStatisticsChartsProps {
   player2Name: string
 }
 
-const chartOptions: ChartOptions<"line"> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top",
-      labels: {
-        boxWidth: 12,
-        padding: 8,
-        font: {
-          size: 11,
-        },
-        color: "rgba(255, 255, 255, 0.7)",
-      },
-    },
-    title: {
-      display: false,
-    },
-    tooltip: {
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      borderColor: "rgba(255, 255, 255, 0.1)",
-      borderWidth: 1,
-      titleFont: {
-        size: 12,
-      },
-      bodyFont: {
-        size: 11,
-      },
-      padding: 8,
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: false,
-      title: {
-        display: true,
-        text: "Átlag",
-        font: {
-          size: 11,
-        },
-        color: "rgba(255, 255, 255, 0.7)",
-      },
-      grid: {
-        color: "rgba(255, 255, 255, 0.1)",
-      },
-      ticks: {
-        font: {
-          size: 10,
-        },
-        color: "rgba(255, 255, 255, 0.6)",
-      },
-    },
-    x: {
-      title: {
-        display: true,
-        text: "Leg",
-        font: {
-          size: 11,
-        },
-        color: "rgba(255, 255, 255, 0.7)",
-      },
-      grid: {
-        color: "rgba(255, 255, 255, 0.1)",
-      },
-      ticks: {
-        font: {
-          size: 10,
-        },
-        color: "rgba(255, 255, 255, 0.6)",
-        maxRotation: 45,
-        minRotation: 0,
-      },
-    },
-  },
-  elements: {
-    point: {
-      radius: 3,
-      hoverRadius: 5,
-    },
-    line: {
-      borderWidth: 2,
-      tension: 0.1,
-    },
-  },
-}
 
 const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, player1Name, player2Name }) => {
+  const t = useTranslations("Tournament.match_stats")
   const [activeTab, setActiveTab] = useState<"overview" | "legs">("overview")
   const [expandedLegs, setExpandedLegs] = useState<Set<number>>(new Set())
+
+  const chartOptions: ChartOptions<"line"> = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          boxWidth: 12,
+          padding: 8,
+          font: {
+            size: 11,
+          },
+          color: "rgba(255, 255, 255, 0.7)",
+        },
+      },
+      title: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        borderWidth: 1,
+        titleFont: {
+          size: 12,
+        },
+        bodyFont: {
+          size: 11,
+        },
+        padding: 8,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: t("charts.avg_axis"),
+          font: {
+            size: 11,
+          },
+          color: "rgba(255, 255, 255, 0.7)",
+        },
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+        ticks: {
+          font: {
+            size: 10,
+          },
+          color: "rgba(255, 255, 255, 0.6)",
+        },
+      },
+      x: {
+        title: {
+          display: true,
+          text: t("charts.leg_axis"),
+          font: {
+            size: 11,
+          },
+          color: "rgba(255, 255, 255, 0.7)",
+        },
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+        ticks: {
+          font: {
+            size: 10,
+          },
+          color: "rgba(255, 255, 255, 0.6)",
+          maxRotation: 45,
+          minRotation: 0,
+        },
+      },
+    },
+    elements: {
+      point: {
+        radius: 3,
+        hoverRadius: 5,
+      },
+      line: {
+        borderWidth: 2,
+        tension: 0.1,
+      },
+    },
+  }), [t])
 
   // Calculate 3-dart average for each leg - uses totalDarts if available
   const calculateLegAverages = (throws: Throw[], totalDarts?: number) => {
@@ -246,7 +249,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
   // Leg-by-leg averages chart data
   const legByLegData = useMemo(
     () => ({
-      labels: legAverages.map((_, index) => `${index + 1}. Leg`),
+      labels: legAverages.map((_, index) => t("legs.leg_title", { number: index + 1 })),
       datasets: [
         {
           label: player1Name,
@@ -266,16 +269,16 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
         },
       ],
     }),
-    [legAverages, player1Name, player2Name]
+    [legAverages, player1Name, player2Name, t]
   )
 
   // Cumulative averages chart data
   const cumulativeData = useMemo(
     () => ({
-      labels: legs.map((_, index) => `${index + 1}. Leg`),
+      labels: legs.map((_, index) => t("legs.leg_title", { number: index + 1 })),
       datasets: [
         {
-          label: `${player1Name} (futó átlag)`,
+          label: `${player1Name} ${t("overview.running_avg_suffix")}`,
           data: player1Cumulative,
           borderColor: "rgb(139, 92, 246)",
           backgroundColor: "rgba(139, 92, 246, 0.2)",
@@ -283,7 +286,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
           fill: false,
         },
         {
-          label: `${player2Name} (futó átlag)`,
+          label: `${player2Name} ${t("overview.running_avg_suffix")}`,
           data: player2Cumulative,
           borderColor: "rgb(236, 72, 153)",
           backgroundColor: "rgba(236, 72, 153, 0.2)",
@@ -292,7 +295,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
         },
       ],
     }),
-    [player1Cumulative, player2Cumulative, legs, player1Name, player2Name]
+    [player1Cumulative, player2Cumulative, legs, player1Name, player2Name, t]
   )
 
   // Create throw-by-throw data for a leg
@@ -305,7 +308,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
 
     const throwLabels = Array.from(
       { length: Math.max(player1ThrowAverages.length, player2ThrowAverages.length) },
-      (_, i) => `${i + 1}. dobás`
+      (_, i) => t("legs.throw_label", { number: i + 1 })
     )
 
     return {
@@ -354,11 +357,11 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
         <TabsList className="mb-4 flex-shrink-0">
           <TabsTrigger value="overview" className="gap-2">
             <IconChartLine className="h-4 w-4" />
-            Összesítő
+            {t("tabs.overview")}
           </TabsTrigger>
           <TabsTrigger value="legs" className="gap-2">
             <IconTarget className="h-4 w-4" />
-            Leg részletek
+            {t("tabs.legs")}
           </TabsTrigger>
         </TabsList>
 
@@ -378,13 +381,13 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">Végső átlag</div>
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.final_avg")}</div>
                     <div className="text-2xl font-bold text-primary">
                       {latestPlayer1Average.toFixed(1)}
                     </div>
                   </div>
                   <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">Max leg átlag</div>
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.max_leg_avg")}</div>
                     <div className="text-2xl font-bold text-info">
                       {bestLegPlayer1.toFixed(1)}
                     </div>
@@ -405,13 +408,13 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">Végső átlag</div>
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.final_avg")}</div>
                     <div className="text-2xl font-bold text-destructive">
                       {latestPlayer2Average.toFixed(1)}
                     </div>
                   </div>
                   <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">Max leg átlag</div>
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.max_leg_avg")}</div>
                     <div className="text-2xl font-bold text-info">
                       {bestLegPlayer2.toFixed(1)}
                     </div>
@@ -426,10 +429,10 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <IconChartLine className="h-5 w-5 text-primary" />
-                Teljesítmény alakulása
+                {t("overview.perf_title")}
               </CardTitle>
               <CardDescription>
-                Legenkénti átlagok összehasonlítása leg-ről leg-re
+                {t("overview.perf_desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -438,7 +441,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-semibold">📊 Legenkénti átlagok:</span> Az egyes legekben elért 3 nyilas átlagok összehasonlítása leg-ről leg-re.
+                  <span className="font-semibold">📊 {t("overview.perf_note").split(': ')[0]}:</span> {t("overview.perf_note").split(': ')[1]}
                 </p>
               </div>
             </CardContent>
@@ -449,10 +452,10 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <IconTrendingDown className="h-5 w-5 text-info" />
-                Futó meccsátlag alakulása
+                {t("overview.cum_title")}
               </CardTitle>
               <CardDescription>
-                A meccs előrehaladtával hogyan változott a játékosok összesített 3-nyilas átlaga
+                {t("overview.cum_desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -461,7 +464,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-semibold">💡 Futó átlag:</span> Az összes dobás átlaga a meccs elejétől az adott legig.
+                  <span className="font-semibold">💡 {t("overview.cum_note").split(': ')[0]}:</span> {t("overview.cum_note").split(': ')[1]}
                 </p>
               </div>
             </CardContent>
@@ -489,7 +492,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs text-muted-foreground mb-1">Leg átlagok</div>
+                        <div className="text-xs text-muted-foreground mb-1">{t("legs.leg_avgs")}</div>
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1">
                             <span className="text-sm font-bold text-primary">{player1LegAvg.toFixed(1)}</span>
@@ -511,13 +514,13 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                             {leg.winnerArrowCount && (
                               <div className="flex items-center gap-1">
                                 <IconTarget className="h-3 w-3" />
-                                <span>{leg.winnerArrowCount} nyíl</span>
+                                <span>{t("legs.arrows", { count: leg.winnerArrowCount })}</span>
                               </div>
                             )}
                             {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
                               <div className="flex items-center gap-1">
                                 <IconTrendingDown className="h-3 w-3" />
-                                <span>{leg.loserRemainingScore} pont</span>
+                                <span>{t("legs.points", { count: leg.loserRemainingScore })}</span>
                               </div>
                             )}
                           </div>
@@ -534,12 +537,12 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                       {isExpanded ? (
                         <>
                           <IconArrowUp className="h-4 w-4" />
-                          Összecsuk
+                          {t("legs.collapse")}
                         </>
                       ) : (
                         <>
                           <IconArrowDown className="h-4 w-4" />
-                          Részletek
+                          {t("legs.details")}
                         </>
                       )}
                     </Button>
@@ -552,7 +555,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                       <div className="mb-3">
                         <div className="flex items-center gap-2 mb-2">
                           <IconTargetArrow className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-semibold">Dobásonkénti átlagok</span>
+                          <span className="text-sm font-semibold">{t("legs.throw_avgs")}</span>
                         </div>
                   </div>
                       <div className="h-64">
@@ -565,7 +568,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                                 ...chartOptions.scales?.x,
                                 title: {
                                   display: true,
-                                  text: "Dobás",
+                                  text: t("charts.throw_axis"),
                                   font: {
                                     size: 10,
                                   },
@@ -580,7 +583,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                       <div className="mt-3 rounded-lg bg-info/10 p-3">
                         <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
                           <p>
-                            💡 <span className="font-semibold">Tipp:</span> A grafikon mutatja, hogyan változott a játékosok teljesítménye a leg során.
+                            💡 <span className="font-semibold">{t("legs.tip_title")}:</span> {t("legs.tip_desc")}
                           </p>
                           {leg.winnerId?._id && (
                             <div className="flex items-center gap-4 pt-1">
@@ -588,14 +591,14 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                                 <div className="flex items-center gap-1">
                                   <IconTarget className="h-3 w-3" />
                                   <span className="font-medium">
-                                    {leg.winnerId.name} kiszállt: {leg.winnerArrowCount} nyíl
+                                    {t("legs.checkout_desc", { name: leg.winnerId.name, count: leg.winnerArrowCount })}
                                   </span>
                                 </div>
                               )}
                               {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
                                 <div className="flex items-center gap-1">
                                   <IconTrendingDown className="h-3 w-3" />
-                                  <span className="font-medium">Maradt: {leg.loserRemainingScore} pont</span>
+                                  <span className="font-medium">{t("legs.remaining_desc", { count: leg.loserRemainingScore })}</span>
                                 </div>
                               )}
                             </div>
@@ -612,7 +615,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
           {legs.filter((leg) => leg.player1Throws.length > 0 || leg.player2Throws.length > 0).length === 0 && (
             <Card className="border-0">
               <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                Még nincsenek részletes leg adatok.
+                {t("legs.no_data")}
               </CardContent>
             </Card>
           )}

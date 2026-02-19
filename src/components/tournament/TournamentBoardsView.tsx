@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
@@ -18,50 +19,43 @@ interface TournamentBoardsViewProps {
   userClubRole?: 'admin' | 'moderator' | 'member' | 'none'
 }
 
-const statusMap: Record<
-  string,
-  {
-    label: string
-    badgeClass: string
-    description: string
-    cardClass: string
-    accentClass: string
-    scoreClass: string
-  }
-> = {
-  idle: {
-    label: "Üres",
-    badgeClass: "bg-muted/50 text-muted-foreground",
-    description: "Tábla készen áll a következő meccsre.",
-    cardClass: "bg-card/90",
-    accentClass: "text-muted-foreground",
-    scoreClass: "text-muted-foreground",
-  },
-  waiting: {
-    label: "Várakozik",
-    badgeClass: "bg-warning/15 text-warning",
-    description: "A következő mérkőzés előkészítés alatt.",
-    cardClass: "bg-gradient-to-br from-warning/10 via-card/90 to-card/95 ring-1 ring-warning/20",
-    accentClass: "text-warning",
-    scoreClass: "text-warning font-semibold",
-  },
-  playing: {
-    label: "Játékban",
-    badgeClass: "bg-success/15 text-success",
-    description: "Aktív mérkőzés folyik ezen a táblán.",
-    cardClass: "bg-gradient-to-br from-success/10 via-card/92 to-card ring-1 ring-success/25",
-    accentClass: "text-success",
-    scoreClass: "text-success font-bold",
-  },
-}
+
 
 const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
 
 export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
+  const t = useTranslations()
   const [tournament, setTournament] = useState(initialTournament);
   const boards = tournament?.boards || []
   const tournamentId = tournament?.tournamentId
   const tournamentPassword = tournament?.tournamentSettings?.password
+
+  const statusMap: Record<string, { label: string; badgeClass: string; description: string; cardClass: string; accentClass: string; scoreClass: string }> = {
+    idle: {
+      label: t('Tournament.boards_view.status_idle_label'),
+      badgeClass: "bg-muted/50 text-muted-foreground",
+      description: t('Tournament.boards_view.status_idle_desc'),
+      cardClass: "bg-card/90",
+      accentClass: "text-muted-foreground",
+      scoreClass: "text-muted-foreground",
+    },
+    waiting: {
+      label: t('Tournament.boards_view.status_waiting_label'),
+      badgeClass: "bg-warning/15 text-warning",
+      description: t('Tournament.boards_view.status_waiting_desc'),
+      cardClass: "bg-gradient-to-br from-warning/10 via-card/90 to-card/95 ring-1 ring-warning/20",
+      accentClass: "text-warning",
+      scoreClass: "text-warning font-semibold",
+    },
+    playing: {
+      label: t('Tournament.boards_view.status_playing_label'),
+      badgeClass: "bg-success/15 text-success",
+      description: t('Tournament.boards_view.status_playing_desc'),
+      cardClass: "bg-gradient-to-br from-success/10 via-card/92 to-card ring-1 ring-success/25",
+      accentClass: "text-success",
+      scoreClass: "text-success font-bold",
+    },
+  }
 
   // Board Edit State
   const [editingBoard, setEditingBoard] = useState<any>(null);
@@ -88,17 +82,17 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
       try {
           const response = await axios.patch(`/api/tournaments/${tournamentId}/boards/${editingBoard.boardNumber}`, editForm);
           if (response.data.success) {
-              toast.success("Tábla beállításai mentve!");
+              toast.success(t('Tournament.boards_view.toast_save_success'));
               setEditingBoard(null);
               // Update local state
               setTournament(response.data.tournament);
           }
       } catch (error: any) {
           console.error("Failed to save board settings:", error);
-           showErrorToast('Hiba történt a mentés során.', {
+           showErrorToast(t('Tournament.boards_view.toast_save_error'), {
             error: error?.response?.data?.error,
-            context: 'Tábla szerkesztése',
-            errorName: 'Mentés sikertelen',
+            context: t('Tournament.boards_view.toast_save_error_context'),
+            errorName: t('Tournament.boards_view.toast_save_error_name'),
           });
       } finally {
           setIsSaving(false);
@@ -111,7 +105,7 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
     return (
       <Card className="bg-card/90 text-muted-foreground shadow-lg shadow-black/30">
         <CardContent className="py-12 text-center text-sm">
-          Ehhez a tornához még nem hoztak létre táblákat.
+          {t('Tournament.boards_view.no_boards')}
         </CardContent>
       </Card>
     )
@@ -145,9 +139,9 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2 pr-8">
                 <CardTitle className="text-lg font-semibold text-foreground">
-                  {board.name && board.name !== `Tábla ${board.boardNumber}`
+                  {board.name && board.name !== t('Tournament.boards_view.board_number', { number: board.boardNumber })
                     ? board.name
-                    : `Tábla ${board.boardNumber}`}
+                    : t('Tournament.boards_view.board_number', { number: board.boardNumber })}
                 </CardTitle>
                 <Badge variant="outline" className={statusInfo.badgeClass}>
                   {statusInfo.label}
@@ -160,7 +154,7 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className={cn("text-xs font-semibold uppercase tracking-wide", statusInfo.accentClass)}>
-                      Jelenlegi mérkőzés
+                      {t('Tournament.boards_view.current_match')}
                     </p>
                     {typeof board.boardNumber === 'number' && (
                       <span className="font-mono text-xs text-muted-foreground">#{board.boardNumber}</span>
@@ -172,18 +166,18 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                     <span className="font-semibold">{getPlayerName(currentMatch.player2)}</span>
                   </p>
                   <p className={cn("font-mono text-sm", statusInfo.scoreClass)}>
-                    Állás: {currentMatch.player1?.legsWon ?? 0} - {currentMatch.player2?.legsWon ?? 0}
+                    {t('Tournament.boards_view.score_label', { p1: currentMatch.player1?.legsWon ?? 0, p2: currentMatch.player2?.legsWon ?? 0 })}
                   </p>
                   {currentMatch.scorer?.name && (
                     <p className="text-xs text-muted-foreground">
-                      Eredményíró: {currentMatch.scorer.name}
+                      {t('Tournament.boards_view.scorer_label', { name: currentMatch.scorer.name })}
                     </p>
                   )}
                 </div>
               ) : statusKey === "waiting" && nextMatch ? (
                 <div className="space-y-2">
                   <p className={cn("text-xs font-semibold uppercase tracking-wide", statusInfo.accentClass)}>
-                    Következő mérkőzés
+                    {t('Tournament.boards_view.next_match')}
                   </p>
                   <p className="text-base font-semibold text-foreground">
                     <span>{getPlayerName(nextMatch.player1)}</span>
@@ -192,19 +186,19 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                   </p>
                   {nextMatch.scorer?.name && (
                     <p className="text-xs text-muted-foreground">
-                      Eredményíró: {nextMatch.scorer.name}
+                      {t('Tournament.boards_view.scorer_label', { name: nextMatch.scorer.name })}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-muted-foreground">Nincs aktív mérkőzés információ.</p>
+                <p className="text-muted-foreground">{t('Tournament.boards_view.no_match_info')}</p>
               )}
 
               <Separator className="my-2" />
 
               <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div>
-                  <p className="font-medium text-foreground">Utolsó frissítés</p>
+                  <p className="font-medium text-foreground">{t('Tournament.boards_view.last_updated')}</p>
                   <p>
                     {board.updatedAt
                       ? new Date(board.updatedAt).toLocaleTimeString('hu-HU', {
@@ -215,7 +209,7 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Aktív mérkőzések száma</p>
+                  <p className="font-medium text-foreground">{t('Tournament.boards_view.active_matches')}</p>
                   <p>{board.matchesInQueue ?? 0}</p>
                 </div>
               </div>
@@ -247,10 +241,10 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
     
     <Dialog open={!!editingBoard} onOpenChange={(open) => !open && setEditingBoard(null)}>
         <DialogContent>
-            <DialogHeader><DialogTitle>Tábla beállítása</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t('Tournament.boards_view.edit_dialog_title')}</DialogTitle></DialogHeader>
             <div className="space-y-4">
                  <div className="space-y-2">
-                     <Label>Tábla neve</Label>
+                     <Label>{t('Tournament.boards_view.edit_board_name')}</Label>
                      <Input 
                         value={editForm.name} 
                         onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))} 
@@ -265,18 +259,18 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
                      />
                  </div>
                  <div className="space-y-2">
-                     <Label>Scolia Access Token</Label>
+                     <Label>{t('Tournament.boards_view.edit_scolia_token')}</Label>
                      <Input 
                         value={editForm.scoliaAccessToken} 
                         onChange={(e) => setEditForm(prev => ({ ...prev, scoliaAccessToken: e.target.value }))}
                         type="password"
-                        placeholder="Titkos hozzáférési kulcs"
+                        placeholder={t('Tournament.boards_view.edit_token_placeholder')}
                      />
                  </div>
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setEditingBoard(null)}>Mégse</Button>
-                <Button onClick={handleSaveBoard} disabled={isSaving}>Mentés</Button>
+                <Button variant="outline" onClick={() => setEditingBoard(null)}>{t('Tournament.boards_view.btn_cancel')}</Button>
+                <Button onClick={handleSaveBoard} disabled={isSaving}>{t('Tournament.boards_view.btn_save')}</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

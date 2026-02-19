@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { IconPlus, IconTrophy, IconUsers, IconTrash, IconShare } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { League } from '@/interface/league.interface';
 import CreateLeagueModal from './CreateLeagueModal';
 import LeagueDetailModal from './LeagueDetailModal';

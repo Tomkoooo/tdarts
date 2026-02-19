@@ -4,6 +4,7 @@ import { useState } from "react"
 import axios from "axios"
 import { toast } from "react-hot-toast"
 import { IconMail, IconSend, IconEye, IconEyeOff } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 import {
   Dialog,
@@ -37,6 +38,7 @@ interface PlayerNotificationModalProps {
 const PANEL_SHADOW = "shadow-lg shadow-black/35"
 
 export default function PlayerNotificationModal({ isOpen, onClose, player, tournamentName }: PlayerNotificationModalProps) {
+  const t = useTranslations("Tournament.notification_modal")
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [language, setLanguage] = useState<"hu" | "en">("hu")
@@ -46,7 +48,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!subject.trim() || !message.trim()) {
-      toast.error("Kérjük, töltsd ki a tárgyat és az üzenetet is!")
+      toast.error(t("error_empty"))
       return
     }
 
@@ -61,23 +63,23 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
       })
 
       if (response.data?.success) {
-        toast.success("Értesítés elküldve")
+        toast.success(t("success"))
         setSubject("")
         setMessage("")
         onClose()
       } else {
-        showErrorToast("Nem sikerült elküldeni az értesítést", {
-          context: "Játékos értesítés",
-          errorName: "Értesítés küldése sikertelen",
+        showErrorToast(t("error_failed"), {
+          context: t("title"),
+          errorName: t("error_failed"),
         })
       }
     } catch (error: unknown) {
       const err = error as any
       console.error("Notification error", err)
-      showErrorToast("Hiba történt az értesítés küldése közben", {
+      showErrorToast(t("error_generic"), {
         error: err?.response?.data?.error,
-        context: "Játékos értesítés",
-        errorName: "Értesítés küldése sikertelen",
+        context: t("title"),
+        errorName: t("error_failed"),
       })
     } finally {
       setIsLoading(false)
@@ -85,8 +87,8 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
   }
 
   const previewHtml = `
-    <h3 style="margin:0 0 8px;font-weight:600;font-size:16px;">${subject || "Értesítés a tornáról"}</h3>
-    <p style="margin:0 0 12px;font-size:14px;line-height:20px;">${message || "Nincs megadva üzenet."}</p>
+    <h3 style="margin:0 0 8px;font-weight:600;font-size:16px;">${subject || t("subject_placeholder")}</h3>
+    <p style="margin:0 0 12px;font-size:14px;line-height:20px;">${message || t("no_message")}</p>
     <p style="margin:0;font-size:12px;color:#6b7280;">tDarts • ${tournamentName}</p>
   `
 
@@ -96,10 +98,10 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
         <DialogHeader className="space-y-3 bg-card/90 px-6 py-5 flex-shrink-0 shadow-sm shadow-primary/5">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <IconMail className="h-5 w-5 text-primary" />
-            Értesítés küldése játékosnak
+            {t("title")}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            A játékos e-mail értesítést kap a megadott tartalommal. Választható nyelv: magyar vagy angol.
+            {t("desc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -107,11 +109,11 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
           <div className="grid gap-6 px-6 py-6 overflow-y-auto flex-1">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="subject">
-              Tárgy
+              {t("subject")}
             </label>
             <Input
               id="subject"
-              placeholder="Pl. Fontos információ a tornáról"
+              placeholder={t("subject_placeholder")}
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
               disabled={isLoading}
@@ -121,11 +123,11 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="message">
-              Üzenet
+              {t("message")}
             </label>
             <Textarea
               id="message"
-              placeholder="Írd le az üzenetet, amit a játékosnak küldenél…"
+              placeholder={t("message_placeholder")}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               disabled={isLoading}
@@ -134,19 +136,19 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">Nyelv:</span>
+            <span className="text-sm font-medium text-muted-foreground">{t("language")}:</span>
             <div className="flex gap-2">
               <Badge
                 onClick={() => setLanguage("hu")}
                 className={`cursor-pointer rounded-full px-3 py-1 text-xs ${language === "hu" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground"}`}
               >
-                Magyar
+                {t("hu")}
               </Badge>
               <Badge
                 onClick={() => setLanguage("en")}
                 className={`cursor-pointer rounded-full px-3 py-1 text-xs ${language === "en" ? "bg-accent text-accent-foreground" : "bg-muted/40 text-muted-foreground"}`}
               >
-                English
+                {t("en")}
               </Badge>
             </div>
           </div>
@@ -155,7 +157,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted-foreground">Előnézet</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("preview")}</p>
               <Button
                 type="button"
                 variant="ghost"
@@ -164,7 +166,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
                 className="gap-2"
               >
                 {showPreview ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
-                {showPreview ? "Előnézet elrejtése" : "Előnézet megjelenítése"}
+                {showPreview ? t("hide_preview") : t("show_preview")}
               </Button>
             </div>
             {showPreview && (
@@ -179,7 +181,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
           <DialogFooter className="flex-shrink-0 flex flex-col items-stretch gap-3 px-6 py-4 sm:flex-row sm:justify-end shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
             <Button type="submit" disabled={isLoading} variant="success" className="gap-2">
               <IconSend className="h-4 w-4" />
-              Értesítés küldése
+              {t("send")}
             </Button>
           </DialogFooter>
         </form>

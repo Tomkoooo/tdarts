@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { showErrorToast } from '@/lib/toastUtils'
+import { useTranslations } from 'next-intl'
 
 interface MemberListProps {
   members: {
@@ -47,65 +48,66 @@ export default function MemberList({
   onClubUpdated,
   showActions = true,
 }: MemberListProps) {
+  const t = useTranslations('Club.members')
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
   const [showStatsModal, setShowStatsModal] = useState(false)
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!userId) return
-    const toastId = toast.loading('Tag törlése...')
+    const toastId = toast.loading(t('toast.removing'))
     try {
       const response = await axios.post<Club>(`/api/clubs/${clubId}/removeMember`, {
         userId: memberId,
         requesterId: userId,
       })
       onClubUpdated(response.data)
-      toast.success(`${memberName} törölve!`, { id: toastId })
+      toast.success(t('toast.removed', { name: memberName }), { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Tag törlése sikertelen', {
+      showErrorToast(err.response?.data?.error || t('toast.remove_error'), {
         error: err?.response?.data?.error,
-        context: 'Tag törlése',
-        errorName: 'Tag törlése sikertelen',
+        context: t('toast.remove_context'),
+        errorName: t('toast.remove_error'),
       })
     }
   }
 
   const handleAddModerator = async (memberId: string, memberName: string) => {
     if (!userId) return
-    const toastId = toast.loading('Moderátor hozzáadása...')
+    const toastId = toast.loading(t('toast.adding_mod'))
     try {
       const response = await axios.post<Club>(`/api/clubs/${clubId}/addModerator`, {
         userId: memberId,
         requesterId: userId,
       })
       onClubUpdated(response.data)
-      toast.success(`${memberName} moderátorrá nevezve!`, { id: toastId })
+      toast.success(t('toast.added_mod', { name: memberName }), { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Moderátor hozzáadása sikertelen', {
+      showErrorToast(err.response?.data?.error || t('toast.add_mod_error'), {
         error: err?.response?.data?.error,
-        context: 'Moderátor hozzáadása',
-        errorName: 'Moderátor hozzáadása sikertelen',
+        context: t('toast.add_mod_context'),
+        errorName: t('toast.add_mod_error'),
       })
     }
   }
 
   const handleRemoveModerator = async (memberId: string, memberName: string) => {
     if (!userId) return
-    const toastId = toast.loading('Moderátor törlése...')
+    const toastId = toast.loading(t('toast.removing_mod'))
     try {
       const response = await axios.post<Club>(`/api/clubs/${clubId}/removeModerator`, {
         userId: memberId,
         requesterId: userId,
       })
       onClubUpdated(response.data)
-      toast.success(`${memberName} moderátori jogai visszavonva!`, { id: toastId })
+      toast.success(t('toast.removed_mod', { name: memberName }), { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Moderátor törlése sikertelen', {
+      showErrorToast(err.response?.data?.error || t('toast.remove_mod_error'), {
         error: err?.response?.data?.error,
-        context: 'Moderátor törlése',
-        errorName: 'Moderátor törlése sikertelen',
+        context: t('toast.remove_mod_context'),
+        errorName: t('toast.remove_mod_error'),
       })
     }
   }
@@ -120,19 +122,19 @@ export default function MemberList({
       case 'admin':
         return {
           icon: <IconCrown className="w-3 h-3" />,
-          label: 'Adminisztrátor',
+          label: t('roles.admin'),
           className: 'bg-destructive/10 text-destructive border-destructive/20',
         }
       case 'moderator':
         return {
           icon: <IconShield className="w-3 h-3" />,
-          label: 'Moderátor',
+          label: t('roles.moderator'),
           className: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
         }
       default:
         return {
           icon: <IconUser className="w-3 h-3" />,
-          label: 'Tag',
+          label: t('roles.member'),
           className: 'bg-muted text-muted-foreground',
         }
     }
@@ -146,9 +148,9 @@ export default function MemberList({
         <Card className="bg-muted/15">
           <CardContent className="py-12 flex flex-col items-center justify-center text-muted-foreground">
             <IconUser className="w-12 h-12 mb-4" />
-            <p className="text-lg font-medium">Nincsenek tagok.</p>
+            <p className="text-lg font-medium">{t('no_members')}</p>
             <p className="text-sm text-muted-foreground/80">
-              Adj hozzá játékosokat a klubodhoz, hogy elkezdhesd a közös munkát.
+              {t('add_members_prompt')}
             </p>
           </CardContent>
         </Card>
@@ -198,12 +200,12 @@ export default function MemberList({
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         {isGuest ? (
                           <Badge variant="outline" className="border-none bg-muted/40 text-muted-foreground">
-                            Vendég
+                            {t('guest')}
                           </Badge>
                         ) : (
                           <>
                             <Badge variant="outline" className="border-none bg-emerald-500/10 text-emerald-500">
-                              Regisztrált
+                              {t('registered')}
                             </Badge>
                             <span>@{member.username}</span>
                           </>
@@ -220,7 +222,7 @@ export default function MemberList({
                       className="gap-2"
                     >
                       <IconChartBar className="w-4 h-4" />
-                      Statisztikák
+                      {t('stats')}
                     </Button>
 
                     {showActions && canManageMembers && !isSelf && (
@@ -237,7 +239,7 @@ export default function MemberList({
                               className="gap-2"
                             >
                               <IconShield className="w-4 h-4" />
-                              Moderátorrá tétel
+                              {t('promote_moderator')}
                             </DropdownMenuItem>
                           )}
                           {canDemote && (
@@ -246,7 +248,7 @@ export default function MemberList({
                               className="gap-2 text-warning focus:text-warning"
                             >
                               <IconShield className="w-4 h-4" />
-                              Moderátor jog elvétel
+                              {t('demote_moderator')}
                             </DropdownMenuItem>
                           )}
                           {canRemove && (
@@ -255,7 +257,7 @@ export default function MemberList({
                               className="gap-2 text-destructive focus:text-destructive"
                             >
                               <IconTrash className="w-4 h-4" />
-                              Tag törlése
+                              {t('remove_member')}
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

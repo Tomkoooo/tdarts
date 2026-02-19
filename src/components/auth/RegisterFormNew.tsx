@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconEye, IconEyeOff, IconUserPlus, IconMail, IconLock, IconUser, IconBrandGoogle } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FormField } from '@/components/ui/form-field';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslations } from 'next-intl';
 
 type RegisterFormData = {
   username: string;
@@ -27,43 +28,44 @@ interface RegisterFormNewProps {
   error?: string;
 }
 
-const registerSchema = z.object({
-  username: z
-    .string()
-    .regex(/^[a-zA-Z0-9_]+$/, "A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat")
-    //no spaces allowed
-    .regex(/^[^\s]+$/, "A felhasználónév nem tartalmazhat szóközöket")
-    .min(3, "A felhasználónévnek legalább 3 karakter hosszúnak kell lennie")
-    .min(1, "Felhasználónév kötelező"),
-  name: z
-    .string()
-    .min(2, "A névnek legalább 2 karakter hosszúnak kell lennie")
-    .min(1, "Név kötelező"),
-  email: z
-    .string()
-    .email("Érvényes email címet adj meg")
-    .min(1, "Email cím kötelező"),
-  password: z
-    .string()
-    .min(6, "A jelszónak legalább 6 karakter hosszúnak kell lennie")
-    .min(1, "Jelszó kötelező"),
-  confirmPassword: z
-    .string()
-    .min(1, "Jelszó megerősítés kötelező"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "A jelszavak nem egyeznek",
-  path: ["confirmPassword"],
-});
-
 const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
   onSubmit,
   isLoading = false,
   redirectPath,
   error: externalError,
 }) => {
+  const t = useTranslations('Auth.register');
+  const tv = useTranslations('Auth.validation');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(externalError || null);
+
+  const registerSchema = z.object({
+    username: z
+      .string()
+      .regex(/^[a-zA-Z0-9_]+$/, tv('username_invalid'))
+      .regex(/^[^\s]+$/, tv('username_no_spaces'))
+      .min(3, tv('username_min'))
+      .min(1, tv('username_required')),
+    name: z
+      .string()
+      .min(2, tv('name_min'))
+      .min(1, tv('name_required')),
+    email: z
+      .string()
+      .email(tv('email_invalid'))
+      .min(1, tv('email_required')),
+    password: z
+      .string()
+      .min(6, tv('password_min'))
+      .min(1, tv('password_required')),
+    confirmPassword: z
+      .string()
+      .min(1, tv('confirm_password_required')),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: tv('passwords_mismatch'),
+    path: ["confirmPassword"],
+  });
 
   const {
     register,
@@ -87,7 +89,7 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
         await onSubmit(data);
       }
     } catch (error: any) {
-      setError(error.message || 'Hiba történt a regisztráció során');
+      setError(error.message || t('error_generic'));
       console.error('Register error:', error);
     }
   };
@@ -100,7 +102,7 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
       });
     } catch (error) {
       console.error('Google signup error:', error);
-      setError('Hiba történt a Google regisztráció során');
+      setError(t('error_google'));
     }
   };
 
@@ -111,9 +113,9 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           <IconUserPlus className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <CardTitle className="text-3xl">Regisztráció</CardTitle>
+          <CardTitle className="text-3xl">{t('title')}</CardTitle>
           <CardDescription className="text-base mt-2">
-            Hozd létre a tDarts fiókod
+            {t('subtitle')}
           </CardDescription>
         </div>
       </CardHeader>
@@ -129,8 +131,8 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           <FormField
             {...register('username')}
             type="text"
-            label="Felhasználónév"
-            placeholder="felhasznalo123"
+            label={t('username_label')}
+            placeholder={t('username_placeholder')}
             error={errors.username?.message}
             icon={<IconUser className="w-5 h-5" />}
             disabled={isLoading}
@@ -140,8 +142,8 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           <FormField
             {...register('name')}
             type="text"
-            label="Teljes név"
-            placeholder="Kovács János"
+            label={t('name_label')}
+            placeholder={t('name_placeholder')}
             error={errors.name?.message}
             icon={<IconUser className="w-5 h-5" />}
             disabled={isLoading}
@@ -151,8 +153,8 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           <FormField
             {...register('email')}
             type="email"
-            label="Email cím"
-            placeholder="email@example.com"
+            label={t('email_label')}
+            placeholder={t('email_placeholder')}
             error={errors.email?.message}
             icon={<IconMail className="w-5 h-5" />}
             disabled={isLoading}
@@ -163,8 +165,8 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
             <FormField
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
-              label="Jelszó"
-              placeholder="••••••••"
+              label={t('password_label')}
+              placeholder={t('password_placeholder')}
               error={errors.password?.message}
               icon={<IconLock className="w-5 h-5" />}
               disabled={isLoading}
@@ -179,12 +181,12 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
               {showPassword ? (
                 <>
                   <IconEyeOff className="w-4 h-4" />
-                  Jelszó elrejtése
+                  {t('hide_password')}
                 </>
               ) : (
                 <>
                   <IconEye className="w-4 h-4" />
-                  Jelszó megjelenítése
+                  {t('show_password')}
                 </>
               )}
             </button>
@@ -194,8 +196,8 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
             <FormField
               {...register('confirmPassword')}
               type={showConfirmPassword ? 'text' : 'password'}
-              label="Jelszó megerősítése"
-              placeholder="••••••••"
+              label={t('confirm_password_label')}
+              placeholder={t('password_placeholder')}
               error={errors.confirmPassword?.message}
               icon={<IconLock className="w-5 h-5" />}
               disabled={isLoading}
@@ -210,12 +212,12 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
               {showConfirmPassword ? (
                 <>
                   <IconEyeOff className="w-4 h-4" />
-                  Jelszó elrejtése
+                  {t('hide_password')}
                 </>
               ) : (
                 <>
                   <IconEye className="w-4 h-4" />
-                  Jelszó megjelenítése
+                  {t('show_password')}
                 </>
               )}
             </button>
@@ -230,12 +232,12 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
             {isLoading ? (
               <>
                 <span className="animate-spin mr-2">⏳</span>
-                Regisztráció...
+                {t('submitting')}
               </>
             ) : (
               <>
                 <IconUserPlus className="w-5 h-5" />
-                Regisztráció
+                {t('submit')}
               </>
             )}
           </Button>
@@ -246,7 +248,7 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
             <Separator />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">vagy</span>
+            <span className="bg-card px-2 text-muted-foreground">{t('separator')}</span>
           </div>
         </div>
 
@@ -259,19 +261,19 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           disabled={isLoading}
         >
           <IconBrandGoogle className="w-5 h-5" />
-          Regisztráció Google-lel
+          {t('google')}
         </Button>
       </CardContent>
 
       <CardFooter className="flex-col space-y-2">
         <Separator />
         <p className="text-sm text-center text-muted-foreground">
-          Már van fiókod?{' '}
+          {t('has_account')}{' '}
           <Link
             href={`/auth/login${redirectPath ? `?redirect=${redirectPath}` : ''}`}
             className="text-primary hover:underline font-medium transition-colors"
           >
-            Jelentkezz be itt
+            {t('login_link')}
           </Link>
         </p>
       </CardFooter>
@@ -280,4 +282,3 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
 };
 
 export default RegisterFormNew;
-

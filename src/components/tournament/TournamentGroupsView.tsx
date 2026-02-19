@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import LegsViewModal from './LegsViewModal';
 import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import axios from 'axios';
@@ -59,6 +60,7 @@ interface TournamentGroupsViewProps {
 
 const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament, userClubRole }) => {
   const { user } = useUserContext();
+  const t = useTranslations();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [player1Legs, setPlayer1Legs] = useState(0);
@@ -130,11 +132,11 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
   const handleMovePlayer = async (groupId: string, playerId: string, direction: 'up' | 'down') => {
     if (userClubRole !== 'admin' && userClubRole !== 'moderator') {
-      toast.error('Nincs jogosultságod a helyezés módosításához!');
+      toast.error(t('Tournament.groups.error_no_permission'));
       return;
     }
 
-    const confirmMessage = `Biztosan módosítod a játékos helyezését?\n\n⚠️ FONTOS: Ez a módosítás minden meccs végén újra szükséges lehet, mivel a rendszer automatikusan újraszámolja a helyezéseket.`;
+    const confirmMessage = t('Tournament.groups.confirm_move');
     
     if (!window.confirm(confirmMessage)) {
       return;
@@ -147,16 +149,16 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       });
 
       if (response.data.success) {
-        toast.success('Helyezés sikeresen módosítva!', {
+        toast.success(t('Tournament.groups.success_moved'), {
           duration: 4000,
         });
         window.location.reload();
       } else {
-        toast.error('Hiba történt a helyezés módosítása során!');
+        toast.error(t('Tournament.groups.error_moving'));
       }
     } catch (error) {
       console.error('Error moving player:', error);
-      toast.error('Hiba történt a helyezés módosítása során!');
+      toast.error(t('Tournament.groups.error_moving'));
     }
   };
 
@@ -164,7 +166,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     if (!selectedMatch) return;
 
     if (player1Legs === player2Legs) {
-      toast.error('Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.');
+      toast.error(t('Tournament.groups.error_tie'));
       return;
     }
 
@@ -192,10 +194,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
       setShowAdminModal(false);
       setSelectedMatch(null);
-      toast.success('Meccs sikeresen frissítve!');
+      toast.success(t('Tournament.groups.success_saved'));
       window.location.reload();
     } catch (err: any) {
-      showErrorToast(err?.message || 'Hiba történt a mentés során!', {
+      showErrorToast(err?.message || t('Tournament.groups.error_save'), {
         error: err?.message,
         context: 'Meccs mentése',
         errorName: 'Mentés sikertelen',
@@ -209,14 +211,14 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   if (!tournament.groups || tournament.groups.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">Még nincsenek csoportok generálva.</p>
+        <p className="text-muted-foreground">{t('Tournament.groups.no_groups')}</p>
       </div>
     );
   }
 
   return (
     <div className="mt-6 space-y-4">
-      <h2 className="text-xl font-bold text-foreground">Csoportok</h2>
+      <h2 className="text-xl font-bold text-foreground">{t('Tournament.groups.title')}</h2>
       
       {tournament.groups.map((group: any, groupIndex: number) => {
         const groupPlayers = tournament.tournamentPlayers
@@ -231,7 +233,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
             <CardContent className="p-4">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-foreground">
-                  Csoport {groupIndex + 1} <span className="text-muted-foreground text-sm">(Tábla {group.board})</span>
+                  {t('Tournament.groups.group_number', { number: groupIndex + 1 })} <span className="text-muted-foreground text-sm">({t('Tournament.groups.board_label', { number: group.board })})</span>
                 </h3>
                 <Button
                   variant="ghost"
@@ -252,7 +254,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                           {player.groupStanding || index + 1}.
                         </Badge>
                         <span className="font-medium text-sm text-foreground">
-                          {player.playerReference?.name || 'Ismeretlen'}
+                          {player.playerReference?.name || t('Tournament.groups.table.unknown')}
                         </span>
                         <span className="text-xs text-muted-foreground ml-auto">
                           {(player.stats?.matchesWon || 0) * 2}p
@@ -268,24 +270,24 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 <div className="mt-4 space-y-6">
                   {/* Players Table */}
                   <div>
-                    <h4 className="font-bold text-base mb-3 text-foreground">Játékosok Rangsora</h4>
+                    <h4 className="font-bold text-base mb-3 text-foreground">{t('Tournament.groups.standings')}</h4>
                     <div className="rounded-md border border-border overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="text-center w-16">Sorszám</TableHead>
-                            <TableHead className="text-center w-16">Helyezés</TableHead>
-                            <TableHead>Név</TableHead>
-                            {isAdminOrModerator && <TableHead className="text-center w-20">Mozgatás</TableHead>}
-                            <TableHead className="text-center">Pontok</TableHead>
-                            <TableHead className="text-center">Nyert</TableHead>
-                            <TableHead className="text-center">Vesztett</TableHead>
-                            <TableHead className="text-center">Nyert Leg</TableHead>
-                            <TableHead className="text-center">Vesztett Leg</TableHead>
-                            <TableHead className="text-center">Leg ±</TableHead>
-                            <TableHead className="text-center">Átlag</TableHead>
-                            <TableHead className="text-center">180</TableHead>
-                            <TableHead className="text-center">Max Kiszálló</TableHead>
+                            <TableHead className="text-center w-16">{t('Tournament.groups.table.order')}</TableHead>
+                            <TableHead className="text-center w-16">{t('Tournament.groups.table.position')}</TableHead>
+                            <TableHead>{t('Tournament.groups.table.name')}</TableHead>
+                            {isAdminOrModerator && <TableHead className="text-center w-20">{t('Tournament.groups.table.move')}</TableHead>}
+                            <TableHead className="text-center">{t('Tournament.groups.table.points')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.won')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.lost')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.legs_won')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.legs_lost')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.leg_diff')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.average')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.180s')}</TableHead>
+                            <TableHead className="text-center">{t('Tournament.groups.table.max_checkout')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -302,7 +304,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                   {player.groupStanding || index + 1}.
                                 </TableCell>
                                 <TableCell className="font-semibold">
-                                  {player.playerReference?.name || 'Ismeretlen'}
+                                  {player.playerReference?.name || t('Tournament.groups.table.unknown')}
                                 </TableCell>
                                 {isAdminOrModerator && (
                                   <TableCell className="text-center">
@@ -313,7 +315,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
-                                        title="Fel mozgatás"
+                                        title={t('Tournament.groups.table.move_up')}
                                       >
                                         <IconArrowUp className="h-3 w-3" />
                                       </Button>
@@ -323,7 +325,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
-                                        title="Le mozgatás"
+                                        title={t('Tournament.groups.table.move_down')}
                                       >
                                         <IconArrowDown className="h-3 w-3" />
                                       </Button>
@@ -373,23 +375,23 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                       className="w-full justify-between mb-4"
                       onClick={() => toggleMatches(group._id)}
                     >
-                      <span>Mérkőzések</span>
+                      <span>{t('Tournament.groups.matches')}</span>
                       <IconChevronDown className={`h-4 w-4 transition-transform ${isMatchesExpanded ? "rotate-180" : ""}`} />
                     </Button>
 
                     {isMatchesExpanded && (
                       <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                          <Label className="text-sm">Szűrés állapot szerint:</Label>
+                          <Label className="text-sm">{t('Tournament.groups.filter')}</Label>
                           <Select value={matchFilter} onValueChange={(v) => setMatchFilter(v as any)}>
                             <SelectTrigger className="w-40">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">Összes</SelectItem>
-                              <SelectItem value="pending">Függőben</SelectItem>
-                              <SelectItem value="ongoing">Folyamatban</SelectItem>
-                              <SelectItem value="finished">Befejezve</SelectItem>
+                              <SelectItem value="all">{t('Tournament.groups.status.all')}</SelectItem>
+                              <SelectItem value="pending">{t('Tournament.groups.status.pending')}</SelectItem>
+                              <SelectItem value="ongoing">{t('Tournament.groups.status.ongoing')}</SelectItem>
+                              <SelectItem value="finished">{t('Tournament.groups.status.finished')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -422,7 +424,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                       {match.player1?.playerId?.name || 'Ismeretlen'} vs {match.player2?.playerId?.name || 'Ismeretlen'}
                                     </TableCell>
                                     <TableCell>
-                                      {match.scorer?.name || 'Nincs'}
+                                      {match.scorer?.name || t('Tournament.groups.table.no_scorer')}
                                     </TableCell>
                                     <TableCell className="text-center">
                                       <Badge variant={
@@ -460,10 +462,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                             variant="info"
                                             size="sm"
                                             onClick={() => handleViewLegs(match)}
-                                            title="Legek megtekintése"
+                                            title={t('Tournament.groups.view_legs')}
                                           >
                                             <IconEye className="h-4 w-4 mr-1" />
-                                            Legek
+                                            {t('Tournament.groups.view_legs')}
                                           </Button>
                                         )}
                                         {isAdminOrModerator && tournament.tournamentSettings?.status !== 'finished' && (
@@ -473,7 +475,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                             onClick={() => handleEditMatch(match)}
                                           >
                                             <IconEdit className="h-4 w-4 mr-1" />
-                                            Szerkesztés
+                                            {t('Tournament.groups.edit')}
                                           </Button>
                                         )}
                                       </div>
@@ -484,7 +486,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                             </Table>
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-center py-4">Nincsenek mérkőzések a csoportban.</p>
+                          <p className="text-muted-foreground text-center py-4">{t('Tournament.groups.no_matches')}</p>
                         )}
                       </div>
                     )}
@@ -500,7 +502,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       <Dialog open={showAdminModal} onOpenChange={setShowAdminModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Meccs Szerkesztése</DialogTitle>
+            <DialogTitle>{t('Tournament.groups.dialog.edit_match')}</DialogTitle>
             <DialogDescription>
               {selectedMatch && (
                 <>
@@ -517,7 +519,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 <h5 className="font-bold text-lg text-primary">{selectedMatch.player1?.playerId?.name}</h5>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="p1-legs">Nyert legek:</Label>
+                  <Label htmlFor="p1-legs">{t('Tournament.groups.dialog.won_legs')}</Label>
                   <Input
                     id="p1-legs"
                     type="number"
@@ -528,7 +530,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="p1-180s">180-ak száma:</Label>
+                  <Label htmlFor="p1-180s">{t('Tournament.groups.dialog.180_count')}</Label>
                   <Input
                     id="p1-180s"
                     type="number"
@@ -542,7 +544,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="p1-checkout">Legmagasabb kiszálló:</Label>
+                  <Label htmlFor="p1-checkout">{t('Tournament.groups.dialog.highest_checkout')}</Label>
                   <Input
                     id="p1-checkout"
                     type="number"
@@ -561,7 +563,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 <h5 className="font-bold text-lg text-primary">{selectedMatch.player2?.playerId?.name}</h5>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="p2-legs">Nyert legek:</Label>
+                  <Label htmlFor="p2-legs">{t('Tournament.groups.dialog.won_legs')}</Label>
                   <Input
                     id="p2-legs"
                     type="number"
@@ -572,7 +574,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="p2-180s">180-ak száma:</Label>
+                  <Label htmlFor="p2-180s">{t('Tournament.groups.dialog.180_count')}</Label>
                   <Input
                     id="p2-180s"
                     type="number"
@@ -586,7 +588,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="p2-checkout">Legmagasabb kiszálló:</Label>
+                  <Label htmlFor="p2-checkout">{t('Tournament.groups.dialog.highest_checkout')}</Label>
                   <Input
                     id="p2-checkout"
                     type="number"
@@ -608,7 +610,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
               onClick={handleSaveMatch}
               disabled={loading || player1Legs === player2Legs}
             >
-              {loading ? 'Mentés...' : 'Mentés'}
+              {loading ? t('Tournament.groups.dialog.saving') : t('Tournament.groups.dialog.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

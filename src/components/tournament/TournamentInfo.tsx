@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus, IconFileInvoice } from '@tabler/icons-react';
 import EditTournamentModal from './EditTournamentModal';
 import { toast } from 'react-hot-toast';
+import { useTranslations } from 'next-intl';
 
 interface TournamentInfoProps {
   tournament: any;
@@ -12,6 +13,7 @@ interface TournamentInfoProps {
 }
 
 const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, userRole, userId }) => {
+  const t = useTranslations('Tournament.info');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const notifiedRef = useRef(false);
@@ -20,13 +22,13 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
 
   useEffect(() => {
     if (canEdit && tournament.invoiceId && !notifiedRef.current) {
-      toast.success('A verseny hitelesítési számlája elérhető és letölthető a torna oldalán és az admin felületen.', {
+      toast.success(t('invoice_toast'), {
         duration: 6000,
         icon: <IconFileInvoice className="text-primary w-5 h-5" />
       });
       notifiedRef.current = true;
     }
-  }, [canEdit, tournament.invoiceId]);
+  }, [canEdit, tournament.invoiceId, t]);
 
   // Description with clickable https links
   const rawDescription: string = tournament.tournamentSettings?.description || '-';
@@ -47,28 +49,28 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">{tournament.tournamentSettings?.name}</h1>
-          <h3 className="text-md italic font-semibold">Torna azonosító: {tournament.tournamentId}</h3>
+          <h3 className="text-md italic font-semibold">{t('id_label')} {tournament.tournamentId}</h3>
         </div>
         {canEdit && (
           <button
             onClick={() => setEditModalOpen(true)}
             className="btn btn-outline btn-sm flex items-center gap-2"
-            title="Torna szerkesztése"
+            title={t('edit_title')}
           >
             <IconEdit className="w-4 h-4" />
-            Szerkesztés
+            {t('edit')}
           </button>
         )}
       </div>
       
       <div className="mb-4">
-        <span className="font-semibold">Formátum:</span> {tournament.tournamentSettings?.format}<br />
-        <span className="font-semibold">Kezdés:</span> {tournament.tournamentSettings?.startDate ? new Date(tournament.tournamentSettings.startDate).toLocaleString() : '-'}<br />
-        <span className="font-semibold">Helyszín:</span> {tournament.tournamentSettings?.location || tournament.clubId?.location}<br />
-        <span className="font-semibold">Nevezési díj:</span> {tournament.tournamentSettings?.entryFee} Ft<br />
-        <span className="font-semibold">Max. létszám:</span> {tournament.tournamentSettings?.maxPlayers}<br />
-        <span className="font-semibold">Kezdő pontszám:</span> {tournament.tournamentSettings?.startingScore}<br />
-        <span className="font-semibold">Leírás:</span>{" "}
+        <span className="font-semibold">{t('format')}</span> {tournament.tournamentSettings?.format}<br />
+        <span className="font-semibold">{t('start')}</span> {tournament.tournamentSettings?.startDate ? new Date(tournament.tournamentSettings.startDate).toLocaleString() : '-'}<br />
+        <span className="font-semibold">{t('location')}</span> {tournament.tournamentSettings?.location || tournament.clubId?.location}<br />
+        <span className="font-semibold">{t('entry_fee')}</span> {tournament.tournamentSettings?.entryFee} Ft<br />
+        <span className="font-semibold">{t('max_players')}</span> {tournament.tournamentSettings?.maxPlayers}<br />
+        <span className="font-semibold">{t('starting_score')}</span> {tournament.tournamentSettings?.startingScore}<br />
+        <span className="font-semibold">{t('description')}</span>{" "}
         <span
           dangerouslySetInnerHTML={{ __html: displayDescription }}
         />
@@ -77,14 +79,14 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
             className="text-primary hover:text-primary-focus ml-1 font-semibold"
           >
-            {isDescriptionExpanded ? '... kevesebb' : '... több'}
+            {isDescriptionExpanded ? t('show_less') : t('show_more')}
           </button>
         )}
       </div>
       <div className="mb-4">
-        <h2 className="text-xl font-semibold mb-1">Rendezői adatok:</h2>
-        <Link 
-          href={`/clubs/${tournament.clubId?._id}`} 
+        <h2 className="text-xl font-semibold mb-1">{t('organizer')}</h2>
+        <Link
+          href={`/clubs/${tournament.clubId?._id}`}
           className="text-primary hover:text-primary/80 hover:underline font-semibold transition-colors"
         >
           {tournament.clubId?.name}
@@ -101,23 +103,23 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Táblák megnyitása
+          {t('open_boards')}
         </Link>
         <button
           onClick={() => onRefetch()}
           className="btn btn-primary btn-md flex items-center gap-2"
         >
           <IconRefresh className="w-5 h-5" />
-          Frissítés
+          {t('refresh')}
         </button>
         <Link href={`/tournaments/${tournament.tournamentId}#registration`} className="lg:hidden btn btn-primary btn-md flex items-center gap-2">
           <IconUserPlus className="w-5 h-5" />
-          Nevezés
+          {t('register')}
         </Link>
         {tournament.status !== 'finished' && tournament.status !== 'pending' && (
           <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="btn btn-primary btn-md flex items-center gap-2">
             <IconScreenShare className="w-5 h-5" />
-            Élő követés
+            {t('live')}
           </Link>
         )}
         
@@ -128,10 +130,10 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
               window.open(`/api/tournaments/${tournament._id}/invoice`, '_blank');
             }}
             className="btn btn-outline btn-md flex items-center gap-2 ml-auto"
-            title="Számla letöltése"
+            title={t('invoice')}
           >
             <IconFileInvoice className="w-5 h-5" />
-            Számla
+            {t('invoice')}
           </button>
         )}
       </div>
@@ -150,4 +152,4 @@ const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, 
   );
 };
 
-export default TournamentInfo; 
+export default TournamentInfo;

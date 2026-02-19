@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { useTranslations } from "next-intl"
 import {
   IconCalendar,
   IconMapPin,
@@ -29,30 +30,7 @@ interface TournamentOverviewProps {
   onRefetch?: () => void
 }
 
-const statusConfig: Record<
-  string,
-  {
-    label: string
-    badgeClass: string
-  }
-> = {
-  pending: {
-    label: "Előkészítés alatt",
-    badgeClass: "bg-warning/10 text-warning border-warning/20",
-  },
-  "group-stage": {
-    label: "Csoportkör",
-    badgeClass: "bg-info/10 text-info border-info/20",
-  },
-  knockout: {
-    label: "Egyenes kiesés",
-    badgeClass: "bg-primary/10 text-primary border-primary/20",
-  },
-  finished: {
-    label: "Befejezett",
-    badgeClass: "bg-success/10 text-success border-success/20",
-  },
-}
+
 
 const formatDescription = (text: string) => {
   if (!text) return []
@@ -94,10 +72,11 @@ const formatDescription = (text: string) => {
 }
 
 export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: TournamentOverviewProps) {
+  const t = useTranslations()
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   const canEdit = userRole === "admin" || userRole === "moderator"
-  const descriptionText = tournament.tournamentSettings?.description || "Nincs megadva leírás."
+  const descriptionText = tournament.tournamentSettings?.description || t('Tournament.overview.no_description')
   const shouldTruncate = descriptionText.length > 180
   const fullDescriptionNodes = useMemo(() => formatDescription(descriptionText), [descriptionText])
   const truncatedDescriptionNodes = useMemo(() => {
@@ -106,29 +85,41 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
     return formatDescription(truncated)
   }, [descriptionText, fullDescriptionNodes, shouldTruncate])
   const status = tournament.tournamentSettings?.status || "pending"
-  const statusMeta = statusConfig[status] || statusConfig.pending
+
+  const statusBadgeClass: Record<string, string> = {
+    pending: "bg-warning/10 text-warning border-warning/20",
+    "group-stage": "bg-info/10 text-info border-info/20",
+    knockout: "bg-primary/10 text-primary border-primary/20",
+    finished: "bg-success/10 text-success border-success/20",
+  }
+  const statusLabel: Record<string, string> = {
+    pending: t('Tournament.overview.status.pending'),
+    "group-stage": t('Tournament.overview.status.group_stage'),
+    knockout: t('Tournament.overview.status.knockout'),
+    finished: t('Tournament.overview.status.finished'),
+  }
 
   const details = [
     {
       icon: <IconCalendar className="h-4 w-4" />,
-      label: "Kezdés",
+      label: t('Tournament.overview.details.start'),
       value: tournament.tournamentSettings?.startDate
         ? new Date(tournament.tournamentSettings.startDate).toLocaleString("hu-HU")
         : "–",
     },
     {
       icon: <IconMapPin className="h-4 w-4" />,
-      label: "Helyszín",
+      label: t('Tournament.overview.details.location'),
       value: tournament.tournamentSettings?.location || tournament.clubId?.location || "–",
     },
     {
       icon: <IconUsers className="h-4 w-4" />,
-      label: "Max. létszám",
+      label: t('Tournament.overview.details.max_players'),
       value: tournament.tournamentSettings?.maxPlayers || "–",
     },
     {
       icon: <IconCoin className="h-4 w-4" />,
-      label: "Nevezési díj",
+      label: t('Tournament.overview.details.entry_fee'),
       value:
         typeof tournament.tournamentSettings?.entryFee === "number"
           ? `${tournament.tournamentSettings.entryFee.toLocaleString("hu-HU")} Ft`
@@ -136,12 +127,12 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
     },
     {
       icon: <IconTarget className="h-4 w-4" />,
-      label: "Kezdő pontszám",
+      label: t('Tournament.overview.details.starting_score'),
       value: tournament.tournamentSettings?.startingScore || "–",
     },
     {
       icon: <IconId className="h-4 w-4" />,
-      label: "Formátum",
+      label: t('Tournament.overview.details.format'),
       value: tournament.tournamentSettings?.format || "–",
     },
   ]
@@ -155,38 +146,38 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
               <CardTitle className="text-2xl font-semibold text-foreground">
                 {tournament.tournamentSettings?.name || "Torna"}
               </CardTitle>
-              <Badge variant="outline" className={statusMeta.badgeClass}>
-                {statusMeta.label}
+              <Badge variant="outline" className={statusBadgeClass[status] || "bg-warning/10 text-warning border-warning/20"}>
+                {statusLabel[status] || statusLabel.pending}
               </Badge>
             </div>
             <CardDescription className="mt-1 flex items-center gap-2 text-sm">
               <IconId className="h-4 w-4" />
-              Torna kód: <span className="font-mono">{tournament.tournamentId}</span>
+              {t('Tournament.overview.tournament_code')} <span className="font-mono">{tournament.tournamentId}</span>
             </CardDescription>
           </div>
 
           <div className="flex flex-wrap justify-start gap-2 md:justify-end">
             <Button variant="outline" size="sm" onClick={onRefetch} className="bg-card/80 hover:bg-card">
               <IconRefresh className="mr-2 h-4 w-4" />
-              Frissítés
+              {t('Tournament.overview.btn_refresh')}
             </Button>
             <Button asChild size="sm" className="bg-card/80 hover:bg-card">
               <Link href={`/board/${tournament.tournamentId}`} target="_blank" className="flex items-center gap-2">
                 <IconTarget className="h-4 w-4" />
-                Író program
+                {t('Tournament.overview.btn_scoring')}
               </Link>
             </Button>
             {(status === 'group-stage' || status === 'knockout') && (
               <Button asChild variant="outline" size="sm" className="bg-card/80 hover:bg-card">
                 <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="flex items-center gap-2">
-                  <IconScreenShare className="h-4 w-4" /> Élő közvetítés
+                  <IconScreenShare className="h-4 w-4" /> {t('Tournament.overview.btn_live')}
                 </Link>
               </Button>
             )}
             {canEdit && status !== 'finished' && (
               <Button variant="secondary" size="sm" onClick={onEdit}>
                 <IconEdit className="mr-2 h-4 w-4" />
-                Szerkesztés
+                {t('Tournament.overview.btn_edit')}
               </Button>
             )}
             <Button
@@ -197,7 +188,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
             >
               <Link href={`/tournaments/${tournament.tournamentId}?tab=players#registration`} className="flex items-center gap-2">
                 <IconUserPlus className="h-4 w-4" />
-                Nevezés
+                {t('Tournament.overview.btn_register')}
               </Link>
             </Button>
           </div>
@@ -223,7 +214,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
         </div>
 
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-foreground">Leírás</h4>
+          <h4 className="text-sm font-semibold text-foreground">{t('Tournament.overview.description_label')}</h4>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {isDescriptionExpanded ? fullDescriptionNodes : truncatedDescriptionNodes}
           </p>
@@ -234,7 +225,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
               className="px-0 text-primary hover:text-primary/80"
               onClick={() => setIsDescriptionExpanded((prev) => !prev)}
             >
-              {isDescriptionExpanded ? "Kevesebb" : "Bővebben"}
+              {isDescriptionExpanded ? t('Tournament.overview.show_less') : t('Tournament.overview.show_more')}
             </Button>
           )}
         </div>
@@ -242,10 +233,10 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
         <Separator />
 
         <div>
-          <h4 className="text-sm font-semibold text-foreground">Rendezői adatok</h4>
+          <h4 className="text-sm font-semibold text-foreground">{t('Tournament.overview.organizer_title')}</h4>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="space-y-1 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Klub</p>
+              <p className="font-medium text-foreground">{t('Tournament.overview.club_label')}</p>
               {tournament.clubId?._id ? (
                 <Link
                   href={`/clubs/${tournament.clubId._id}`}
@@ -254,9 +245,9 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
                   {tournament.clubId?.name}
                 </Link>
               ) : (
-                <span>{tournament.clubId?.name || 'Ismeretlen klub'}</span>
+                <span>{tournament.clubId?.name || t('Tournament.overview.unknown_club')}</span>
               )}
-              <p>{tournament.clubId?.location || 'Nincs megadva helyszín'}</p>
+              <p>{tournament.clubId?.location || t('Tournament.overview.no_location')}</p>
             </div>
             <div className="space-y-1 text-sm text-muted-foreground">
               {tournament.clubId?.contact?.email && (

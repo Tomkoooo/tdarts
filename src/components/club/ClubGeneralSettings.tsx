@@ -19,20 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { showErrorToast } from '@/lib/toastUtils'
-
-const editClubSchema = z.object({
-  name: z.string().min(1, 'A klub neve kötelező'),
-  location: z.string().min(1, 'A helyszín kötelező'),
-  contact: z
-    .object({
-      email: z.string().email('Érvényes email címet adj meg').optional().or(z.literal('')),
-      phone: z.string().optional(),
-      website: z.string().url('Érvényes weboldal URL-t adj meg').optional().or(z.literal('')),
-    })
-    .optional(),
-})
-
-type EditClubFormData = z.infer<typeof editClubSchema>
+import { useTranslations } from 'next-intl'
 
 interface ClubGeneralSettingsProps {
   club: Club
@@ -41,6 +28,22 @@ interface ClubGeneralSettingsProps {
 }
 
 export default function ClubGeneralSettings({ club, onClubUpdated, userId }: ClubGeneralSettingsProps) {
+  const t = useTranslations('Club.settings.general_form')
+
+  const editClubSchema = z.object({
+    name: z.string().min(1, t('validation.name_required')),
+    location: z.string().min(1, t('validation.location_required')),
+    contact: z
+      .object({
+        email: z.string().email(t('validation.email_invalid')).optional().or(z.literal('')),
+        phone: z.string().optional(),
+        website: z.string().url(t('validation.url_invalid')).optional().or(z.literal('')),
+      })
+      .optional(),
+  })
+
+  type EditClubFormData = z.infer<typeof editClubSchema>
+
   const form = useForm<EditClubFormData>({
     resolver: zodResolver(editClubSchema),
     defaultValues: {
@@ -69,20 +72,20 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
   }, [club, form])
 
   const onSubmit = async (data: EditClubFormData) => {
-    const toastId = toast.loading('Klub adatok frissítése...')
+    const toastId = toast.loading(t('toast.loading'))
     try {
       const response = await axios.post<Club>(`/api/clubs`, {
         userId,
         updates: { ...data, _id: club._id },
       })
       onClubUpdated(response.data)
-      toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
+      toast.success(t('toast.success'), { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Klub frissítése sikertelen', {
+      showErrorToast(err.response?.data?.error || t('toast.error'), {
         error: err?.response?.data?.error,
-        context: 'Klub szerkesztése',
-        errorName: 'Klub frissítése sikertelen',
+        context: t('toast.context'),
+        errorName: t('toast.error'),
       })
     }
   }
@@ -96,9 +99,9 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Klub neve</FormLabel>
+              <FormLabel>{t('name')}</FormLabel>
               <FormControl>
-                <Input placeholder="Klub neve" {...field} />
+                <Input placeholder={t('name')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -112,9 +115,9 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Helyszín</FormLabel>
+              <FormLabel>{t('location')}</FormLabel>
               <FormControl>
-                <Input placeholder="Város, cím" {...field} />
+                <Input placeholder={t('location_placeholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -127,7 +130,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
             name="contact.email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Kapcsolat email</FormLabel>
+                <FormLabel>{t('email')}</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="email@example.com" {...field} />
                 </FormControl>
@@ -140,7 +143,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
             name="contact.phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Telefonszám</FormLabel>
+                <FormLabel>{t('phone')}</FormLabel>
                 <FormControl>
                   <Input placeholder="+36301234567" {...field} />
                 </FormControl>
@@ -155,7 +158,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           name="contact.website"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Weboldal</FormLabel>
+              <FormLabel>{t('website')}</FormLabel>
               <FormControl>
                 <Input placeholder="https://example.com" {...field} />
               </FormControl>
@@ -168,7 +171,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
         <div className="flex justify-end">
           <Button type="submit" size="sm" className="w-full sm:w-auto shadow-lg shadow-primary/30">
             <IconDeviceFloppy className="mr-2 h-4 w-4" />
-            Mentés
+            {t('save')}
           </Button>
         </div>
       </form>

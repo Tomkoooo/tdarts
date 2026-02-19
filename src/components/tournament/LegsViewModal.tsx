@@ -31,7 +31,9 @@ import {
   IconAlertTriangle,
   IconChartLine,
   IconLock,
+  IconDeviceGamepad2,
 } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 type Throw = {
   score: number
@@ -83,6 +85,7 @@ interface LegsViewModalProps {
 }
 
 const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: initialMatch, onBackToMatches }) => {
+  const t = useTranslations("Tournament.legs_modal")
   const [match, setMatch] = useState<Match | null>(initialMatch)
   const [legs, setLegs] = useState<Leg[]>([])
   const [loading, setLoading] = useState(false)
@@ -142,16 +145,16 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
     setError("")
     try {
       const response = await fetch(`/api/matches/${match._id}/legs`)
-      if (!response.ok) throw new Error("Nem sikerült betölteni a legek adatát")
+      if (!response.ok) throw new Error(t('error_loading'))
       const data = await response.json()
       if (data.success) {
         setLegs(data.legs ?? data.match?.legs ?? [])
       } else {
-        setError(data.error || "Nem sikerült betölteni a legek adatát")
+        setError(data.error || t('error_loading'))
       }
     } catch (err) {
       console.error("Fetch legs error", err)
-      setError("Hiba történt a legek betöltésekor")
+      setError(t('error_generic'))
     } finally {
       setLoading(false)
     }
@@ -249,7 +252,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
             <span className="mx-2 text-muted-foreground">vs</span>
             <span className={cn(isPlayer2Winner ? "text-primary" : "text-foreground")}>{playerTwoName}</span>
           </DialogTitle>
-          <DialogDescription>Legek részletei és statisztikák</DialogDescription>
+          <DialogDescription>{t('title')}</DialogDescription>
         </DialogHeader>
 
         <div className="px-6 pb-4 flex items-center justify-between gap-3 flex-shrink-0">
@@ -262,7 +265,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                 className="gap-2"
               >
                 <IconArrowLeft className="h-4 w-4" />
-                Vissza
+                {t('back')}
               </Button>
             )}
             {!isFeatureFlagLoading && (
@@ -284,7 +287,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                 ) : (
                   <IconLock className="h-4 w-4 text-primary/40" />
                 )}
-                {showDetailedStats ? "Grafikonok elrejtése" : "Részletes grafikonok"}
+                {showDetailedStats ? t('hide_charts') : t('show_charts')}
               </Button>
             )}
           </div>
@@ -292,7 +295,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
           {!isFeatureFlagLoading && !isDetailedStatsEnabled && (
             <Badge variant="outline" className="text-xs bg-primary/5 text-primary/60 border-primary/20 gap-1.5 px-3 py-1">
               <IconLock size={12} />
-              Pro funkció
+              {t('pro_feature')}
             </Badge>
           )}
         </div>
@@ -305,7 +308,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
           <div className="px-6 pb-4 flex-shrink-0">
             <Alert variant="destructive">
               <IconAlertTriangle className="h-5 w-5" />
-              <AlertTitle>Hiba történt</AlertTitle>
+              <AlertTitle>{t('error_generic')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           </div>
@@ -313,7 +316,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
           <div className="px-6 pb-4 flex-shrink-0">
             <Card className="border-0">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                Ehhez a meccshez még nem érkeztek részletes statisztikák.
+                {t('no_stats')}
               </CardContent>
             </Card>
           </div>
@@ -323,7 +326,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
               <TabsList className="mb-4 flex-shrink-0">
                 <TabsTrigger value="legs" className="gap-2">
                   <IconTarget className="h-4 w-4" />
-                  Legek
+                  {t('tabs_legs')}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="stats" 
@@ -335,7 +338,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                   ) : (
                     <IconLock className="h-4 w-4" />
                   )}
-                  Statisztikák
+                  {t('tabs_stats')}
                 </TabsTrigger>
               </TabsList>
 
@@ -360,7 +363,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                 <span className="text-base font-bold text-primary">{legIndex + 1}</span>
                               </div>
                               <div>
-                                <CardTitle className="text-base">{legIndex + 1}. Leg</CardTitle>
+                                <CardTitle className="text-base">{t('leg', { count: legIndex + 1 })}</CardTitle>
                                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     <IconTrophy className="h-3 w-3 text-warning" />
@@ -369,13 +372,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                   {leg.winnerArrowCount && (
                                     <div className="flex items-center gap-1">
                                       <IconTarget className="h-3 w-3 text-primary" />
-                                      <span>{leg.winnerArrowCount} nyíl</span>
+                                      <span>{t('arrows', { count: leg.winnerArrowCount })}</span>
                                     </div>
                                   )}
                                   {loserRemaining > 0 && (
                                     <div className="flex items-center gap-1">
                                       <IconTrendingDown className="h-3 w-3 text-destructive" />
-                                      <span>Maradt: {loserRemaining} pont</span>
+                                      <span>{t('remains', { count: loserRemaining })}</span>
                                     </div>
                                   )}
                                 </div>
@@ -407,13 +410,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                     (leg as any).player1TotalDarts,
                                     isPlayer1Winner,
                                     leg.winnerArrowCount
-                                  )} nyíl
+                                  )} {t('arrows')}
                                 </span>
                               </div>
                               {showDetailedStats && player1LegStats && (
                                 <div className="flex gap-2 text-xs">
-                                  <span className="text-muted-foreground">Átlag: <strong>{player1LegStats.average}</strong></span>
-                                  <span className="text-muted-foreground">Max: <strong>{player1LegStats.highestThrow}</strong></span>
+                                  <span className="text-muted-foreground">{t('avg')}: <strong>{player1LegStats.average}</strong></span>
+                                  <span className="text-muted-foreground">{t('max')}: <strong>{player1LegStats.highestThrow}</strong></span>
                                 </div>
                               )}
                             </div>
@@ -457,13 +460,13 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                     (leg as any).player2TotalDarts,
                                     isPlayer2Winner,
                                     leg.winnerArrowCount
-                                  )} nyíl
+                                  )} {t('arrows')}
                                 </span>
                               </div>
                               {showDetailedStats && player2LegStats && (
                                 <div className="flex gap-2 text-xs">
-                                  <span className="text-muted-foreground">Átlag: <strong>{player2LegStats.average}</strong></span>
-                                  <span className="text-muted-foreground">Max: <strong>{player2LegStats.highestThrow}</strong></span>
+                                  <span className="text-muted-foreground">{t('avg')}: <strong>{player2LegStats.average}</strong></span>
+                                  <span className="text-muted-foreground">{t('max')}: <strong>{player2LegStats.highestThrow}</strong></span>
                                 </div>
                               )}
                             </div>
@@ -527,7 +530,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
         )}
 
         <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0">
-          <Button onClick={onClose}>Bezárás</Button>
+          <Button onClick={onClose}>{t('close')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

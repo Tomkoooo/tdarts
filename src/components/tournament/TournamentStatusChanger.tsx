@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react"
+import { useTranslations } from "next-intl"
 import axios from "axios"
 import {
   CreateManualGroupsRequest,
@@ -41,6 +42,7 @@ export default function TournamentStatusChanger({
   userClubRole,
   onRefetch,
 }: TournamentStatusManagerProps) {
+  const t = useTranslations()
   const [action, setAction] = useState<PendingAction>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -93,7 +95,7 @@ export default function TournamentStatusChanger({
         await request()
         onRefetch()
       } catch (err: any) {
-        const message = err?.response?.data?.error || err?.message || "Ismeretlen hiba történt."
+        const message = err?.response?.data?.error || err?.message || t('Tournament.status_changer.error_unknown')
         setError(message)
         showErrorToast(message, {
           error: err?.response?.data?.details || err?.message,
@@ -116,7 +118,7 @@ export default function TournamentStatusChanger({
     handleApiRequest("generate-groups", async () => {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/generateGroups`)
       if (!response?.data || response.status !== 200) {
-        throw new Error(response?.data?.error || "Nem sikerült csoportokat generálni.")
+        throw new Error(response?.data?.error || t('Tournament.status_changer.error_groups_generate'))
       }
       setIsGroupsDialogOpen(false)
     })
@@ -126,7 +128,7 @@ export default function TournamentStatusChanger({
     handleApiRequest("manual-groups", async () => {
       const { data } = await axios.get(`/api/tournaments/${tournamentCode}/manualGroups/context`)
       if (!data?.success) {
-        throw new Error(data?.error || "Nem sikerült betölteni a manuális csoport szerkesztőt.")
+        throw new Error(data?.error || t('Tournament.status_changer.manual_groups_dialog.error_load'))
       }
 
       const availableBoards = (data.boards || []).filter((board: { isUsed: boolean }) => !board.isUsed)
@@ -149,7 +151,7 @@ export default function TournamentStatusChanger({
       .filter((group) => group.playerIds.length >= MIN_PLAYERS_PER_GROUP && group.playerIds.length <= MAX_PLAYERS_PER_GROUP)
 
     if (payloadGroups.length === 0) {
-      setError("Legalább egy érvényes csoportot ki kell jelölni (3-6 játékos táblánként).")
+      setError(t('Tournament.status_changer.manual_groups_dialog.error_no_valid_groups'))
       return
     }
 
@@ -160,7 +162,7 @@ export default function TournamentStatusChanger({
     handleApiRequest("generate-groups", async () => {
       const { data } = await axios.post(`/api/tournaments/${tournamentCode}/manualGroups/create`, payload)
       if (!data?.success) {
-        throw new Error(data?.error || "Nem sikerült létrehozni a csoportokat.")
+        throw new Error(data?.error || t('Tournament.status_changer.manual_groups_dialog.error_create'))
       }
 
       setIsManualGroupsDialogOpen(false)
@@ -196,7 +198,7 @@ export default function TournamentStatusChanger({
       }
 
       if (!response?.data?.success) {
-        throw new Error(response?.data?.error || "Nem sikerült létrehozni az egyenes kiesést.")
+        throw new Error(response?.data?.error || t('Tournament.status_changer.knockout_dialog.error_generate'))
       }
 
       setIsKnockoutDialogOpen(false)
@@ -227,7 +229,7 @@ export default function TournamentStatusChanger({
         if (player) {
           losers.push({
             _id: loserId,
-            name: (player.playerReference as any)?.name || "Névtelen játékos",
+            name: (player.playerReference as any)?.name || t('Tournament.groups.table.unknown'),
           })
         }
       }
@@ -248,7 +250,7 @@ export default function TournamentStatusChanger({
         thirdPlacePlayerId: thirdPlaceId,
       })
       if (!response?.data?.success) {
-        throw new Error(response?.data?.error || "Nem sikerült befejezni a tornát.")
+        throw new Error(response?.data?.error || t('Tournament.status_changer.third_place_dialog.error'))
       }
       setIsThirdPlaceDialogOpen(false)
     })
@@ -258,7 +260,7 @@ export default function TournamentStatusChanger({
     handleApiRequest("cancel-knockout", async () => {
       const response = await axios.post(`/api/tournaments/${tournamentCode}/cancel-knockout`)
       if (!response?.data?.success) {
-        throw new Error(response?.data?.error || "Nem sikerült visszavonni az egyenes kiesést.")
+        throw new Error(response?.data?.error || t('Tournament.status_changer.cancel_knockout_dialog.error'))
       }
       setIsCancelKnockoutDialogOpen(false)
     })
@@ -343,9 +345,9 @@ export default function TournamentStatusChanger({
     <div className="space-y-4">
       <div className="bg-transparent">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-lg font-semibold">Torna státusz műveletek</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('Tournament.status_changer.title')}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            A lenti lehetőségekkel generálhatod a csoportokat és az egyenes kiesést, vagy lezárhatod a tornát.
+            {t('Tournament.status_changer.description')}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -358,7 +360,7 @@ export default function TournamentStatusChanger({
                   onClick={handleOpenGroupsDialog}
                   disabled={!isGroupGenerationAllowed}
                 >
-                  Csoportok generálása
+                  {t('Tournament.status_changer.btn_generate_groups')}
                 </Button>
               )}
 
@@ -385,7 +387,7 @@ export default function TournamentStatusChanger({
                   setIsCancelKnockoutDialogOpen(true)
                 }}
               >
-                Egyenes kiesés visszavonása
+                {t('Tournament.status_changer.btn_cancel_knockout')}
               </Button>
             )}
 
@@ -393,7 +395,7 @@ export default function TournamentStatusChanger({
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
               <Button variant="outline" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
-                Torna befejezése
+                {t('Tournament.status_changer.btn_finish')}
               </Button>
             )}
           </div>
@@ -403,14 +405,13 @@ export default function TournamentStatusChanger({
             (tournamentFormat === "group" || tournamentFormat === "group_knockout") &&
             boardCount > 0 && (
               <Alert variant="warning">
-                <AlertTitle>Nem megfelelő játékosszám</AlertTitle>
+                <AlertTitle>{t('Tournament.status_changer.alert_player_count_title')}</AlertTitle>
                 <AlertDescription className="space-y-1">
                   <p>
-                    Minimum {MIN_PLAYERS_PER_GROUP} és maximum {MAX_PLAYERS_PER_GROUP} játékos szükséges csoportonként.
+                    {t('Tournament.status_changer.alert_player_count_desc', { min: MIN_PLAYERS_PER_GROUP, max: MAX_PLAYERS_PER_GROUP })}
                   </p>
                   <p>
-                    Jelenleg {availablePlayers} bejelentkezett játékos áll rendelkezésre {boardCount} táblára (összesen {totalPlayers}
-                    játékos).
+                    {t('Tournament.status_changer.alert_player_count_current', { available: availablePlayers, boards: boardCount, total: totalPlayers })}
                   </p>
                 </AlertDescription>
               </Alert>
@@ -418,7 +419,7 @@ export default function TournamentStatusChanger({
 
           {error && (
             <Alert variant="destructive">
-              <AlertTitle>Hiba történt</AlertTitle>
+              <AlertTitle>{t('Tournament.status_changer.alert_error_title')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -428,38 +429,37 @@ export default function TournamentStatusChanger({
       <Dialog open={isGroupsDialogOpen} onOpenChange={setIsGroupsDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Csoportok generálása</DialogTitle>
+            <DialogTitle>{t('Tournament.status_changer.groups_dialog.title')}</DialogTitle>
             <DialogDescription>
-              Válaszd ki, hogy automatikusan generáljuk a csoportokat vagy manuálisan szeretnéd kiosztani a játékosokat.
+              {t('Tournament.status_changer.groups_dialog.description')}
             </DialogDescription>
           </DialogHeader>
 
           {!isGroupGenerationAllowed && boardCount > 0 && (
             <Alert variant="warning">
-              <AlertTitle>Játékosszám ellenőrzés</AlertTitle>
+              <AlertTitle>{t('Tournament.status_changer.groups_dialog.alert_check_title')}</AlertTitle>
               <AlertDescription>
-                {boardCount} tábla esetén {minPlayersRequired} és {maxPlayersAllowed} játékos között kell lennie a bejelentkezett
-                játékosok számának. Jelenleg {availablePlayers} játékos érhető el.
+                {t('Tournament.status_changer.groups_dialog.alert_check_desc', { boards: boardCount, min: minPlayersRequired, max: maxPlayersAllowed, available: availablePlayers })}
               </AlertDescription>
             </Alert>
           )}
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
+            <span className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.groups_dialog.mode_label')}</span>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant={groupsMode === "automatic" ? "default" : "outline"}
                 onClick={() => setGroupsMode("automatic")}
               >
-                Automatikus
+                {t('Tournament.status_changer.groups_dialog.automatic')}
               </Button>
               <Button
                 type="button"
                 variant={groupsMode === "manual" ? "default" : "outline"}
                 onClick={() => setGroupsMode("manual")}
               >
-                Manuális
+                {t('Tournament.status_changer.groups_dialog.manual')}
               </Button>
             </div>
           </div>
@@ -495,9 +495,9 @@ export default function TournamentStatusChanger({
       <Dialog open={isManualGroupsDialogOpen} onOpenChange={setIsManualGroupsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
-            <DialogTitle>Manuális csoportkészítő</DialogTitle>
+            <DialogTitle>{t('Tournament.status_changer.manual_groups_dialog.title')}</DialogTitle>
             <DialogDescription>
-              Válaszd ki, mely játékosok szerepeljenek az egyes táblákon. Táblánként minimum 3, maximum 6 játékos engedélyezett.
+              {t('Tournament.status_changer.manual_groups_dialog.description')}
             </DialogDescription>
           </DialogHeader>
 
@@ -507,9 +507,9 @@ export default function TournamentStatusChanger({
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Elérhető táblák</CardTitle>
+                    <CardTitle className="text-base">{t('Tournament.status_changer.manual_groups_dialog.boards_title')}</CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      A már lezárt táblák nem választhatók. A jelölés a kiválasztott játékosok számát mutatja.
+                      {t('Tournament.status_changer.manual_groups_dialog.boards_desc')}
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -528,10 +528,10 @@ export default function TournamentStatusChanger({
                           }}
                         >
                           <span className="flex items-center gap-2">
-                            Tábla {board.boardNumber}
-                            {board.isUsed && <Badge variant="secondary">Foglalt</Badge>}
+                            {t('Tournament.status_changer.manual_groups_dialog.board_number', { number: board.boardNumber })}
+                            {board.isUsed && <Badge variant="secondary">{t('Tournament.status_changer.manual_groups_dialog.board_occupied')}</Badge>}
                           </span>
-                          <Badge variant={assignedCount ? "default" : "secondary"}>{assignedCount} játékos</Badge>
+                          <Badge variant={assignedCount ? "default" : "secondary"}>{t('Tournament.status_changer.manual_groups_dialog.board_player_count', { count: assignedCount })}</Badge>
                         </Button>
                       )
                     })}
@@ -542,13 +542,13 @@ export default function TournamentStatusChanger({
               <div className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-muted-foreground">Játékosok kijelölése</h3>
+                    <h3 className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.players_label')}</h3>
                     {selectedBoard && (
-                      <Badge variant="outline">Aktív tábla: {selectedBoard}</Badge>
+                      <Badge variant="outline">{t('Tournament.status_changer.manual_groups_dialog.active_board', { number: selectedBoard })}</Badge>
                     )}
                   </div>
                   <Input
-                    placeholder="Keresés név szerint..."
+                    placeholder={t('Tournament.status_changer.manual_groups_dialog.search_placeholder')}
                     value={manualContext.searchQuery}
                     onChange={(event) =>
                       setManualContext((prev) => (prev ? { ...prev, searchQuery: event.target.value } : prev))
@@ -586,7 +586,7 @@ export default function TournamentStatusChanger({
 
                         {filteredManualPlayers.length === 0 && (
                           <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
-                            Nincs a feltételeknek megfelelő játékos.
+                            {t('Tournament.status_changer.manual_groups_dialog.no_players')}
                           </div>
                         )}
                       </div>
@@ -594,13 +594,13 @@ export default function TournamentStatusChanger({
                       <Separator />
 
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-muted-foreground">Összegzés</h4>
+                        <h4 className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.summary_title')}</h4>
                         <div className="rounded-md border bg-background px-3 py-2 text-sm">
                           {Array.from(assignedPlayers.entries())
                             .filter(([, ids]) => ids.length > 0)
                             .map(([boardNumber, playerIds]) => (
                               <div key={boardNumber} className="flex flex-wrap gap-1">
-                                <span className="font-medium">Tábla {boardNumber}:</span>
+                                <span className="font-medium">{t('Tournament.status_changer.manual_groups_dialog.summary_board', { number: boardNumber })}</span>
                                 <span>
                                   {playerIds
                                     .map((playerId) => {
@@ -613,14 +613,14 @@ export default function TournamentStatusChanger({
                             ))}
 
                           {Array.from(assignedPlayers.values()).every((ids) => ids.length === 0) && (
-                            <p className="text-muted-foreground">Még nem választottál ki játékosokat.</p>
+                            <p className="text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.no_players_selected')}</p>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
-                      Válassz ki először egy táblát a bal oldali listából.
+                      {t('Tournament.status_changer.manual_groups_dialog.select_board_first')}
                     </div>
                   )}
                 </div>
@@ -632,7 +632,7 @@ export default function TournamentStatusChanger({
           {!manualContext && (
             <div className="flex-1 flex items-center justify-center py-12">
               <div className="text-center text-muted-foreground">
-                <p>Betöltés...</p>
+                <p>{t('Tournament.status_changer.manual_groups_dialog.loading_context')}</p>
               </div>
             </div>
           )}
@@ -647,10 +647,10 @@ export default function TournamentStatusChanger({
               {action === "generate-groups" ? (
                 <span className="flex items-center gap-2">
                   <LoadingSpinner size="sm" />
-                  Mentés...
+                  {t('Tournament.status_changer.manual_groups_dialog.saving')}
                 </span>
               ) : (
-                "Csoportok létrehozása"
+                t('Tournament.status_changer.manual_groups_dialog.btn_create')
               )}
             </Button>
           </DialogFooter>
@@ -660,47 +660,47 @@ export default function TournamentStatusChanger({
       <Dialog open={isKnockoutDialogOpen} onOpenChange={setIsKnockoutDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Egyenes kiesés generálása</DialogTitle>
+            <DialogTitle>{t('Tournament.status_changer.knockout_dialog.title')}</DialogTitle>
             <DialogDescription>
-              Válaszd ki, hogy automatikusan generáljuk-e a párosításokat vagy manuálisan szeretnéd kiosztani a játékosokat.
+              {t('Tournament.status_changer.knockout_dialog.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4">
             <div className="space-y-2">
-              <span className="text-sm font-semibold text-muted-foreground">Generálás módja</span>
+              <span className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.knockout_dialog.mode_label')}</span>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant={knockoutMode === "automatic" ? "default" : "outline"}
                   onClick={() => setKnockoutMode("automatic")}
                 >
-                  Automatikus
+                  {t('Tournament.status_changer.knockout_dialog.automatic')}
                 </Button>
                 <Button
                   type="button"
                   variant={knockoutMode === "manual" ? "default" : "outline"}
                   onClick={() => setKnockoutMode("manual")}
                 >
-                  Manuális
+                  {t('Tournament.status_changer.knockout_dialog.manual')}
                 </Button>
               </div>
             </div>
 
             {knockoutMode === "automatic" && !isAutomaticKnockoutAllowed && (
               <Alert variant="destructive">
-                <AlertTitle>Nem támogatott csoportszám</AlertTitle>
+                <AlertTitle>{t('Tournament.status_changer.knockout_dialog.alert_unsupported_title')}</AlertTitle>
                 <AlertDescription>
-                  Automatikus generálás csak 2, 4, 8 vagy 16 csoport esetén lehetséges (MDL szabályok). Válts manuális módra.
+                  {t('Tournament.status_changer.knockout_dialog.alert_unsupported_desc')}
                 </AlertDescription>
               </Alert>
             )}
 
               {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
                 <div className="space-y-2">
-                  <span className="text-sm font-semibold text-muted-foreground">Továbbjutók száma csoportonként</span>
+                  <span className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.knockout_dialog.qualifiers_label')}</span>
                   <p className="text-xs text-muted-foreground">
-                    Válaszd ki, hány játékos jusson tovább csoportonként. Ez határozza meg a főtábla méretét.
+                    {t('Tournament.status_changer.knockout_dialog.qualifiers_desc')}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {[2, 3, 4].filter(count => !(boardCount >= 16 && count === 4)).map((count) => (
@@ -710,12 +710,12 @@ export default function TournamentStatusChanger({
                         variant={selectedPlayers === count ? "default" : "outline"}
                         onClick={() => setSelectedPlayers(count)}
                       >
-                        {count} játékos
+                        {t('Tournament.status_changer.knockout_dialog.players_count', { count })}
                       </Button>
                     ))}
                   </div>
                   <div className="text-sm text-muted-foreground mt-2">
-                     Várható főtábla méret: <strong>{boardCount * selectedPlayers} fős</strong> ({boardCount} csoport esetén)
+                    {t('Tournament.status_changer.knockout_dialog.bracket_size', { size: boardCount * selectedPlayers, boards: boardCount })}
                   </div>
                   
                   <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
@@ -729,10 +729,9 @@ export default function TournamentStatusChanger({
 
             {knockoutMode === "manual" && (
               <Alert>
-                <AlertTitle>Manuális kiosztás</AlertTitle>
+                <AlertTitle>{t('Tournament.status_changer.knockout_dialog.alert_manual_title')}</AlertTitle>
                 <AlertDescription>
-                  Üres köröket hozunk létre, amelyeket később tetszőlegesen kitölthetsz a játékosokkal. Ez a mód javasolt, ha
-                  kiemelt játékosokat szeretnél elhelyezni.
+                  {t('Tournament.status_changer.knockout_dialog.alert_manual_desc')}
                 </AlertDescription>
               </Alert>
             )}
@@ -744,10 +743,10 @@ export default function TournamentStatusChanger({
               {action === "generate-knockout" ? (
                 <span className="flex items-center gap-2">
                   <LoadingSpinner size="sm" />
-                  Generálás...
+                  {t('Tournament.status_changer.knockout_dialog.generating')}
                 </span>
               ) : (
-                "Generálás"
+                t('Tournament.status_changer.knockout_dialog.btn_generate')
               )}
             </Button>
           </DialogFooter>
@@ -757,9 +756,9 @@ export default function TournamentStatusChanger({
       <Dialog open={isCancelKnockoutDialogOpen} onOpenChange={setIsCancelKnockoutDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Knockout visszavonása</DialogTitle>
+            <DialogTitle>{t('Tournament.status_changer.cancel_knockout_dialog.title')}</DialogTitle>
             <DialogDescription>
-              A művelet törli az összes knockout kört és meccset. Biztosan folytatod? Ez a lépés nem vonható vissza.
+              {t('Tournament.status_changer.cancel_knockout_dialog.description')}
             </DialogDescription>
           </DialogHeader>
 
@@ -768,10 +767,10 @@ export default function TournamentStatusChanger({
               {action === "cancel-knockout" ? (
                 <span className="flex items-center gap-2">
                   <LoadingSpinner size="sm" />
-                  Visszavonás...
+                  {t('Tournament.status_changer.cancel_knockout_dialog.cancelling')}
                 </span>
               ) : (
-                "Knockout visszavonása"
+                t('Tournament.status_changer.cancel_knockout_dialog.btn_cancel')
               )}
             </Button>
           </DialogFooter>
@@ -780,10 +779,9 @@ export default function TournamentStatusChanger({
       <Dialog open={isThirdPlaceDialogOpen} onOpenChange={setIsThirdPlaceDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>3. hely kiválasztása</DialogTitle>
+            <DialogTitle>{t('Tournament.status_changer.third_place_dialog.title')}</DialogTitle>
             <DialogDescription>
-              A torna befejezése előtt kiválaszthatod, ki legyen a 3. helyezett. Ha nem választasz senkit, mindkét
-              elődöntőben kiesett játékos 4. helyezést kap.
+              {t('Tournament.status_changer.third_place_dialog.description')}
             </DialogDescription>
           </DialogHeader>
 
@@ -798,7 +796,7 @@ export default function TournamentStatusChanger({
                 >
                   <div className="flex flex-col">
                     <span className="font-semibold">{player.name}</span>
-                    <span className="text-xs text-muted-foreground">Jelölés 3. helyre</span>
+                    <span className="text-xs text-muted-foreground">{t('Tournament.status_changer.third_place_dialog.mark_third')}</span>
                   </div>
                 </Button>
               ))}
@@ -808,8 +806,8 @@ export default function TournamentStatusChanger({
                 onClick={() => setSelectedThirdPlaceId(null)}
               >
                 <div className="flex flex-col">
-                  <span className="font-semibold">Nincs különbség</span>
-                  <span className="text-xs text-muted-foreground">Mindkét játékos 4. helyezett lesz</span>
+                  <span className="font-semibold">{t('Tournament.status_changer.third_place_dialog.no_difference')}</span>
+                  <span className="text-xs text-muted-foreground">{t('Tournament.status_changer.third_place_dialog.both_fourth')}</span>
                 </div>
               </Button>
             </div>
@@ -817,7 +815,7 @@ export default function TournamentStatusChanger({
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button variant="outline" onClick={() => setIsThirdPlaceDialogOpen(false)}>
-              Mégse
+              {t('Tournament.status_changer.third_place_dialog.btn_cancel')}
             </Button>
             <Button
               onClick={() => handleFinishTournament(selectedThirdPlaceId || undefined)}
@@ -826,10 +824,10 @@ export default function TournamentStatusChanger({
               {action === "finish" ? (
                 <span className="flex items-center gap-2">
                   <LoadingSpinner size="sm" />
-                  Befejezés...
+                  {t('Tournament.status_changer.third_place_dialog.finishing')}
                 </span>
               ) : (
-                "Torna befejezése"
+                t('Tournament.status_changer.third_place_dialog.btn_finish')
               )}
             </Button>
           </DialogFooter>

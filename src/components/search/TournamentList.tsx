@@ -1,20 +1,23 @@
 import TournamentCard from "@/components/tournament/TournamentCard"
 import { IconCalendar } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 interface TournamentListProps {
     tournaments: any[];
 }
 
 export function TournamentList({ tournaments }: TournamentListProps) {
+    const tResults = useTranslations('Search.tournament_results')
+    
     if (!tournaments || tournaments.length === 0) {
         return (
             <div className="text-center py-16 bg-base-100 rounded-xl border border-base-200 shadow-sm">
                 <div className="w-20 h-20 rounded-full bg-base-200 flex items-center justify-center mx-auto mb-6">
                     <IconCalendar className="w-10 h-10 text-base-content/50" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Nincsenek találatok</h3>
+                <h3 className="text-xl font-bold mb-2">{tResults('no_tournaments')}</h3>
                 <p className="text-muted-foreground max-w-sm mx-auto">
-                    Próbáld meg módosítani a szűrőket vagy keress más időpontban.
+                    {tResults('no_tournaments_filters_desc')}
                 </p>
             </div>
         )
@@ -53,9 +56,9 @@ export function TournamentList({ tournaments }: TournamentListProps) {
         targetDate.setHours(0, 0, 0, 0)
     
         if (targetDate.getTime() === today.getTime()) {
-          return 'Ma'
+          return tResults('today')
         } else if (targetDate.getTime() === tomorrow.getTime()) {
-          return 'Holnap'
+          return tResults('tomorrow')
         } else {
           return targetDate.toLocaleDateString('hu-HU', { 
             weekday: 'long', 

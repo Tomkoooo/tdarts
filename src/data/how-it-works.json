@@ -467,8 +467,10 @@
             "content": [
               "1. Kattints a 'Páros nevezés' gombra a torna oldalán.",
               "2. Add meg a páros/csapat nevét.",
-              "3. Válaszd ki a társadat a kereső segítségével (regisztrált vagy vendég játékos is lehet).",
-              "4. A nevezés után a páros bekerül a jelentkezési listára."
+              "3. Hívd meg a társadat email cím alapján. (Ha van már tDarts regisztrációja akkor a fiókhoz tartozó email cím alapján)",
+              "4. A meghívott félnek elküldésre kerül egy emailben egy link, amivel tudja fogadni a meghívást. (Ehhez a meghívottnak az email címhez tartozó tDarts fiókba kell bejelentkezve lennie, ha beépített böngészőbe nyitja meg az email a linket akkor ez trükkös lehet így ajánlott azt kimásolni és rendes böngésző munkamenetbe megnyitni)",
+              "5. Elfogadást követően kerül fel a csapat a nevezők listájára, ameddig folyamatba van a nevezés addig a várólistára kerülnek, elutasítás esetén pedig onnan levételre kerülnek.",
+              "A folyamatba lévő nevezőket át tudja emelni a rendező a regisztrációs listára illetve tud a rendező párokat felvenni regisztrált/vendégként."
             ]
           },
           {
