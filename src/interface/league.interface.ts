@@ -3,7 +3,7 @@ import { PlayerDocument } from './player.interface';
 import { TournamentDocument } from './tournament.interface';
 
 // Point System Type
-export type PointSystemType = 'platform' | 'remiz_christmas' | 'ontour';
+export type PointSystemType = 'platform' | 'remiz_christmas' | 'ontour' | 'gold_fisch';
 
 // League Points Configuration Interface
 export interface LeaguePointsConfig {

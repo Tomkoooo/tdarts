@@ -9,18 +9,20 @@ import { showErrorToast } from "@/lib/toastUtils"
 import axios from "axios"
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
+import { useLocale } from "next-intl"
 
 export default function MyClubPage() {
   const { user } = useUserContext()
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(true)
   const [clubs, setClubs] = React.useState<Club[]>([])
+  const locale = useLocale()
 
   React.useEffect(() => {
     const checkUserClubs = async () => {
       if (!user) {
         // Redirect to login if no user is logged in
-        router.push("/auth/login")
+        router.push(`/${locale}/auth/login`)
         return
       }
 
@@ -32,7 +34,7 @@ export default function MyClubPage() {
 
         if (userClubs.length > 0) {
           // Redirect to the first club's page if user is associated with a club
-          router.push(`/clubs/${userClubs[0]._id}`)
+          router.push(`/${locale}/clubs/${userClubs[0]._id}`)
         }
       } catch (error: any) {
         showErrorToast("Hiba történt a klubok lekérdezése során", {

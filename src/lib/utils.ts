@@ -67,6 +67,37 @@ export const roundRobin = (numPlayers: number) => {
                 { player1: 2, player2: 5, scorer: 3 }
             );
             break;
+        case 7:
+            /*
+            1-7(3), 2-6(4), 3-4(1), 5-6(2), 1-3(5), 2-7(6), 
+4-5(7), 1-6(3), 2-4(1), 3-7(5), 2-5(4), 3-6(7), 
+1-4(6), 5-7(2), 2-3(1), 4-6(7), 1-5(4), 6-7(3), 
+3-5(6), 4-7(2), 1-2(5) 
+            */
+           matches.push(
+            {player1: 1, player2: 7, scorer: 3},
+            {player1: 2, player2: 6, scorer: 4},
+            {player1: 3, player2: 4, scorer: 1},
+            {player1: 5, player2: 6, scorer: 2},
+            {player1: 1, player2: 3, scorer: 5},
+            {player1: 2, player2: 7, scorer: 6},
+            {player1: 4, player2: 5, scorer: 7},
+            {player1: 1, player2: 6, scorer: 3},
+            {player1: 2, player2: 4, scorer: 1},
+            {player1: 3, player2: 7, scorer: 5},
+            {player1: 2, player2: 5, scorer: 4},
+            {player1: 3, player2: 6, scorer: 7},
+            {player1: 1, player2: 4, scorer: 6},
+            {player1: 5, player2: 7, scorer: 2},
+            {player1: 2, player2: 3, scorer: 1},
+            {player1: 4, player2: 6, scorer: 7},
+            {player1: 1, player2: 5, scorer: 4},
+            {player1: 6, player2: 7, scorer: 3},
+            {player1: 3, player2: 5, scorer: 6},
+            {player1: 4, player2: 7, scorer: 2},
+            {player1: 1, player2: 2, scorer: 5}
+           )
+            break
         default:
             // Fallback to dynamic generation for other numbers of players
             if (numPlayers < 2) return [];

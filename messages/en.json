@@ -226,6 +226,7 @@
             "separator": "or",
             "no_account": "Don't have an account?",
             "register_link": "Register here",
+            "language": "Language",
             "success": "Successful login!",
             "error_generic": "An error occurred during login"
         },
@@ -249,6 +250,7 @@
             "separator": "or",
             "has_account": "Already have an account?",
             "login_link": "Log in here",
+            "language": "Language",
             "error_generic": "An error occurred during registration",
             "error_google": "An error occurred during Google registration",
             "loading": "Registration in progress...",
@@ -307,10 +309,23 @@
             "username_invalid": "Username can only contain letters, numbers, and underscores",
             "username_no_spaces": "Username cannot contain spaces",
             "name_required": "Name is required",
-            "name_min": "Name must be at least 2 characters long",
+            "name_min_length": "Name must be at least 2 characters long",
             "confirm_password_required": "Password confirmation is required",
             "passwords_mismatch": "Passwords do not match",
             "code_required": "Verification code is required"
+        },
+        "link": {
+            "title": "Link Google Account",
+            "subtitle": "Link your Google account",
+            "google_data": "Your Google account data:",
+            "name": "Name: {name}",
+            "email_label": "Email Address",
+            "password_label": "Password",
+            "cancel": "Cancel",
+            "submit": "Link Account",
+            "submitting": "Linking...",
+            "footer": "Your Google account will be linked to your existing user account. After that, you can sign in both ways.",
+            "error_generic": "An error occurred during account linking"
         }
     },
     "Metadata": {

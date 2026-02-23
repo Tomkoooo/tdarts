@@ -35,7 +35,7 @@ type PendingAction =
   | null
 
 const MIN_PLAYERS_PER_GROUP = 3
-const MAX_PLAYERS_PER_GROUP = 6
+const MAX_PLAYERS_PER_GROUP = 7
 
 export default function TournamentStatusChanger({
   tournament,
@@ -367,16 +367,16 @@ export default function TournamentStatusChanger({
             {((tournamentStatus === "group-stage" &&
               (tournamentFormat === "knockout" || tournamentFormat === "group_knockout")) ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
-              <Button
-                className="flex-1 min-w-[200px]"
-                onClick={() => {
-                  resetError()
-                  setIsKnockoutDialogOpen(true)
-                }}
-              >
-                Egyenes kiesés generálása
-              </Button>
-            )}
+                <Button
+                  className="flex-1 min-w-[200px]"
+                  onClick={() => {
+                    resetError()
+                    setIsKnockoutDialogOpen(true)
+                  }}
+                >
+                  Egyenes kiesés generálása
+                </Button>
+              )}
 
             {tournamentStatus === "knockout" && (
               <Button
@@ -394,10 +394,10 @@ export default function TournamentStatusChanger({
             {(tournamentStatus === "knockout" ||
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
-              <Button variant="outline" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
-                {t('Tournament.status_changer.btn_finish')}
-              </Button>
-            )}
+                <Button variant="outline" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
+                  {t('Tournament.status_changer.btn_finish')}
+                </Button>
+              )}
           </div>
 
           {!isGroupGenerationAllowed &&
@@ -503,129 +503,129 @@ export default function TournamentStatusChanger({
 
           {manualContext && (
             <div className="flex-1 overflow-y-auto px-1">
-            <div className="grid gap-6 md:grid-cols-[260px_1fr]">
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{t('Tournament.status_changer.manual_groups_dialog.boards_title')}</CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      {t('Tournament.status_changer.manual_groups_dialog.boards_desc')}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {manualContext.boards.map((board) => {
-                      const assignedCount = assignedPlayers.get(board.boardNumber)?.length ?? 0
-                      const isActive = selectedBoard === board.boardNumber
+              <div className="grid gap-6 md:grid-cols-[260px_1fr]">
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{t('Tournament.status_changer.manual_groups_dialog.boards_title')}</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        {t('Tournament.status_changer.manual_groups_dialog.boards_desc')}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {manualContext.boards.map((board) => {
+                        const assignedCount = assignedPlayers.get(board.boardNumber)?.length ?? 0
+                        const isActive = selectedBoard === board.boardNumber
 
-                      return (
-                        <Button
-                          key={board.boardNumber}
-                          variant={isActive ? "default" : "outline"}
-                          className="w-full justify-between"
-                          disabled={board.isUsed}
-                          onClick={() => {
-                            setSelectedBoard(board.boardNumber)
-                          }}
-                        >
-                          <span className="flex items-center gap-2">
-                            {t('Tournament.status_changer.manual_groups_dialog.board_number', { number: board.boardNumber })}
-                            {board.isUsed && <Badge variant="secondary">{t('Tournament.status_changer.manual_groups_dialog.board_occupied')}</Badge>}
-                          </span>
-                          <Badge variant={assignedCount ? "default" : "secondary"}>{t('Tournament.status_changer.manual_groups_dialog.board_player_count', { count: assignedCount })}</Badge>
-                        </Button>
-                      )
-                    })}
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.players_label')}</h3>
-                    {selectedBoard && (
-                      <Badge variant="outline">{t('Tournament.status_changer.manual_groups_dialog.active_board', { number: selectedBoard })}</Badge>
-                    )}
-                  </div>
-                  <Input
-                    placeholder={t('Tournament.status_changer.manual_groups_dialog.search_placeholder')}
-                    value={manualContext.searchQuery}
-                    onChange={(event) =>
-                      setManualContext((prev) => (prev ? { ...prev, searchQuery: event.target.value } : prev))
-                    }
-                  />
+                        return (
+                          <Button
+                            key={board.boardNumber}
+                            variant={isActive ? "default" : "outline"}
+                            className="w-full justify-between"
+                            disabled={board.isUsed}
+                            onClick={() => {
+                              setSelectedBoard(board.boardNumber)
+                            }}
+                          >
+                            <span className="flex items-center gap-2">
+                              {t('Tournament.status_changer.manual_groups_dialog.board_number', { number: board.boardNumber })}
+                              {board.isUsed && <Badge variant="secondary">{t('Tournament.status_changer.manual_groups_dialog.board_occupied')}</Badge>}
+                            </span>
+                            <Badge variant={assignedCount ? "default" : "secondary"}>{t('Tournament.status_changer.manual_groups_dialog.board_player_count', { count: assignedCount })}</Badge>
+                          </Button>
+                        )
+                      })}
+                    </CardContent>
+                  </Card>
                 </div>
 
-                <div className="rounded-lg border bg-muted/40 p-3">
-                  {selectedBoard ? (
-                    <div className="space-y-3">
-                      <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
-                        {filteredManualPlayers.map((player) => {
-                          const assignedToCurrentBoard = assignedPlayers.get(selectedBoard) || []
-                          const checked = assignedToCurrentBoard.includes(player._id)
-                          const isBoardFull = assignedToCurrentBoard.length >= MAX_PLAYERS_PER_GROUP
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.players_label')}</h3>
+                      {selectedBoard && (
+                        <Badge variant="outline">{t('Tournament.status_changer.manual_groups_dialog.active_board', { number: selectedBoard })}</Badge>
+                      )}
+                    </div>
+                    <Input
+                      placeholder={t('Tournament.status_changer.manual_groups_dialog.search_placeholder')}
+                      value={manualContext.searchQuery}
+                      onChange={(event) =>
+                        setManualContext((prev) => (prev ? { ...prev, searchQuery: event.target.value } : prev))
+                      }
+                    />
+                  </div>
 
-                          return (
-                            <label
-                              key={player._id}
-                              className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm"
-                            >
-                              <div className="flex flex-col">
-                                <span className="font-medium">{player.name || player._id}</span>
-                              </div>
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={(event) => handleTogglePlayer(player._id, event.target.checked)}
-                                disabled={!checked && isBoardFull}
-                                className="h-4 w-4"
-                              />
-                            </label>
-                          )
-                        })}
+                  <div className="rounded-lg border bg-muted/40 p-3">
+                    {selectedBoard ? (
+                      <div className="space-y-3">
+                        <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                          {filteredManualPlayers.map((player) => {
+                            const assignedToCurrentBoard = assignedPlayers.get(selectedBoard) || []
+                            const checked = assignedToCurrentBoard.includes(player._id)
+                            const isBoardFull = assignedToCurrentBoard.length >= MAX_PLAYERS_PER_GROUP
 
-                        {filteredManualPlayers.length === 0 && (
-                          <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
-                            {t('Tournament.status_changer.manual_groups_dialog.no_players')}
-                          </div>
-                        )}
-                      </div>
+                            return (
+                              <label
+                                key={player._id}
+                                className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm"
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{player.name || player._id}</span>
+                                </div>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(event) => handleTogglePlayer(player._id, event.target.checked)}
+                                  disabled={!checked && isBoardFull}
+                                  className="h-4 w-4"
+                                />
+                              </label>
+                            )
+                          })}
 
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.summary_title')}</h4>
-                        <div className="rounded-md border bg-background px-3 py-2 text-sm">
-                          {Array.from(assignedPlayers.entries())
-                            .filter(([, ids]) => ids.length > 0)
-                            .map(([boardNumber, playerIds]) => (
-                              <div key={boardNumber} className="flex flex-wrap gap-1">
-                                <span className="font-medium">{t('Tournament.status_changer.manual_groups_dialog.summary_board', { number: boardNumber })}</span>
-                                <span>
-                                  {playerIds
-                                    .map((playerId) => {
-                                      const player = manualContext.availablePlayers.find((item) => item._id === playerId)
-                                      return player?.name || playerId
-                                    })
-                                    .join(", ")}
-                                </span>
-                              </div>
-                            ))}
-
-                          {Array.from(assignedPlayers.values()).every((ids) => ids.length === 0) && (
-                            <p className="text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.no_players_selected')}</p>
+                          {filteredManualPlayers.length === 0 && (
+                            <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                              {t('Tournament.status_changer.manual_groups_dialog.no_players')}
+                            </div>
                           )}
                         </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.summary_title')}</h4>
+                          <div className="rounded-md border bg-background px-3 py-2 text-sm">
+                            {Array.from(assignedPlayers.entries())
+                              .filter(([, ids]) => ids.length > 0)
+                              .map(([boardNumber, playerIds]) => (
+                                <div key={boardNumber} className="flex flex-wrap gap-1">
+                                  <span className="font-medium">{t('Tournament.status_changer.manual_groups_dialog.summary_board', { number: boardNumber })}</span>
+                                  <span>
+                                    {playerIds
+                                      .map((playerId) => {
+                                        const player = manualContext.availablePlayers.find((item) => item._id === playerId)
+                                        return player?.name || playerId
+                                      })
+                                      .join(", ")}
+                                  </span>
+                                </div>
+                              ))}
+
+                            {Array.from(assignedPlayers.values()).every((ids) => ids.length === 0) && (
+                              <p className="text-muted-foreground">{t('Tournament.status_changer.manual_groups_dialog.no_players_selected')}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
-                      {t('Tournament.status_changer.manual_groups_dialog.select_board_first')}
-                    </div>
-                  )}
+                    ) : (
+                      <div className="rounded-md border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                        {t('Tournament.status_changer.manual_groups_dialog.select_board_first')}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
           )}
 
@@ -696,36 +696,36 @@ export default function TournamentStatusChanger({
               </Alert>
             )}
 
-              {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
-                <div className="space-y-2">
-                  <span className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.knockout_dialog.qualifiers_label')}</span>
-                  <p className="text-xs text-muted-foreground">
-                    {t('Tournament.status_changer.knockout_dialog.qualifiers_desc')}
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[2, 3, 4].filter(count => !(boardCount >= 16 && count === 4)).map((count) => (
-                      <Button
-                        key={count}
-                        type="button"
-                        variant={selectedPlayers === count ? "default" : "outline"}
-                        onClick={() => setSelectedPlayers(count)}
-                      >
-                        {t('Tournament.status_changer.knockout_dialog.players_count', { count })}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {t('Tournament.status_changer.knockout_dialog.bracket_size', { size: boardCount * selectedPlayers, boards: boardCount })}
-                  </div>
-                  
-                  <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
-                    <p>
-                      <strong>Megjegyzés:</strong> Az egyeneság az MDL egyeneság szabályai alapján generálódik automatikus módban. 
-                      Ha más megközelítést szeretne, válassza a <em>Manuális</em> módot és vegye fel kézzel a meccseket.
-                    </p>
-                  </div>
+            {knockoutMode === "automatic" && isAutomaticKnockoutAllowed && tournamentFormat !== "knockout" && (
+              <div className="space-y-2">
+                <span className="text-sm font-semibold text-muted-foreground">{t('Tournament.status_changer.knockout_dialog.qualifiers_label')}</span>
+                <p className="text-xs text-muted-foreground">
+                  {t('Tournament.status_changer.knockout_dialog.qualifiers_desc')}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[2, 3, 4].filter(count => !(boardCount >= 16 && count === 4)).map((count) => (
+                    <Button
+                      key={count}
+                      type="button"
+                      variant={selectedPlayers === count ? "default" : "outline"}
+                      onClick={() => setSelectedPlayers(count)}
+                    >
+                      {t('Tournament.status_changer.knockout_dialog.players_count', { count })}
+                    </Button>
+                  ))}
                 </div>
-              )}
+                <div className="text-sm text-muted-foreground mt-2">
+                  {t('Tournament.status_changer.knockout_dialog.bracket_size', { size: boardCount * selectedPlayers, boards: boardCount })}
+                </div>
+
+                <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">
+                  <p>
+                    <strong>Megjegyzés:</strong> Az egyeneság az MDL egyeneság szabályai alapján generálódik automatikus módban.
+                    Ha más megközelítést szeretne, válassza a <em>Manuális</em> módot és vegye fel kézzel a meccseket.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {knockoutMode === "manual" && (
               <Alert>

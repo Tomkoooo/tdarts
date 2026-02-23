@@ -482,6 +482,39 @@ export class LeagueService {
       const eliminatedIn = tournamentPlayer.eliminatedIn || 'unknown';
 
       let points: number;
+
+      switch(league.pointSystemType) {
+        case 'remiz_christmas':
+          points = await this.calculateRemizChristmasPoints(
+            tournamentPlayer,
+            tournament,
+            position,
+          );
+          break;
+        case 'ontour':
+          points = await this.calculateOntourPoints(
+            tournamentPlayer,
+            tournament,
+            position,
+          );
+          break;
+        case 'gold_fisch':
+          points = await this.calculateGoldFischPoints(
+            tournamentPlayer,
+            tournament,
+            position,
+          );
+          break;
+        default:
+          points = this.calculatePlayerPointsForTournament(
+            position,
+            eliminatedIn,
+            checkedInPlayers.length,
+            league.pointsConfig
+          );
+          break;
+      }
+
       if (league.pointSystemType === 'remiz_christmas') {
         points = await this.calculateRemizChristmasPoints(
           tournamentPlayer,
@@ -646,6 +679,93 @@ export class LeagueService {
     totalPoints += placementPoints;
 
     return totalPoints;
+  }
+
+  //Here add the gold fisch point calculation
+  private static async calculateGoldFischPoints(
+    tournamentPlayer: any,
+    tournament: TournamentDocument,
+    position: number
+  ) {
+    /*
+      winner: 15p
+      runner up: 12p
+      third: 10p
+      8. placement: 8p
+      16. placement: 6p
+      32. placement: 4p
+      64. placement: 2p
+      128. placement: 1p
+
+      if playercount is under 8:
+      winner: 10p
+      runner up: 8p
+      third: 6p
+      4. placement: 5p
+      5. placement: 4p
+      6. placement: 3p
+      7. placement: 2p
+    */
+    let tournamentPoint: number;
+    if (tournament.tournamentPlayers.length < 8) {
+      switch (position) {
+        case 1:
+          tournamentPoint = 10;
+          break;
+        case 2:
+          tournamentPoint = 8;
+          break;
+        case 3:
+          tournamentPoint = 6;
+          break;
+        case 4:
+          tournamentPoint = 5;
+          break;
+        case 5:
+          tournamentPoint = 4;
+          break;
+        case 6:
+          tournamentPoint = 3;
+          break;
+        case 7:
+          tournamentPoint = 2;
+          break;
+        default:
+          tournamentPoint = 0;
+          break;
+      }
+    } else {
+      switch (position) {
+      case 1:
+        tournamentPoint = 15;
+        break;
+      case 2:
+        tournamentPoint = 12;
+        break;
+      case 3:
+        tournamentPoint = 10;
+        break;
+      case 8:
+        tournamentPoint = 8;
+        break;
+      case 16:
+        tournamentPoint = 6;
+        break;
+      case 32:
+        tournamentPoint = 4;
+        break;
+      case 64:
+        tournamentPoint = 2;
+        break;
+      case 128:
+        tournamentPoint = 1;
+        break;
+      default:
+        tournamentPoint = 0;
+        break;
+    }
+  }
+    return tournamentPoint;
   }
 
   /**
