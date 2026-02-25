@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 'use client';
 
 import Link from 'next/link';
@@ -12,6 +14,7 @@ interface ErrorProps {
 }
 
 export default function LiveError({ error, reset }: ErrorProps) {
+    const t = useTranslations("Auto");
   useEffect(() => {
     console.error('Live page error:', error);
   }, [error]);
@@ -23,21 +26,19 @@ export default function LiveError({ error, reset }: ErrorProps) {
           <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconAlertTriangle className="h-8 w-8 text-destructive" />
           </div>
-          <CardTitle className="text-xl">Hiba Történt</CardTitle>
+          <CardTitle className="text-xl">{t("hiba_történt_82")}</CardTitle>
           <CardDescription>
-            Nem sikerült betölteni az élő követési oldalt. 
-            Kérjük próbáld újra.
-          </CardDescription>
+            {t("nem_sikerült_betölteni_85")}</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
           <div className="bg-muted p-4 rounded-lg">
-            <h3 className="font-semibold text-sm mb-2">Lehetséges okok:</h3>
+            <h3 className="font-semibold text-sm mb-2">{t("lehetséges_okok")}</h3>
             <ul className="text-sm text-muted-foreground space-y-1 text-left">
-              <li>• A torna nem létezik vagy törölve lett</li>
-              <li>• Nincs jogosultságod az oldal megtekintéséhez</li>
-              <li>• Hálózati kapcsolat problémák</li>
-              <li>• Szerver hiba</li>
+              <li>{t("a_torna_nem")}</li>
+              <li>{t("nincs_jogosultságod_az")}</li>
+              <li>{t("hálózati_kapcsolat_problémák")}</li>
+              <li>{t("szerver_hiba")}</li>
             </ul>
           </div>
 
@@ -47,20 +48,17 @@ export default function LiveError({ error, reset }: ErrorProps) {
               className="flex-1 gap-2"
             >
               <IconRefresh className="w-4 h-4" />
-              Újra Próbálkozás
-            </Button>
+              {t("újra_próbálkozás")}</Button>
             <Button asChild variant="outline" className="flex-1 gap-2">
               <Link href="/tournaments">
                 <IconArrowLeft className="w-4 h-4" />
-                Darts
-              </Link>
+                {t("darts")}</Link>
             </Button>
           </div>
 
           <div className="pt-2">
             <p className="text-xs text-muted-foreground text-center">
-              Ha a probléma továbbra is fennáll, kérjük vedd fel a kapcsolatot az adminisztrátorral.
-            </p>
+              {t("ha_a_probléma_40")}</p>
           </div>
         </CardContent>
       </Card>

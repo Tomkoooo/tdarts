@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -55,6 +57,7 @@ interface SystemInfo {
 }
 
 export default function AdminSettingsPage() {
+    const t = useTranslations("Auto");
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -80,7 +83,7 @@ export default function AdminSettingsPage() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="size-16 rounded-2xl" />
-          <p className="text-sm text-muted-foreground">Rendszer információk betöltése…</p>
+          <p className="text-sm text-muted-foreground">{t("rendszer_információk_betöltése")}</p>
         </div>
       </div>
     )
@@ -94,13 +97,12 @@ export default function AdminSettingsPage() {
             <IconSettings className="size-12 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">Hiba történt</h2>
-            <p className="text-muted-foreground">Nem sikerült betölteni a rendszer információkat.</p>
+            <h2 className="text-2xl font-bold text-foreground">{t("hiba_történt")}</h2>
+            <p className="text-muted-foreground">{t("nem_sikerült_betölteni_15")}</p>
           </div>
           <Button onClick={fetchSystemInfo} className="gap-2">
             <IconRefresh className="size-5" />
-            Újrapróbálás
-          </Button>
+            {t("újrapróbálás")}</Button>
         </div>
       </div>
     )
@@ -124,15 +126,14 @@ export default function AdminSettingsPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-primary">
               <IconSettings className="size-10" />
-              <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Rendszer Beállítások</h1>
+              <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">{t("rendszer_beállítások")}</h1>
         </div>
-            <p className="max-w-xl text-sm text-muted-foreground">Rendszer információk és konfiguráció</p>
+            <p className="max-w-xl text-sm text-muted-foreground">{t("rendszer_információk_és")}</p>
           </div>
           
           <Button onClick={fetchSystemInfo} disabled={loading} variant="outline" className="gap-2">
             <IconRefresh className={cn("size-5", loading && "animate-spin")} />
-            Frissítés
-          </Button>
+            {t("frissítés")}</Button>
         </div>
       </Card>
 
@@ -144,10 +145,10 @@ export default function AdminSettingsPage() {
               <div className="size-12 backdrop-blur-md bg-success/20 rounded-full flex items-center justify-center">
                 <IconActivity className="size-6 text-success" />
               </div>
-              <Badge className="backdrop-blur-md bg-success/20 text-success">ONLINE</Badge>
+              <Badge className="backdrop-blur-md bg-success/20 text-success">{t("online")}</Badge>
             </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Rendszer Állapot</h3>
-          <p className="text-2xl font-bold text-success">Működik</p>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">{t("rendszer_állapot")}</h3>
+          <p className="text-2xl font-bold text-success">{t("működik")}</p>
           </CardContent>
         </Card>
 
@@ -158,7 +159,7 @@ export default function AdminSettingsPage() {
                 <IconClock className="size-6 text-info" />
               </div>
             </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Üzemidő</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">{t("üzemidő")}</h3>
           <p className="text-2xl font-bold text-info">{systemInfo.uptime}</p>
           </CardContent>
         </Card>
@@ -170,7 +171,7 @@ export default function AdminSettingsPage() {
                 <IconDeviceFloppy className="size-6 text-warning" />
               </div>
             </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Memória</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">{t("memória")}</h3>
           <p className="text-2xl font-bold text-warning">{systemInfo.memory.percentage}%</p>
             <p className="text-xs text-muted-foreground mt-1">
               {systemInfo.memory.used} / {systemInfo.memory.total}
@@ -186,7 +187,7 @@ export default function AdminSettingsPage() {
               </div>
               <StatusBadge active={systemInfo.database.status === "connected"} />
             </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Adatbázis</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">{t("adatbázis")}</h3>
           <p className="text-2xl font-bold text-primary capitalize">{systemInfo.database.status}</p>
           </CardContent>
         </Card>
@@ -199,7 +200,7 @@ export default function AdminSettingsPage() {
             <div className="size-10 backdrop-blur-md bg-primary/20 rounded-lg flex items-center justify-center">
               <IconDatabase className="size-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Adatbázis Információk</CardTitle>
+            <CardTitle className="text-2xl">{t("adatbázis_információk")}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -207,13 +208,13 @@ export default function AdminSettingsPage() {
             <Card  className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.collections}</div>
-                <div className="text-sm text-muted-foreground font-medium">Kollekciók</div>
+                <div className="text-sm text-muted-foreground font-medium">{t("kollekciók")}</div>
               </CardContent>
             </Card>
             <Card  className="backdrop-blur-md bg-muted/30">
               <CardContent className="p-6 text-center">
             <div className="text-4xl font-bold text-primary mb-2">{systemInfo.database.documents.toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground font-medium">Dokumentumok</div>
+                <div className="text-sm text-muted-foreground font-medium">{t("dokumentumok")}</div>
               </CardContent>
             </Card>
             <Card  className="backdrop-blur-md bg-muted/30">
@@ -221,7 +222,7 @@ export default function AdminSettingsPage() {
                 <div className="text-4xl font-bold text-primary mb-2">
                   {systemInfo.database.status === "connected" ? "✓" : "✗"}
           </div>
-                <div className="text-sm text-muted-foreground font-medium">Kapcsolat</div>
+                <div className="text-sm text-muted-foreground font-medium">{t("kapcsolat")}</div>
               </CardContent>
             </Card>
           </div>
@@ -235,7 +236,7 @@ export default function AdminSettingsPage() {
             <div className="size-10 backdrop-blur-md bg-success/20 rounded-lg flex items-center justify-center">
               <IconPlug className="size-6 text-success" />
             </div>
-            <CardTitle className="text-2xl">Funkciók</CardTitle>
+            <CardTitle className="text-2xl">{t("funkciók")}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -243,28 +244,28 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
             <div className="flex items-center gap-3">
                 <IconShield className="size-5 text-primary" />
-              <span className="font-medium">Előfizetés rendszer</span>
+              <span className="font-medium">{t("előfizetés_rendszer")}</span>
             </div>
             <StatusBadge active={systemInfo.features.subscriptionEnabled} />
           </div>
             <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
             <div className="flex items-center gap-3">
                 <IconActivity className="size-5 text-primary" />
-              <span className="font-medium">Socket kapcsolat</span>
+              <span className="font-medium">{t("socket_kapcsolat")}</span>
             </div>
             <StatusBadge active={systemInfo.features.socketEnabled} />
           </div>
             <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
             <div className="flex items-center gap-3">
                 <IconSection className="size-5 text-primary" />
-              <span className="font-medium">Ligák</span>
+              <span className="font-medium">{t("ligák")}</span>
             </div>
             <StatusBadge active={systemInfo.features.leaguesEnabled} />
           </div>
             <div className="flex items-center justify-between p-4 backdrop-blur-md bg-muted/30 rounded-xl">
             <div className="flex items-center gap-3">
                 <IconChartBar className="size-5 text-primary" />
-              <span className="font-medium">Részletes statisztikák</span>
+              <span className="font-medium">{t("részletes_statisztikák")}</span>
             </div>
             <StatusBadge active={systemInfo.features.detailedStatisticsEnabled} />
           </div>
@@ -279,7 +280,7 @@ export default function AdminSettingsPage() {
             <div className="size-10 backdrop-blur-md bg-info/20 rounded-lg flex items-center justify-center">
               <IconCode className="size-6 text-info" />
             </div>
-            <CardTitle className="text-2xl">Környezeti Változók</CardTitle>
+            <CardTitle className="text-2xl">{t("környezeti_változók")}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -287,8 +288,8 @@ export default function AdminSettingsPage() {
             <table className="w-full">
             <thead>
                 <tr>
-                  <th className="backdrop-blur-md bg-muted/20 px-4 py-4 text-left font-semibold">Változó</th>
-                  <th className="backdrop-blur-md bg-muted/20 px-4 py-4 text-left font-semibold">Érték</th>
+                  <th className="backdrop-blur-md bg-muted/20 px-4 py-4 text-left font-semibold">{t("változó")}</th>
+                  <th className="backdrop-blur-md bg-muted/20 px-4 py-4 text-left font-semibold">{t("érték")}</th>
               </tr>
             </thead>
             <tbody>
@@ -296,8 +297,7 @@ export default function AdminSettingsPage() {
                   <td className="font-mono text-sm px-4 py-5">
                   <div className="flex items-center gap-2">
                       <IconServer className="size-4 text-primary" />
-                    NODE_ENV
-                  </div>
+                    {t("node_env")}</div>
                 </td>
                   <td className="px-4 py-5">
                     <Badge
@@ -316,8 +316,7 @@ export default function AdminSettingsPage() {
                   <td className="font-mono text-sm px-4 py-5">
                   <div className="flex items-center gap-2">
                       <IconShield className="size-4 text-primary" />
-                    SUBSCRIPTION_ENABLED
-                  </div>
+                    {t("subscription_enabled")}</div>
                 </td>
                   <td className="px-4 py-5">
                     <Badge variant="outline" className="backdrop-blur-md bg-info/20 text-info">
@@ -329,8 +328,7 @@ export default function AdminSettingsPage() {
                   <td className="font-mono text-sm px-4 py-5">
                   <div className="flex items-center gap-2">
                       <IconActivity className="size-4 text-primary" />
-                    SOCKET_SERVER_URL
-                  </div>
+                    {t("socket_server_url")}</div>
                 </td>
                   <td className="px-4 py-5">
                     <code className="text-xs backdrop-blur-md bg-muted/30 px-2 py-1 rounded">
@@ -342,8 +340,7 @@ export default function AdminSettingsPage() {
                   <td className="font-mono text-sm px-4 py-5">
                   <div className="flex items-center gap-2">
                       <IconMail className="size-4 text-primary" />
-                    EMAIL_USERNAME
-                  </div>
+                    {t("email_username")}</div>
                 </td>
                   <td className="px-4 py-5">
                     <code className="text-xs backdrop-blur-md bg-muted/30 px-2 py-1 rounded">
@@ -366,8 +363,8 @@ export default function AdminSettingsPage() {
                 <IconCode className="size-7 text-primary" />
             </div>
             <div>
-                <h3 className="text-lg font-bold text-foreground">Rendszer Verzió</h3>
-                <p className="text-sm text-muted-foreground">Aktuális verzió információk</p>
+                <h3 className="text-lg font-bold text-foreground">{t("rendszer_verzió")}</h3>
+                <p className="text-sm text-muted-foreground">{t("aktuális_verzió_információk")}</p>
             </div>
           </div>
           <div className="text-right">

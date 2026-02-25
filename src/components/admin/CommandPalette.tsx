@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -125,6 +127,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
+    const t = useTranslations("Auto");
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState(0)
   const router = useRouter()
@@ -169,14 +172,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-4 pt-4 pb-3 border-b border-border">
-          <DialogTitle className="sr-only">Command Palette</DialogTitle>
+          <DialogTitle className="sr-only">{t("command_palette")}</DialogTitle>
           <DialogDescription className="sr-only">
-            Search for pages and actions
-          </DialogDescription>
+            {t("search_for_pages")}</DialogDescription>
           <div className="relative">
             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Type to search..."
+              placeholder={t("type_to_search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -194,7 +196,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         <div className="max-h-[400px] overflow-y-auto p-2">
           {filteredCommands.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-sm text-muted-foreground">No results found.</p>
+              <p className="text-sm text-muted-foreground">{t("no_results_found")}</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -247,16 +249,16 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               <div className="flex items-center gap-1">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">↑</Badge>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">↓</Badge>
-                <span>Navigate</span>
+                <span>{t("navigate")}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">↵</Badge>
-                <span>Select</span>
+                <span>{t("select")}</span>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">ESC</Badge>
-              <span>Close</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">{t("esc")}</Badge>
+              <span>{t("close")}</span>
             </div>
           </div>
         </div>

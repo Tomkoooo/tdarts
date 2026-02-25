@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -54,6 +56,7 @@ interface ErrorStats {
 }
 
 export default function AdminErrorsPage() {
+    const t = useTranslations("Auto");
   const [errorStats, setErrorStats] = useState<ErrorStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -120,7 +123,7 @@ export default function AdminErrorsPage() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="size-16 rounded-2xl" />
-          <p className="text-sm text-muted-foreground">Hiba adatok betöltése…</p>
+          <p className="text-sm text-muted-foreground">{t("hiba_adatok_betöltése")}</p>
         </div>
       </div>
     )
@@ -134,13 +137,12 @@ export default function AdminErrorsPage() {
             <IconAlertTriangle className="size-12 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">Hiba történt</h2>
-            <p className="text-muted-foreground">Nem sikerült betölteni a hiba adatokat.</p>
+            <h2 className="text-2xl font-bold text-foreground">{t("hiba_történt")}</h2>
+            <p className="text-muted-foreground">{t("nem_sikerült_betölteni")}</p>
           </div>
           <Button onClick={fetchErrorData} className="gap-2">
             <IconRefresh className="size-5" />
-            Újrapróbálás
-          </Button>
+            {t("újrapróbálás")}</Button>
         </div>
       </div>
     )
@@ -159,15 +161,14 @@ export default function AdminErrorsPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-destructive">
               <IconAlertTriangle className="size-10" />
-              <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">Hiba Kezelés</h1>
+              <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">{t("hiba_kezelés")}</h1>
             </div>
-            <p className="max-w-xl text-sm text-muted-foreground">Rendszer hibák monitorozása és kezelése</p>
+            <p className="max-w-xl text-sm text-muted-foreground">{t("rendszer_hibák_monitorozása")}</p>
           </div>
 
           <Button onClick={fetchErrorData} disabled={loading} variant="outline" className="gap-2">
             <IconRefresh className={cn("size-5", loading && "animate-spin")} />
-            Frissítés
-          </Button>
+            {t("frissítés")}</Button>
         </div>
       </Card>
 
@@ -178,7 +179,7 @@ export default function AdminErrorsPage() {
             <div className="size-14 backdrop-blur-md bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconAlertTriangle className="size-7 text-destructive" />
             </div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Összes Hiba</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("összes_hiba")}</h3>
             <p className="text-4xl font-bold text-destructive">{errorStats.totalErrors}</p>
           </CardContent>
         </Card>
@@ -202,7 +203,7 @@ export default function AdminErrorsPage() {
 
       {/* Daily Chart */}
       <DailyChart
-        title="Hibák napi előfordulása"
+        title={t("hibák_napi_előfordulása")}
         apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}`}
         color="error"
       />
@@ -212,33 +213,32 @@ export default function AdminErrorsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconFilter className="size-5 text-primary" />
-            Szűrők
-          </CardTitle>
+            {t("szűrők")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label className="font-semibold">Időszak</Label>
+              <Label className="font-semibold">{t("időszak")}</Label>
               <Select value={dateRange.toString()} onValueChange={(value) => setDateRange(Number(value))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Utolsó 24 óra</SelectItem>
-                  <SelectItem value="7">Utolsó 7 nap</SelectItem>
-                  <SelectItem value="30">Utolsó 30 nap</SelectItem>
-                  <SelectItem value="90">Utolsó 3 hónap</SelectItem>
+                  <SelectItem value="1">{t("utolsó_óra")}</SelectItem>
+                  <SelectItem value="7">{t("utolsó_nap")}</SelectItem>
+                  <SelectItem value="30">{t("utolsó_nap_94")}</SelectItem>
+                  <SelectItem value="90">{t("utolsó_hónap")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold">Kategória</Label>
+              <Label className="font-semibold">{t("kategória")}</Label>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Összes kategória</SelectItem>
+                  <SelectItem value="all">{t("összes_kategória")}</SelectItem>
                   {Object.keys(errorStats.errorsByCategory).map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -248,13 +248,13 @@ export default function AdminErrorsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold">Szint</Label>
+              <Label className="font-semibold">{t("szint")}</Label>
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Összes szint</SelectItem>
+                  <SelectItem value="all">{t("összes_szint")}</SelectItem>
                   {Object.keys(errorStats.errorsByLevel).map((level) => (
                     <SelectItem key={level} value={level}>
                       {level}
@@ -264,7 +264,7 @@ export default function AdminErrorsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold">Auth hibák</Label>
+              <Label className="font-semibold">{t("auth_hibák")}</Label>
               <div className="flex items-center gap-3 pt-2">
                 <input
                   type="checkbox"
@@ -288,8 +288,7 @@ export default function AdminErrorsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconCode className="size-6 text-primary" />
-              Hibák Kategóriánként
-            </CardTitle>
+              {t("hibák_kategóriánként")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -323,8 +322,7 @@ export default function AdminErrorsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconAlertTriangle className="size-6 text-primary" />
-              Hibák Szintenként
-            </CardTitle>
+              {t("hibák_szintenként")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -357,7 +355,7 @@ export default function AdminErrorsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconBug className="size-6 text-primary" />
-            Legutóbbi Hibák ({filteredRecentErrors.length})
+            {t("legutóbbi_hibák")}{filteredRecentErrors.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -409,19 +407,19 @@ export default function AdminErrorsPage() {
                         {error.userId && (
                           <div className="flex items-center gap-1">
                             <IconUser className="size-4" />
-                            <span>User: {error.userId.slice(0, 8)}...</span>
+                            <span>{t("user")}{error.userId.slice(0, 8)}...</span>
                           </div>
                         )}
                         {error.clubId && (
                           <div className="flex items-center gap-1">
                             <IconBuilding className="size-4" />
-                            <span>Club: {error.clubId.slice(0, 8)}...</span>
+                            <span>{t("club")}{error.clubId.slice(0, 8)}...</span>
                           </div>
                         )}
                         {error.tournamentId && (
                           <div className="flex items-center gap-1">
                             <IconTrophy className="size-4" />
-                            <span>Tournament: {error.tournamentId.slice(0, 8)}...</span>
+                            <span>{t("tournament")}{error.tournamentId.slice(0, 8)}...</span>
                           </div>
                         )}
                       </div>
@@ -431,13 +429,13 @@ export default function AdminErrorsPage() {
                         <div className="mt-4 pt-4 space-y-3">
                           {error.error && (
                             <div className="backdrop-blur-md bg-destructive/20 rounded-lg p-3">
-                              <p className="text-sm font-bold text-destructive mb-1">Error Details:</p>
+                              <p className="text-sm font-bold text-destructive mb-1">{t("error_details")}</p>
                               <p className="text-sm text-foreground/80 font-mono break-all">{error.error}</p>
                             </div>
                           )}
                           {error.stack && (
                             <div className="backdrop-blur-md bg-muted/30 rounded-lg p-3 max-h-48 overflow-y-auto">
-                              <p className="text-sm font-bold text-foreground mb-2">Stack Trace:</p>
+                              <p className="text-sm font-bold text-foreground mb-2">{t("stack_trace")}</p>
                               <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap break-all">
                                 {error.stack}
                               </pre>
@@ -445,7 +443,7 @@ export default function AdminErrorsPage() {
                           )}
                           {error.metadata && Object.keys(error.metadata).length > 0 && (
                             <div className="backdrop-blur-md bg-info/20 rounded-lg p-3">
-                              <p className="text-sm font-bold text-info mb-2">Metadata:</p>
+                              <p className="text-sm font-bold text-info mb-2">{t("metadata")}</p>
                               <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap break-all">
                                 {JSON.stringify(error.metadata, null, 2)}
                               </pre>
@@ -462,7 +460,7 @@ export default function AdminErrorsPage() {
                 <div className="size-20 backdrop-blur-md bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <IconAlertCircle className="size-10 text-success" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Nincsenek hibák</h3>
+                <h3 className="text-xl font-bold text-foreground mb-2">{t("nincsenek_hibák")}</h3>
                 <p className="text-muted-foreground">
                   {selectedCategory !== "all" || selectedLevel !== "all"
                     ? "Nincsenek hibák a megadott feltételekkel."

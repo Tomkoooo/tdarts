@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import { useUserContext } from "@/hooks/useUser"
 import { Club } from "@/interface/club.interface"
 import ClubRegistrationForm from "@/components/club/ClubRegistrationForm"
@@ -22,7 +22,7 @@ export default function MyClubPage() {
     const checkUserClubs = async () => {
       if (!user) {
         // Redirect to login if no user is logged in
-        router.push(`/${locale}/auth/login`)
+        router.push(`/auth/login`)
         return
       }
 
@@ -34,7 +34,7 @@ export default function MyClubPage() {
 
         if (userClubs.length > 0) {
           // Redirect to the first club's page if user is associated with a club
-          router.push(`/${locale}/clubs/${userClubs[0]._id}`)
+          router.push(`/clubs/${userClubs[0]._id}`)
         }
       } catch (error: any) {
         showErrorToast("Hiba történt a klubok lekérdezése során", {
@@ -77,7 +77,7 @@ export default function MyClubPage() {
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
                 Hozz létre egy új darts klubot, és kezdd el szervezni a közösségi eseményeket!
               </p>
-              
+
               {/* Features */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-3xl mx-auto">
                 {[

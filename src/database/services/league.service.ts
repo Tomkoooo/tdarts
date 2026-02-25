@@ -2,10 +2,10 @@ import mongoose from 'mongoose';
 import { LeagueModel } from '@/database/models/league.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { ClubModel } from '@/database/models/club.model';
-import { 
-  LeagueDocument, 
-  League, 
-  CreateLeagueRequest, 
+import {
+  LeagueDocument,
+  League,
+  CreateLeagueRequest,
   UpdateLeagueRequest,
   AddPlayerToLeagueRequest,
   ManualPointsAdjustmentRequest,
@@ -52,8 +52,8 @@ export class LeagueService {
    * Create a new league within a club
    */
   static async createLeague(
-    clubId: string, 
-    creatorId: string, 
+    clubId: string,
+    creatorId: string,
     leagueData: CreateLeagueRequest
   ): Promise<LeagueDocument> {
     await connectMongo();
@@ -71,10 +71,10 @@ export class LeagueService {
     }
 
     // Check for duplicate league names within the club
-    const existingLeague = await LeagueModel.findOne({ 
-      club: clubId, 
+    const existingLeague = await LeagueModel.findOne({
+      club: clubId,
       name: leagueData.name,
-      isActive: true 
+      isActive: true
     });
     if (existingLeague) {
       throw new BadRequestError('A league with this name already exists in the club');
@@ -150,7 +150,7 @@ export class LeagueService {
     if (updates.startDate !== undefined) league.startDate = updates.startDate;
     if (updates.endDate !== undefined) league.endDate = updates.endDate;
     if (updates.pointSystemType !== undefined) league.pointSystemType = updates.pointSystemType;
-    
+
     if (updates.pointsConfig) {
       league.pointsConfig = {
         ...league.pointsConfig,
@@ -194,7 +194,7 @@ export class LeagueService {
       }
     }
 
-    if(!tournamentId){
+    if (!tournamentId) {
       throw new BadRequestError('Tournament ID is required - League Service');
     }
 
@@ -274,7 +274,7 @@ export class LeagueService {
     // Check if tournament is actually attached to this league
     const tournamentObjectId = new mongoose.Types.ObjectId(tournamentId);
     const tournamentIndex = league.attachedTournaments.findIndex((id: mongoose.Types.ObjectId) => id.equals(tournamentObjectId));
-    
+
     if (tournamentIndex === -1) {
       throw new BadRequestError('Tournament is not attached to this league');
     }
@@ -287,11 +287,11 @@ export class LeagueService {
       const pointsIndex = player.tournamentPoints.findIndex(
         (tp: any) => tp.tournament.toString() === tournamentId
       );
-      
+
       if (pointsIndex !== -1) {
         console.log(`Removing tournament points for player ${player.player} from tournament ${tournamentId}`);
         player.tournamentPoints.splice(pointsIndex, 1);
-        
+
         // Recalculate total points for this player
         player.totalPoints = this.calculatePlayerTotalPointsForLeague(player);
       }
@@ -483,7 +483,7 @@ export class LeagueService {
 
       let points: number;
 
-      switch(league.pointSystemType) {
+      switch (league.pointSystemType) {
         case 'remiz_christmas':
           points = await this.calculateRemizChristmasPoints(
             tournamentPlayer,
@@ -527,7 +527,7 @@ export class LeagueService {
           tournament,
           position,
         );
-      }else {
+      } else {
         points = this.calculatePlayerPointsForTournament(
           position,
           eliminatedIn,
@@ -660,7 +660,7 @@ export class LeagueService {
         (p: any) => p.groupId?.toString() === tournamentPlayer.groupId?.toString()
       );
       const groupSize = groupPlayers.length;
-      
+
       // Count only group matches won (not knockout matches)
       const playerRefId = this.getPlayerId(tournamentPlayer.playerReference);
       const groupMatchesWon = await this.countGroupMatchesWon(
@@ -668,7 +668,7 @@ export class LeagueService {
         playerRefId,
         tournamentPlayer.groupId.toString()
       );
-      
+
       // Calculate group points based on group size and wins
       const groupPoints = this.getRemizGroupPoints(groupSize, groupMatchesWon);
       totalPoints += groupPoints;
@@ -690,7 +690,7 @@ export class LeagueService {
     /*
       winner: 15p
       runner up: 12p
-      third: 10p
+      fourth: 10p
       8. placement: 8p
       16. placement: 6p
       32. placement: 4p
@@ -736,35 +736,35 @@ export class LeagueService {
       }
     } else {
       switch (position) {
-      case 1:
-        tournamentPoint = 15;
-        break;
-      case 2:
-        tournamentPoint = 12;
-        break;
-      case 3:
-        tournamentPoint = 10;
-        break;
-      case 8:
-        tournamentPoint = 8;
-        break;
-      case 16:
-        tournamentPoint = 6;
-        break;
-      case 32:
-        tournamentPoint = 4;
-        break;
-      case 64:
-        tournamentPoint = 2;
-        break;
-      case 128:
-        tournamentPoint = 1;
-        break;
-      default:
-        tournamentPoint = 0;
-        break;
+        case 1:
+          tournamentPoint = 15;
+          break;
+        case 2:
+          tournamentPoint = 12;
+          break;
+        case 4:
+          tournamentPoint = 10;
+          break;
+        case 8:
+          tournamentPoint = 8;
+          break;
+        case 16:
+          tournamentPoint = 6;
+          break;
+        case 32:
+          tournamentPoint = 4;
+          break;
+        case 64:
+          tournamentPoint = 2;
+          break;
+        case 128:
+          tournamentPoint = 1;
+          break;
+        default:
+          tournamentPoint = 0;
+          break;
+      }
     }
-  }
     return tournamentPoint;
   }
 
@@ -777,7 +777,7 @@ export class LeagueService {
     groupId: string
   ): Promise<number> {
     const { MatchModel } = await import('@/database/models/match.model');
-    
+
     // Find the group
     const group = tournament.groups?.find((g: any) => g._id?.toString() === groupId);
     if (!group || !group.matches || group.matches.length === 0) {
@@ -785,7 +785,7 @@ export class LeagueService {
     }
 
     // Get all matches for this group
-    const matchDocs = await MatchModel.find({ 
+    const matchDocs = await MatchModel.find({
       _id: { $in: group.matches },
       type: 'group' // Ensure we only count group matches
     });
@@ -905,7 +905,7 @@ export class LeagueService {
     // Calculate geometric progression points
     const roundFromBottom = Math.max(1, knockoutRound);
     const points = config.knockoutBasePoints * Math.pow(config.knockoutMultiplier, roundFromBottom - 1);
-    
+
     return Math.round(points);
   }
 
@@ -929,29 +929,29 @@ export class LeagueService {
       .filter((player: any) => player.player !== null && player.player !== undefined) // Filter out null/undefined players
       .map((player: any) => {
         const totalPoints = this.calculatePlayerTotalPointsForLeague(player);
-       
-        
+
+
         // Get positions from tournamentPoints (tournaments with points)
         const positionsFromPoints = player.tournamentPoints.map((tp: any) => tp.position).filter((p: number) => p > 0);
-        
+
         // Also get positions and averages from all attached tournaments for this player
         const playerIdStr = this.getPlayerId(player.player);
         const allPositions: number[] = [...positionsFromPoints];
         const allAverages: number[] = [];
-        
+
         attachedTournaments.forEach((tournament: any) => {
           if (tournament && tournament.tournamentPlayers) {
             const tournamentPlayer = tournament.tournamentPlayers.find(
               (tp: any) => tp.playerReference?.toString() === playerIdStr
             );
-            
+
             if (tournamentPlayer) {
               // Add position if available
               const position = tournamentPlayer.tournamentStanding || tournamentPlayer.finalPosition;
               if (position && position > 0 && !positionsFromPoints.includes(position)) {
                 allPositions.push(position);
               }
-              
+
               // Add average if available
               const avg = tournamentPlayer.stats?.avg || tournamentPlayer.stats?.average;
               if (avg && avg > 0) {
@@ -960,18 +960,18 @@ export class LeagueService {
             }
           }
         });
-        
+
         // Calculate statistics
-        const averagePosition = allPositions.length > 0 
-          ? allPositions.reduce((sum: number, pos: number) => sum + pos, 0) / allPositions.length 
+        const averagePosition = allPositions.length > 0
+          ? allPositions.reduce((sum: number, pos: number) => sum + pos, 0) / allPositions.length
           : 0;
         const bestPosition = allPositions.length > 0 ? Math.min(...allPositions) : 999;
         const leagueAverage = allAverages.length > 0
           ? allAverages.reduce((sum: number, avg: number) => sum + avg, 0) / allAverages.length
           : 0;
-        
+
         // Get last tournament date
-        const lastTournamentDate = player.tournamentPoints.length > 0 
+        const lastTournamentDate = player.tournamentPoints.length > 0
           ? new Date(Math.max(...player.tournamentPoints.map((tp: { tournament: { createdAt?: Date } }) => new Date(tp.tournament.createdAt || 0).getTime())))
           : undefined;
 
@@ -1040,7 +1040,7 @@ export class LeagueService {
         path: 'removedPlayers.manualAdjustments.adjustedBy',
         select: 'name username'
       });
-    
+
     if (!league) {
       throw new BadRequestError('League not found');
     }
@@ -1048,19 +1048,19 @@ export class LeagueService {
     const leaderboard = await this.getLeagueLeaderboard(leagueId);
     const totalTournaments = league.attachedTournaments.length;
     const totalPlayers = league.players.length;
-    
+
     // Debug: Check if players are populated
     console.log('League players populated check:', league.players.map((p: any) => ({
       playerId: p.player?._id || p.player,
       playerName: p.player?.name || 'NOT POPULATED',
       isPopulated: typeof p.player === 'object'
     })));
-    
+
     // If players are not populated, manually populate them
     if (league.players.length > 0 && typeof league.players[0].player === 'string') {
       console.log('Players not populated, manually populating...');
       const PlayerModel = (await import('@/database/models/player.model')).PlayerModel;
-      
+
       for (let i = 0; i < league.players.length; i++) {
         const playerId = league.players[i].player;
         const playerDoc = await PlayerModel.findById(playerId).select('name username');
@@ -1068,7 +1068,7 @@ export class LeagueService {
           league.players[i].player = playerDoc;
         }
       }
-      
+
       // Also populate manualAdjustments.adjustedBy
       for (let i = 0; i < league.players.length; i++) {
         for (let j = 0; j < league.players[i].manualAdjustments.length; j++) {
@@ -1083,9 +1083,9 @@ export class LeagueService {
         }
       }
     }
-    
+
     // Calculate average points per tournament
-    const totalPointsAwarded = league.players.reduce((sum: number, player: any) => 
+    const totalPointsAwarded = league.players.reduce((sum: number, player: any) =>
       sum + player.tournamentPoints.reduce((playerSum: number, tp: any) => playerSum + tp.points, 0), 0
     );
     const averagePointsPerTournament = totalTournaments > 0 ? totalPointsAwarded / totalTournaments : 0;
@@ -1124,20 +1124,20 @@ export class LeagueService {
             _id: player.player._id,
             name: player.player.name,
             username: player.player.username
-        },
-        totalPoints: player.totalPoints,
-        tournamentPoints: player.tournamentPoints,
-        manualAdjustments: player.manualAdjustments.map((adjustment: any) => ({
-          points: adjustment.points,
-          reason: adjustment.reason,
-          adjustedBy: {
-            _id: adjustment.adjustedBy._id,
-            name: adjustment.adjustedBy.name,
-            username: adjustment.adjustedBy.username
           },
-          adjustedAt: adjustment.adjustedAt
-        }))
-      })),
+          totalPoints: player.totalPoints,
+          tournamentPoints: player.tournamentPoints,
+          manualAdjustments: player.manualAdjustments.map((adjustment: any) => ({
+            points: adjustment.points,
+            reason: adjustment.reason,
+            adjustedBy: {
+              _id: adjustment.adjustedBy._id,
+              name: adjustment.adjustedBy.name,
+              username: adjustment.adjustedBy.username
+            },
+            adjustedAt: adjustment.adjustedAt
+          }))
+        })),
       // Include removed players with full data
       removedPlayers: league.removedPlayers ? league.removedPlayers.map((removal: any) => ({
         player: {
@@ -1332,10 +1332,10 @@ export class LeagueService {
    */
   static async findLeagueByTournament(tournamentId: string): Promise<LeagueDocument | null> {
     await connectMongo();
-    
-    return await LeagueModel.findOne({ 
+
+    return await LeagueModel.findOne({
       attachedTournaments: tournamentId,
-      isActive: true 
+      isActive: true
     });
   }
 }

@@ -62,10 +62,10 @@ export default function LeagueDetailModal({
   const [loading, setLoading] = useState(false);
 
   // ... (comments) ...
-  
+
   const isVerifiedLeague = league.verified;
   const canManage = !readOnly && !isVerifiedLeague && (userRole === 'admin' || userRole === 'moderator');
-  
+
   // Note: If the user IS a global admin, they should be able to manage.
   // However, the current props don't pass 'isGlobalAdmin'. 
   // We might need to update the parent component or fetch this info.
@@ -762,7 +762,7 @@ interface TournamentsTabProps {
   clubId: string;
   leagueId: string;
   onTournamentAttached: () => void;
-  pointSystemType?: 'platform' | 'remiz_christmas' | 'ontour';
+  pointSystemType?: 'platform' | 'remiz_christmas' | 'ontour' | 'gold_fisch';
 }
 
 function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournamentAttached, pointSystemType = 'platform' }: TournamentsTabProps) {
@@ -1003,7 +1003,7 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                 <div className="rounded-md bg-primary/5 px-3 py-2 text-sm">
                   <p className="font-medium text-foreground">Pontszámítási rendszer:</p>
                   <p className="text-xs text-muted-foreground">
-                    {pointSystemType === 'remiz_christmas' 
+                    {pointSystemType === 'remiz_christmas'
                       ? 'Remiz Christmas Series pontszámítás (20 pont részvétel + csoport pontok + helyezési pontok)'
                       : 'Platform pontszámítás (geometrikus progresszió)'}
                   </p>
@@ -1242,22 +1242,20 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
         <button
           type="button"
           onClick={() => setActiveSubTab('settings')}
-          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 ${
-            activeSubTab === 'settings' 
-              ? 'bg-background text-foreground shadow-sm' 
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 ${activeSubTab === 'settings'
+              ? 'bg-background text-foreground shadow-sm'
               : 'hover:bg-background/50'
-          }`}
+            }`}
         >
           Beállítások
         </button>
         <button
           type="button"
           onClick={() => setActiveSubTab('history')}
-          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 ${
-            activeSubTab === 'history' 
-              ? 'bg-background text-foreground shadow-sm' 
+          className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 ${activeSubTab === 'history'
+              ? 'bg-background text-foreground shadow-sm'
               : 'hover:bg-background/50'
-          }`}
+            }`}
         >
           Pontszámítás történet
         </button>
@@ -1395,7 +1393,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                 onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                 placeholder="Liga neve"
               />
-               <Label>Leírás</Label>
+              <Label>Leírás</Label>
               <textarea
                 className="min-h-[80px] w-full border rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
                 value={formData.description}
@@ -1404,35 +1402,35 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
-             <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
-                <div>
-                   <label className="text-sm font-medium text-foreground block">Liga státusza</label>
-                   <span className="text-xs text-muted-foreground block mt-0.5">
-                     Ha kikapcsolod, a liga &quot;Lezárt&quot; státuszba kerül, és nem jelenik meg az alapértelmezett keresési listákban.
-                   </span>
-                </div>
-                <div className="flex items-center gap-2">
-                   <span className={formData.isActive ? "text-sm font-medium text-green-500" : "text-sm font-medium text-muted-foreground"}>
-                      {formData.isActive ? "Aktív" : "Lezárt"}
-                   </span>
-                   <input
-                     type="checkbox"
-                     checked={formData.isActive}
-                     onChange={(event) => setFormData({ ...formData, isActive: event.target.checked })}
-                     className="h-5 w-5 rounded accent-primary cursor-pointer"
-                   />
-                </div>
-             </div>
-             {!formData.isActive && (
-               <Alert className="border-warning/50 bg-warning/5 py-3">
-                 <IconInfoCircle className="h-4 w-4 text-warning" />
-                 <AlertDescription className="text-xs text-warning font-medium">
-                   Figyelem: A liga lezárása után a beállítások és a ranglista adatai nem lesznek módosíthatóak!
-                 </AlertDescription>
-               </Alert>
-             )}
+            <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
+              <div>
+                <label className="text-sm font-medium text-foreground block">Liga státusza</label>
+                <span className="text-xs text-muted-foreground block mt-0.5">
+                  Ha kikapcsolod, a liga &quot;Lezárt&quot; státuszba kerül, és nem jelenik meg az alapértelmezett keresési listákban.
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={formData.isActive ? "text-sm font-medium text-green-500" : "text-sm font-medium text-muted-foreground"}>
+                  {formData.isActive ? "Aktív" : "Lezárt"}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(event) => setFormData({ ...formData, isActive: event.target.checked })}
+                  className="h-5 w-5 rounded accent-primary cursor-pointer"
+                />
+              </div>
+            </div>
+            {!formData.isActive && (
+              <Alert className="border-warning/50 bg-warning/5 py-3">
+                <IconInfoCircle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-xs text-warning font-medium">
+                  Figyelem: A liga lezárása után a beállítások és a ranglista adatai nem lesznek módosíthatóak!
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -1440,7 +1438,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             <select
               id="point-system-type"
               value={formData.pointSystemType || 'platform'}
-              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' | 'ontour'}))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' | 'ontour' }))}
               className="w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               <option value="platform">Platform pontszámítás</option>
@@ -1448,57 +1446,57 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
               <option value="ontour">Dartsbarlang onTour pontszámítás</option>
             </select>
             <p className="text-xs text-muted-foreground">
-              {formData.pointSystemType === 'remiz_christmas' 
+              {formData.pointSystemType === 'remiz_christmas'
                 ? 'Fix pontrendszer: 20 pont részvétel, csoport pontok a csoport mérete és győzelmek alapján, helyezési pontok a végső helyezés alapján.'
-                : formData.pointSystemType === 'ontour' 
-                ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont' 
-                :'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
+                : formData.pointSystemType === 'ontour'
+                  ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont'
+                  : 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
             </p>
           </div>
 
           {formData.pointSystemType === 'platform' && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <IconInfoCircle className="h-4 w-4" /> Pontszámítás beállítások
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <IconInfoCircle className="h-4 w-4" /> Pontszámítás beállítások
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {[
+                  { key: 'groupDropoutPoints', label: 'Csoportkör kiesés pontjai' },
+                  { key: 'knockoutBasePoints', label: 'Egyenes kiesés alappont' },
+                  { key: 'knockoutMultiplier', label: 'Szorzó tényező', step: 0.1 },
+                  { key: 'winnerBonus', label: 'Győztes bónusz' },
+                  { key: 'maxKnockoutRounds', label: 'Max. kiesős körök' },
+                ].map((config) => (
+                  <div key={config.key} className="space-y-2">
+                    <Label>{config.label}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={config.step ?? 1}
+                      value={(formData.pointsConfig as any)[config.key] ?? ''}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        setFormData({
+                          ...formData,
+                          pointsConfig: {
+                            ...formData.pointsConfig,
+                            [config.key]: val === '' ? '' : (config.step ? parseFloat(val) : parseInt(val, 10)),
+                          },
+                        });
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[
-                { key: 'groupDropoutPoints', label: 'Csoportkör kiesés pontjai' },
-                { key: 'knockoutBasePoints', label: 'Egyenes kiesés alappont' },
-                { key: 'knockoutMultiplier', label: 'Szorzó tényező', step: 0.1 },
-                { key: 'winnerBonus', label: 'Győztes bónusz' },
-                { key: 'maxKnockoutRounds', label: 'Max. kiesős körök' },
-              ].map((config) => (
-                <div key={config.key} className="space-y-2">
-                  <Label>{config.label}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={config.step ?? 1}
-                    value={(formData.pointsConfig as any)[config.key] ?? ''}
-                    onChange={(event) => {
-                      const val = event.target.value;
-                      setFormData({
-                        ...formData,
-                        pointsConfig: {
-                          ...formData.pointsConfig,
-                          [config.key]: val === '' ? '' : (config.step ? parseFloat(val) : parseInt(val, 10)),
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
           )}
 
           {formData.pointSystemType === 'platform' && (
-          <Alert className="border-primary/30 bg-primary/5">
-            <AlertDescription>
-              Tippek: tartsd alacsonyan a szorzót, hogy a pontszámítás kiegyensúlyozott maradjon.
-            </AlertDescription>
-          </Alert>
+            <Alert className="border-primary/30 bg-primary/5">
+              <AlertDescription>
+                Tippek: tartsd alacsonyan a szorzót, hogy a pontszámítás kiegyensúlyozott maradjon.
+              </AlertDescription>
+            </Alert>
           )}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -1527,18 +1525,18 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Státusz</p>
             <div className="flex items-center gap-2 mt-1">
-                 <Badge variant={league.isActive ? "default" : "secondary"}>
-                    {league.isActive ? "Aktív" : "Lezárt"}
-                 </Badge>
-                 {!league.isActive && (
-                     <span className="text-xs text-muted-foreground">(Nem jelenik meg a keresőkben)</span>
-                 )}
+              <Badge variant={league.isActive ? "default" : "secondary"}>
+                {league.isActive ? "Aktív" : "Lezárt"}
+              </Badge>
+              {!league.isActive && (
+                <span className="text-xs text-muted-foreground">(Nem jelenik meg a keresőkben)</span>
+              )}
             </div>
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/60">Pontszámítási rendszer</p>
             <p className="text-base text-foreground">
-              {league.pointSystemType === 'remiz_christmas' 
+              {league.pointSystemType === 'remiz_christmas'
                 ? 'Remiz Christmas Series pontszámítás'
                 : 'Platform pontszámítás'}
             </p>
@@ -1549,16 +1547,16 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             )}
           </div>
           {league.pointSystemType === 'platform' && (
-          <div className="grid gap-3 md:grid-cols-2">
-            <InfoRow label="Csoportkör kiesés pontjai" value={league.pointsConfig.groupDropoutPoints} />
-            <InfoRow label="Egyenes kiesés alappont" value={league.pointsConfig.knockoutBasePoints} />
-            <InfoRow
-              label="Szorzó tényező"
-              value={(league.pointsConfig.knockoutMultiplier || 0).toFixed(2)}
-            />
-            <InfoRow label="Győztes bónusz" value={league.pointsConfig.winnerBonus} />
-            <InfoRow label="Max. kiesős körök" value={league.pointsConfig.maxKnockoutRounds} />
-          </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <InfoRow label="Csoportkör kiesés pontjai" value={league.pointsConfig.groupDropoutPoints} />
+              <InfoRow label="Egyenes kiesés alappont" value={league.pointsConfig.knockoutBasePoints} />
+              <InfoRow
+                label="Szorzó tényező"
+                value={(league.pointsConfig.knockoutMultiplier || 0).toFixed(2)}
+              />
+              <InfoRow label="Győztes bónusz" value={league.pointsConfig.winnerBonus} />
+              <InfoRow label="Max. kiesős körök" value={league.pointsConfig.maxKnockoutRounds} />
+            </div>
           )}
         </div>
       )}

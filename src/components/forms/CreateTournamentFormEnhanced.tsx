@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import * as React from "react"
@@ -34,6 +36,7 @@ export function CreateTournamentFormEnhanced({
   onCancel,
   defaultValues,
 }: CreateTournamentFormEnhancedProps) {
+    const t = useTranslations("Auto");
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitSuccess, setSubmitSuccess] = React.useState(false)
 
@@ -96,11 +99,9 @@ export function CreateTournamentFormEnhanced({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconTrophy className="w-5 h-5 text-primary" />
-              Alapvető Információk
-            </CardTitle>
+              {t("alapvető_információk")}</CardTitle>
             <CardDescription>
-              Add meg a verseny alapvető adatait
-            </CardDescription>
+              {t("add_meg_a_91")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Tournament Name */}
@@ -109,16 +110,15 @@ export function CreateTournamentFormEnhanced({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Verseny neve</FormLabel>
+                  <FormLabel required>{t("verseny_neve")}</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="pl. Tavaszi Darts Bajnokság"
+                      placeholder={t("pl_tavaszi_darts")}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Válassz egy egyedi, beszédes nevet a versenyednek
-                  </FormDescription>
+                    {t("válassz_egy_egyedi")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -130,7 +130,7 @@ export function CreateTournamentFormEnhanced({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Leírás</FormLabel>
+                  <FormLabel>{t("leírás")}</FormLabel>
                   <FormControl>
                     <textarea
                       className={cn(
@@ -139,13 +139,12 @@ export function CreateTournamentFormEnhanced({
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         "disabled:cursor-not-allowed disabled:opacity-50"
                       )}
-                      placeholder="Rövid leírás a versenyről..."
+                      placeholder={t("rövid_leírás_a")}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Opcionális rövid leírás, amit a résztvevők látni fognak
-                  </FormDescription>
+                    {t("opcionális_rövid_leírás")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -157,7 +156,7 @@ export function CreateTournamentFormEnhanced({
               name="startDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Kezdési dátum</FormLabel>
+                  <FormLabel required>{t("kezdési_dátum")}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
@@ -170,8 +169,7 @@ export function CreateTournamentFormEnhanced({
                     </div>
                   </FormControl>
                   <FormDescription>
-                    Mikor kezdődik a verseny?
-                  </FormDescription>
+                    {t("mikor_kezdődik_a")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -184,11 +182,9 @@ export function CreateTournamentFormEnhanced({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconTarget className="w-5 h-5 text-primary" />
-              Verseny Beállítások
-            </CardTitle>
+              {t("verseny_beállítások")}</CardTitle>
             <CardDescription>
-              Válaszd ki a verseny formátumát és szabályait
-            </CardDescription>
+              {t("válaszd_ki_a_78")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Max Players */}
@@ -197,7 +193,7 @@ export function CreateTournamentFormEnhanced({
               name="maxPlayers"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Maximum játékosszám</FormLabel>
+                  <FormLabel required>{t("maximum_játékosszám")}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
@@ -211,8 +207,7 @@ export function CreateTournamentFormEnhanced({
                     </div>
                   </FormControl>
                   <FormDescription>
-                    Hány játékos vehet részt maximum? (4-128)
-                  </FormDescription>
+                    {t("hány_játékos_vehet")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -224,7 +219,7 @@ export function CreateTournamentFormEnhanced({
               name="format"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Verseny formátum</FormLabel>
+                  <FormLabel required>{t("verseny_formátum")}</FormLabel>
                   <FormControl>
                     <div className="grid grid-cols-2 gap-3">
                       {[
@@ -261,7 +256,7 @@ export function CreateTournamentFormEnhanced({
               name="gameType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Játék típus</FormLabel>
+                  <FormLabel required>{t("játék_típus")}</FormLabel>
                   <FormControl>
                     <div className="flex gap-3">
                       {["501", "301", "cricket"].map((type) => (
@@ -292,7 +287,7 @@ export function CreateTournamentFormEnhanced({
               name="legsToWin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Nyeréshez szükséges leg-ek</FormLabel>
+                  <FormLabel required>{t("nyeréshez_szükséges_leg")}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -303,8 +298,7 @@ export function CreateTournamentFormEnhanced({
                     />
                   </FormControl>
                   <FormDescription>
-                    Hány leg-et kell nyerni egy meccs megnyeréséhez?
-                  </FormDescription>
+                    {t("hány_leg_et")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -317,11 +311,9 @@ export function CreateTournamentFormEnhanced({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconTarget className="w-5 h-5 text-primary" />
-              Táblák
-            </CardTitle>
+              {t("táblák")}</CardTitle>
             <CardDescription>
-              Add meg a versenyen használt táblákat
-            </CardDescription>
+              {t("add_meg_a_88")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {boards.map((board, index) => (
@@ -335,7 +327,7 @@ export function CreateTournamentFormEnhanced({
                         <Input
                           type="number"
                           min={0}
-                          placeholder="Tábla szám"
+                          placeholder={t("tábla_szám")}
                           value={field.value ?? ''}
                           onChange={(e) => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value))}
                         />
@@ -364,8 +356,7 @@ export function CreateTournamentFormEnhanced({
               onClick={() => append({ number: boards.length + 1 })}
             >
               <IconPlus className="w-4 h-4" />
-              Tábla hozzáadása
-            </Button>
+              {t("tábla_hozzáadása")}</Button>
           </CardContent>
         </Card>
 
@@ -374,8 +365,7 @@ export function CreateTournamentFormEnhanced({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {isPublic ? <IconWorld className="w-5 h-5 text-primary" /> : <IconLock className="w-5 h-5 text-primary" />}
-              Láthatóság
-            </CardTitle>
+              {t("láthatóság")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Is Public */}
@@ -386,10 +376,9 @@ export function CreateTournamentFormEnhanced({
                 <FormItem>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <FormLabel>Nyilvános verseny</FormLabel>
+                      <FormLabel>{t("nyilvános_verseny")}</FormLabel>
                       <FormDescription>
-                        A verseny látható lesz mindenki számára a kereső oldalon
-                      </FormDescription>
+                        {t("a_verseny_látható")}</FormDescription>
                     </div>
                     <button
                       type="button"
@@ -421,18 +410,18 @@ export function CreateTournamentFormEnhanced({
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jelszó</FormLabel>
+                    <FormLabel>{t("jelszó")}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Verseny jelszava"
+                        placeholder={t("verseny_jelszava")}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
                       <div className="flex items-center gap-2">
                         <IconInfoCircle className="w-4 h-4" />
-                        <span>A játékosoknak ezt a jelszót kell megadniuk a csatlakozáshoz</span>
+                        <span>{t("a_játékosoknak_ezt")}</span>
                       </div>
                     </FormDescription>
                     <FormMessage />
@@ -446,28 +435,24 @@ export function CreateTournamentFormEnhanced({
         {/* Submit Success Message */}
         {submitSuccess && (
           <div className="text-sm font-medium text-success">
-            Verseny sikeresen létrehozva!
-          </div>
+            {t("verseny_sikeresen_létrehozva")}</div>
         )}
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              Mégse
-            </Button>
+              {t("mégse")}</Button>
           )}
           <Button type="submit" disabled={isSubmitting} className="gap-2">
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Létrehozás...
-              </>
+                {t("létrehozás")}</>
             ) : (
               <>
                 <IconTrophy className="w-4 h-4" />
-                Verseny létrehozása
-              </>
+                {t("verseny_létrehozása")}</>
             )}
           </Button>
         </div>

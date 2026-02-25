@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
@@ -26,6 +28,7 @@ interface ChartData {
 }
 
 export default function DailyChart({ title, apiEndpoint, color = 'primary', icon }: DailyChartProps) {
+    const t = useTranslations("Auto");
   const [data, setData] = useState<ChartData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -169,12 +172,11 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
         <CardContent className="p-6">
         <div className="text-center">
             <div className="text-destructive text-6xl mb-4">⚠️</div>
-            <h3 className="text-lg font-semibold text-destructive mb-2">Hiba történt</h3>
+            <h3 className="text-lg font-semibold text-destructive mb-2">{t("hiba_történt")}</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={fetchData} variant="outline" className="gap-2">
               <IconRefresh className="size-4" />
-            Újrapróbálás
-            </Button>
+            {t("újrapróbálás")}</Button>
         </div>
         </CardContent>
       </Card>
@@ -204,15 +206,15 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="text-center">
-            <p className="text-sm text-muted-foreground">Összesen (30 nap)</p>
+            <p className="text-sm text-muted-foreground">{t("összesen_nap")}</p>
           <p className="text-2xl font-bold text-primary">{totalCount}</p>
         </div>
         <div className="text-center">
-            <p className="text-sm text-muted-foreground">Átlagos/nap</p>
+            <p className="text-sm text-muted-foreground">{t("átlagos_nap")}</p>
           <p className="text-2xl font-bold text-info">{averageCount}</p>
         </div>
         <div className="text-center">
-            <p className="text-sm text-muted-foreground">Trend</p>
+            <p className="text-sm text-muted-foreground">{t("trend")}</p>
           <div className="flex items-center justify-center gap-1">
             {trend > 0 ? (
                 <IconTrendingUp className="size-5 text-success" />
@@ -278,8 +280,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
       {/* Legend */}
       <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
-          Az előző 30 nap napi lebontású statisztikája
-        </p>
+          {t("az_előző_nap")}</p>
       </div>
       </CardContent>
     </Card>

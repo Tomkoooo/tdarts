@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,6 +12,7 @@ interface ErrorProps {
 }
 
 export default function Error({ error, reset }: ErrorProps) {
+    const t = useTranslations("Auto");
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -32,25 +35,22 @@ export default function Error({ error, reset }: ErrorProps) {
         {/* Main Content */}
         <div className="mb-12">
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            Hiba történt
-          </h1>
+            {t("hiba_történt")}</h1>
           <p className="text-xl text-muted-foreground mb-6">
-            Sajnos valami hiba történt az oldal betöltése közben.
-          </p>
+            {t("sajnos_valami_hiba")}</p>
           <p className="text-muted-foreground mb-4">
-            Próbáld meg újratölteni az oldalt, vagy lépj vissza a főoldalra.
-          </p>
+            {t("próbáld_meg_újratölteni")}</p>
           
           {/* Error Details (only in development) */}
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-6 p-4 bg-card/60 rounded-lg text-left border border-destructive/20">
-              <h3 className="text-sm font-semibold text-foreground mb-2">Hiba részletei (fejlesztői mód):</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-2">{t("hiba_részletei_fejlesztői")}</h3>
               <p className="text-xs text-muted-foreground font-mono break-all">
                 {error.message}
               </p>
               {error.digest && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Error ID: {error.digest}
+                  {t("error_id")}{error.digest}
                 </p>
               )}
             </div>
@@ -64,7 +64,7 @@ export default function Error({ error, reset }: ErrorProps) {
             className="flex items-center space-x-2 px-8 py-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200 font-semibold shadow-lg shadow-primary/30"
           >
             <IconRefresh size={20} />
-            <span>Újrapróbálkozás</span>
+            <span>{t("újrapróbálkozás")}</span>
           </button>
           
           <Link 
@@ -72,30 +72,29 @@ export default function Error({ error, reset }: ErrorProps) {
             className="flex items-center space-x-2 px-8 py-4 bg-card text-foreground rounded-lg hover:bg-accent transition-all duration-200 font-semibold border border-primary/20"
           >
             <IconHome size={20} />
-            <span>Főoldal</span>
+            <span>{t("főoldal")}</span>
           </Link>
         </div>
 
         {/* Additional Help */}
         <div className="p-6 bg-card/60 rounded-2xl border border-primary/10">
           <h3 className="text-lg font-semibold text-foreground mb-3">
-            Mit tehetsz?
-          </h3>
+            {t("mit_tehetsz")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
             <div className="text-left">
-              <h4 className="font-medium text-foreground mb-2">Azonnali megoldások:</h4>
+              <h4 className="font-medium text-foreground mb-2">{t("azonnali_megoldások")}</h4>
               <ul className="space-y-1">
-                <li>• Kattints az &ldquo;Újrapróbálkozás&rdquo; gombra</li>
-                <li>• Frissítsd az oldalt (F5)</li>
-                <li>• Töröld a böngésző cache-t</li>
+                <li>{t("kattints_az_ldquo")}</li>
+                <li>{t("frissítsd_az_oldalt")}</li>
+                <li>{t("töröld_a_böngésző")}</li>
               </ul>
             </div>
             <div className="text-left">
-              <h4 className="font-medium text-foreground mb-2">Alternatív megoldások:</h4>
+              <h4 className="font-medium text-foreground mb-2">{t("alternatív_megoldások")}</h4>
               <ul className="space-y-1">
-                <li>• Lépj vissza a főoldalra</li>
-                <li>• Próbáld másik böngészőben</li>
-                <li>• Ellenőrizd az internetkapcsolatot</li>
+                <li>{t("lépj_vissza_a")}</li>
+                <li>{t("próbáld_másik_böngészőben")}</li>
+                <li>{t("ellenőrizd_az_internetkapcsolatot")}</li>
               </ul>
             </div>
           </div>
@@ -104,11 +103,10 @@ export default function Error({ error, reset }: ErrorProps) {
         {/* Contact Info */}
         <div className="mt-8 text-xs text-muted-foreground">
           <p>
-            Ha a probléma továbbra is fennáll, kérjük vedd fel a kapcsolatot a fejlesztőkkel.
-          </p>
+            {t("ha_a_probléma")}</p>
           {error.digest && (
             <p className="mt-1">
-              Hibajelentés azonosító: {error.digest}
+              {t("hibajelentés_azonosító")}{error.digest}
             </p>
           )}
         </div>

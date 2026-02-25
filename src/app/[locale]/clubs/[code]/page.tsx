@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import * as React from "react"
@@ -18,6 +20,7 @@ import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 
 export default function ClubDetailPage() {
+    const t = useTranslations("Auto");
   const { user } = useUserContext()
   const router = useRouter()
   const params = useParams()
@@ -116,14 +119,14 @@ export default function ClubDetailPage() {
   // Action handlers
   const handleLeaveClub = async () => {
     if (!club || !user?._id) return
-    const toastId = toast.loading('Kilépés a klubból...')
+    const toastId = toast.loading(t("kilépés_a_klubból"))
     try {
       await axios.post(`/api/clubs/${club._id}/removeMember`, {
         userId: user._id,
         requesterId: user._id,
       })
       await fetchClub()
-      toast.success('Sikeresen kiléptél a klubból!', { id: toastId })
+      toast.success(t("sikeresen_kiléptél_a"), { id: toastId })
       router.push('/clubs')
     } catch (err: any) {
       toast.dismiss(toastId)
@@ -137,13 +140,13 @@ export default function ClubDetailPage() {
 
   const handleDeactivateClub = async () => {
     if (!club || !user?._id) return
-    const toastId = toast.loading('Klub deaktiválása...')
+    const toastId = toast.loading(t("klub_deaktiválása"))
     try {
       await axios.post(`/api/clubs/${club._id}/deactivate`, {
         requesterId: user._id,
       })
       await fetchClub()
-      toast.success('Klub sikeresen deaktiválva!', { id: toastId })
+      toast.success(t("klub_sikeresen_deaktiválva"), { id: toastId })
       router.push('/clubs')
     } catch (err: any) {
       toast.dismiss(toastId)
@@ -164,13 +167,13 @@ export default function ClubDetailPage() {
         const res = await axios.post('/api/players', { name: player.name })
         playerId = res.data._id
       }
-      const toastId = toast.loading('Játékos hozzáadása...')
+      const toastId = toast.loading(t("játékos_hozzáadása"))
       await axios.post(`/api/clubs/${club._id}/addMember`, {
         userId: playerId,
         requesterId: user._id,
       })
       await fetchClub()
-      toast.success('Játékos hozzáadva!', { id: toastId })
+      toast.success(t("játékos_hozzáadva"), { id: toastId })
     } catch (err: any) {
       showErrorToast(err.response?.data?.error || 'Játékos hozzáadása sikertelen', {
         error: err?.response?.data?.error,
@@ -210,13 +213,13 @@ export default function ClubDetailPage() {
   const handleConfirmDeleteTournament = async (emailData?: { subject: string; message: string }) => {
     if (!deleteTournamentModal.tournamentId || !user?._id) return
 
-    const toastId = toast.loading('Torna törlése...')
+    const toastId = toast.loading(t("torna_törlése"))
     try {
       await axios.delete(`/api/tournaments/${deleteTournamentModal.tournamentId}`, {
         data: { emailData }
       })
       await fetchClub()
-      toast.success('Torna sikeresen törölve!', { id: toastId })
+      toast.success(t("torna_sikeresen_törölve"), { id: toastId })
       setDeleteTournamentModal({
         isOpen: false,
         tournamentId: null,
@@ -243,7 +246,7 @@ export default function ClubDetailPage() {
       if (oacLeague) {
         setOacTournamentConfig({ isOpen: true, leagueId: oacLeague._id })
       } else {
-        toast.error('OAC liga nem található!')
+        toast.error(t("oac_liga_nem"))
       }
     } catch (err: any) {
       showErrorToast(err.response?.data?.error || 'OAC liga betöltése sikertelen', {
@@ -293,7 +296,7 @@ export default function ClubDetailPage() {
         <div className="text-4xl font-bold mb-4 flex flex-col">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
         </div>
-        <div className="text-xl mb-4">Klub betöltése folyamatban...</div>
+        <div className="text-xl mb-4">{t("klub_betöltése_folyamatban")}</div>
       </div>
     </div>
   )
@@ -302,9 +305,9 @@ export default function ClubDetailPage() {
     //club not found section -- use icons and spacing
     <div className="flex items-center justify-center h-screen">
       <div className="flex flex-col items-center">
-        <div className="text-4xl font-bold mb-4">Klub nem található!</div>
-        <div className="text-xl mb-4">Sajnálom, de a keresett klub nem található.</div>
-        <div className="text-xl mb-4">Kérem ellenőrizd a klub kódját.</div>
+        <div className="text-4xl font-bold mb-4">{t("klub_nem_található")}</div>
+        <div className="text-xl mb-4">{t("sajnálom_de_a")}</div>
+        <div className="text-xl mb-4">{t("kérem_ellenőrizd_a")}</div>
       </div>
     </div>
   )

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -67,6 +69,7 @@ interface ClubStats {
 }
 
 export default function AdminClubsPage() {
+    const t = useTranslations("Auto");
   const [clubs, setClubs] = useState<AdminClub[]>([])
   const [stats, setStats] = useState<ClubStats>({ total: 0, active: 0, deleted: 0, verified: 0, unverified: 0 })
   const [loading, setLoading] = useState(true)
@@ -111,7 +114,7 @@ export default function AdminClubsPage() {
       setPage(response.data.pagination.page || 1)
     } catch (error: any) {
       console.error("Error fetching clubs:", error)
-      toast.error("Hiba történt az adatok betöltése során")
+      toast.error(t("hiba_történt_az"))
     } finally {
       setLoading(false)
     }
@@ -123,37 +126,36 @@ export default function AdminClubsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Klubok</h1>
-          <p className="text-muted-foreground">Klubok kezelése, statisztikák és áttekintés</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("klubok")}</h1>
+          <p className="text-muted-foreground">{t("klubok_kezelése_statisztikák")}</p>
         </div>
         <Button onClick={() => fetchClubs(page, searchTerm, verifiedFilter)} variant="outline" size="sm" className="gap-2">
           <IconRefresh className={cn("size-4", loading && "animate-spin")} />
-          Frissítés
-        </Button>
+          {t("frissítés")}</Button>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard 
-          title="Összes Klub" 
+          title={t("összes_klub")} 
           value={stats.total} 
           icon={IconBuilding} 
           className="bg-primary/5 text-primary" 
         />
         <StatsCard 
-          title="Aktív Klubok" 
+          title={t("aktív_klubok")} 
           value={stats.active} 
           icon={IconCheck} 
           className="bg-success/5 text-success" 
         />
         <StatsCard 
-          title="Hitelesített" 
+          title={t("hitelesített")} 
           value={stats.verified} 
           icon={IconShield} 
           className="bg-info/5 text-info" 
         />
         <StatsCard 
-          title="Törölt" 
+          title={t("törölt")} 
           value={stats.deleted} 
           icon={IconTrash} 
           className="bg-destructive/5 text-destructive" 
@@ -161,7 +163,7 @@ export default function AdminClubsPage() {
       </div>
 
       {/* Daily Chart */}
-      <DailyChart title="Klubok napi létrehozása" apiEndpoint="/api/admin/charts/clubs/daily" color="secondary" />
+      <DailyChart title={t("klubok_napi_létrehozása")} apiEndpoint="/api/admin/charts/clubs/daily" color="secondary" />
 
       {/* Main Content Card */}
       <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">
@@ -170,7 +172,7 @@ export default function AdminClubsPage() {
              <div className="relative w-full md:w-96">
                 <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Keresés név, helyszín vagy leírás alapján..." 
+                  placeholder={t("keresés_név_helyszín")} 
                   className="pl-9 bg-background/50 border-input/50 focus:bg-background transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -181,13 +183,13 @@ export default function AdminClubsPage() {
                  <SelectTrigger className="w-[200px] bg-background/50">
                     <div className="flex items-center gap-2">
                       <IconFilter className="size-4" />
-                      <SelectValue placeholder="Szűrés státuszra" />
+                      <SelectValue placeholder={t("szűrés_státuszra")} />
                     </div>
                  </SelectTrigger>
                  <SelectContent>
-                   <SelectItem value="all">Minden klub</SelectItem>
-                   <SelectItem value="verified">Csak Hitelesített</SelectItem>
-                   <SelectItem value="unverified">Csak Nem Hitelesített</SelectItem>
+                   <SelectItem value="all">{t("minden_klub")}</SelectItem>
+                   <SelectItem value="verified">{t("csak_hitelesített")}</SelectItem>
+                   <SelectItem value="unverified">{t("csak_nem_hitelesített")}</SelectItem>
                  </SelectContent>
                </Select>
              </div>
@@ -197,14 +199,14 @@ export default function AdminClubsPage() {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead>Klub Név</TableHead>
-                <TableHead>Helyszín</TableHead>
-                <TableHead>Csomag</TableHead>
-                <TableHead className="text-center">Tagok</TableHead>
-                <TableHead className="text-center">Versenyek</TableHead>
-                <TableHead>Státusz</TableHead>
-                <TableHead>Létrehozva</TableHead>
-                <TableHead className="text-right">Műveletek</TableHead>
+                <TableHead>{t("klub_név")}</TableHead>
+                <TableHead>{t("helyszín")}</TableHead>
+                <TableHead>{t("csomag")}</TableHead>
+                <TableHead className="text-center">{t("tagok")}</TableHead>
+                <TableHead className="text-center">{t("versenyek")}</TableHead>
+                <TableHead>{t("státusz")}</TableHead>
+                <TableHead>{t("létrehozva")}</TableHead>
+                <TableHead className="text-right">{t("műveletek")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -224,8 +226,7 @@ export default function AdminClubsPage() {
               ) : clubs.length === 0 ? (
                 <TableRow>
                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
-                    Nincs találat a keresési feltételek alapján.
-                   </TableCell>
+                    {t("nincs_találat_a")}</TableCell>
                 </TableRow>
               ) : (
                 clubs.map((club) => {
@@ -235,7 +236,7 @@ export default function AdminClubsPage() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground">{club.name}</span>
-                          {club.isDeleted && <span className="text-xs text-destructive font-bold">TÖRÖLVE</span>}
+                          {club.isDeleted && <span className="text-xs text-destructive font-bold">{t("törölve")}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -259,12 +260,10 @@ export default function AdminClubsPage() {
                       <TableCell>
                         {club.verified ? (
                            <Badge variant="outline" className="border-success/50 text-success bg-success/10 gap-1">
-                             <IconShield className="size-3" /> Hitelesített
-                           </Badge>
+                             <IconShield className="size-3" /> {t("hitelesített")}</Badge>
                         ) : (
                            <Badge variant="outline" className="border-border text-muted-foreground gap-1">
-                             <IconBuilding className="size-3" /> Normál
-                           </Badge>
+                             <IconBuilding className="size-3" /> {t("normál")}</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
@@ -288,7 +287,7 @@ export default function AdminClubsPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Összesen <strong>{paginationTotal}</strong> találat (Oldal: {page} / {totalPages})
+              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
             </span>
              {totalPages > 1 && (
               <Pagination

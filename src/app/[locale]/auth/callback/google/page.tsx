@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
+import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { useUserContext } from '@/hooks/useUser';
 import GoogleAccountLinkModal from '@/components/auth/GoogleAccountLinkModal';
@@ -18,7 +19,7 @@ export default function GoogleCallbackPage() {
   useEffect(() => {
     const handleGoogleAuth = async () => {
       if (status === 'loading') return;
-      
+
       if (status === 'unauthenticated') {
         setError('Google bejelentkezés sikertelen');
         setLoading(false);
@@ -28,16 +29,16 @@ export default function GoogleCallbackPage() {
       if (session?.user) {
         try {
           console.log('Google OAuth session:', session);
-          
+
           // Hívjuk meg a Google OAuth API-t
           const response = await axios.post('/api/auth/google');
-          
+
           console.log('Google OAuth API response:', response.data);
-          
+
           if (response.data.success) {
             // Frissítjük a user context-et
             setUser(response.data.user);
-            
+
             // Átirányítás
             const redirect = searchParams.get('redirect') || '/';
             router.push(redirect);
@@ -54,7 +55,7 @@ export default function GoogleCallbackPage() {
           }
         }
       }
-      
+
       setLoading(false);
     };
 
@@ -88,7 +89,7 @@ export default function GoogleCallbackPage() {
           <div className="text-error text-6xl mb-4">❌</div>
           <h1 className="text-2xl font-bold text-error mb-4">Bejelentkezési hiba</h1>
           <p className="text-base-content/70 mb-6">{error}</p>
-          <button 
+          <button
             onClick={() => router.push('/auth/login')}
             className="btn btn-primary"
           >

@@ -1,4 +1,7 @@
+import { useTranslations } from "next-intl";
+
 export default function Loading() {
+    const t = useTranslations("Auto");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
@@ -9,11 +12,9 @@ export default function Loading() {
         
         {/* Loading Text */}
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          Betöltés...
-        </h2>
+          {t("betöltés")}</h2>
         <p className="text-muted-foreground">
-          Kérjük várj, az oldal betöltése folyamatban van.
-        </p>
+          {t("kérjük_várj_az")}</p>
         
         {/* Progress Bar */}
         <div className="mt-8 w-64 mx-auto">

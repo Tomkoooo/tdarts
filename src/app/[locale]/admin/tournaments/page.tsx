@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -71,6 +73,7 @@ interface TournamentStats {
 }
 
 export default function AdminTournamentsPage() {
+    const t = useTranslations("Auto");
   const [tournaments, setTournaments] = useState<AdminTournament[]>([])
   const [stats, setStats] = useState<TournamentStats>({ 
     total: 0, active: 0, finished: 0, pending: 0, 
@@ -121,7 +124,7 @@ export default function AdminTournamentsPage() {
       setPage(response.data.pagination.page || 1)
     } catch (error: any) {
       console.error("Error fetching tournaments:", error)
-      toast.error("Hiba történt az adatok betöltése során")
+      toast.error(t("hiba_történt_az"))
     } finally {
       setLoading(false)
     }
@@ -153,8 +156,8 @@ export default function AdminTournamentsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Versenyek</h1>
-          <p className="text-muted-foreground">Versenyek kezelése, statisztikák és áttekintés</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("versenyek")}</h1>
+          <p className="text-muted-foreground">{t("versenyek_kezelése_statisztikák")}</p>
         </div>
         <Button 
           onClick={() => fetchTournaments(page, searchTerm, statusFilter, verifiedFilter, sandboxFilter)} 
@@ -164,38 +167,37 @@ export default function AdminTournamentsPage() {
           className="gap-2"
         >
           <IconRefresh className={cn("size-4", loading && "animate-spin")} />
-          Frissítés
-        </Button>
+          {t("frissítés")}</Button>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard 
-          title="Összes" 
+          title={t("összes")} 
           value={stats.total} 
           icon={IconTrophy} 
           className="bg-primary/5 text-primary" 
         />
         <StatsCard 
-          title="Aktív" 
+          title={t("aktív")} 
           value={stats.active} 
           icon={IconClock} 
           className="bg-info/5 text-info" 
         />
         <StatsCard 
-          title="Befejezett" 
+          title={t("befejezett")} 
           value={stats.finished} 
           icon={IconTrophy} 
           className="bg-success/5 text-success" 
         />
         <StatsCard 
-          title="Függőben" 
+          title={t("függőben")} 
           value={stats.pending} 
           icon={IconClock} 
           className="bg-warning/5 text-warning" 
         />
          <StatsCard 
-          title="Játékosok" 
+          title={t("játékosok")} 
           value={stats.totalPlayers} 
           icon={IconUsers} 
           className="bg-destructive/5 text-destructive" 
@@ -203,7 +205,7 @@ export default function AdminTournamentsPage() {
       </div>
 
       {/* Daily Chart */}
-      <DailyChart title="Versenyek napi indítása" apiEndpoint="/api/admin/charts/tournaments/daily" color="warning" />
+      <DailyChart title={t("versenyek_napi_indítása")} apiEndpoint="/api/admin/charts/tournaments/daily" color="warning" />
 
       {/* Filters & Content */}
       <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">
@@ -214,7 +216,7 @@ export default function AdminTournamentsPage() {
                 <div className="relative w-full md:w-96">
                     <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Keresés név, klub vagy leírás alapján..." 
+                      placeholder={t("keresés_név_klub")} 
                       className="pl-9 bg-background/50 border-input/50 focus:bg-background transition-all"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -223,37 +225,37 @@ export default function AdminTournamentsPage() {
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-[140px] bg-background/50">
-                             <SelectValue placeholder="Státusz" />
+                             <SelectValue placeholder={t("státusz")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Összes státusz</SelectItem>
-                          <SelectItem value="pending">Függőben</SelectItem>
-                          <SelectItem value="active">Aktív</SelectItem>
-                          <SelectItem value="group-stage">Csoportkör</SelectItem>
-                          <SelectItem value="knockout">Kieséses</SelectItem>
-                          <SelectItem value="finished">Befejezett</SelectItem>
+                          <SelectItem value="all">{t("összes_státusz")}</SelectItem>
+                          <SelectItem value="pending">{t("függőben")}</SelectItem>
+                          <SelectItem value="active">{t("aktív")}</SelectItem>
+                          <SelectItem value="group-stage">{t("csoportkör")}</SelectItem>
+                          <SelectItem value="knockout">{t("kieséses")}</SelectItem>
+                          <SelectItem value="finished">{t("befejezett")}</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Select value={verifiedFilter} onValueChange={setVerifiedFilter}>
                         <SelectTrigger className="w-[140px] bg-background/50">
-                             <SelectValue placeholder="Típus" />
+                             <SelectValue placeholder={t("típus")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Minden típus</SelectItem>
-                          <SelectItem value="verified">Verified (OAC)</SelectItem>
-                          <SelectItem value="unverified">Platform</SelectItem>
+                          <SelectItem value="all">{t("minden_típus")}</SelectItem>
+                          <SelectItem value="verified">{t("verified_oac")}</SelectItem>
+                          <SelectItem value="unverified">{t("platform")}</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Select value={sandboxFilter} onValueChange={setSandboxFilter}>
                          <SelectTrigger className="w-[140px] bg-background/50">
-                             <SelectValue placeholder="Mód" />
+                             <SelectValue placeholder={t("mód")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Minden mód</SelectItem>
-                          <SelectItem value="active">Éles</SelectItem>
-                          <SelectItem value="sandbox">Sandbox</SelectItem>
+                          <SelectItem value="all">{t("minden_mód")}</SelectItem>
+                          <SelectItem value="active">{t("éles")}</SelectItem>
+                          <SelectItem value="sandbox">{t("sandbox")}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -264,13 +266,13 @@ export default function AdminTournamentsPage() {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead>Verseny Név</TableHead>
-                <TableHead>Klub</TableHead>
-                <TableHead>Típus</TableHead>
-                <TableHead>Státusz</TableHead>
-                <TableHead className="text-center">Játékosok</TableHead>
-                <TableHead>Dátum</TableHead>
-                <TableHead className="text-right">Műveletek</TableHead>
+                <TableHead>{t("verseny_név")}</TableHead>
+                <TableHead>{t("klub")}</TableHead>
+                <TableHead>{t("típus")}</TableHead>
+                <TableHead>{t("státusz")}</TableHead>
+                <TableHead className="text-center">{t("játékosok")}</TableHead>
+                <TableHead>{t("dátum")}</TableHead>
+                <TableHead className="text-right">{t("műveletek")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -289,8 +291,7 @@ export default function AdminTournamentsPage() {
               ) : tournaments.length === 0 ? (
                 <TableRow>
                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                    Nincs találat a keresési feltételek alapján.
-                   </TableCell>
+                    {t("nincs_találat_a")}</TableCell>
                 </TableRow>
               ) : (
                 tournaments.map((tournament) => {
@@ -304,15 +305,13 @@ export default function AdminTournamentsPage() {
                           <div className="flex items-center gap-2">
                              {tournament.verified && (
                                 <Badge variant="secondary" className="h-5 px-1 bg-success/15 text-success hover:bg-success/25 gap-1 text-[10px]">
-                                  <IconShield className="size-3" /> OAC
-                                </Badge>
+                                  <IconShield className="size-3" /> {t("oac")}</Badge>
                              )}
                              {tournament.isSandbox && (
                                 <Badge variant="outline" className="h-5 px-1 border-warning/50 text-warning gap-1 text-[10px]">
-                                   Sandbox 
-                                </Badge>
+                                   {t("sandbox")}</Badge>
                              )}
-                              {tournament.isDeleted && <Badge variant="destructive" className="h-5 px-1 text-[10px]">TÖRÖLVE</Badge>}
+                              {tournament.isDeleted && <Badge variant="destructive" className="h-5 px-1 text-[10px]">{t("törölve")}</Badge>}
                           </div>
                         </div>
                       </TableCell>
@@ -365,7 +364,7 @@ export default function AdminTournamentsPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
             <span className="text-xs text-muted-foreground order-2 sm:order-1 text-center sm:text-left w-full sm:w-auto">
-              Összesen <strong>{paginationTotal}</strong> találat (Oldal: {page} / {totalPages})
+              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
             </span>
             {totalPages > 1 && (
               <div className="order-1 sm:order-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">

@@ -1,7 +1,8 @@
 'use client';
+import { useTranslations } from "next-intl";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -30,6 +31,7 @@ interface TournamentSelectionPageProps {
 }
 
 const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tournaments }) => {
+  const t = useTranslations("Auto");
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -38,7 +40,7 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedTournament) {
       setError('Kérjük válassz ki egy tornát.');
       return;
@@ -71,7 +73,7 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
     } catch (err) {
 
       console.log(err);
-    
+
 
       setError('Hiba történt a kapcsolódás során.');
     } finally {
@@ -118,17 +120,16 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
                 <IconTrophy className="text-primary" size={24} />
               </div>
               <div>
-                <CardTitle className="text-2xl">Torna Kiválasztása</CardTitle>
+                <CardTitle className="text-2xl">{t("torna_kiválasztása")}</CardTitle>
                 <CardDescription>
-                  Több aktív torna található ebben a klubban. Válaszd ki, melyik tornához szeretnél csatlakozni.
-                </CardDescription>
+                  {t("több_aktív_torna")}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-3">
-                <Label className="text-sm font-semibold">Válassz tornát:</Label>
+                <Label className="text-sm font-semibold">{t("válassz_tornát")}</Label>
                 <div className="space-y-3">
                   {tournaments.map((tournament) => (
                     <button
@@ -158,8 +159,7 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
                             <div className="flex items-center gap-1.5">
                               <IconUsers size={16} />
                               <span>
-                                {tournament.tournamentPlayers.length}/{tournament.tournamentSettings.maxPlayers} játékos
-                              </span>
+                                {tournament.tournamentPlayers.length}/{tournament.tournamentSettings.maxPlayers} {t("játékos")}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <IconCalendar size={16} />
@@ -187,12 +187,11 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-semibold">
-                  Torna jelszó
-                </Label>
+                  {t("torna_jelszó_52")}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Add meg a torna jelszavát"
+                  placeholder={t("add_meg_a_11")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -214,8 +213,7 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                    Kapcsolódás...
-                  </>
+                    {t("kapcsolódás")}</>
                 ) : (
                   'Csatlakozás a tornához'
                 )}

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -64,6 +66,7 @@ interface UserStats {
 }
 
 export default function AdminUsersPage() {
+    const t = useTranslations("Auto");
   const [users, setUsers] = useState<AdminUser[]>([])
   const [stats, setStats] = useState<UserStats>({ total: 0, admins: 0, verified: 0, unverified: 0 })
   const [loading, setLoading] = useState(true)
@@ -90,6 +93,7 @@ export default function AdminUsersPage() {
   }, [page]) // Only trigger on page change here, search/filter is handled above
 
   const fetchUsers = async (pageToFetch: number, search: string, role: string) => {
+      const t = useTranslations("Auto");
     try {
       setLoading(true)
       const response = await axios.get(`/api/admin/users`, {
@@ -108,31 +112,33 @@ export default function AdminUsersPage() {
       setPage(response.data.pagination.page || 1)
     } catch {
       console.error("Error fetching users")
-      toast.error("Hiba történt az adatok betöltése során")
+      toast.error(t("hiba_történt_az"))
     } finally {
       setLoading(false)
     }
   }
 
   const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
+      const t = useTranslations("Auto");
     try {
       const action = currentStatus ? "remove-admin" : "make-admin"
       await axios.post(`/api/admin/users/${userId}/${action}`)
       fetchUsers(page, searchTerm, roleFilter) // Refresh to ensure data consistency
       toast.success(currentStatus ? "Admin jogosultság eltávolítva" : "Admin jogosultság hozzáadva")
     } catch {
-      toast.error("Hiba történt a művelet során")
+      toast.error(t("hiba_történt_a_39"))
     }
   }
 
   const deactivateUser = async (userId: string) => {
+      const t = useTranslations("Auto");
     if (!window.confirm("Biztosan deaktiválja ezt a felhasználót?")) return
     try {
       await axios.post(`/api/admin/users/${userId}/deactivate`)
       fetchUsers(page, searchTerm, roleFilter)
-      toast.success("Felhasználó deaktiválva")
+      toast.success(t("felhasználó_deaktiválva"))
     } catch {
-      toast.error("Hiba történt a deaktiválás során")
+      toast.error(t("hiba_történt_a_29"))
     }
   }
 
@@ -140,6 +146,7 @@ export default function AdminUsersPage() {
   const [emailModal, setEmailModal] = useState<{ isOpen: boolean; user: AdminUser | null }>({ isOpen: false, user: null })
 
   const sendEmail = async (subject: string, message: string, language: "hu" | "en") => {
+      const t = useTranslations("Auto");
     if (!emailModal.user) return
     try {
       await axios.post("/api/admin/send-email", {
@@ -148,10 +155,10 @@ export default function AdminUsersPage() {
         message,
         language,
       })
-      toast.success("Email sikeresen elküldve!")
+      toast.success(t("email_sikeresen_elküldve"))
       setEmailModal({ isOpen: false, user: null })
     } catch {
-      toast.error("Hiba történt az email küldése során")
+      toast.error(t("hiba_történt_az_9"))
     }
   }
 
@@ -161,37 +168,36 @@ export default function AdminUsersPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Felhasználók</h1>
-          <p className="text-muted-foreground">Felhasználói fiókok kezelése és adminisztrációja</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("felhasználók")}</h1>
+          <p className="text-muted-foreground">{t("felhasználói_fiókok_kezelése")}</p>
         </div>
         <Button onClick={() => fetchUsers(page, searchTerm, roleFilter)} variant="outline" size="sm" className="gap-2">
           <IconRefresh className={cn("size-4", loading && "animate-spin")} />
-          Frissítés
-        </Button>
+          {t("frissítés")}</Button>
       </div>
 
       {/* Stats Grid - Displays GLOBAL stats from DB */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard 
-          title="Összes Felhasználó" 
+          title={t("összes_felhasználó")} 
           value={stats.total} 
           icon={IconUsers} 
           className="bg-primary/5 text-primary" 
         />
         <StatsCard 
-          title="Adminisztrátorok" 
+          title={t("adminisztrátorok")} 
           value={stats.admins} 
           icon={IconCrown} 
           className="bg-warning/5 text-warning" 
         />
         <StatsCard 
-          title="Regisztrált" 
+          title={t("regisztrált")} 
           value={stats.verified} 
           icon={IconCheck} 
           className="bg-success/5 text-success" 
         />
         <StatsCard 
-          title="Nem Regisztrált" 
+          title={t("nem_regisztrált")} 
           value={stats.unverified} 
           icon={IconX} 
           className="bg-destructive/5 text-destructive" 
@@ -205,7 +211,7 @@ export default function AdminUsersPage() {
              <div className="relative w-full md:w-96">
                 <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Keresés név, email vagy felhasználónév alapján..." 
+                  placeholder={t("keresés_név_email")} 
                   className="pl-9 bg-background/50 border-input/50 focus:bg-background transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -216,13 +222,13 @@ export default function AdminUsersPage() {
                  <SelectTrigger className="w-[180px] bg-background/50">
                     <div className="flex items-center gap-2">
                       <IconFilter className="size-4" />
-                      <SelectValue placeholder="Szűrés szerepkörre" />
+                      <SelectValue placeholder={t("szűrés_szerepkörre")} />
                     </div>
                  </SelectTrigger>
                  <SelectContent>
-                   <SelectItem value="all">Minden felhasználó</SelectItem>
-                   <SelectItem value="admin">Csak Adminok</SelectItem>
-                   <SelectItem value="user">Csak Felhasználók</SelectItem>
+                   <SelectItem value="all">{t("minden_felhasználó")}</SelectItem>
+                   <SelectItem value="admin">{t("csak_adminok")}</SelectItem>
+                   <SelectItem value="user">{t("csak_felhasználók")}</SelectItem>
                  </SelectContent>
                </Select>
              </div>
@@ -233,12 +239,12 @@ export default function AdminUsersPage() {
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Felhasználó</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Szerepkör</TableHead>
-                <TableHead>Státusz</TableHead>
-                <TableHead>Csatlakozott</TableHead>
-                <TableHead className="text-right">Műveletek</TableHead>
+                <TableHead>{t("felhasználó")}</TableHead>
+                <TableHead>{t("email")}</TableHead>
+                <TableHead>{t("szerepkör")}</TableHead>
+                <TableHead>{t("státusz")}</TableHead>
+                <TableHead>{t("csatlakozott")}</TableHead>
+                <TableHead className="text-right">{t("műveletek")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -257,8 +263,7 @@ export default function AdminUsersPage() {
               ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                    Nincs találat a keresési feltételek alapján.
-                  </TableCell>
+                    {t("nincs_találat_a")}</TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
@@ -280,23 +285,19 @@ export default function AdminUsersPage() {
                     <TableCell>
                       {user.isAdmin ? (
                         <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10 gap-1 hover:bg-warning/20">
-                          <IconCrown className="size-3" /> Admin
-                        </Badge>
+                          <IconCrown className="size-3" /> {t("admin")}</Badge>
                       ) : (
                         <Badge variant="outline" className="border-border text-muted-foreground gap-1">
-                          <IconUser className="size-3" /> Felhasználó
-                        </Badge>
+                          <IconUser className="size-3" /> {t("felhasználó")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {user.isVerified ? (
                         <Badge variant="outline" className="border-success/50 text-success bg-success/10 gap-1 hover:bg-success/20">
-                          <IconCheck className="size-3" /> Aktív
-                        </Badge>
+                          <IconCheck className="size-3" /> {t("aktív")}</Badge>
                       ) : (
                         <Badge variant="outline" className="border-destructive/50 text-destructive bg-destructive/10 gap-1 hover:bg-destructive/20">
-                          <IconX className="size-3" /> Nem megerősített
-                        </Badge>
+                          <IconX className="size-3" /> {t("nem_megerősített")}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
@@ -310,11 +311,10 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Műveletek</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t("műveletek")}</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => setEmailModal({ isOpen: true, user })}>
                             <IconMail className="size-4 mr-2" />
-                            Email küldése
-                          </DropdownMenuItem>
+                            {t("email_küldése")}</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => toggleAdminStatus(user._id, user.isAdmin)}>
                             <IconShield className="size-4 mr-2" />
@@ -322,8 +322,7 @@ export default function AdminUsersPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => deactivateUser(user._id)}>
                             <IconTrash className="size-4 mr-2" />
-                            Fiók felfüggesztése
-                          </DropdownMenuItem>
+                            {t("fiók_felfüggesztése")}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -337,7 +336,7 @@ export default function AdminUsersPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Összesen <strong>{paginationTotal}</strong> találat (Oldal: {page} / {totalPages})
+              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
             </span>
             <div className="flex gap-2">
               <Button
@@ -346,16 +345,14 @@ export default function AdminUsersPage() {
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1 || loading}
               >
-                Előző
-              </Button>
+                {t("előző")}</Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages || loading}
               >
-                Következő
-              </Button>
+                {t("következő")}</Button>
             </div>
         </div>
       </Card>
@@ -390,6 +387,7 @@ function StatsCard({ title, value, icon: Icon, className }: any) {
 
 // Re-using EmailModal logic but keeping it cleaner
 function EmailModal({ user, onClose, onSend }: { user: AdminUser, onClose: () => void, onSend: (s:string, m:string, l:"hu"|"en")=>void }) {
+    const t = useTranslations("Auto");
   // Keeping simplified for brevity, assume similar logic to before but with shadcn Dialog
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
@@ -406,30 +404,30 @@ function EmailModal({ user, onClose, onSend }: { user: AdminUser, onClose: () =>
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Email küldése: {user.name}</DialogTitle>
+          <DialogTitle>{t("email_küldése_59")}{user.name}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
            <div className="grid gap-2">
-             <Label>Tárgy</Label>
-             <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Üzenet tárgya..." />
+             <Label>{t("tárgy")}</Label>
+             <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder={t("üzenet_tárgya")} />
            </div>
            <div className="grid gap-2">
-            <Label>Üzenet</Label>
-            <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Írja be az üzenetet..." rows={5} />
+            <Label>{t("üzenet")}</Label>
+            <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={t("írja_be_az")} rows={5} />
            </div>
            <div className="grid gap-2">
-             <Label>Nyelv</Label>
+             <Label>{t("nyelv")}</Label>
              <Select value={lang} onValueChange={(v:any) => setLang(v)}>
                <SelectTrigger><SelectValue /></SelectTrigger>
                <SelectContent>
-                 <SelectItem value="hu">Magyar</SelectItem>
-                 <SelectItem value="en">Angol</SelectItem>
+                 <SelectItem value="hu">{t("magyar")}</SelectItem>
+                 <SelectItem value="en">{t("angol")}</SelectItem>
                </SelectContent>
              </Select>
            </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={loading}>Mégse</Button>
+          <Button variant="ghost" onClick={onClose} disabled={loading}>{t("mégse")}</Button>
           <Button onClick={handleSend} disabled={loading || !subject || !message}>
             {loading ? "Küldés..." : "Küldés"}
           </Button>

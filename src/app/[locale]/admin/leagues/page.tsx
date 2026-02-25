@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -56,6 +58,7 @@ interface LeagueStats {
 }
 
 export default function AdminLeaguesPage() {
+    const t = useTranslations("Auto");
   const [leagues, setLeagues] = useState<League[]>([])
   const [stats, setStats] = useState<LeagueStats>({ total: 0, verified: 0, unverified: 0 })
   const [loading, setLoading] = useState(true)
@@ -100,7 +103,7 @@ export default function AdminLeaguesPage() {
       setPage(response.data.pagination.page || 1)
     } catch (error: any) {
       console.error("Error fetching leagues:", error)
-      toast.error("Hiba történt a ligák betöltése során")
+      toast.error(t("hiba_történt_a_14"))
     } finally {
       setLoading(false)
     }
@@ -112,8 +115,8 @@ export default function AdminLeaguesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Ligák</h1>
-          <p className="text-muted-foreground">Ligák kezelése, statisztikák és áttekintés</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("ligák")}</h1>
+          <p className="text-muted-foreground">{t("ligák_kezelése_statisztikák")}</p>
         </div>
         <Button 
           onClick={() => fetchLeagues(page, searchTerm, verifiedFilter)} 
@@ -123,26 +126,25 @@ export default function AdminLeaguesPage() {
           className="gap-2"
         >
           <IconRefresh className={cn("size-4", loading && "animate-spin")} />
-          Frissítés
-        </Button>
+          {t("frissítés")}</Button>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard 
-          title="Összes Liga" 
+          title={t("összes_liga")} 
           value={stats.total} 
           icon={IconAward} 
           className="bg-primary/5 text-primary" 
         />
         <StatsCard 
-          title="Hitelesített (OAC)" 
+          title={t("hitelesített_oac")} 
           value={stats.verified} 
           icon={IconCheck} 
           className="bg-success/5 text-success" 
         />
         <StatsCard 
-          title="Platform Ligák" 
+          title={t("platform_ligák")} 
           value={stats.unverified} 
           icon={IconX} 
           className="bg-muted/10 text-muted-foreground" 
@@ -156,7 +158,7 @@ export default function AdminLeaguesPage() {
              <div className="relative w-full md:w-96">
                 <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Keresés név vagy klub alapján..." 
+                  placeholder={t("keresés_név_vagy")} 
                   className="pl-9 bg-background/50 border-input/50 focus:bg-background transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -167,13 +169,13 @@ export default function AdminLeaguesPage() {
                  <SelectTrigger className="w-[200px] bg-background/50">
                     <div className="flex items-center gap-2">
                        <IconFilter className="size-4" />
-                       <SelectValue placeholder="Szűrés típusra" />
+                       <SelectValue placeholder={t("szűrés_típusra")} />
                     </div>
                  </SelectTrigger>
                  <SelectContent>
-                   <SelectItem value="all">Minden típus</SelectItem>
-                   <SelectItem value="verified">Verified (OAC)</SelectItem>
-                   <SelectItem value="unverified">Platform</SelectItem>
+                   <SelectItem value="all">{t("minden_típus")}</SelectItem>
+                   <SelectItem value="verified">{t("verified_oac")}</SelectItem>
+                   <SelectItem value="unverified">{t("platform")}</SelectItem>
                  </SelectContent>
                </Select>
              </div>
@@ -183,12 +185,12 @@ export default function AdminLeaguesPage() {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead>Liga Neve</TableHead>
-                <TableHead>Klub</TableHead>
-                <TableHead>Pontozási Rendszer</TableHead>
-                <TableHead>Státusz</TableHead>
-                <TableHead>Aktív</TableHead>
-                <TableHead>Létrehozva</TableHead>
+                <TableHead>{t("liga_neve")}</TableHead>
+                <TableHead>{t("klub")}</TableHead>
+                <TableHead>{t("pontozási_rendszer")}</TableHead>
+                <TableHead>{t("státusz")}</TableHead>
+                <TableHead>{t("aktív")}</TableHead>
+                <TableHead>{t("létrehozva")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -206,8 +208,7 @@ export default function AdminLeaguesPage() {
               ) : leagues.length === 0 ? (
                 <TableRow>
                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                    Nincs találat a keresési feltételek alapján.
-                   </TableCell>
+                    {t("nincs_találat_a")}</TableCell>
                 </TableRow>
               ) : (
                 leagues.map((league) => (
@@ -239,17 +240,16 @@ export default function AdminLeaguesPage() {
                     <TableCell>
                        {league.verified ? (
                           <Badge variant="secondary" className="gap-1 bg-success/15 text-success hover:bg-success/25">
-                            <IconShield className="size-3" /> OAC Liga
-                          </Badge>
+                            <IconShield className="size-3" /> {t("oac_liga")}</Badge>
                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">Platform Liga</Badge>
+                          <Badge variant="outline" className="text-muted-foreground">{t("platform_liga")}</Badge>
                        )}
                     </TableCell>
                     <TableCell>
                       {league.isActive ? (
-                        <Badge variant="secondary" className="bg-success/10 text-success rounded-full size-2 p-0" title="Aktív" />
+                        <Badge variant="secondary" className="bg-success/10 text-success rounded-full size-2 p-0" title={t("aktív")} />
                       ) : (
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground rounded-full size-2 p-0" title="Inaktív" />
+                        <Badge variant="secondary" className="bg-muted text-muted-foreground rounded-full size-2 p-0" title={t("inaktív")} />
                       )}
                       <span className="ml-2 text-sm text-muted-foreground">{league.isActive ? "Aktív" : "Inaktív"}</span>
                     </TableCell>
@@ -269,7 +269,7 @@ export default function AdminLeaguesPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Összesen <strong>{paginationTotal}</strong> találat (Oldal: {page} / {totalPages})
+              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
             </span>
              {totalPages > 1 && (
               <Pagination

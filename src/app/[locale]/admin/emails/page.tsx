@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,6 +22,7 @@ interface EmailTemplate {
 }
 
 function PreviewFrame({ content }: { content: string }) {
+    const t = useTranslations("Auto");
   const [height, setHeight] = useState('400px');
   
   // Basic variable replacement for preview
@@ -51,12 +54,13 @@ function PreviewFrame({ content }: { content: string }) {
           }
         }
       }}
-      title="Email Preview"
+      title={t("email_preview")}
     />
   );
 }
 
 export default function EmailTemplatesPage() {
+    const t = useTranslations("Auto");
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -75,6 +79,7 @@ export default function EmailTemplatesPage() {
   }, []);
 
   const fetchTemplates = async () => {
+      const t = useTranslations("Auto");
     try {
       const response = await fetch('/api/admin/email-templates');
       const data = await response.json();
@@ -82,10 +87,10 @@ export default function EmailTemplatesPage() {
       if (data.success) {
         setTemplates(data.templates);
       } else {
-        showErrorToast('Hiba történt a sablonok betöltése során');
+        showErrorToast(t("hiba_történt_a"));
       }
     } catch {
-      showErrorToast('Hálózati hiba történt');
+      showErrorToast(t("hálózati_hiba_történt"));
     } finally {
       setLoading(false);
     }
@@ -101,6 +106,7 @@ export default function EmailTemplatesPage() {
   };
 
   const saveTemplate = async () => {
+      const t = useTranslations("Auto");
     if (!selectedTemplate) return;
 
     setSaving(true);
@@ -118,24 +124,25 @@ export default function EmailTemplatesPage() {
       const data = await response.json();
 
       if (data.success) {
-        showSuccessToast('Sablon sikeresen mentve');
+        showSuccessToast(t("sablon_sikeresen_mentve"));
         await fetchTemplates();
         setSelectedTemplate(data.template);
         setEditMode(false);
       } else {
-        showErrorToast('Hiba történt a mentés során');
+        showErrorToast(t("hiba_történt_a_87"));
       }
     } catch {
-      showErrorToast('Hálózati hiba történt');
+      showErrorToast(t("hálózati_hiba_történt"));
     } finally {
       setSaving(false);
     }
   };
 
   const sendTestEmail = async () => {
+      const t = useTranslations("Auto");
     if (!selectedTemplate) return;
     if (!testRecipient) {
-      showErrorToast('Kérjük, adj meg egy email címet');
+      showErrorToast(t("kérjük_adj_meg"));
       return;
     }
 
@@ -149,18 +156,19 @@ export default function EmailTemplatesPage() {
 
       const data = await response.json();
       if (data.success) {
-        showSuccessToast('Teszt email elküldve');
+        showSuccessToast(t("teszt_email_elküldve"));
       } else {
         showErrorToast(data.message || 'Hiba történt a küldés során');
       }
     } catch {
-      showErrorToast('Hálózati hiba történt');
+      showErrorToast(t("hálózati_hiba_történt"));
     } finally {
       setSendingTest(false);
     }
   };
 
   const toggleActive = async (template: EmailTemplate) => {
+      const t = useTranslations("Auto");
     try {
       const response = await fetch(`/api/admin/email-templates/${template._id}`, {
         method: 'PATCH',
@@ -180,7 +188,7 @@ export default function EmailTemplatesPage() {
         }
       }
     } catch {
-      showErrorToast('Hálózati hiba történt');
+      showErrorToast(t("hálózati_hiba_történt"));
     }
   };
 
@@ -211,7 +219,7 @@ export default function EmailTemplatesPage() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Sablonok betöltése...</p>
+          <p className="text-muted-foreground">{t("sablonok_betöltése")}</p>
         </div>
       </div>
     );
@@ -223,11 +231,9 @@ export default function EmailTemplatesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <Mail className="w-8 h-8 text-primary" />
-            Email Sablonok
-          </h1>
+            {t("email_sablonok")}</h1>
           <p className="text-muted-foreground mt-2">
-            Kezeld az email sablonokat, amelyeket a platform küld a felhasználóknak
-          </p>
+            {t("kezeld_az_email")}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -235,7 +241,7 @@ export default function EmailTemplatesPage() {
           <div className="lg:col-span-1">
             <div className="bg-card rounded-lg shadow-sm border border-border">
               <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-foreground">Sablonok ({templates.length})</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("sablonok")}{templates.length})</h2>
               </div>
               <div className="divide-y divide-border max-h-[calc(100vh-300px)] overflow-y-auto">
                 {templates.map((template) => (
@@ -258,8 +264,7 @@ export default function EmailTemplatesPage() {
                           </span>
                           {!template.isActive && (
                             <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                              Inaktív
-                            </span>
+                              {t("inaktív")}</span>
                           )}
                         </div>
                       </div>
@@ -305,8 +310,7 @@ export default function EmailTemplatesPage() {
                           className="px-3 py-2 text-sm text-foreground border border-border rounded-md hover:bg-muted flex items-center gap-2"
                         >
                           <X className="w-4 h-4" />
-                          Mégse
-                        </button>
+                          {t("mégse")}</button>
                         <button
                           onClick={saveTemplate}
                           disabled={saving}
@@ -335,8 +339,7 @@ export default function EmailTemplatesPage() {
                           className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 flex items-center gap-2"
                         >
                           <Code className="w-4 h-4" />
-                          Szerkesztés
-                        </button>
+                          {t("szerkesztés")}</button>
                       </>
                     )}
                   </div>
@@ -345,7 +348,7 @@ export default function EmailTemplatesPage() {
                 {/* Variables Info */}
                 {selectedTemplate.variables.length > 0 && (
                   <div className="p-4 bg-accent/50 border-b border-border">
-                    <h3 className="text-sm font-medium text-foreground mb-2">Elérhető változók:</h3>
+                    <h3 className="text-sm font-medium text-foreground mb-2">{t("elérhető_változók")}</h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedTemplate.variables.map((variable) => (
                         <code key={variable} className="text-xs px-2 py-1 bg-accent text-accent-foreground rounded">
@@ -354,7 +357,7 @@ export default function EmailTemplatesPage() {
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Használd ezeket a változókat a sablonban, pl: <code className="bg-accent px-1">{`{userName}`}</code>
+                      {t("használd_ezeket_a")}<code className="bg-accent px-1">{`{userName}`}</code>
                     </p>
                   </div>
                 )}
@@ -362,7 +365,7 @@ export default function EmailTemplatesPage() {
                 <div className="p-6 space-y-4">
                   {/* Subject */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Tárgy</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{t("tárgy")}</label>
                     {editMode ? (
                       <input
                         type="text"
@@ -379,7 +382,7 @@ export default function EmailTemplatesPage() {
 
                   {/* HTML Content */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">HTML Tartalom</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{t("html_tartalom")}</label>
                     {editMode ? (
                       <textarea
                         value={editedHtmlContent}
@@ -400,7 +403,7 @@ export default function EmailTemplatesPage() {
 
                   {/* Text Content */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Szöveges Tartalom (fallback)</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{t("szöveges_tartalom_fallback")}</label>
                     {editMode ? (
                       <textarea
                         value={editedTextContent}
@@ -419,16 +422,15 @@ export default function EmailTemplatesPage() {
                   <div className="pt-6 border-t border-border">
                     <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                       <Mail className="w-4 h-4 text-primary" />
-                      Teszt email küldése
-                    </h3>
+                      {t("teszt_email_küldése")}</h3>
                     <div className="flex items-end gap-3 max-w-md">
                       <div className="flex-1">
-                        <label className="block text-xs text-muted-foreground mb-1">Címzett email</label>
+                        <label className="block text-xs text-muted-foreground mb-1">{t("címzett_email")}</label>
                         <input
                           type="email"
                           value={testRecipient}
                           onChange={(e) => setTestRecipient(e.target.value)}
-                          placeholder="vmi@pelda.hu"
+                          placeholder={t("vmi_pelda_hu")}
                           className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-primary focus:border-primary"
                         />
                       </div>
@@ -442,24 +444,22 @@ export default function EmailTemplatesPage() {
                         ) : (
                           <Mail className="w-4 h-4" />
                         )}
-                        Küldés
-                      </button>
+                        {t("küldés")}</button>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-2">
-                      A teszt emailt a fent látható módon rendereljük, minta adatokkal feltöltve.
-                    </p>
+                      {t("a_teszt_emailt")}</p>
                   </div>
 
                   {/* Metadata */}
                   <div className="pt-4 border-t border-border text-sm text-muted-foreground">
                     <p>
-                      <strong>Kulcs:</strong> <code className="bg-muted px-1">{selectedTemplate.key}</code>
+                      <strong>{t("kulcs")}</strong> <code className="bg-muted px-1">{selectedTemplate.key}</code>
                     </p>
                     <p className="mt-1">
-                      <strong>Utolsó módosítás:</strong> {new Date(selectedTemplate.lastModified).toLocaleString('hu-HU')}
+                      <strong>{t("utolsó_módosítás")}</strong> {new Date(selectedTemplate.lastModified).toLocaleString('hu-HU')}
                     </p>
                     <p className="mt-1">
-                      <strong>Alapértelmezett:</strong> {selectedTemplate.isDefault ? 'Igen' : 'Nem'}
+                      <strong>{t("alapértelmezett")}</strong> {selectedTemplate.isDefault ? 'Igen' : 'Nem'}
                     </p>
                   </div>
                 </div>
@@ -467,8 +467,8 @@ export default function EmailTemplatesPage() {
             ) : (
               <div className="bg-card rounded-lg shadow-sm border border-border p-12 text-center">
                 <Mail className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">Nincs kiválasztott sablon</h3>
-                <p className="text-muted-foreground">Válassz egy sablont a bal oldali listából a megtekintéshez és szerkesztéshez</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t("nincs_kiválasztott_sablon")}</h3>
+                <p className="text-muted-foreground">{t("válassz_egy_sablont")}</p>
               </div>
             )}
           </div>

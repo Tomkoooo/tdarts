@@ -1,7 +1,10 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import { IconX, IconQrcode, IconGripVertical } from "@tabler/icons-react"
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
 import axios from "axios"
@@ -12,6 +15,7 @@ import BoardStatus from "@/components/tournament/tv/BoardStatus"
 import GroupsDisplay from "@/components/tournament/tv/GroupsDisplay"
 
 export default function TVModePage() {
+  const t = useTranslations("Auto");
   const { code } = useParams()
   const router = useRouter()
   const [tournament, setTournament] = useState<any>(null)
@@ -57,9 +61,9 @@ export default function TVModePage() {
   useEffect(() => {
     if (lastEvent) {
       console.log('TV Mode - Received event:', lastEvent.type, lastEvent.data)
-      if (lastEvent.type === 'tournament-update' || 
-          lastEvent.type === 'match-update' || 
-          lastEvent.type === 'group-update') {
+      if (lastEvent.type === 'tournament-update' ||
+        lastEvent.type === 'match-update' ||
+        lastEvent.type === 'group-update') {
         // Always refresh on these events to catch knockout rounds and other updates
         console.log('TV Mode - Triggering silent refresh')
         silentRefresh()
@@ -72,7 +76,7 @@ export default function TVModePage() {
     if (!tournament?.boards) return 45
     const waitingBoards = tournament.boards.filter((b: any) => b.status === 'waiting')
     const boardCount = waitingBoards.length
-    
+
     // Each board card is roughly 80px, plus padding and header
     // Min 40vh, max 60vh (increased from 20-50vh)
     if (boardCount === 0) return 30
@@ -140,7 +144,7 @@ export default function TVModePage() {
   if (loading) {
     return (
       <div className="h-screen w-screen bg-background flex items-center justify-center">
-        <div className="text-foreground text-2xl">Loading...</div>
+        <div className="text-foreground text-2xl">{t("loading")}</div>
       </div>
     )
   }
@@ -148,12 +152,12 @@ export default function TVModePage() {
   if (!tournament) {
     return (
       <div className="h-screen w-screen bg-background flex items-center justify-center">
-        <div className="text-foreground text-2xl">Tournament not found</div>
+        <div className="text-foreground text-2xl">{t("tournament_not_found")}</div>
       </div>
     )
   }
 
-  const tournamentUrl = process.env.NEXT_PUBLIC_NODE_ENV === 'development' ? 'http://localhost:3000/tournaments/${code}' : `https://tdarts.sironic.hu/tournaments/${code}` 
+  const tournamentUrl = process.env.NEXT_PUBLIC_NODE_ENV === 'development' ? 'http://localhost:3000/tournaments/${code}' : `https://tdarts.sironic.hu/tournaments/${code}`
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background text-foreground relative">
@@ -170,7 +174,7 @@ export default function TVModePage() {
           className="flex items-center gap-2 px-4 py-2 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors"
         >
           <IconX className="h-5 w-5" />
-          <span>Exit</span>
+          <span>{t("exit")}</span>
         </button>
       </header>
 
@@ -216,8 +220,7 @@ export default function TVModePage() {
             </div>
             <QRCode value={tournamentUrl} size={qrSize} level="H" />
             <div className="text-center mt-2 text-xs font-semibold text-gray-800">
-              Scan to join
-            </div>
+              {t("scan_to_join")}</div>
             {/* Resize handle */}
             <div
               onMouseDown={handleResizeMouseDown}
@@ -233,7 +236,7 @@ export default function TVModePage() {
             className="bg-primary text-primary-content px-4 py-2 rounded-lg shadow-xl hover:bg-primary/90 transition-colors flex items-center gap-2"
           >
             <IconQrcode className="h-5 w-5" />
-            <span className="font-semibold">Open QR</span>
+            <span className="font-semibold">{t("open_qr")}</span>
           </button>
         )}
       </div>

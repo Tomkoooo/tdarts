@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import React, { useState, useEffect } from "react"
@@ -8,6 +10,7 @@ import axios from "axios"
 import toast from "react-hot-toast"
 
 export function GlobalTodoShortcut() {
+    const t = useTranslations("Auto");
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export function GlobalTodoShortcut() {
         status: "pending",
         isPublic: true
       })
-      toast.success("Feladat gyorsan hozzáadva!", {
+      toast.success(t("feladat_gyorsan_hozzáadva"), {
         icon: <IconCheck className="text-emerald-500" />,
         style: {
           borderRadius: "10px",
@@ -39,7 +42,7 @@ export function GlobalTodoShortcut() {
       setIsOpen(false)
     } catch (error) {
       console.error("Error creating todo", error)
-      toast.error("Hiba történt a feladat létrehozásakor")
+      toast.error(t("hiba_történt_a_88"))
     }
   }
 
@@ -49,11 +52,9 @@ export function GlobalTodoShortcut() {
         <div className="p-6 pb-2">
             <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                Gyors Feladat Létrehozása
-            </DialogTitle>
+                {t("gyors_feladat_létrehozása")}</DialogTitle>
             <DialogDescription>
-                Használd a természetes nyelvet (pl. &quot;Hiba javítása !!! ma #bug&quot;)
-            </DialogDescription>
+                {t("használd_a_természetes")}</DialogDescription>
             </DialogHeader>
         </div>
         <div className="p-6 pt-2 pb-8">

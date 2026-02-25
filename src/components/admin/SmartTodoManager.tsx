@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -127,6 +129,7 @@ const TodoItemCard = ({ todo, onToggle, onDelete }: { todo: TodoItem; onToggle: 
 
 // --- Main SmartTodoManager Component ---
 export default function SmartTodoManager() {
+    const t = useTranslations("Auto");
   const [todos, setTodos] = useState<TodoItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all") // all, active, completed
@@ -139,7 +142,7 @@ export default function SmartTodoManager() {
       setTodos(response.data.todos)
     } catch (error) {
       console.error("Error fetching todos", error)
-      toast.error("Nem sikerült betölteni a feladatokat")
+      toast.error(t("nem_sikerült_betölteni_12"))
     } finally {
       setLoading(false)
     }
@@ -157,11 +160,11 @@ export default function SmartTodoManager() {
         isPublic: true // Default to public
       })
       setTodos(prev => [response.data.todo || response.data, ...prev]) // Handle different API responses
-      toast.success("Feladat hozzáadva!")
+      toast.success(t("feladat_hozzáadva"))
       fetchTodos() // Refresh to be safe
     } catch (error) {
       console.error("Error creating todo", error)
-      toast.error("Hiba történt a feladat létrehozásakor")
+      toast.error(t("hiba_történt_a_78"))
     }
   }
 
@@ -178,7 +181,7 @@ export default function SmartTodoManager() {
       await axios.put(`/api/admin/todos/${id}`, { status: newStatus })
     } catch (error) {
       console.error("Error updating todo", error)
-      toast.error("Nem sikerült frissíteni a státuszt")
+      toast.error(t("nem_sikerült_frissíteni"))
       // Revert
       setTodos(prev => prev.map(t => t._id === id ? { ...t, status: todo.status } : t))
     }
@@ -192,10 +195,10 @@ export default function SmartTodoManager() {
 
     try {
       await axios.delete(`/api/admin/todos/${id}`)
-      toast.success("Feladat törölve")
+      toast.success(t("feladat_törölve"))
     } catch (error) {
       console.error("Error deleting todo", error)
-      toast.error("Nem sikerült törölni a feladatot")
+      toast.error(t("nem_sikerült_törölni"))
       fetchTodos() // Revert by fetching
     }
   }
@@ -249,8 +252,8 @@ export default function SmartTodoManager() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div className="space-y-2 text-center md:text-left">
-        <h2 className="text-3xl font-bold tracking-tight">Smart Todo</h2>
-        <p className="text-muted-foreground">Írd be természetes nyelven: &quot;Szerver karbantartás !!! holnap #dev&quot;</p>
+        <h2 className="text-3xl font-bold tracking-tight">{t("smart_todo")}</h2>
+        <p className="text-muted-foreground">{t("írd_be_természetes")}</p>
       </div>
 
       <SmartInput onAdd={handleAddTodo} />
@@ -261,20 +264,17 @@ export default function SmartTodoManager() {
             onClick={() => setFilter("all")}
             className={cn("px-3 py-1.5 text-sm font-medium rounded-md transition-all", filter === "all" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
           >
-            Összes
-          </button>
+            {t("összes")}</button>
           <button
             onClick={() => setFilter("active")}
             className={cn("px-3 py-1.5 text-sm font-medium rounded-md transition-all", filter === "active" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
           >
-            Aktív
-          </button>
+            {t("aktív")}</button>
           <button
             onClick={() => setFilter("completed")}
             className={cn("px-3 py-1.5 text-sm font-medium rounded-md transition-all", filter === "completed" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
           >
-            Kész
-          </button>
+            {t("kész")}</button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -286,9 +286,9 @@ export default function SmartTodoManager() {
              </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="smart">✨ Okos rendezés (Urgency)</SelectItem>
-              <SelectItem value="date">📅 Határidő szerint</SelectItem>
-              <SelectItem value="priority">🔥 Prioritás szerint</SelectItem>
+              <SelectItem value="smart">{t("okos_rendezés_urgency")}</SelectItem>
+              <SelectItem value="date">{t("határidő_szerint")}</SelectItem>
+              <SelectItem value="priority">{t("prioritás_szerint")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -296,7 +296,7 @@ export default function SmartTodoManager() {
 
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Betöltés...</div>
+          <div className="text-center py-12 text-muted-foreground">{t("betöltés")}</div>
         ) : filteredAndSortedTodos.length > 0 ? (
           <div className="grid gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {filteredAndSortedTodos.map((todo) => (
@@ -311,8 +311,8 @@ export default function SmartTodoManager() {
         ) : (
           <div className="text-center py-16 border-2 border-dashed border-border/50 rounded-2xl bg-muted/10">
             <IconLayoutKanban className="size-12 mx-auto text-muted-foreground/30 mb-3" />
-            <h3 className="font-semibold text-lg">Nincs megjeleníthető feladat</h3>
-            <p className="text-muted-foreground text-sm">Adj hozzá egy újat a fenti mező segítségével!</p>
+            <h3 className="font-semibold text-lg">{t("nincs_megjeleníthető_feladat")}</h3>
+            <p className="text-muted-foreground text-sm">{t("adj_hozzá_egy")}</p>
           </div>
         )}
       </div>

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 
 import React from "react"
@@ -62,6 +64,7 @@ const deviceOptions = [
 type FeedbackValues = z.infer<typeof feedbackSchema>
 
 export default function FeedbackPage() {
+    const t = useTranslations("Auto");
   const { user } = useUserContext()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -113,7 +116,7 @@ export default function FeedbackPage() {
         ...values,
         userId: user?._id,
       })
-      toast.success("Köszönjük a visszajelzésedet! Nemsokára felvesszük veled a kapcsolatot.")
+      toast.success(t("köszönjük_a_visszajelzésedet"))
       form.reset({
         ...values,
         title: "",
@@ -143,8 +146,8 @@ export default function FeedbackPage() {
             <IconMessageCircle className="text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Visszajelzés</h1>
-            <p className="text-muted-foreground">Oszd meg velünk a tapasztalataidat és segíts jobbá tenni a platformot</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("visszajelzés")}</h1>
+            <p className="text-muted-foreground">{t("oszd_meg_velünk")}</p>
           </div>
         </div>
 
@@ -158,7 +161,7 @@ export default function FeedbackPage() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Kategória</FormLabel>
+                      <FormLabel>{t("kategória")}</FormLabel>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                         {categoryConfig.map((category) => {
                           const Icon = category.icon
@@ -191,9 +194,9 @@ export default function FeedbackPage() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cím</FormLabel>
+                      <FormLabel>{t("cím")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Rövid összefoglaló..." {...field} />
+                        <Input placeholder={t("rövid_összefoglaló")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -205,10 +208,10 @@ export default function FeedbackPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Részletes leírás</FormLabel>
+                      <FormLabel>{t("részletes_leírás")}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Írd le részletesen, mi történt..."
+                          placeholder={t("írd_le_részletesen")}
                           className="min-h-[160px] resize-none"
                           {...field}
                         />
@@ -224,9 +227,9 @@ export default function FeedbackPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email cím</FormLabel>
+                        <FormLabel>{t("email_cím")}</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="email@example.com" {...field} />
+                          <Input type="email" placeholder={t("email_example_com")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -238,13 +241,13 @@ export default function FeedbackPage() {
                     name="device"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Eszköz</FormLabel>
+                        <FormLabel>{t("eszköz")}</FormLabel>
                         <FormControl>
                           <select
                             {...field}
                             className="select select-bordered w-full h-11 rounded-xl bg-muted/20 border border-border/40 shadow-sm text-foreground font-medium focus:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                           >
-                            <option value="" disabled>Válassz eszközt</option>
+                            <option value="" disabled>{t("válassz_eszközt")}</option>
                             {deviceOptions.map((option) => (
                               <option key={option.value} value={option.value}>
                                 {option.label}
@@ -263,11 +266,11 @@ export default function FeedbackPage() {
                   name="page"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Érintett oldal (opcionális)</FormLabel>
+                      <FormLabel>{t("érintett_oldal_opcionális")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="/tournaments/ABC1" {...field} />
+                        <Input placeholder={t("tournaments_abc")} {...field} />
                       </FormControl>
-                      <FormDescription>Az oldal, ahol a problémát tapasztaltad</FormDescription>
+                      <FormDescription>{t("az_oldal_ahol")}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

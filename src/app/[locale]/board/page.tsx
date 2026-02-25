@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 "use client"
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +14,7 @@ import LocalMatchGame from "@/components/board/LocalMatchGame";
 import Link from "next/link";
 
 const BoardPage: React.FC = () => {
+    const t = useTranslations("Auto");
   const [tournamentCode, setTournamentCode] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -124,18 +127,16 @@ const BoardPage: React.FC = () => {
                 className="gap-2 flex items-center"
               >
                 <IconArrowLeft size={18} />
-                Vissza
-              </Link>
+                {t("vissza")}</Link>
             </div>
             <div className="text-center space-y-4">
               <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/10">
                 <IconDeviceDesktop className="text-primary" size={32} />
               </div>
               <div>
-                <CardTitle className="text-3xl font-bold tracking-tight">Tábla Csatlakozás</CardTitle>
+                <CardTitle className="text-3xl font-bold tracking-tight">{t("tábla_csatlakozás")}</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Add meg a torna kódot és jelszót
-                </CardDescription>
+                  {t("add_meg_a_85")}</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -149,12 +150,11 @@ const BoardPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="tournamentCode" className="text-sm font-semibold">
-                  Torna Kód
-                </Label>
+                  {t("torna_kód")}</Label>
                 <Input
                   id="tournamentCode"
                   type="text"
-                  placeholder="Pl.: ABC1"
+                  placeholder={t("pl_abc")}
                   className="text-center text-2xl font-mono tracking-widest uppercase h-14"
                   value={tournamentCode}
                   onChange={(e) => setTournamentCode(e.target.value.toUpperCase())}
@@ -162,23 +162,22 @@ const BoardPage: React.FC = () => {
                   autoFocus
                   disabled={!isOnline}
                 />
-                <p className="text-xs text-muted-foreground">4 karakteres kód</p>
+                <p className="text-xs text-muted-foreground">{t("karakteres_kód")}</p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-semibold">
-                  Jelszó
-                </Label>
+                  {t("jelszó")}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Torna jelszó"
+                  placeholder={t("torna_jelszó_72")}
                   className="h-14"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={!isOnline}
                 />
-                <p className="text-xs text-muted-foreground">Kérd el a szervezőtől</p>
+                <p className="text-xs text-muted-foreground">{t("kérd_el_a")}</p>
               </div>
               
               <Button
@@ -192,8 +191,7 @@ const BoardPage: React.FC = () => {
                 ) : loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                    Csatlakozás...
-                  </>
+                    {t("csatlakozás")}</>
                 ) : (
                   'Csatlakozás a tornához'
                 )}
@@ -209,17 +207,14 @@ const BoardPage: React.FC = () => {
                   className="w-full gap-2"
                 >
                   <IconPlayerPlay size={20} />
-                  Helyi meccs indítása
-                </Button>
+                  {t("helyi_meccs_indítása")}</Button>
               </div>
               
               <div className="space-y-2 text-center">
               <p className="text-sm text-muted-foreground">
-                Nincs torna kódod? Kérdezd meg a szervezőt!
-              </p>
+                {t("nincs_torna_kódod")}</p>
               <p className="text-xs text-muted-foreground/70">
-                A jelszó mentésre kerül a böngésződben a könnyebb használat érdekében.
-              </p>
+                {t("a_jelszó_mentésre")}</p>
               </div>
             </div>
           </CardContent>
@@ -230,13 +225,12 @@ const BoardPage: React.FC = () => {
       <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Helyi meccs beállítása</DialogTitle>
+            <DialogTitle>{t("helyi_meccs_beállítása")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label htmlFor="legsToWin" className="text-sm font-medium mb-2 block">
-                Nyert legek száma
-              </Label>
+                {t("nyert_legek_száma")}</Label>
               <select 
                 id="legsToWin"
                 onChange={(e) => setLocalMatchLegsToWin(parseInt(e.target.value))} 
@@ -247,12 +241,11 @@ const BoardPage: React.FC = () => {
                   <option key={i + 1} value={i + 1}>{i + 1}</option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground mt-1">Best of {localMatchLegsToWin * 2 - 1}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("best_of")}{localMatchLegsToWin * 2 - 1}</p>
             </div>
             <div>
               <Label htmlFor="startingScore" className="text-sm font-medium mb-2 block">
-                Kezdő pontszám
-              </Label>
+                {t("kezdő_pontszám")}</Label>
               <select 
                 id="startingScore"
                 onChange={(e) => setLocalMatchStartingScore(parseInt(e.target.value))} 
@@ -263,23 +256,20 @@ const BoardPage: React.FC = () => {
                   <option key={score} value={score}>{score}</option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground mt-1">Ebből a pontszámból indulnak minden legben</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("ebből_a_pontszámból")}</p>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Játékosok: <span className="font-semibold">1</span> és <span className="font-semibold">2</span>
+                {t("játékosok_39")}<span className="font-semibold">1</span> és <span className="font-semibold">2</span>
               </p>
               <p className="text-xs text-muted-foreground">
-                A játékos 1 mindig kezd.
-              </p>
+                {t("a_játékos_mindig")}</p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowLocalMatchSetup(false)}>
-                Mégse
-              </Button>
+                {t("mégse")}</Button>
               <Button className="flex-1" onClick={handleStartLocalMatch}>
-                Meccs indítása
-              </Button>
+                {t("meccs_indítása")}</Button>
             </div>
           </div>
         </DialogContent>

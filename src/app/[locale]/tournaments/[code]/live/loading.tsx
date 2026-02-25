@@ -1,7 +1,9 @@
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { IconLoader2 } from '@tabler/icons-react';
 
 export default function LiveLoading() {
+    const t = useTranslations("Auto");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full shadow-xl">
@@ -9,17 +11,16 @@ export default function LiveLoading() {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconLoader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
-          <CardTitle className="text-xl">Élő Közvetítés Betöltése</CardTitle>
+          <CardTitle className="text-xl">{t("élő_közvetítés_betöltése")}</CardTitle>
           <CardDescription>
-            Kérjük várj, amíg betöltjük az adatokat...
-          </CardDescription>
+            {t("kérjük_várj_amíg")}</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6 pt-4">
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Tournament adatok</span>
+                <span>{t("tournament_adatok")}</span>
                 <IconLoader2 className="h-3 w-3 animate-spin" />
               </div>
               <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
@@ -29,7 +30,7 @@ export default function LiveLoading() {
             
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Jogosultság ellenőrzés</span>
+                <span>{t("jogosultság_ellenőrzés")}</span>
                 <IconLoader2 className="h-3 w-3 animate-spin" />
               </div>
               <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
@@ -39,7 +40,7 @@ export default function LiveLoading() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Kapcsolódás a szerverhez</span>
+                <span>{t("kapcsolódás_a_szerverhez")}</span>
                 <IconLoader2 className="h-3 w-3 animate-spin" />
               </div>
               <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
