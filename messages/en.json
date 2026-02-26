@@ -193,7 +193,7 @@
                 "badge": "Popular"
             },
             "draw": {
-                "title": "Competition Announcement",
+                "title": "Competition Notice",
                 "description": "Create your own tournaments with unique rules and formats. Automatic group assignment and pairing.",
                 "badge": "New"
             },
@@ -319,7 +319,7 @@
             "email_label": "Email address",
             "email_placeholder": "email@example.com",
             "password_label": "Password",
-            "password_placeholder": "••••••••",
+            "password_placeholder": null,
             "show_password": "Show password",
             "hide_password": "Hide password",
             "forgot_password": "Forgot your password?",
@@ -343,7 +343,7 @@
             "email_label": "Email address",
             "email_placeholder": "email@example.com",
             "password_label": "Password",
-            "password_placeholder": "••••••••",
+            "password_placeholder": null,
             "confirm_password_label": "Confirm password",
             "show_password": "Show password",
             "hide_password": "Hide password",
@@ -420,7 +420,7 @@
         "link": {
             "title": "Link your Google account",
             "subtitle": "Link your Google account",
-            "google_data": "Your Google account information:",
+            "google_data": "Your Google account details:",
             "name": "Name: {name}",
             "email_label": "Email address",
             "password_label": "Password",
@@ -787,7 +787,7 @@
                 "lost": "V",
                 "legs_won": "L GY",
                 "legs_lost": "L V",
-                "leg_diff": "+/-",
+                "leg_diff": null,
                 "average": "Average",
                 "180s": "180",
                 "max_checkout": "HC",
@@ -2988,7 +2988,7 @@
                 "medium": "Medium",
                 "low": "Low"
             },
-            "id_prefix": "Ticket #",
+            "id_prefix": "Ticket#",
             "updated_at": "Updated: {date}",
             "empty": "You have no feedback yet.",
             "reply_placeholder": "Write a reply...",

@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 echo "🚀 Running pre-push checks..."
 echo "⏳ This may take a few minutes..."
 
@@ -7,32 +9,23 @@ echo "⏳ This may take a few minutes..."
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 cd "$PROJECT_ROOT" || exit 1
 
-# Ensure we're using the correct Node.js version and PATH
-# Get the node path from the current environment
-NODE_BIN="$(command -v node)"
-NPM_BIN="$(command -v npm)"
+# Use exactly the same Node/npm that are on PATH in the shell
+NODE_BIN="$(command -v node || true)"
+NPM_BIN="$(command -v npm || true)"
 
-if [ -z "$NODE_BIN" ]; then
-  # Fallback to common locations
-  if [ -f "/usr/local/bin/node" ]; then
-    NODE_BIN="/usr/local/bin/node"
-  elif [ -f "/opt/homebrew/bin/node" ]; then
-    NODE_BIN="/opt/homebrew/bin/node"
-  fi
+if [ -z "$NODE_BIN" ] || [ -z "$NPM_BIN" ]; then
+  echo "❌ node/npm not found on PATH inside pre-push hook."
+  echo "Please ensure your shell initialization exposes Node before git push."
+  exit 1
 fi
 
-if [ -n "$NODE_BIN" ]; then
-  export PATH="$(dirname "$NODE_BIN"):$PATH"
-  export NODE_PATH="$NODE_BIN"
-fi
-
-# Set NODE_OPTIONS to avoid module resolution issues
-export NODE_OPTIONS="--no-warnings"
+echo "🔧 Node: $($NODE_BIN -v)"
+echo "🔧 Npm: $($NPM_BIN -v)"
 
 # Run lint
 echo ""
 echo "📝 Running ESLint..."
-npm run lint || {
+"$NPM_BIN" run lint || {
   echo ""
   echo "❌ ESLint failed. Please fix the errors before pushing."
   echo "Run 'npm run lint' to see the errors."
@@ -42,7 +35,7 @@ npm run lint || {
 # Run build
 echo ""
 echo "🏗️  Running production build..."
-npm run build || {
+"$NPM_BIN" run build || {
   echo ""
   echo "❌ Build failed. Please fix the errors before pushing."
   echo "Run 'npm run build' to see the errors."
