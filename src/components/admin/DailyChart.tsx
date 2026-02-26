@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { IconTrendingUp, IconTrendingDown, IconRefresh } from '@tabler/icons-react'
@@ -28,7 +28,7 @@ interface ChartData {
 }
 
 export default function DailyChart({ title, apiEndpoint, color = 'primary', icon }: DailyChartProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.components");
   const [data, setData] = useState<ChartData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -70,11 +70,11 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
           }]
         })
       } else {
-        setError('Ismeretlen adatformátum')
+        setError(t("ismeretlen_adatformatum_v65o"))
       }
     } catch (error) {
       console.error(`Error fetching ${title} data:`, error)
-      setError('Hiba történt az adatok betöltésekor')
+      setError(t("hiba_tortent_az_adatok_qmk8"))
     } finally {
       setLoading(false)
     }

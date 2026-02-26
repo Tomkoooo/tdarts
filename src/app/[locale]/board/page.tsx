@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +14,7 @@ import LocalMatchGame from "@/components/board/LocalMatchGame";
 import Link from "next/link";
 
 const BoardPage: React.FC = () => {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Board");
   const [tournamentCode, setTournamentCode] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -46,17 +46,17 @@ const BoardPage: React.FC = () => {
     if (!isOnline) return;
     
     if (!tournamentCode.trim()) {
-      setError("Kérlek add meg a torna kódot!");
+      setError(t("kerlek_add_meg_a_rra3"));
       return;
     }
 
     if (tournamentCode.length !== 4) {
-      setError("A torna kódnak 4 karakter hosszúnak kell lennie!");
+      setError(t("a_torna_kodnak_4_6g60"));
       return;
     }
 
     if (!password.trim()) {
-      setError("Kérlek add meg a jelszót!");
+      setError(t("kerlek_add_meg_a_tdqh"));
       return;
     }
 

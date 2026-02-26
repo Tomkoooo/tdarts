@@ -1,6 +1,6 @@
+'use client';
 import { useTranslations } from "next-intl";
 
-'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ interface ErrorProps {
 }
 
 export default function Error({ error, reset }: ErrorProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Common");
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {

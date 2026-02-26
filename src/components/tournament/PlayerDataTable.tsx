@@ -58,7 +58,8 @@ export function PlayerDataTable({
   onCheckInPlayer,
   onRemovePlayer,
 }: PlayerDataTableProps) {
-  const t = useTranslations("Tournament.players_table")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`players_table.${key}`, values)
   const canManage = userRole === 'admin' || userRole === 'moderator'
 
   const columns: ColumnDef<Player>[] = [

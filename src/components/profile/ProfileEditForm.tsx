@@ -15,6 +15,7 @@ const createUpdateProfileSchema = (t: any) => z.object({
   email: z.string().email(t("validation.email")).optional().or(z.literal('')),
   name: z.string().min(1, t("validation.name_required")).optional().or(z.literal('')),
   username: z.string().min(1, t("validation.username_required")).optional().or(z.literal('')),
+  country: z.string().optional().or(z.literal('')),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
 }).refine((data) => {
@@ -43,6 +44,7 @@ interface ProfileEditFormProps {
     email?: string
     name?: string
     username?: string
+    country?: string
   }
   isLoading: boolean
   onSubmit: (data: any) => Promise<void>
@@ -54,6 +56,7 @@ function ProfileEditForm({
   onSubmit,
 }: ProfileEditFormProps) {
   const t = useTranslations("Profile.edit")
+  const tc = useTranslations("Profile.countries")
   const [showPassword, setShowPassword] = React.useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
 
@@ -130,6 +133,31 @@ function ProfileEditForm({
               />
               {errors.username && (
                 <p className="text-sm text-destructive">{errors.username.message}</p>
+              )}
+            </div>
+
+            {/* Country */}
+            <div className="space-y-2">
+              <Label htmlFor="country" className="flex items-center gap-2">
+                <IconUser className="w-4 h-4" />
+                {t("country")}
+              </Label>
+              <select
+                id="country"
+                {...register("country")}
+                disabled={isLoading}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="hu">{tc("hu")}</option>
+                <option value="at">{tc("at")}</option>
+                <option value="de">{tc("de")}</option>
+                <option value="sk">{tc("sk")}</option>
+                <option value="ro">{tc("ro")}</option>
+                <option value="hr">{tc("hr")}</option>
+                <option value="si">{tc("si")}</option>
+              </select>
+              {errors.country && (
+                <p className="text-sm text-destructive">{errors.country.message}</p>
               )}
             </div>
 

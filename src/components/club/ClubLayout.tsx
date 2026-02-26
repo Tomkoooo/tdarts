@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter, usePathname, Link } from "@/i18n/routing"
+import { useRouter } from "@/i18n/routing"
 import { useSearchParams } from "next/navigation"
 import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -228,7 +228,7 @@ export default function ClubLayout({
                 <div className="absolute inset-0 z-0 overflow-hidden">
                     <ImageWithSkeleton 
                         src={landingPage.coverImage} 
-                        alt="Cover" 
+                        alt={t("cover_12vl")} 
                         className="h-full w-full object-cover"
                         containerClassName="w-full h-full"
                     />
@@ -243,7 +243,7 @@ export default function ClubLayout({
           <div className="flex items-center gap-4">
             <div className="flex w-48 items-center justify-center rounded-full bg-primary/20 backdrop-blur overflow-hidden border-2 border-white/20">
               {landingPage?.logo ? (
-                  <ImageWithSkeleton src={landingPage.logo} alt="Club Logo" className="h-full w-full object-cover" containerClassName="h-full w-full" />
+                  <ImageWithSkeleton src={landingPage.logo} alt={t("club_logo_x3a0")} className="h-full w-full object-cover" containerClassName="h-full w-full" />
               ) : (
                   <svg className="h-6 w-6 text-primary md:h-8 md:w-8" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />

@@ -31,7 +31,7 @@ interface TournamentSelectionPageProps {
 }
 
 const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tournaments }) => {
-  const t = useTranslations("Auto");
+  const t = useTranslations("Board");
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -42,12 +42,12 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
     e.preventDefault();
 
     if (!selectedTournament) {
-      setError('Kérjük válassz ki egy tornát.');
+      setError(t("kerjuk_valassz_ki_egy_mqrn"));
       return;
     }
 
     if (!password) {
-      setError('Kérjük add meg a jelszót.');
+      setError(t("kerjuk_add_meg_a_eop9"));
       return;
     }
 
@@ -75,7 +75,7 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
       console.log(err);
 
 
-      setError('Hiba történt a kapcsolódás során.');
+      setError(t("hiba_tortent_a_kapcsolodas_j6nr"));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import * as React from "react"
 import { useForm, useFieldArray } from "react-hook-form"
@@ -36,7 +36,7 @@ export function CreateTournamentFormEnhanced({
   onCancel,
   defaultValues,
 }: CreateTournamentFormEnhancedProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Common");
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitSuccess, setSubmitSuccess] = React.useState(false)
 
@@ -223,10 +223,10 @@ export function CreateTournamentFormEnhanced({
                   <FormControl>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { value: "single-elimination", label: "Egyenes kiesés", description: "Egy vereség = kiesés" },
-                        { value: "double-elimination", label: "Dupla kiesés", description: "Két vereség = kiesés" },
-                        { value: "round-robin", label: "Körmérkőzés", description: "Mindenki mindenkivel" },
-                        { value: "group_knockout", label: "Csoportos", description: "Csoportok + kiesés" },
+                        { value: "single-elimination", label: t("egyenes_kieses_lfsy"), description: "Egy vereség = kiesés" },
+                        { value: "double-elimination", label: t("dupla_kieses_g6zf"), description: "Két vereség = kiesés" },
+                        { value: "round-robin", label: t("kormerkozes_vrpm"), description: "Mindenki mindenkivel" },
+                        { value: "group_knockout", label: t("csoportos_cksc"), description: "Csoportok + kiesés" },
                       ].map((format) => (
                         <button
                           key={format.value}

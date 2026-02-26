@@ -7,7 +7,8 @@ interface RankingsCheckoutProps {
 }
 
 export default function RankingsCheckout({ tournament }: RankingsCheckoutProps) {
-  const t = useTranslations("Tournament.tv_views.rankings_checkout")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string) => tTour(`tv_views.rankings_checkout.${key}`)
   // Extract and sort players by highest checkout
   const rankings = tournament.tournamentPlayers
     ?.map((tp: any) => ({

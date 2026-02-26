@@ -3,10 +3,8 @@
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
-import { showErrorToast } from "@/lib/toastUtils"
 import axios from "axios"
 import { useUserContext } from "@/hooks/useUser"
-import { useLogout } from "@/hooks/useLogout"
 import ProfileHeader from "@/components/profile/ProfileHeader"
 import ProfileTabs from "@/components/profile/ProfileTabs"
 import CurrentInfoSection from "@/components/profile/CurrentInfoSection"
@@ -20,7 +18,6 @@ import TicketDetail from "@/components/profile/TicketDetail"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
-import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
 export default function ProfilePage() {
@@ -28,7 +25,6 @@ export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, setUser } = useUserContext()
-  const { logout } = useLogout()
 
   // State
   const [activeTab, setActiveTab] = React.useState<'details' | 'stats' | 'tickets'>('details')
@@ -43,7 +39,6 @@ export default function ProfilePage() {
   const [isLoadingLeagueHistory, setIsLoadingLeagueHistory] = React.useState(false)
   const [selectedTicket, setSelectedTicket] = React.useState<any>(null)
   const [tickets, setTickets] = React.useState<any[]>([])
-  const [isLoadingTickets, setIsLoadingTickets] = React.useState(false)
   const [ticketToastDismissed, setTicketToastDismissed] = React.useState(false)
   const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets()
 
@@ -92,7 +87,6 @@ export default function ProfilePage() {
 
   // Load tickets
   const loadTickets = async () => {
-    setIsLoadingTickets(true)
     try {
       const response = await axios.get('/api/profile/tickets')
       if (response.data.success) {
@@ -101,7 +95,6 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error loading tickets:', error)
     } finally {
-      setIsLoadingTickets(false)
     }
   }
 
@@ -150,6 +143,7 @@ export default function ProfilePage() {
         email: data.email,
         name: data.name,
         username: data.username,
+        country: data.country,
       }
 
       if (data.password && data.password.trim().length > 0) {
@@ -168,6 +162,7 @@ export default function ProfilePage() {
               email: data.email || user!.email,
               name: data.name || user!.name,
               username: data.username || user!.username,
+              country: data.country || user!.country,
               isVerified: data.email && data.email !== user!.email ? false : user!.isVerified,
             })
             setNeedsEmailVerification(data.email !== user!.email && !!data.email)
@@ -252,7 +247,7 @@ export default function ProfilePage() {
       await axios.post("/api/auth/logout")
       toast.success(t("toasts.logout_success"))
       window.location.href = "/"
-    } catch (error) {
+    } catch {
       toast.error(t("toasts.logout_error"))
     } finally {
       setIsLoading(false)
@@ -263,7 +258,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <LoadingScreen text="Felhasználói adatok betöltése..." />
+        <LoadingScreen text={t("loading_data")} />
       </div>
     )
   }
@@ -289,6 +284,7 @@ export default function ProfilePage() {
                 email: user.email,
                 name: user.name,
                 username: user.username,
+                country: user.country,
               }}
               isLoading={isLoading}
               onSubmit={onProfileSubmit}
@@ -353,10 +349,6 @@ export default function ProfilePage() {
                 setSelectedTicket(ticket)
               }}
               onCreateTicket={() => router.push('/contact')}
-              onRefresh={() => {
-                refreshUnreadCount();
-                loadTickets();
-              }}
             />
           )
         )}

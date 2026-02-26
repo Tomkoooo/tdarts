@@ -1,6 +1,5 @@
-import { useTranslations } from "next-intl";
-
 "use client"
+import { useTranslations } from "next-intl";
 
 import * as React from "react"
 import axios from "axios"
@@ -23,7 +22,7 @@ interface ClubGallerySectionProps {
 }
 
 export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Club.components");
   const [galleries, setGalleries] = React.useState<Gallery[]>([])
   const [loading, setLoading] = React.useState(true)
   const [selectedGallery, setSelectedGallery] = React.useState<Gallery | null>(null)

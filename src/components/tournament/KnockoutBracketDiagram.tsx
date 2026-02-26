@@ -80,7 +80,8 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
   onAddMatchToRound,
   compactMode = false,
 }) => {
-  const t = useTranslations("Tournament.bracket")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`bracket.${key}`, values)
   const cardWidth = compactMode ? COMPACT_CARD_WIDTH : CARD_WIDTH
   const cardHeight = compactMode ? COMPACT_CARD_HEIGHT : CARD_HEIGHT
   const columnGap = compactMode ? COMPACT_COLUMN_GAP : COLUMN_GAP
@@ -249,7 +250,8 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions, co
   const player1Stats = rawMatch?.matchReference?.player1
   const player2Stats = rawMatch?.matchReference?.player2
   const boardLabel = (match.meta?.boardLabel as string | undefined) ?? undefined
-  const t = useTranslations("Tournament.bracket")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`bracket.${key}`, values)
   const statusTone = toneForStatus(match.status)
 
   return (
@@ -315,7 +317,8 @@ interface TeamRowProps {
 }
 
 const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, highestCheckout, compactMode = false }) => {
-  const t = useTranslations("Tournament.bracket")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`bracket.${key}`, values)
   const displayName = name || t("tbd")
   const scoreValue = Number.isFinite(score ?? NaN) ? score : "–"
   const hasStats = Number.isFinite(oneEighties ?? NaN) || Number.isFinite(highestCheckout ?? NaN)

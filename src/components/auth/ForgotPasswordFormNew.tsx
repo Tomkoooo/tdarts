@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { IconMail, IconSend, IconLanguage, IconArrowLeft } from "@tabler/icons-react"
+import { IconMail, IconSend, IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
@@ -13,12 +13,6 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { forgotPasswordSchema, ForgotPasswordFormData } from "@/lib/validations"
 import { useTranslations } from "next-intl"
 

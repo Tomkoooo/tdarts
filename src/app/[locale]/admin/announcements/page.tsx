@@ -1,13 +1,13 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import AnnouncementTable from "@/components/admin/AnnouncementTable"
 import { IconSpeakerphone } from "@tabler/icons-react"
 import { Card } from "@/components/ui/Card"
 
 export default function AdminAnnouncementsPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.announcements");
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}

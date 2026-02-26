@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useEffect, useState } from "react"
 import axios from "axios"
@@ -66,7 +66,8 @@ interface UserStats {
 }
 
 export default function AdminUsersPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.users");
+    const tCommon = useTranslations("Admin.common");
   const [users, setUsers] = useState<AdminUser[]>([])
   const [stats, setStats] = useState<UserStats>({ total: 0, admins: 0, verified: 0, unverified: 0 })
   const [loading, setLoading] = useState(true)
@@ -93,7 +94,6 @@ export default function AdminUsersPage() {
   }, [page]) // Only trigger on page change here, search/filter is handled above
 
   const fetchUsers = async (pageToFetch: number, search: string, role: string) => {
-      const t = useTranslations("Auto");
     try {
       setLoading(true)
       const response = await axios.get(`/api/admin/users`, {
@@ -112,14 +112,13 @@ export default function AdminUsersPage() {
       setPage(response.data.pagination.page || 1)
     } catch {
       console.error("Error fetching users")
-      toast.error(t("hiba_történt_az"))
+      toast.error(tCommon("hiba_történt_az"))
     } finally {
       setLoading(false)
     }
   }
 
   const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
-      const t = useTranslations("Auto");
     try {
       const action = currentStatus ? "remove-admin" : "make-admin"
       await axios.post(`/api/admin/users/${userId}/${action}`)
@@ -131,7 +130,6 @@ export default function AdminUsersPage() {
   }
 
   const deactivateUser = async (userId: string) => {
-      const t = useTranslations("Auto");
     if (!window.confirm("Biztosan deaktiválja ezt a felhasználót?")) return
     try {
       await axios.post(`/api/admin/users/${userId}/deactivate`)
@@ -146,7 +144,6 @@ export default function AdminUsersPage() {
   const [emailModal, setEmailModal] = useState<{ isOpen: boolean; user: AdminUser | null }>({ isOpen: false, user: null })
 
   const sendEmail = async (subject: string, message: string, language: "hu" | "en") => {
-      const t = useTranslations("Auto");
     if (!emailModal.user) return
     try {
       await axios.post("/api/admin/send-email", {
@@ -294,7 +291,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                       {user.isVerified ? (
                         <Badge variant="outline" className="border-success/50 text-success bg-success/10 gap-1 hover:bg-success/20">
-                          <IconCheck className="size-3" /> {t("aktív")}</Badge>
+                          <IconCheck className="size-3" /> {tCommon("aktív")}</Badge>
                       ) : (
                         <Badge variant="outline" className="border-destructive/50 text-destructive bg-destructive/10 gap-1 hover:bg-destructive/20">
                           <IconX className="size-3" /> {t("nem_megerősített")}</Badge>
@@ -336,7 +333,7 @@ export default function AdminUsersPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
+              {tCommon("összesen")}<strong>{paginationTotal}</strong> {tCommon("találat_oldal")}{page} / {totalPages})
             </span>
             <div className="flex gap-2">
               <Button
@@ -387,7 +384,7 @@ function StatsCard({ title, value, icon: Icon, className }: any) {
 
 // Re-using EmailModal logic but keeping it cleaner
 function EmailModal({ user, onClose, onSend }: { user: AdminUser, onClose: () => void, onSend: (s:string, m:string, l:"hu"|"en")=>void }) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.users");
   // Keeping simplified for brevity, assume similar logic to before but with shadcn Dialog
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")

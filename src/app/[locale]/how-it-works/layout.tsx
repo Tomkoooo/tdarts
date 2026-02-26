@@ -1,10 +1,14 @@
 import { Metadata } from "next"
-export function generateMetadata(): Metadata {
+import { getTranslations } from "next-intl/server";
+
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+    const { locale } = params;
+    const t = await getTranslations({ locale, namespace: "Auto" });
     return {
-        title: "Hogyan működik?",
+        title: t("hogyan_mukodik_247b"),
         description: "tDarts rendszer használatával kapcsolatos információk és kisokos",
         openGraph: {
-            title: "Hogyan működik?",
+            title: t("hogyan_mukodik_247b"),
             description: "tDarts rendszer használatával kapcsolatos információk és kisokos",
             url: "https://tdarts.hu/how-it-works",
             siteName: "tDarts",
@@ -13,7 +17,7 @@ export function generateMetadata(): Metadata {
         },
         twitter: {
             card: "summary_large_image",
-            title: "Hogyan működik?",
+            title: t("hogyan_mukodik_247b"),
             description: "tDarts rendszer használatával kapcsolatos információk és kisokos",
         },
     }

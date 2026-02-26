@@ -13,12 +13,14 @@ interface CurrentInfoSectionProps {
     email: string
     name: string
     username: string
+    country?: string
     isVerified: boolean
   }
 }
 
 export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
   const t = useTranslations("Profile.info")
+  const tc = useTranslations("Profile.countries")
 
   return (
     <Card>
@@ -78,6 +80,18 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
             <Input
               id="current-username"
               value={user.username}
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="current-country" className="flex items-center gap-2">
+              <IconUser className="w-4 h-4" />
+              {t("country")}
+            </Label>
+            <Input
+              id="current-country"
+              value={user.country ? tc(user.country) : '-'}
               readOnly
             />
           </div>

@@ -1,8 +1,7 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
-
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
@@ -38,96 +37,95 @@ interface CommandItem {
   category: "navigation" | "actions" | "recent"
 }
 
-const navigationCommands: CommandItem[] = [
-  {
-    id: "nav-dashboard",
-    title: "Dashboard",
-    description: "Overview and stats",
-    icon: IconLayoutDashboard,
-    href: "/admin",
-    category: "navigation",
-  },
-  {
-    id: "nav-users",
-    title: "Users",
-    description: "Manage users",
-    icon: IconUsers,
-    href: "/admin/users",
-    category: "navigation",
-  },
-  {
-    id: "nav-clubs",
-    title: "Clubs",
-    description: "Manage clubs",
-    icon: IconBuilding,
-    href: "/admin/clubs",
-    category: "navigation",
-  },
-  {
-    id: "nav-tournaments",
-    title: "Tournaments",
-    description: "Manage tournaments",
-    icon: IconTrophy,
-    href: "/admin/tournaments",
-    category: "navigation",
-  },
-  {
-    id: "nav-leagues",
-    title: "Leagues",
-    description: "Manage leagues",
-    icon: IconMedal,
-    href: "/admin/leagues",
-    category: "navigation",
-  },
-  {
-    id: "nav-feedback",
-    title: "Feedback",
-    description: "User feedback",
-    icon: IconMessageCircle,
-    href: "/admin/feedback",
-    category: "navigation",
-  },
-  {
-    id: "nav-errors",
-    title: "Errors",
-    description: "System errors",
-    icon: IconAlertTriangle,
-    href: "/admin/errors",
-    category: "navigation",
-  },
-  {
-    id: "nav-announcements",
-    title: "Announcements",
-    description: "Manage announcements",
-    icon: IconSpeakerphone,
-    href: "/admin/announcements",
-    category: "navigation",
-  },
-  {
-    id: "nav-todos",
-    title: "Todos",
-    description: "Task management",
-    icon: IconCheck,
-    href: "/admin/todos",
-    category: "navigation",
-  },
-  {
-    id: "nav-settings",
-    title: "Settings",
-    description: "System settings",
-    icon: IconSettings,
-    href: "/admin/settings",
-    category: "navigation",
-  },
-]
-
 interface CommandPaletteProps {
   isOpen: boolean
   onClose: () => void
 }
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.components");
+    const navigationCommands = useMemo(() => ([
+      {
+        id: "nav-dashboard",
+        title: t("dashboard_ft8p"),
+        description: "Overview and stats",
+        icon: IconLayoutDashboard,
+        href: "/admin",
+        category: "navigation",
+      },
+      {
+        id: "nav-users",
+        title: t("users_1cu3"),
+        description: "Manage users",
+        icon: IconUsers,
+        href: "/admin/users",
+        category: "navigation",
+      },
+      {
+        id: "nav-clubs",
+        title: t("clubs_12tn"),
+        description: "Manage clubs",
+        icon: IconBuilding,
+        href: "/admin/clubs",
+        category: "navigation",
+      },
+      {
+        id: "nav-tournaments",
+        title: t("tournaments_e65c"),
+        description: "Manage tournaments",
+        icon: IconTrophy,
+        href: "/admin/tournaments",
+        category: "navigation",
+      },
+      {
+        id: "nav-leagues",
+        title: t("leagues_sd4t"),
+        description: "Manage leagues",
+        icon: IconMedal,
+        href: "/admin/leagues",
+        category: "navigation",
+      },
+      {
+        id: "nav-feedback",
+        title: t("feedback_23iz"),
+        description: "User feedback",
+        icon: IconMessageCircle,
+        href: "/admin/feedback",
+        category: "navigation",
+      },
+      {
+        id: "nav-errors",
+        title: t("errors_ygvm"),
+        description: "System errors",
+        icon: IconAlertTriangle,
+        href: "/admin/errors",
+        category: "navigation",
+      },
+      {
+        id: "nav-announcements",
+        title: t("announcements_mk89"),
+        description: "Manage announcements",
+        icon: IconSpeakerphone,
+        href: "/admin/announcements",
+        category: "navigation",
+      },
+      {
+        id: "nav-todos",
+        title: t("todos_1c7q"),
+        description: "Task management",
+        icon: IconCheck,
+        href: "/admin/todos",
+        category: "navigation",
+      },
+      {
+        id: "nav-settings",
+        title: t("settings_osmo"),
+        description: "System settings",
+        icon: IconSettings,
+        href: "/admin/settings",
+        category: "navigation",
+      },
+    ]), [t]) as CommandItem[];
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState(0)
   const router = useRouter()

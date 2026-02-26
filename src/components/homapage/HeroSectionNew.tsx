@@ -13,7 +13,7 @@ const HeroSectionNew = () => {
   const t = useTranslations('Hero');
 
   const stats = [
-    { number: '20+', label: t('stats_labels.clubs'), sublabel: t('stats_labels.clubs_sub') },
+    { number: '150+', label: t('stats_labels.clubs'), sublabel: t('stats_labels.clubs_sub') },
     { number: '40+', label: t('stats_labels.tournaments'), sublabel: t('stats_labels.tournaments_sub') },
     { number: '24/7', label: t('stats_labels.realtime'), sublabel: t('stats_labels.realtime_sub') }
   ];
@@ -50,8 +50,7 @@ const HeroSectionNew = () => {
           {/* Main Heading */}
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 hover:scale-[1.01] transition-transform duration-500" style={{ animationDelay: '100ms' }}>
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground">
-              TDARTS
-            </h1>
+              {t("tdarts_u6qj")}</h1>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <IconTarget className="w-8 h-8 text-primary" />
               <Separator orientation="vertical" className="h-8 bg-border" />

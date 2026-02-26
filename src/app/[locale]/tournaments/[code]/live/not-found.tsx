@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { IconAlertCircle, IconArrowLeft, IconSearch } from '@tabler/icons-react';
 
 export default function LiveNotFound() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Tournament.live");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full shadow-xl">

@@ -1,13 +1,13 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import SmartTodoManager from "@/components/admin/SmartTodoManager"
 import { Card } from "@/components/ui/Card"
 import { IconCheck } from "@tabler/icons-react"
 
 export default function AdminTodosPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.todos");
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}

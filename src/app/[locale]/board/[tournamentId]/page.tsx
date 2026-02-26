@@ -1,4 +1,6 @@
 "use client"
+import { useTranslations } from "next-intl";
+
 import React, { useState, useEffect, use } from "react";
 import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
@@ -79,6 +81,7 @@ interface BoardPageProps {
 }
 
 const BoardPage: React.FC<BoardPageProps> = (props) => {
+  const t = useTranslations("Board");
   const { tournamentId } = use(props.params);
   const { user } = useUserContext();
   const { lastEvent } = useRealTimeUpdates();
@@ -216,7 +219,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           setTournamentData(tournamentResponse.data);
         } catch (err: any) {
           console.error('Failed to load tournament data:', err);
-          showErrorToast('Nem sikerült betölteni a torna adatokat.', {
+          showErrorToast(t("nem_sikerült_betölteni_34"), {
             error: err?.response?.data?.error,
             context: 'Torna adatok betöltése',
             errorName: 'Torna adatok betöltése sikertelen',
@@ -225,11 +228,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         
         await loadBoards();
       } else {
-        toast.error('Hibás jelszó!');
+        toast.error(t("hibás_jelszó"));
       }
     } catch (err: any) {
-      setError("Hiba történt a bejelentkezés során!");
-      showErrorToast('Nem sikerült bejelentkezni.', {
+      setError(t("hiba_tortent_a_bejelentkezes_i7x8"));
+      showErrorToast(t("nem_sikerült_bejelentkezni"), {
         error: err?.response?.data?.error,
         context: 'Tábla bejelentkezés',
         errorName: 'Bejelentkezés sikertelen',
@@ -246,8 +249,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       const response = await axios.get(`/api/boards/${tournamentId}/getBoards`);
       setBoards(response.data.boards);
     } catch (err: any) {
-      setError("Nem sikerült betölteni a táblákat!");
-      showErrorToast('Nem sikerült betölteni a táblákat.', {
+      setError(t("nem_sikerult_betolteni_a_px4t"));
+      showErrorToast(t("nem_sikerült_betölteni_72"), {
         error: err?.response?.data?.error,
         context: 'Táblák betöltése',
         errorName: 'Táblák betöltése sikertelen',
@@ -266,8 +269,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       const response = await axios.get(`/api/boards/${tournamentId}/${selectedBoard.boardNumber}/matches`);
       setMatches(response.data.matches);
     } catch (err: any) {
-      setError("Nem sikerült betölteni a meccseket!");
-      showErrorToast('Nem sikerült betölteni a meccseket.', {
+      setError(t("nem_sikerult_betolteni_a_qh0h"));
+      showErrorToast(t("nem_sikerült_betölteni_13"), {
         error: err?.response?.data?.error,
         context: 'Meccsek betöltése',
         errorName: 'Meccsek betöltése sikertelen',
@@ -310,7 +313,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     
     // Ensure no tie
     if (cleanedPlayer1Legs === cleanedPlayer2Legs) {
-      setError("Nem lehet döntetlen! Egyik játékosnak több leg-et kell nyernie.");
+      setError(t("nem_lehet_dontetlen_egyik_u0zf"));
       return;
     }
     
@@ -341,8 +344,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       setPlayer2Legs(0);
       await loadMatches(); // Reload matches to see updated status
     } catch (err: any) {
-      setError("Hiba történt a meccs befejezése során!");
-      showErrorToast('Nem sikerült befejezni a meccset.', {
+      setError(t("hiba_tortent_a_meccs_9wjg"));
+      showErrorToast(t("nem_sikerült_befejezni"), {
         error: err?.response?.data?.error,
         context: 'Meccs befejezése',
         errorName: 'Meccs befejezése sikertelen',
@@ -392,8 +395,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         }
       }
     } catch (err: any) {
-      setError("Nem sikerült elindítani a meccset!");
-      showErrorToast('Nem sikerült elindítani a meccset.', {
+      setError(t("nem_sikerult_elinditani_a_pgom"));
+      showErrorToast(t("nem_sikerült_elindítani"), {
         error: err?.response?.data?.error,
         context: 'Meccs indítása',
         errorName: 'Meccs indítása sikertelen',
@@ -469,20 +472,18 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   <IconDeviceDesktop className="text-primary" size={32} />
                 </div>
                 <div>
-                  <CardTitle className="text-3xl font-bold tracking-tight">Torna Jelszó</CardTitle>
+                  <CardTitle className="text-3xl font-bold tracking-tight">{t("torna_jelszó")}</CardTitle>
                   <CardDescription className="text-base mt-2">
-                    Add meg a torna jelszavát a folytatáshoz
-                  </CardDescription>
+                    {t("add_meg_a")}</CardDescription>
                 </div>
                 <div className="flex gap-2 justify-center pt-2">
                   <Button variant="ghost" size="sm" asChild>
                     <Link href="/board">
                       <IconArrowLeft size={18} />
-                      Vissza
-                    </Link>
+                      {t("vissza")}</Link>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link href={`/tournaments/${tournamentId}`}>Torna oldal</Link>
+                    <Link href={`/tournaments/${tournamentId}`}>{t("torna_oldal")}</Link>
                   </Button>
                 </div>
               </div>
@@ -497,12 +498,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="board-password" className="text-sm font-semibold">
-                    Torna jelszó
-                  </Label>
+                    {t("torna_jelszó_1")}</Label>
                   <Input
                     id="board-password"
                     type="password"
-                    placeholder="Torna jelszó"
+                    placeholder={t("torna_jelszó_31")}
                     className="h-14"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -520,8 +520,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                      Bejelentkezés...
-                    </>
+                      {t("bejelentkezés")}</>
                   ) : (
                     "Bejelentkezés"
                   )}
@@ -545,19 +544,18 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 <IconDeviceDesktop className="text-primary" size={24} />
               </div>
               <div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Válassz Táblát</h1>
-                <p className="text-muted-foreground mt-1">Válaszd ki a táblát, amin játszani szeretnél</p>
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{t("válassz_táblát")}</h1>
+                <p className="text-muted-foreground mt-1">{t("válaszd_ki_a")}</p>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
               <Button variant="ghost" size="sm" asChild className="w-full sm:w-auto">
                 <Link href="/board">
                   <IconArrowLeft size={18} />
-                  Vissza
-                </Link>
+                  {t("vissza")}</Link>
               </Button>
               <Button size="sm" asChild className="w-full sm:w-auto">
-                <Link href={`/tournaments/${tournamentId}`}>Torna oldal</Link>
+                <Link href={`/tournaments/${tournamentId}`}>{t("torna_oldal")}</Link>
               </Button>
               <Button 
                 variant="outline" 
@@ -566,8 +564,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 className="w-full sm:w-auto gap-2"
               >
                 <IconPlayerPlay size={18} />
-                Helyi meccs indítása
-              </Button>
+                {t("helyi_meccs_indítása")}</Button>
             </div>
           </div>
           
@@ -585,9 +582,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {boards.map((board) => {
                 const statusConfig = {
-                  playing: { label: 'Játékban', variant: 'default' as const, ring: 'ring-2 ring-primary' },
-                  waiting: { label: 'Várakozik', variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
-                  idle: { label: 'Szabad', variant: 'outline' as const, ring: '' },
+                  playing: { label: t("jatekban_oj3d"), variant: 'default' as const, ring: 'ring-2 ring-primary' },
+                  waiting: { label: t("varakozik_nvfk"), variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
+                  idle: { label: t("szabad_ttii"), variant: 'outline' as const, ring: '' },
                 };
                 const config = statusConfig[board.status as keyof typeof statusConfig] || statusConfig.idle;
                 
@@ -610,8 +607,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       </div>
                       <div className="flex justify-end">
                         <Button size="sm" variant="outline">
-                          Kiválaszt
-                        </Button>
+                          {t("kiválaszt")}</Button>
                       </div>
                     </div>
                   </button>
@@ -624,16 +620,14 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Helyi meccs beállítása</DialogTitle>
+                <DialogTitle>{t("helyi_meccs_beállítása")}</DialogTitle>
                 <DialogDescription>
-                  Állítsd be a helyi meccs beállításait
-                </DialogDescription>
+                  {t("állítsd_be_a")}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="local-legsToWin-board" className="text-sm font-medium mb-2 block">
-                    Nyert legek száma
-                  </Label>
+                    {t("nyert_legek_száma")}</Label>
                   <select 
                     id="local-legsToWin-board"
                     onChange={(e) => setLocalMatchLegsToWin(parseInt(e.target.value))} 
@@ -644,12 +638,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       <option key={i + 1} value={i + 1}>{i + 1}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">Best of {localMatchLegsToWin * 2 - 1}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("best_of")}{localMatchLegsToWin * 2 - 1}</p>
                 </div>
                 <div>
                   <Label htmlFor="local-startingScore-board" className="text-sm font-medium mb-2 block">
-                    Kezdő pontszám
-                  </Label>
+                    {t("kezdő_pontszám")}</Label>
                   <select 
                     id="local-startingScore-board"
                     onChange={(e) => setLocalMatchStartingScore(parseInt(e.target.value))} 
@@ -660,23 +653,20 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       <option key={score} value={score}>{score}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">Ebből a pontszámból indulnak minden legben</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("ebből_a_pontszámból")}</p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Játékosok: <span className="font-semibold">1</span> és <span className="font-semibold">2</span>
+                    {t("játékosok_92")}<span className="font-semibold">1</span> és <span className="font-semibold">2</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    A játékos 1 mindig kezd.
-                  </p>
+                    {t("a_játékos_mindig")}</p>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1" onClick={() => setShowLocalMatchSetup(false)}>
-                    Mégse
-                  </Button>
+                    {t("mégse")}</Button>
                   <Button className="flex-1" onClick={handleStartLocalMatch}>
-                    Meccs indítása
-                  </Button>
+                    {t("meccs_indítása")}</Button>
                 </div>
               </div>
             </DialogContent>
@@ -696,8 +686,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <Button variant="outline" size="sm" onClick={handleBackToBoards} className="gap-2 w-full sm:w-auto">
               <IconArrowLeft size={18} />
-              Vissza a táblákhoz
-            </Button>
+              {t("vissza_a_táblákhoz")}</Button>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                 <h1 className="text-xl sm:text-2xl font-bold">
                 {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
@@ -711,7 +700,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 className="gap-2"
               >
                 <IconRefresh size={18} />
-                    <span className="hidden sm:inline">Frissítés</span>
+                    <span className="hidden sm:inline">{t("frissítés")}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -720,8 +709,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     className="gap-2"
                   >
                     <IconPlayerPlay size={18} />
-                    <span className="hidden sm:inline">Helyi meccs</span>
-                    <span className="sm:hidden">Helyi</span>
+                    <span className="hidden sm:inline">{t("helyi_meccs")}</span>
+                    <span className="sm:hidden">{t("helyi")}</span>
               </Button>
                 </div>
               </div>
@@ -743,9 +732,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {matches.map((match) => {
                   const statusConfig = {
-                    ongoing: { label: 'Játékban', variant: 'default' as const, ring: 'ring-2 ring-primary' },
-                    pending: { label: 'Várakozik', variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
-                    finished: { label: 'Befejezett', variant: 'outline' as const, ring: '' },
+                    ongoing: { label: t("jatekban_oj3d"), variant: 'default' as const, ring: 'ring-2 ring-primary' },
+                    pending: { label: t("varakozik_nvfk"), variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
+                    finished: { label: t("befejezett_x25b"), variant: 'outline' as const, ring: '' },
                   };
                   const config = statusConfig[match.status as keyof typeof statusConfig] || statusConfig.finished;
                   
@@ -765,18 +754,17 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                             {match.player1.playerId.name} vs {match.player2.playerId.name}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Író: {match.scorer?.name ? match.scorer.name : 'Előző kör vesztese'}
+                            {t("író")}{match.scorer?.name ? match.scorer.name : 'Előző kör vesztese'}
                           </p>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          <p>Kezdő pontszám: {match.type === '501' ? '501' : match.type}</p>
-                          <p>{match.legsToWin || 3} nyert leg</p>
+                          <p>{t("kezdő_pontszám_46")}{match.type === '501' ? '501' : match.type}</p>
+                          <p>{match.legsToWin || 3} {t("nyert_leg")}</p>
                         </div>
                         <div className="flex items-center justify-between">
                           <Badge variant={config.variant}>{config.label}</Badge>
                           <Button size="sm" variant="outline">
-                            Kiválaszt
-                          </Button>
+                            {t("kiválaszt")}</Button>
                         </div>
                       </div>
                     </button>
@@ -794,9 +782,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                         boardReference: selectedBoard.boardNumber,
                         type: '501',
                         round: 1,
-                        player1: { playerId: { _id: '', name: 'Player 1' } },
-                        player2: { playerId: { _id: '', name: 'Player 2' } },
-                        scorer: { playerId: '', name: 'Scorer' },
+                        player1: { playerId: { _id: '', name: t("player_1_w5cv") } },
+                        player2: { playerId: { _id: '', name: t("player_2_w5cv") } },
+                        scorer: { playerId: '', name: t("scorer_u5wh") },
                         status: 'pending',
                         startingScore: 501,
                         legsToWin: 4
@@ -807,8 +795,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     className="gap-2"
                   >
                     <IconPlayerPlay size={20} />
-                    Új meccs indítása
-                  </Button>
+                    {t("új_meccs_indítása")}</Button>
                 </div>
               )}
             </div>
@@ -818,16 +805,14 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Helyi meccs beállítása</DialogTitle>
+                <DialogTitle>{t("helyi_meccs_beállítása")}</DialogTitle>
                 <DialogDescription>
-                  Állítsd be a helyi meccs beállításait
-                </DialogDescription>
+                  {t("állítsd_be_a")}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="local-legsToWin" className="text-sm font-medium mb-2 block">
-                    Nyert legek száma
-                  </Label>
+                    {t("nyert_legek_száma")}</Label>
                   <select 
                     id="local-legsToWin"
                     onChange={(e) => setLocalMatchLegsToWin(parseInt(e.target.value))} 
@@ -838,12 +823,11 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       <option key={i + 1} value={i + 1}>{i + 1}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">Best of {localMatchLegsToWin * 2 - 1}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("best_of")}{localMatchLegsToWin * 2 - 1}</p>
                 </div>
                 <div>
                   <Label htmlFor="local-startingScore" className="text-sm font-medium mb-2 block">
-                    Kezdő pontszám
-                  </Label>
+                    {t("kezdő_pontszám")}</Label>
                   <select 
                     id="local-startingScore"
                     onChange={(e) => setLocalMatchStartingScore(parseInt(e.target.value))} 
@@ -854,23 +838,20 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       <option key={score} value={score}>{score}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground mt-1">Ebből a pontszámból indulnak minden legben</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("ebből_a_pontszámból")}</p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Játékosok: <span className="font-semibold">1</span> és <span className="font-semibold">2</span>
+                    {t("játékosok_26")}<span className="font-semibold">1</span> és <span className="font-semibold">2</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    A játékos 1 mindig kezd.
-                  </p>
+                    {t("a_játékos_mindig")}</p>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1" onClick={() => setShowLocalMatchSetup(false)}>
-                    Mégse
-                  </Button>
+                    {t("mégse")}</Button>
                   <Button className="flex-1" onClick={handleStartLocalMatch}>
-                    Meccs indítása
-                  </Button>
+                    {t("meccs_indítása")}</Button>
                 </div>
               </div>
             </DialogContent>
@@ -887,13 +868,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
             }}>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl">Admin - Meccs Beállítás</DialogTitle>
+                  <DialogTitle className="text-2xl">{t("admin_meccs_beállítás")}</DialogTitle>
                   <DialogDescription>
                     <div className="text-center mt-4">
                       <h4 className="text-lg font-bold mb-2">
                         {adminMatch.player1.playerId.name} vs {adminMatch.player2.playerId.name}
                       </h4>
-                      <p className="text-muted-foreground">Állítsd be a nyert legek számát</p>
+                      <p className="text-muted-foreground">{t("állítsd_be_a_83")}</p>
                     </div>
                   </DialogDescription>
                 </DialogHeader>
@@ -907,8 +888,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">
-                      {adminMatch.player1.playerId.name} nyert legek
-                    </Label>
+                      {adminMatch.player1.playerId.name} {t("nyert_legek")}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -929,8 +909,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">
-                      {adminMatch.player2.playerId.name} nyert legek
-                    </Label>
+                      {adminMatch.player2.playerId.name} {t("nyert_legek")}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -960,8 +939,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       setError("");
                     }}
                   >
-                    Mégse
-                  </Button>
+                    {t("mégse")}</Button>
                   <Button
                     className="flex-1"
                     onClick={handleAdminMatchFinish}
@@ -970,8 +948,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     {adminLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                        Mentés...
-                      </>
+                        {t("mentés")}</>
                     ) : (
                       "Meccs befejezése"
                     )}
@@ -1000,8 +977,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 <div className="flex items-center justify-between mb-4">
                   <Button variant="ghost" size="sm" onClick={handleBackToMatches} className="gap-2">
                     <IconArrowLeft size={18} />
-                    Vissza
-                  </Button>
+                    {t("vissza")}</Button>
                   <h2 className="text-lg font-bold">
                     {selectedBoard?.name || `Tábla ${selectedBoard?.boardNumber}`}
                   </h2>
@@ -1010,12 +986,12 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                   <CardTitle className="text-xl">
                     {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
                   </CardTitle>
-                  <CardDescription>Író: {selectedMatch.scorer ? selectedMatch.scorer.name : "Előző kör vesztese"}</CardDescription>
+                  <CardDescription>{t("író")}{selectedMatch.scorer ? selectedMatch.scorer.name : "Előző kör vesztese"}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Hány nyert legig?</Label>
+                  <Label className="text-sm font-semibold">{t("hány_nyert_legig")}</Label>
                   <select
                     value={legsToWin}
                     onChange={(e) => {
@@ -1029,20 +1005,18 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     }}
                     className="select select-bordered w-full h-14 rounded-xl bg-muted/20 border border-border/40 shadow-sm text-foreground font-medium focus:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    <option value="" disabled>Válassz számot</option>
+                    <option value="" disabled>{t("válassz_számot")}</option>
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                       <option key={num} value={num}>
-                        {num} leg
-                      </option>
+                        {num} {t("leg")}</option>
                     ))}
                   </select>
                 </div>
                 
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold">Ki kezdi?</Label>
+                  <Label className="text-sm font-semibold">{t("ki_kezdi")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    A bull-t a bal oldali játékos kezdi
-                  </p>
+                    {t("a_bull_t")}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       size="lg"
@@ -1069,15 +1043,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     className="flex-1"
                     onClick={handleBackToMatches}
                   >
-                    Mégse
-                  </Button>
+                    {t("mégse")}</Button>
                   <Button
                     className="flex-1"
                     onClick={() => setShowConfirmDialog(true)}
                     disabled={setupLoading}
                   >
-                    Meccs indítása
-                  </Button>
+                    {t("meccs_indítása")}</Button>
                 </div>
               </CardContent>
             </Card>
@@ -1088,30 +1060,29 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Meccs indítása</DialogTitle>
+              <DialogTitle>{t("meccs_indítása")}</DialogTitle>
               <DialogDescription>
-                Ellenőrizd a beállításokat a meccs indítása előtt
-              </DialogDescription>
+                {t("ellenőrizd_a_beállításokat")}</DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Kezdő játékos:</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("kezdő_játékos")}</span>
                   <span className="text-sm font-semibold text-foreground">{startingPlayerName}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Nyert legek:</span>
-                  <span className="text-sm font-semibold text-foreground">{legsToWin} leg</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("nyert_legek_0")}</span>
+                  <span className="text-sm font-semibold text-foreground">{legsToWin} {t("leg")}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Tábla:</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("tábla")}</span>
                   <span className="text-sm font-semibold text-foreground">
                     {selectedBoard?.name || `Tábla ${selectedBoard?.boardNumber}`}
                   </span>
                 </div>
                 <div className="flex items-start justify-between pt-2 border-t border-border/40">
-                  <span className="text-sm font-medium text-muted-foreground">Játékosok:</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("játékosok_86")}</span>
                   <span className="text-sm font-semibold text-foreground text-right">
                     {selectedMatch.player1.playerId.name}<br />
                     vs<br />
@@ -1127,8 +1098,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 className="flex-1"
                 onClick={() => setShowConfirmDialog(false)}
               >
-                Mégse
-              </Button>
+                {t("mégse")}</Button>
               <Button
                 className="flex-1"
                 onClick={() => {
@@ -1140,8 +1110,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 {setupLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                    Indítás...
-                  </>
+                    {t("indítás")}</>
                 ) : (
                   "Meccs indítása"
                 )}

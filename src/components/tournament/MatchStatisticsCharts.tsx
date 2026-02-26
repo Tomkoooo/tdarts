@@ -64,7 +64,8 @@ interface MatchStatisticsChartsProps {
 
 
 const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, player1Name, player2Name }) => {
-  const t = useTranslations("Tournament.match_stats")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`match_stats.${key}`, values)
   const [activeTab, setActiveTab] = useState<"overview" | "legs">("overview")
   const [expandedLegs, setExpandedLegs] = useState<Set<number>>(new Set())
 

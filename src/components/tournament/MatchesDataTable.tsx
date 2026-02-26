@@ -64,7 +64,8 @@ export function MatchesDataTable({
   onStartMatch,
   onDeleteMatch,
 }: MatchesDataTableProps) {
-  const t = useTranslations("Tournament.matches_table")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`matches_table.${key}`, values)
   const canManage = userRole === 'admin' || userRole === 'moderator'
 
   const columns: ColumnDef<Match>[] = [

@@ -28,9 +28,10 @@ export default function TeamRegistrationModal({
   tournamentName,
   clubId,
   onSuccess,
-  isModeratorMode, // Removed default value here as it's an optional prop
+  isModeratorMode,
 }: TeamRegistrationModalProps) {
-  const t = useTranslations("Tournament.team_registration")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`team_registration.${key}`, values)
   const [teamName, setTeamName] = useState("")
   const [member1, setMember1] = useState<any>(null)
   const [member2, setMember2] = useState<any>(null)

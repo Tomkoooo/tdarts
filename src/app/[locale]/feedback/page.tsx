@@ -1,8 +1,8 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
-import React from "react"
+import React, { useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import axios from "axios"
 import { useForm } from "react-hook-form"
@@ -47,24 +47,21 @@ const feedbackSchema = z.object({
   page: z.string().max(200).optional().or(z.literal("")),
   device: z.enum(["desktop", "mobile", "tablet"]),
 })
-
-const categoryConfig = [
-  { value: "bug", label: "Hiba jelentése", icon: IconBug },
-  { value: "feature", label: "Új funkció", icon: IconBulb },
-  { value: "improvement", label: "Fejlesztési javaslat", icon: IconSettings },
-  { value: "other", label: "Egyéb", icon: IconSparkles },
-]
-
-const deviceOptions = [
-  { value: "desktop", label: "Asztali gép", icon: IconDeviceDesktop },
-  { value: "tablet", label: "Tablet", icon: IconDeviceTablet },
-  { value: "mobile", label: "Mobil", icon: IconDeviceMobile },
-]
-
 type FeedbackValues = z.infer<typeof feedbackSchema>
 
 export default function FeedbackPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Feedback");
+    const deviceOptions = useMemo(() => ([
+      { value: "desktop", label: t("asztali_gep_46m4"), icon: IconDeviceDesktop },
+      { value: "tablet", label: t("tablet_tq6v"), icon: IconDeviceTablet },
+      { value: "mobile", label: t("mobil_18d4"), icon: IconDeviceMobile },
+    ]), [t]);
+    const categoryConfig = useMemo(() => ([
+      { value: "bug", label: t("hiba_jelentese_pk3e"), icon: IconBug },
+      { value: "feature", label: t("uj_funkcio_k5rt"), icon: IconBulb },
+      { value: "improvement", label: t("fejlesztesi_javaslat_wiow"), icon: IconSettings },
+      { value: "other", label: t("egyeb_13u7"), icon: IconSparkles },
+    ]), [t]);
   const { user } = useUserContext()
   const router = useRouter()
   const searchParams = useSearchParams()

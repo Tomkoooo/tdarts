@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { useTranslations, useFormatter } from "next-intl"
+import { useTranslations } from "next-intl"
 import axios from "axios"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
@@ -65,7 +65,6 @@ const TournamentPage = () => {
   const searchParams = useSearchParams()
   const { user } = useUserContext()
   const t = useTranslations('Tournament.page')
-  const format = useFormatter()
 
   const statusMeta = useMemo(() => getStatusMeta(t) as Record<string, any>, [t])
   const tabs = useMemo(() => getTabs(t), [t])

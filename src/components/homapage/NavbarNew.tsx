@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 
 const NavbarNew = () => {
   const t = useTranslations('Navbar');
@@ -88,13 +89,12 @@ const NavbarNew = () => {
                 src="/tdarts_fav.svg" 
                 width={36} 
                 height={36} 
-                alt="tDarts Logo"
+                alt={t("tdarts_logo_wslq")}
                 className="transition-transform group-hover:scale-105"
               />
             </div>
             <span className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-              tDarts
-            </span>
+              {t("tdarts_f0pi")}</span>
             {!isOnline && (
               <span className="ml-2 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wider animate-pulse border border-destructive/20">
                 {t('offline')}
@@ -128,6 +128,7 @@ const NavbarNew = () => {
 
           {/* Desktop User Menu */}
           <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
+            <LanguageSwitcher />
             {user ? (
               <>
                 <Link href="/myclub">
@@ -236,11 +237,13 @@ const NavbarNew = () => {
               </SheetTrigger>
               <SheetContent side="right" className="flex w-full max-w-xs flex-col px-4 py-6">
                 <SheetHeader className="px-1 text-left">
-                  <SheetTitle className="flex items-center gap-2">
-                    <Image src="/tdarts_fav.svg" width={28} height={28} alt="tDarts" />
-                    <span className="text-lg font-bold text-foreground">
-                      tDarts
-                    </span>
+                  <SheetTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Image src="/tdarts_fav.svg" width={28} height={28} alt={t("tdarts_f0pi")} />
+                        <span className="text-lg font-bold text-foreground">
+                        {t("tdarts_f0pi")}</span>
+                    </div>
+                    <LanguageSwitcher />
                   </SheetTitle>
                 </SheetHeader>
 

@@ -28,18 +28,18 @@ const topRankStyles: Record<
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlobalRank = false }) => {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Common");
   const mmr = (player as any).mmr ?? player.stats?.mmr ?? 800
 
   const mmrTier =
     (player as any).mmrTier ??
     (() => {
-      if (mmr >= 1600) return { name: "Elit", color: "text-[#ff8fa3]" }
-      if (mmr >= 1400) return { name: "Mester", color: "text-[#fcd34d]" }
-      if (mmr >= 1200) return { name: "Haladó", color: "text-blue-300" }
-      if (mmr >= 1000) return { name: "Középhaladó", color: "text-emerald-300" }
-      if (mmr >= 800) return { name: "Kezdő+", color: "text-primary" }
-      return { name: "Kezdő", color: "text-muted-foreground" }
+      if (mmr >= 1600) return { name: t("elit_1acs"), color: "text-[#ff8fa3]" }
+      if (mmr >= 1400) return { name: t("mester_wz01"), color: "text-[#fcd34d]" }
+      if (mmr >= 1200) return { name: t("halado_zek6"), color: "text-blue-300" }
+      if (mmr >= 1000) return { name: t("kozephalado_uheg"), color: "text-emerald-300" }
+      if (mmr >= 800) return { name: t("kezdo_xwyz"), color: "text-primary" }
+      return { name: t("kezdo_173n"), color: "text-muted-foreground" }
     })()
 
   const globalRank = (player as any).globalRank

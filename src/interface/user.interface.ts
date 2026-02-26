@@ -20,7 +20,8 @@ export interface IUser {
         reset_password: string | null;
         verify_email: string | null;
         two_factor_auth: string | null;
-    }
+    };
+    country: string;
 }
 
 export interface UserDocument extends Omit<IUser, '_id'>, mongoose.Document{

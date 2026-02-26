@@ -15,7 +15,8 @@ const getPlayerName = (player: any, t: any) => {
 }
 
 export default function BoardStatus({ tournament }: BoardStatusProps) {
-  const t = useTranslations("Tournament.tv_views.board_status")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`tv_views.board_status.${key}`, values)
   const boards = tournament?.boards || []
 
   // Only show waiting boards

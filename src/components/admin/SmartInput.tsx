@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/Input"
@@ -97,7 +97,7 @@ export const parseSmartInput = (input: string): Partial<TodoItemData> => {
 }
 
 export const SmartInput = ({ onAdd, placeholder, autoFocus }: SmartTodoInputProps) => {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.components");
   const [input, setInput] = useState("")
   const [preview, setPreview] = useState<Partial<TodoItemData> | null>(null)
   

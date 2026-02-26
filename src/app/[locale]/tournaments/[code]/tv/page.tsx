@@ -1,6 +1,5 @@
-import { useTranslations } from "next-intl";
-
 "use client"
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
@@ -15,7 +14,7 @@ import BoardStatus from "@/components/tournament/tv/BoardStatus"
 import GroupsDisplay from "@/components/tournament/tv/GroupsDisplay"
 
 export default function TVModePage() {
-  const t = useTranslations("Auto");
+  const t = useTranslations("Tournament.tv");
   const { code } = useParams()
   const router = useRouter()
   const [tournament, setTournament] = useState<any>(null)

@@ -34,7 +34,7 @@ export default function TournamentList({
   onDeleteTournament,
   onEditTournament,
 }: TournamentListProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Club.components");
   if (!tournaments.length) {
     return (
       <Card className="border-dashed border-muted bg-card/50">

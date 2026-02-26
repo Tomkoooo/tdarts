@@ -12,8 +12,9 @@ interface TournamentInfoProps {
   userId?: string;
 }
 
-const TournamentInfo: React.FC<TournamentInfoProps> = ({ tournament, onRefetch, userRole, userId }) => {
-  const t = useTranslations('Tournament.info');
+const TournamentInfo = ({ tournament, onRefetch, userRole, userId }: TournamentInfoProps) => {
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`info.${key}`, values);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const notifiedRef = useRef(false);

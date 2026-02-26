@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 
 export default function Loading() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Common");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">

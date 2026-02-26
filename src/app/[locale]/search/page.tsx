@@ -71,6 +71,7 @@ export default function SearchPage() {
         isOac: searchParams.get("isOac") === "true" || undefined,
         year: Number(searchParams.get("year")) || undefined,
         rankingType: (searchParams.get("rankingType") as "oacMmr" | "leaguePoints") || undefined,
+        country: searchParams.get("country") || 'hu',
         page: Number(searchParams.get("page")) || 1,
         limit: 10
     })
@@ -184,9 +185,10 @@ export default function SearchPage() {
              params.delete('status');
              params.delete('type');
              params.delete('tournamentType');
-             params.delete('verified');
-             // params.delete('isOac'); // Keep isOac if present
-             params.delete('rankingType'); // Clear detailed filters but maybe keep isOac context? 
+              params.delete('verified');
+              // params.delete('isOac'); // Keep isOac if present
+              params.delete('rankingType'); // Clear detailed filters but maybe keep isOac context? 
+              params.delete('country');
              // Requirement: "If i search or change filters i still be under the isOac param."
              // So we DO NOT delete 'isOac'.
              params.delete('page'); // Also clear page param

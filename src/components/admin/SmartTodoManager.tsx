@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useState, useEffect, useMemo } from "react"
 import axios from "axios"
@@ -129,7 +129,7 @@ const TodoItemCard = ({ todo, onToggle, onDelete }: { todo: TodoItem; onToggle: 
 
 // --- Main SmartTodoManager Component ---
 export default function SmartTodoManager() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.components");
   const [todos, setTodos] = useState<TodoItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all") // all, active, completed

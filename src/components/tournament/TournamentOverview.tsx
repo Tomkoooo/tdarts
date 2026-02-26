@@ -72,12 +72,12 @@ const formatDescription = (text: string) => {
 }
 
 export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: TournamentOverviewProps) {
-  const t = useTranslations()
+  const tTour = useTranslations("Tournament");
   const format = useFormatter()
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   const canEdit = userRole === "admin" || userRole === "moderator"
-  const descriptionText = tournament.tournamentSettings?.description || t('Tournament.overview.no_description')
+  const descriptionText = tournament.tournamentSettings?.description || tTour('overview.no_description')
   const shouldTruncate = descriptionText.length > 180
   const fullDescriptionNodes = useMemo(() => formatDescription(descriptionText), [descriptionText])
   const truncatedDescriptionNodes = useMemo(() => {
@@ -94,16 +94,16 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
     finished: "bg-success/10 text-success border-success/20",
   }
   const statusLabel: Record<string, string> = {
-    pending: t('Tournament.overview.status.pending'),
-    "group-stage": t('Tournament.overview.status.group_stage'),
-    knockout: t('Tournament.overview.status.knockout'),
-    finished: t('Tournament.overview.status.finished'),
+    pending: tTour('overview.status.pending'),
+    "group-stage": tTour('overview.status.group_stage'),
+    knockout: tTour('overview.status.knockout'),
+    finished: tTour('overview.status.finished'),
   }
 
   const details = [
     {
       icon: <IconCalendar className="h-4 w-4" />,
-      label: t('Tournament.overview.details.start'),
+      label: tTour('overview.details.start'),
       value: tournament.tournamentSettings?.startDate
         ? format.dateTime(new Date(tournament.tournamentSettings.startDate), {
             year: 'numeric',
@@ -116,17 +116,17 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
     },
     {
       icon: <IconMapPin className="h-4 w-4" />,
-      label: t('Tournament.overview.details.location'),
+      label: tTour('overview.details.location'),
       value: tournament.tournamentSettings?.location || tournament.clubId?.location || "–",
     },
     {
       icon: <IconUsers className="h-4 w-4" />,
-      label: t('Tournament.overview.details.max_players'),
+      label: tTour('overview.details.max_players'),
       value: tournament.tournamentSettings?.maxPlayers || "–",
     },
     {
       icon: <IconCoin className="h-4 w-4" />,
-      label: t('Tournament.overview.details.entry_fee'),
+      label: tTour('overview.details.entry_fee'),
       value:
         typeof tournament.tournamentSettings?.entryFee === "number"
           ? format.number(tournament.tournamentSettings.entryFee, {
@@ -138,12 +138,12 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
     },
     {
       icon: <IconTarget className="h-4 w-4" />,
-      label: t('Tournament.overview.details.starting_score'),
+      label: tTour('overview.details.starting_score'),
       value: tournament.tournamentSettings?.startingScore || "–",
     },
     {
       icon: <IconId className="h-4 w-4" />,
-      label: t('Tournament.overview.details.format'),
+      label: tTour('overview.details.format'),
       value: tournament.tournamentSettings?.format || "–",
     },
   ]
@@ -155,7 +155,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <CardTitle className="text-2xl font-semibold text-foreground">
-                {tournament.tournamentSettings?.name || t('Tournament.common.default_name')}
+                {tournament.tournamentSettings?.name || tTour('common.default_name')}
               </CardTitle>
               <Badge variant="outline" className={statusBadgeClass[status] || "bg-warning/10 text-warning border-warning/20"}>
                 {statusLabel[status] || statusLabel.pending}
@@ -163,32 +163,32 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
             </div>
             <CardDescription className="mt-1 flex items-center gap-2 text-sm">
               <IconId className="h-4 w-4" />
-              {t('Tournament.overview.tournament_code')} <span className="font-mono">{tournament.tournamentId}</span>
+              {tTour('overview.tournament_code')} <span className="font-mono">{tournament.tournamentId}</span>
             </CardDescription>
           </div>
 
           <div className="flex flex-wrap justify-start gap-2 md:justify-end">
             <Button variant="outline" size="sm" onClick={onRefetch} className="bg-card/80 hover:bg-card">
               <IconRefresh className="mr-2 h-4 w-4" />
-              {t('Tournament.overview.btn_refresh')}
+              {tTour('overview.btn_refresh')}
             </Button>
             <Button asChild size="sm" className="bg-card/80 hover:bg-card">
               <Link href={`/board/${tournament.tournamentId}`} target="_blank" className="flex items-center gap-2">
                 <IconTarget className="h-4 w-4" />
-                {t('Tournament.overview.btn_scoring')}
+                {tTour('overview.btn_scoring')}
               </Link>
             </Button>
             {(status === 'group-stage' || status === 'knockout') && (
               <Button asChild variant="outline" size="sm" className="bg-card/80 hover:bg-card">
                 <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="flex items-center gap-2">
-                  <IconScreenShare className="h-4 w-4" /> {t('Tournament.overview.btn_live')}
+                  <IconScreenShare className="h-4 w-4" /> {tTour('overview.btn_live')}
                 </Link>
               </Button>
             )}
             {canEdit && status !== 'finished' && (
               <Button variant="secondary" size="sm" onClick={onEdit}>
                 <IconEdit className="mr-2 h-4 w-4" />
-                {t('Tournament.overview.btn_edit')}
+                {tTour('overview.btn_edit')}
               </Button>
             )}
             <Button
@@ -199,7 +199,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
             >
               <Link href={`/tournaments/${tournament.tournamentId}?tab=players#registration`} className="flex items-center gap-2">
                 <IconUserPlus className="h-4 w-4" />
-                {t('Tournament.overview.btn_register')}
+                {tTour('overview.btn_register')}
               </Link>
             </Button>
           </div>
@@ -225,7 +225,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
         </div>
 
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-foreground">{t('Tournament.overview.description_label')}</h4>
+          <h4 className="text-sm font-semibold text-foreground">{tTour('overview.description_label')}</h4>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {isDescriptionExpanded ? fullDescriptionNodes : truncatedDescriptionNodes}
           </p>
@@ -236,7 +236,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
               className="px-0 text-primary hover:text-primary/80"
               onClick={() => setIsDescriptionExpanded((prev) => !prev)}
             >
-              {isDescriptionExpanded ? t('Tournament.overview.show_less') : t('Tournament.overview.show_more')}
+              {isDescriptionExpanded ? tTour('overview.show_less') : tTour('overview.show_more')}
             </Button>
           )}
         </div>
@@ -244,10 +244,10 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
         <Separator />
 
         <div>
-          <h4 className="text-sm font-semibold text-foreground">{t('Tournament.overview.organizer_title')}</h4>
+          <h4 className="text-sm font-semibold text-foreground">{tTour('overview.organizer_title')}</h4>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="space-y-1 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">{t('Tournament.overview.club_label')}</p>
+              <p className="font-medium text-foreground">{tTour('overview.club_label')}</p>
               {tournament.clubId?._id ? (
                 <Link
                   href={`/clubs/${tournament.clubId._id}`}
@@ -256,9 +256,9 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
                   {tournament.clubId?.name}
                 </Link>
               ) : (
-                <span>{tournament.clubId?.name || t('Tournament.overview.unknown_club')}</span>
+                <span>{tournament.clubId?.name || tTour('overview.unknown_club')}</span>
               )}
-              <p>{tournament.clubId?.location || t('Tournament.overview.no_location')}</p>
+              <p>{tournament.clubId?.location || tTour('overview.no_location')}</p>
             </div>
             <div className="space-y-1 text-sm text-muted-foreground">
               {tournament.clubId?.contact?.email && (
@@ -287,7 +287,7 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
                   className="flex items-center gap-2 font-medium text-primary hover:text-primary/80"
                 >
                   <IconExternalLink className="h-4 w-4" />
-                  {t('Tournament.overview.website_label')}
+                  {tTour('overview.website_label')}
                 </Link>
               )}
             </div>

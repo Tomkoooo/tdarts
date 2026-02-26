@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
       verify_email: { type: String, default: null },
       two_factor_auth: { type: String, default: null },
     },
+    country: { type: String, default: 'hu' },
   },
   { collection: 'users', timestamps: true }
 );
@@ -43,21 +44,25 @@ userSchema.pre('save', async function (next) {
     this.password = await bcrypt.hash(this.password, 15);
   }
   
-  // Update linked player document if name changed
-  if (this.isModified('name') && !this.isNew) {
+  // Update linked player document if name or country changed
+  if ((this.isModified('name') || this.isModified('country')) && !this.isNew) {
     try {
       const { PlayerModel } = await import('./player.model');
       const linkedPlayer = await PlayerModel.findOne({ userRef: this._id });
       if (linkedPlayer) {
+        const updates: any = {};
+        if (this.isModified('name')) updates.name = this.name;
+        if (this.isModified('country')) updates.country = this.country;
+        
         await PlayerModel.findByIdAndUpdate(
           linkedPlayer._id,
-          { name: this.name },
+          updates,
           { new: true }
         );
-        console.log(`Auto-updated player name for user ${this._id} to: ${this.name}`);
+        console.log(`Auto-updated player data for user ${this._id}`);
       }
     } catch (error) {
-      console.error('Error auto-updating player name:', error);
+      console.error('Error auto-updating player data:', error);
       // Don't throw error to prevent user update from failing
     }
   }

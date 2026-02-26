@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useEffect, useState } from "react"
 import axios from "axios"
@@ -58,7 +58,8 @@ interface LeagueStats {
 }
 
 export default function AdminLeaguesPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.leagues");
+    const tCommon = useTranslations("Admin.common");
   const [leagues, setLeagues] = useState<League[]>([])
   const [stats, setStats] = useState<LeagueStats>({ total: 0, verified: 0, unverified: 0 })
   const [loading, setLoading] = useState(true)
@@ -186,11 +187,11 @@ export default function AdminLeaguesPage() {
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead>{t("liga_neve")}</TableHead>
-                <TableHead>{t("klub")}</TableHead>
+                <TableHead>{tCommon("klub")}</TableHead>
                 <TableHead>{t("pontozási_rendszer")}</TableHead>
                 <TableHead>{t("státusz")}</TableHead>
-                <TableHead>{t("aktív")}</TableHead>
-                <TableHead>{t("létrehozva")}</TableHead>
+                <TableHead>{tCommon("aktív")}</TableHead>
+                <TableHead>{tCommon("létrehozva")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -247,7 +248,7 @@ export default function AdminLeaguesPage() {
                     </TableCell>
                     <TableCell>
                       {league.isActive ? (
-                        <Badge variant="secondary" className="bg-success/10 text-success rounded-full size-2 p-0" title={t("aktív")} />
+                        <Badge variant="secondary" className="bg-success/10 text-success rounded-full size-2 p-0" title={tCommon("aktív")} />
                       ) : (
                         <Badge variant="secondary" className="bg-muted text-muted-foreground rounded-full size-2 p-0" title={t("inaktív")} />
                       )}
@@ -269,7 +270,7 @@ export default function AdminLeaguesPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
+              {tCommon("összesen")}<strong>{paginationTotal}</strong> {tCommon("találat_oldal")}{page} / {totalPages})
             </span>
              {totalPages > 1 && (
               <Pagination

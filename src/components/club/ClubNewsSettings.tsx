@@ -200,7 +200,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
               <Input type="file" accept="image/*" onChange={(e) => handlePostImageUpload(e, setPostCoverImage)} />
               {postCoverImage && (
                   <div className="relative mt-2 w-full max-w-sm group">
-                    <ImageWithSkeleton src={postCoverImage} alt="Cover 1" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                    <ImageWithSkeleton src={postCoverImage} alt={t("cover_1_rnd5")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                     <Button 
                         type="button"
                         variant="destructive" 
@@ -219,7 +219,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
               <Input type="file" accept="image/*" onChange={(e) => handlePostImageUpload(e, setPostCoverImage2)} />
               {postCoverImage2 && (
                   <div className="relative mt-2 w-full max-w-sm group">
-                    <ImageWithSkeleton src={postCoverImage2} alt="Cover 2" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                    <ImageWithSkeleton src={postCoverImage2} alt={t("cover_2_rnd5")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                     <Button 
                         type="button"
                         variant="destructive" 

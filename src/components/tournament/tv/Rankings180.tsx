@@ -7,7 +7,8 @@ interface Rankings180Props {
 }
 
 export default function Rankings180({ tournament }: Rankings180Props) {
-  const t = useTranslations("Tournament.tv_views.rankings_180")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string) => tTour(`tv_views.rankings_180.${key}`)
   // Extract and sort players by 180 count
   const rankings = tournament.tournamentPlayers
     ?.map((tp: any) => ({

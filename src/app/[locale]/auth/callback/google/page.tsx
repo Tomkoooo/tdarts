@@ -6,8 +6,10 @@ import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { useUserContext } from '@/hooks/useUser';
 import GoogleAccountLinkModal from '@/components/auth/GoogleAccountLinkModal';
+import { useTranslations } from "next-intl";
 
 export default function GoogleCallbackPage() {
+  const t = useTranslations("Common");
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,7 +23,7 @@ export default function GoogleCallbackPage() {
       if (status === 'loading') return;
 
       if (status === 'unauthenticated') {
-        setError('Google bejelentkezés sikertelen');
+        setError(t("google_bejelentkezes_sikertelen_gllv"));
         setLoading(false);
         return;
       }
@@ -43,7 +45,7 @@ export default function GoogleCallbackPage() {
             const redirect = searchParams.get('redirect') || '/';
             router.push(redirect);
           } else {
-            setError('Hiba történt a bejelentkezés során');
+            setError(t("hiba_tortent_a_bejelentkezes_mbps"));
           }
         } catch (error: any) {
           console.error('Google OAuth callback error:', error);
@@ -60,7 +62,7 @@ export default function GoogleCallbackPage() {
     };
 
     handleGoogleAuth();
-  }, [session, status, router, searchParams, setUser]);
+  }, [session, status, router, searchParams, setUser, t]);
 
   // Ha van hiba a URL-ben (pl. OAuthAccountNotLinked)
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function GoogleCallbackPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="loading loading-spinner loading-lg text-primary mb-4"></div>
-          <p className="text-lg">Google bejelentkezés feldolgozása...</p>
+          <p className="text-lg">{t("google_bejelentkezes_feldolgozasa_nq04")}</p>
         </div>
       </div>
     );
@@ -87,14 +89,13 @@ export default function GoogleCallbackPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-error text-6xl mb-4">❌</div>
-          <h1 className="text-2xl font-bold text-error mb-4">Bejelentkezési hiba</h1>
+          <h1 className="text-2xl font-bold text-error mb-4">{t("bejelentkezesi_hiba_hqbc")}</h1>
           <p className="text-base-content/70 mb-6">{error}</p>
           <button
             onClick={() => router.push('/auth/login')}
             className="btn btn-primary"
           >
-            Vissza a bejelentkezéshez
-          </button>
+            {t("vissza_a_bejelentkezeshez_kk0h")}</button>
         </div>
       </div>
     );

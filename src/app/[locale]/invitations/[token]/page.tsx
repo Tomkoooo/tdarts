@@ -8,8 +8,10 @@ import { toast } from "react-hot-toast"
 
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card"
+import { useTranslations } from "next-intl";
 
 export default function InvitationPage() {
+  const t = useTranslations("Common");
   const params = useParams()
   const token = params?.token as string
   const router = useRouter()
@@ -62,7 +64,7 @@ export default function InvitationPage() {
 
       if (action === 'accept') {
         setSuccessMessage("Sikeresen csatlakoztál a csapathoz! Átirányítunk a tornára...")
-        toast.success("Csapat meghívás elfogadva!")
+        toast.success(t("csapat_meghivas_elfogadva_r38s"))
         setTimeout(() => {
           if (invitation?.tournamentId?._id) {
              router.push(`/tournaments/${invitation.tournamentId.tournamentId}`)
@@ -70,7 +72,7 @@ export default function InvitationPage() {
         }, 2000)
       } else {
         setSuccessMessage("Meghívás elutasítva.")
-        toast.success("Meghívás elutasítva")
+        toast.success(t("meghivas_elutasitva_vzwy"))
       }
       
     } catch (err: any) {
@@ -86,7 +88,7 @@ export default function InvitationPage() {
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center gap-4">
           <IconLoader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground">Meghívó betöltése...</p>
+          <p className="text-muted-foreground">{t("meghivo_betoltese_pctm")}</p>
         </div>
       </div>
     )
@@ -97,14 +99,13 @@ export default function InvitationPage() {
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md border-destructive/50 bg-destructive/5">
           <CardHeader>
-            <CardTitle className="text-destructive">Hiba történt</CardTitle>
+            <CardTitle className="text-destructive">{t("hiba_tortent_w14r")}</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardFooter>
             <Link href="/" className="w-full">
               <Button variant="outline" className="w-full">
-                Vissza a főoldalra
-              </Button>
+                {t("vissza_a_fooldalra_hdrp")}</Button>
             </Link>
           </CardFooter>
         </Card>
@@ -122,20 +123,18 @@ export default function InvitationPage() {
                 <IconCheck className="h-8 w-8 text-green-500" />
               </div>
             </div>
-            <CardTitle className="text-center text-green-600">Sikeres művelet</CardTitle>
+            <CardTitle className="text-center text-green-600">{t("sikeres_muvelet_fiwv")}</CardTitle>
             <CardDescription className="text-center text-lg">{successMessage}</CardDescription>
           </CardHeader>
           <CardFooter className="flex gap-2">
             <Link href="/" className="flex-1">
               <Button variant="outline" className="w-full">
-                Főoldal
-              </Button>
+                {t("fooldal_iry6")}</Button>
             </Link>
             {invitation?.tournamentId && (
                 <Link href={`/tournaments/${invitation.tournamentId.tournamentId}`} className="flex-1">
                   <Button className="w-full">
-                    Tornára lépés
-                  </Button>
+                    {t("tornara_lepes_joqq")}</Button>
                 </Link>
             )}
           </CardFooter>
@@ -151,10 +150,9 @@ export default function InvitationPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <IconUsers className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Csapat Meghívó</CardTitle>
+          <CardTitle className="text-2xl">{t("csapat_meghivo_orrr")}</CardTitle>
           <CardDescription className="text-lg">
-            Meghívást kaptál egy páros/csapat tornára
-          </CardDescription>
+            {t("meghivast_kaptal_egy_paros_z44a")}</CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
@@ -165,7 +163,7 @@ export default function InvitationPage() {
                   <IconTrophy className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Torna</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("torna_1c80")}</p>
                   <p className="font-semibold text-foreground">{invitation?.tournamentId?.tournamentSettings?.name || invitation?.tournamentId?.name || "Ismeretlen torna"}</p>
                 </div>
               </div>
@@ -175,15 +173,14 @@ export default function InvitationPage() {
                   <IconUsers className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Csapat neve</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("csapat_neve_b7w7")}</p>
                   <p className="font-semibold text-foreground">{invitation?.teamId?.name || "Névtelen csapat"}</p>
                 </div>
               </div>
               
               <div className="mt-4 border-t border-border pt-4">
                 <p className="text-center text-muted-foreground">
-                  <span className="font-semibold text-foreground">{invitation?.inviterId?.name}</span> meghívott, hogy csatlakozz a csapatához.
-                </p>
+                  <span className="font-semibold text-foreground">{invitation?.inviterId?.name}</span> {t("meghivott_hogy_csatlakozz_a_5u8m")}</p>
               </div>
             </div>
           </div>
@@ -197,8 +194,7 @@ export default function InvitationPage() {
             disabled={processing}
           >
             <IconX className="h-4 w-4" />
-            Elutasítás
-          </Button>
+            {t("elutasitas_ymrf")}</Button>
           <Button 
             className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
             onClick={() => handleAction('accept')}
@@ -209,8 +205,7 @@ export default function InvitationPage() {
             ) : (
               <IconCheck className="h-4 w-4" />
             )}
-            Meghívás elfogadása
-          </Button>
+            {t("meghivas_elfogadasa_x0n5")}</Button>
         </CardFooter>
       </Card>
     </div>

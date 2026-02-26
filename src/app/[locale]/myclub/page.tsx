@@ -9,14 +9,14 @@ import { showErrorToast } from "@/lib/toastUtils"
 import axios from "axios"
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
-import { useLocale } from "next-intl"
+import { useTranslations } from "next-intl"
 
 export default function MyClubPage() {
+  const t = useTranslations("Club.pages");
   const { user } = useUserContext()
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(true)
   const [clubs, setClubs] = React.useState<Club[]>([])
-  const locale = useLocale()
 
   React.useEffect(() => {
     const checkUserClubs = async () => {
@@ -37,7 +37,7 @@ export default function MyClubPage() {
           router.push(`/clubs/${userClubs[0]._id}`)
         }
       } catch (error: any) {
-        showErrorToast("Hiba történt a klubok lekérdezése során", {
+        showErrorToast(t("hiba_tortent_a_klubok_oqbq"), {
           error: error?.response?.data?.error,
           context: "Saját klub ellenőrzés",
           errorName: "Klubok lekérdezése sikertelen",
@@ -72,28 +72,26 @@ export default function MyClubPage() {
                 <IconUsersGroup className="w-10 h-10 text-primary" />
               </div>
               <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
-                Új Klub Regisztrálása
-              </h1>
+                {t("uj_klub_regisztralasa_8231")}</h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Hozz létre egy új darts klubot, és kezdd el szervezni a közösségi eseményeket!
-              </p>
+                {t("hozz_letre_egy_uj_d07t")}</p>
 
               {/* Features */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-3xl mx-auto">
                 {[
                   {
                     icon: IconSparkles,
-                    title: "Szervezz tornákat",
+                    title: t("szervezz_tornakat_pgxr"),
                     description: "Hozz létre és kezelj versenyeket",
                   },
                   {
                     icon: IconUsersGroup,
-                    title: "Építs közösséget",
+                    title: t("epits_kozosseget_qsy3"),
                     description: "Kezeld tagjaidat és játékosokat",
                   },
                   {
                     icon: IconSparkles,
-                    title: "Követd az eredményeket",
+                    title: t("kovetd_az_eredmenyeket_xpkq"),
                     description: "Részletes statisztikák és ranglista",
                   },
                 ].map((feature, index) => (

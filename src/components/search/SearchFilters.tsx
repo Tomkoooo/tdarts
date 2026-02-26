@@ -168,7 +168,7 @@ export function SearchFiltersPanel({
                  id="minPlayers"
                  type="number"
                  min={0}
-                 placeholder="Min"
+                 placeholder={t("min_1noy")}
                  className="h-8 text-xs"
                  value={filters.minPlayers ?? ''}
                  onChange={(e) => onFiltersChange({ ...filters, minPlayers: e.target.value ? parseInt(e.target.value) : undefined })}
@@ -177,7 +177,7 @@ export function SearchFiltersPanel({
                  id="maxPlayers"
                  type="number"
                  min={0}
-                 placeholder="Max"
+                 placeholder={t("max_1nic")}
                  className="h-8 text-xs"
                  value={filters.maxPlayers ?? ''}
                  onChange={(e) => onFiltersChange({ ...filters, maxPlayers: e.target.value ? parseInt(e.target.value) : undefined })}

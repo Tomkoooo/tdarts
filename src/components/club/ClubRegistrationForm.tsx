@@ -23,6 +23,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
     description: z.string().min(10, t('validation.desc_min')),
     city: z.string().min(1, t('validation.city_required')),
     address: z.string().min(1, t('validation.address_required')),
+    country: z.string().min(2, t('validation.country_required')),
     contact: z.object({
       email: z.string().email(t('validation.email_invalid')).optional().or(z.literal('')),
       phone: z.string().optional(),
@@ -43,6 +44,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
       description: '',
       city: '',
       address: '',
+      country: 'hu',
       contact: {
         email: '',
         phone: '',
@@ -51,10 +53,12 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
     },
   });
 
+
+
   const onSubmit = async (data: ClubFormData) => {
     try {
       const location = `${data.city}, ${data.address}`;
-      const { name, description, contact } = data;
+      const { name, description, contact, country } = data;
       
       await toast.promise(
         axios.post<Club>('/api/clubs/create', {
@@ -64,6 +68,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
             description,
             contact,
             location,
+            country,
           },
         }, {
           headers: { 'Content-Type': 'application/json' },
@@ -126,6 +131,29 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
           {errors.description && <p className="form-error">{errors.description.message}</p>}
         </div>
 
+        <div>
+          <label className="form-label">
+            <span className="form-label-text">{t('country_label')}</span>
+          </label>
+          <div className="form-input-container">
+            <IconLocation className="form-input-icon"/>
+            <select
+              {...register('country')}
+              className="form-input cursor-pointer"
+              disabled={isSubmitting}
+            >
+              <option value="hu">{t("magyarorszag_fm30")}</option>
+              <option value="at">{t("ausztria_okn5")}</option>
+              <option value="de">{t("nemetorszag_vpgb")}</option>
+              <option value="sk">{t("szlovakia_o5lp")}</option>
+              <option value="ro">{t("romania_kni2")}</option>
+              <option value="hr">{t("horvatorszag_86m1")}</option>
+              <option value="si">{t("szlovenia_o5gj")}</option>
+            </select>
+          </div>
+          {errors.country && <p className="form-error">{errors.country.message}</p>}
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="form-label">
@@ -171,7 +199,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
             <input
               {...register('contact.email')}
               type="email"
-              placeholder="email@example.com"
+              placeholder={t("email_example_com_oyiv")}
               className="form-input"
               disabled={isSubmitting}
             />
@@ -205,7 +233,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
             <input
               {...register('contact.website')}
               type="text"
-              placeholder="https://example.com"
+              placeholder={t("https_example_com_ags5")}
               className="form-input"
               disabled={isSubmitting}
             />

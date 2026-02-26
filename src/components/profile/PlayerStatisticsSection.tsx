@@ -398,14 +398,14 @@ export function PlayerStatisticsSection({
                 <div className="text-2xl font-black text-primary ">
                   {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.stats.mmr : (activeStats.mmr || 800)}
                 </div>
-                <span className="text-[10px] font-bold uppercase opacity-60">MMR</span>
+                <span className="text-[10px] font-bold uppercase opacity-60">{t("mmr_1n02")}</span>
               </div>
               {((selectedSeason === 'current' || selectedSeason === 'all-time') && playerStats.player.stats.oacMmr !== 800) && (
                 <div className="flex items-center gap-2 pt-1">
                   <div className="text-lg font-black text-primary">
                     {playerStats.player.stats.oacMmr}
                   </div>
-                  <span className="text-[9px] font-bold uppercase text-primary/70">OAC MMR</span>
+                  <span className="text-[9px] font-bold uppercase text-primary/70">{t("oac_mmr_g66r")}</span>
                 </div>
               )}
             </div>
@@ -499,12 +499,11 @@ export function PlayerStatisticsSection({
                                         const data = props.payload;
                                         return [
                                             <div key="mmr-tip" className="space-y-1">
-                                                <div className="font-bold">{value} MMR</div>
+                                                <div className="font-bold">{value} {t("mmr_1n02")}</div>
                                                 <div className="text-[10px] text-muted-foreground">{data.display}</div>
                                                 {data.change !== undefined && (
                                                     <div className={cn("text-[10px] font-bold", data.change >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                                        {data.change >= 0 ? "+" : ""}{data.change} MMR
-                                                    </div>
+                                                        {data.change >= 0 ? "+" : ""}{data.change} {t("mmr_1n02")}</div>
                                                 )}
                                             </div>,
                                             null
@@ -591,8 +590,7 @@ export function PlayerStatisticsSection({
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold">{team.name}</span>
                                         <span className="text-[10px] text-muted-foreground uppercase opacity-60">
-                                            {team.type === 'pair' ? t("teams.pair") : t("teams.team")} • {team.stats?.mmr || 800} MMR
-                                        </span>
+                                            {team.type === 'pair' ? t("teams.pair") : t("teams.team")} • {team.stats?.mmr || 800} {t("mmr_1n02")}</span>
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -628,13 +626,11 @@ export function PlayerStatisticsSection({
                          <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{tournament.finalPosition || tournament.position}.</Badge>
                          {tournament.mmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} MMR
-                            </span>
+                                {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} {t("mmr_1n02")}</span>
                          )}
                          {tournament.oacMmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
-                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} OAC MMR
-                            </span>
+                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} {t("oac_mmr_g66r")}</span>
                          )}
                       </div>
                     </div>

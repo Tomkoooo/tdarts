@@ -18,6 +18,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { showErrorToast } from '@/lib/toastUtils'
 import { useTranslations } from 'next-intl'
 
@@ -33,6 +40,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
   const editClubSchema = z.object({
     name: z.string().min(1, t('validation.name_required')),
     location: z.string().min(1, t('validation.location_required')),
+    country: z.string().optional(),
     contact: z
       .object({
         email: z.string().email(t('validation.email_invalid')).optional().or(z.literal('')),
@@ -49,6 +57,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
     defaultValues: {
       name: club.name,
       location: club.location,
+      country: club.country || 'hu',
       contact: {
         email: club.contact?.email || '',
         phone: club.contact?.phone || '',
@@ -62,6 +71,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
       form.reset({
         name: club.name,
         location: club.location,
+        country: club.country || 'hu',
         contact: {
           email: club.contact?.email || '',
           phone: club.contact?.phone || '',
@@ -124,6 +134,33 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="country"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('country')}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('country_placeholder')} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="hu">Magyarország</SelectItem>
+                  <SelectItem value="at">Ausztria</SelectItem>
+                  <SelectItem value="de">Németország</SelectItem>
+                  <SelectItem value="sk">Szlovákia</SelectItem>
+                  <SelectItem value="ro">Románia</SelectItem>
+                  <SelectItem value="hr">Horvátország</SelectItem>
+                  <SelectItem value="si">Szlovénia</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -132,7 +169,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
               <FormItem>
                 <FormLabel>{t('email')}</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@example.com" {...field} />
+                  <Input type="email" placeholder={t("email_example_com_oyiv")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -160,7 +197,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
             <FormItem>
               <FormLabel>{t('website')}</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com" {...field} />
+                <Input placeholder={t("https_example_com_ags5")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

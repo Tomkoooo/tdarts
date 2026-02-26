@@ -123,7 +123,7 @@ export function ProfilePictureUpload({
           )}
           <AvatarImage 
             src={currentPicture} 
-            alt="Profilkép" 
+            alt={t("profilkep_giiz")} 
             className="object-cover" 
             onLoadingStatusChange={(status) => setIsImageLoading(status === 'loading')}
           />

@@ -1,6 +1,6 @@
+'use client';
 import { useTranslations } from "next-intl";
 
-'use client';
 
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -14,7 +14,7 @@ interface ErrorProps {
 }
 
 export default function LiveError({ error, reset }: ErrorProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Tournament.live");
   useEffect(() => {
     console.error('Live page error:', error);
   }, [error]);

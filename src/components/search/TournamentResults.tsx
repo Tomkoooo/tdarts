@@ -233,7 +233,7 @@ export function TournamentResults({
                              {tournament.isOac && (
                                 <div className="flex items-center text-amber-500">
                                    <IconRosette className="w-3 h-3" />
-                                   <span className="text-[10px] font-bold px-0.5">OAC</span>
+                                   <span className="text-[10px] font-bold px-0.5">{t("oac_1o6p")}</span>
                                 </div>
                              )}
                           </div>

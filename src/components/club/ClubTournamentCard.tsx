@@ -122,8 +122,7 @@ export default function ClubTournamentCard({
               </Badge>
               {tournament.isSandbox && (
                 <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10">
-                  SANDBOX
-                </Badge>
+                  {t("sandbox_sb17")}</Badge>
               )}
             </div>
             <div className="w-6">

@@ -20,14 +20,12 @@ interface TicketListProps {
   tickets: Ticket[]
   onSelectTicket: (ticketId: string) => void
   onCreateTicket: () => void
-  onRefresh?: () => void
 }
 
 export function TicketList({
   tickets,
   onSelectTicket,
   onCreateTicket,
-  onRefresh,
 }: TicketListProps) {
   const t = useTranslations("Profile.tickets")
   const locale = useLocale()

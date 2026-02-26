@@ -12,6 +12,7 @@ const updateProfileSchema = z.object({
   confirmPassword: z.string().optional(),
   profilePicture: z.string().nullable().optional(),
   publicConsent: z.boolean().optional(),
+  country: z.string().min(2).optional(),
 }).refine((data) => {
   if (data.password && !data.confirmPassword) {
     return false;

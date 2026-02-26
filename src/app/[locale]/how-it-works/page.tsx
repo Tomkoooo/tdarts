@@ -16,8 +16,7 @@ import {
   IconCheck,
   IconFlagCheck,
   IconDeviceMobile,
-  IconSword,
-  IconX
+  IconSword
 } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { useRouter, useSearchParams } from 'next/navigation';

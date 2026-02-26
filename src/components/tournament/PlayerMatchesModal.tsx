@@ -75,7 +75,8 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
   tournamentCode,
   onShowDetailedStats,
 }) => {
-  const t = useTranslations('Tournament.player_matches_modal');
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`player_matches_modal.${key}`, values);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

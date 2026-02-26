@@ -1,6 +1,6 @@
+'use client';
 import { useTranslations } from "next-intl";
 
-'use client';
 import React, { useState, useEffect } from 'react';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { CreateLeagueRequest, DEFAULT_LEAGUE_POINTS_CONFIG } from '@/interface/league.interface';
@@ -33,7 +33,7 @@ export default function CreateLeagueModal({
   onClose,
   onLeagueCreated,
 }: CreateLeagueModalProps) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Club.components");
   const [formData, setFormData] = useState<CreateLeagueRequest>({
     name: '',
     description: '',
@@ -106,7 +106,7 @@ export default function CreateLeagueModal({
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ismeretlen hiba';
-      setError('Error creating league');
+      setError(t("error_creating_league_ojvj"));
       showErrorToast(t("hiba_a_liga"), {
         context: 'Liga létrehozása',
         error: message,
@@ -192,21 +192,21 @@ export default function CreateLeagueModal({
             <div className="grid gap-4 md:grid-cols-2">
               {[
                 {
-                  label: 'Csoportkörből kiesők pontjai',
+                  label: t("csoportkorbol_kiesok_pontjai_x3re"),
                   field: 'groupDropoutPoints',
                   min: 0,
                   max: 100,
                   helper: 'Fix pontszám a csoportkörben kiesőknek.',
                 },
                 {
-                  label: 'Egyenes kiesés alappont',
+                  label: t("egyenes_kieses_alappont_kkrk"),
                   field: 'knockoutBasePoints',
                   min: 1,
                   max: 100,
                   helper: 'Az első kieső kör pontszáma.',
                 },
                 {
-                  label: 'Szorzó tényező',
+                  label: t("szorzo_tenyezo_fyk4"),
                   field: 'knockoutMultiplier',
                   min: 1.1,
                   max: 3.0,
@@ -214,14 +214,14 @@ export default function CreateLeagueModal({
                   helper: 'Minden további kör pontszáma ezzel szorozódik.',
                 },
                 {
-                  label: 'Győztes bónusz',
+                  label: t("gyoztes_bonusz_pzwy"),
                   field: 'winnerBonus',
                   min: 0,
                   max: 100,
                   helper: 'Extra pontok a bajnoknak.',
                 },
                 {
-                  label: 'Max. kiesős körök',
+                  label: t("max_kiesos_korok_j57q"),
                   field: 'maxKnockoutRounds',
                   min: 1,
                   max: 10,

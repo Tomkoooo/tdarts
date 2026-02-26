@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useEffect, useState } from "react"
 import axios from "axios"
@@ -56,7 +56,7 @@ interface ErrorStats {
 }
 
 export default function AdminErrorsPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.errors");
   const [errorStats, setErrorStats] = useState<ErrorStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -93,14 +93,14 @@ export default function AdminErrorsPage() {
 
   const getCategoryConfig = (category: string) => {
     const configs: Record<string, { icon: any; color: string; label: string }> = {
-      auth: { icon: IconUser, color: "backdrop-blur-md bg-warning/20 text-warning", label: "Auth" },
-      club: { icon: IconBuilding, color: "backdrop-blur-md bg-info/20 text-info", label: "Club" },
-      tournament: { icon: IconTrophy, color: "backdrop-blur-md bg-success/20 text-success", label: "Tournament" },
-      player: { icon: IconUser, color: "backdrop-blur-md bg-primary/20 text-primary", label: "Player" },
-      user: { icon: IconUser, color: "backdrop-blur-md bg-primary/20 text-primary", label: "User" },
-      api: { icon: IconApi, color: "backdrop-blur-md bg-destructive/20 text-destructive", label: "API" },
-      system: { icon: IconServer, color: "backdrop-blur-md bg-destructive/20 text-destructive", label: "System" },
-      database: { icon: IconDatabase, color: "backdrop-blur-md bg-destructive/20 text-destructive", label: "Database" },
+      auth: { icon: IconUser, color: "backdrop-blur-md bg-warning/20 text-warning", label: t("auth_17zr") },
+      club: { icon: IconBuilding, color: "backdrop-blur-md bg-info/20 text-info", label: t("club_1932") },
+      tournament: { icon: IconTrophy, color: "backdrop-blur-md bg-success/20 text-success", label: t("tournament_ghva") },
+      player: { icon: IconUser, color: "backdrop-blur-md bg-primary/20 text-primary", label: t("player_vgc0") },
+      user: { icon: IconUser, color: "backdrop-blur-md bg-primary/20 text-primary", label: t("user_1kpn") },
+      api: { icon: IconApi, color: "backdrop-blur-md bg-destructive/20 text-destructive", label: t("api_1e62") },
+      system: { icon: IconServer, color: "backdrop-blur-md bg-destructive/20 text-destructive", label: t("system_ttqf") },
+      database: { icon: IconDatabase, color: "backdrop-blur-md bg-destructive/20 text-destructive", label: t("database_unvz") },
     }
     return configs[category] || { icon: IconBug, color: "backdrop-blur-md bg-muted/20 text-muted-foreground", label: category }
   }

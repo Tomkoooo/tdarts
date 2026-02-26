@@ -25,7 +25,7 @@ export default function Footer() {
               {t('contact')}
             </Link>
             <p className="text-sm text-muted-foreground mt-auto pt-4">
-              &copy; {new Date().getFullYear()} tDarts. {t('all_rights_reserved')}
+              {t("copy_jk6j")}{new Date().getFullYear()} {t("tdarts_vlt8")}{t('all_rights_reserved')}
             </p>
           </div>
 
@@ -71,7 +71,7 @@ export default function Footer() {
               <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
                 <Image 
                   src="/partners/mdsz_logo.png" 
-                  alt="Magyar Darts Szövetség" 
+                  alt={t("magyar_darts_szovetseg_1x63")} 
                   fill
                   className="object-contain p-1"
                 />
@@ -79,7 +79,7 @@ export default function Footer() {
               <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
                 <Image 
                   src="/partners/dartsbarlang_logo.png" 
-                  alt="DartsBarlang" 
+                  alt={t("dartsbarlang_slgh")} 
                   fill
                   className="object-contain p-1"
                 />
@@ -87,7 +87,7 @@ export default function Footer() {
               <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
                 <Image 
                   src="/partners/remiz_logo.png" 
-                  alt="Remiz Sport- és Eseményközpont" 
+                  alt={t("remiz_sport_es_esemenykozpont_7fgn")} 
                   fill
                   className="object-contain p-1"
                 />

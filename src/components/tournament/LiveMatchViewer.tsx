@@ -60,7 +60,8 @@ interface MatchData {
 }
 
 const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCode, player1, player2, onBack, onShare }) => {
-  const t = useTranslations('Tournament.live_viewer');
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`live_viewer.${key}`, values);
   
   const [matchState, setMatchState] = useState<MatchState>({
     currentLeg: 1,
@@ -250,8 +251,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
         <span className={className}>{t_throw.score}</span>
         {t_throw.isCheckout && (
           <Badge variant="outline" className="text-[10px] h-3 px-1 border-primary text-primary absolute -mt-6 ml-6 bg-background">
-            OUT
-          </Badge>
+            {t("out_1ooe")}</Badge>
         )}
       </div>
     );
@@ -315,7 +315,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
              </div>
              <div className="w-px h-5 bg-border"></div>
              <div className="flex items-center gap-1 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-               Leg {matchState.currentLeg}
+               {t("leg_1mum")}{matchState.currentLeg}
              </div>
           </div>
 
@@ -344,8 +344,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
             {/* Middle Stats (Center) */}
             <div className="w-12 sm:w-24 bg-muted/5 flex flex-col items-center py-2 sm:py-4 justify-start pt-8 sm:pt-12">
                <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground tracking-wider font-bold text-center leading-tight mb-1 opacity-70">
-                 tDarts
-               </div>
+                 {t("tdarts_f0pi")}</div>
             </div>
 
             {/* Player 2 (Right) */}

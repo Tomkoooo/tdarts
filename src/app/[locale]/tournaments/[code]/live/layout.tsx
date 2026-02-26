@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { redirect } from 'next/navigation';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { connectMongo } from '@/lib/mongoose';
@@ -14,7 +14,7 @@ interface LiveLayoutProps {
 }
 
 export default async function LiveLayout({ children, params }: LiveLayoutProps) {
-  const t = useTranslations("Auto");
+  const t = await getTranslations("Auto");
   const { locale, code } = await params;
 
   try {

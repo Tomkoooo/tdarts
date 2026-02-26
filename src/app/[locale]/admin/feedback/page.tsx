@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import FeedbackTable from "@/components/admin/FeedbackTable"
 import DailyChart from "@/components/admin/DailyChart"
@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card"
 import { IconBug } from "@tabler/icons-react"
 
 export default function AdminFeedbackPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.feedback");
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}

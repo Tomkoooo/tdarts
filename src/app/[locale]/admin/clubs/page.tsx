@@ -1,8 +1,8 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import axios from "axios"
 import Link from "next/link"
 import {
@@ -50,16 +50,6 @@ interface AdminClub {
   verified: boolean
 }
 
-const subscriptionMeta: Record<
-  NonNullable<AdminClub["subscriptionModel"]>,
-  { label: string; icon: typeof IconBuilding; tone: string }
-> = {
-  free: { label: "Free", icon: IconBuilding, tone: "bg-muted/40 text-muted-foreground" },
-  basic: { label: "Basic", icon: IconBuilding, tone: "bg-primary/15 text-primary" },
-  pro: { label: "Pro", icon: IconShield, tone: "bg-accent/15 text-accent-foreground" },
-  enterprise: { label: "Enterprise", icon: IconStar, tone: "bg-destructive/15 text-destructive" },
-}
-
 interface ClubStats {
   total: number
   active: number
@@ -69,7 +59,14 @@ interface ClubStats {
 }
 
 export default function AdminClubsPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.clubs");
+    const tCommon = useTranslations("Admin.common");
+    const subscriptionMeta = useMemo(() => ({
+      free: { label: t("free_1b43"), icon: IconBuilding, tone: "bg-muted/40 text-muted-foreground" },
+      basic: { label: t("basic_122s"), icon: IconBuilding, tone: "bg-primary/15 text-primary" },
+      pro: { label: t("pro_1q4t"), icon: IconShield, tone: "bg-accent/15 text-accent-foreground" },
+      enterprise: { label: t("enterprise_joxf"), icon: IconStar, tone: "bg-destructive/15 text-destructive" },
+    }), [t]);
   const [clubs, setClubs] = useState<AdminClub[]>([])
   const [stats, setStats] = useState<ClubStats>({ total: 0, active: 0, deleted: 0, verified: 0, unverified: 0 })
   const [loading, setLoading] = useState(true)
@@ -114,7 +111,7 @@ export default function AdminClubsPage() {
       setPage(response.data.pagination.page || 1)
     } catch (error: any) {
       console.error("Error fetching clubs:", error)
-      toast.error(t("hiba_történt_az"))
+      toast.error(tCommon("hiba_történt_az"))
     } finally {
       setLoading(false)
     }
@@ -131,7 +128,7 @@ export default function AdminClubsPage() {
         </div>
         <Button onClick={() => fetchClubs(page, searchTerm, verifiedFilter)} variant="outline" size="sm" className="gap-2">
           <IconRefresh className={cn("size-4", loading && "animate-spin")} />
-          {t("frissítés")}</Button>
+          Refresh</Button>
       </div>
 
       {/* Stats Grid */}
@@ -203,10 +200,10 @@ export default function AdminClubsPage() {
                 <TableHead>{t("helyszín")}</TableHead>
                 <TableHead>{t("csomag")}</TableHead>
                 <TableHead className="text-center">{t("tagok")}</TableHead>
-                <TableHead className="text-center">{t("versenyek")}</TableHead>
-                <TableHead>{t("státusz")}</TableHead>
-                <TableHead>{t("létrehozva")}</TableHead>
-                <TableHead className="text-right">{t("műveletek")}</TableHead>
+                <TableHead className="text-center">{tCommon("versenyek")}</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>{tCommon("létrehozva")}</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -226,7 +223,7 @@ export default function AdminClubsPage() {
               ) : clubs.length === 0 ? (
                 <TableRow>
                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
-                    {t("nincs_találat_a")}</TableCell>
+                    No results found</TableCell>
                 </TableRow>
               ) : (
                 clubs.map((club) => {
@@ -236,7 +233,7 @@ export default function AdminClubsPage() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground">{club.name}</span>
-                          {club.isDeleted && <span className="text-xs text-destructive font-bold">{t("törölve")}</span>}
+                          {club.isDeleted && <span className="text-xs text-destructive font-bold">{tCommon("törölve")}</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">

@@ -22,7 +22,8 @@ export default function EditTournamentModal({
   userId,
   onTournamentUpdated
 }: EditTournamentModalProps) {
-  const t = useTranslations('Tournament.edit_modal');
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`edit_modal.${key}`, values);
   const tCreate = useTranslations('Tournament.create_tournament_modal.settings');
   const tCard = useTranslations('Tournament.card');
   const [settings, setSettings] = useState<TournamentSettings>(tournament.tournamentSettings);
@@ -200,7 +201,7 @@ export default function EditTournamentModal({
                 value={settings.name}
                 onChange={(e) => handleSettingsChange('name', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                placeholder="Pl.: Tavaszi Bajnokság 2024"
+                placeholder={t("pl_tavaszi_bajnoksag_2024_ukri")}
                 required
               />
             </div>
@@ -211,7 +212,7 @@ export default function EditTournamentModal({
                 value={settings.description || ''}
                 onChange={(e) => handleSettingsChange('description', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20 min-h-[80px]"
-                placeholder="Részletes leírás a tornáról..."
+                placeholder={t("reszletes_leiras_a_tornarol_18k9")}
               />
             </div>
 
@@ -222,7 +223,7 @@ export default function EditTournamentModal({
                 value={settings.location || ''}
                 onChange={(e) => handleSettingsChange('location', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                placeholder="Pl.: Budapest, Sport Klub"
+                placeholder={t("pl_budapest_sport_klub_98hq")}
               />
             </div>
 
@@ -271,7 +272,7 @@ export default function EditTournamentModal({
                   <option value="group_knockout">{tCreate('format.group_knockout')}</option>
                 </select>
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">{t("nem_modosithato_a_verseny_xnl9")}</p>
                 )}
               </div>
 

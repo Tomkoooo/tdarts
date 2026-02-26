@@ -1,6 +1,5 @@
-import { useTranslations } from "next-intl";
-
 "use client"
+import { useTranslations } from "next-intl";
 
 import React, { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -10,7 +9,7 @@ import axios from "axios"
 import toast from "react-hot-toast"
 
 export function GlobalTodoShortcut() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.components");
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {

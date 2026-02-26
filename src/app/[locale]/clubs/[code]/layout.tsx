@@ -2,6 +2,7 @@ import React, { ReactNode } from "react";
 import { Metadata } from "next";
 import { ClubService } from "@/database/services/club.service";
 import "./layout.css";
+import { getTranslations } from "next-intl/server";
 
 interface LayoutProps {
   children: ReactNode;
@@ -18,9 +19,10 @@ function getAbsoluteUrl(path: string): string {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ code: string }>;
+  params: Promise<{ code: string; locale: string }>;
 }): Promise<Metadata> {
-  const { code } = await params;
+  const { code, locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Auto" });
   try {
     const club = await ClubService.getClub(code);
     
@@ -90,7 +92,7 @@ export async function generateMetadata({
   } catch (e) {
     console.error(e);
     return {
-      title: 'Club Not Found',
+      title: t("club_not_found_ecjo"),
     };
   }
 }

@@ -1,9 +1,9 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
-
 import * as React from "react"
-import { useRouter, useParams, useSearchParams } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
+import { useParams, useSearchParams } from "next/navigation"
 import axios from "axios"
 import toast from "react-hot-toast"
 import { showErrorToast } from "@/lib/toastUtils"
@@ -20,7 +20,7 @@ import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 
 export default function ClubDetailPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Club.pages");
   const { user } = useUserContext()
   const router = useRouter()
   const params = useParams()

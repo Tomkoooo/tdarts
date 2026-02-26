@@ -1,6 +1,6 @@
+'use client';
 import { useTranslations } from "next-intl";
 
-'use client';
 
 import { useState, useEffect } from 'react';
 import { Mail, Code, Eye, Save, Check, X } from 'lucide-react';
@@ -22,7 +22,7 @@ interface EmailTemplate {
 }
 
 function PreviewFrame({ content }: { content: string }) {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.emails");
   const [height, setHeight] = useState('400px');
   
   // Basic variable replacement for preview
@@ -60,7 +60,7 @@ function PreviewFrame({ content }: { content: string }) {
 }
 
 export default function EmailTemplatesPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.emails");
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -79,7 +79,6 @@ export default function EmailTemplatesPage() {
   }, []);
 
   const fetchTemplates = async () => {
-      const t = useTranslations("Auto");
     try {
       const response = await fetch('/api/admin/email-templates');
       const data = await response.json();
@@ -106,7 +105,6 @@ export default function EmailTemplatesPage() {
   };
 
   const saveTemplate = async () => {
-      const t = useTranslations("Auto");
     if (!selectedTemplate) return;
 
     setSaving(true);
@@ -139,7 +137,6 @@ export default function EmailTemplatesPage() {
   };
 
   const sendTestEmail = async () => {
-      const t = useTranslations("Auto");
     if (!selectedTemplate) return;
     if (!testRecipient) {
       showErrorToast(t("kérjük_adj_meg"));
@@ -168,7 +165,6 @@ export default function EmailTemplatesPage() {
   };
 
   const toggleActive = async (template: EmailTemplate) => {
-      const t = useTranslations("Auto");
     try {
       const response = await fetch(`/api/admin/email-templates/${template._id}`, {
         method: 'PATCH',

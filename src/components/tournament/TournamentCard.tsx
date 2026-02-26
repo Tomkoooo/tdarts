@@ -70,7 +70,8 @@ export default function TournamentCard({
   onDelete,
   onEdit,
 }: TournamentCardProps) {
-  const t = useTranslations('Tournament.card')
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`card.${key}`, values)
 
   const statusLabels: Record<string, string> = {
     pending: t('status.pending'),

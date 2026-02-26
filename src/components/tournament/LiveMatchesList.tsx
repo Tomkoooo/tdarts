@@ -29,7 +29,8 @@ interface LiveMatch {
 }
 
 const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMatchSelect, selectedMatchId }) => {
-  const t = useTranslations('Tournament.live_matches');
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`live_matches.${key}`, values);
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(selectedMatchId || null);
   const [isLoading, setIsLoading] = useState(true);
@@ -256,7 +257,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                     variant={selectedMatch === match._id ? "default" : "secondary"}
                     className="text-[10px] uppercase font-bold tracking-wider"
                   >
-                    Leg {match.currentLeg}
+                    {t("leg_1mum")}{match.currentLeg}
                   </Badge>
                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <IconClock className="w-3 h-3" />
@@ -279,8 +280,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                       {match.player1Remaining}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
-                      {match.player1LegsWon || 0} leg
-                    </div>
+                      {match.player1LegsWon || 0} {t("leg_2aku")}</div>
                   </div>
 
                   {/* VS Divider */}
@@ -300,8 +300,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                       {match.player2Remaining}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
-                      {match.player2LegsWon || 0} leg
-                    </div>
+                      {match.player2LegsWon || 0} {t("leg_2aku")}</div>
                   </div>
                 </div>
 

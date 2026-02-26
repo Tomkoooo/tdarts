@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     },
     description: t('description'),
     keywords: t('keywords').split(',').map(k => k.trim()),
-    authors: [{ name: "tDarts Team" }],
+    authors: [{ name: t("tdarts_team_wsgu") }],
     creator: "tDarts",
     publisher: "tDarts",
     formatDetection: {
@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     appleWebApp: {
       capable: true,
       statusBarStyle: "black-translucent",
-      title: "tDarts",
+      title: t("tdarts_f0pi"),
     },
     applicationName: "tDarts",
     openGraph: {

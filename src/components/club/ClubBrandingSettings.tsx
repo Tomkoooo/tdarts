@@ -213,7 +213,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                             onChange={(e) => setValue("secondaryColor", e.target.value)}
                             className="w-12 h-10 p-1 cursor-pointer" 
                         />
-                        <Input {...register("secondaryColor")} value={watch("secondaryColor")} placeholder="#ffffff" />
+                        <Input {...register("secondaryColor")} value={watch("secondaryColor")} placeholder={t("ffffff_4mgq")} />
                     </div>
                  </div>
               </div>
@@ -279,7 +279,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                       <input type="hidden" {...register("logo")} />
                       {watch("logo") && (
                         <div className="relative mt-2 w-fit group">
-                            <ImageWithSkeleton src={watch("logo")} alt="Logo" className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
+                            <ImageWithSkeleton src={watch("logo")} alt={t("logo_1evu")} className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
                             <Button 
                                 type="button"
                                 variant="destructive" 
@@ -298,7 +298,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                       <input type="hidden" {...register("coverImage")} />
                       {watch("coverImage") && (
                         <div className="relative mt-2 w-full max-w-sm group">
-                            <ImageWithSkeleton src={watch("coverImage")} alt="Cover" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                            <ImageWithSkeleton src={watch("coverImage")} alt={t("cover_12vl")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                              <Button 
                                 type="button"
                                 variant="destructive" 

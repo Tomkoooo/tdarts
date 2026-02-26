@@ -292,7 +292,7 @@ export function InitialView({
                     <div className="flex justify-between items-start mb-4">
                       <h4 className="text-lg font-bold line-clamp-2">{league.name}</h4>
                       {league.verified && (
-                        <span className="badge badge-success badge-sm shrink-0">OAC</span>
+                        <span className="badge badge-success badge-sm shrink-0">{t("oac_1o6p")}</span>
                       )}
                     </div>
                     

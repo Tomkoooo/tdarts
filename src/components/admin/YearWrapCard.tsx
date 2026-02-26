@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 
 export function YearWrapCard() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.components");
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [year, setYear] = useState(new Date().getFullYear())

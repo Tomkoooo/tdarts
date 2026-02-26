@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { IconLoader2 } from '@tabler/icons-react';
 
 export default function LiveLoading() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Tournament.live");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full shadow-xl">

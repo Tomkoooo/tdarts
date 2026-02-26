@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+
 
 import { useState, useEffect, Suspense } from 'react';
 import LiveMatchViewer from '@/components/tournament/LiveMatchViewer';
@@ -10,6 +12,7 @@ import { IconShare, IconDeviceTv, IconArrowLeft } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 const LiveStreamingContent = () => {
+  const t = useTranslations("Tournament.live");
   const { code } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,9 +58,9 @@ const LiveStreamingContent = () => {
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success('Link másolva a vágólapra!');
+      toast.success(t("link_másolva_a"));
     } catch (err) {
-      toast.error('Nem sikerült másolni a linket.');
+      toast.error(t("nem_sikerült_másolni"));
       console.log(err)
     }
   };
@@ -80,8 +83,7 @@ const LiveStreamingContent = () => {
                <div>
                  <h1 className="text-lg font-bold flex items-center gap-2">
                    <IconDeviceTv className="w-5 h-5 text-primary" />
-                   tDarts Live
-                 </h1>
+                   {t("tdarts_live")}</h1>
                </div>
             </div>
             
@@ -90,7 +92,7 @@ const LiveStreamingContent = () => {
               {selectedMatchId && !isMobileView && (
                 <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
                   <IconShare className="w-4 h-4" />
-                  <span>Megosztás</span>
+                  <span>{t("megosztás")}</span>
                 </Button>
               )}
             </div>
@@ -132,8 +134,8 @@ const LiveStreamingContent = () => {
                  <IconDeviceTv className="w-10 h-10 opacity-40" />
                </div>
                <div className="text-center">
-                 <h3 className="font-semibold text-lg">Válassz egy meccset</h3>
-                 <p className="text-sm opacity-70">A bal oldali listából választhatsz.</p>
+                 <h3 className="font-semibold text-lg">{t("válassz_egy_meccset")}</h3>
+                 <p className="text-sm opacity-70">{t("a_bal_oldali")}</p>
                </div>
             </div>
           )}

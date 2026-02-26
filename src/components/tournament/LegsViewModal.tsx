@@ -31,7 +31,6 @@ import {
   IconAlertTriangle,
   IconChartLine,
   IconLock,
-  IconDeviceGamepad2,
 } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
 
@@ -85,7 +84,8 @@ interface LegsViewModalProps {
 }
 
 const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: initialMatch, onBackToMatches }) => {
-  const t = useTranslations("Tournament.legs_modal")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`legs_modal.${key}`, values)
   const [match, setMatch] = useState<Match | null>(initialMatch)
   const [legs, setLegs] = useState<Leg[]>([])
   const [loading, setLoading] = useState(false)

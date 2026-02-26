@@ -35,7 +35,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
         <div className="flex flex-col gap-4 mb-6">
             
             {/* City Filters - Horizontal Scrolling Chips */}
-            {(activeTab === 'tournaments' || activeTab === 'clubs') && cities.length > 0 && (
+            {(activeTab === 'tournaments' || activeTab === 'clubs' || activeTab === 'leagues') && cities.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                          <Label className="text-sm font-medium text-muted-foreground">{t('popular_cities')}</Label>
@@ -49,11 +49,36 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
             )}
 
             {/* Stacked Filter Controls */}
-            {(activeTab === 'tournaments' || activeTab === 'players') && (
+            {activeTab && (
             <Card className="p-4 bg-base-100 border-base-200 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex flex-wrap gap-8 items-center">
                         
+                        {/* Country Filter */}
+                        <div className="flex flex-col gap-2">
+                            <Label className="text-sm font-semibold">{t('country_label')}</Label>
+                            <Select 
+                                value={filters.country || 'all'} 
+                                onValueChange={(val) => onFilterChange('country', val === 'all' ? undefined : val)}
+                            >
+                                <SelectTrigger className="w-[200px]">
+                                    <SelectValue placeholder={t('country_placeholder')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{t('country_all')}</SelectItem>
+                                    <SelectItem value="hu">{t('country_hu')}</SelectItem>
+                                    <SelectItem value="de">{t('country_de')}</SelectItem>
+                                    <SelectItem value="at">{t('country_at')}</SelectItem>
+                                    <SelectItem value="sk">{t('country_sk')}</SelectItem>
+                                    <SelectItem value="ro">{t('country_ro')}</SelectItem>
+                                    <SelectItem value="hr">{t('country_hr')}</SelectItem>
+                                    <SelectItem value="si">{t('country_si')}</SelectItem>
+                                    <SelectItem value="nl">{t('country_nl')}</SelectItem>
+                                    <SelectItem value="el">{t('country_el')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         {/* Status Filter (Tournaments Only) */}
                         {activeTab === 'tournaments' && (
                             <div className="flex flex-col gap-2">
@@ -155,7 +180,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                     </div>
 
                     {/* Clear Filters Button */}
-                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || hasActiveQuery) && (
+                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || filters.country || hasActiveQuery) && (
                          <Button 
                             variant="ghost" 
                             size="icon" 
@@ -166,6 +191,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     isVerified: undefined,
                                     city: undefined,
                                     year: undefined,
+                                    country: undefined,
                                     page: 1
                                 });
                                 if (onClearQuery) onClearQuery();

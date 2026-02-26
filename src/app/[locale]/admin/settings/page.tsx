@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useEffect, useState } from "react"
 import axios from "axios"
@@ -57,7 +57,7 @@ interface SystemInfo {
 }
 
 export default function AdminSettingsPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.settings");
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(true)
 

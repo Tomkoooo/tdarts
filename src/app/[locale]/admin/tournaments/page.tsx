@@ -1,6 +1,6 @@
+"use client"
 import { useTranslations } from "next-intl";
 
-"use client"
 
 import { useEffect, useState } from "react"
 import axios from "axios"
@@ -73,7 +73,8 @@ interface TournamentStats {
 }
 
 export default function AdminTournamentsPage() {
-    const t = useTranslations("Auto");
+    const t = useTranslations("Admin.tournaments");
+    const tCommon = useTranslations("Admin.common");
   const [tournaments, setTournaments] = useState<AdminTournament[]>([])
   const [stats, setStats] = useState<TournamentStats>({ 
     total: 0, active: 0, finished: 0, pending: 0, 
@@ -124,7 +125,7 @@ export default function AdminTournamentsPage() {
       setPage(response.data.pagination.page || 1)
     } catch (error: any) {
       console.error("Error fetching tournaments:", error)
-      toast.error(t("hiba_történt_az"))
+      toast.error(tCommon("hiba_történt_az"))
     } finally {
       setLoading(false)
     }
@@ -132,20 +133,20 @@ export default function AdminTournamentsPage() {
 
   const getStatusConfig = (status: string) => {
     const configs: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-      pending: { variant: "secondary", label: "Függőben" },
-      active: { variant: "default", label: "Aktív" },
-      "group-stage": { variant: "default", label: "Csoportkör" },
-      knockout: { variant: "outline", label: "Kieséses" },
-      finished: { variant: "default", label: "Befejezett" },
+      pending: { variant: "secondary", label: t("fuggoben_ddvf") },
+      active: { variant: "default", label: t("aktiv_11ph") },
+      "group-stage": { variant: "default", label: t("csoportkor_yqu8") },
+      knockout: { variant: "outline", label: t("kieseses_c2i5") },
+      finished: { variant: "default", label: t("befejezett_x25b") },
     }
     return configs[status] || { variant: "outline", label: status }
   }
 
   const getTypeConfig = (type: string) => {
     const configs: Record<string, { label: string; icon: any }> = {
-      group: { label: "Csoportos", icon: IconUsers },
-      knockout: { label: "Kieséses", icon: IconTarget },
-      group_knockout: { label: "Vegyes", icon: IconTrophy },
+      group: { label: t("csoportos_cksc"), icon: IconUsers },
+      knockout: { label: t("kieseses_c2i5"), icon: IconTarget },
+      group_knockout: { label: t("vegyes_spt0"), icon: IconTrophy },
     }
     return configs[type] || { label: type, icon: IconTrophy }
   }
@@ -156,7 +157,7 @@ export default function AdminTournamentsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("versenyek")}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{tCommon("versenyek")}</h1>
           <p className="text-muted-foreground">{t("versenyek_kezelése_statisztikák")}</p>
         </div>
         <Button 
@@ -179,7 +180,7 @@ export default function AdminTournamentsPage() {
           className="bg-primary/5 text-primary" 
         />
         <StatsCard 
-          title={t("aktív")} 
+          title={tCommon("aktív")} 
           value={stats.active} 
           icon={IconClock} 
           className="bg-info/5 text-info" 
@@ -197,7 +198,7 @@ export default function AdminTournamentsPage() {
           className="bg-warning/5 text-warning" 
         />
          <StatsCard 
-          title={t("játékosok")} 
+          title={tCommon("játékosok")} 
           value={stats.totalPlayers} 
           icon={IconUsers} 
           className="bg-destructive/5 text-destructive" 
@@ -230,7 +231,7 @@ export default function AdminTournamentsPage() {
                         <SelectContent>
                           <SelectItem value="all">{t("összes_státusz")}</SelectItem>
                           <SelectItem value="pending">{t("függőben")}</SelectItem>
-                          <SelectItem value="active">{t("aktív")}</SelectItem>
+                          <SelectItem value="active">{tCommon("aktív")}</SelectItem>
                           <SelectItem value="group-stage">{t("csoportkör")}</SelectItem>
                           <SelectItem value="knockout">{t("kieséses")}</SelectItem>
                           <SelectItem value="finished">{t("befejezett")}</SelectItem>
@@ -267,10 +268,10 @@ export default function AdminTournamentsPage() {
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead>{t("verseny_név")}</TableHead>
-                <TableHead>{t("klub")}</TableHead>
+                <TableHead>{tCommon("klub")}</TableHead>
                 <TableHead>{t("típus")}</TableHead>
                 <TableHead>{t("státusz")}</TableHead>
-                <TableHead className="text-center">{t("játékosok")}</TableHead>
+                <TableHead className="text-center">{tCommon("játékosok")}</TableHead>
                 <TableHead>{t("dátum")}</TableHead>
                 <TableHead className="text-right">{t("műveletek")}</TableHead>
               </TableRow>
@@ -311,7 +312,7 @@ export default function AdminTournamentsPage() {
                                 <Badge variant="outline" className="h-5 px-1 border-warning/50 text-warning gap-1 text-[10px]">
                                    {t("sandbox")}</Badge>
                              )}
-                              {tournament.isDeleted && <Badge variant="destructive" className="h-5 px-1 text-[10px]">{t("törölve")}</Badge>}
+                              {tournament.isDeleted && <Badge variant="destructive" className="h-5 px-1 text-[10px]">{tCommon("törölve")}</Badge>}
                           </div>
                         </div>
                       </TableCell>
@@ -364,7 +365,7 @@ export default function AdminTournamentsPage() {
         {/* Pagination Footer */}
         <div className="border-t bg-muted/20 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
             <span className="text-xs text-muted-foreground order-2 sm:order-1 text-center sm:text-left w-full sm:w-auto">
-              {t("összesen")}<strong>{paginationTotal}</strong> {t("találat_oldal")}{page} / {totalPages})
+              {tCommon("összesen")}<strong>{paginationTotal}</strong> {tCommon("találat_oldal")}{page} / {totalPages})
             </span>
             {totalPages > 1 && (
               <div className="order-1 sm:order-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">

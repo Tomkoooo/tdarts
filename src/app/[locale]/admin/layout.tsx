@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, ReactNode } from "react"
+import { useEffect, useState, ReactNode, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -34,67 +34,67 @@ interface AdminLayoutProps {
   children: ReactNode
 }
 
-const sidebarItems = [
-  {
-    title: "sidebar.dashboard",
-    href: "/admin",
-    icon: IconLayoutDashboard,
-  },
-  {
-    title: "sidebar.users",
-    href: "/admin/users",
-    icon: IconUsers,
-  },
-  {
-    title: "sidebar.clubs",
-    href: "/admin/clubs",
-    icon: IconBuilding,
-  },
-  {
-    title: "sidebar.tournaments",
-    href: "/admin/tournaments",
-    icon: IconTrophy,
-  },
-  {
-    title: "sidebar.leagues",
-    href: "/admin/leagues",
-    icon: IconMedal,
-  },
-  {
-    title: "sidebar.feedback",
-    href: "/admin/feedback",
-    icon: IconMessageCircle,
-  },
-  {
-    title: "sidebar.errors",
-    href: "/admin/errors",
-    icon: IconAlertTriangle,
-  },
-  {
-    title: "sidebar.announcements",
-    href: "/admin/announcements",
-    icon: IconSpeakerphone,
-  },
-  {
-    title: "sidebar.todos",
-    href: "/admin/todos",
-    icon: IconCheck,
-  },
-  {
-    title: "sidebar.emails",
-    href: "/admin/emails",
-    icon: IconMail,
-  },
-  {
-    title: "sidebar.settings",
-    href: "/admin/settings",
-    icon: IconSettings,
-  },
-]
-
 function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: { isCollapsed?: boolean; onNavigate?: () => void; onToggleCollapse?: () => void }) {
   const pathname = usePathname()
   const t = useTranslations("Admin.layout")
+
+  const sidebarItems = useMemo(() => ([
+    {
+      title: "sidebar_dashboard_a3kc",
+      href: "/admin",
+      icon: IconLayoutDashboard,
+    },
+    {
+      title: "sidebar_users_arcp",
+      href: "/admin/users",
+      icon: IconUsers,
+    },
+    {
+      title: "sidebar_clubs_b1d5",
+      href: "/admin/clubs",
+      icon: IconBuilding,
+    },
+    {
+      title: "sidebar_tournaments_6vcv",
+      href: "/admin/tournaments",
+      icon: IconTrophy,
+    },
+    {
+      title: "sidebar_leagues_xluc",
+      href: "/admin/leagues",
+      icon: IconMedal,
+    },
+    {
+      title: "sidebar_feedback_ic83",
+      href: "/admin/feedback",
+      icon: IconMessageCircle,
+    },
+    {
+      title: "sidebar_errors_e0kt",
+      href: "/admin/errors",
+      icon: IconAlertTriangle,
+    },
+    {
+      title: "sidebar_announcements_pvfc",
+      href: "/admin/announcements",
+      icon: IconSpeakerphone,
+    },
+    {
+      title: "sidebar_todos_arz2",
+      href: "/admin/todos",
+      icon: IconCheck,
+    },
+    {
+      title: "sidebar_emails_dxiv",
+      href: "/admin/emails",
+      icon: IconMail,
+    },
+    {
+      title: "sidebar_settings_psqa",
+      href: "/admin/settings",
+      icon: IconSettings,
+    },
+  ]), []);
 
   return (
     <nav className="flex flex-col gap-1.5 p-2 h-[calc(100vh-4rem)]">
@@ -152,6 +152,7 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const t = useTranslations("Admin.layout");
   const { user } = useUserContext()
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [adminLoading, setAdminLoading] = useState(true)
@@ -159,8 +160,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { isOpen: isCommandOpen, setIsOpen: setCommandOpen } = useCommandPalette()
-  const t = useTranslations("Admin.layout")
-
   useEffect(() => {
     const checkAdminStatus = async () => {
       setAdminLoading(true)
@@ -243,7 +242,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex flex-col h-full bg-card">
             {/* Mobile Header */}
             <div className="flex items-center gap-2 justify-start border-b border-border px-4 py-6 bg-muted/30">
-                 <Image src="/tdarts_fav.svg" alt="tDarts" width={32} height={32} className="rounded-md" />
+                 <Image src="/tdarts_fav.svg" alt={t("tdarts_f0pi")} width={32} height={32} className="rounded-md" />
                <div className="flex flex-col items-start">
                  <div className="flex items-center gap-3 mb-2">
                    <span className="font-bold text-xl tracking-tight">{t("sidebar.title")}</span>

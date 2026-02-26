@@ -38,7 +38,8 @@ interface PlayerNotificationModalProps {
 const PANEL_SHADOW = "shadow-lg shadow-black/35"
 
 export default function PlayerNotificationModal({ isOpen, onClose, player, tournamentName }: PlayerNotificationModalProps) {
-  const t = useTranslations("Tournament.notification_modal")
+  const tTour = useTranslations("Tournament")
+  const t = (key: string) => tTour(`notification_modal.${key}`)
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [language, setLanguage] = useState<"hu" | "en">("hu")

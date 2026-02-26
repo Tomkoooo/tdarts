@@ -75,8 +75,8 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       // Hozzáadom a kilépő animációt
       const toastElement = document.querySelector(`[data-toast-id="${announcement._id}"]`);
       if (toastElement) {
-        toastElement.classList.remove('animate-slideInFromLeft');
-        toastElement.classList.add('animate-slideOutToLeft');
+        toastElement.classList.remove(t("animate_slideinfromleft_zbfn"));
+        toastElement.classList.add(t("animate_slideouttoleft_om3m"));
       }
       // Animáció után töröljük a toast-ot
       setTimeout(() => {
@@ -116,8 +116,8 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
     // Hozzáadom a kilépő animációt
     const toastElement = document.querySelector(`[data-toast-id="${announcement._id}"]`);
     if (toastElement) {
-      toastElement.classList.remove('animate-slideInFromLeft');
-      toastElement.classList.add('animate-slideOutToLeft');
+      toastElement.classList.remove(t("animate_slideinfromleft_zbfn"));
+      toastElement.classList.add(t("animate_slideouttoleft_om3m"));
     }
     setTimeout(() => onClose(announcement._id), 500);
   };

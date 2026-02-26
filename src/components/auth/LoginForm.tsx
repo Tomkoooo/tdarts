@@ -96,8 +96,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
             {t('login.language')}
           </div>
           <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
-            <li><button onClick={() => toggleLanguage('hu')}>Magyar</button></li>
-            <li><button onClick={() => toggleLanguage('en')}>English</button></li>
+            <li><button onClick={() => toggleLanguage('hu')}>{t("magyar_x1es")}</button></li>
+            <li><button onClick={() => toggleLanguage('en')}>{t("english_1097")}</button></li>
           </ul>
         </div>
       </div>
