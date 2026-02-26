@@ -22,20 +22,31 @@ fi
 echo "🔧 Node: $($NODE_BIN -v)"
 echo "🔧 Npm: $($NPM_BIN -v)"
 
-# On Apple Silicon, force arm64 execution so native optional deps resolve correctly.
-RUNNER=""
-if [ "$(uname -m)" = "arm64" ] && [ -x "/usr/bin/arch" ]; then
-  RUNNER="/usr/bin/arch -arm64"
-  echo "🔧 Exec mode: arm64"
+# Resolve Next CLI directly and run it with Node.
+NEXT_CLI="./node_modules/next/dist/bin/next"
+if [ ! -f "$NEXT_CLI" ]; then
+  echo "❌ next CLI not found at $NEXT_CLI"
+  echo "Run npm install first."
+  exit 1
+fi
+
+# On Apple Silicon hardware, always force arm64 execution even if git was launched under Rosetta.
+RUN_PREFIX=""
+if [ -x "/usr/sbin/sysctl" ] && [ -x "/usr/bin/arch" ]; then
+  HOST_ARM64="$(/usr/sbin/sysctl -in hw.optional.arm64 2>/dev/null || echo 0)"
+  if [ "$HOST_ARM64" = "1" ]; then
+    RUN_PREFIX="/usr/bin/arch -arm64"
+    echo "🔧 Exec mode: arm64 (forced)"
+  fi
 fi
 
 # Run lint
 echo ""
 echo "📝 Running ESLint..."
-if [ -n "$RUNNER" ]; then
-  $RUNNER "$NPM_BIN" run lint
+if [ -n "$RUN_PREFIX" ]; then
+  $RUN_PREFIX "$NODE_BIN" "$NEXT_CLI" lint
 else
-  "$NPM_BIN" run lint
+  "$NODE_BIN" "$NEXT_CLI" lint
 fi || {
   echo ""
   echo "❌ ESLint failed. Please fix the errors before pushing."
@@ -46,10 +57,10 @@ fi || {
 # Run build
 echo ""
 echo "🏗️  Running production build..."
-if [ -n "$RUNNER" ]; then
-  $RUNNER "$NPM_BIN" run build
+if [ -n "$RUN_PREFIX" ]; then
+  $RUN_PREFIX "$NODE_BIN" "$NEXT_CLI" build
 else
-  "$NPM_BIN" run build
+  "$NODE_BIN" "$NEXT_CLI" build
 fi || {
   echo ""
   echo "❌ Build failed. Please fix the errors before pushing."
