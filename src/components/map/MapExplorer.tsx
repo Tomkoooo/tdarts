@@ -23,6 +23,11 @@ interface MapExplorerProps {
   initialQuery?: string;
 }
 
+const hasValidCoordinates = (
+  item: MapItem
+): item is MapItem & { lat: number; lng: number } =>
+  Boolean(item.mapReady) && item.lat != null && item.lng != null;
+
 export default function MapExplorer({ initialQuery = '' }: MapExplorerProps) {
   const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu');
   const [query, setQuery] = useState(initialQuery);
@@ -87,7 +92,7 @@ export default function MapExplorer({ initialQuery = '' }: MapExplorerProps) {
       }
       markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
 
-      const markerItems = items.filter((item) => item.mapReady && item.lat != null && item.lng != null);
+      const markerItems = items.filter(hasValidCoordinates);
       if (markerItems.length === 0) {
         mapRef.current.setView([47.1625, 19.5033], 7);
         mapRef.current.invalidateSize();

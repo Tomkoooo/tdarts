@@ -17,7 +17,7 @@ export class ProfileService {
       profilePicture?: string | null;
       publicConsent?: boolean;
       country?: string | null;
-      locale?: 'hu' | 'en';
+      locale?: 'hu' | 'en' | 'de';
     }
   ): Promise<IUserDocument> {
     await connectMongo();

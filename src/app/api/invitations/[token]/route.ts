@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           const inviterPlayerId = inviterPlayer?._id?.toString?.();
 
           if (inviterPlayerId) {
-            replaceIndex = existingMemberIds.findIndex((id) => id !== inviterPlayerId);
+            replaceIndex = existingMemberIds.findIndex((id: string) => id !== inviterPlayerId);
           }
           if (replaceIndex === -1) {
             replaceIndex = team.members.findIndex((member: any) => !member?.userRef);

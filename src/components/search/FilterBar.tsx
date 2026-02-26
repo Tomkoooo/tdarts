@@ -150,30 +150,28 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                         )}
 
                         {/* Country Filter */}
-                        {activeTab !== 'map' && (
-                            <>
-                                <Separator orientation="vertical" className="hidden md:block h-10" />
-                                <div className="flex flex-col gap-2">
-                                    <Label className="text-sm font-semibold">Ország</Label>
-                                    <Select
-                                        value={filters.country || 'all'}
-                                        onValueChange={(val) => onFilterChange('country', val === 'all' ? undefined : val)}
-                                    >
-                                        <SelectTrigger className="w-[210px]">
-                                            <SelectValue placeholder="Minden ország" />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-72">
-                                            <SelectItem value="all">Minden ország</SelectItem>
-                                            {countryOptions.map((country) => (
-                                                <SelectItem key={country.value} value={country.value}>
-                                                    {country.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </>
-                        )}
+                        <>
+                            <Separator orientation="vertical" className="hidden md:block h-10" />
+                            <div className="flex flex-col gap-2">
+                                <Label className="text-sm font-semibold">Ország</Label>
+                                <Select
+                                    value={filters.country || 'all'}
+                                    onValueChange={(val) => onFilterChange('country', val === 'all' ? undefined : val)}
+                                >
+                                    <SelectTrigger className="w-[210px]">
+                                        <SelectValue placeholder="Minden ország" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-72">
+                                        <SelectItem value="all">Minden ország</SelectItem>
+                                        {countryOptions.map((country) => (
+                                            <SelectItem key={country.value} value={country.value}>
+                                                {country.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </>
 
                         {/* Verified Toggle (Tournaments Only) */}
                         {activeTab === 'tournaments' && (

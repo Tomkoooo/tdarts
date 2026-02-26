@@ -32,14 +32,12 @@ export async function POST(
 
     await connectMongo();
     const template = await EmailTemplateModel.findById(id);
-    const resolvedLocale = normalizeEmailLocale(locale || template.locale || 'hu');
-    const localeTemplate =
-      (await EmailTemplateModel.findOne({ key: template.key, locale: resolvedLocale })) || template;
-
-
     if (!template) {
       return NextResponse.json({ success: false, message: 'Template not found' }, { status: 404 });
     }
+    const resolvedLocale = normalizeEmailLocale(locale || template.locale || 'hu');
+    const localeTemplate =
+      (await EmailTemplateModel.findOne({ key: template.key, locale: resolvedLocale })) || template;
 
     // Generate dummy data for all variables
     const dummyData: Record<string, string> = {

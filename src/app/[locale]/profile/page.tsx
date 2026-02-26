@@ -102,27 +102,6 @@ export default function ProfilePage() {
     }
   }
 
-  // Handle reply to ticket
-  const handleReplyToTicket = async (ticket: any, content: string) => {
-    setIsLoading(true)
-    try {
-      if (ticket.status === 'closed') {
-        toast.error(t("tickets.toasts.closed_error"))
-        return
-      }
-      const response = await axios.post(`/api/profile/tickets/${ticket.id}/reply`, { content })
-      if (response.data.success) {
-        setSelectedTicket(response.data.data)
-        // Update the ticket in the list as well
-        setTickets(tickets.map(tk => tk.id === ticket.id ? response.data.data : tk))
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || t("tickets.toasts.reply_error"))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   // Load league history
   const loadLeagueHistory = async () => {
     setIsLoadingLeagueHistory(true)
@@ -359,12 +338,10 @@ export default function ProfilePage() {
             <TicketDetail 
               ticket={selectedTicket} 
               onBack={() => setSelectedTicket(null)}
-              onSendMessage={(content) => handleReplyToTicket(selectedTicket, content)}
               onUpdate={() => {
                 refreshUnreadCount();
                 loadTickets();
               }}
-              isLoading={isLoading}
             />
           ) : (
             <TicketList 

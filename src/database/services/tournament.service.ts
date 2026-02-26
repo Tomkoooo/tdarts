@@ -86,10 +86,12 @@ export class TournamentService {
         const locationInput = tournamentData.tournamentSettings?.location;
         if (typeof locationInput === 'string' && locationInput.trim()) {
             const geocodeResult = await GeocodingService.geocodeAddress(locationInput, 'user');
-            tournamentData.tournamentSettings = {
-                ...tournamentData.tournamentSettings,
-                locationData: geocodeResult.location,
-            };
+            if (tournamentData.tournamentSettings) {
+                tournamentData.tournamentSettings = {
+                    ...tournamentData.tournamentSettings,
+                    locationData: geocodeResult.location,
+                } as TournamentSettings;
+            }
         }
 
         // Sandbox check: Limit to 5 per month per club

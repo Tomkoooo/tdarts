@@ -24,7 +24,7 @@ export async function POST() {
       );
     }
 
-    user.googleId = null;
+    user.googleId = undefined;
     user.authProvider = 'local';
     await user.save();
 
