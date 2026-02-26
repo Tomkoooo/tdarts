@@ -20,7 +20,7 @@ const updateProfileSchema = z.object({
     .refine((value) => isValidCountryCode(value), 'Invalid country code')
     .nullable()
     .optional(),
-  locale: z.enum(['hu', 'en']).optional(),
+  locale: z.enum(['hu', 'en', 'de']).optional(),
 }).refine((data) => {
   if (data.password && !data.confirmPassword) {
     return false;

@@ -17,7 +17,7 @@ export interface IUser {
     profilePicture?: string;
     authProvider?: 'local' | 'google';
     country?: string;
-    locale?: 'hu' | 'en';
+    locale?: 'hu' | 'en' | 'de';
     codes: {
         reset_password: string | null;
         verify_email: string | null;

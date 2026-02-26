@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
     profilePicture: { type: String, default: null },
     authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
     country: { type: String, default: null },
-    locale: { type: String, enum: ['hu', 'en'], default: 'hu' },
+    locale: { type: String, enum: ['hu', 'en', 'de'], default: 'hu' },
     codes: {
       reset_password: { type: String, default: null },
       verify_email: { type: String, default: null },

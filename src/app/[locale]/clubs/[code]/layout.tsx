@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { ClubService } from "@/database/services/club.service";
 import "./layout.css";
 import { getTranslations } from "next-intl/server";
+import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,27 +24,25 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { code, locale } = await params;
   const t = await getTranslations({ locale, namespace: "Auto" });
+  const baseUrl = getBaseUrl();
+  const clubPath = `/clubs/${code}`;
+  const localeAlternates = buildLocaleAlternates(clubPath);
+  const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
+
   try {
     const club = await ClubService.getClub(code);
     
-    // SEO Fields with fallbacks
     const name = club.name || "Darts Klub";
     const title = club.landingPage?.seo?.title || name;
     const description = club.landingPage?.seo?.description || club.description || `Részletek a(z) ${name} darts klubról.`;
     const commonKeywords = [name, club.location, 'darts', 'tornák', 'klub'].filter(Boolean);
     const keywords = club.landingPage?.seo?.keywords || commonKeywords.join(', ');
     
-    // Use club logo or default image
     const image = club.landingPage?.coverImage || club.landingPage?.logo || club.logo || "/images/club-default-cover.jpg";
     const imageUrl = getAbsoluteUrl(image);
 
-    // Location - use address or location
     const location = club.address || club.location || "Magyarország";
-
-    // Canonical URL
-    const canonicalUrl = getAbsoluteUrl(`/clubs/${code}`);
-
-    // Get club statistics
+    const canonicalUrl = `${baseUrl}/${locale}${clubPath}`;
     const memberCount = club.members?.length || 0;
 
     return {
@@ -53,8 +52,15 @@ export async function generateMetadata({
       },
       description,
       keywords,
+      metadataBase: new URL(baseUrl),
       alternates: {
         canonical: canonicalUrl,
+        languages: {
+          ...Object.fromEntries(
+            Object.entries(localeAlternates).map(([loc, path]) => [loc, `${baseUrl}${path}`])
+          ),
+          'x-default': `${baseUrl}/hu${clubPath}`,
+        },
       },
       openGraph: {
         title,
@@ -69,8 +75,8 @@ export async function generateMetadata({
             alt: title,
           },
         ],
-        siteName: "Darts Club",
-        locale: "hu_HU",
+        siteName: "tDarts",
+        locale: ogLocale,
       },
       twitter: {
         card: "summary_large_image",
@@ -78,11 +84,10 @@ export async function generateMetadata({
         description,
         images: [imageUrl],
       },
-      metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"),
       other: {
         "og:type": "website",
-        "og:site_name": "Darts Club",
-        "og:locale": "hu_HU",
+        "og:site_name": "tDarts",
+        "og:locale": ogLocale,
         "og:location": location,
         "og:club:name": name,
         "og:club:member_count": memberCount.toString(),

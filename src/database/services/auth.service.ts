@@ -38,7 +38,7 @@ export class AuthService {
     }
   }
 
-  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean, country?: string | null, locale?: 'hu' | 'en'}}> {
+  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean, country?: string | null, locale?: 'hu' | 'en' | 'de'}}> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password)) || user.isDeleted) {

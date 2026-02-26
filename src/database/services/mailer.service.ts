@@ -12,7 +12,7 @@ export class MailerService {
             tournamentCode: string;
             freeSpots: number;
             userName: string;
-            locale?: 'hu' | 'en';
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -237,7 +237,7 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
             clubUrl: string;
             profileUrl: string;
             howItWorksUrl: string;
-            locale?: 'hu' | 'en';
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -402,7 +402,7 @@ tDarts Csapat
         data: {
             clubName: string;
             clubUrl: string;
-            locale?: 'hu' | 'en';
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -527,7 +527,7 @@ tDarts Csapat
             tournamentCode: string;
             tournamentDate: string;
             userName: string;
-            locale?: 'hu' | 'en';
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -611,7 +611,7 @@ tDarts Csapat
         data: {
             userName: string;
             verificationCode: string;
-            locale?: 'hu' | 'en';
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -685,7 +685,7 @@ tDarts Csapat
         data: {
             userName: string;
             resetCode: string;
-            locale?: 'hu' | 'en';
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
