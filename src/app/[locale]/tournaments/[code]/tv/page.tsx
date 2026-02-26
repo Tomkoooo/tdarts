@@ -52,7 +52,6 @@ function LegacyTVLayout({
   qrPosition,
   qrSize,
   isDragging,
-  isResizing,
   handleMouseDown,
   handleResizeMouseDown,
   handleExit,
@@ -65,7 +64,6 @@ function LegacyTVLayout({
   qrPosition: { x: number; y: number } | null;
   qrSize: number;
   isDragging: boolean;
-  isResizing: boolean;
   handleMouseDown: (e: React.MouseEvent) => void;
   handleResizeMouseDown: (e: React.MouseEvent) => void;
   handleExit: () => void;
@@ -448,7 +446,6 @@ export default function TVModePage() {
         qrPosition={qrPosition}
         qrSize={qrSize}
         isDragging={isDragging}
-        isResizing={isResizing}
         handleMouseDown={handleMouseDown}
         handleResizeMouseDown={handleResizeMouseDown}
         handleExit={handleExit}
