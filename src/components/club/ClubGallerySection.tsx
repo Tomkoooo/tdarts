@@ -1,5 +1,5 @@
-
 "use client"
+import { useTranslations } from "next-intl";
 
 import * as React from "react"
 import axios from "axios"
@@ -22,6 +22,7 @@ interface ClubGallerySectionProps {
 }
 
 export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) {
+    const t = useTranslations("Club.components");
   const [galleries, setGalleries] = React.useState<Gallery[]>([])
   const [loading, setLoading] = React.useState(true)
   const [selectedGallery, setSelectedGallery] = React.useState<Gallery | null>(null)
@@ -84,7 +85,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
       const baseUrl = window.location.href.split('?')[0];
       const shareUrl = `${baseUrl}?galleryId=${gallery._id}`;
       navigator.clipboard.writeText(shareUrl);
-      toast.success("Galéria linkje másolva!");
+      toast.success(t("galéria_linkje_másolva"));
   }
 
   const nextImage = () => {
@@ -97,12 +98,12 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
     setCurrentImageIndex((prev) => (prev - 1 + selectedGallery.images.length) % selectedGallery.images.length)
   }
 
-  if (loading) return <div className="text-center py-10">Betöltés...</div>
+  if (loading) return <div className="text-center py-10">{t("betöltés")}</div>
   if (galleries.length === 0) return null
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Képgaléria</h2>
+      <h2 className="text-2xl font-bold">{t("képgaléria")}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {galleries.map((gallery) => (
           <div 
@@ -118,12 +119,12 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                  />
                ) : (
-                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">Empty</div>
+                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">{t("empty")}</div>
                )}
                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10 flex justify-between items-end">
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-semibold truncate">{gallery.name}</div>
-                    <div className="text-white/80 text-xs">{gallery.images.length} kép</div>
+                    <div className="text-white/80 text-xs">{gallery.images.length} {t("kép")}</div>
                   </div>
                   <Button 
                     variant="ghost" 

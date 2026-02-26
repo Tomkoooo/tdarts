@@ -33,6 +33,7 @@ import {
   Area
 } from "recharts"
 import { TournamentHistory, PlayerHonor } from "@/interface/player.interface"
+import { useTranslations, useLocale } from "next-intl"
 
 interface PlayerStatsData {
   hasPlayer: boolean
@@ -89,6 +90,8 @@ export function PlayerStatisticsSection({
   isLoading,
   onViewLegs,
 }: PlayerStatisticsSectionProps) {
+  const t = useTranslations("Profile.stats")
+  const locale = useLocale()
   const [selectedSeason, setSelectedSeason] = React.useState<string>('current');
   const [selectedTeam, setSelectedTeam] = React.useState<Player | null>(null);
 
@@ -116,7 +119,7 @@ export function PlayerStatisticsSection({
     [...previousSeasons].sort((a: any, b: any) => a.year - b.year).forEach((season: any) => {
         let seasonMmr = 800;
         history.push({
-            display: `${season.year} Start`,
+            display: `${season.year} ${t("career")}`,
             mmr: 800,
             year: season.year,
             fullDate: `${season.year}.01.01.`
@@ -129,7 +132,7 @@ export function PlayerStatisticsSection({
                 display: t.tournamentName || (t as any).name,
                 mmr: seasonMmr,
                 year: season.year,
-                fullDate: new Date(t.date || (t as any).startDate).toLocaleDateString('hu-HU'),
+                fullDate: new Date(t.date || (t as any).startDate).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US'),
                 change: t.mmrChange
             });
         });
@@ -138,7 +141,7 @@ export function PlayerStatisticsSection({
     // 2. Process current season
     let currentSeasonMmr = 800;
     history.push({
-        display: `${currentYear} Start`,
+        display: `${currentYear} ${t("career")}`,
         mmr: 800,
         year: currentYear,
         fullDate: `${currentYear}.01.01.`
@@ -150,13 +153,13 @@ export function PlayerStatisticsSection({
             display: t.name || t.tournamentName,
             mmr: currentSeasonMmr,
             year: currentYear,
-            fullDate: new Date(t.startDate || t.date).toLocaleDateString('hu-HU'),
+            fullDate: new Date(t.startDate || t.date).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US'),
             change: t.mmrChange
         });
     });
 
     return history;
-  }, [playerStats, currentYear, previousSeasons]);
+  }, [playerStats, currentYear, previousSeasons, t, locale]);
 
   const allTimeSummary = React.useMemo(() => {
     if (!playerStats?.player) return { totalTournaments: 0, wins: 0, losses: 0, totalLegsWon: 0, totalLegsLost: 0, winRate: 0, legWinRate: 0 };
@@ -291,9 +294,9 @@ export function PlayerStatisticsSection({
         name: t.tournamentName || t.name || 'Unknown',
         avg: (t.stats?.average || t.average || 0),
         oneEighties: (t.stats?.oneEightiesCount || t.oneEightiesCount || 0),
-        date: new Date(t.date || t.startDate).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })
+        date: new Date(t.date || t.startDate).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US', { month: 'short', day: 'numeric' })
     })).reverse();
-  }, [activeHistory]);
+  }, [activeHistory, locale]);
 
   if (isLoading) {
     return (
@@ -350,7 +353,7 @@ export function PlayerStatisticsSection({
         <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-2xl font-bold">
             <IconTrophy className="w-6 h-6 text-primary" />
-            Játékos statisztikák
+            {t("title")}
             </CardTitle>
             <div className="flex flex-wrap gap-2 pt-1">
                 {honors.map((honor, i) => (
@@ -363,15 +366,15 @@ export function PlayerStatisticsSection({
         </div>
         
         <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">Időszak:</span>
+            <span className="text-sm font-medium text-muted-foreground">{t("period")}</span>
             <select 
                 value={selectedSeason} 
                 onChange={(e) => setSelectedSeason(e.target.value)}
                 className="h-9 w-[160px] rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
-                <option value="current">Jelenlegi Szezon</option>
-                <option value="all-time">Összesített</option>
-                <optgroup label="Korábbi évek">
+                <option value="current">{t("seasons.current")}</option>
+                <option value="all-time">{t("seasons.all_time")}</option>
+                <optgroup label={t("seasons.previous")}>
                     {availableYears.filter(y => y !== currentYear.toString()).map(year => (
                         <option key={year} value={year}>{year}</option>
                     ))}
@@ -386,7 +389,7 @@ export function PlayerStatisticsSection({
           <div className={cn("p-5 rounded-xl border transition-all hover:bg-opacity-10", "border-primary/20 bg-primary/5 text-primary")}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
-                {selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Aktuális MMR' : 'Szezon végi MMR'}
+                {selectedSeason === 'current' || selectedSeason === 'all-time' ? t("mmr.current") : t("mmr.season_end")}
               </span>
               <div className="opacity-50"><IconTarget className="w-4 h-4" /></div>
             </div>
@@ -395,39 +398,39 @@ export function PlayerStatisticsSection({
                 <div className="text-2xl font-black text-primary ">
                   {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.stats.mmr : (activeStats.mmr || 800)}
                 </div>
-                <span className="text-[10px] font-bold uppercase opacity-60">MMR</span>
+                <span className="text-[10px] font-bold uppercase opacity-60">{t("mmr_1n02")}</span>
               </div>
               {((selectedSeason === 'current' || selectedSeason === 'all-time') && playerStats.player.stats.oacMmr !== 800) && (
                 <div className="flex items-center gap-2 pt-1">
                   <div className="text-lg font-black text-primary">
                     {playerStats.player.stats.oacMmr}
                   </div>
-                  <span className="text-[9px] font-bold uppercase text-primary/70">OAC MMR</span>
+                  <span className="text-[9px] font-bold uppercase text-primary/70">{t("oac_mmr_g66r")}</span>
                 </div>
               )}
             </div>
             <div className="text-[10px] font-bold uppercase tracking-tighter mt-1 opacity-60">
-              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : 'Archivált'}
+              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : t("mmr.archived")}
             </div>
           </div>
           <StatCard 
-            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Rangsor' : 'Végezte'}
+            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? t("rank") : t("rank_end")}
             value={selectedSeason === 'current' || selectedSeason === 'all-time' ? `#${playerStats.player.globalRank || '—'}` : '—'}
-            subtext="Globális lista"
+            subtext={t("global_list")}
             icon={<IconTrendingUp className="w-4 h-4" />}
             variant="blue"
           />
           <StatCard 
-            label="Tornák"
+            label={t("tournaments")}
             value={activeSummary.totalTournaments}
-            subtext={selectedSeason === 'all-time' ? 'Pályafutás' : 'Időszak'}
+            subtext={selectedSeason === 'all-time' ? t("career") : t("term")}
             icon={<IconCalendar className="w-4 h-4" />}
             variant="amber"
           />
           <StatCard 
-            label="Győzelmi ráta"
+            label={t("win_rate")}
             value={`${activeSummary.winRate}%`}
-            subtext={`${activeSummary.wins} Győzelem`}
+            subtext={`${activeSummary.wins} ${t("wins")}`}
             icon={<IconSword className="w-4 h-4" />}
             variant="emerald"
           />
@@ -438,7 +441,7 @@ export function PlayerStatisticsSection({
             <Card className="bg-card border-muted/20 shadow-sm">
                 <CardHeader className="py-4 border-b border-muted/10">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                        Forma (Átlag)
+                        {t("charts.form")}
                         <IconChartBar size={14} className="text-blue-500" />
                     </CardTitle>
                 </CardHeader>
@@ -470,7 +473,7 @@ export function PlayerStatisticsSection({
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30">
-                            <span className="text-xs font-bold uppercase tracking-widest">Nincs adat</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{t("charts.no_data")}</span>
                         </div>
                     )}
                 </CardContent>
@@ -479,7 +482,7 @@ export function PlayerStatisticsSection({
             <Card className="bg-card border-muted/20 shadow-sm">
                 <CardHeader className="py-4 border-b border-muted/10">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                        MMR Alakulás
+                        {t("charts.mmr_history")}
                         <IconTarget size={14} className="text-emerald-500" />
                     </CardTitle>
                 </CardHeader>
@@ -496,12 +499,11 @@ export function PlayerStatisticsSection({
                                         const data = props.payload;
                                         return [
                                             <div key="mmr-tip" className="space-y-1">
-                                                <div className="font-bold">{value} MMR</div>
+                                                <div className="font-bold">{value} {t("mmr_1n02")}</div>
                                                 <div className="text-[10px] text-muted-foreground">{data.display}</div>
                                                 {data.change !== undefined && (
                                                     <div className={cn("text-[10px] font-bold", data.change >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                                        {data.change >= 0 ? "+" : ""}{data.change} MMR
-                                                    </div>
+                                                        {data.change >= 0 ? "+" : ""}{data.change} {t("mmr_1n02")}</div>
                                                 )}
                                             </div>,
                                             null
@@ -520,7 +522,7 @@ export function PlayerStatisticsSection({
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30">
-                            <span className="text-xs font-bold uppercase tracking-widest">Nincs MMR történet</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{t("charts.no_history")}</span>
                         </div>
                     )}
                 </CardContent>
@@ -532,14 +534,14 @@ export function PlayerStatisticsSection({
           <div className="space-y-6">
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
               <IconChartBar size={16} className="text-primary" />
-              Szezonális Mutatók
+              {t("metrics.title")}
             </h3>
             <div className="bg-card border border-muted/20 rounded-xl overflow-hidden divide-y divide-muted/10">
-                <SimpleStatRow label="Átlag" value={activeStats.avg?.toFixed(1) || '—'} />
-                <SimpleStatRow label="180-as Dobások" value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
-                <SimpleStatRow label="Legjobb Helyezés" value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
-                <SimpleStatRow label="Átlagos Helyezés" value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />
-                <SimpleStatRow label="Max Kiszálló" value={activeStats.highestCheckout || '—'} />
+                <SimpleStatRow label={t("metrics.avg")} value={activeStats.avg?.toFixed(1) || '—'} />
+                <SimpleStatRow label={t("metrics.one_eighties")} value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
+                <SimpleStatRow label={t("metrics.best_pos")} value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
+                <SimpleStatRow label={t("metrics.avg_pos")} value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />
+                <SimpleStatRow label={t("metrics.max_checkout")} value={activeStats.highestCheckout || '—'} />
             </div>
 
             {/* Recent Matches Restoration */}
@@ -547,7 +549,7 @@ export function PlayerStatisticsSection({
                 <>
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
                         <IconSword size={16} className="text-primary" />
-                        Legutóbbi Meccsek
+                        {t("matches.title")}
                     </h3>
                     <div className="space-y-2">
                         {playerStats.matchHistory.map((match: any) => (
@@ -558,7 +560,7 @@ export function PlayerStatisticsSection({
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-xs font-black font-mono">{match.player1Score} - {match.player2Score}</span>
-                                    <span className="text-[10px] text-muted-foreground opacity-60">{new Date(match.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' })}</span>
+                                    <span className="text-[10px] text-muted-foreground opacity-60">{new Date(match.date).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US', { month: '2-digit', day: '2-digit' })}</span>
                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onViewLegs(match)}>
                                         <IconHistory size={14} />
                                     </Button>
@@ -574,7 +576,7 @@ export function PlayerStatisticsSection({
                 <>
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
                         <IconUsers size={16} className="text-primary" />
-                        Párosaim / Csapataim
+                        {t("teams.title")}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {playerStats.teams.map((team: any) => (
@@ -588,8 +590,7 @@ export function PlayerStatisticsSection({
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold">{team.name}</span>
                                         <span className="text-[10px] text-muted-foreground uppercase opacity-60">
-                                            {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
-                                        </span>
+                                            {team.type === 'pair' ? t("teams.pair") : t("teams.team")} • {team.stats?.mmr || 800} {t("mmr_1n02")}</span>
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -606,9 +607,9 @@ export function PlayerStatisticsSection({
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <IconCalendar size={16} className="text-primary" />
-                Esemény Napló
+                {t("history.title")}
               </div>
-              <span className="text-[10px] opacity-40">{activeHistory.length} Torna</span>
+              <span className="text-[10px] opacity-40">{t("history.tournaments_count", { count: activeHistory.length })}</span>
             </h3>
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {activeHistory.length > 0 ? activeHistory.map((tournament: any, index: number) => (
@@ -625,52 +626,50 @@ export function PlayerStatisticsSection({
                          <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{tournament.finalPosition || tournament.position}.</Badge>
                          {tournament.mmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} MMR
-                            </span>
+                                {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} {t("mmr_1n02")}</span>
                          )}
                          {tournament.oacMmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
-                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} OAC MMR
-                            </span>
+                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} {t("oac_mmr_g66r")}</span>
                          )}
                       </div>
                     </div>
                     <Link href={`/tournaments/${tournament.tournamentId}`}>
                        <Button variant="outline" size="sm" className="">
-                         Megnyitás
+                         {t("history.open_button")}
                        </Button>
                     </Link>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mt-3 pt-3 border-t border-muted/5">
-                      <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Meccsek</span>
-                          <span className="text-[11px] font-bold">{tournament.stats?.matchesWon || 0}W - {tournament.stats?.matchesLost || 0}L</span>
-                      </div>
-                      <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Legek</span>
-                          <span className="text-[11px] font-bold text-muted-foreground">{tournament.stats?.legsWon || 0}W - {tournament.stats?.legsLost || 0}L</span>
-                      </div>
-                      <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Átlag</span>
-                          <span className="text-[11px] font-bold">{tournament.stats?.average?.toFixed(1) || tournament.stats?.avg?.toFixed(1) || '—'}</span>
-                      </div>
-                      <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">180-ak</span>
-                          <span className="text-[11px] font-bold">{tournament.stats?.oneEightiesCount || 0}</span>
-                      </div>
-                      <div className="flex flex-col">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Checkout</span>
-                          <span className="text-[11px] font-bold">{tournament.stats?.highestCheckout || '—'}</span>
-                      </div>
-                      <div className="flex flex-col text-right">
-                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Dátum</span>
-                          <span className="text-[11px] font-bold opacity-60">{new Date(tournament.startDate || tournament.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' })}</span>
-                      </div>
-                  </div>
+                       <div className="flex flex-col">
+                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.matches")}</span>
+                           <span className="text-[11px] font-bold">{tournament.stats?.matchesWon || 0}W - {tournament.stats?.matchesLost || 0}L</span>
+                       </div>
+                       <div className="flex flex-col">
+                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.legs")}</span>
+                           <span className="text-[11px] font-bold text-muted-foreground">{tournament.stats?.legsWon || 0}W - {tournament.stats?.legsLost || 0}L</span>
+                       </div>
+                       <div className="flex flex-col">
+                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.avg")}</span>
+                           <span className="text-[11px] font-bold">{tournament.stats?.average?.toFixed(1) || tournament.stats?.avg?.toFixed(1) || '—'}</span>
+                       </div>
+                       <div className="flex flex-col">
+                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.one_eighties")}</span>
+                           <span className="text-[11px] font-bold">{tournament.stats?.oneEightiesCount || 0}</span>
+                       </div>
+                       <div className="flex flex-col">
+                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.checkout")}</span>
+                           <span className="text-[11px] font-bold">{tournament.stats?.highestCheckout || '—'}</span>
+                       </div>
+                       <div className="flex flex-col text-right">
+                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.date")}</span>
+                           <span className="text-[11px] font-bold opacity-60">{new Date(tournament.startDate || tournament.date).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US', { month: '2-digit', day: '2-digit' })}</span>
+                       </div>
+                   </div>
                 </div>
               )) : (
                 <div className="py-10 text-center text-muted-foreground/30 border border-dashed border-muted/10 rounded-xl">
-                    <span className="text-xs font-bold uppercase tracking-widest">Üres lista</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">{t("history.empty")}</span>
                 </div>
               )}
             </div>

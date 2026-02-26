@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { 
   IconSearch, IconBolt, IconTrophy, IconUsers, IconChartBar, 
   IconSettings, IconQrcode, IconShield, IconDeviceTablet, 
@@ -9,72 +9,75 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const FeaturesSectionNew = () => {
+  const t = useTranslations('Features');
+
   const features = [
     {
       icon: IconSearch,
-      title: 'Verseny Keresés',
-      description: 'Könnyedén találj versenyt lokáció, szint és időpont alapján. Szűrd az eredményeket és jelentkezz egy kattintással.',
+      title: t('items.search.title'),
+      description: t('items.search.description'),
       color: 'from-primary/20 to-primary/5',
       iconColor: 'text-primary',
-      badge: 'Népszerű'
+      badge: t('items.search.badge')
     },
     {
       icon: IconTrophy,
-      title: 'Verseny Kiírás',
-      description: 'Hozz létre saját versenyeket egyedi szabályokkal és formátumokkal. Automatikus csoportbeosztás és párosítás.',
+      title: t('items.draw.title'),
+      description: t('items.draw.description'),
       color: 'from-primary/15 to-accent/5',
       iconColor: 'text-primary',
-      badge: 'Új'
+      badge: t('items.draw.badge')
     },
     {
       icon: IconUsers,
-      title: 'Klub Kezelés',
-      description: 'Alapíts vagy csatlakozz darts klubokhoz, szervezz közösségi eseményeket. Teljes tagság kezelés.',
+      title: t('items.club.title'),
+      description: t('items.club.description'),
       color: 'from-accent/20 to-primary/5',
       iconColor: 'text-accent'
     },
     {
       icon: IconChartBar,
-      title: 'Statisztikai Követés',
-      description: 'Részletes statisztikák minden játékoshoz: átlagok, 180-ak, legmagasabb kiszállók, form grafikon.',
+      title: t('items.stats.title'),
+      description: t('items.stats.description'),
       color: 'from-success/20 to-success/5',
       iconColor: 'text-success',
-      badge: 'Pro'
+      badge: t('items.stats.badge')
     },
     {
       icon: IconBolt,
-      title: 'Valós Idejű Követés',
-      description: 'Kövesd élőben a meccseket és eredményeket. Automatikus frissítés és értesítések.',
+      title: t('items.realtime.title'),
+      description: t('items.realtime.description'),
       color: 'from-warning/20 to-warning/5',
       iconColor: 'text-warning'
     },
     {
       icon: IconSettings,
-      title: 'Teljes Testreszabás',
-      description: 'Minden versenyforma támogatva: 501, 301, Cricket és egyedi szabályok. Testre szabható táblák.',
+      title: t('items.custom.title'),
+      description: t('items.custom.description'),
       color: 'from-info/20 to-info/5',
       iconColor: 'text-info'
     },
     {
       icon: IconQrcode,
-      title: 'QR Kódos Csatlakozás',
-      description: 'Játékosok QR kóddal és jelszóval csatlakozhatnak, regisztráció nélkül. Gyors és egyszerű.',
+      title: t('items.qr.title'),
+      description: t('items.qr.description'),
       color: 'from-primary/15 to-success/5',
       iconColor: 'text-success'
     },
     {
       icon: IconDeviceTablet,
-      title: 'Tablet Támogatás',
-      description: 'Támogatja a táblákhoz kihelyezett tableteket. Optimalizált író felület és érintésvezérlés.',
+      title: t('items.tablet.title'),
+      description: t('items.tablet.description'),
       color: 'from-info/15 to-primary/5',
       iconColor: 'text-info'
     },
     {
       icon: IconShield,
-      title: 'Jelszó Védett',
-      description: 'Minden torna saját jelszóval védett. Biztonságos hozzáférés és adatvédelem.',
+      title: t('items.secure.title'),
+      description: t('items.secure.description'),
       color: 'from-destructive/15 to-destructive/5',
       iconColor: 'text-destructive'
     }
@@ -90,16 +93,15 @@ const FeaturesSectionNew = () => {
         <div className="text-center mb-16 sm:mb-20 space-y-4">
           <Badge variant="secondary" className="mb-4">
             <IconSparkles className="w-4 h-4 mr-2" />
-            Funkciók
+            {t('badge')}
           </Badge>
           
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">
-            Miért tDarts?
+            {t('title')}
           </h2>
           
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            A legmodernebb darts verseny platform minden funkcióval, 
-            amit csak elképzelhetsz. Egyszerű, gyors, professzionális.
+            {t('description')}
           </p>
         </div>
 
@@ -142,7 +144,7 @@ const FeaturesSectionNew = () => {
                     {/* Badge */}
                     {feature.badge && (
                       <Badge 
-                        variant={feature.badge === 'Pro' ? 'default' : 'secondary'}
+                        variant={feature.badge === t('items.stats.badge') ? 'default' : 'secondary'}
                         className="text-xs"
                       >
                         {feature.badge}
@@ -169,24 +171,24 @@ const FeaturesSectionNew = () => {
         <div className="text-center mt-16 sm:mt-20 space-y-6">
           <div className="max-w-2xl mx-auto space-y-4">
             <h3 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Készen állsz az indulásra?
+              {t('cta.title')}
             </h3>
             <p className="text-muted-foreground">
-              Tudd meg hogyan működik a rendszer, és hozd létre az első tornádat percek alatt.
+              {t('cta.description')}
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button size="lg" className="gap-2 group" asChild>
               <Link href="/how-it-works">
-                Hogyan Működik?
+                {t('cta.how_it_works')}
                 <IconArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
             
             <Button size="lg" variant="outline" className="gap-2" asChild>
               <Link href="/auth/register">
-                Ingyenes Regisztráció
+                {t('cta.register')}
               </Link>
             </Button>
           </div>

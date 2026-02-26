@@ -2,14 +2,17 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { IconMapPin, IconShieldCheck, IconUsers } from "@tabler/icons-react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 interface ClubListProps {
     clubs: any[];
 }
 
 export function ClubList({ clubs }: ClubListProps) {
+    const t = useTranslations('Search.club_list')
+
     if (!clubs || clubs.length === 0) {
-        return <div className="text-center py-8 text-muted-foreground">Nincsenek klubok</div>
+        return <div className="text-center py-8 text-muted-foreground">{t('no_clubs')}</div>
     }
 
     return (
@@ -33,7 +36,7 @@ export function ClubList({ clubs }: ClubListProps) {
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <IconUsers className="w-4 h-4" />
-                                        {club.memberCount} tag
+                                        {t('member_count', { count: club.memberCount })}
                                     </div>
                                 </div>
                             </div>
@@ -44,12 +47,12 @@ export function ClubList({ clubs }: ClubListProps) {
                                         {club.tournamentCount}
                                     </div>
                                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                        Verseny
+                                        {t('tournament_count')}
                                     </div>
                                 </div>
                                 <Button asChild variant="outline" size="sm">
                                     <Link href={`/clubs/${club._id}`}>
-                                        Adatlap
+                                        {t('view_profile')}
                                     </Link>
                                 </Button>
                             </div>

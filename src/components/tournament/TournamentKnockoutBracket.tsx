@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useTranslations } from "next-intl";
 import {
   IconAlertTriangle,
   IconChartHistogram,
@@ -42,7 +43,7 @@ import LegsViewModal from "./LegsViewModal";
 import KnockoutBracketDiagram, { DiagramMatch, DiagramRound, RoundSummary } from "./KnockoutBracketDiagram";
 
 class KnockoutErrorBoundary extends React.Component<
-  { children: React.ReactNode; tournamentCode: string; userClubRole: string },
+  { children: React.ReactNode; tournamentCode: string; userClubRole: string; t: any },
   { hasError: boolean; error: Error | null }
 > {
   constructor(props: any) {
@@ -59,20 +60,20 @@ class KnockoutErrorBoundary extends React.Component<
   }
 
   render() {
+    const { t } = this.props;
     if (this.state.hasError) {
       return (
         <Card className="bg-destructive/10 text-destructive">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <IconAlertTriangle className="h-5 w-5" />
-              Hiba történt a knockout tábla betöltésekor
-            </CardTitle>
+              {t("hiba_tortent_a_knockout_3hh4")}</CardTitle>
             <CardDescription className="text-destructive/80">
               {this.state.error?.message || "Ismeretlen hiba"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-destructive/80">
-            <p>Próbáld meg újratölteni az oldalt, vagy generálj új kört az admin felületen.</p>
+            <p>{t("probald_meg_ujratolteni_az_j5oz")}</p>
           </CardContent>
         </Card>
       )
@@ -131,6 +132,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   clubId,
 }) => {
   const { user } = useUserContext()
+  const t = useTranslations("Tournament.components");
+  const tTour = useTranslations("Tournament");
   const isAdmin = userClubRole === "admin" || userClubRole === "moderator"
   const fullscreenContainerRef = useRef<HTMLDivElement>(null)
   const [knockoutData, setKnockoutData] = useState<KnockoutRound[]>([])
@@ -377,7 +380,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowGenerateNextRound(false)
-        toast.success("Következő kör sikeresen generálva!")
+        toast.success(tTour('knockout.success_next_round'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült generálni a következő kört.", {
           error: response.data?.error,
@@ -398,7 +401,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleMatchEdit = (match: KnockoutMatch) => {
     if (!match.matchReference || !match.player1 || !match.player2) {
-      showErrorToast("Bye meccseket nem lehet szerkeszteni - automatikusan befejeződnek.", {
+      showErrorToast(tTour('knockout.error_bye_edit'), {
         context: "Meccs szerkesztése",
         errorName: "Szerkesztés sikertelen",
       })
@@ -427,7 +430,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleSaveMatch = async () => {
     if (!selectedMatch || !selectedMatch.matchReference) {
-      showErrorToast("Nem lehet menteni a meccset.", {
+      showErrorToast(t("nem_lehet_menteni_a_u9c9"), {
         context: "Meccs mentése",
         errorName: "Mentés sikertelen",
       })
@@ -464,7 +467,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         await fetchKnockoutData()
         setShowMatchEditModal(false)
         setSelectedMatch(null)
-        toast.success("Meccs sikeresen frissítve!")
+        toast.success(tTour('knockout.success_match_updated'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
           error: response.data?.error,
@@ -485,12 +488,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleAddMatch = async () => {
     if (selectedPlayer1 && selectedPlayer2 && selectedPlayer1 === selectedPlayer2) {
-      toast.error("Kérjük válassz ki két különböző játékost.")
+      toast.error(tTour('knockout.error_different_players'))
       return
     }
 
     if ((selectedPlayer1 || selectedPlayer2) && !selectedBoard) {
-      toast.error("Kérjük válassz ki egy táblát ha játékosokat adsz hozzá.")
+      toast.error(tTour('knockout.error_select_board'))
       return
     }
 
@@ -518,7 +521,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowPlayer1Dropdown(false)
         setShowPlayer2Dropdown(false)
         setShowScorerDropdown(false)
-        toast.success("Meccs sikeresen hozzáadva!")
+        toast.success(tTour('knockout.success_match_added'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült hozzáadni a meccset.", {
           error: response.data?.error,
@@ -546,7 +549,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       if (response.data?.success) {
         await fetchKnockoutData()
         setShowGenerateEmptyRoundsModal(false)
-        toast.success("Üres körök sikeresen generálva!")
+        toast.success(tTour('knockout.success_empty_rounds'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült generálni az üres köröket.", {
           error: response.data?.error,
@@ -567,7 +570,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleGenerateRandomPairings = async () => {
     if (selectedPlayersForPairing.length < 2) {
-      toast.error("Kérjük válassz ki legalább 2 játékost.")
+      toast.error(tTour('knockout.error_min_players'))
       return
     }
 
@@ -582,7 +585,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         await fetchKnockoutData()
         setShowRandomPairingModal(false)
         setSelectedPlayersForPairing([])
-        toast.success("Párosítások sikeresen generálva!")
+        toast.success(tTour('knockout.success_pairings'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült generálni a párosításokat.", {
           error: response.data?.error,
@@ -639,7 +642,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowPlayer1Dropdown(false)
         setShowPlayer2Dropdown(false)
         setShowScorerDropdown(false)
-        toast.success("Meccs beállítások sikeresen frissítve!")
+        toast.success(tTour('knockout.success_settings_updated'))
       } else {
         showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccs beállításait.", {
           error: response.data?.error,
@@ -660,7 +663,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleUpdateMatchPlayer = async () => {
     if (!editingMatch) {
-      showErrorToast("Nem lehet frissíteni a meccset.", {
+      showErrorToast(t("nem_lehet_frissiteni_a_p1ye"), {
         context: "Knockout meccs frissítés",
         errorName: "Meccs frissítése sikertelen",
       })
@@ -669,12 +672,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
     const isNewMatch = !editingMatch.matchReference
     if (isNewMatch && !editPairPlayer1 && !editPairPlayer2) {
-      toast.error("Kérjük válassz ki legalább egy játékost!")
+      toast.error(tTour('knockout.error_select_player'))
       return
     }
 
     if (isNewMatch && (editPairPlayer1 || editPairPlayer2) && !editPairBoard) {
-      toast.error("Kérjük válassz ki egy táblát!")
+      toast.error(tTour('knockout.error_select_board'))
       return
     }
 
@@ -703,7 +706,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
         if (response.data?.success) {
           await fetchKnockoutData()
-          toast.success("Meccs sikeresen létrehozva!")
+          toast.success(tTour('knockout.success_match_created'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
@@ -728,7 +731,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
         if (response.data?.success) {
           await fetchKnockoutData()
-          toast.success("Meccs sikeresen frissítve!")
+          toast.success(tTour('knockout.success_match_updated'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
@@ -752,7 +755,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const handleViewLegs = (match: KnockoutMatch) => {
     if (!match.matchReference) {
-      toast.error("Bye meccsekhez nincsenek legek.")
+      toast.error(tTour('knockout.error_bye_legs'))
       return
     }
     setSelectedMatchForLegs(match)
@@ -769,7 +772,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       })
       if (response.data?.success) {
         await fetchKnockoutData()
-        toast.success("Meccs sikeresen törölve!")
+        toast.success(tTour('knockout.success_match_deleted'))
         setShowDeleteMatchModal(false)
         setMatchToDelete(null)
       } else {
@@ -796,7 +799,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteLastRound`)
       if (response.data?.success) {
         await fetchKnockoutData()
-        toast.success("Utolsó kör sikeresen törölve!")
+        toast.success(tTour('knockout.success_round_deleted'))
         setShowDeleteLastRoundModal(false)
       } else {
         showErrorToast(response.data?.error || "Nem sikerült törölni az utolsó kört.", {
@@ -1049,8 +1052,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <CardContent className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3 text-muted-foreground">
             <IconRefresh className="h-5 w-5 animate-spin" />
-            Betöltés...
-          </div>
+            {t("betoltes_69f8")}</div>
         </CardContent>
       </Card>
     )
@@ -1061,8 +1063,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     return (
       <Card className="bg-card/92 shadow-lg shadow-black/35">
         <CardContent className="py-12 text-center text-muted-foreground">
-          Még nincs knockout tábla generálva.
-        </CardContent>
+          {t("meg_nincs_knockout_tabla_czkk")}</CardContent>
       </Card>
     )
   }
@@ -1104,7 +1105,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 <IconChartHistogram size={16} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top">Legek</TooltipContent>
+            <TooltipContent side="top">{t("legek_17n1")}</TooltipContent>
           </Tooltip>
         ) : null}
 
@@ -1122,7 +1123,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <IconSettings size={16} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Beállítások</TooltipContent>
+                <TooltipContent side="top">{t("beallitasok_cd9f")}</TooltipContent>
               </Tooltip>
             )}
 
@@ -1138,7 +1139,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <IconClipboardList size={16} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Eredmény módosítása</TooltipContent>
+                <TooltipContent side="top">{t("eredmeny_modositasa_vhbi")}</TooltipContent>
               </Tooltip>
             ) : null}
 
@@ -1157,14 +1158,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <IconTrash size={16} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Meccs törlése</TooltipContent>
+                <TooltipContent side="top">{t("meccs_torlese_3k04")}</TooltipContent>
               </Tooltip>
             ) : null}
           </>
         ) : null}
         {status !=="finished" && (
         <span className="text-xs text-muted-foreground italic flex ml-auto">
-          Író: {rawMatch.matchReference?.scorer?.name || "Előző vesztes"}
+          {t("iro_3pep")}{rawMatch.matchReference?.scorer?.name || "Előző vesztes"}
         </span>
         )}
       </div>
@@ -1185,8 +1186,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <div className="space-y-2 flex-1">
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <IconHierarchy className="h-6 w-6 text-primary" />
-                  Egyenes kiesés
-                  {isAdmin && roundsWithMatches.length > 0 && !isTournamentLocked && tournamentStatus !== 'finished' && (
+                  {t("egyenes_kieses_lfsy")}{isAdmin && roundsWithMatches.length > 0 && !isTournamentLocked && tournamentStatus !== 'finished' && (
                     <Button
                       className="gap-2 ml-4"
                       size="sm"
@@ -1194,13 +1194,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       disabled={loading || roundsWithMatches.some((round) => round.matches?.some((match) => match.matchReference?.status !== "finished"))}
                     >
                       <IconChevronRight className="h-4 w-4" />
-                      Következő kör generálása
-                    </Button>
+                      {t("kovetkezo_kor_generalasa_583b")}</Button>
                   )}
                 </CardTitle>
                 <CardDescription>
-                  Kövesd a kieséses ág párosításait, eredményeit és adminisztráld a meccseket.
-                </CardDescription>
+                  {t("kovesd_a_kieseses_ag_6tx7")}</CardDescription>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -1211,7 +1209,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     size="icon"
                     
                     onClick={() => setZoomLevel(1)}
-                    title="Alaphelyzet"
+                    title={t("alaphelyzet_mvmx")}
                   >
                     <IconRefresh size={16} className="text-foreground" />
                   </Button>
@@ -1220,7 +1218,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     variant="outline"
                     size="icon"
                     onClick={() => setZoomLevel((prev) => Math.max(0.6, +(prev - 0.1).toFixed(2)))}
-                    title="Kicsinyítés"
+                    title={t("kicsinyites_jovs")}
                   >
                     <IconMinus size={16} className="text-foreground" />
                   </Button>
@@ -1229,7 +1227,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     variant="outline"
                     size="icon"
                     onClick={() => setZoomLevel((prev) => Math.min(1.6, +(prev + 0.1).toFixed(2)))}
-                    title="Nagyítás"
+                    title={t("nagyitas_t1rp")}
                   >
                     <IconPlus className="text-foreground" />
                   </Button>
@@ -1238,7 +1236,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
                 {isFullscreen && (
                   <div className="flex items-center gap-2 rounded-full bg-muted/20 px-3 py-1">
-                    <span className="text-xs text-muted-foreground">Gombok:</span>
+                    <span className="text-xs text-muted-foreground">{t("gombok_ux7w")}</span>
                     <button
                       type="button"
                       onClick={() => setShowActionsInFullscreen(!showActionsInFullscreen)}
@@ -1265,20 +1263,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   {isFullscreen ? (
                     <>
                       <IconPlayerPause className="h-4 w-4" />
-                      Kilépés teljes képernyőből
-                    </>
+                      {t("kilepes_teljes_kepernyobol_6puy")}</>
                   ) : (
                     <>
                       <IconPlayerPlay className="h-4 w-4" />
-                      Teljes képernyő
-                    </>
+                      {t("teljes_kepernyo_hkpx")}</>
                   )}
                 </Button>
 
                 <Button variant="outline" size="sm" className="gap-2" onClick={fetchKnockoutData}>
                   <IconRefresh className="h-4 w-4" />
-                  Frissítés
-                </Button>
+                  {t("frissites_knax")}</Button>
               </div>
             </div>
 
@@ -1294,8 +1289,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                         disabled={loading}
                       >
                         <IconPlus className="h-4 w-4" />
-                        Üres kör generálása
-                      </Button>
+                        {t("ures_kor_generalasa_sk12")}</Button>
                       {!knockoutHasStarted && (
                         <Button
                           variant="outline"
@@ -1307,8 +1301,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           disabled={loading}
                         >
                           <IconHierarchy className="h-4 w-4" />
-                          Random párosítás
-                        </Button>
+                          {t("random_parositas_jtvj")}</Button>
                       )}
                     </>
                   )}
@@ -1319,8 +1312,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       onClick={() => setShowDeleteLastRoundModal(true)}
                     >
                       <IconTrash className="h-4 w-4" />
-                      Utolsó kör visszavonása
-                    </Button>
+                      {t("utolso_kor_visszavonasa_cck2")}</Button>
                   )}
                 </div>
               </div>
@@ -1351,17 +1343,15 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showGenerateNextRound} onOpenChange={setShowGenerateNextRound}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Következő kör generálása</DialogTitle>
+              <DialogTitle>{t("kovetkezo_kor_generalasa_583b")}</DialogTitle>
               <DialogDescription>
-                Biztosan generálni szeretnéd a következő kört? A befejezett meccsek győztesei automatikusan továbbjutnak.
-              </DialogDescription>
+                {t("biztosan_generalni_szeretned_a_9x5k")}</DialogDescription>
             </DialogHeader>
             {currentKnockoutMethod === "manual" && (
               <Alert className="bg-primary/10 text-primary">
-                <AlertTitle>Megjegyzés manuális módhoz</AlertTitle>
+                <AlertTitle>{t("megjegyzes_manualis_modhoz_uwpe")}</AlertTitle>
                 <AlertDescription>
-                  Bye meccsek esetén az egyedül maradt játékos automatikusan továbbjut. Páratlan játékos számnál az utolsó játékos kap bye-t.
-                </AlertDescription>
+                  {t("bye_meccsek_eseten_az_uov1")}</AlertDescription>
               </Alert>
             )}
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -1376,11 +1366,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showGenerateEmptyRoundsModal} onOpenChange={setShowGenerateEmptyRoundsModal}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Üres körök generálása</DialogTitle>
-              <DialogDescription>Adj meg hány üres kört szeretnél létrehozni a manuális párosításhoz.</DialogDescription>
+              <DialogTitle>{t("ures_korok_generalasa_bwnc")}</DialogTitle>
+              <DialogDescription>{t("adj_meg_hany_ures_2wq7")}</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              <Label htmlFor="roundsToGenerate">Körök száma</Label>
+              <Label htmlFor="roundsToGenerate">{t("korok_szama_v4hy")}</Label>
               <Input
                 id="roundsToGenerate"
                 type="number"
@@ -1402,19 +1392,18 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showRandomPairingModal} onOpenChange={setShowRandomPairingModal}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Random párosítás</DialogTitle>
+              <DialogTitle>{t("random_parositas_jtvj")}</DialogTitle>
               <DialogDescription>
-                Válaszd ki a játékosokat, akiket szeretnél párosítani a {selectedRound}. körben. Minimum két játékos szükséges.
-              </DialogDescription>
+                {t("valaszd_ki_a_jatekosokat_mrxd")}{selectedRound}{t("korben_minimum_ket_jatekos_fxsm")}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="playerSearch">Játékos keresése</Label>
+                <Label htmlFor="playerSearch">{t("jatekos_keresese_jfey")}</Label>
                 <Input
                   id="playerSearch"
                   value={playerSearchTerm}
                   onChange={(event) => setPlayerSearchTerm(event.target.value)}
-                  placeholder="Játékos neve..."
+                  placeholder={t("jatekos_neve_iedl")}
                   className="mt-2"
                 />
               </div>
@@ -1456,15 +1445,15 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showAddMatchModal} onOpenChange={setShowAddMatchModal}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Meccs hozzáadása</DialogTitle>
-              <DialogDescription>{selectedRound}. kör</DialogDescription>
+              <DialogTitle>{t("meccs_hozzaadasa_k6ce")}</DialogTitle>
+              <DialogDescription>{selectedRound}{t("kor_pxc6")}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="grid gap-3">
-                <Label>Első játékos</Label>
+                <Label>{t("elso_jatekos_fq2d")}</Label>
                 <Input
-                  placeholder="Keresés..."
+                  placeholder={t("kereses_swtb")}
                   value={player1SearchTerm}
                   onChange={(event) => {
                     setPlayer1SearchTerm(event.target.value)
@@ -1502,9 +1491,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </div>
 
               <div className="grid gap-3">
-                <Label>Második játékos</Label>
+                <Label>{t("masodik_jatekos_gmax")}</Label>
                 <Input
-                  placeholder="Keresés..."
+                  placeholder={t("kereses_swtb")}
                   value={player2SearchTerm}
                   onChange={(event) => {
                     setPlayer2SearchTerm(event.target.value)
@@ -1542,9 +1531,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </div>
 
               <div className="grid gap-3">
-                <Label>Író (opcionális)</Label>
+                <Label>{t("iro_opcionalis_b7mi")}</Label>
                 <Input
-                  placeholder="Keresés..."
+                  placeholder={t("kereses_swtb")}
                   value={scorerSearchTerm}
                   onChange={(event) => {
                     setScorerSearchTerm(event.target.value)
@@ -1582,14 +1571,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </div>
 
               <div className="grid gap-3">
-                <Label htmlFor="boardSelect">Tábla</Label>
+                <Label htmlFor="boardSelect">{t("tabla_1e8h")}</Label>
                 <select
                   id="boardSelect"
                   value={selectedBoard}
                   onChange={(event) => setSelectedBoard(event.target.value)}
                   className="rounded-lg border border-border/40 bg-card/80 px-3 py-2 text-sm text-foreground shadow-sm shadow-black/15 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="">Válassz táblát</option>
+                  <option value="">{t("valassz_tablat_w2ov")}</option>
                   {availableBoards.map((board: any) => (
                     <option key={board.boardNumber} value={board.boardNumber.toString()}>
                       {formatBoardDisplay(board.boardNumber, board.name)}
@@ -1617,10 +1606,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showMatchEditModal} onOpenChange={setShowMatchEditModal}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Meccs eredmény rögzítése</DialogTitle>
+              <DialogTitle>{t("meccs_eredmeny_rogzitese_h1ee")}</DialogTitle>
               <DialogDescription>
-                Állítsd be a legek számát és statisztikákat. Mentés után a meccs befejezettnek számít.
-              </DialogDescription>
+                {t("allitsd_be_a_legek_ifc6")}</DialogDescription>
             </DialogHeader>
 
             {selectedMatch && (
@@ -1637,7 +1625,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       <h4 className="text-sm font-semibold text-primary">{selectedMatch.player1?.name || "Player 1"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
-                          <Label>Nyert legek</Label>
+                          <Label>{t("nyert_legek_es4r")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -1650,7 +1638,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label>180-ak száma</Label>
+                          <Label>{t("180_ak_szama_r1fz")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -1666,7 +1654,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label>Legmagasabb kiszálló</Label>
+                          <Label>{t("legmagasabb_kiszallo_v119")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -1688,7 +1676,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       <h4 className="text-sm font-semibold text-accent">{selectedMatch.player2?.name || "Player 2"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
-                          <Label>Nyert legek</Label>
+                          <Label>{t("nyert_legek_es4r")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -1701,7 +1689,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label>180-ak száma</Label>
+                          <Label>{t("180_ak_szama_r1fz")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -1717,7 +1705,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label>Legmagasabb kiszálló</Label>
+                          <Label>{t("legmagasabb_kiszallo_v119")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -1741,8 +1729,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button onClick={handleSaveMatch} disabled={editForm.player1LegsWon === editForm.player2LegsWon}>
-                Mentés
-              </Button>
+                {t("mentes_wz35")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1750,15 +1737,15 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showMatchPlayerEditModal} onOpenChange={setShowMatchPlayerEditModal}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Meccs párosítás szerkesztése</DialogTitle>
-              <DialogDescription>Állítsd be a játékosokat, írót és táblát ehhez a meccshez.</DialogDescription>
+              <DialogTitle>{t("meccs_parositas_szerkesztese_374y")}</DialogTitle>
+              <DialogDescription>{t("allitsd_be_a_jatekosokat_lszw")}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="grid gap-3">
-                <Label>Első játékos</Label>
+                <Label>{t("elso_jatekos_fq2d")}</Label>
                 <Input
-                  placeholder="Keresés..."
+                  placeholder={t("kereses_swtb")}
                   value={editPairPlayer1Search}
                   onChange={(event) => {
                     setEditPairPlayer1Search(event.target.value)
@@ -1796,9 +1783,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </div>
 
               <div className="grid gap-3">
-                <Label>Második játékos</Label>
+                <Label>{t("masodik_jatekos_gmax")}</Label>
                 <Input
-                  placeholder="Keresés..."
+                  placeholder={t("kereses_swtb")}
                   value={editPairPlayer2Search}
                   onChange={(event) => {
                     setEditPairPlayer2Search(event.target.value)
@@ -1836,9 +1823,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               </div>
 
               <div className="grid gap-3">
-                <Label>Író</Label>
+                <Label>{t("iro_4axa")}</Label>
                 <Input
-                  placeholder="Keresés..."
+                  placeholder={t("kereses_swtb")}
                   value={editPairScorerSearch}
                   onChange={(event) => {
                     setEditPairScorerSearch(event.target.value)
@@ -1877,13 +1864,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
               {!editingMatch?.matchReference && (
                 <div className="grid gap-3">
-                  <Label>Tábla</Label>
+                  <Label>{t("tabla_1e8h")}</Label>
                   <select
                     value={editPairBoard}
                     onChange={(event) => setEditPairBoard(event.target.value)}
                     className="rounded-lg border border-border/40 bg-card/80 px-3 py-2 text-sm text-foreground shadow-sm shadow-black/15 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">Válassz táblát</option>
+                    <option value="">{t("valassz_tablat_w2ov")}</option>
                     {availableBoards.map((board: any) => (
                       <option key={board.boardNumber} value={board.boardNumber.toString()}>
                         {formatBoardDisplay(board.boardNumber, board.name)}
@@ -1905,16 +1892,16 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showMatchSettingsModal} onOpenChange={setShowMatchSettingsModal}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Meccs beállítások</DialogTitle>
-              <DialogDescription>Állítsd be a játékosokat, írót és táblát ehhez a meccshez.</DialogDescription>
+              <DialogTitle>{t("meccs_beallitasok_7eb7")}</DialogTitle>
+              <DialogDescription>{t("allitsd_be_a_jatekosokat_lszw")}</DialogDescription>
             </DialogHeader>
 
             {editingMatchSettings && (
               <div className="space-y-4">
                 <div className="grid gap-3">
-                  <Label>Első játékos</Label>
+                  <Label>{t("elso_jatekos_fq2d")}</Label>
                   <Input
-                    placeholder="Keresés..."
+                    placeholder={t("kereses_swtb")}
                     value={player1SearchTerm}
                     onChange={(event) => {
                       setPlayer1SearchTerm(event.target.value)
@@ -1952,9 +1939,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 </div>
 
                 <div className="grid gap-3">
-                  <Label>Második játékos</Label>
+                  <Label>{t("masodik_jatekos_gmax")}</Label>
                   <Input
-                    placeholder="Keresés..."
+                    placeholder={t("kereses_swtb")}
                     value={player2SearchTerm}
                     onChange={(event) => {
                       setPlayer2SearchTerm(event.target.value)
@@ -1992,9 +1979,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 </div>
 
                 <div className="grid gap-3">
-                  <Label>Író</Label>
+                  <Label>{t("iro_4axa")}</Label>
                   <Input
-                    placeholder="Keresés..."
+                    placeholder={t("kereses_swtb")}
                     value={scorerSearchTerm}
                     onChange={(event) => {
                       setScorerSearchTerm(event.target.value)
@@ -2032,13 +2019,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 </div>
 
                 <div className="grid gap-3">
-                  <Label>Tábla</Label>
+                  <Label>{t("tabla_1e8h")}</Label>
                   <select
                     value={selectedBoard}
                     onChange={(event) => setSelectedBoard(event.target.value)}
                     className="rounded-lg border border-border/40 bg-card/80 px-3 py-2 text-sm text-foreground shadow-sm shadow-black/15 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">Válassz táblát</option>
+                    <option value="">{t("valassz_tablat_w2ov")}</option>
                     {availableBoards.map((board: any) => (
                       <option key={board.boardNumber} value={board.boardNumber.toString()}>
                         {formatBoardDisplay(board.boardNumber, board.name)}
@@ -2060,13 +2047,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showDeleteMatchModal} onOpenChange={setShowDeleteMatchModal}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Meccs törlése</DialogTitle>
-              <DialogDescription>Biztosan törölni szeretnéd ezt a meccset? A művelet nem visszavonható.</DialogDescription>
+              <DialogTitle>{t("meccs_torlese_3k04")}</DialogTitle>
+              <DialogDescription>{t("biztosan_torolni_szeretned_ezt_ft7i")}</DialogDescription>
             </DialogHeader>
             {matchToDelete?.match && (
               <Alert className="bg-destructive/10 text-destructive">
                 <AlertTitle>{matchToDelete.match.player1?.name} vs {matchToDelete.match.player2?.name || "Üres"}</AlertTitle>
-                <AlertDescription>{matchToDelete.round}. kör</AlertDescription>
+                <AlertDescription>{matchToDelete.round}{t("kor_pxc6")}</AlertDescription>
               </Alert>
             )}
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -2080,12 +2067,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         <Dialog open={showDeleteLastRoundModal} onOpenChange={setShowDeleteLastRoundModal}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Utolsó kör visszavonása</DialogTitle>
-              <DialogDescription>Az összes meccs törlődik az utolsó generált körből. Biztosan folytatod?</DialogDescription>
+              <DialogTitle>{t("utolso_kor_visszavonasa_cck2")}</DialogTitle>
+              <DialogDescription>{t("az_osszes_meccs_torlodik_ylac")}</DialogDescription>
             </DialogHeader>
             <Alert className="bg-destructive/10 text-destructive">
-              <AlertTitle>Figyelem!</AlertTitle>
-              <AlertDescription>Ez a művelet nem visszavonható.</AlertDescription>
+              <AlertTitle>{t("figyelem_ikm5")}</AlertTitle>
+              <AlertDescription>{t("ez_a_muvelet_nem_lw70")}</AlertDescription>
             </Alert>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button variant="destructive" onClick={handleDeleteLastRound} disabled={loading}>
@@ -2128,10 +2115,12 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 }
 
 const TournamentKnockoutBracket: React.FC<TournamentKnockoutBracketProps> = (props) => {
+  const t = useTranslations("Tournament.components")
   return (
     <KnockoutErrorBoundary 
       tournamentCode={props.tournamentCode} 
       userClubRole={props.userClubRole}
+      t={t}
     >
       <TournamentKnockoutBracketContent {...props} />
     </KnockoutErrorBoundary>

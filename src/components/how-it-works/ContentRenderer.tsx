@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface NoteProps {
   type: 'info' | 'warning' | 'tip' | 'important';
@@ -7,6 +8,7 @@ interface NoteProps {
 }
 
 const Note: React.FC<NoteProps> = ({ type, content }) => {
+  const t = useTranslations('ContentRenderer.notes');
   const getNoteStyles = () => {
     switch (type) {
       case 'info':
@@ -43,7 +45,7 @@ const Note: React.FC<NoteProps> = ({ type, content }) => {
     <div className={cn("p-4 rounded-xl", styles.bg, styles.border, "border")}>
       <p className={cn("text-sm leading-relaxed", styles.text)}>
         <span className="mr-2">{getIcon()}</span>
-        <strong>{type === 'info' ? 'Info:' : type === 'warning' ? 'Fontos:' : type === 'tip' ? 'Tipp:' : 'Megjegyzés:'}</strong> {content}
+        <strong>{t(type || 'default')}</strong> {content}
       </p>
     </div>
   );

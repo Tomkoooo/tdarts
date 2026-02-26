@@ -3,14 +3,16 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { IconShieldCheck } from "@tabler/icons-react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 interface LeagueListProps {
     leagues: any[];
 }
 
 export function LeagueList({ leagues }: LeagueListProps) {
+    const t = useTranslations('Search.league_list')
     if (!leagues || leagues.length === 0) {
-        return <div className="text-center py-8 text-muted-foreground">Nincsenek ligák</div>
+        return <div className="text-center py-8 text-muted-foreground">{t('no_leagues')}</div>
     }
 
     return (
@@ -29,13 +31,13 @@ export function LeagueList({ leagues }: LeagueListProps) {
                                 
                                 {league.club && (
                                     <div className="text-sm text-muted-foreground">
-                                        Szervező: <span className="font-medium text-base-content">{league.club.name}</span>
+                                        {t('organizer')} <span className="font-medium text-base-content">{league.club.name}</span>
                                     </div>
                                 )}
                                 
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     <Badge variant={league.isActive ? "default" : "secondary"}>
-                                        {league.isActive ? "Aktív szezon" : "Lezárt"}
+                                        {league.isActive ? t('status_active') : t('status_closed')}
                                     </Badge>
                                     <Badge variant="outline">
                                         {league.pointSystemType}
@@ -45,7 +47,7 @@ export function LeagueList({ leagues }: LeagueListProps) {
 
                             <Button asChild variant="outline" size="sm">
                                 <Link href={league.club ? `/clubs/${league.club._id}?page=leagues&league=${league._id}` : '#'}>
-                                    Részletek
+                                    {t('details')}
                                 </Link>
                             </Button>
                         </div>

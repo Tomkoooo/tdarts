@@ -1,9 +1,12 @@
 
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/Button';
+import { useTranslations } from 'next-intl';
 
 export default function Footer() {
+  const t = useTranslations('Footer');
+
   return (
     <footer className="relative z-10 bg-[#4a2828] text-foreground border-t border-border mt-auto w-full">
       <div className="container mx-auto px-4 py-8">
@@ -11,39 +14,39 @@ export default function Footer() {
           
           {/* Column 1: Legal & Info */}
           <div className="flex flex-col space-y-4">
-            <h3 className="font-bold text-lg mb-2">Információk</h3>
+            <h3 className="font-bold text-lg mb-2">{t('legal_title')}</h3>
             <a href="gdpr.pdf" className="hover:text-primary transition-colors text-muted-foreground">
-              Adatkezelési tájékoztató
+              {t('privacy')}
             </a>
             <Link href="/terms" className="hover:text-primary transition-colors text-muted-foreground">
-              Általános Szerződési Feltételek
+              {t('terms')}
             </Link>
             <Link href="/feedback" className="hover:text-primary transition-colors text-muted-foreground">
-              Kapcsolat / Visszajelzés
+              {t('contact')}
             </Link>
             <p className="text-sm text-muted-foreground mt-auto pt-4">
-              &copy; {new Date().getFullYear()} tDarts. Minden jog fenntartva.
+              {t("copy_jk6j")}{new Date().getFullYear()} {t("tdarts_vlt8")}{t('all_rights_reserved')}
             </p>
           </div>
 
           {/* Column 2: Maintainer & OAC */}
           <div className="flex flex-col space-y-4">
-            <h3 className="font-bold text-lg mb-2">Hálózat</h3>
+            <h3 className="font-bold text-lg mb-2">{t('network_title')}</h3>
             <div className="flex flex-col space-y-2">
               <p className="text-muted-foreground">
-                Fenntartó:{" "}
+                {t('maintainer')}
                 <Link
                   href="https://sironic.hu" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-primary hover:underline font-medium"
                 >
-                  Sironic Rendszerház
+                  {t('sironic')}
                 </Link>
               </p>
               
               <div className="mt-4 p-4 bg-muted rounded-lg border border-border">
-                <p className="text-sm font-semibold mb-2 text-foreground">Tudj meg többet az Országos Amatőr Ligáról!</p>
+                <p className="text-sm font-semibold mb-2 text-foreground">{t('oac_info')}</p>
                 <Button 
                   variant="outline"
                   className="w-full"
@@ -54,7 +57,7 @@ export default function Footer() {
                     target="_blank" 
                     rel="noopener noreferrer"
                   >
-                    OAC - Amatőr Darts
+                    {t('oac_button')}
                   </Link>
                 </Button>
               </div>
@@ -63,12 +66,12 @@ export default function Footer() {
 
           {/* Column 3: Partners */}
           <div className="flex flex-col space-y-4">
-            <h3 className="font-bold text-lg mb-2">Partnereink</h3>
+            <h3 className="font-bold text-lg mb-2">{t('partners_title')}</h3>
             <div className="grid grid-cols-3 gap-4 items-center">
               <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
                 <Image 
                   src="/partners/mdsz_logo.png" 
-                  alt="Magyar Darts Szövetség" 
+                  alt={t("magyar_darts_szovetseg_1x63")} 
                   fill
                   className="object-contain p-1"
                 />
@@ -76,7 +79,7 @@ export default function Footer() {
               <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
                 <Image 
                   src="/partners/dartsbarlang_logo.png" 
-                  alt="DartsBarlang" 
+                  alt={t("dartsbarlang_slgh")} 
                   fill
                   className="object-contain p-1"
                 />
@@ -84,7 +87,7 @@ export default function Footer() {
               <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
                 <Image 
                   src="/partners/remiz_logo.png" 
-                  alt="Remiz Sport- és Eseményközpont" 
+                  alt={t("remiz_sport_es_esemenykozpont_7fgn")} 
                   fill
                   className="object-contain p-1"
                 />
@@ -92,7 +95,7 @@ export default function Footer() {
             </div>
             
             <p className="text-xs text-muted-foreground mt-2">
-              Kiemelt partnereink, akik támogatják a magyar darts fejlődését.
+              {t('partners_note')}
             </p>
           </div>
         </div>

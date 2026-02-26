@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { toast } from "react-hot-toast"
 import { IconUsers, IconX, IconUser } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
@@ -27,8 +28,10 @@ export default function TeamRegistrationModal({
   tournamentName,
   clubId,
   onSuccess,
-  isModeratorMode = false,
+  isModeratorMode,
 }: TeamRegistrationModalProps) {
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`team_registration.${key}`, values)
   const [teamName, setTeamName] = useState("")
   const [member1, setMember1] = useState<any>(null)
   const [member2, setMember2] = useState<any>(null)
@@ -39,18 +42,18 @@ export default function TeamRegistrationModal({
     setError("")
     
     if (!teamName) {
-      setError("Kérjük, add meg a csapat nevét")
+      setError(t("error_name"))
       return
     }
     
     if (isModeratorMode) {
       if (!member1 || !member2) {
-        setError("Kérjük, válaszd ki mindkét csapattagot")
+        setError(t("error_both_members"))
         return
       }
     } else {
       if (!member1) {
-        setError("Kérjük, válassz társat")
+        setError(t("error_partner"))
         return
       }
     }
@@ -79,16 +82,16 @@ export default function TeamRegistrationModal({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Hiba történt a csapat regisztráció során")
+        throw new Error(data.error || t("error_generic"))
       }
 
       if (data.message === 'waiting_for_partner') {
-        toast.success("Meghívó elküldve a társadnak! A csapat a várólistára került az elfogadásig.", { 
+        toast.success(t("success_invitation"), { 
           duration: 5000,
           icon: '📩'
         })
       } else {
-        toast.success("Csapat sikeresen létrehozva!")
+        toast.success(t("success"))
       }
       
       onSuccess()
@@ -99,7 +102,7 @@ export default function TeamRegistrationModal({
       setMember1(null)
       setMember2(null)
     } catch (err: any) {
-      setError(err.message || "Hiba történt a csapat regisztráció során")
+      setError(err.message || t("error_generic"))
       toast.error(err.message)
     } finally {
       setIsSubmitting(false)
@@ -122,19 +125,19 @@ export default function TeamRegistrationModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <IconUsers className="h-6 w-6 text-primary" />
-            Páros nevezés - {tournamentName}
+            {t("title", { name: tournamentName })}
           </DialogTitle>
           <DialogDescription>
             {isModeratorMode 
-              ? 'Add meg a csapat nevét és válaszd ki mindkét csapattagot'
-              : 'Add meg a csapat nevét és válaszd ki a társadat'}
+              ? t("desc_moderator")
+              : t("desc_player")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <FormField
-            label="Csapat név"
-            placeholder="pl.: A Nyerők"
+            label={t("team_name")}
+            placeholder={t("team_name_placeholder")}
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             icon={<IconUsers className="h-5 w-5" />}
@@ -143,7 +146,7 @@ export default function TeamRegistrationModal({
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              {isModeratorMode ? '1. csapattag' : 'Társ kiválasztása'}
+              {isModeratorMode ? t("member_1_label") : t("partner_label")}
             </label>
             {member1 ? (
               <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 p-3">
@@ -152,7 +155,7 @@ export default function TeamRegistrationModal({
                   <div>
                     <p className="font-medium">{member1.name}</p>
                     {member1.userRef && (
-                      <p className="text-xs text-muted-foreground">Regisztrált játékos</p>
+                      <p className="text-xs text-muted-foreground">{t("registered_player")}</p>
                     )}
                   </div>
                 </div>
@@ -170,14 +173,14 @@ export default function TeamRegistrationModal({
                 clubId={clubId}
                 isForTournament
                 showAddGuest={true}
-                placeholder={isModeratorMode ? "Keress rá az 1. csapattagra vagy add meg a nevét" : "Keress rá a társadra vagy add meg a nevét"}
+                placeholder={isModeratorMode ? t("search_member_1") : t("search_partner")}
               />
             )}
           </div>
 
           {isModeratorMode && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">2. csapattag</label>
+              <label className="text-sm font-medium">{t("member_2_label")}</label>
               {member2 ? (
                 <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 p-3">
                   <div className="flex items-center gap-3">
@@ -185,7 +188,7 @@ export default function TeamRegistrationModal({
                     <div>
                       <p className="font-medium">{member2.name}</p>
                       {member2.userRef && (
-                        <p className="text-xs text-muted-foreground">Regisztrált játékos</p>
+                        <p className="text-xs text-muted-foreground">{t("registered_player")}</p>
                       )}
                     </div>
                   </div>
@@ -203,7 +206,7 @@ export default function TeamRegistrationModal({
                   clubId={clubId}
                   isForTournament
                   showAddGuest={true}
-                  placeholder="Keress rá a 2. csapattagra vagy add meg a nevét"
+                  placeholder={t("search_member_2")}
                 />
               )}
             </div>
@@ -218,13 +221,13 @@ export default function TeamRegistrationModal({
 
         <DialogFooter>
           <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
-            Mégse
+            {t("cancel")}
           </Button>
           <Button 
             onClick={handleSubmit} 
             disabled={isSubmitting || !teamName || !member1 || (isModeratorMode && !member2)}
           >
-            {isSubmitting ? "Mentés..." : "Csapat létrehozása"}
+            {isSubmitting ? t("saving") : t("create")}
           </Button>
         </DialogFooter>
       </DialogContent>

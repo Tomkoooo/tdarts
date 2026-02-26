@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from 'next-intl'
 
 interface QRCodeModalProps {
   isOpen: boolean
@@ -19,10 +20,11 @@ interface QRCodeModalProps {
 }
 
 export default function QRCodeModal({ isOpen, onClose, clubId, boardNumber, boardName }: QRCodeModalProps) {
+  const t = useTranslations('Club.qr_code_modal')
   const printRef = useRef<HTMLDivElement>(null)
 
   const qrUrl = `https://tdarts.sironic.hu/board/redirect/${clubId}`
-  const displayName = boardName || `Tábla #${boardNumber}`
+  const displayName = boardName || t('default_board_name', { number: boardNumber })
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -35,7 +37,7 @@ export default function QRCodeModal({ isOpen, onClose, clubId, boardNumber, boar
           <!DOCTYPE html>
           <html>
             <head>
-              <title>${displayName} - QR Kód</title>
+              <title>${t('print_title', { name: displayName })}</title>
               <style>
                 body { font-family: Arial, sans-serif; margin: 0; padding: 20px; text-align: center; }
                 .print-container { max-width: 400px; margin: 0 auto; padding: 20px; border: 2px solid #000; border-radius: 12px; }
@@ -53,8 +55,8 @@ export default function QRCodeModal({ isOpen, onClose, clubId, boardNumber, boar
                   ${qrCodeSVG}
                 </div>
                 <div class="instructions">
-                  <p>Scanneld be a QR kódot a táblához való csatlakozáshoz.</p>
-                  <p>Vagy látogass el: ${qrUrl}</p>
+                  <p>${t('scan_instructions')}</p>
+                  <p>${t('visit_url', { url: qrUrl })}</p>
                 </div>
               </div>
             </body>
@@ -70,9 +72,9 @@ export default function QRCodeModal({ isOpen, onClose, clubId, boardNumber, boar
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>QR kód – {displayName}</DialogTitle>
+          <DialogTitle>{t('title', { name: displayName })}</DialogTitle>
           <DialogDescription>
-            Nyomtasd ki vagy jelenítsd meg a táblához tartozó QR kódot a gyors csatlakozáshoz.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -84,20 +86,20 @@ export default function QRCodeModal({ isOpen, onClose, clubId, boardNumber, boar
             </div>
           </div>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p>Scanneld be a QR kódot a táblához való csatlakozáshoz.</p>
+            <p>{t('scan_instructions')}</p>
             <p className="text-xs break-all">{qrUrl}</p>
           </div>
         </div>
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
-            Bezárás
+            {t('close')}
           </Button>
           <Button onClick={handlePrint} className="w-full sm:w-auto">
-            Nyomtatás
+            {t('print')}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
-} 
+}

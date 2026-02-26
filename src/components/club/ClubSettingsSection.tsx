@@ -21,6 +21,7 @@ import QRCodeModal from "./QRCodeModal"
 import { Club } from "@/interface/club.interface"
 import { Button } from "@/components/ui/Button"
 import { IconTrash, IconDoorExit } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 interface ClubSettingsSectionProps {
   club: Club
@@ -42,6 +43,7 @@ export function ClubSettingsSection({
   onDeactivateClub,
   onClubUpdated,
 }: ClubSettingsSectionProps) {
+  const t = useTranslations('Club.settings')
   const [qrCodeModal, setQrCodeModal] = React.useState<{
     isOpen: boolean
     boardNumber: number
@@ -54,7 +56,7 @@ export function ClubSettingsSection({
   // Only admin/moderator should see most of this.
   // Assuming the parent component checks this, but extra check is fine.
   if (userRole !== 'admin' && userRole !== 'moderator') {
-      return <div>Nincs jogosultságod a beállítások megtekintéséhez.</div>
+      return <div className="p-4 text-center text-muted-foreground">{t('no_permission')}</div>
   }
 
   return (
@@ -64,27 +66,27 @@ export function ClubSettingsSection({
           <IconSettings size={24} className="text-primary" />
         </div>
         <div>
-           <h2 className="text-2xl md:text-3xl font-bold">Klub Beállítások</h2>
-           <p className="text-muted-foreground">Kezeld a klub adatait, megjelenését és tagjait</p>
+           <h2 className="text-2xl md:text-3xl font-bold">{t('title')}</h2>
+           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full space-y-6">
           <div className="overflow-x-auto pb-2 scrollbar-hide">
             <TabsList className="w-auto inline-flex justify-start">
-               <TabsTrigger value="general" className="gap-2"><IconInfoCircle size={16}/> Adatok</TabsTrigger>
-               <TabsTrigger value="branding" className="gap-2"><IconPalette size={16}/> Megjelenés</TabsTrigger>
-               <TabsTrigger value="news" className="gap-2"><IconNews size={16}/> Hírek</TabsTrigger>
-               <TabsTrigger value="gallery" className="gap-2"><IconPhoto size={16}/> Galéria</TabsTrigger>
-               <TabsTrigger value="members" className="gap-2"><IconUsers size={16}/> Tagok</TabsTrigger>
+               <TabsTrigger value="general" className="gap-2"><IconInfoCircle size={16}/> {t('tabs.general')}</TabsTrigger>
+               <TabsTrigger value="branding" className="gap-2"><IconPalette size={16}/> {t('tabs.branding')}</TabsTrigger>
+               <TabsTrigger value="news" className="gap-2"><IconNews size={16}/> {t('tabs.news')}</TabsTrigger>
+               <TabsTrigger value="gallery" className="gap-2"><IconPhoto size={16}/> {t('tabs.gallery')}</TabsTrigger>
+               <TabsTrigger value="members" className="gap-2"><IconUsers size={16}/> {t('tabs.members')}</TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="general" className="space-y-6">
               <Card>
                   <CardHeader>
-                      <CardTitle>Alapadatok</CardTitle>
-                      <CardDescription>A klub nyilvános adatainak szerkesztése</CardDescription>
+                      <CardTitle>{t('general.title')}</CardTitle>
+                      <CardDescription>{t('general.description')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                       <ClubGeneralSettings 
@@ -103,7 +105,7 @@ export function ClubSettingsSection({
                 <CardHeader>
                   <CardTitle className="text-destructive flex items-center gap-2">
                     <IconTrash size={20} />
-                    Veszélyes műveletek
+                    {t('danger.title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -115,7 +117,7 @@ export function ClubSettingsSection({
                         onClick={onDeactivateClub}
                       >
                         <IconTrash size={16} />
-                        Klub deaktiválása
+                        {t('danger.deactivate')}
                       </Button>
                     )}
                     <Button
@@ -124,7 +126,7 @@ export function ClubSettingsSection({
                       onClick={onLeaveClub}
                     >
                       <IconDoorExit size={16} />
-                      Kilépés a klubból
+                      {t('danger.leave')}
                     </Button>
                   </div>
                 </CardContent>
@@ -134,8 +136,8 @@ export function ClubSettingsSection({
           <TabsContent value="branding">
               <Card>
                   <CardHeader>
-                      <CardTitle>Megjelenés</CardTitle>
-                      <CardDescription>Színek, logó és egyéni stílusok</CardDescription>
+                      <CardTitle>{t('branding.title')}</CardTitle>
+                      <CardDescription>{t('branding.description')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                       <ClubBrandingSettings 
@@ -149,7 +151,7 @@ export function ClubSettingsSection({
           <TabsContent value="news">
               <Card>
                   <CardHeader>
-                      <CardTitle>Hírek & Tartalom</CardTitle>
+                      <CardTitle>{t('news.title')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                       <ClubNewsSettings club={club} />
@@ -160,7 +162,7 @@ export function ClubSettingsSection({
           <TabsContent value="gallery">
               <Card>
                   <CardHeader>
-                      <CardTitle>Képgaléria</CardTitle>
+                      <CardTitle>{t('gallery.title')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                       <ClubGallerySettings club={club} />
@@ -171,13 +173,13 @@ export function ClubSettingsSection({
           <TabsContent value="members" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Tagok kezelése</CardTitle>
-                  <CardDescription>Játékosok felvétele és jogosultságok</CardDescription>
+                  <CardTitle>{t('members.title')}</CardTitle>
+                  <CardDescription>{t('members.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <PlayerSearch
                     onPlayerSelected={onPlayerSelected}
-                    placeholder="Játékos keresése vagy hozzáadása..."
+                    placeholder={t('members.search_placeholder')}
                     userRole={userRole}
                   />
                   <MemberList

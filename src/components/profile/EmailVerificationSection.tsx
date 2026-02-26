@@ -10,12 +10,13 @@ import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { Button } from "@/components/ui/Button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useTranslations } from "next-intl"
 
-const verifyEmailSchema = z.object({
-  code: z.string().min(1, "Verifikációs kód kötelező"),
+const createVerifyEmailSchema = (t: any) => z.object({
+  code: z.string().min(1, t("validation.code_required")),
 })
 
-type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>
+type VerifyEmailFormData = z.infer<ReturnType<typeof createVerifyEmailSchema>>
 
 interface EmailVerificationSectionProps {
   isLoading: boolean
@@ -30,12 +31,16 @@ export function EmailVerificationSection({
   onVerifySubmit,
   onResendCode,
 }: EmailVerificationSectionProps) {
+  const t = useTranslations("Profile.verification")
+  
+  const schema = React.useMemo(() => createVerifyEmailSchema(t), [t])
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<VerifyEmailFormData>({
-    resolver: zodResolver(verifyEmailSchema),
+    resolver: zodResolver(schema),
   })
 
   return (
@@ -43,14 +48,14 @@ export function EmailVerificationSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconKey className="w-5 h-5" />
-          Email ellenőrzés
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert className="bg-warning/10 border-warning/20">
           <IconAlertCircle className="w-4 h-4 text-warning" />
           <AlertDescription className="text-warning/90">
-            Az email címed ellenőrzésre szorul. Kérlek add meg az emailben kapott ellenőrző kódot.
+            {t("alert")}
           </AlertDescription>
         </Alert>
 
@@ -58,13 +63,13 @@ export function EmailVerificationSection({
           <div className="space-y-2">
             <Label htmlFor="verification-code" className="flex items-center gap-2">
               <IconKey className="w-4 h-4" />
-              Ellenőrző kód
+              {t("code_label")}
             </Label>
             <Input
               id="verification-code"
               {...register("code")}
               type="text"
-              placeholder="Add meg az ellenőrző kódot"
+              placeholder={t("code_placeholder")}
               disabled={isLoading}
             />
             {errors.code && (
@@ -77,12 +82,12 @@ export function EmailVerificationSection({
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                  Ellenőrzés...
+                  {t("verifying")}
                 </>
               ) : (
                 <>
                   <IconKey className="w-4 h-4 mr-2" />
-                  Email ellenőrzése
+                  {t("verify_button")}
                 </>
               )}
             </Button>
@@ -96,12 +101,12 @@ export function EmailVerificationSection({
               {isResending ? (
                 <>
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                  Küldés...
+                  {t("resending")}
                 </>
               ) : (
                 <>
                   <IconRefresh className="w-4 h-4 mr-2" />
-                  Újraküldés
+                  {t("resend_button")}
                 </>
               )}
             </Button>

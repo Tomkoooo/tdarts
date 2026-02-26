@@ -4,31 +4,35 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconUsers, IconLocation, IconBrowser, IconMail, IconPhone, IconPencil, IconMapPin } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Club } from '@/interface/club.interface';
-
-const clubSchema = z.object({
-  name: z.string().min(3, 'A klub neve minimum 3 karakter legyen'),
-  description: z.string().min(10, 'A leírás minimum 10 karakter legyen'),
-  city: z.string().min(1, 'Város megadása kötelező'),
-  address: z.string().min(1, 'Cím megadása kötelező'),
-  contact: z.object({
-    email: z.string().email('Érvényes email címet adj meg').optional().or(z.literal('')),
-    phone: z.string().optional(),
-    website: z.string().url('Érvényes weboldal URL-t adj meg').optional().or(z.literal('')),
-  }).optional(),
-});
-
-type ClubFormData = z.infer<typeof clubSchema>;
+import { useTranslations } from 'next-intl';
 
 interface ClubRegistrationFormProps {
   userId: string;
 }
 
 const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) => {
+  const t = useTranslations('Club.registration');
   const router = useRouter();
+
+  const clubSchema = z.object({
+    name: z.string().min(3, t('validation.name_min')),
+    description: z.string().min(10, t('validation.desc_min')),
+    city: z.string().min(1, t('validation.city_required')),
+    address: z.string().min(1, t('validation.address_required')),
+    country: z.string().min(2, t('validation.country_required')),
+    contact: z.object({
+      email: z.string().email(t('validation.email_invalid')).optional().or(z.literal('')),
+      phone: z.string().optional(),
+      website: z.string().url(t('validation.url_invalid')).optional().or(z.literal('')),
+    }).optional(),
+  });
+
+  type ClubFormData = z.infer<typeof clubSchema>;
+
   const {
     register,
     handleSubmit,
@@ -40,6 +44,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
       description: '',
       city: '',
       address: '',
+      country: 'hu',
       contact: {
         email: '',
         phone: '',
@@ -48,14 +53,12 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
     },
   });
 
+
+
   const onSubmit = async (data: ClubFormData) => {
     try {
-      // Construct location from city and address
       const location = `${data.city}, ${data.address}`;
-      // Remove city and address from the data sent to backend if backend doesn't expect them
-      // Although sending them is usually harmless if backend ignores extra fields.
-      // But for clarity let's prepare the payload.
-      const { name, description, contact } = data;
+      const { name, description, contact, country } = data;
       
       await toast.promise(
         axios.post<Club>('/api/clubs/create', {
@@ -65,17 +68,18 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
             description,
             contact,
             location,
+            country,
           },
         }, {
           headers: { 'Content-Type': 'application/json' },
         }),
         {
-          loading: 'Klub létrehozása folyamatban...',
+          loading: t('toast.loading'),
           success: (response) => {
             router.push(`/clubs/${response.data._id}`);
-            return 'Klub sikeresen létrehozva!';
+            return t('toast.success');
           },
-          error: (error) => error.response?.data?.error || 'Hiba történt a klub létrehozása során',
+          error: (error) => error.response?.data?.error || t('toast.error'),
         }
       );
     } catch (error) {
@@ -89,21 +93,21 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
         <div className="form-icon-container">
           <IconUsers className="form-icon" />
         </div>
-        <h1 className="form-title">Klub Regisztrálása</h1>
-        <p className="form-subtitle">Töltsd ki az adatokat az új klub létrehozásához</p>
+        <h1 className="form-title">{t('title')}</h1>
+        <p className="form-subtitle">{t('subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <label className="form-label">
-            <span className="form-label-text">Klub neve</span>
+            <span className="form-label-text">{t('name_label')}</span>
           </label>
           <div className="form-input-container">
             <IconUsers className="form-input-icon" />
             <input
               {...register('name')}
               type="text"
-              placeholder="Klub neve"
+              placeholder={t('name_placeholder')}
               className="form-input"
               disabled={isSubmitting}
             />
@@ -113,13 +117,13 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
 
         <div>
           <label className="form-label">
-            <span className="form-label-text">Leírás</span>
+            <span className="form-label-text">{t('description_label')}</span>
           </label>
           <div className="form-input-container">
             <IconPencil className="form-input-icon"/>
             <textarea
               {...register('description')}
-              placeholder="Klub leírása"
+              placeholder={t('description_placeholder')}
               className="form-input min-h-[100px] resize-none"
               disabled={isSubmitting}
             />
@@ -127,17 +131,40 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
           {errors.description && <p className="form-error">{errors.description.message}</p>}
         </div>
 
+        <div>
+          <label className="form-label">
+            <span className="form-label-text">{t('country_label')}</span>
+          </label>
+          <div className="form-input-container">
+            <IconLocation className="form-input-icon"/>
+            <select
+              {...register('country')}
+              className="form-input cursor-pointer"
+              disabled={isSubmitting}
+            >
+              <option value="hu">{t("magyarorszag_fm30")}</option>
+              <option value="at">{t("ausztria_okn5")}</option>
+              <option value="de">{t("nemetorszag_vpgb")}</option>
+              <option value="sk">{t("szlovakia_o5lp")}</option>
+              <option value="ro">{t("romania_kni2")}</option>
+              <option value="hr">{t("horvatorszag_86m1")}</option>
+              <option value="si">{t("szlovenia_o5gj")}</option>
+            </select>
+          </div>
+          {errors.country && <p className="form-error">{errors.country.message}</p>}
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="form-label">
-              <span className="form-label-text">Város</span>
+              <span className="form-label-text">{t('city_label')}</span>
             </label>
             <div className="form-input-container">
             <IconLocation className="form-input-icon"/>
               <input
                 {...register('city')}
                 type="text"
-                placeholder="Város"
+                placeholder={t('city_placeholder')}
                 className="form-input"
                 disabled={isSubmitting}
               />
@@ -147,14 +174,14 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
 
           <div>
             <label className="form-label">
-              <span className="form-label-text">Cím</span>
+              <span className="form-label-text">{t('address_label')}</span>
             </label>
             <div className="form-input-container">
             <IconMapPin className="form-input-icon"/>
               <input
                 {...register('address')}
                 type="text"
-                placeholder="Utca, házszám"
+                placeholder={t('address_placeholder')}
                 className="form-input"
                 disabled={isSubmitting}
               />
@@ -165,14 +192,14 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
 
         <div>
           <label className="form-label">
-            <span className="form-label-text">Kapcsolat email (opcionális)</span>
+            <span className="form-label-text">{t('email_label')}</span>
           </label>
           <div className="form-input-container">
           <IconMail className="form-input-icon"/>
             <input
               {...register('contact.email')}
               type="email"
-              placeholder="email@example.com"
+              placeholder={t("email_example_com_oyiv")}
               className="form-input"
               disabled={isSubmitting}
             />
@@ -182,7 +209,7 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
 
         <div>
           <label className="form-label">
-            <span className="form-label-text">Telefonszám (opcionális)</span>
+            <span className="form-label-text">{t('phone_label')}</span>
           </label>
           <div className="form-input-container">
           <IconPhone className="form-input-icon"/>
@@ -199,14 +226,14 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
 
         <div>
           <label className="form-label">
-            <span className="form-label-text">Weboldal (opcionális)</span>
+            <span className="form-label-text">{t('website_label')}</span>
           </label>
           <div className="form-input-container">
           <IconBrowser className="form-input-icon"/>
             <input
               {...register('contact.website')}
               type="text"
-              placeholder="https://example.com"
+              placeholder={t("https_example_com_ags5")}
               className="form-input"
               disabled={isSubmitting}
             />
@@ -218,12 +245,12 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
           {isSubmitting ? (
             <div className="form-button-loading">
               <span className="loading loading-spinner w-4 h-4"></span>
-              <span>Létrehozás...</span>
+              <span>{t('submitting')}</span>
             </div>
           ) : (
             <div className="form-button-loading">
               <IconUsers className="form-button-icon" />
-              <span>Klub létrehozása</span>
+              <span>{t('submit')}</span>
             </div>
           )}
         </button>

@@ -2,7 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { IconTrophy, IconTarget, IconAward, IconStar, IconBolt, IconCrown } from '@tabler/icons-react';
 
+import { useTranslations } from "next-intl";
+
 const InfiniteCarousel = () => {
+  const t = useTranslations('Carousel');
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -12,12 +15,12 @@ const InfiniteCarousel = () => {
   }, []);
 
   const items = [
-    { icon: IconTrophy, text: 'Világszínvonalú Versenykezelés' },
-    { icon: IconTarget, text: 'Precíz Célkövetés' },
-    { icon: IconAward, text: 'Professzionális Eredmények' },
-    { icon: IconStar, text: 'Kiváló Felhasználói Élmény' },
-    { icon: IconBolt, text: 'Villámgyors Feldolgozás' },
-    { icon: IconCrown, text: 'Bajnoki Szintű Platform' },
+    { icon: IconTrophy, text: t('management') },
+    { icon: IconTarget, text: t('targeting') },
+    { icon: IconAward, text: t('results') },
+    { icon: IconStar, text: t('experience') },
+    { icon: IconBolt, text: t('speed') },
+    { icon: IconCrown, text: t('platform') },
   ];
 
   // Calculate scroll-based horizontal offset

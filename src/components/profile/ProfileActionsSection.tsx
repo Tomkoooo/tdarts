@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { IconLogout, IconUsers, IconShieldLock } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
+import { useTranslations } from "next-intl"
 
 interface ProfileActionsSectionProps {
   isLoading: boolean
@@ -17,10 +18,12 @@ export function ProfileActionsSection({
   isAdmin,
   onLogout,
 }: ProfileActionsSectionProps) {
+  const t = useTranslations("Profile.actions")
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Műveletek</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button
@@ -32,12 +35,12 @@ export function ProfileActionsSection({
           {isLoading ? (
             <>
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-              Kijelentkezés...
+              {t("logging_out")}
             </>
           ) : (
             <>
               <IconLogout className="w-4 h-4 mr-2" />
-              Kijelentkezés
+              {t("logout")}
             </>
           )}
         </Button>
@@ -46,7 +49,7 @@ export function ProfileActionsSection({
           <Link href="/myclub" className="w-full">
             <Button variant="outline" className="w-full">
               <IconUsers className="w-4 h-4 mr-2" />
-              Saját klub
+              {t("my_club")}
             </Button>
           </Link>
 
@@ -54,7 +57,7 @@ export function ProfileActionsSection({
             <Link href="/admin" className="w-full">
               <Button variant="outline" className="w-full">
                 <IconShieldLock className="w-4 h-4 mr-2" />
-                Admin
+                {t("admin")}
               </Button>
             </Link>
           )}

@@ -1,4 +1,6 @@
 "use client"
+import { useTranslations } from "next-intl";
+
 import { IconSettings, IconPlayerPlay } from '@tabler/icons-react';
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
@@ -19,6 +21,8 @@ interface LocalMatchGameProps {
 }
 
 const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsToWin, startingScore, onBack, onRematch }) => {
+  const tTour = useTranslations("Tournament");
+  const t = (key: string, values?: any) => tTour(`local_match.${key}`, values);
   // --- Game State via Custom Hook ---
   const { 
     gameState, 
@@ -149,7 +153,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       setEditingThrow(null);
       setEditScoreInput('');
     } else {
-      toast.error('Érvénytelen pontszám! (0-180)');
+      toast.error(t("érvénytelen_pontszám"));
     }
   };
 
@@ -268,7 +272,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
     setLegsToWin(tempLegsToWin);
     setGameState(prev => ({ ...prev, legsToWin: tempLegsToWin }));
     setShowSettingsModal(false);
-    toast.success('Beállítások mentve!');
+    toast.success(t("beállítások_mentve"));
   };
 
   const handleRestartWithNewSettings = () => {
@@ -291,22 +295,21 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
         <Card className="max-w-4xl w-full mx-auto">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">Meccs Statisztikák</CardTitle>
+              <CardTitle className="text-2xl">{t("meccs_statisztikák")}</CardTitle>
               <div className="flex gap-2">
                 {onRematch && (
                   <Button onClick={onRematch} className="gap-2">
                     <IconPlayerPlay size={18} />
-                    Rematch
-                  </Button>
+                    {t("rematch")}</Button>
                 )}
-                <Button onClick={onBack} variant="outline">Vissza</Button>
+                <Button onClick={onBack} variant="outline">{t("vissza")}</Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center">
               <h3 className="text-xl font-bold mb-2">
-                Győztes: {matchStats.winner === 1 ? 'Játékos 1' : 'Játékos 2'}
+                {t("győztes")}{matchStats.winner === 1 ? 'Játékos 1' : 'Játékos 2'}
               </h3>
               <p className="text-muted-foreground">
                 {matchStats.player1.legsWon} - {matchStats.player2.legsWon}
@@ -316,15 +319,15 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Játékos 1</CardTitle>
+                  <CardTitle className="text-lg">{t("játékos_71")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Átlag:</span>
+                    <span>{t("átlag")}</span>
                     <span className="font-bold">{matchStats.player1.stats.average.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Leg nyert:</span>
+                    <span>{t("leg_nyert")}</span>
                     <span className="font-bold">{matchStats.player1.legsWon}</span>
                   </div>
                   <div className="flex justify-between">
@@ -332,7 +335,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                     <span className="font-bold">{count180s(matchStats.player1.allThrows)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Legnagyobb kiszálló:</span>
+                    <span>{t("legnagyobb_kiszálló")}</span>
                     <span className="font-bold">{matchStats.player1.stats.highestCheckout}</span>
                   </div>
                 </CardContent>
@@ -340,15 +343,15 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Játékos 2</CardTitle>
+                  <CardTitle className="text-lg">{t("játékos_23")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Átlag:</span>
+                    <span>{t("átlag")}</span>
                     <span className="font-bold">{matchStats.player2.stats.average.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Leg nyert:</span>
+                    <span>{t("leg_nyert")}</span>
                     <span className="font-bold">{matchStats.player2.legsWon}</span>
                   </div>
                   <div className="flex justify-between">
@@ -356,7 +359,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                     <span className="font-bold">{count180s(matchStats.player2.allThrows)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Legnagyobb kiszálló:</span>
+                    <span>{t("legnagyobb_kiszálló")}</span>
                     <span className="font-bold">{matchStats.player2.stats.highestCheckout}</span>
                   </div>
                 </CardContent>
@@ -377,33 +380,33 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           {/* Player 1 */}
           <div className={`flex-1 flex flex-col items-center justify-center transition-all duration-300 ${currentPlayer === 1 ? 'border-2 border-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
-              <div className="truncate max-w-full">Játékos 1</div>
+              <div className="truncate max-w-full">{t("játékos_94")}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player1.legsWon}</div>
             </div>
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player1.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
-              <span className="text-gray-400">Avg: {player1.stats.average.toFixed(2)}</span>
+              <span className="text-gray-400">{t("avg")}{player1.stats.average.toFixed(2)}</span>
               <span className="text-gray-400">180: {count180s(player1.allThrows)}</span>
             </div>
           </div>
 
           {/* Center Info */}
           <div className="flex w-12 flex-col items-center justify-center bg-gray-800 sm:w-16 md:w-24">
-            <div className="text-xs sm:text-sm font-bold text-warning mb-1">tDarts</div>
+            <div className="text-xs sm:text-sm font-bold text-warning mb-1">{t("tdarts")}</div>
             <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1">{currentLeg}</div>
-            <div className="text-xs text-gray-400">Leg</div>
+            <div className="text-xs text-gray-400">{t("leg_25")}</div>
             <div className="text-xs text-gray-400 mt-1">BO{legsToWin * 2 - 1}</div>
           </div>
           
           {/* Player 2 */}
           <div className={`flex-1 flex flex-col items-center justify-center transition-all duration-300 z-50 ${currentPlayer === 2 ? 'border-2 border-primary' : 'bg-gray-900/50'}`}>
             <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 text-white text-center px-2">
-              <div className="truncate max-w-full">Játékos 2</div>
+              <div className="truncate max-w-full">{t("játékos_77")}</div>
               <div className="text-gray-400 text-2xl sm:text-3xl md:text-4xl lg:text-5xl mt-1">{player2.legsWon}</div>
             </div>
             <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-1 sm:mb-2 leading-none">{player2.score}</div>
             <div className="flex gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
-              <span className="text-gray-400">Avg: {player2.stats.average.toFixed(2)}</span>
+              <span className="text-gray-400">{t("avg")}{player2.stats.average.toFixed(2)}</span>
               <span className="text-gray-400">180: {count180s(player2.allThrows)}</span>
             </div>
           </div>
@@ -414,7 +417,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
           <div ref={chalkboardRef} className="flex w-full overflow-y-auto">
             {/* Player 1 All Throws */}
             <div className="flex flex-1 flex-col p-2 sm:p-3 lg:p-4">
-              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-200 z-10 pb-1">Játékos 1</div>
+              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-200 z-10 pb-1">{t("játékos_84")}</div>
               <div className="flex-1">
                 <div className="space-y-1">
                   {player1.allThrows.map((throwValue, index) => (
@@ -451,7 +454,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
 
             {/* Round Numbers */}
             <div className="w-14 sm:w-16 lg:w-20 flex flex-col items-center bg-base-100 p-2">
-              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-100 z-10 pb-1">Nyilak</div>
+              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-100 z-10 pb-1">{t("nyilak")}</div>
               <div className="flex-1">
                 <div className="space-y-1">
                   {Array.from({ length: Math.max(player1.allThrows.length, player2.allThrows.length) }).map((_, index) => (
@@ -465,7 +468,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               
             {/* Player 2 All Throws */}
             <div className="flex-1 flex flex-col p-2 sm:p-3 lg:p-4">
-              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-200 z-10 pb-1">Játékos 2</div>
+              <div className="text-center text-base-content font-bold mb-2 text-xs sm:text-sm lg:text-base sticky top-0 bg-base-200 z-10 pb-1">{t("játékos_71")}</div>
               <div className="flex-1">
                 <div className="space-y-1">
                   {player2.allThrows.map((throwValue, index) => (
@@ -511,12 +514,11 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             onClick={() => handleBack()}
             className="bg-base-300 hover:bg-base-100 text-base-content font-bold px-3 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-base border uppercase tracking-widest"
           >
-            UNDO
-          </button>
+            {t("undo")}</button>
           <div className="flex flex-col items-center flex-1">
             {editingThrow && (
               <div className="text-xs sm:text-sm text-primary mb-1">
-                Szerkesztés: Játékos {editingThrow.player} - Dobás #{editingThrow.throwIndex + 1}
+                {t("szerkesztés_játékos")}{editingThrow.player} {t("dobás")}{editingThrow.throwIndex + 1}
               </div>
             )}
             <div className={`text-5xl sm:text-6xl md:text-7xl font-bold ${editingThrow ? 'text-primary' : 'text-base-content'}`}>
@@ -628,11 +630,11 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Meccs beállítások</DialogTitle>
+            <DialogTitle>{t("meccs_beállítások")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label>Nyert legek száma</Label>
+              <Label>{t("nyert_legek_száma")}</Label>
               <select 
                 onChange={(e) => setTempLegsToWin(parseInt(e.target.value))} 
                 value={tempLegsToWin} 
@@ -642,33 +644,33 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                   <option key={i + 1} value={i + 1}>{i + 1}</option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground">Best of {tempLegsToWin * 2 - 1}</p>
+              <p className="text-xs text-muted-foreground">{t("best_of")}{tempLegsToWin * 2 - 1}</p>
             </div>
             
             <div className="space-y-4 pt-4 border-t">
-              <Label className="text-base font-semibold">Scolia Autoscoring</Label>
+              <Label className="text-base font-semibold">{t("scolia_autoscoring")}</Label>
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="scolia-serial">Scolia Szériaszám</Label>
+                  <Label htmlFor="scolia-serial">{t("scolia_szériaszám")}</Label>
                   <Input
                     id="scolia-serial"
-                    placeholder="Scolia Szériaszám"
+                    placeholder={t("scolia_szériaszám")}
                     value={scoliaSerial}
                     onChange={(e) => setScoliaSerial(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="scolia-token">Hozzáférési Token</Label>
+                  <Label htmlFor="scolia-token">{t("hozzáférési_token")}</Label>
                   <Input
                     id="scolia-token"
                     type="password"
-                    placeholder="Hozzáférési Token"
+                    placeholder={t("hozzáférési_token")}
                     value={scoliaToken}
                     onChange={(e) => setScoliaToken(e.target.value)}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="scolia-enable">Scolia engedélyezése</Label>
+                  <Label htmlFor="scolia-enable">{t("scolia_engedélyezése")}</Label>
                   <Switch
                     id="scolia-enable"
                     checked={isScoliaEnabled}
@@ -684,16 +686,14 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                 className="w-full" 
                 onClick={handleSaveLegsToWin}
               >
-                Beállítások mentése
-              </Button>
+                {t("beállítások_mentése")}</Button>
               
               <Button 
                 variant="default" 
                 className="w-full" 
                 onClick={handleRestartWithNewSettings}
               >
-                Újraindítás új beállításokkal
-              </Button>
+                {t("újraindítás_új_beállításokkal")}</Button>
               
               {onRematch && (
                 <Button 
@@ -704,8 +704,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                     onRematch();
                   }}
                 >
-                  Újraindítás (ugyanazokkal a beállításokkal)
-                </Button>
+                  {t("újraindítás_ugyanazokkal_a")}</Button>
               )}
               
               <Button 
@@ -716,8 +715,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                   onBack();
                 }}
               >
-                Kilépés
-              </Button>
+                {t("kilépés")}</Button>
             </div>
           </div>
         </DialogContent>
@@ -727,12 +725,11 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       <Dialog open={showLegConfirmation} onOpenChange={() => {}}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Leg vége?</DialogTitle>
+            <DialogTitle>{t("leg_vége")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="font-medium">
-              Játékos {pendingLegWinner} nyerte ezt a leg-et!
-            </p>
+              {t("játékos_28")}{pendingLegWinner} {t("nyerte_ezt_a")}</p>
             
             {(() => {
               const lastThrow = pendingLegWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
@@ -741,8 +738,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               return (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
-                  </p>
+                    {t("kiszálló")}<span className="font-bold text-foreground">{lastThrow}</span> {t("hány_nyílból")}</p>
                   <div className="flex gap-2 justify-center">
                     {possibleArrowCounts.map((count) => (
                       <Button
@@ -752,14 +748,12 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                         size="sm"
                         className="min-w-[80px]"
                       >
-                        {count} nyíl
-                      </Button>
+                        {count} {t("nyíl")}</Button>
                     ))}
                   </div>
                   {possibleArrowCounts.length === 1 && (
                     <p className="text-xs text-muted-foreground text-center">
-                      Csak {possibleArrowCounts[0]} nyíl lehetséges
-                    </p>
+                      {t("csak")}{possibleArrowCounts[0]} {t("nyíl_lehetséges")}</p>
                   )}
                 </div>
               );
@@ -767,11 +761,9 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             
             <div className="flex gap-2 pt-2">
               <Button variant="destructive" className="flex-1" onClick={cancelLegEnd}>
-                Visszavonás
-              </Button>
+                {t("visszavonás")}</Button>
               <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={confirmLegEnd}>
-                Igen
-              </Button>
+                {t("igen")}</Button>
             </div>
           </div>
         </DialogContent>
@@ -781,12 +773,11 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
       <Dialog open={showMatchConfirmation} onOpenChange={() => {}}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Meccs vége?</DialogTitle>
+            <DialogTitle>{t("meccs_vége")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="font-medium">
-              Játékos {pendingMatchWinner} nyerte a meccset!
-            </p>
+              {t("játékos_14")}{pendingMatchWinner} {t("nyerte_a_meccset")}</p>
             
             {(() => {
               const lastThrow = pendingMatchWinner === 1 ? player1.allThrows[player1.allThrows.length - 1] : player2.allThrows[player2.allThrows.length - 1];
@@ -795,8 +786,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
               return (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Utolsó kiszálló: <span className="font-bold text-foreground">{lastThrow}</span> - Hány nyílból?
-                  </p>
+                    {t("utolsó_kiszálló")}<span className="font-bold text-foreground">{lastThrow}</span> {t("hány_nyílból")}</p>
                   <div className="flex gap-2 justify-center">
                     {possibleArrowCounts.map((count) => (
                       <Button
@@ -806,14 +796,12 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                         size="sm"
                         className="min-w-[80px]"
                       >
-                        {count} nyíl
-                      </Button>
+                        {count} {t("nyíl")}</Button>
                     ))}
                   </div>
                   {possibleArrowCounts.length === 1 && (
                     <p className="text-xs text-muted-foreground text-center">
-                      Csak {possibleArrowCounts[0]} nyíl lehetséges
-                    </p>
+                      {t("csak")}{possibleArrowCounts[0]} {t("nyíl_lehetséges")}</p>
                   )}
                 </div>
               );
@@ -821,11 +809,9 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
             
             <div className="flex gap-2 pt-2">
               <Button variant="destructive" className="flex-1" onClick={cancelMatchEnd}>
-                Visszavonás
-              </Button>
+                {t("visszavonás")}</Button>
               <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={confirmMatchEnd}>
-                Igen
-              </Button>
+                {t("igen")}</Button>
             </div>
           </div>
         </DialogContent>

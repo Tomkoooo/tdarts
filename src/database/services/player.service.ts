@@ -187,26 +187,32 @@ export class PlayerService {
 
 
   static async findOrCreateTeam(name: string, m1: string, m2: string) {
-    // Check if team with same name and same members exists
-    // (Order of members shouldn't matter for existence check, but exact name match is good enough for now or complex query)
-    // Actually, usually team name is unique per tournament or globally?
-    // Let's assume team name + members combo.
-    
     // Sort members to ensure consistency
-    const members = [m1, m2].sort();
+    const sortedMembers = [m1, m2].sort();
 
+    // 1. Check if a pair with these exact members already exists
     const existingTeam = await PlayerModel.findOne({
       type: 'pair',
-      name: name,
-      members: { $all: members, $size: 2 }
+      members: { $all: sortedMembers, $size: 2 }
     });
 
-    if (existingTeam) return existingTeam;
+    if (existingTeam) {
+      // If the team exists but has a different name, update it to the new name
+      // This ensures that the pair's identity (MMR, stats) is preserved 
+      // even if they choose a new name for a new tournament.
+      if (existingTeam.name !== name) {
+        console.log(`Updating team name from "${existingTeam.name}" to "${name}" for members: ${sortedMembers.join(', ')}`);
+        existingTeam.name = name;
+        await existingTeam.save();
+      }
+      return existingTeam;
+    }
 
+    // 2. If no such pair exists, create a new one
     const newTeam = new PlayerModel({
       name: name,
       type: 'pair',
-      members: members,
+      members: sortedMembers,
       isRegistered: false // Teams are virtual players
     });
 

@@ -26,6 +26,7 @@ export class ClubService {
         phone?: string;
         website?: string;
       };
+      country?: string;
     }
   ): Promise<ClubDocument> {
     await connectMongo();
@@ -56,6 +57,7 @@ export class ClubService {
       name: clubData.name,
       description: clubData.description,
       location: clubData.location,
+      country: clubData.country || 'hu',
       contact: clubData.contact || {},
       admin: [creatorId], // creator is admin
       members: [], // No initial members, they are added through other flows
@@ -109,6 +111,7 @@ export class ClubService {
         phone?: string;
         website?: string;
       };
+      country?: string;
       billingInfo?: BillingInfo;
     }
   ): Promise<ClubDocument> {
@@ -137,6 +140,7 @@ export class ClubService {
     if (updates.name) club.name = updates.name;
     if (updates.description) club.description = updates.description;
     if (updates.location) club.location = updates.location;
+    if (updates.country) club.country = updates.country;
     if (updates.contact) club.contact = { ...club.contact, ...updates.contact };
     if (updates.billingInfo) club.billingInfo = { ...club.billingInfo, ...updates.billingInfo };
     //TODO: update the boards from the club.

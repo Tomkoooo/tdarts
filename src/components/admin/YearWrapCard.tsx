@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { useState } from "react"
 import axios from "axios"
 import { IconAlertTriangle, IconLoader2 } from "@tabler/icons-react"
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 
 export function YearWrapCard() {
+    const t = useTranslations("Admin.components");
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [year, setYear] = useState(new Date().getFullYear())
@@ -19,7 +21,7 @@ export function YearWrapCard() {
   const handleWrap = async () => {
     // ... existing handleWrap logic
     if (confirmText !== `CONFIRM_WRAP_${year}`) {
-      toast.error("Hibás megerősítő kód")
+      toast.error(t("hibás_megerősítő_kód"))
       return
     }
 
@@ -45,7 +47,7 @@ export function YearWrapCard() {
 
   const handleRestore = async () => {
     if (confirmText !== `CONFIRM_RESTORE_${year}`) {
-      toast.error("Hibás megerősítő kód")
+      toast.error(t("hibás_megerősítő_kód"))
       return
     }
 
@@ -77,22 +79,19 @@ export function YearWrapCard() {
               <IconAlertTriangle className="size-6 text-destructive" />
             </div>
             <div>
-              <CardTitle className="text-2xl text-destructive">Veszélyzóna</CardTitle>
+              <CardTitle className="text-2xl text-destructive">{t("veszélyzóna")}</CardTitle>
               <CardDescription>
-                Kritikus rendszer műveletek
-              </CardDescription>
+                {t("kritikus_rendszer_műveletek")}</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-destructive/20 bg-background/50">
             <div>
-              <h4 className="font-semibold text-foreground">Éves Zárás és Reset</h4>
+              <h4 className="font-semibold text-foreground">{t("éves_zárás_és")}</h4>
               <p className="text-sm text-muted-foreground max-w-xl">
-                Ez a művelet alaphelyzetbe állítja az összes játékos statisztikáját, archiválja a jelenlegi adatokat és kiosztja a címeket.
-                <br />
-                <span className="font-bold">Visszaállítás:</span> Ha véletlenül futtattad, a Visszaállítás gombbal visszavonhatod az utolsó zárást.
-              </p>
+                {t("ez_a_művelet")}<br />
+                <span className="font-bold">{t("visszaállítás")}</span> {t("ha_véletlenül_futtattad")}</p>
             </div>
             <div className="flex gap-2 shrink-0">
                  <Button 
@@ -100,14 +99,12 @@ export function YearWrapCard() {
                   onClick={() => setIsRestoreOpen(true)}
                   className="border-destructive/50 text-destructive hover:bg-destructive/10"
                 >
-                  Visszaállítás
-                </Button>
+                  {t("visszaállítás_45")}</Button>
                 <Button 
                   variant="destructive" 
                   onClick={() => setIsOpen(true)}
                 >
-                  Év Lezárása
-                </Button>
+                  {t("év_lezárása")}</Button>
             </div>
           </div>
         </CardContent>
@@ -117,15 +114,14 @@ export function YearWrapCard() {
       <Dialog open={isOpen} onOpenChange={(open) => !loading && setIsOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Év Lezárása - {year}</DialogTitle>
+            <DialogTitle>{t("év_lezárása_85")}{year}</DialogTitle>
             <DialogDescription>
-              Biztosan le akarod zárni a {year}-es évet? Ez a művelet <strong>törli</strong> a jelenlegi statisztikákat és archiválja őket.
-            </DialogDescription>
+              {t("biztosan_le_akarod")}{year}{t("es_évet_ez")}<strong>{t("törli")}</strong> {t("a_jelenlegi_statisztikákat")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Év kiválasztása</Label>
+              <Label>{t("év_kiválasztása")}</Label>
               <Input 
                 type="number" 
                 value={year} 
@@ -133,9 +129,9 @@ export function YearWrapCard() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Megerősítés</Label>
+              <Label>{t("megerősítés")}</Label>
               <div className="text-xs text-muted-foreground mb-1">
-                Írd be a következőt a megerősítéshez: <span className="font-mono font-bold select-all">CONFIRM_WRAP_{year}</span>
+                {t("írd_be_a")}<span className="font-mono font-bold select-all">{t("confirm_wrap")}{year}</span>
               </div>
               <Input 
                 value={confirmText}
@@ -148,16 +144,14 @@ export function YearWrapCard() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOpen(false)} disabled={loading}>
-              Mégse
-            </Button>
+              {t("mégse")}</Button>
             <Button 
               variant="destructive" 
               onClick={handleWrap} 
               disabled={loading || confirmText !== `CONFIRM_WRAP_${year}`}
             >
               {loading ? <IconLoader2 className="animate-spin mr-2" /> : null}
-              Véglegesítés és Reset
-            </Button>
+              {t("véglegesítés_és_reset")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -166,16 +160,14 @@ export function YearWrapCard() {
       <Dialog open={isRestoreOpen} onOpenChange={(open) => !loading && setIsRestoreOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Visszaállítás (Undo) - {year}</DialogTitle>
+            <DialogTitle>{t("visszaállítás_undo")}{year}</DialogTitle>
             <DialogDescription>
-              Ez a művelet <strong>VISSZAÁLLÍTJA</strong> a statisztikákat a {year}-es archívumból, és törli az archívumot.
-              Hasznos, ha véletlenül futtattad az Év Lezárását.
-            </DialogDescription>
+              {t("ez_a_művelet_57")}<strong>{t("visszaállítja")}</strong> {t("a_statisztikákat_a")}{year}{t("es_archívumból_és")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Visszaállítandó Év</Label>
+              <Label>{t("visszaállítandó_év")}</Label>
               <Input 
                 type="number" 
                 value={year} 
@@ -183,9 +175,9 @@ export function YearWrapCard() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Megerősítés</Label>
+              <Label>{t("megerősítés")}</Label>
               <div className="text-xs text-muted-foreground mb-1">
-                Írd be a következőt a megerősítéshez: <span className="font-mono font-bold select-all">CONFIRM_RESTORE_{year}</span>
+                {t("írd_be_a")}<span className="font-mono font-bold select-all">{t("confirm_restore")}{year}</span>
               </div>
               <Input 
                 value={confirmText}
@@ -198,8 +190,7 @@ export function YearWrapCard() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRestoreOpen(false)} disabled={loading}>
-              Mégse
-            </Button>
+              {t("mégse")}</Button>
             <Button 
               variant="default" 
               onClick={handleRestore} 
@@ -207,8 +198,7 @@ export function YearWrapCard() {
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {loading ? <IconLoader2 className="animate-spin mr-2" /> : null}
-              Visszaállítás
-            </Button>
+              {t("visszaállítás_55")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -14,6 +14,7 @@ import { showErrorToast } from "@/lib/toastUtils"
 import { extractMediaIds } from "@/lib/utils"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Club } from "@/interface/club.interface"
+import { useTranslations } from 'next-intl'
 
 interface ClubBrandingSettingsProps {
   club: Club
@@ -21,10 +22,9 @@ interface ClubBrandingSettingsProps {
 }
 
 export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandingSettingsProps) {
+  const t = useTranslations('Club.settings.branding_form')
   const [loading, setLoading] = useState(false)
   const [lastSavedAboutText, setLastSavedAboutText] = useState(club.landingPage?.aboutText || club.description || "");
-
-
 
   const { register, handleSubmit, setValue, watch, reset } = useForm({
     defaultValues: {
@@ -89,9 +89,9 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
         try {
             const data = JSON.parse(event.target?.result as string);
             reset(data);
-            toast.success("Beállítások betöltve");
+            toast.success(t('toast.imported'));
         } catch {
-            toast.error("Hibás fájl formátum");
+            toast.error(t('toast.import_error'));
         }
     };
     reader.readAsText(file);
@@ -99,14 +99,14 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
   };
 
   const handleResetDefaults = () => {
-      if(!confirm("Biztosan visszaállítasz mindent alaphelyzetbe? A mentés gomb megnyomásáig nem végleges.")) return;
+      if(!confirm(t('confirm_reset'))) return;
       setValue("primaryColor", "");
       setValue("secondaryColor", "");
       setValue("backgroundColor", "");
       setValue("foregroundColor", "");
       setValue("cardColor", "");
       setValue("cardForegroundColor", "");
-      toast.success("Színek alaphelyzetbe állítva (Mentsd el a változtatásokat!)");
+      toast.success(t('toast.reset_success'));
   }
 
   const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: 'logo' | 'coverImage') => {
@@ -114,7 +114,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
     if (!file) return
 
     if (file.size > 15 * 1024 * 1024) {
-      toast.error("A fájl mérete maximum 15MB lehet");
+      toast.error(t('toast.size_error'));
       return;
     }
 
@@ -122,15 +122,15 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
     formData.append('file', file)
     formData.append('clubId', club._id)
 
-    const toastId = toast.loading("Feltöltés...")
+    const toastId = toast.loading(t('toast.uploading'))
     try {
       const res = await axios.post('/api/media', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       setValue(fieldName, res.data.url)
-      toast.success("Sikeres feltöltés", { id: toastId })
+      toast.success(t('toast.upload_success'), { id: toastId })
     } catch {
-      toast.error("Feltöltés sikertelen", { id: toastId })
+      toast.error(t('toast.upload_error'), { id: toastId })
     }
   }
 
@@ -154,10 +154,10 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
       })
       
       setLastSavedAboutText(newAboutText); // Update reference for next save
-      toast.success("Beállítások mentve")
+      toast.success(t('toast.saved'))
       onClubUpdated()
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || "Mentés sikertelen")
+      showErrorToast(err.response?.data?.error || t('toast.upload_error'))
     } finally {
       setLoading(false)
     }
@@ -167,8 +167,8 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
             <div>
-                <h3 className="text-lg font-semibold">Arculat & Info</h3>
-                <p className="text-sm text-muted-foreground">Kezeld a klub nyilvános megjelenését</p>
+                <h3 className="text-lg font-semibold">{t('title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Input 
@@ -179,13 +179,13 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                   onChange={handleImportConfig}
                 />
                 <Button variant="outline" size="sm" onClick={() => document.getElementById('config-import')?.click()}>
-                    Import
+                    {t('import')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleExportConfig}>
-                    Export
+                    {t('export')}
                 </Button>
                 <Button variant="destructive" size="sm" onClick={handleResetDefaults}>
-                    Alaphelyzet
+                    {t('reset')}
                 </Button>
             </div>
         </div>
@@ -193,7 +193,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
         <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
-                    <Label>Elsődleges Szín (Primary)</Label>
+                    <Label>{t('primary_color')}</Label>
                     <div className="flex gap-2">
                         <Input 
                             type="color" 
@@ -205,7 +205,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                     </div>
                  </div>
                  <div>
-                    <Label>Másodlagos Szín (Secondary)</Label>
+                    <Label>{t('secondary_color')}</Label>
                     <div className="flex gap-2">
                         <Input 
                             type="color" 
@@ -213,16 +213,16 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                             onChange={(e) => setValue("secondaryColor", e.target.value)}
                             className="w-12 h-10 p-1 cursor-pointer" 
                         />
-                        <Input {...register("secondaryColor")} value={watch("secondaryColor")} placeholder="#ffffff" />
+                        <Input {...register("secondaryColor")} value={watch("secondaryColor")} placeholder={t("ffffff_4mgq")} />
                     </div>
                  </div>
               </div>
 
               <div className="border-t pt-4 mt-4">
-                  <h3 className="text-sm font-medium mb-3">Haladó Színek</h3>
+                  <h3 className="text-sm font-medium mb-3">{t('advanced_colors')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Háttérszín (Background)</Label>
+                        <Label>{t('bg_color')}</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -230,11 +230,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("backgroundColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("backgroundColor")} value={watch("backgroundColor")} placeholder="Alapértelmezett" />
+                            <Input {...register("backgroundColor")} value={watch("backgroundColor")} placeholder={t('default_placeholder')} />
                         </div>
                      </div>
                      <div>
-                        <Label>Szövegszín (Foreground)</Label>
+                        <Label>{t('fg_color')}</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -242,11 +242,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("foregroundColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("foregroundColor")} value={watch("foregroundColor")} placeholder="Alapértelmezett" />
+                            <Input {...register("foregroundColor")} value={watch("foregroundColor")} placeholder={t('default_placeholder')} />
                         </div>
                      </div>
                      <div>
-                        <Label>Kártya Háttér (Card)</Label>
+                        <Label>{t('card_color')}</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -254,11 +254,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("cardColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("cardColor")} value={watch("cardColor")} placeholder="Alapértelmezett" />
+                            <Input {...register("cardColor")} value={watch("cardColor")} placeholder={t('default_placeholder')} />
                         </div>
                      </div>
                      <div>
-                        <Label>Kártya Szöveg (Card Foreground)</Label>
+                        <Label>{t('card_fg_color')}</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -266,7 +266,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("cardForegroundColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("cardForegroundColor")} value={watch("cardForegroundColor")} placeholder="Alapértelmezett" />
+                            <Input {...register("cardForegroundColor")} value={watch("cardForegroundColor")} placeholder={t('default_placeholder')} />
                         </div>
                      </div>
                   </div>
@@ -274,12 +274,12 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                      <Label>Logó</Label>
+                      <Label>{t('logo')}</Label>
                       <Input type="file" accept="image/*" onChange={(e) => handleMediaUpload(e, 'logo')} />
                       <input type="hidden" {...register("logo")} />
                       {watch("logo") && (
                         <div className="relative mt-2 w-fit group">
-                            <ImageWithSkeleton src={watch("logo")} alt="Logo" className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
+                            <ImageWithSkeleton src={watch("logo")} alt={t("logo_1evu")} className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
                             <Button 
                                 type="button"
                                 variant="destructive" 
@@ -293,12 +293,12 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                       )}
                   </div>
                   <div>
-                      <Label>Borítókép</Label>
+                      <Label>{t('cover')}</Label>
                       <Input type="file" accept="image/*" onChange={(e) => handleMediaUpload(e, 'coverImage')} />
                       <input type="hidden" {...register("coverImage")} />
                       {watch("coverImage") && (
                         <div className="relative mt-2 w-full max-w-sm group">
-                            <ImageWithSkeleton src={watch("coverImage")} alt="Cover" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                            <ImageWithSkeleton src={watch("coverImage")} alt={t("cover_12vl")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                              <Button 
                                 type="button"
                                 variant="destructive" 
@@ -314,38 +314,38 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
               </div>
 
               <div>
-                  <Label>Rólunk (Szöveg)</Label>
+                  <Label>{t('about')}</Label>
                   <RichTextEditor 
                     value={watch("aboutText")} 
                     onChange={(val) => setValue("aboutText", val)} 
-                    placeholder="Írj a klubról..." 
+                    placeholder={t('about_placeholder')} 
                   />
               </div>
 
               <div className="border-t pt-4 mt-4">
-                  <h3 className="text-sm font-medium mb-3">SEO Beállítások</h3>
+                  <h3 className="text-sm font-medium mb-3">{t('seo_title')}</h3>
                   <div className="space-y-4">
                       <div>
-                        <Label>Meta Title (SEO Cím)</Label>
-                        <Input {...register("seo.title")} placeholder="Keresőmotorokban megjelenő cím" />
-                        <p className="text-[10px] text-muted-foreground mt-1">Alapértelmezett: a klub neve. Maximális hossz: 100 karakter.</p>
+                        <Label>{t('meta_title')}</Label>
+                        <Input {...register("seo.title")} placeholder={t('meta_title_placeholder')} />
+                        <p className="text-[10px] text-muted-foreground mt-1">{t('meta_title_desc')}</p>
                       </div>
                       <div>
-                        <Label>Meta Description (SEO Leírás)</Label>
-                        <Input {...register("seo.description")} placeholder="Rövid leírás a keresőknek" />
-                        <p className="text-[10px] text-muted-foreground mt-1">Alapértelmezett: a klub leírása. Maximális hossz: 200 karakter.</p>
+                        <Label>{t('meta_desc')}</Label>
+                        <Input {...register("seo.description")} placeholder={t('meta_desc_placeholder')} />
+                        <p className="text-[10px] text-muted-foreground mt-1">{t('meta_desc_desc')}</p>
                       </div>
                       <div>
-                        <Label>Kulcsszavak (Keywords)</Label>
-                        <Input {...register("seo.keywords")} placeholder="darts, tornák, klub, helyszín..." />
-                        <p className="text-[10px] text-muted-foreground mt-1">Vesszővel elválasztva.</p>
+                        <Label>{t('keywords')}</Label>
+                        <Input {...register("seo.keywords")} placeholder={t('keywords_placeholder')} />
+                        <p className="text-[10px] text-muted-foreground mt-1">{t('keywords_desc')}</p>
                       </div>
                   </div>
               </div>
 
               <div className="flex justify-end">
                   <Button onClick={handleSubmit(onBrandingSubmit)} disabled={loading}>
-                    <IconDeviceFloppy className="mr-2 h-4 w-4" /> Mentés
+                    <IconDeviceFloppy className="mr-2 h-4 w-4" /> {t('save')}
                   </Button>
               </div>
         </div>

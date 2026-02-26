@@ -1,4 +1,6 @@
 "use client"
+import { useTranslations } from "next-intl";
+
 
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/Input"
@@ -95,6 +97,7 @@ export const parseSmartInput = (input: string): Partial<TodoItemData> => {
 }
 
 export const SmartInput = ({ onAdd, placeholder, autoFocus }: SmartTodoInputProps) => {
+    const t = useTranslations("Admin.components");
   const [input, setInput] = useState("")
   const [preview, setPreview] = useState<Partial<TodoItemData> | null>(null)
   
@@ -143,8 +146,8 @@ export const SmartInput = ({ onAdd, placeholder, autoFocus }: SmartTodoInputProp
             <span className="font-medium text-foreground">{preview.title}</span>
           </div>
           <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-            <span>Nyomj <kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono">Enter</kbd> a hozzáadáshoz</span>
-            {preview.tags && preview.tags.length > 0 && <span>Tags: {preview.tags.join(", ")}</span>}
+            <span>{t("nyomj")}<kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono">{t("enter")}</kbd> {t("a_hozzáadáshoz")}</span>
+            {preview.tags && preview.tags.length > 0 && <span>{t("tags")}{preview.tags.join(", ")}</span>}
           </div>
         </div>
       )}

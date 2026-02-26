@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import React from "react"
 import { Player } from "@/interface/player.interface"
 import { IconChevronRight, IconMedal, IconMedal2, IconAward, IconTrophy } from "@tabler/icons-react"
@@ -27,17 +28,18 @@ const topRankStyles: Record<
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlobalRank = false }) => {
+    const t = useTranslations("Common");
   const mmr = (player as any).mmr ?? player.stats?.mmr ?? 800
 
   const mmrTier =
     (player as any).mmrTier ??
     (() => {
-      if (mmr >= 1600) return { name: "Elit", color: "text-[#ff8fa3]" }
-      if (mmr >= 1400) return { name: "Mester", color: "text-[#fcd34d]" }
-      if (mmr >= 1200) return { name: "Haladó", color: "text-blue-300" }
-      if (mmr >= 1000) return { name: "Középhaladó", color: "text-emerald-300" }
-      if (mmr >= 800) return { name: "Kezdő+", color: "text-primary" }
-      return { name: "Kezdő", color: "text-muted-foreground" }
+      if (mmr >= 1600) return { name: t("elit_1acs"), color: "text-[#ff8fa3]" }
+      if (mmr >= 1400) return { name: t("mester_wz01"), color: "text-[#fcd34d]" }
+      if (mmr >= 1200) return { name: t("halado_zek6"), color: "text-blue-300" }
+      if (mmr >= 1000) return { name: t("kozephalado_uheg"), color: "text-emerald-300" }
+      if (mmr >= 800) return { name: t("kezdo_xwyz"), color: "text-primary" }
+      return { name: t("kezdo_173n"), color: "text-muted-foreground" }
     })()
 
   const globalRank = (player as any).globalRank
@@ -72,8 +74,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
                     {player.name}
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    {player.stats?.tournamentsPlayed || 0} torna • {player.stats?.matchesPlayed || 0} meccs
-                  </p>
+                    {player.stats?.tournamentsPlayed || 0} {t("torna")}{player.stats?.matchesPlayed || 0} {t("meccs")}</p>
                 </div>
                 <IconChevronRight className="h-4 w-4 text-muted-foreground/60" />
               </div>
@@ -124,10 +125,10 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
         <Separator className="opacity-10" />
 
         <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
-          <Stat label="Átlag" value={player.stats?.avg?.toFixed(1) ?? "—"} />
+          <Stat label={t("átlag_19")} value={player.stats?.avg?.toFixed(1) ?? "—"} />
           <Stat label="180-ak" value={player.stats?.total180s ?? 0} />
-          <Stat label="Legjobb helyezés" value={player.stats?.bestPosition ?? "—"} />
-          <Stat label="Max kiszálló" value={player.stats?.highestCheckout ?? "—"} />
+          <Stat label={t("legjobb_helyezés")} value={player.stats?.bestPosition ?? "—"} />
+          <Stat label={t("max_kiszálló")} value={player.stats?.highestCheckout ?? "—"} />
         </div>
       </CardContent>
     </Card>

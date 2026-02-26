@@ -21,6 +21,7 @@ export interface SearchFilters {
     limit?: number;
     year?: number;
     rankingType?: 'oacMmr' | 'leaguePoints'; // New filter for player ranking in OAC mode
+    country?: string;
 }
 
 
@@ -70,20 +71,39 @@ export class SearchService {
     if (regex) playerQuery.name = regex;
     
     if (filters.isOac) {
-         // Consistent with searchPlayers logic: check for verified tournament history
          playerQuery['tournamentHistory.isVerified'] = true;
+    }
+    if (filters.country) {
+        playerQuery.country = filters.country;
     }
 
     counts.players = await PlayerModel.countDocuments(playerQuery);
 
-        // 3. Clubs Count
-        const clubQuery = this.buildClubQuery(query, filters);
-        counts.clubs = await ClubModel.countDocuments(clubQuery);
+    // 3. Clubs Count
+    const clubQuery = this.buildClubQuery(query, filters);
+    counts.clubs = await ClubModel.countDocuments(clubQuery);
 
-        // 4. Leagues Count
+    // 4. Leagues Count
+    const { LeagueModel } = await import('../models/league.model');
+    // Using simple query if no country filter, otherwise needs aggregation
+    if (filters.country) {
+        const leaguePipeline: any[] = [];
+        if (regex) leaguePipeline.push({ $match: { name: regex } });
+        leaguePipeline.push(
+            { $lookup: { from: 'clubs', localField: 'club', foreignField: '_id', as: 'clubData' } },
+            { $unwind: '$clubData' },
+            { $match: { 'clubData.country': filters.country } }
+        );
+        if (filters.isVerified || filters.isOac) {
+            leaguePipeline.push({ $match: { verified: true } });
+        }
+        leaguePipeline.push({ $count: 'total' });
+        const leagueCountResult = await LeagueModel.aggregate(leaguePipeline);
+        counts.leagues = leagueCountResult[0]?.total || 0;
+    } else {
         const leagueQuery = this.buildLeagueQuery(query, filters);
-        const { LeagueModel } = await import('../models/league.model');
         counts.leagues = await LeagueModel.countDocuments(leagueQuery);
+    }
 
         return counts;
     }
@@ -164,6 +184,10 @@ export class SearchService {
             // Requirement: "only want to list those who was once part of a verified tournament"
             // We check 'tournamentHistory' array for at least one item where isVerified is true
             queryObj['tournamentHistory.isVerified'] = true;
+        }
+
+        if (filters.country) {
+            queryObj.country = filters.country;
         }
 
         const total = await PlayerModel.countDocuments(queryObj);
@@ -310,26 +334,61 @@ export class SearchService {
         const limit = filters.limit || 10;
         const skip = (page - 1) * limit;
 
-        const queryObj = this.buildLeagueQuery(query, filters);
+        const pipeline: any[] = [];
 
-        // Ensure OAC filter is applied if active (verified only)
-        if (filters.isOac) {
-            queryObj.verified = true;
+        // 1. Initial Match (Name search if query exists)
+        const initialMatch: any = {};
+        if (query) {
+            initialMatch.name = new RegExp(query, 'i');
+        }
+        if (Object.keys(initialMatch).length > 0) {
+            pipeline.push({ $match: initialMatch });
         }
 
-        const total = await LeagueModel.countDocuments(queryObj);
+        // 2. Lookup Club
+        pipeline.push(
+            {
+                $lookup: {
+                    from: 'clubs',
+                    localField: 'club',
+                    foreignField: '_id',
+                    as: 'clubData'
+                }
+            },
+            { $unwind: { path: '$clubData', preserveNullAndEmptyArrays: true } }
+        );
 
-        const leagues = await LeagueModel.find(queryObj)
-            .populate('club', 'name location verified')
-            .sort({ isActive: -1, createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
+        // 3. Filter by country and verification
+        const filterMatch: any = {};
+        if (filters.country) {
+            filterMatch['clubData.country'] = filters.country;
+        }
+        if (filters.isVerified || filters.isOac) {
+            filterMatch.verified = true;
+        }
+        if (Object.keys(filterMatch).length > 0) {
+            pipeline.push({ $match: filterMatch });
+        }
+
+        // 4. Count total
+        const countPipeline = [...pipeline, { $count: 'total' }];
+        const countResult = await LeagueModel.aggregate(countPipeline);
+        const total = countResult.length > 0 ? countResult[0].total : 0;
+
+        // 5. Pagination and sorting
+        pipeline.push(
+            { $sort: { isActive: -1, createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit }
+        );
+
+        const leagues = await LeagueModel.aggregate(pipeline);
 
         const results = leagues.map(l => ({
             _id: l._id,
             name: l.name,
             description: l.description,
-            club: l.club,
+            club: l.clubData,
             verified: l.verified,
             isActive: l.isActive,
             pointSystemType: l.pointSystemType,
@@ -595,6 +654,20 @@ export class SearchService {
             matchStage.city = new RegExp(filters.city, 'i');
         }
 
+        if (filters.country) {
+            if (filters.country === 'hu') {
+                // For Hungary (default), also include tournaments that don't have a linked club
+                andConditions.push({
+                    $or: [
+                        { 'club.country': 'hu' },
+                        { 'club': null }
+                    ]
+                });
+            } else {
+                andConditions.push({ 'club.country': filters.country });
+            }
+        }
+
         if (filters.tournamentType) {
             matchStage['tournamentSettings.type'] = filters.tournamentType;
         }
@@ -645,6 +718,10 @@ export class SearchService {
             q.verified = true;
         }
 
+        if (filters.country) {
+            q.country = filters.country;
+        }
+
         return q;
     }
 
@@ -662,6 +739,16 @@ export class SearchService {
 
         if (filters.isVerified) {
             q.verified = true;
+        }
+
+        if (filters.country) {
+            // Need to lookup club country for leagues. Let's do that at the caller if needed, or by passing in populated fields.
+            // Simplified for now, assuming club country might need aggregation later if leagues don't have country directly.
+            // Actually, we should add country to League model or just fetch and filter. The requirement is just Search, but keeping it simple.
+            // Let's rely on club country. To do this perfectly, `searchLeagues` needs an aggregation pipeline.
+            // We'll leave it out of `buildLeagueQuery` and handle it in `searchLeagues` if we add pipeline, but for now we'll add it to the query assuming we might add country to league model later, or we can just ignore league country filtering if not explicitly requested (the request says "list clubs/tournaments/leagues from hungary". 
+            // Better to change searchLeagues to use aggregation or populate and filter.
+            // For now, let's just add it to the query and if it fails, we'll implement aggregation.
         }
 
         // Default to active unless specified? Plan didn't specify, assume all or only active?

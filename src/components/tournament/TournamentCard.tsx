@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import {
   IconTrophy,
   IconCalendar,
@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface TournamentCardProps {
   tournament: {
@@ -63,24 +64,27 @@ const statusStyles: Record<string, string> = {
   finished: 'bg-success/10 text-success border-success/20',
 }
 
-const statusLabels: Record<string, string> = {
-  pending: 'Várakozó',
-  'group-stage': 'Csoportkör',
-  knockout: 'Kieséses',
-  finished: 'Befejezett',
-}
-
-const typeLabels: Record<string, string> = {
-  amateur: 'Amatőr',
-  open: 'Open',
-}
-
 export default function TournamentCard({
   tournament,
   userRole = 'none',
   onDelete,
   onEdit,
 }: TournamentCardProps) {
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`card.${key}`, values)
+
+  const statusLabels: Record<string, string> = {
+    pending: t('status.pending'),
+    'group-stage': t('status.group_stage'),
+    knockout: t('status.knockout'),
+    finished: t('status.finished'),
+  }
+
+  const typeLabels: Record<string, string> = {
+    amateur: t('type.amateur'),
+    open: t('type.open'),
+  }
+
   const status = tournament.tournamentSettings?.status || 'pending'
   const playerCount = tournament.tournamentPlayers?.length || 0
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
@@ -89,7 +93,6 @@ export default function TournamentCard({
   const tournamentId = tournament.tournamentId || tournament._id
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking on dropdown or its trigger
     const target = e.target as HTMLElement
     if (target.closest('[role="menu"]') || target.closest('[data-radix-popper-content-wrapper]')) {
       e.preventDefault()
@@ -97,8 +100,7 @@ export default function TournamentCard({
     }
   }
 
-
-  const getDetailsLink = () => {  
+  const getDetailsLink = () => {
     return `/tournaments/${tournamentId}`
   }
 
@@ -117,14 +119,14 @@ export default function TournamentCard({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <IconTrophy className="w-4 h-4 text-primary" />
               <span className="truncate">
-                {typeof tournament.clubId === 'object' && tournament.clubId?.name 
-                  ? tournament.clubId.name 
-                  : tournament.verified ? '' : 'Torna részletei'}
+                {typeof tournament.clubId === 'object' && tournament.clubId?.name
+                  ? tournament.clubId.name
+                  : tournament.verified ? '' : t('tournament_details')}
               </span>
               {(tournament.verified) && (
                 <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 flex items-center gap-1">
                   <IconShieldCheck className="w-3 h-3" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Hitelesített</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{t('verified')}</span>
                 </Badge>
               )}
 
@@ -145,9 +147,9 @@ export default function TournamentCard({
             {(userRole === 'admin' || userRole === 'moderator') && (onDelete || onEdit) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 sm:h-8 sm:w-8 md:h-9 md:w-9"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -156,12 +158,12 @@ export default function TournamentCard({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40" onClick={(e) => e.stopPropagation()}>
                   {onEdit && (
-                    <DropdownMenuItem 
-                      onClick={(e) => handleActionClick(e, onEdit)} 
+                    <DropdownMenuItem
+                      onClick={(e) => handleActionClick(e, onEdit)}
                       className="flex items-center gap-2"
                     >
                       <IconEdit className="w-4 h-4 flex-shrink-0" />
-                      <span>Szerkesztés</span>
+                      <span>{t('edit')}</span>
                     </DropdownMenuItem>
                   )}
                   {onDelete && !(tournament.verified || tournament.isVerified) && (
@@ -170,7 +172,7 @@ export default function TournamentCard({
                       className="flex items-center gap-2 text-destructive focus:text-destructive"
                     >
                       <IconTrash className="w-4 h-4 flex-shrink-0" />
-                      <span>Törlés</span>
+                      <span>{t('delete')}</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -198,7 +200,6 @@ export default function TournamentCard({
                 hour: '2-digit',
                 minute: '2-digit'
               })}
-              
             </span>
           </div>
         )}
@@ -215,15 +216,15 @@ export default function TournamentCard({
         <div className="flex items-center gap-2">
           <IconUsers className="w-4 h-4 text-success" />
           <span>
-            {playerCount} / {maxPlayers || '∞'} játékos
-            {isFull && <span className="ml-1 text-xs text-warning">(Betelt)</span>}
+            {playerCount} / {maxPlayers || '∞'} {t('players')}
+            {isFull && <span className="ml-1 text-xs text-warning">({t('full')})</span>}
           </span>
         </div>
 
         {entryFee > 0 && (
           <div className="flex items-center gap-2">
             <IconCoin className="w-4 h-4 text-warning" />
-            <span>Nevezési díj: {entryFee} Ft</span>
+            <span>{t('entry_fee')}: {entryFee} Ft</span>
           </div>
         )}
       </CardContent>
@@ -233,11 +234,11 @@ export default function TournamentCard({
           ID: {tournament.tournamentId}
         </div>
         <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary transition-all">
-          Részletek
+          {t('details')}
           <IconChevronRight className="w-4 h-4" />
         </Button>
       </CardFooter>
     </Card>
     </Link>
   )
-} 
+}

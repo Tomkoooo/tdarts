@@ -5,6 +5,7 @@ import { IconSearch, IconX } from "@tabler/icons-react"
 import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
+import { useTranslations } from "next-intl"
 
 interface SearchHeaderProps {
   query: string
@@ -29,6 +30,7 @@ export function SearchHeader({
   onClearFilters,
   loading = false,
 }: SearchHeaderProps) {
+  const t = useTranslations('Search')
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   return (
@@ -45,7 +47,7 @@ export function SearchHeader({
             <Input
               ref={inputRef}
               type="text"
-              placeholder="Keress tornára, játékosra, klubra..."
+              placeholder={t('placeholder')}
               className="h-14 pl-12 pr-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
@@ -92,7 +94,7 @@ export function SearchHeader({
             className="gap-2 h-14 px-6"
           >
             <IconX className="w-4 h-4" />
-            Szűrők törlése
+            {t('header.clear_filters')}
             <Badge variant="secondary" className="ml-1">{activeFiltersCount}</Badge>
           </Button>
         )}
@@ -103,4 +105,3 @@ export function SearchHeader({
 }
 
 export default SearchHeader
-

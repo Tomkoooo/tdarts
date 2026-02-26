@@ -11,6 +11,7 @@ import {
   IconTargetArrow,
   IconPlus,
 } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 export type DiagramMatch = {
   id: string
@@ -79,6 +80,8 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
   onAddMatchToRound,
   compactMode = false,
 }) => {
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`bracket.${key}`, values)
   const cardWidth = compactMode ? COMPACT_CARD_WIDTH : CARD_WIDTH
   const cardHeight = compactMode ? COMPACT_CARD_HEIGHT : CARD_HEIGHT
   const columnGap = compactMode ? COMPACT_COLUMN_GAP : COLUMN_GAP
@@ -164,7 +167,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
   if (!layout) {
     return (
       <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border/40">
-        <p className="text-sm text-muted-foreground">Nincs elérhető bracket információ.</p>
+        <p className="text-sm text-muted-foreground">{t("no_info")}</p>
       </div>
     )
   }
@@ -187,7 +190,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
                 variant="ghost"
                 className="pointer-events-auto rounded-full bg-primary/10 text-primary hover:bg-primary/20"
                 onClick={() => onAddMatchToRound(round.roundNumber)}
-                aria-label={`${round.label} - meccs hozzáadása`}
+                aria-label={t("add_match", { label: round.label })}
               >
                 <IconPlus color="white" size={16}/>
               </Button>
@@ -247,6 +250,8 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions, co
   const player1Stats = rawMatch?.matchReference?.player1
   const player2Stats = rawMatch?.matchReference?.player2
   const boardLabel = (match.meta?.boardLabel as string | undefined) ?? undefined
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`bracket.${key}`, values)
   const statusTone = toneForStatus(match.status)
 
   return (
@@ -274,7 +279,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, x, y, onClick, actions, co
                     statusTone.badge
                   )}
                 >
-                  {labelStatus(match.status)}
+                  {labelStatus(match.status, t)}
                 </Badge>
               ) : null}
             </div>
@@ -312,7 +317,9 @@ interface TeamRowProps {
 }
 
 const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, highestCheckout, compactMode = false }) => {
-  const displayName = name || "TBD"
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`bracket.${key}`, values)
+  const displayName = name || t("tbd")
   const scoreValue = Number.isFinite(score ?? NaN) ? score : "–"
   const hasStats = Number.isFinite(oneEighties ?? NaN) || Number.isFinite(highestCheckout ?? NaN)
 
@@ -362,15 +369,15 @@ const TeamRow: React.FC<TeamRowProps> = ({ name, score, isWinner, oneEighties, h
   )
 }
 
-const labelStatus = (status?: string | null) => {
+const labelStatus = (status: string | null | undefined, t: any) => {
   if (!status) return ""
   switch (status) {
     case "pending":
-      return "Várakozik"
+      return t("status.pending")
     case "ongoing":
-      return "Folyamatban"
+      return t("status.ongoing")
     case "finished":
-      return "Befejezve"
+      return t("status.finished")
     default:
       return status
   }

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { IconDots, IconEye, IconPlayerPlay, IconTrash, IconClock } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/Button"
@@ -63,6 +64,8 @@ export function MatchesDataTable({
   onStartMatch,
   onDeleteMatch,
 }: MatchesDataTableProps) {
+  const tTour = useTranslations("Tournament")
+  const t = (key: string, values?: any) => tTour(`matches_table.${key}`, values)
   const canManage = userRole === 'admin' || userRole === 'moderator'
 
   const columns: ColumnDef<Match>[] = [
@@ -80,7 +83,7 @@ export function MatchesDataTable({
     },
     {
       accessorKey: "players",
-      header: "Játékosok",
+      header: t("players"),
       cell: ({ row }) => {
         const match = row.original
         return (
@@ -124,27 +127,27 @@ export function MatchesDataTable({
     },
     {
       accessorKey: "status",
-      header: "Státusz",
+      header: t("status"),
       cell: ({ row }) => {
         return <StatusBadge status={row.original.status} />
       },
     },
     {
       accessorKey: "board",
-      header: "Tábla",
+      header: t("board"),
       cell: ({ row }) => {
         const board = row.original.board
         if (!board) return <span className="text-muted-foreground">-</span>
         return (
           <Badge variant="secondary">
-            Tábla {board.number}
+            {t("board_numbered", { number: board.number })}
           </Badge>
         )
       },
     },
     {
       accessorKey: "round",
-      header: "Forduló",
+      header: t("round"),
       cell: ({ row }) => {
         const round = row.original.round
         if (!round) return <span className="text-muted-foreground">-</span>
@@ -155,7 +158,7 @@ export function MatchesDataTable({
     },
     {
       accessorKey: "scheduledTime",
-      header: "Időpont",
+      header: t("time"),
       cell: ({ row }) => {
         const match = row.original
         
@@ -164,7 +167,7 @@ export function MatchesDataTable({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <IconClock className="w-4 h-4" />
               <span>
-                Befejezve {new Date(match.finishedAt).toLocaleString('hu-HU', {
+                {t("finished_at")} {new Date(match.finishedAt).toLocaleString('hu-HU', {
                   month: 'short',
                   day: 'numeric',
                   hour: '2-digit',
@@ -179,7 +182,7 @@ export function MatchesDataTable({
           return (
             <div className="flex items-center gap-2 text-sm text-success">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span>Folyamatban</span>
+              <span>{t("ongoing")}</span>
             </div>
           )
         }
@@ -200,12 +203,12 @@ export function MatchesDataTable({
           )
         }
         
-        return <span className="text-muted-foreground">Ütemezetlen</span>
+        return <span className="text-muted-foreground">{t("unscheduled")}</span>
       },
     },
     {
       id: "actions",
-      header: () => <div className="text-right">Műveletek</div>,
+      header: () => <div className="text-right">{t("actions")}</div>,
       cell: ({ row }) => {
         const match = row.original
 
@@ -223,7 +226,7 @@ export function MatchesDataTable({
                 }}
               >
                 <IconPlayerPlay className="w-4 h-4" />
-                Indítás
+                {t("start")}
               </Button>
             )}
 
@@ -232,24 +235,24 @@ export function MatchesDataTable({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <IconDots className="w-4 h-4" />
-                  <span className="sr-only">Műveletek</span>
+                  <span className="sr-only">{t("actions")}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Műveletek</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
                 {onViewMatch && (
                   <DropdownMenuItem onClick={() => onViewMatch(match)}>
                     <IconEye className="w-4 h-4 mr-2" />
-                    Részletek
+                    {t("details")}
                   </DropdownMenuItem>
                 )}
 
                 {canManage && match.status === 'scheduled' && onStartMatch && (
                   <DropdownMenuItem onClick={() => onStartMatch(match)}>
                     <IconPlayerPlay className="w-4 h-4 mr-2" />
-                    Meccs indítása
+                    {t("start_match")}
                   </DropdownMenuItem>
                 )}
 
@@ -261,7 +264,7 @@ export function MatchesDataTable({
                       className="text-destructive"
                     >
                       <IconTrash className="w-4 h-4 mr-2" />
-                      Törlés
+                      {t("delete")}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -278,7 +281,7 @@ export function MatchesDataTable({
       columns={columns}
       data={matches}
       searchKey="player1.name"
-      searchPlaceholder="Keresés játékos név szerint..."
+      searchPlaceholder={t("search_placeholder")}
       loading={loading}
       onRowClick={onViewMatch}
     />

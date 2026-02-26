@@ -1,7 +1,8 @@
 'use client';
+import { useTranslations } from "next-intl";
 import React, { useState, useEffect } from 'react';
 import { IconPlus, IconTrophy, IconUsers, IconTrash, IconShare } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { League } from '@/interface/league.interface';
 import CreateLeagueModal from './CreateLeagueModal';
 import LeagueDetailModal from './LeagueDetailModal';
@@ -19,6 +20,8 @@ interface LeagueManagerProps {
 }
 
 export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: LeagueManagerProps) {
+  const tTour = useTranslations("Tournament");
+  const t = (key: string, values?: any) => tTour(`league_manager.${key}`, values);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -67,11 +70,11 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
           }
         }
       } else {
-        setError('Failed to load leagues');
+        setError(t("failed_to_load_leagues_ni5z"));
       }
     } catch (err) {
-      setError('Error loading leagues');
-      showErrorToast('Hiba a ligák betöltése során', {
+      setError(t("error_loading_leagues_ri2b"));
+      showErrorToast(t("hiba_a_ligák"), {
         context: 'Liga lista betöltése',
         error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
@@ -89,7 +92,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
         setClubSubscription(clubData.subscriptionModel || 'free');
       }
     } catch (err) {
-      showErrorToast('Hiba a klub előfizetési adatok betöltése során', {
+      showErrorToast(t("hiba_a_klub"), {
         context: 'Klub előfizetés betöltése',
         error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
@@ -107,7 +110,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       }
       return false;
     } catch (err) {
-      showErrorToast('Hiba a funkció ellenőrzése során', {
+      showErrorToast(t("hiba_a_funkció"), {
         context: 'Feature flag ellenőrzése',
         error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
@@ -135,7 +138,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
       });
 
       if (response.ok) {
-        showSuccessToast('Liga sikeresen törölve!');
+        showSuccessToast(t("liga_sikeresen_törölve"));
         fetchLeagues();
       } else {
         const errorData = await response.json();
@@ -146,8 +149,8 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
         });
       }
     } catch (err) {
-      setError('Error deleting league');
-      showErrorToast('Hiba a liga törlése során', {
+      setError(t("error_deleting_league_9b7v"));
+      showErrorToast(t("hiba_a_liga_33"), {
         context: 'Liga törlése',
         error: err instanceof Error ? err.message : 'Ismeretlen hiba',
       });
@@ -169,23 +172,20 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
         <CardContent className="py-12 text-center space-y-4">
           <IconTrophy size={48} className="mx-auto text-muted-foreground/40" />
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-foreground/80">Ligák funkció nem elérhető</h3>
+            <h3 className="text-lg font-semibold text-foreground/80">{t("ligák_funkció_nem")}</h3>
             <p className="text-sm text-muted-foreground">
-              Ez a funkció jelenleg nem engedélyezett ezen a klubon.
-            </p>
+              {t("ez_a_funkció")}</p>
           </div>
           {canManageLeagues && clubSubscription === 'free' && (
             <div className="space-y-3">
               <Alert>
                 <AlertDescription>
-                  A ligák használatához prémium előfizetés szükséges.
-                </AlertDescription>
+                  {t("a_ligák_használatához")}</AlertDescription>
               </Alert>
               <Button asChild>
                 <Link href="/#pricing" className="gap-2">
                   <IconPlus className="h-4 w-4" />
-                  Előfizetés frissítése
-                </Link>
+                  {t("előfizetés_frissítése")}</Link>
               </Button>
             </div>
           )}
@@ -198,22 +198,19 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Ligák</h2>
+          <h2 className="text-2xl font-bold text-foreground">{t("ligák")}</h2>
           <p className="text-sm text-muted-foreground">
-            Kövesd nyomon a versenyeidet és a játékosok pontszámait ligákon keresztül.
-          </p>
+            {t("kövesd_nyomon_a")}</p>
         </div>
         {canCreateLeagues ? (
           <Button onClick={() => setShowCreateModal(true)} className="gap-2">
             <IconPlus className="h-4 w-4" />
-            Új liga
-          </Button>
+            {t("új_liga")}</Button>
         ) : canManageLeagues && clubSubscription === 'free' && process.env.NEXT_PUBLIC_IS_SUBSCRIPTION_ENABLED !== 'false' ? (
           <Button asChild variant="outline" className="gap-2">
-            <Link href="/#pricing" title="Prémium előfizetés szükséges">
+            <Link href="/#pricing" title={t("prémium_előfizetés_szükséges")}>
               <IconPlus className="h-4 w-4" />
-              Új liga (Prémium)
-            </Link>
+              {t("új_liga_prémium")}</Link>
           </Button>
         ) : null}
       </div>
@@ -229,7 +226,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
           <CardContent className="space-y-4 px-6 py-12 text-center">
             <IconTrophy size={48} className="mx-auto text-muted-foreground/40" />
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-foreground/80">Még nincsenek ligák</h3>
+              <h3 className="text-lg font-semibold text-foreground/80">{t("még_nincsenek_ligák")}</h3>
               <p className="text-sm text-muted-foreground">
                 {canManageLeagues
                   ? 'Hozz létre egy új ligát a versenyeid nyomon követéséhez.'
@@ -239,20 +236,17 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
             {canCreateLeagues ? (
               <Button onClick={() => setShowCreateModal(true)} className="gap-2">
                 <IconPlus className="h-4 w-4" />
-                Első liga létrehozása
-              </Button>
+                {t("első_liga_létrehozása")}</Button>
             ) : canManageLeagues && clubSubscription === 'free' ? (
               <div className="space-y-3">
                 <Alert>
                   <AlertDescription>
-                    A ligák létrehozásához prémium előfizetés szükséges.
-                  </AlertDescription>
+                    {t("a_ligák_létrehozásához")}</AlertDescription>
                 </Alert>
                 <Button asChild className="gap-2">
                   <Link href="/#pricing">
                     <IconPlus className="h-4 w-4" />
-                    Előfizetés frissítése
-                  </Link>
+                    {t("előfizetés_frissítése")}</Link>
                 </Button>
               </div>
             ) : null}
@@ -264,8 +258,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
             {leagues.filter(l => l.isActive && (!l.endDate || new Date(l.endDate) > new Date())).length > 0 && (
                 <div className="space-y-4">
                     <h3 className="text-xl font-semibold flex items-center gap-2">
-                        <IconTrophy className="text-primary" /> Aktív Ligák
-                    </h3>
+                        <IconTrophy className="text-primary" /> {t("aktív_ligák")}</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {leagues
                         .filter(l => l.isActive && (!l.endDate || new Date(l.endDate) > new Date()))
@@ -288,8 +281,7 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
                          <h3 className="text-xl font-semibold flex items-center gap-2 text-muted-foreground">
-                            <IconTrophy className="scale-x-[-1]" /> Lezárt / Inaktív Ligák
-                        </h3>
+                            <IconTrophy className="scale-x-[-1]" /> {t("lezárt_inaktív_ligák")}</h3>
                         <div className="h-px bg-border flex-1" />
                     </div>
                    
@@ -348,6 +340,8 @@ interface LeagueCardProps {
 }
 
 function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardProps) {
+  const tTour = useTranslations("Tournament");
+  const t = (key: string, values?: any) => tTour(`league_manager.${key}`, values);
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/clubs/${clubId}?page=leagues&league=${league._id}`;
@@ -361,15 +355,15 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
         });
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        showSuccessToast('Liga link másolva a vágólapra!');
+        showSuccessToast(t("liga_link_másolva"));
       }
     } catch (error) {
       console.error('Error sharing league:', error);
       try {
         await navigator.clipboard.writeText(shareUrl);
-        showSuccessToast('Liga link másolva a vágólapra!');
+        showSuccessToast(t("liga_link_másolva"));
       } catch (clipboardError) {
-        showErrorToast('Nem sikerült másolni a linket');
+        showErrorToast(t("nem_sikerült_másolni_32"));
         console.error('Error copying link to clipboard:', clipboardError);
       }
     }
@@ -403,7 +397,7 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
             </span>
             <div>
               <p className="text-base font-semibold text-foreground">{league.players?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Játékosok</p>
+              <p className="text-xs text-muted-foreground">{t("játékosok")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -412,15 +406,14 @@ function LeagueCard({ league, canManage, onView, onDelete, clubId }: LeagueCardP
             </span>
             <div>
               <p className="text-base font-semibold text-foreground">{league.attachedTournaments?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Versenyek</p>
+              <p className="text-xs text-muted-foreground">{t("versenyek")}</p>
             </div>
           </div>
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-between gap-2">
         <Button className="flex-1" onClick={onView}>
-          Részletek
-        </Button>
+          {t("részletek")}</Button>
         {canManage && !league.verified && (
           <Button variant="destructive" size={"icon"} onClick={onDelete}>
             <IconTrash />

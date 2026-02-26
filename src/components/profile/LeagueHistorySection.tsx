@@ -6,6 +6,7 @@ import { IconUsers, IconTrophy } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTranslations, useLocale } from "next-intl"
 
 interface LeagueHistorySectionProps {
   leagueHistory: any[]
@@ -18,6 +19,9 @@ export function LeagueHistorySection({
   isLoading,
   hasPlayer,
 }: LeagueHistorySectionProps) {
+  const t = useTranslations("Profile.history")
+  const locale = useLocale()
+
   if (!hasPlayer || leagueHistory.length === 0) {
     return null
   }
@@ -28,7 +32,7 @@ export function LeagueHistorySection({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconUsers className="w-5 h-5" />
-            Liga részvétel
+            {t("title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -45,7 +49,7 @@ export function LeagueHistorySection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconUsers className="w-5 h-5" />
-          Liga részvétel
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -78,19 +82,19 @@ export function LeagueHistorySection({
 
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="flex flex-col">
-                          <span className="text-muted-foreground mb-1">Pontszám</span>
+                          <span className="text-muted-foreground mb-1">{t("points")}</span>
                           <span className="font-semibold text-foreground">
                             {league.totalPoints}
                         </span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-muted-foreground mb-1">Versenyek</span>
+                          <span className="text-muted-foreground mb-1">{t("tournaments")}</span>
                           <span className="font-semibold text-foreground">
                             {league.tournamentsPlayed}
                         </span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-muted-foreground mb-1">Pozíció</span>
+                          <span className="text-muted-foreground mb-1">{t("position")}</span>
                           <span className="font-semibold text-warning">
                             #{league.position}
                         </span>
@@ -100,11 +104,11 @@ export function LeagueHistorySection({
 
                     <div className="text-right text-xs text-muted-foreground flex-shrink-0 ml-4">
                       <div className="mb-1">
-                        {new Date(league.joinedAt).toLocaleDateString('hu-HU')}
+                        {new Date(league.joinedAt).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US')}
                       </div>
                       {league.lastActivity && (
                         <div className="text-muted-foreground/70">
-                          Utolsó: {new Date(league.lastActivity).toLocaleDateString('hu-HU')}
+                          {t("last_activity", { date: new Date(league.lastActivity).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US') })}
                         </div>
                       )}
                     </div>

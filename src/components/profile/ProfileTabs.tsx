@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Activity, Ticket } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ProfileTabsProps {
   activeTab: 'details' | 'stats' | 'tickets';
@@ -7,6 +8,8 @@ interface ProfileTabsProps {
 }
 
 export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
+  const t = useTranslations('Profile.tabs');
+
   return (
     <div className="flex border-b border-white/10 mb-6 overflow-x-auto">
       <button
@@ -18,7 +21,7 @@ export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps
         }`}
       >
         <User className="w-4 h-4" />
-        Adatok
+        {t('details')}
         {activeTab === 'details' && (
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
         )}
@@ -33,7 +36,7 @@ export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps
         }`}
       >
         <Activity className="w-4 h-4" />
-        Statisztikák
+        {t('stats')}
         {activeTab === 'stats' && (
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
         )}
@@ -48,7 +51,7 @@ export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps
         }`}
       >
         <Ticket className="w-4 h-4" />
-        Ticketek
+        {t('tickets')}
         {activeTab === 'tickets' && (
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
         )}

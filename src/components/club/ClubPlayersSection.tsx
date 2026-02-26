@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from "next-intl";
 
 import * as React from "react"
 import { IconUsers } from "@tabler/icons-react"
@@ -18,13 +19,14 @@ export function ClubPlayersSection({
   userId,
   onClubUpdated,
 }: ClubPlayersSectionProps) {
+    const t = useTranslations("Club.components");
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
           <IconUsers className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold">Játékosok</h2>
+        <h2 className="text-2xl md:text-3xl font-bold">{t("játékosok")}</h2>
       </div>
 
       <MemberList

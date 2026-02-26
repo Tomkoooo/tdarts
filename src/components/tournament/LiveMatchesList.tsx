@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { IconDeviceGamepad2, IconTrophy, IconClock } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 
 interface LiveMatchesListProps {
   tournamentCode: string;
@@ -28,6 +29,8 @@ interface LiveMatch {
 }
 
 const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMatchSelect, selectedMatchId }) => {
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`live_matches.${key}`, values);
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(selectedMatchId || null);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,11 +60,11 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
           player2Remaining: 501,
           player1: {
             _id: data.matchData.player1?.playerId?._id || data.matchData.player1?._id,
-            name: data.matchData.player1?.playerId?.name || data.matchData.player1?.name || 'Player 1'
+            name: data.matchData.player1?.playerId?.name || data.matchData.player1?.name || t('player_1')
           },
           player2: {
             _id: data.matchData.player2?.playerId?._id || data.matchData.player2?._id,
-            name: data.matchData.player2?.playerId?.name || data.matchData.player2?.name || 'Player 2'
+            name: data.matchData.player2?.playerId?.name || data.matchData.player2?.name || t('player_2')
           },
           player1LegsWon: 0,
           player2LegsWon: 0,
@@ -153,11 +156,11 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
             player2Remaining: match.player2Remaining || 501,
             player1: {
               _id: match.player1?.playerId?._id || match.player1?._id,
-              name: match.player1?.playerId?.name || match.player1?.name || 'Loading...'
+              name: match.player1?.playerId?.name || match.player1?.name || t('loading')
             },
             player2: {
               _id: match.player2?.playerId?._id || match.player2?._id,
-              name: match.player2?.playerId?.name || match.player2?.name || 'Loading...'
+              name: match.player2?.playerId?.name || match.player2?.name || t('loading')
             },
             player1LegsWon: match.player1?.legsWon || 0,
             player2LegsWon: match.player2?.legsWon || 0,
@@ -212,7 +215,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-lg flex items-center gap-2">
             <IconDeviceGamepad2 className="w-5 h-5 text-primary" />
-            Aktív meccsek
+            {t('title')}
           </h3>
           <div className="flex items-center gap-2">
             <span className={cn(
@@ -220,12 +223,12 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
               isConnected ? "bg-green-500" : "bg-red-500"
             )} />
             <span className="text-xs text-muted-foreground hidden sm:inline-block">
-              {isConnected ? 'Élő kapcsolat' : 'Kapcsolódás...'}
+              {isConnected ? t('connected') : t('connecting')}
             </span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Válassz egy meccset a részletes követéshez
+          {t('desc')}
         </p>
       </div>
 
@@ -234,8 +237,8 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
           {liveMatches.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
               <IconTrophy className="w-12 h-12 mb-3 opacity-20" />
-              <p>Jelenleg nincs élő meccs</p>
-              <p className="text-xs mt-1">A meccsek automatikusan megjelennek itt</p>
+              <p>{t('no_matches')}</p>
+              <p className="text-xs mt-1">{t('no_matches_auto')}</p>
             </div>
           ) : (
             liveMatches.map((match) => (
@@ -254,7 +257,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                     variant={selectedMatch === match._id ? "default" : "secondary"}
                     className="text-[10px] uppercase font-bold tracking-wider"
                   >
-                    Leg {match.currentLeg}
+                    {t("leg_1mum")}{match.currentLeg}
                   </Badge>
                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <IconClock className="w-3 h-3" />
@@ -268,7 +271,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                   {/* Player 1 */}
                   <div className="flex-1 text-center">
                     <div className="text-sm font-semibold truncate px-1" title={match.player1?.name}>
-                      {match.player1?.name || "Játékos 1"}
+                      {match.player1?.name || t('player_1')}
                     </div>
                     <div className={cn(
                       "text-2xl font-bold font-mono my-1",
@@ -277,8 +280,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                       {match.player1Remaining}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
-                      {match.player1LegsWon || 0} leg
-                    </div>
+                      {match.player1LegsWon || 0} {t("leg_2aku")}</div>
                   </div>
 
                   {/* VS Divider */}
@@ -289,7 +291,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                   {/* Player 2 */}
                   <div className="flex-1 text-center">
                     <div className="text-sm font-semibold truncate px-1" title={match.player2?.name}>
-                      {match.player2?.name || "Játékos 2"}
+                      {match.player2?.name || t('player_2')}
                     </div>
                     <div className={cn(
                       "text-2xl font-bold font-mono my-1",
@@ -298,8 +300,7 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
                       {match.player2Remaining}
                     </div>
                     <div className="text-xs font-medium text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-block">
-                      {match.player2LegsWon || 0} leg
-                    </div>
+                      {match.player2LegsWon || 0} {t("leg_2aku")}</div>
                   </div>
                 </div>
 
@@ -316,4 +317,4 @@ const LiveMatchesList: React.FC<LiveMatchesListProps> = ({ tournamentCode, onMat
   );
 };
 
-export default LiveMatchesList; 
+export default LiveMatchesList;

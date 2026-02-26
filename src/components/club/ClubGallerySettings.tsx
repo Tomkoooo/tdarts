@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Club } from "@/interface/club.interface"
+import { useTranslations } from 'next-intl'
 
 interface ClubGallerySettingsProps {
   club: Club
@@ -21,6 +22,7 @@ interface Gallery {
 }
 
 export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) {
+    const t = useTranslations('Club.settings.gallery_form')
     const [loading, setLoading] = useState(false)
     const [galleries, setGalleries] = useState<Gallery[]>([])
     const [isEditingGallery, setIsEditingGallery] = useState(false)
@@ -47,18 +49,18 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
         if (!files || files.length === 0) return
 
         if (galleryImages.length + files.length > 5) {
-            toast.error("Maximum 5 kép engedélyezett galériánként")
+            toast.error(t('validation.max_images'))
             return
         }
 
-        const toastId = toast.loading("Feltöltés...")
+        const toastId = toast.loading(t('toast.uploading'))
         const newImages: string[] = []
 
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (file.size > 15 * 1024 * 1024) {
-                     toast.error(`A ${file.name} túl nagy (max 15MB)`);
+                     toast.error(t('toast.size_error', { name: file.name }));
                      continue;
                 }
                 
@@ -72,15 +74,15 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                 newImages.push(res.data.url)
             }
             setGalleryImages([...galleryImages, ...newImages])
-            toast.success("Képek feltöltve", { id: toastId })
+            toast.success(t('toast.upload_success'), { id: toastId })
         } catch {
-            toast.error("Feltöltés sikertelen", { id: toastId })
+            toast.error(t('toast.upload_error'), { id: toastId })
         }
         e.target.value = ''
     }
 
     const handleSaveGallery = async () => {
-        if (!galleryName) return toast.error("Adja meg a galéria nevét")
+        if (!galleryName) return toast.error(t('validation.name_required'))
         
         setLoading(true)
         try {
@@ -103,14 +105,14 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                     name: galleryName,
                     images: galleryImages
                 })
-                toast.success("Galéria frissítve")
+                toast.success(t('toast.updated'))
             } else {
                 // Create
                 await axios.post(`/api/clubs/${club._id}/galleries`, {
                     name: galleryName,
                     images: galleryImages
                 })
-                toast.success("Galéria létrehozva")
+                toast.success(t('toast.created'))
             }
             
             setIsEditingGallery(false)
@@ -119,7 +121,7 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
             setCurrentGalleryId(null)
             fetchGalleries()
         } catch (err: any) {
-            toast.error(err.response?.data?.error || "Hiba történt")
+            toast.error(err.response?.data?.error || t('toast.error'))
         } finally {
             setLoading(false)
         }
@@ -134,7 +136,7 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
     }
 
     const handleDeleteGallery = async (gallery: Gallery) => {
-        if (!confirm(`Biztosan törölni szeretnéd a(z) "${gallery.name}" galériát?`)) return
+        if (!confirm(t('confirm_delete', { name: gallery.name }))) return
         try {
             // Delete associated media
             const extractId = (url: string) => url.match(/\/api\/media\/([a-f0-9]{24})/) ? url.split('/').pop() : null;
@@ -146,10 +148,10 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
             }
 
             await axios.delete(`/api/clubs/${club._id}/galleries?id=${gallery._id}`)
-            toast.success("Galéria törölve")
+            toast.success(t('toast.deleted'))
             fetchGalleries()
         } catch {
-            toast.error("Hiba történt")
+            toast.error(t('toast.error'))
         }
     }
 
@@ -157,8 +159,8 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
       <div className="space-y-6">
            <div className="flex justify-between items-center border-b pb-4">
                 <div>
-                    <h3 className="text-lg font-semibold">Galéria</h3>
-                    <p className="text-sm text-muted-foreground">Kezeld a klub galériáit</p>
+                    <h3 className="text-lg font-semibold">{t('title')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
                 </div>
                 {!isEditingGallery && (
                     <div className="flex flex-col items-end gap-1">
@@ -171,11 +173,11 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                                 setIsEditingGallery(true)
                             }}
                         >
-                            <IconPlus className="mr-2 h-4 w-4" /> Új Galéria
+                            <IconPlus className="mr-2 h-4 w-4" /> {t('new_gallery')}
                         </Button>
                         {galleries.length >= 3 && (
                             <span className="text-[10px] text-muted-foreground bg-secondary/30 px-2 py-0.5 rounded">
-                                Maximum 3 galéria (Ingyenes csomag)
+                                {t('max_galleries_hint')}
                             </span>
                         )}
                     </div>
@@ -184,13 +186,13 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
 
            {isEditingGallery ? (
                 <div className="space-y-4 border p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold">{currentGalleryId ? "Galéria Szerkesztése" : "Új Galéria Létrehozása"}</h3>
+                    <h3 className="text-lg font-semibold">{currentGalleryId ? t('edit_gallery') : t('create_gallery')}</h3>
                     <div>
-                        <Label>Galéria Neve</Label>
-                        <Input value={galleryName} onChange={(e) => setGalleryName(e.target.value)} placeholder="pl. Verseny 2024" />
+                        <Label>{t('gallery_name')}</Label>
+                        <Input value={galleryName} onChange={(e) => setGalleryName(e.target.value)} placeholder={t('gallery_name_placeholder')} />
                     </div>
                     <div>
-                        <Label>Képek (Max 5, Max 15MB/kép)</Label>
+                        <Label>{t('images_label')}</Label>
                         <Input 
                             type="file" 
                             accept="image/*" 
@@ -214,17 +216,17 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                     </div>
                     <div className="flex gap-2">
                         <Button onClick={handleSaveGallery} disabled={loading}>
-                            <IconDeviceFloppy className="mr-2 h-4 w-4" /> Mentés
+                            <IconDeviceFloppy className="mr-2 h-4 w-4" /> {t('save')}
                         </Button>
                         <Button variant="outline" onClick={() => {
                             setIsEditingGallery(false)
                             setGalleryName("")
                             setGalleryImages([])
                             setCurrentGalleryId(null)
-                        }}>Mégse</Button>
+                        }}>{t('cancel')}</Button>
                     </div>
                 </div>
-             ) : (
+              ) : (
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {galleries.map(gallery => (
@@ -233,10 +235,10 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                                     {gallery.images && gallery.images.length > 0 ? (
                                         <ImageWithSkeleton src={gallery.images[0]} alt={gallery.name} className="w-full h-full object-cover" containerClassName="w-full h-full" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">Nincs kép</div>
+                                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">{t('no_images')}</div>
                                     )}
                                     <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-md">
-                                        {gallery.images.length} kép
+                                        {t('image_count', { count: gallery.images.length })}
                                     </div>
                                 </div>
                                 <div className="p-3 flex justify-between items-center bg-card">
@@ -254,12 +256,12 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                         ))}
                         {galleries.length === 0 && (
                             <div className="col-span-full text-center py-8 text-muted-foreground">
-                                Még nincs létrehozott galéria.
+                                {t('no_galleries')}
                             </div>
                         )}
                     </div>
                 </div>
-             )}
+              )}
       </div>
     )
 }

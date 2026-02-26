@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TournamentSettings } from '@/interface/tournament.interface';
 import { IconTarget, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -21,6 +22,10 @@ export default function EditTournamentModal({
   userId,
   onTournamentUpdated
 }: EditTournamentModalProps) {
+  const tTour = useTranslations('Tournament')
+  const t = (key: string, values?: any) => tTour(`edit_modal.${key}`, values);
+  const tCreate = useTranslations('Tournament.create_tournament_modal.settings');
+  const tCard = useTranslations('Tournament.card');
   const [settings, setSettings] = useState<TournamentSettings>(tournament.tournamentSettings);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -62,7 +67,7 @@ export default function EditTournamentModal({
 
   const handleAddBoard = () => {
     const newBoardNumber = boards.length > 0 ? Math.max(...boards.map(b => b.boardNumber)) + 1 : 1;
-    setBoards(prev => [...prev, { boardNumber: newBoardNumber, name: `Tábla ${newBoardNumber}`, isActive: true, status: 'idle' }]);
+    setBoards(prev => [...prev, { boardNumber: newBoardNumber, name: t('board_name_placeholder', { number: newBoardNumber }), isActive: true, status: 'idle' }]);
   };
 
   const handleRemoveBoard = (index: number) => {
@@ -82,7 +87,7 @@ export default function EditTournamentModal({
     
     // Validate board selection
     if (!isTournamentStarted && boards.length === 0) {
-      setError('Legalább egy táblát létre kell hozni');
+      setError(t('error_min_board'));
       return;
     }
     
@@ -128,7 +133,7 @@ export default function EditTournamentModal({
           });
           setError(errorData.error);
         } else {
-          throw new Error(errorData.error || 'Hiba történt a torna frissítése során');
+          throw new Error(errorData.error || t('status_update_err'));
         }
         return;
       }
@@ -136,7 +141,7 @@ export default function EditTournamentModal({
       onTournamentUpdated();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Hiba történt a torna frissítése során');
+      setError(err.message || t('status_update_err'));
     } finally {
       setLoading(false);
     }
@@ -149,10 +154,10 @@ export default function EditTournamentModal({
       <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-md shadow-2xl border-border/40">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary-foreground">
-            Torna szerkesztése
+            {t('title')}
           </DialogTitle>
           <DialogDescription>
-            Itt módosíthatod a torna alapadatait és beállításait.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -162,8 +167,8 @@ export default function EditTournamentModal({
               <p className="font-medium">{error}</p>
               {subscriptionError && (
                 <div className="mt-2 text-sm">
-                  <p>Jelenlegi csomag: <span className="font-semibold">{subscriptionError.planName}</span></p>
-                  <p>Havi versenyek: {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? 'Korlátlan' : subscriptionError.maxAllowed}</p>
+                  <p>{t('plan_prefix')} <span className="font-semibold">{subscriptionError.planName}</span></p>
+                  <p>{t('monthly_count')} {subscriptionError.currentCount} / {subscriptionError.maxAllowed === -1 ? t('unlimited') : subscriptionError.maxAllowed}</p>
                 </div>
               )}
             </div>
@@ -178,7 +183,7 @@ export default function EditTournamentModal({
                 }}
               >
                 <IconExternalLink className="w-4 h-4" />
-                Csomagok
+                {t('packages')}
               </Button>
             )}
           </div>
@@ -187,44 +192,44 @@ export default function EditTournamentModal({
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary">Alapadatok</h3>
+            <h3 className="text-lg font-semibold text-primary">{t('basic_info')}</h3>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Torna neve *</label>
+              <label className="text-sm font-medium">{t('name')} *</label>
               <input
                 type="text"
                 value={settings.name}
                 onChange={(e) => handleSettingsChange('name', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                placeholder="Pl.: Tavaszi Bajnokság 2024"
+                placeholder={t("pl_tavaszi_bajnoksag_2024_ukri")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Leírás</label>
+              <label className="text-sm font-medium">{t('desc')}</label>
               <textarea
                 value={settings.description || ''}
                 onChange={(e) => handleSettingsChange('description', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20 min-h-[80px]"
-                placeholder="Részletes leírás a tornáról..."
+                placeholder={t("reszletes_leiras_a_tornarol_18k9")}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Helyszín</label>
+              <label className="text-sm font-medium">{t('location')}</label>
               <input
                 type="text"
                 value={settings.location || ''}
                 onChange={(e) => handleSettingsChange('location', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                placeholder="Pl.: Budapest, Sport Klub"
+                placeholder={t("pl_budapest_sport_klub_98hq")}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Kezdés dátuma *</label>
+                <label className="text-sm font-medium">{t('start_date')} *</label>
                 <input
                   type="datetime-local"
                   value={new Date(settings.startDate).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
@@ -235,7 +240,7 @@ export default function EditTournamentModal({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Nevezési határidő</label>
+                <label className="text-sm font-medium">{t('reg_deadline')}</label>
                 <input
                   type="datetime-local"
                   value={settings.registrationDeadline ? new Date(settings.registrationDeadline).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T') : ''}
@@ -250,11 +255,11 @@ export default function EditTournamentModal({
 
           {/* Tournament Settings */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary">Verseny beállítások</h3>
+            <h3 className="text-lg font-semibold text-primary">{t('tournament_settings')}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Formátum *</label>
+                <label className="text-sm font-medium">{t('format')} *</label>
                 <select
                   value={settings.format}
                   onChange={(e) => handleSettingsChange('format', e.target.value)}
@@ -262,29 +267,29 @@ export default function EditTournamentModal({
                   disabled={isTournamentStarted}
                   required
                 >
-                  <option value="group">Csoportkör</option>
-                  <option value="knockout">Kieséses</option>
-                  <option value="group_knockout">Csoportkör + Kieséses</option>
+                  <option value="group">{tCreate('format.group')}</option>
+                  <option value="knockout">{tCreate('format.knockout')}</option>
+                  <option value="group_knockout">{tCreate('format.group_knockout')}</option>
                 </select>
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">{t("nem_modosithato_a_verseny_xnl9")}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Típus</label>
+                <label className="text-sm font-medium">{t('type')}</label>
                 <select
                   value={settings.type}
                   onChange={(e) => handleSettingsChange('type', e.target.value)}
                   className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 >
-                  <option value="amateur">Amatőr</option>
-                  <option value="open">Open</option>
+                  <option value="amateur">{tCard('type.amateur')}</option>
+                  <option value="open">{tCard('type.open')}</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Max. létszám *</label>
+                <label className="text-sm font-medium">{t('max_players')} *</label>
                 <input
                   type="number"
                   value={settings.maxPlayers ?? ''}
@@ -295,12 +300,12 @@ export default function EditTournamentModal({
                   required
                 />
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">{t('status_warning')}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Kezdő pontszám *</label>
+                <label className="text-sm font-medium">{t('starting_score')} *</label>
                 <input
                   type="number"
                   value={settings.startingScore ?? ''}
@@ -311,20 +316,20 @@ export default function EditTournamentModal({
                   required
                 />
                 {isTournamentStarted && (
-                  <p className="text-xs text-warning">Nem módosítható a verseny indítása után</p>
+                  <p className="text-xs text-warning">{t('status_warning')}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Táblák száma</label>
+                <label className="text-sm font-medium">{t('board_count')}</label>
                 <div className="w-full px-3 py-2 bg-muted/20 text-muted-foreground rounded-lg border border-border/20">
-                  {boards.length} tábla
+                  {t('boards_summary', { count: boards.length })}
                 </div>
-                <p className="text-xs text-muted-foreground">Automatikusan frissül a táblák alapján</p>
+                <p className="text-xs text-muted-foreground">{t('boards_summary_desc', { defaultValue: 'Automatikusan frissül a táblák alapján' })}</p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Nevezési díj (Ft)</label>
+                <label className="text-sm font-medium">{t('entry_fee')}</label>
                 <input
                   type="number"
                   value={settings.entryFee ?? ''}
@@ -336,26 +341,26 @@ export default function EditTournamentModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Jelszó</label>
+              <label className="text-sm font-medium">{t('password')}</label>
               <input
                 type="text"
                 value={settings.tournamentPassword}
                 onChange={(e) => handleSettingsChange('tournamentPassword', e.target.value)}
                 className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
-                placeholder="Opcionális jelszó a versenyhez"
+                placeholder={t('password_placeholder')}
               />
             </div>
 
             {settings.format === 'group_knockout' && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Kieséses módszer</label>
+                <label className="text-sm font-medium">{t('knockout_method')}</label>
                 <select
                   value={settings.knockoutMethod || 'automatic'}
                   onChange={(e) => handleSettingsChange('knockoutMethod', e.target.value)}
                   className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 >
-                  <option value="automatic">Automatikus</option>
-                  <option value="manual">Manuális</option>
+                  <option value="automatic">{t('auto')}</option>
+                  <option value="manual">{t('manual')}</option>
                 </select>
               </div>
             )}
@@ -364,7 +369,7 @@ export default function EditTournamentModal({
           {/* Board Management - Only show if tournament hasn't started */}
           {!isTournamentStarted && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary">Tábla kezelés</h3>
+              <h3 className="text-lg font-semibold text-primary">{t('board_management')}</h3>
               
               <div className="space-y-3">
                 {boards.map((board, index) => (
@@ -378,7 +383,7 @@ export default function EditTournamentModal({
                       value={board.name}
                       onChange={(e) => handleBoardChange(index, 'name', e.target.value)}
                       className="flex-1 px-3 py-1.5 bg-background/50 rounded-md border border-border/40 outline-none focus:ring-1 ring-primary/30 text-sm"
-                      placeholder={`Tábla ${index + 1}`}
+                      placeholder={t('board_name_placeholder', { number: index + 1 })}
                     />
                     {boards.length > 1 && (
                       <Button
@@ -400,7 +405,7 @@ export default function EditTournamentModal({
                   onClick={handleAddBoard}
                   className="w-full border-dashed"
                 >
-                  + Új tábla hozzáadása
+                  + {t('add_board')}
                 </Button>
               </div>
             </div>
@@ -413,13 +418,13 @@ export default function EditTournamentModal({
               onClick={onClose}
               disabled={loading}
             >
-              Mégse
+              {t('cancel')}
             </Button>
             <Button
               type="submit"
               disabled={loading || (boards.length === 0 && !isTournamentStarted)}
             >
-              {loading ? "Mentés..." : "Mentés"}
+              {loading ? t('saving') : t('save')}
             </Button>
           </div>
         </form>
