@@ -18,6 +18,7 @@ import toast from "react-hot-toast"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { IconTrash } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 interface ProfilePictureUploadProps {
   currentPicture?: string
@@ -28,6 +29,7 @@ export function ProfilePictureUpload({
   currentPicture,
   onUploadSuccess,
 }: ProfilePictureUploadProps) {
+  const t = useTranslations("Profile.picture")
   const [image, setImage] = React.useState<string | null>(null)
   const [crop, setCrop] = React.useState({ x: 0, y: 0 })
   const [zoom, setZoom] = React.useState(1)
@@ -57,7 +59,7 @@ export function ProfilePictureUpload({
   const handleUpload = async () => {
     if (!image || !croppedAreaPixels) return
     if (!consent) {
-      toast.error("A feltöltéshez el kell fogadnod, hogy a képed publikusan elérhető lesz.")
+      toast.error(t("consent_error"))
       return
     }
 
@@ -85,17 +87,17 @@ export function ProfilePictureUpload({
       onUploadSuccess(imageUrl)
       setIsDialogOpen(false)
       setImage(null)
-      toast.success("Profilkép sikeresen frissítve!")
+      toast.success(t("success_update"))
     } catch (error) {
       console.error("Profile picture upload error:", error)
-      toast.error("Hiba történt a profilkép feltöltése során.")
+      toast.error(t("error_update"))
     } finally {
       setIsUploading(false)
     }
   }
 
   const handleRemove = async () => {
-    if (!confirm("Biztosan el akarod távolítani a profilképedet?")) return
+    if (!confirm(t("remove_confirm"))) return
 
     setIsRemoving(true)
     try {
@@ -103,10 +105,10 @@ export function ProfilePictureUpload({
         profilePicture: null,
       })
       onUploadSuccess("")
-      toast.success("Profilkép eltávolítva.")
+      toast.success(t("success_remove"))
     } catch (error) {
       console.error("Profile picture removal error:", error)
-      toast.error("Hiba történt a profilkép eltávolítása során.")
+      toast.error(t("error_remove"))
     } finally {
       setIsRemoving(false)
     }
@@ -121,7 +123,7 @@ export function ProfilePictureUpload({
           )}
           <AvatarImage 
             src={currentPicture} 
-            alt="Profilkép" 
+            alt={t("profilkep_giiz")} 
             className="object-cover" 
             onLoadingStatusChange={(status) => setIsImageLoading(status === 'loading')}
           />
@@ -152,11 +154,11 @@ export function ProfilePictureUpload({
           disabled={isRemoving}
         >
           {isRemoving ? (
-            "Eltávolítás..."
+            t("removing")
           ) : (
             <>
               <IconTrash className="w-4 h-4 mr-2" />
-              Kép eltávolítása
+              {t("remove_button")}
             </>
           )}
         </Button>
@@ -165,7 +167,7 @@ export function ProfilePictureUpload({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md bg-background border-border">
           <DialogHeader>
-            <DialogTitle>Profilkép szerkesztése</DialogTitle>
+            <DialogTitle>{t("dialog_title")}</DialogTitle>
           </DialogHeader>
           
           <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden">
@@ -186,7 +188,7 @@ export function ProfilePictureUpload({
 
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-2 px-2">
-              <span className="text-sm font-medium">Zoom:</span>
+              <span className="text-sm font-medium">{t("zoom")}</span>
               <input
                 type="range"
                 value={zoom}
@@ -210,7 +212,7 @@ export function ProfilePictureUpload({
                 htmlFor="consent"
                 className="text-xs leading-relaxed text-muted-foreground cursor-pointer select-none"
               >
-                Kifejezetten hozzájárulok, hogy a profilképem nyilvánosan megjelenjen a keresési találatokban, a ranglistákon és a versenyek játékoslistájában.
+                {t("consent_label")}
               </label>
             </div>
           </div>
@@ -223,7 +225,7 @@ export function ProfilePictureUpload({
               size="sm"
             >
               <IconX className="w-4 h-4 mr-2" />
-              Mégse
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleUpload}
@@ -232,11 +234,11 @@ export function ProfilePictureUpload({
               className="bg-primary hover:bg-primary/90"
             >
               {isUploading ? (
-                <>Feltöltés...</>
+                <>{t("saving")}</>
               ) : (
                 <>
                   <IconCheck className="w-4 h-4 mr-2" />
-                  Mentés
+                  {t("save")}
                 </>
               )}
             </Button>

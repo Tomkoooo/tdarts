@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { IconTrophy } from '@tabler/icons-react'
 import ClubTournamentCard from '@/components/club/ClubTournamentCard'
 import { Card, CardContent } from "@/components/ui/Card"
@@ -33,16 +34,16 @@ export default function TournamentList({
   onDeleteTournament,
   onEditTournament,
 }: TournamentListProps) {
+    const t = useTranslations("Club.components");
   if (!tournaments.length) {
     return (
       <Card className="border-dashed border-muted bg-card/50">
         <CardContent className="py-12 text-center text-muted-foreground space-y-3">
           <IconTrophy className="w-10 h-10 mx-auto" />
           <div className="space-y-1">
-            <p className="text-lg font-semibold">Még nincsenek tornák.</p>
+            <p className="text-lg font-semibold">{t("még_nincsenek_tornák")}</p>
             <p className="text-sm text-muted-foreground/80">
-              Hozz létre egy új eseményt, hogy megkezdődhessen a játék.
-            </p>
+              {t("hozz_létre_egy")}</p>
           </div>
         </CardContent>
       </Card>

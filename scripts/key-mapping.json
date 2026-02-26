@@ -1,0 +1,5265 @@
+{
+  "announcement_kezelő": {
+    "newPath": "Admin.announcements",
+    "newKey": "announcement_kezelő",
+    "categories": [
+      "Admin.announcements"
+    ]
+  },
+  "rendszerüzenetek_létrehozása_és": {
+    "newPath": "Admin.announcements",
+    "newKey": "rendszerüzenetek_létrehozása_és",
+    "categories": [
+      "Admin.announcements"
+    ]
+  },
+  "aktív_klubok": {
+    "newPath": "Admin.clubs",
+    "newKey": "aktív_klubok",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "basic_122s": {
+    "newPath": "Admin.clubs",
+    "newKey": "basic_122s",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "csak_hitelesített": {
+    "newPath": "Admin.clubs",
+    "newKey": "csak_hitelesített",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "csak_nem_hitelesített": {
+    "newPath": "Admin.clubs",
+    "newKey": "csak_nem_hitelesített",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "csomag": {
+    "newPath": "Admin.clubs",
+    "newKey": "csomag",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "enterprise_joxf": {
+    "newPath": "Admin.clubs",
+    "newKey": "enterprise_joxf",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "free_1b43": {
+    "newPath": "Admin.clubs",
+    "newKey": "free_1b43",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "frissítés": {
+    "newPath": "Common",
+    "newKey": "frissítés"
+  },
+  "helyszín": {
+    "newPath": "Admin.clubs",
+    "newKey": "helyszín",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "hiba_történt_az": {
+    "newPath": "Admin.common",
+    "newKey": "hiba_történt_az",
+    "categories": [
+      "Admin.clubs",
+      "Admin.tournaments",
+      "Admin.users"
+    ]
+  },
+  "hitelesített": {
+    "newPath": "Admin.clubs",
+    "newKey": "hitelesített",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "keresés_név_helyszín": {
+    "newPath": "Admin.clubs",
+    "newKey": "keresés_név_helyszín",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "klub_név": {
+    "newPath": "Admin.clubs",
+    "newKey": "klub_név",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "klubok": {
+    "newPath": "Admin.clubs",
+    "newKey": "klubok",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "klubok_kezelése_statisztikák": {
+    "newPath": "Admin.clubs",
+    "newKey": "klubok_kezelése_statisztikák",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "klubok_napi_létrehozása": {
+    "newPath": "Admin.clubs",
+    "newKey": "klubok_napi_létrehozása",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "létrehozva": {
+    "newPath": "Admin.common",
+    "newKey": "létrehozva",
+    "categories": [
+      "Admin.clubs",
+      "Admin.leagues"
+    ]
+  },
+  "minden_klub": {
+    "newPath": "Admin.clubs",
+    "newKey": "minden_klub",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "műveletek": {
+    "newPath": "Common",
+    "newKey": "műveletek"
+  },
+  "nincs_találat_a": {
+    "newPath": "Common",
+    "newKey": "nincs_találat_a"
+  },
+  "normál": {
+    "newPath": "Admin.clubs",
+    "newKey": "normál",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "pro_1q4t": {
+    "newPath": "Admin.clubs",
+    "newKey": "pro_1q4t",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "státusz": {
+    "newPath": "Common",
+    "newKey": "státusz"
+  },
+  "szűrés_státuszra": {
+    "newPath": "Admin.clubs",
+    "newKey": "szűrés_státuszra",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "tagok": {
+    "newPath": "Admin.clubs",
+    "newKey": "tagok",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "találat_oldal": {
+    "newPath": "Admin.common",
+    "newKey": "találat_oldal",
+    "categories": [
+      "Admin.clubs",
+      "Admin.tournaments",
+      "Admin.users",
+      "Admin.leagues"
+    ]
+  },
+  "törölt": {
+    "newPath": "Admin.clubs",
+    "newKey": "törölt",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "törölve": {
+    "newPath": "Admin.common",
+    "newKey": "törölve",
+    "categories": [
+      "Admin.clubs",
+      "Admin.tournaments"
+    ]
+  },
+  "versenyek": {
+    "newPath": "Club.components",
+    "newKey": "versenyek",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "összes_klub": {
+    "newPath": "Admin.clubs",
+    "newKey": "összes_klub",
+    "categories": [
+      "Admin.clubs"
+    ]
+  },
+  "összesen": {
+    "newPath": "Admin.common",
+    "newKey": "összesen",
+    "categories": [
+      "Admin.clubs",
+      "Admin.tournaments",
+      "Admin.users",
+      "Admin.leagues"
+    ]
+  },
+  "aktiv_11ph": {
+    "newPath": "Admin.tournaments",
+    "newKey": "aktiv_11ph",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "aktív": {
+    "newPath": "Admin.common",
+    "newKey": "aktív",
+    "categories": [
+      "Admin.tournaments",
+      "Admin.users",
+      "Admin.leagues",
+      "Admin.components"
+    ]
+  },
+  "befejezett": {
+    "newPath": "Admin.tournaments",
+    "newKey": "befejezett",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "befejezett_x25b": {
+    "newPath": "Board",
+    "newKey": "befejezett_x25b",
+    "categories": [
+      "Board"
+    ]
+  },
+  "csoportkor_yqu8": {
+    "newPath": "Admin.tournaments",
+    "newKey": "csoportkor_yqu8",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "csoportkör": {
+    "newPath": "Admin.tournaments",
+    "newKey": "csoportkör",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "csoportos_cksc": {
+    "newPath": "Common",
+    "newKey": "csoportos_cksc",
+    "categories": [
+      "Common"
+    ]
+  },
+  "dátum": {
+    "newPath": "Admin.tournaments",
+    "newKey": "dátum",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "fuggoben_ddvf": {
+    "newPath": "Admin.tournaments",
+    "newKey": "fuggoben_ddvf",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "függőben": {
+    "newPath": "Admin.tournaments",
+    "newKey": "függőben",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "játékosok": {
+    "newPath": "Club.components",
+    "newKey": "játékosok",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "keresés_név_klub": {
+    "newPath": "Admin.tournaments",
+    "newKey": "keresés_név_klub",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "kieseses_c2i5": {
+    "newPath": "Admin.tournaments",
+    "newKey": "kieseses_c2i5",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "kieséses": {
+    "newPath": "Admin.tournaments",
+    "newKey": "kieséses",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "klub": {
+    "newPath": "Admin.common",
+    "newKey": "klub",
+    "categories": [
+      "Admin.tournaments",
+      "Admin.leagues"
+    ]
+  },
+  "minden_mód": {
+    "newPath": "Admin.tournaments",
+    "newKey": "minden_mód",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "minden_típus": {
+    "newPath": "Admin.leagues",
+    "newKey": "minden_típus",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "mód": {
+    "newPath": "Admin.tournaments",
+    "newKey": "mód",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "oac": {
+    "newPath": "Admin.tournaments",
+    "newKey": "oac",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "platform": {
+    "newPath": "Admin.leagues",
+    "newKey": "platform",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "sandbox": {
+    "newPath": "Admin.tournaments",
+    "newKey": "sandbox",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "típus": {
+    "newPath": "Admin.tournaments",
+    "newKey": "típus",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "vegyes_spt0": {
+    "newPath": "Admin.tournaments",
+    "newKey": "vegyes_spt0",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "verified_oac": {
+    "newPath": "Admin.leagues",
+    "newKey": "verified_oac",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "verseny_név": {
+    "newPath": "Admin.tournaments",
+    "newKey": "verseny_név",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "versenyek_kezelése_statisztikák": {
+    "newPath": "Admin.tournaments",
+    "newKey": "versenyek_kezelése_statisztikák",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "versenyek_napi_indítása": {
+    "newPath": "Admin.tournaments",
+    "newKey": "versenyek_napi_indítása",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "éles": {
+    "newPath": "Admin.tournaments",
+    "newKey": "éles",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "összes": {
+    "newPath": "Admin.components",
+    "newKey": "összes",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "összes_státusz": {
+    "newPath": "Admin.tournaments",
+    "newKey": "összes_státusz",
+    "categories": [
+      "Admin.tournaments"
+    ]
+  },
+  "admin": {
+    "newPath": "Admin.users",
+    "newKey": "admin",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "adminisztrátorok": {
+    "newPath": "Admin.users",
+    "newKey": "adminisztrátorok",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "angol": {
+    "newPath": "Admin.users",
+    "newKey": "angol",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "csak_adminok": {
+    "newPath": "Admin.users",
+    "newKey": "csak_adminok",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "csak_felhasználók": {
+    "newPath": "Admin.users",
+    "newKey": "csak_felhasználók",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "csatlakozott": {
+    "newPath": "Admin.users",
+    "newKey": "csatlakozott",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "előző": {
+    "newPath": "Admin.users",
+    "newKey": "előző",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "email": {
+    "newPath": "Admin.users",
+    "newKey": "email",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "email_küldése": {
+    "newPath": "Admin.users",
+    "newKey": "email_küldése",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "email_küldése_59": {
+    "newPath": "Admin.users",
+    "newKey": "email_küldése_59",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "email_sikeresen_elküldve": {
+    "newPath": "Admin.users",
+    "newKey": "email_sikeresen_elküldve",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "felhasználó": {
+    "newPath": "Admin.users",
+    "newKey": "felhasználó",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "felhasználó_deaktiválva": {
+    "newPath": "Admin.users",
+    "newKey": "felhasználó_deaktiválva",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "felhasználói_fiókok_kezelése": {
+    "newPath": "Admin.users",
+    "newKey": "felhasználói_fiókok_kezelése",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "felhasználók": {
+    "newPath": "Admin.users",
+    "newKey": "felhasználók",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "fiók_felfüggesztése": {
+    "newPath": "Admin.users",
+    "newKey": "fiók_felfüggesztése",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "hiba_történt_a_29": {
+    "newPath": "Admin.users",
+    "newKey": "hiba_történt_a_29",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "hiba_történt_a_39": {
+    "newPath": "Admin.users",
+    "newKey": "hiba_történt_a_39",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "hiba_történt_az_9": {
+    "newPath": "Admin.users",
+    "newKey": "hiba_történt_az_9",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "keresés_név_email": {
+    "newPath": "Admin.users",
+    "newKey": "keresés_név_email",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "következő": {
+    "newPath": "Admin.users",
+    "newKey": "következő",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "magyar": {
+    "newPath": "Admin.users",
+    "newKey": "magyar",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "minden_felhasználó": {
+    "newPath": "Admin.users",
+    "newKey": "minden_felhasználó",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "mégse": {
+    "newPath": "Common",
+    "newKey": "mégse"
+  },
+  "nem_megerősített": {
+    "newPath": "Admin.users",
+    "newKey": "nem_megerősített",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "nem_regisztrált": {
+    "newPath": "Admin.users",
+    "newKey": "nem_regisztrált",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "nyelv": {
+    "newPath": "Admin.users",
+    "newKey": "nyelv",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "regisztrált": {
+    "newPath": "Admin.users",
+    "newKey": "regisztrált",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "szerepkör": {
+    "newPath": "Admin.users",
+    "newKey": "szerepkör",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "szűrés_szerepkörre": {
+    "newPath": "Admin.users",
+    "newKey": "szűrés_szerepkörre",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "tárgy": {
+    "newPath": "Admin.emails",
+    "newKey": "tárgy",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "írja_be_az": {
+    "newPath": "Admin.users",
+    "newKey": "írja_be_az",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "összes_felhasználó": {
+    "newPath": "Admin.users",
+    "newKey": "összes_felhasználó",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "üzenet": {
+    "newPath": "Admin.users",
+    "newKey": "üzenet",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "üzenet_tárgya": {
+    "newPath": "Admin.users",
+    "newKey": "üzenet_tárgya",
+    "categories": [
+      "Admin.users"
+    ]
+  },
+  "api_1e62": {
+    "newPath": "Admin.errors",
+    "newKey": "api_1e62",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "auth_17zr": {
+    "newPath": "Admin.errors",
+    "newKey": "auth_17zr",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "auth_hibák": {
+    "newPath": "Admin.errors",
+    "newKey": "auth_hibák",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "club": {
+    "newPath": "Admin.errors",
+    "newKey": "club",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "club_1932": {
+    "newPath": "Admin.errors",
+    "newKey": "club_1932",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "database_unvz": {
+    "newPath": "Admin.errors",
+    "newKey": "database_unvz",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "error_details": {
+    "newPath": "Admin.errors",
+    "newKey": "error_details",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "hiba_adatok_betöltése": {
+    "newPath": "Admin.errors",
+    "newKey": "hiba_adatok_betöltése",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "hiba_kezelés": {
+    "newPath": "Admin.errors",
+    "newKey": "hiba_kezelés",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "hiba_történt": {
+    "newPath": "Common",
+    "newKey": "hiba_történt"
+  },
+  "hibák_kategóriánként": {
+    "newPath": "Admin.errors",
+    "newKey": "hibák_kategóriánként",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "hibák_napi_előfordulása": {
+    "newPath": "Admin.errors",
+    "newKey": "hibák_napi_előfordulása",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "hibák_szintenként": {
+    "newPath": "Admin.errors",
+    "newKey": "hibák_szintenként",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "időszak": {
+    "newPath": "Admin.errors",
+    "newKey": "időszak",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "kategória": {
+    "newPath": "Feedback",
+    "newKey": "kategória",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "legutóbbi_hibák": {
+    "newPath": "Admin.errors",
+    "newKey": "legutóbbi_hibák",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "metadata": {
+    "newPath": "Admin.errors",
+    "newKey": "metadata",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "nem_sikerült_betölteni": {
+    "newPath": "Admin.errors",
+    "newKey": "nem_sikerült_betölteni",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "nincsenek_hibák": {
+    "newPath": "Admin.errors",
+    "newKey": "nincsenek_hibák",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "player_vgc0": {
+    "newPath": "Admin.errors",
+    "newKey": "player_vgc0",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "rendszer_hibák_monitorozása": {
+    "newPath": "Admin.errors",
+    "newKey": "rendszer_hibák_monitorozása",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "stack_trace": {
+    "newPath": "Admin.errors",
+    "newKey": "stack_trace",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "system_ttqf": {
+    "newPath": "Admin.errors",
+    "newKey": "system_ttqf",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "szint": {
+    "newPath": "Admin.errors",
+    "newKey": "szint",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "szűrők": {
+    "newPath": "Admin.errors",
+    "newKey": "szűrők",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "tournament": {
+    "newPath": "Admin.errors",
+    "newKey": "tournament",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "tournament_ghva": {
+    "newPath": "Admin.errors",
+    "newKey": "tournament_ghva",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "user": {
+    "newPath": "Admin.errors",
+    "newKey": "user",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "user_1kpn": {
+    "newPath": "Admin.errors",
+    "newKey": "user_1kpn",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "utolsó_hónap": {
+    "newPath": "Admin.errors",
+    "newKey": "utolsó_hónap",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "utolsó_nap": {
+    "newPath": "Admin.errors",
+    "newKey": "utolsó_nap",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "utolsó_nap_94": {
+    "newPath": "Admin.errors",
+    "newKey": "utolsó_nap_94",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "utolsó_óra": {
+    "newPath": "Admin.errors",
+    "newKey": "utolsó_óra",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "összes_hiba": {
+    "newPath": "Admin.errors",
+    "newKey": "összes_hiba",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "összes_kategória": {
+    "newPath": "Admin.errors",
+    "newKey": "összes_kategória",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "összes_szint": {
+    "newPath": "Admin.errors",
+    "newKey": "összes_szint",
+    "categories": [
+      "Admin.errors"
+    ]
+  },
+  "újrapróbálás": {
+    "newPath": "Common",
+    "newKey": "újrapróbálás"
+  },
+  "adatbázis": {
+    "newPath": "Admin.settings",
+    "newKey": "adatbázis",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "adatbázis_információk": {
+    "newPath": "Admin.settings",
+    "newKey": "adatbázis_információk",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "aktuális_verzió_információk": {
+    "newPath": "Admin.settings",
+    "newKey": "aktuális_verzió_információk",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "dokumentumok": {
+    "newPath": "Admin.settings",
+    "newKey": "dokumentumok",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "előfizetés_rendszer": {
+    "newPath": "Admin.settings",
+    "newKey": "előfizetés_rendszer",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "email_username": {
+    "newPath": "Admin.settings",
+    "newKey": "email_username",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "funkciók": {
+    "newPath": "Admin.settings",
+    "newKey": "funkciók",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "kapcsolat": {
+    "newPath": "Admin.settings",
+    "newKey": "kapcsolat",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "kollekciók": {
+    "newPath": "Admin.settings",
+    "newKey": "kollekciók",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "környezeti_változók": {
+    "newPath": "Admin.settings",
+    "newKey": "környezeti_változók",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "ligák": {
+    "newPath": "Admin.leagues",
+    "newKey": "ligák",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "memória": {
+    "newPath": "Admin.settings",
+    "newKey": "memória",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "működik": {
+    "newPath": "Admin.settings",
+    "newKey": "működik",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "nem_sikerült_betölteni_15": {
+    "newPath": "Admin.settings",
+    "newKey": "nem_sikerült_betölteni_15",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "node_env": {
+    "newPath": "Admin.settings",
+    "newKey": "node_env",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "online": {
+    "newPath": "Admin.settings",
+    "newKey": "online",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "rendszer_beállítások": {
+    "newPath": "Admin.settings",
+    "newKey": "rendszer_beállítások",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "rendszer_információk_betöltése": {
+    "newPath": "Admin.settings",
+    "newKey": "rendszer_információk_betöltése",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "rendszer_információk_és": {
+    "newPath": "Admin.settings",
+    "newKey": "rendszer_információk_és",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "rendszer_verzió": {
+    "newPath": "Admin.settings",
+    "newKey": "rendszer_verzió",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "rendszer_állapot": {
+    "newPath": "Admin.settings",
+    "newKey": "rendszer_állapot",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "részletes_statisztikák": {
+    "newPath": "Admin.settings",
+    "newKey": "részletes_statisztikák",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "socket_kapcsolat": {
+    "newPath": "Admin.settings",
+    "newKey": "socket_kapcsolat",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "socket_server_url": {
+    "newPath": "Admin.settings",
+    "newKey": "socket_server_url",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "subscription_enabled": {
+    "newPath": "Admin.settings",
+    "newKey": "subscription_enabled",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "változó": {
+    "newPath": "Admin.settings",
+    "newKey": "változó",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "érték": {
+    "newPath": "Admin.settings",
+    "newKey": "érték",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "üzemidő": {
+    "newPath": "Admin.settings",
+    "newKey": "üzemidő",
+    "categories": [
+      "Admin.settings"
+    ]
+  },
+  "a_teszt_emailt": {
+    "newPath": "Admin.emails",
+    "newKey": "a_teszt_emailt",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "alapértelmezett": {
+    "newPath": "Admin.emails",
+    "newKey": "alapértelmezett",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "címzett_email": {
+    "newPath": "Admin.emails",
+    "newKey": "címzett_email",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "elérhető_változók": {
+    "newPath": "Admin.emails",
+    "newKey": "elérhető_változók",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "email_preview": {
+    "newPath": "Admin.emails",
+    "newKey": "email_preview",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "email_sablonok": {
+    "newPath": "Admin.emails",
+    "newKey": "email_sablonok",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "használd_ezeket_a": {
+    "newPath": "Admin.emails",
+    "newKey": "használd_ezeket_a",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "hiba_történt_a": {
+    "newPath": "Admin.emails",
+    "newKey": "hiba_történt_a",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "hiba_történt_a_87": {
+    "newPath": "Admin.emails",
+    "newKey": "hiba_történt_a_87",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "html_tartalom": {
+    "newPath": "Admin.emails",
+    "newKey": "html_tartalom",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "hálózati_hiba_történt": {
+    "newPath": "Admin.emails",
+    "newKey": "hálózati_hiba_történt",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "inaktív": {
+    "newPath": "Admin.leagues",
+    "newKey": "inaktív",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "kezeld_az_email": {
+    "newPath": "Admin.emails",
+    "newKey": "kezeld_az_email",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "kulcs": {
+    "newPath": "Admin.emails",
+    "newKey": "kulcs",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "kérjük_adj_meg": {
+    "newPath": "Admin.emails",
+    "newKey": "kérjük_adj_meg",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "küldés": {
+    "newPath": "Admin.emails",
+    "newKey": "küldés",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "nincs_kiválasztott_sablon": {
+    "newPath": "Admin.emails",
+    "newKey": "nincs_kiválasztott_sablon",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "sablon_sikeresen_mentve": {
+    "newPath": "Admin.emails",
+    "newKey": "sablon_sikeresen_mentve",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "sablonok": {
+    "newPath": "Admin.emails",
+    "newKey": "sablonok",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "sablonok_betöltése": {
+    "newPath": "Admin.emails",
+    "newKey": "sablonok_betöltése",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "szerkesztés": {
+    "newPath": "Club.components",
+    "newKey": "szerkesztés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "szöveges_tartalom_fallback": {
+    "newPath": "Admin.emails",
+    "newKey": "szöveges_tartalom_fallback",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "teszt_email_elküldve": {
+    "newPath": "Admin.emails",
+    "newKey": "teszt_email_elküldve",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "teszt_email_küldése": {
+    "newPath": "Admin.emails",
+    "newKey": "teszt_email_küldése",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "utolsó_módosítás": {
+    "newPath": "Admin.emails",
+    "newKey": "utolsó_módosítás",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "vmi_pelda_hu": {
+    "newPath": "Admin.emails",
+    "newKey": "vmi_pelda_hu",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "válassz_egy_sablont": {
+    "newPath": "Admin.emails",
+    "newKey": "válassz_egy_sablont",
+    "categories": [
+      "Admin.emails"
+    ]
+  },
+  "feladatok_és_észrevételek": {
+    "newPath": "Admin.todos",
+    "newKey": "feladatok_és_észrevételek",
+    "categories": [
+      "Admin.todos"
+    ]
+  },
+  "todo_kezelés": {
+    "newPath": "Admin.todos",
+    "newKey": "todo_kezelés",
+    "categories": [
+      "Admin.todos"
+    ]
+  },
+  "felhasználói_visszajelzések_és": {
+    "newPath": "Admin.feedback",
+    "newKey": "felhasználói_visszajelzések_és",
+    "categories": [
+      "Admin.feedback"
+    ]
+  },
+  "hibabejelentések_kezelése": {
+    "newPath": "Admin.feedback",
+    "newKey": "hibabejelentések_kezelése",
+    "categories": [
+      "Admin.feedback"
+    ]
+  },
+  "visszajelzések_napi_beérkezése": {
+    "newPath": "Admin.feedback",
+    "newKey": "visszajelzések_napi_beérkezése",
+    "categories": [
+      "Admin.feedback"
+    ]
+  },
+  "hiba_történt_a_14": {
+    "newPath": "Admin.leagues",
+    "newKey": "hiba_történt_a_14",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "hitelesített_oac": {
+    "newPath": "Admin.leagues",
+    "newKey": "hitelesített_oac",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "keresés_név_vagy": {
+    "newPath": "Admin.leagues",
+    "newKey": "keresés_név_vagy",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "liga_neve": {
+    "newPath": "Admin.leagues",
+    "newKey": "liga_neve",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "ligák_kezelése_statisztikák": {
+    "newPath": "Admin.leagues",
+    "newKey": "ligák_kezelése_statisztikák",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "oac_liga": {
+    "newPath": "Admin.leagues",
+    "newKey": "oac_liga",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "platform_liga": {
+    "newPath": "Admin.leagues",
+    "newKey": "platform_liga",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "platform_ligák": {
+    "newPath": "Admin.leagues",
+    "newKey": "platform_ligák",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "pontozási_rendszer": {
+    "newPath": "Admin.leagues",
+    "newKey": "pontozási_rendszer",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "szűrés_típusra": {
+    "newPath": "Admin.leagues",
+    "newKey": "szűrés_típusra",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "összes_liga": {
+    "newPath": "Admin.leagues",
+    "newKey": "összes_liga",
+    "categories": [
+      "Admin.leagues"
+    ]
+  },
+  "a_hozzáadáshoz": {
+    "newPath": "Admin.components",
+    "newKey": "a_hozzáadáshoz",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "a_jelenlegi_statisztikákat": {
+    "newPath": "Admin.components",
+    "newKey": "a_jelenlegi_statisztikákat",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "a_statisztikákat_a": {
+    "newPath": "Admin.components",
+    "newKey": "a_statisztikákat_a",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "adj_hozzá_egy": {
+    "newPath": "Admin.components",
+    "newKey": "adj_hozzá_egy",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "announcements_mk89": {
+    "newPath": "Admin.components",
+    "newKey": "announcements_mk89",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "az_előző_nap": {
+    "newPath": "Admin.components",
+    "newKey": "az_előző_nap",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "betöltés": {
+    "newPath": "Common",
+    "newKey": "betöltés"
+  },
+  "biztosan_le_akarod": {
+    "newPath": "Admin.components",
+    "newKey": "biztosan_le_akarod",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "close": {
+    "newPath": "Admin.components",
+    "newKey": "close",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "clubs_12tn": {
+    "newPath": "Admin.components",
+    "newKey": "clubs_12tn",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "command_palette": {
+    "newPath": "Admin.components",
+    "newKey": "command_palette",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "confirm_restore": {
+    "newPath": "Admin.components",
+    "newKey": "confirm_restore",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "confirm_wrap": {
+    "newPath": "Admin.components",
+    "newKey": "confirm_wrap",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "dashboard_ft8p": {
+    "newPath": "Admin.components",
+    "newKey": "dashboard_ft8p",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "enter": {
+    "newPath": "Admin.components",
+    "newKey": "enter",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "errors_ygvm": {
+    "newPath": "Admin.components",
+    "newKey": "errors_ygvm",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "es_archívumból_és": {
+    "newPath": "Admin.components",
+    "newKey": "es_archívumból_és",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "es_évet_ez": {
+    "newPath": "Admin.components",
+    "newKey": "es_évet_ez",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "esc": {
+    "newPath": "Admin.components",
+    "newKey": "esc",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "ez_a_művelet": {
+    "newPath": "Admin.components",
+    "newKey": "ez_a_művelet",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "ez_a_művelet_57": {
+    "newPath": "Admin.components",
+    "newKey": "ez_a_művelet_57",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "feedback_23iz": {
+    "newPath": "Admin.components",
+    "newKey": "feedback_23iz",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "feladat_gyorsan_hozzáadva": {
+    "newPath": "Admin.components",
+    "newKey": "feladat_gyorsan_hozzáadva",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "feladat_hozzáadva": {
+    "newPath": "Admin.components",
+    "newKey": "feladat_hozzáadva",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "feladat_törölve": {
+    "newPath": "Admin.components",
+    "newKey": "feladat_törölve",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "gyors_feladat_létrehozása": {
+    "newPath": "Admin.components",
+    "newKey": "gyors_feladat_létrehozása",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "ha_véletlenül_futtattad": {
+    "newPath": "Admin.components",
+    "newKey": "ha_véletlenül_futtattad",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "használd_a_természetes": {
+    "newPath": "Admin.components",
+    "newKey": "használd_a_természetes",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "határidő_szerint": {
+    "newPath": "Admin.components",
+    "newKey": "határidő_szerint",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "hiba_tortent_az_adatok_qmk8": {
+    "newPath": "Admin.components",
+    "newKey": "hiba_tortent_az_adatok_qmk8",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "hiba_történt_a_78": {
+    "newPath": "Admin.components",
+    "newKey": "hiba_történt_a_78",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "hiba_történt_a_88": {
+    "newPath": "Admin.components",
+    "newKey": "hiba_történt_a_88",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "hibás_megerősítő_kód": {
+    "newPath": "Admin.components",
+    "newKey": "hibás_megerősítő_kód",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "ismeretlen_adatformatum_v65o": {
+    "newPath": "Admin.components",
+    "newKey": "ismeretlen_adatformatum_v65o",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "kritikus_rendszer_műveletek": {
+    "newPath": "Admin.components",
+    "newKey": "kritikus_rendszer_műveletek",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "kész": {
+    "newPath": "Admin.components",
+    "newKey": "kész",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "leagues_sd4t": {
+    "newPath": "Admin.components",
+    "newKey": "leagues_sd4t",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "megerősítés": {
+    "newPath": "Admin.components",
+    "newKey": "megerősítés",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "navigate": {
+    "newPath": "Admin.components",
+    "newKey": "navigate",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "nem_sikerült_betölteni_12": {
+    "newPath": "Admin.components",
+    "newKey": "nem_sikerült_betölteni_12",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "nem_sikerült_frissíteni": {
+    "newPath": "Admin.components",
+    "newKey": "nem_sikerült_frissíteni",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "nem_sikerült_törölni": {
+    "newPath": "Admin.components",
+    "newKey": "nem_sikerült_törölni",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "nincs_megjeleníthető_feladat": {
+    "newPath": "Admin.components",
+    "newKey": "nincs_megjeleníthető_feladat",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "no_results_found": {
+    "newPath": "Admin.components",
+    "newKey": "no_results_found",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "nyomj": {
+    "newPath": "Admin.components",
+    "newKey": "nyomj",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "okos_rendezés_urgency": {
+    "newPath": "Admin.components",
+    "newKey": "okos_rendezés_urgency",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "prioritás_szerint": {
+    "newPath": "Admin.components",
+    "newKey": "prioritás_szerint",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "search_for_pages": {
+    "newPath": "Admin.components",
+    "newKey": "search_for_pages",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "select": {
+    "newPath": "Admin.components",
+    "newKey": "select",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "settings_osmo": {
+    "newPath": "Admin.components",
+    "newKey": "settings_osmo",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "smart_todo": {
+    "newPath": "Admin.components",
+    "newKey": "smart_todo",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "tags": {
+    "newPath": "Admin.components",
+    "newKey": "tags",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "todos_1c7q": {
+    "newPath": "Admin.components",
+    "newKey": "todos_1c7q",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "tournaments_e65c": {
+    "newPath": "Admin.components",
+    "newKey": "tournaments_e65c",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "trend": {
+    "newPath": "Admin.components",
+    "newKey": "trend",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "type_to_search": {
+    "newPath": "Admin.components",
+    "newKey": "type_to_search",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "törli": {
+    "newPath": "Admin.components",
+    "newKey": "törli",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "users_1cu3": {
+    "newPath": "Admin.components",
+    "newKey": "users_1cu3",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "veszélyzóna": {
+    "newPath": "Admin.components",
+    "newKey": "veszélyzóna",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "visszaállítandó_év": {
+    "newPath": "Admin.components",
+    "newKey": "visszaállítandó_év",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "visszaállítja": {
+    "newPath": "Admin.components",
+    "newKey": "visszaállítja",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "visszaállítás": {
+    "newPath": "Admin.components",
+    "newKey": "visszaállítás",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "visszaállítás_45": {
+    "newPath": "Admin.components",
+    "newKey": "visszaállítás_45",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "visszaállítás_55": {
+    "newPath": "Admin.components",
+    "newKey": "visszaállítás_55",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "visszaállítás_undo": {
+    "newPath": "Admin.components",
+    "newKey": "visszaállítás_undo",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "véglegesítés_és_reset": {
+    "newPath": "Admin.components",
+    "newKey": "véglegesítés_és_reset",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "átlagos_nap": {
+    "newPath": "Admin.components",
+    "newKey": "átlagos_nap",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "év_kiválasztása": {
+    "newPath": "Admin.components",
+    "newKey": "év_kiválasztása",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "év_lezárása": {
+    "newPath": "Admin.components",
+    "newKey": "év_lezárása",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "év_lezárása_85": {
+    "newPath": "Admin.components",
+    "newKey": "év_lezárása_85",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "éves_zárás_és": {
+    "newPath": "Admin.components",
+    "newKey": "éves_zárás_és",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "írd_be_a": {
+    "newPath": "Admin.components",
+    "newKey": "írd_be_a",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "írd_be_természetes": {
+    "newPath": "Admin.components",
+    "newKey": "írd_be_természetes",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "összesen_nap": {
+    "newPath": "Admin.components",
+    "newKey": "összesen_nap",
+    "categories": [
+      "Admin.components"
+    ]
+  },
+  "a_bal_oldali": {
+    "newPath": "Tournament.live",
+    "newKey": "a_bal_oldali",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "a_keresett_élő": {
+    "newPath": "Tournament.live",
+    "newKey": "a_keresett_élő",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "a_torna_nem": {
+    "newPath": "Tournament.live",
+    "newKey": "a_torna_nem",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "a_torna_nem_82": {
+    "newPath": "Tournament.live",
+    "newKey": "a_torna_nem_82",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "a_torna_törölve": {
+    "newPath": "Tournament.live",
+    "newKey": "a_torna_törölve",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "darts": {
+    "newPath": "Tournament.live",
+    "newKey": "darts",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "ha_a_probléma_40": {
+    "newPath": "Tournament.live",
+    "newKey": "ha_a_probléma_40",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "ha_úgy_gondolod": {
+    "newPath": "Tournament.live",
+    "newKey": "ha_úgy_gondolod",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "hiba_történt_82": {
+    "newPath": "Tournament.live",
+    "newKey": "hiba_történt_82",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "hibás_url": {
+    "newPath": "Tournament.live",
+    "newKey": "hibás_url",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "hálózati_kapcsolat_problémák": {
+    "newPath": "Tournament.live",
+    "newKey": "hálózati_kapcsolat_problémák",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "jogosultság_ellenőrzés": {
+    "newPath": "Tournament.live",
+    "newKey": "jogosultság_ellenőrzés",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "kapcsolódás_a_szerverhez": {
+    "newPath": "Tournament.live",
+    "newKey": "kapcsolódás_a_szerverhez",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "keresés": {
+    "newPath": "Common",
+    "newKey": "keresés"
+  },
+  "kérjük_várj_amíg": {
+    "newPath": "Tournament.live",
+    "newKey": "kérjük_várj_amíg",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "lehetséges_okok": {
+    "newPath": "Tournament.live",
+    "newKey": "lehetséges_okok",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "link_másolva_a": {
+    "newPath": "Tournament.live",
+    "newKey": "link_másolva_a",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "megosztás": {
+    "newPath": "Tournament.live",
+    "newKey": "megosztás",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "nem_sikerült_betölteni_85": {
+    "newPath": "Tournament.live",
+    "newKey": "nem_sikerült_betölteni_85",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "nem_sikerült_másolni": {
+    "newPath": "Tournament.live",
+    "newKey": "nem_sikerült_másolni",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "nincs_jogosultságod_az": {
+    "newPath": "Tournament.live",
+    "newKey": "nincs_jogosultságod_az",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "szerver_hiba": {
+    "newPath": "Tournament.live",
+    "newKey": "szerver_hiba",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "tdarts_live": {
+    "newPath": "Tournament.live",
+    "newKey": "tdarts_live",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "tournament_adatok": {
+    "newPath": "Tournament.live",
+    "newKey": "tournament_adatok",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "vissza": {
+    "newPath": "Common",
+    "newKey": "vissza"
+  },
+  "válassz_egy_meccset": {
+    "newPath": "Tournament.live",
+    "newKey": "válassz_egy_meccset",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "élő_közvetítés_betöltése": {
+    "newPath": "Tournament.live",
+    "newKey": "élő_közvetítés_betöltése",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "élő_közvetítés_nem": {
+    "newPath": "Tournament.live",
+    "newKey": "élő_közvetítés_nem",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "újra_próbálkozás": {
+    "newPath": "Tournament.live",
+    "newKey": "újra_próbálkozás",
+    "categories": [
+      "Tournament.live"
+    ]
+  },
+  "exit": {
+    "newPath": "Tournament.tv",
+    "newKey": "exit",
+    "categories": [
+      "Tournament.tv"
+    ]
+  },
+  "loading": {
+    "newPath": "Tournament.tv",
+    "newKey": "loading",
+    "categories": [
+      "Tournament.tv"
+    ]
+  },
+  "open_qr": {
+    "newPath": "Tournament.tv",
+    "newKey": "open_qr",
+    "categories": [
+      "Tournament.tv"
+    ]
+  },
+  "scan_to_join": {
+    "newPath": "Tournament.tv",
+    "newKey": "scan_to_join",
+    "categories": [
+      "Tournament.tv"
+    ]
+  },
+  "tournament_not_found": {
+    "newPath": "Tournament.tv",
+    "newKey": "tournament_not_found",
+    "categories": [
+      "Tournament.tv"
+    ]
+  },
+  "180_ak_szama_r1fz": {
+    "newPath": "Tournament.components",
+    "newKey": "180_ak_szama_r1fz",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "adj_meg_hany_ures_2wq7": {
+    "newPath": "Tournament.components",
+    "newKey": "adj_meg_hany_ures_2wq7",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "alaphelyzet_mvmx": {
+    "newPath": "Tournament.components",
+    "newKey": "alaphelyzet_mvmx",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "allapot_qn05": {
+    "newPath": "Tournament.components",
+    "newKey": "allapot_qn05",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "allitsd_be_a_jatekosokat_lszw": {
+    "newPath": "Tournament.components",
+    "newKey": "allitsd_be_a_jatekosokat_lszw",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "allitsd_be_a_legek_ifc6": {
+    "newPath": "Tournament.components",
+    "newKey": "allitsd_be_a_legek_ifc6",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "atlag_308n": {
+    "newPath": "Common",
+    "newKey": "atlag_308n",
+    "categories": [
+      "Common"
+    ]
+  },
+  "az_egyenesag_az_mdl_32nl": {
+    "newPath": "Tournament.components",
+    "newKey": "az_egyenesag_az_mdl_32nl",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "az_osszes_meccs_torlodik_ylac": {
+    "newPath": "Tournament.components",
+    "newKey": "az_osszes_meccs_torlodik_ylac",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "beallitasok_cd9f": {
+    "newPath": "Tournament.components",
+    "newKey": "beallitasok_cd9f",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "betoltes_69f8": {
+    "newPath": "Common",
+    "newKey": "betoltes_69f8",
+    "categories": [
+      "Common"
+    ]
+  },
+  "biztosan_generalni_szeretned_a_9x5k": {
+    "newPath": "Tournament.components",
+    "newKey": "biztosan_generalni_szeretned_a_9x5k",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "biztosan_torolni_szeretned_ezt_ft7i": {
+    "newPath": "Tournament.components",
+    "newKey": "biztosan_torolni_szeretned_ezt_ft7i",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "bye_meccsek_eseten_az_uov1": {
+    "newPath": "Tournament.components",
+    "newKey": "bye_meccsek_eseten_az_uov1",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "check_in_qhhd": {
+    "newPath": "Tournament.components",
+    "newKey": "check_in_qhhd",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "egyenes_kieses_generalasa_msbj": {
+    "newPath": "Tournament.components",
+    "newKey": "egyenes_kieses_generalasa_msbj",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "egyenes_kieses_lfsy": {
+    "newPath": "Common",
+    "newKey": "egyenes_kieses_lfsy",
+    "categories": [
+      "Common"
+    ]
+  },
+  "elfogadas_qikd": {
+    "newPath": "Tournament.components",
+    "newKey": "elfogadas_qikd",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "elso_jatekos_fq2d": {
+    "newPath": "Tournament.components",
+    "newKey": "elso_jatekos_fq2d",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "eltavolitas_cmzb": {
+    "newPath": "Tournament.components",
+    "newKey": "eltavolitas_cmzb",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "eredmeny_hu1y": {
+    "newPath": "Tournament.components",
+    "newKey": "eredmeny_hu1y",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "eredmeny_modositasa_vhbi": {
+    "newPath": "Tournament.components",
+    "newKey": "eredmeny_modositasa_vhbi",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "ez_a_muvelet_nem_lw70": {
+    "newPath": "Tournament.components",
+    "newKey": "ez_a_muvelet_nem_lw70",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "feliratkozas_a_varolistara_94fl": {
+    "newPath": "Tournament.components",
+    "newKey": "feliratkozas_a_varolistara_94fl",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "felveve_1k3a": {
+    "newPath": "Tournament.components",
+    "newKey": "felveve_1k3a",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "figyelem_ikm5": {
+    "newPath": "Tournament.components",
+    "newKey": "figyelem_ikm5",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "frissites_knax": {
+    "newPath": "Tournament.components",
+    "newKey": "frissites_knax",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "generalas_9txw": {
+    "newPath": "Tournament.components",
+    "newKey": "generalas_9txw",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "gombok_ux7w": {
+    "newPath": "Tournament.components",
+    "newKey": "gombok_ux7w",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "hiba_tortent_a_knockout_3hh4": {
+    "newPath": "Tournament.components",
+    "newKey": "hiba_tortent_a_knockout_3hh4",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "iro_3pep": {
+    "newPath": "Tournament.components",
+    "newKey": "iro_3pep",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "iro_4axa": {
+    "newPath": "Tournament.components",
+    "newKey": "iro_4axa",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "iro_opcionalis_b7mi": {
+    "newPath": "Tournament.components",
+    "newKey": "iro_opcionalis_b7mi",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "jatekos_keresese_jfey": {
+    "newPath": "Tournament.components",
+    "newKey": "jatekos_keresese_jfey",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "jatekos_neve_iedl": {
+    "newPath": "Tournament.components",
+    "newKey": "jatekos_neve_iedl",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "jatekosok_kw3i": {
+    "newPath": "Club.components",
+    "newKey": "jatekosok_kw3i",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kereses_swtb": {
+    "newPath": "Tournament.components",
+    "newKey": "kereses_swtb",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "kicsinyites_jovs": {
+    "newPath": "Tournament.components",
+    "newKey": "kicsinyites_jovs",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "kilepes_teljes_kepernyobol_6puy": {
+    "newPath": "Tournament.components",
+    "newKey": "kilepes_teljes_kepernyobol_6puy",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "kor_pxc6": {
+    "newPath": "Tournament.components",
+    "newKey": "kor_pxc6",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "korben_minimum_ket_jatekos_fxsm": {
+    "newPath": "Tournament.components",
+    "newKey": "korben_minimum_ket_jatekos_fxsm",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "korok_szama_v4hy": {
+    "newPath": "Tournament.components",
+    "newKey": "korok_szama_v4hy",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "kovesd_a_kieseses_ag_6tx7": {
+    "newPath": "Tournament.components",
+    "newKey": "kovesd_a_kieseses_ag_6tx7",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "kovetkezo_kor_generalasa_583b": {
+    "newPath": "Tournament.components",
+    "newKey": "kovetkezo_kor_generalasa_583b",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "legek_17n1": {
+    "newPath": "Tournament.components",
+    "newKey": "legek_17n1",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "legmagasabb_kiszallo_v119": {
+    "newPath": "Common",
+    "newKey": "legmagasabb_kiszallo_v119",
+    "categories": [
+      "Common"
+    ]
+  },
+  "leiratkozas_z3ge": {
+    "newPath": "Tournament.components",
+    "newKey": "leiratkozas_z3ge",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "manualis_3h1i": {
+    "newPath": "Tournament.components",
+    "newKey": "manualis_3h1i",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "masodik_jatekos_gmax": {
+    "newPath": "Tournament.components",
+    "newKey": "masodik_jatekos_gmax",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meccs_beallitasok_7eb7": {
+    "newPath": "Tournament.components",
+    "newKey": "meccs_beallitasok_7eb7",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meccs_eredmeny_rogzitese_h1ee": {
+    "newPath": "Tournament.components",
+    "newKey": "meccs_eredmeny_rogzitese_h1ee",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meccs_hozzaadasa_k6ce": {
+    "newPath": "Tournament.components",
+    "newKey": "meccs_hozzaadasa_k6ce",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meccs_parositas_szerkesztese_374y": {
+    "newPath": "Tournament.components",
+    "newKey": "meccs_parositas_szerkesztese_374y",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meccs_torlese_3k04": {
+    "newPath": "Tournament.components",
+    "newKey": "meccs_torlese_3k04",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meccsek_ryjy": {
+    "newPath": "Tournament.components",
+    "newKey": "meccsek_ryjy",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "meg_nincs_knockout_tabla_czkk": {
+    "newPath": "Tournament.components",
+    "newKey": "meg_nincs_knockout_tabla_czkk",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "megjegyzes_manualis_modhoz_uwpe": {
+    "newPath": "Tournament.components",
+    "newKey": "megjegyzes_manualis_modhoz_uwpe",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "megjegyzes_tf0a": {
+    "newPath": "Tournament.components",
+    "newKey": "megjegyzes_tf0a",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "megosztando_link_dxgn": {
+    "newPath": "Tournament.components",
+    "newKey": "megosztando_link_dxgn",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "mentes_wz35": {
+    "newPath": "Tournament.components",
+    "newKey": "mentes_wz35",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "modot_es_vegye_fel_mh0e": {
+    "newPath": "Tournament.components",
+    "newKey": "modot_es_vegye_fel_mh0e",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "muveletek_t2dg": {
+    "newPath": "Tournament.components",
+    "newKey": "muveletek_t2dg",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nagyitas_t1rp": {
+    "newPath": "Tournament.components",
+    "newKey": "nagyitas_t1rp",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_lehet_frissiteni_a_p1ye": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_lehet_frissiteni_a_p1ye",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_lehet_menteni_a_u9c9": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_lehet_menteni_a_u9c9",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_sikerult_betolteni_a_cia4": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_sikerult_betolteni_a_cia4",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_sikerult_feliratkozni_a_dbkc": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_sikerult_feliratkozni_a_dbkc",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_sikerult_feliratkozni_az_6n4g": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_sikerult_feliratkozni_az_6n4g",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_sikerult_leiratkozni_az_hnr8": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_sikerult_leiratkozni_az_hnr8",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_sikerult_masolni_a_jh9g": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_sikerult_masolni_a_jh9g",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nem_sikerult_megnyitni_a_ms3l": {
+    "newPath": "Tournament.components",
+    "newKey": "nem_sikerult_megnyitni_a_ms3l",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "nyert_legek_es4r": {
+    "newPath": "Tournament.components",
+    "newKey": "nyert_legek_es4r",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "pontozo_kzfn": {
+    "newPath": "Tournament.components",
+    "newKey": "pontozo_kzfn",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "probald_meg_ujratolteni_az_j5oz": {
+    "newPath": "Tournament.components",
+    "newKey": "probald_meg_ujratolteni_az_j5oz",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "random_parositas_jtvj": {
+    "newPath": "Tournament.components",
+    "newKey": "random_parositas_jtvj",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "tabla_1e8h": {
+    "newPath": "Tournament.components",
+    "newKey": "tabla_1e8h",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "tagok_tq3m": {
+    "newPath": "Tournament.components",
+    "newKey": "tagok_tq3m",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "teljes_kepernyo_hkpx": {
+    "newPath": "Tournament.components",
+    "newKey": "teljes_kepernyo_hkpx",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "top_1t11": {
+    "newPath": "Tournament.components",
+    "newKey": "top_1t11",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "ures_kor_generalasa_sk12": {
+    "newPath": "Tournament.components",
+    "newKey": "ures_kor_generalasa_sk12",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "ures_korok_generalasa_bwnc": {
+    "newPath": "Tournament.components",
+    "newKey": "ures_korok_generalasa_bwnc",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "utolso_kor_visszavonasa_cck2": {
+    "newPath": "Tournament.components",
+    "newKey": "utolso_kor_visszavonasa_cck2",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "valassz_tablat_w2ov": {
+    "newPath": "Tournament.components",
+    "newKey": "valassz_tablat_w2ov",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "valaszd_ki_a_jatekosokat_mrxd": {
+    "newPath": "Tournament.components",
+    "newKey": "valaszd_ki_a_jatekosokat_mrxd",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "varolista_s58e": {
+    "newPath": "Tournament.components",
+    "newKey": "varolista_s58e",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "varolistan_levo_jatekosok_d12f": {
+    "newPath": "Tournament.components",
+    "newKey": "varolistan_levo_jatekosok_d12f",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "varolistara_feliratkozas_7cah": {
+    "newPath": "Tournament.components",
+    "newKey": "varolistara_feliratkozas_7cah",
+    "categories": [
+      "Tournament.components"
+    ]
+  },
+  "epits_kozosseget_qsy3": {
+    "newPath": "Club.pages",
+    "newKey": "epits_kozosseget_qsy3",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "hiba_tortent_a_klubok_oqbq": {
+    "newPath": "Club.pages",
+    "newKey": "hiba_tortent_a_klubok_oqbq",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "hozz_letre_egy_uj_d07t": {
+    "newPath": "Club.pages",
+    "newKey": "hozz_letre_egy_uj_d07t",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "játékos_hozzáadva": {
+    "newPath": "Club.pages",
+    "newKey": "játékos_hozzáadva",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "játékos_hozzáadása": {
+    "newPath": "Club.pages",
+    "newKey": "játékos_hozzáadása",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "kilépés_a_klubból": {
+    "newPath": "Club.pages",
+    "newKey": "kilépés_a_klubból",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "klub_betöltése_folyamatban": {
+    "newPath": "Club.pages",
+    "newKey": "klub_betöltése_folyamatban",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "klub_deaktiválása": {
+    "newPath": "Club.pages",
+    "newKey": "klub_deaktiválása",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "klub_nem_található": {
+    "newPath": "Club.pages",
+    "newKey": "klub_nem_található",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "klub_sikeresen_deaktiválva": {
+    "newPath": "Club.pages",
+    "newKey": "klub_sikeresen_deaktiválva",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "kovetd_az_eredmenyeket_xpkq": {
+    "newPath": "Club.pages",
+    "newKey": "kovetd_az_eredmenyeket_xpkq",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "kérem_ellenőrizd_a": {
+    "newPath": "Club.pages",
+    "newKey": "kérem_ellenőrizd_a",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "oac_liga_nem": {
+    "newPath": "Club.pages",
+    "newKey": "oac_liga_nem",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "sajnálom_de_a": {
+    "newPath": "Club.pages",
+    "newKey": "sajnálom_de_a",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "sikeresen_kiléptél_a": {
+    "newPath": "Club.pages",
+    "newKey": "sikeresen_kiléptél_a",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "szervezz_tornakat_pgxr": {
+    "newPath": "Club.pages",
+    "newKey": "szervezz_tornakat_pgxr",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "torna_sikeresen_törölve": {
+    "newPath": "Club.pages",
+    "newKey": "torna_sikeresen_törölve",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "torna_törlése": {
+    "newPath": "Club.pages",
+    "newKey": "torna_törlése",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "uj_klub_regisztralasa_8231": {
+    "newPath": "Club.pages",
+    "newKey": "uj_klub_regisztralasa_8231",
+    "categories": [
+      "Club.pages"
+    ]
+  },
+  "a_liga_beállításait": {
+    "newPath": "Club.components",
+    "newKey": "a_liga_beállításait",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "a_pontszám_változás": {
+    "newPath": "Club.components",
+    "newKey": "a_pontszám_változás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "adj_meg_minden": {
+    "newPath": "Club.components",
+    "newKey": "adj_meg_minden",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "atlag_pont_verseny_9ej7": {
+    "newPath": "Club.components",
+    "newKey": "atlag_pont_verseny_9ej7",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "az_új_pontszám": {
+    "newPath": "Club.components",
+    "newKey": "az_új_pontszám",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "befejezett_verseny_hozzárendelése": {
+    "newPath": "Club.components",
+    "newKey": "befejezett_verseny_hozzárendelése",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "beállítás": {
+    "newPath": "Club.components",
+    "newKey": "beállítás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "beállítások": {
+    "newPath": "Club.components",
+    "newKey": "beállítások",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "biztosan_eltávolítod_ezt": {
+    "newPath": "Club.components",
+    "newKey": "biztosan_eltávolítod_ezt",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "biztosan_törölni_szeretnéd": {
+    "newPath": "Club.components",
+    "newKey": "biztosan_törölni_szeretnéd",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "csak_befejezett_versenyek": {
+    "newPath": "Club.components",
+    "newKey": "csak_befejezett_versenyek",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "csatlakoztatott_versenyek_gfqv": {
+    "newPath": "Club.components",
+    "newKey": "csatlakoztatott_versenyek_gfqv",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "csoportkor_kieses_pontjai_1yik": {
+    "newPath": "Club.components",
+    "newKey": "csoportkor_kieses_pontjai_1yik",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "csoportkorbol_kiesok_pontjai_x3re": {
+    "newPath": "Club.components",
+    "newKey": "csoportkorbol_kiesok_pontjai_x3re",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "csoportkör_kiesés": {
+    "newPath": "Club.components",
+    "newKey": "csoportkör_kiesés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "csoportkör_kiesés_pontjai": {
+    "newPath": "Club.components",
+    "newKey": "csoportkör_kiesés_pontjai",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "dartsbarlang_ontour_pontszámítás": {
+    "newPath": "Club.components",
+    "newKey": "dartsbarlang_ontour_pontszámítás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "dobás_átlag": {
+    "newPath": "Club.components",
+    "newKey": "dobás_átlag",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "döntő_kiesés": {
+    "newPath": "Club.components",
+    "newKey": "döntő_kiesés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "egyenes_kieses_alappont_kkrk": {
+    "newPath": "Club.components",
+    "newKey": "egyenes_kieses_alappont_kkrk",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "egyenes_kiesés_alappont": {
+    "newPath": "Club.components",
+    "newKey": "egyenes_kiesés_alappont",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "ehhez_a_ligához": {
+    "newPath": "Club.components",
+    "newKey": "ehhez_a_ligához",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "eltávolított_játékosok": {
+    "newPath": "Club.components",
+    "newKey": "eltávolított_játékosok",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "eltávolítva": {
+    "newPath": "Club.components",
+    "newKey": "eltávolítva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "eltávolítás": {
+    "newPath": "Club.components",
+    "newKey": "eltávolítás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "eltávolítás_oka": {
+    "newPath": "Club.components",
+    "newKey": "eltávolítás_oka",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "empty": {
+    "newPath": "Club.components",
+    "newKey": "empty",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "error_creating_league_ojvj": {
+    "newPath": "Club.components",
+    "newKey": "error_creating_league_ojvj",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "ez_a_művelet_0": {
+    "newPath": "Club.components",
+    "newKey": "ez_a_művelet_0",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "ezek_a_beállítások": {
+    "newPath": "Club.components",
+    "newKey": "ezek_a_beállítások",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "figyelem_a_liga": {
+    "newPath": "Club.components",
+    "newKey": "figyelem_a_liga",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "galéria_linkje_másolva": {
+    "newPath": "Club.components",
+    "newKey": "galéria_linkje_másolva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "gyoztes_bonusz_pzwy": {
+    "newPath": "Club.components",
+    "newKey": "gyoztes_bonusz_pzwy",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "győztes": {
+    "newPath": "Club.components",
+    "newKey": "győztes",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "győztes_bónusz": {
+    "newPath": "Club.components",
+    "newKey": "győztes_bónusz",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "ha_kikapcsolod_a": {
+    "newPath": "Club.components",
+    "newKey": "ha_kikapcsolod_a",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "használd_a_fenti": {
+    "newPath": "Club.components",
+    "newKey": "használd_a_fenti",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_játékos": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_játékos",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_játékos_47": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_játékos_47",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_liga": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_liga",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_mentés": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_mentés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_pontszám": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_pontszám",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_verseny": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_verseny",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_verseny_84": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_verseny_84",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_visszahelyezés": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_visszahelyezés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hiba_a_visszavonás": {
+    "newPath": "Club.components",
+    "newKey": "hiba_a_visszavonás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "hozz_létre_egy": {
+    "newPath": "Club.components",
+    "newKey": "hozz_létre_egy",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "indoklás": {
+    "newPath": "Club.components",
+    "newKey": "indoklás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "jelenlegi_pontszáma": {
+    "newPath": "Club.components",
+    "newKey": "jelenlegi_pontszáma",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "játékos_22": {
+    "newPath": "Club.components",
+    "newKey": "játékos_22",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "játékos_eltávolítása": {
+    "newPath": "Club.components",
+    "newKey": "játékos_eltávolítása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "játékos_hozzáadása_a": {
+    "newPath": "Club.components",
+    "newKey": "játékos_hozzáadása_a",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "játékos_keresése_és": {
+    "newPath": "Club.components",
+    "newKey": "játékos_keresése_és",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "játékos_sikeresen_hozzáadva": {
+    "newPath": "Club.components",
+    "newKey": "játékos_sikeresen_hozzáadva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "játékos_visszahelyezve_a": {
+    "newPath": "Club.components",
+    "newKey": "játékos_visszahelyezve_a",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kezeld_a_liga": {
+    "newPath": "Club.components",
+    "newKey": "kezeld_a_liga",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kép": {
+    "newPath": "Club.components",
+    "newKey": "kép",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "képgaléria": {
+    "newPath": "Club.components",
+    "newKey": "képgaléria",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kérlek_add_meg": {
+    "newPath": "Club.components",
+    "newKey": "kérlek_add_meg",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kérlek_add_meg_57": {
+    "newPath": "Club.components",
+    "newKey": "kérlek_add_meg_57",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kérlek_adj_meg": {
+    "newPath": "Club.components",
+    "newKey": "kérlek_adj_meg",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kérlek_válassz_egy": {
+    "newPath": "Club.components",
+    "newKey": "kérlek_válassz_egy",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kör_kiesés": {
+    "newPath": "Club.components",
+    "newKey": "kör_kiesés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "kör_kiesés_1": {
+    "newPath": "Club.components",
+    "newKey": "kör_kiesés_1",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "legjobb": {
+    "newPath": "Club.components",
+    "newKey": "legjobb",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "lezárt": {
+    "newPath": "Club.components",
+    "newKey": "lezárt",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "leírás": {
+    "newPath": "Common",
+    "newKey": "leírás",
+    "categories": [
+      "Common"
+    ]
+  },
+  "liga_beállítások": {
+    "newPath": "Club.components",
+    "newKey": "liga_beállítások",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_beállítások_sikeresen": {
+    "newPath": "Club.components",
+    "newKey": "liga_beállítások_sikeresen",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_leírása": {
+    "newPath": "Club.components",
+    "newKey": "liga_leírása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_link_másolva": {
+    "newPath": "Club.components",
+    "newKey": "liga_link_másolva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_neve_18": {
+    "newPath": "Club.components",
+    "newKey": "liga_neve_18",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_neve_28": {
+    "newPath": "Club.components",
+    "newKey": "liga_neve_28",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_neve_62": {
+    "newPath": "Club.components",
+    "newKey": "liga_neve_62",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_neve_91": {
+    "newPath": "Club.components",
+    "newKey": "liga_neve_91",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_részletes_leírása": {
+    "newPath": "Club.components",
+    "newKey": "liga_részletes_leírása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_sikeresen_létrehozva": {
+    "newPath": "Club.components",
+    "newKey": "liga_sikeresen_létrehozva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "liga_státusza": {
+    "newPath": "Club.components",
+    "newKey": "liga_státusza",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "ligak_17po": {
+    "newPath": "Club.components",
+    "newKey": "ligak_17po",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "létrehozás": {
+    "newPath": "Common",
+    "newKey": "létrehozás"
+  },
+  "max_kiesos_korok_j57q": {
+    "newPath": "Club.components",
+    "newKey": "max_kiesos_korok_j57q",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "max_kiesős_körök": {
+    "newPath": "Club.components",
+    "newKey": "max_kiesős_körök",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "mentés_60": {
+    "newPath": "Club.components",
+    "newKey": "mentés_60",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "miért_módosítod_a": {
+    "newPath": "Club.components",
+    "newKey": "miért_módosítod_a",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "miért_távolítod_el": {
+    "newPath": "Club.components",
+    "newKey": "miért_távolítod_el",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "már_befejezett_versenyeknél": {
+    "newPath": "Club.components",
+    "newKey": "már_befejezett_versenyeknél",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "még_nem_lett": {
+    "newPath": "Club.components",
+    "newKey": "még_nem_lett",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "még_nincsenek_játékosok": {
+    "newPath": "Club.components",
+    "newKey": "még_nincsenek_játékosok",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "még_nincsenek_manuális": {
+    "newPath": "Club.components",
+    "newKey": "még_nincsenek_manuális",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "még_nincsenek_tornák": {
+    "newPath": "Club.components",
+    "newKey": "még_nincsenek_tornák",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "módosítás": {
+    "newPath": "Club.components",
+    "newKey": "módosítás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "módosítás_12": {
+    "newPath": "Club.components",
+    "newKey": "módosítás_12",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "módosítás_35": {
+    "newPath": "Club.components",
+    "newKey": "módosítás_35",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "nem_javasolt_már": {
+    "newPath": "Club.components",
+    "newKey": "nem_javasolt_már",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "nem_jelenik_meg": {
+    "newPath": "Club.components",
+    "newKey": "nem_jelenik_meg",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "nem_sikerült_betölteni_73": {
+    "newPath": "Club.components",
+    "newKey": "nem_sikerült_betölteni_73",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "nem_sikerült_másolni_16": {
+    "newPath": "Club.components",
+    "newKey": "nem_sikerült_másolni_16",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "nincs_elérhető_befejezett": {
+    "newPath": "Club.components",
+    "newKey": "nincs_elérhető_befejezett",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pl_tavaszi_bajnokság": {
+    "newPath": "Club.components",
+    "newKey": "pl_tavaszi_bajnokság",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "platform_pontszámítás": {
+    "newPath": "Club.components",
+    "newKey": "platform_pontszámítás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pont": {
+    "newPath": "Club.components",
+    "newKey": "pont",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pont_53": {
+    "newPath": "Club.components",
+    "newKey": "pont_53",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pont_83": {
+    "newPath": "Club.components",
+    "newKey": "pont_83",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pont_részvétel_csoport": {
+    "newPath": "Club.components",
+    "newKey": "pont_részvétel_csoport",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszám_módosítás_visszavonva": {
+    "newPath": "Club.components",
+    "newKey": "pontszám_módosítás_visszavonva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszám_módosítása": {
+    "newPath": "Club.components",
+    "newKey": "pontszám_módosítása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszám_sikeresen_módosítva": {
+    "newPath": "Club.components",
+    "newKey": "pontszám_sikeresen_módosítva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítás_beállításai": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítás_beállításai",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítás_beállítások": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítás_beállítások",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítás_előnézet": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítás_előnézet",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítás_engedélyezése": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítás_engedélyezése",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítás_történet": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítás_történet",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámításhoz_kapcsolódó_módosítások": {
+    "newPath": "Club.components",
+    "newKey": "pontszámításhoz_kapcsolódó_módosítások",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítási_rendszer": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítási_rendszer",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítási_rendszer_0": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítási_rendszer_0",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítási_rendszer_67": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítási_rendszer_67",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "pontszámítási_rendszer_7": {
+    "newPath": "Club.components",
+    "newKey": "pontszámítási_rendszer_7",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "quot_versenyt_a": {
+    "newPath": "Club.components",
+    "newKey": "quot_versenyt_a",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "ranglista": {
+    "newPath": "Club.components",
+    "newKey": "ranglista",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "remiz_christmas_series": {
+    "newPath": "Club.components",
+    "newKey": "remiz_christmas_series",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "szorzo_tenyezo_fyk4": {
+    "newPath": "Club.components",
+    "newKey": "szorzo_tenyezo_fyk4",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "szorzó_tényező": {
+    "newPath": "Club.components",
+    "newKey": "szorzó_tényező",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "tippek_tartsd_alacsonyan": {
+    "newPath": "Club.components",
+    "newKey": "tippek_tartsd_alacsonyan",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "verseny": {
+    "newPath": "Club.components",
+    "newKey": "verseny",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "verseny_92": {
+    "newPath": "Club.components",
+    "newKey": "verseny_92",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "verseny_eltávolítása": {
+    "newPath": "Club.components",
+    "newKey": "verseny_eltávolítása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "verseny_hozzárendelése": {
+    "newPath": "Club.components",
+    "newKey": "verseny_hozzárendelése",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "verseny_sikeresen_eltávolítva": {
+    "newPath": "Club.components",
+    "newKey": "verseny_sikeresen_eltávolítva",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "versenyek_hozzáadása": {
+    "newPath": "Club.components",
+    "newKey": "versenyek_hozzáadása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "visszahelyezés": {
+    "newPath": "Club.components",
+    "newKey": "visszahelyezés",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "visszavonás": {
+    "newPath": "Club.components",
+    "newKey": "visszavonás",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "válassz": {
+    "newPath": "Club.components",
+    "newKey": "válassz",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "válassz_versenyt": {
+    "newPath": "Club.components",
+    "newKey": "válassz_versenyt",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "átlag_hely": {
+    "newPath": "Club.components",
+    "newKey": "átlag_hely",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "érvénytelen_pontszám_formátum": {
+    "newPath": "Club.components",
+    "newKey": "érvénytelen_pontszám_formátum",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "új_liga_létrehozása": {
+    "newPath": "Club.components",
+    "newKey": "új_liga_létrehozása",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "új_verseny_létrehozásakor": {
+    "newPath": "Club.components",
+    "newKey": "új_verseny_létrehozásakor",
+    "categories": [
+      "Club.components"
+    ]
+  },
+  "a_bull_t": {
+    "newPath": "Board",
+    "newKey": "a_bull_t",
+    "categories": [
+      "Board"
+    ]
+  },
+  "a_jelszó_mentésre": {
+    "newPath": "Board",
+    "newKey": "a_jelszó_mentésre",
+    "categories": [
+      "Board"
+    ]
+  },
+  "a_játékos_mindig": {
+    "newPath": "Board",
+    "newKey": "a_játékos_mindig",
+    "categories": [
+      "Board"
+    ]
+  },
+  "a_torna_kodnak_4_6g60": {
+    "newPath": "Board",
+    "newKey": "a_torna_kodnak_4_6g60",
+    "categories": [
+      "Board"
+    ]
+  },
+  "add_meg_a": {
+    "newPath": "Board",
+    "newKey": "add_meg_a",
+    "categories": [
+      "Board"
+    ]
+  },
+  "add_meg_a_11": {
+    "newPath": "Board",
+    "newKey": "add_meg_a_11",
+    "categories": [
+      "Board"
+    ]
+  },
+  "add_meg_a_85": {
+    "newPath": "Board",
+    "newKey": "add_meg_a_85",
+    "categories": [
+      "Board"
+    ]
+  },
+  "admin_meccs_beállítás": {
+    "newPath": "Board",
+    "newKey": "admin_meccs_beállítás",
+    "categories": [
+      "Board"
+    ]
+  },
+  "bejelentkezés": {
+    "newPath": "Board",
+    "newKey": "bejelentkezés",
+    "categories": [
+      "Board"
+    ]
+  },
+  "best_of": {
+    "newPath": "Board",
+    "newKey": "best_of",
+    "categories": [
+      "Board"
+    ]
+  },
+  "csatlakozás": {
+    "newPath": "Board",
+    "newKey": "csatlakozás",
+    "categories": [
+      "Board"
+    ]
+  },
+  "ebből_a_pontszámból": {
+    "newPath": "Board",
+    "newKey": "ebből_a_pontszámból",
+    "categories": [
+      "Board"
+    ]
+  },
+  "ellenőrizd_a_beállításokat": {
+    "newPath": "Board",
+    "newKey": "ellenőrizd_a_beállításokat",
+    "categories": [
+      "Board"
+    ]
+  },
+  "helyi": {
+    "newPath": "Board",
+    "newKey": "helyi",
+    "categories": [
+      "Board"
+    ]
+  },
+  "helyi_meccs": {
+    "newPath": "Board",
+    "newKey": "helyi_meccs",
+    "categories": [
+      "Board"
+    ]
+  },
+  "helyi_meccs_beállítása": {
+    "newPath": "Board",
+    "newKey": "helyi_meccs_beállítása",
+    "categories": [
+      "Board"
+    ]
+  },
+  "helyi_meccs_indítása": {
+    "newPath": "Board",
+    "newKey": "helyi_meccs_indítása",
+    "categories": [
+      "Board"
+    ]
+  },
+  "hiba_tortent_a_bejelentkezes_i7x8": {
+    "newPath": "Board",
+    "newKey": "hiba_tortent_a_bejelentkezes_i7x8",
+    "categories": [
+      "Board"
+    ]
+  },
+  "hiba_tortent_a_kapcsolodas_j6nr": {
+    "newPath": "Board",
+    "newKey": "hiba_tortent_a_kapcsolodas_j6nr",
+    "categories": [
+      "Board"
+    ]
+  },
+  "hiba_tortent_a_meccs_9wjg": {
+    "newPath": "Board",
+    "newKey": "hiba_tortent_a_meccs_9wjg",
+    "categories": [
+      "Board"
+    ]
+  },
+  "hibás_jelszó": {
+    "newPath": "Board",
+    "newKey": "hibás_jelszó",
+    "categories": [
+      "Board"
+    ]
+  },
+  "hány_nyert_legig": {
+    "newPath": "Board",
+    "newKey": "hány_nyert_legig",
+    "categories": [
+      "Board"
+    ]
+  },
+  "indítás": {
+    "newPath": "Board",
+    "newKey": "indítás",
+    "categories": [
+      "Board"
+    ]
+  },
+  "jatekban_oj3d": {
+    "newPath": "Board",
+    "newKey": "jatekban_oj3d",
+    "categories": [
+      "Board"
+    ]
+  },
+  "jelszó": {
+    "newPath": "Common",
+    "newKey": "jelszó",
+    "categories": [
+      "Common"
+    ]
+  },
+  "játékos": {
+    "newPath": "Board",
+    "newKey": "játékos",
+    "categories": [
+      "Board"
+    ]
+  },
+  "játékosok_26": {
+    "newPath": "Board",
+    "newKey": "játékosok_26",
+    "categories": [
+      "Board"
+    ]
+  },
+  "játékosok_39": {
+    "newPath": "Board",
+    "newKey": "játékosok_39",
+    "categories": [
+      "Board"
+    ]
+  },
+  "játékosok_86": {
+    "newPath": "Board",
+    "newKey": "játékosok_86",
+    "categories": [
+      "Board"
+    ]
+  },
+  "játékosok_92": {
+    "newPath": "Board",
+    "newKey": "játékosok_92",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kapcsolódás": {
+    "newPath": "Board",
+    "newKey": "kapcsolódás",
+    "categories": [
+      "Board"
+    ]
+  },
+  "karakteres_kód": {
+    "newPath": "Board",
+    "newKey": "karakteres_kód",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kerjuk_add_meg_a_eop9": {
+    "newPath": "Board",
+    "newKey": "kerjuk_add_meg_a_eop9",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kerjuk_valassz_ki_egy_mqrn": {
+    "newPath": "Board",
+    "newKey": "kerjuk_valassz_ki_egy_mqrn",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kerlek_add_meg_a_rra3": {
+    "newPath": "Board",
+    "newKey": "kerlek_add_meg_a_rra3",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kerlek_add_meg_a_tdqh": {
+    "newPath": "Board",
+    "newKey": "kerlek_add_meg_a_tdqh",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kezdő_játékos": {
+    "newPath": "Board",
+    "newKey": "kezdő_játékos",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kezdő_pontszám": {
+    "newPath": "Board",
+    "newKey": "kezdő_pontszám",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kezdő_pontszám_46": {
+    "newPath": "Board",
+    "newKey": "kezdő_pontszám_46",
+    "categories": [
+      "Board"
+    ]
+  },
+  "ki_kezdi": {
+    "newPath": "Board",
+    "newKey": "ki_kezdi",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kiválaszt": {
+    "newPath": "Board",
+    "newKey": "kiválaszt",
+    "categories": [
+      "Board"
+    ]
+  },
+  "kérd_el_a": {
+    "newPath": "Board",
+    "newKey": "kérd_el_a",
+    "categories": [
+      "Board"
+    ]
+  },
+  "leg": {
+    "newPath": "Board",
+    "newKey": "leg",
+    "categories": [
+      "Board"
+    ]
+  },
+  "meccs_indítása": {
+    "newPath": "Board",
+    "newKey": "meccs_indítása",
+    "categories": [
+      "Board"
+    ]
+  },
+  "mentés": {
+    "newPath": "Common",
+    "newKey": "mentés"
+  },
+  "nem_lehet_dontetlen_egyik_u0zf": {
+    "newPath": "Board",
+    "newKey": "nem_lehet_dontetlen_egyik_u0zf",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerult_betolteni_a_px4t": {
+    "newPath": "Board",
+    "newKey": "nem_sikerult_betolteni_a_px4t",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerult_betolteni_a_qh0h": {
+    "newPath": "Board",
+    "newKey": "nem_sikerult_betolteni_a_qh0h",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerult_elinditani_a_pgom": {
+    "newPath": "Board",
+    "newKey": "nem_sikerult_elinditani_a_pgom",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerült_befejezni": {
+    "newPath": "Board",
+    "newKey": "nem_sikerült_befejezni",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerült_bejelentkezni": {
+    "newPath": "Board",
+    "newKey": "nem_sikerült_bejelentkezni",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerült_betölteni_13": {
+    "newPath": "Board",
+    "newKey": "nem_sikerült_betölteni_13",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerült_betölteni_34": {
+    "newPath": "Board",
+    "newKey": "nem_sikerült_betölteni_34",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerült_betölteni_72": {
+    "newPath": "Board",
+    "newKey": "nem_sikerült_betölteni_72",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nem_sikerült_elindítani": {
+    "newPath": "Board",
+    "newKey": "nem_sikerült_elindítani",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nincs_torna_kódod": {
+    "newPath": "Board",
+    "newKey": "nincs_torna_kódod",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nyert_leg": {
+    "newPath": "Board",
+    "newKey": "nyert_leg",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nyert_legek": {
+    "newPath": "Board",
+    "newKey": "nyert_legek",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nyert_legek_0": {
+    "newPath": "Board",
+    "newKey": "nyert_legek_0",
+    "categories": [
+      "Board"
+    ]
+  },
+  "nyert_legek_száma": {
+    "newPath": "Board",
+    "newKey": "nyert_legek_száma",
+    "categories": [
+      "Board"
+    ]
+  },
+  "pl_abc": {
+    "newPath": "Board",
+    "newKey": "pl_abc",
+    "categories": [
+      "Board"
+    ]
+  },
+  "player_1_w5cv": {
+    "newPath": "Board",
+    "newKey": "player_1_w5cv",
+    "categories": [
+      "Board"
+    ]
+  },
+  "player_2_w5cv": {
+    "newPath": "Board",
+    "newKey": "player_2_w5cv",
+    "categories": [
+      "Board"
+    ]
+  },
+  "scorer_u5wh": {
+    "newPath": "Board",
+    "newKey": "scorer_u5wh",
+    "categories": [
+      "Board"
+    ]
+  },
+  "szabad_ttii": {
+    "newPath": "Board",
+    "newKey": "szabad_ttii",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_jelszó": {
+    "newPath": "Board",
+    "newKey": "torna_jelszó",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_jelszó_1": {
+    "newPath": "Board",
+    "newKey": "torna_jelszó_1",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_jelszó_31": {
+    "newPath": "Board",
+    "newKey": "torna_jelszó_31",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_jelszó_52": {
+    "newPath": "Board",
+    "newKey": "torna_jelszó_52",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_jelszó_72": {
+    "newPath": "Board",
+    "newKey": "torna_jelszó_72",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_kiválasztása": {
+    "newPath": "Board",
+    "newKey": "torna_kiválasztása",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_kód": {
+    "newPath": "Board",
+    "newKey": "torna_kód",
+    "categories": [
+      "Board"
+    ]
+  },
+  "torna_oldal": {
+    "newPath": "Board",
+    "newKey": "torna_oldal",
+    "categories": [
+      "Board"
+    ]
+  },
+  "tábla": {
+    "newPath": "Board",
+    "newKey": "tábla",
+    "categories": [
+      "Board"
+    ]
+  },
+  "tábla_csatlakozás": {
+    "newPath": "Board",
+    "newKey": "tábla_csatlakozás",
+    "categories": [
+      "Board"
+    ]
+  },
+  "több_aktív_torna": {
+    "newPath": "Board",
+    "newKey": "több_aktív_torna",
+    "categories": [
+      "Board"
+    ]
+  },
+  "varakozik_nvfk": {
+    "newPath": "Board",
+    "newKey": "varakozik_nvfk",
+    "categories": [
+      "Board"
+    ]
+  },
+  "vissza_a_táblákhoz": {
+    "newPath": "Board",
+    "newKey": "vissza_a_táblákhoz",
+    "categories": [
+      "Board"
+    ]
+  },
+  "válassz_számot": {
+    "newPath": "Board",
+    "newKey": "válassz_számot",
+    "categories": [
+      "Board"
+    ]
+  },
+  "válassz_tornát": {
+    "newPath": "Board",
+    "newKey": "válassz_tornát",
+    "categories": [
+      "Board"
+    ]
+  },
+  "válassz_táblát": {
+    "newPath": "Board",
+    "newKey": "válassz_táblát",
+    "categories": [
+      "Board"
+    ]
+  },
+  "válaszd_ki_a": {
+    "newPath": "Board",
+    "newKey": "válaszd_ki_a",
+    "categories": [
+      "Board"
+    ]
+  },
+  "állítsd_be_a": {
+    "newPath": "Board",
+    "newKey": "állítsd_be_a",
+    "categories": [
+      "Board"
+    ]
+  },
+  "állítsd_be_a_83": {
+    "newPath": "Board",
+    "newKey": "állítsd_be_a_83",
+    "categories": [
+      "Board"
+    ]
+  },
+  "író": {
+    "newPath": "Board",
+    "newKey": "író",
+    "categories": [
+      "Board"
+    ]
+  },
+  "új_meccs_indítása": {
+    "newPath": "Board",
+    "newKey": "új_meccs_indítása",
+    "categories": [
+      "Board"
+    ]
+  },
+  "asztali_gep_46m4": {
+    "newPath": "Feedback",
+    "newKey": "asztali_gep_46m4",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "az_oldal_ahol": {
+    "newPath": "Feedback",
+    "newKey": "az_oldal_ahol",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "cím": {
+    "newPath": "Feedback",
+    "newKey": "cím",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "egyeb_13u7": {
+    "newPath": "Feedback",
+    "newKey": "egyeb_13u7",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "email_cím": {
+    "newPath": "Feedback",
+    "newKey": "email_cím",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "email_example_com": {
+    "newPath": "Feedback",
+    "newKey": "email_example_com",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "eszköz": {
+    "newPath": "Feedback",
+    "newKey": "eszköz",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "fejlesztesi_javaslat_wiow": {
+    "newPath": "Feedback",
+    "newKey": "fejlesztesi_javaslat_wiow",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "hiba_jelentese_pk3e": {
+    "newPath": "Feedback",
+    "newKey": "hiba_jelentese_pk3e",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "köszönjük_a_visszajelzésedet": {
+    "newPath": "Feedback",
+    "newKey": "köszönjük_a_visszajelzésedet",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "mobil_18d4": {
+    "newPath": "Feedback",
+    "newKey": "mobil_18d4",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "oszd_meg_velünk": {
+    "newPath": "Feedback",
+    "newKey": "oszd_meg_velünk",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "részletes_leírás": {
+    "newPath": "Feedback",
+    "newKey": "részletes_leírás",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "rövid_összefoglaló": {
+    "newPath": "Feedback",
+    "newKey": "rövid_összefoglaló",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "tablet_tq6v": {
+    "newPath": "Feedback",
+    "newKey": "tablet_tq6v",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "tournaments_abc": {
+    "newPath": "Feedback",
+    "newKey": "tournaments_abc",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "uj_funkcio_k5rt": {
+    "newPath": "Feedback",
+    "newKey": "uj_funkcio_k5rt",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "visszajelzés": {
+    "newPath": "Feedback",
+    "newKey": "visszajelzés",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "válassz_eszközt": {
+    "newPath": "Feedback",
+    "newKey": "válassz_eszközt",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "érintett_oldal_opcionális": {
+    "newPath": "Feedback",
+    "newKey": "érintett_oldal_opcionális",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "írd_le_részletesen": {
+    "newPath": "Feedback",
+    "newKey": "írd_le_részletesen",
+    "categories": [
+      "Feedback"
+    ]
+  },
+  "a_játékosoknak_ezt": {
+    "newPath": "Common",
+    "newKey": "a_játékosoknak_ezt",
+    "categories": [
+      "Common"
+    ]
+  },
+  "a_verseny_látható": {
+    "newPath": "Common",
+    "newKey": "a_verseny_látható",
+    "categories": [
+      "Common"
+    ]
+  },
+  "add_meg_a_88": {
+    "newPath": "Common",
+    "newKey": "add_meg_a_88",
+    "categories": [
+      "Common"
+    ]
+  },
+  "add_meg_a_91": {
+    "newPath": "Common",
+    "newKey": "add_meg_a_91",
+    "categories": [
+      "Common"
+    ]
+  },
+  "alapvető_információk": {
+    "newPath": "Common",
+    "newKey": "alapvető_információk",
+    "categories": [
+      "Common"
+    ]
+  },
+  "alternatív_megoldások": {
+    "newPath": "Common",
+    "newKey": "alternatív_megoldások",
+    "categories": [
+      "Common"
+    ]
+  },
+  "azonnali_megoldások": {
+    "newPath": "Common",
+    "newKey": "azonnali_megoldások",
+    "categories": [
+      "Common"
+    ]
+  },
+  "bejelentkezesi_hiba_hqbc": {
+    "newPath": "Common",
+    "newKey": "bejelentkezesi_hiba_hqbc",
+    "categories": [
+      "Common"
+    ]
+  },
+  "bezaras_o3av": {
+    "newPath": "Common",
+    "newKey": "bezaras_o3av",
+    "categories": [
+      "Common"
+    ]
+  },
+  "csapat_meghivas_elfogadva_r38s": {
+    "newPath": "Common",
+    "newKey": "csapat_meghivas_elfogadva_r38s",
+    "categories": [
+      "Common"
+    ]
+  },
+  "csapat_meghivo_orrr": {
+    "newPath": "Common",
+    "newKey": "csapat_meghivo_orrr",
+    "categories": [
+      "Common"
+    ]
+  },
+  "csapat_neve_b7w7": {
+    "newPath": "Common",
+    "newKey": "csapat_neve_b7w7",
+    "categories": [
+      "Common"
+    ]
+  },
+  "dupla_kieses_g6zf": {
+    "newPath": "Common",
+    "newKey": "dupla_kieses_g6zf",
+    "categories": [
+      "Common"
+    ]
+  },
+  "elit_1acs": {
+    "newPath": "Common",
+    "newKey": "elit_1acs",
+    "categories": [
+      "Common"
+    ]
+  },
+  "ellenőrizd_az_internetkapcsolatot": {
+    "newPath": "Common",
+    "newKey": "ellenőrizd_az_internetkapcsolatot",
+    "categories": [
+      "Common"
+    ]
+  },
+  "elutasitas_ymrf": {
+    "newPath": "Common",
+    "newKey": "elutasitas_ymrf",
+    "categories": [
+      "Common"
+    ]
+  },
+  "error_id": {
+    "newPath": "Common",
+    "newKey": "error_id",
+    "categories": [
+      "Common"
+    ]
+  },
+  "fooldal_iry6": {
+    "newPath": "Common",
+    "newKey": "fooldal_iry6",
+    "categories": [
+      "Common"
+    ]
+  },
+  "frissítsd_az_oldalt": {
+    "newPath": "Common",
+    "newKey": "frissítsd_az_oldalt",
+    "categories": [
+      "Common"
+    ]
+  },
+  "főoldal": {
+    "newPath": "Common",
+    "newKey": "főoldal",
+    "categories": [
+      "Common"
+    ]
+  },
+  "google_bejelentkezes_feldolgozasa_nq04": {
+    "newPath": "Common",
+    "newKey": "google_bejelentkezes_feldolgozasa_nq04",
+    "categories": [
+      "Common"
+    ]
+  },
+  "google_bejelentkezes_sikertelen_gllv": {
+    "newPath": "Common",
+    "newKey": "google_bejelentkezes_sikertelen_gllv",
+    "categories": [
+      "Common"
+    ]
+  },
+  "ha_a_probléma": {
+    "newPath": "Common",
+    "newKey": "ha_a_probléma",
+    "categories": [
+      "Common"
+    ]
+  },
+  "halado_zek6": {
+    "newPath": "Common",
+    "newKey": "halado_zek6",
+    "categories": [
+      "Common"
+    ]
+  },
+  "helyezes_bugj": {
+    "newPath": "Common",
+    "newKey": "helyezes_bugj",
+    "categories": [
+      "Common"
+    ]
+  },
+  "hiba_részletei_fejlesztői": {
+    "newPath": "Common",
+    "newKey": "hiba_részletei_fejlesztői",
+    "categories": [
+      "Common"
+    ]
+  },
+  "hiba_tortent_a_bejelentkezes_mbps": {
+    "newPath": "Common",
+    "newKey": "hiba_tortent_a_bejelentkezes_mbps",
+    "categories": [
+      "Common"
+    ]
+  },
+  "hiba_tortent_w14r": {
+    "newPath": "Common",
+    "newKey": "hiba_tortent_w14r",
+    "categories": [
+      "Common"
+    ]
+  },
+  "hibajelentés_azonosító": {
+    "newPath": "Common",
+    "newKey": "hibajelentés_azonosító",
+    "categories": [
+      "Common"
+    ]
+  },
+  "hány_játékos_vehet": {
+    "newPath": "Common",
+    "newKey": "hány_játékos_vehet",
+    "categories": [
+      "Common"
+    ]
+  },
+  "hány_leg_et": {
+    "newPath": "Common",
+    "newKey": "hány_leg_et",
+    "categories": [
+      "Common"
+    ]
+  },
+  "játék_típus": {
+    "newPath": "Common",
+    "newKey": "játék_típus",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kattints_az_ldquo": {
+    "newPath": "Common",
+    "newKey": "kattints_az_ldquo",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kezdo_173n": {
+    "newPath": "Common",
+    "newKey": "kezdo_173n",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kezdo_xwyz": {
+    "newPath": "Common",
+    "newKey": "kezdo_xwyz",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kezdési_dátum": {
+    "newPath": "Common",
+    "newKey": "kezdési_dátum",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kiszallo_arany_49l1": {
+    "newPath": "Common",
+    "newKey": "kiszallo_arany_49l1",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kormerkozes_vrpm": {
+    "newPath": "Common",
+    "newKey": "kormerkozes_vrpm",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kozephalado_uheg": {
+    "newPath": "Common",
+    "newKey": "kozephalado_uheg",
+    "categories": [
+      "Common"
+    ]
+  },
+  "kérjük_várj_az": {
+    "newPath": "Common",
+    "newKey": "kérjük_várj_az",
+    "categories": [
+      "Common"
+    ]
+  },
+  "legjobb_helyezes_i1t1": {
+    "newPath": "Common",
+    "newKey": "legjobb_helyezes_i1t1",
+    "categories": [
+      "Common"
+    ]
+  },
+  "legjobb_helyezés": {
+    "newPath": "Common",
+    "newKey": "legjobb_helyezés",
+    "categories": [
+      "Common"
+    ]
+  },
+  "láthatóság": {
+    "newPath": "Common",
+    "newKey": "láthatóság",
+    "categories": [
+      "Common"
+    ]
+  },
+  "lépj_vissza_a": {
+    "newPath": "Common",
+    "newKey": "lépj_vissza_a",
+    "categories": [
+      "Common"
+    ]
+  },
+  "max_kiszálló": {
+    "newPath": "Common",
+    "newKey": "max_kiszálló",
+    "categories": [
+      "Common"
+    ]
+  },
+  "maximum_játékosszám": {
+    "newPath": "Common",
+    "newKey": "maximum_játékosszám",
+    "categories": [
+      "Common"
+    ]
+  },
+  "meccs": {
+    "newPath": "Common",
+    "newKey": "meccs",
+    "categories": [
+      "Common"
+    ]
+  },
+  "meghivas_elfogadasa_x0n5": {
+    "newPath": "Common",
+    "newKey": "meghivas_elfogadasa_x0n5",
+    "categories": [
+      "Common"
+    ]
+  },
+  "meghivas_elutasitva_vzwy": {
+    "newPath": "Common",
+    "newKey": "meghivas_elutasitva_vzwy",
+    "categories": [
+      "Common"
+    ]
+  },
+  "meghivast_kaptal_egy_paros_z44a": {
+    "newPath": "Common",
+    "newKey": "meghivast_kaptal_egy_paros_z44a",
+    "categories": [
+      "Common"
+    ]
+  },
+  "meghivo_betoltese_pctm": {
+    "newPath": "Common",
+    "newKey": "meghivo_betoltese_pctm",
+    "categories": [
+      "Common"
+    ]
+  },
+  "meghivott_hogy_csatlakozz_a_5u8m": {
+    "newPath": "Common",
+    "newKey": "meghivott_hogy_csatlakozz_a_5u8m",
+    "categories": [
+      "Common"
+    ]
+  },
+  "mester_wz01": {
+    "newPath": "Common",
+    "newKey": "mester_wz01",
+    "categories": [
+      "Common"
+    ]
+  },
+  "mikor_kezdődik_a": {
+    "newPath": "Common",
+    "newKey": "mikor_kezdődik_a",
+    "categories": [
+      "Common"
+    ]
+  },
+  "mit_tehetsz": {
+    "newPath": "Common",
+    "newKey": "mit_tehetsz",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nem_sikerult_betolteni_a_8vw4": {
+    "newPath": "Common",
+    "newKey": "nem_sikerult_betolteni_a_8vw4",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nincs_elerheto_torna_tortenet_8gia": {
+    "newPath": "Common",
+    "newKey": "nincs_elerheto_torna_tortenet_8gia",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nyert_lejatszott_leg_47wb": {
+    "newPath": "Common",
+    "newKey": "nyert_lejatszott_leg_47wb",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nyert_lejatszott_meccs_61q5": {
+    "newPath": "Common",
+    "newKey": "nyert_lejatszott_meccs_61q5",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nyert_lejatszott_torna_5xow": {
+    "newPath": "Common",
+    "newKey": "nyert_lejatszott_torna_5xow",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nyeréshez_szükséges_leg": {
+    "newPath": "Common",
+    "newKey": "nyeréshez_szükséges_leg",
+    "categories": [
+      "Common"
+    ]
+  },
+  "nyilvános_verseny": {
+    "newPath": "Common",
+    "newKey": "nyilvános_verseny",
+    "categories": [
+      "Common"
+    ]
+  },
+  "opcionális_rövid_leírás": {
+    "newPath": "Common",
+    "newKey": "opcionális_rövid_leírás",
+    "categories": [
+      "Common"
+    ]
+  },
+  "osszes_180_reco": {
+    "newPath": "Common",
+    "newKey": "osszes_180_reco",
+    "categories": [
+      "Common"
+    ]
+  },
+  "osszesitett_statisztikak_y0ve": {
+    "newPath": "Common",
+    "newKey": "osszesitett_statisztikak_y0ve",
+    "categories": [
+      "Common"
+    ]
+  },
+  "pl_tavaszi_darts": {
+    "newPath": "Common",
+    "newKey": "pl_tavaszi_darts",
+    "categories": [
+      "Common"
+    ]
+  },
+  "próbáld_meg_újratölteni": {
+    "newPath": "Common",
+    "newKey": "próbáld_meg_újratölteni",
+    "categories": [
+      "Common"
+    ]
+  },
+  "próbáld_másik_böngészőben": {
+    "newPath": "Common",
+    "newKey": "próbáld_másik_böngészőben",
+    "categories": [
+      "Common"
+    ]
+  },
+  "rövid_leírás_a": {
+    "newPath": "Common",
+    "newKey": "rövid_leírás_a",
+    "categories": [
+      "Common"
+    ]
+  },
+  "sajnos_valami_hiba": {
+    "newPath": "Common",
+    "newKey": "sajnos_valami_hiba",
+    "categories": [
+      "Common"
+    ]
+  },
+  "sikeres_muvelet_fiwv": {
+    "newPath": "Common",
+    "newKey": "sikeres_muvelet_fiwv",
+    "categories": [
+      "Common"
+    ]
+  },
+  "torna": {
+    "newPath": "Common",
+    "newKey": "torna",
+    "categories": [
+      "Common"
+    ]
+  },
+  "torna_1c80": {
+    "newPath": "Common",
+    "newKey": "torna_1c80",
+    "categories": [
+      "Common"
+    ]
+  },
+  "torna_tortenet_jznf": {
+    "newPath": "Common",
+    "newKey": "torna_tortenet_jznf",
+    "categories": [
+      "Common"
+    ]
+  },
+  "tornara_lepes_joqq": {
+    "newPath": "Common",
+    "newKey": "tornara_lepes_joqq",
+    "categories": [
+      "Common"
+    ]
+  },
+  "tábla_hozzáadása": {
+    "newPath": "Common",
+    "newKey": "tábla_hozzáadása",
+    "categories": [
+      "Common"
+    ]
+  },
+  "tábla_szám": {
+    "newPath": "Common",
+    "newKey": "tábla_szám",
+    "categories": [
+      "Common"
+    ]
+  },
+  "táblák": {
+    "newPath": "Common",
+    "newKey": "táblák",
+    "categories": [
+      "Common"
+    ]
+  },
+  "töröld_a_böngésző": {
+    "newPath": "Common",
+    "newKey": "töröld_a_böngésző",
+    "categories": [
+      "Common"
+    ]
+  },
+  "verseny_beállítások": {
+    "newPath": "Common",
+    "newKey": "verseny_beállítások",
+    "categories": [
+      "Common"
+    ]
+  },
+  "verseny_formátum": {
+    "newPath": "Common",
+    "newKey": "verseny_formátum",
+    "categories": [
+      "Common"
+    ]
+  },
+  "verseny_jelszava": {
+    "newPath": "Common",
+    "newKey": "verseny_jelszava",
+    "categories": [
+      "Common"
+    ]
+  },
+  "verseny_létrehozása": {
+    "newPath": "Common",
+    "newKey": "verseny_létrehozása",
+    "categories": [
+      "Common"
+    ]
+  },
+  "verseny_neve": {
+    "newPath": "Common",
+    "newKey": "verseny_neve",
+    "categories": [
+      "Common"
+    ]
+  },
+  "verseny_sikeresen_létrehozva": {
+    "newPath": "Common",
+    "newKey": "verseny_sikeresen_létrehozva",
+    "categories": [
+      "Common"
+    ]
+  },
+  "vissza_a_bejelentkezeshez_kk0h": {
+    "newPath": "Common",
+    "newKey": "vissza_a_bejelentkezeshez_kk0h",
+    "categories": [
+      "Common"
+    ]
+  },
+  "vissza_a_fooldalra_hdrp": {
+    "newPath": "Common",
+    "newKey": "vissza_a_fooldalra_hdrp",
+    "categories": [
+      "Common"
+    ]
+  },
+  "válassz_egy_egyedi": {
+    "newPath": "Common",
+    "newKey": "válassz_egy_egyedi",
+    "categories": [
+      "Common"
+    ]
+  },
+  "válaszd_ki_a_78": {
+    "newPath": "Common",
+    "newKey": "válaszd_ki_a_78",
+    "categories": [
+      "Common"
+    ]
+  },
+  "átlag_19": {
+    "newPath": "Common",
+    "newKey": "átlag_19",
+    "categories": [
+      "Common"
+    ]
+  },
+  "újrapróbálkozás": {
+    "newPath": "Common",
+    "newKey": "újrapróbálkozás",
+    "categories": [
+      "Common"
+    ]
+  }
+}

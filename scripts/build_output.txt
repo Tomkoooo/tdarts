@@ -1,0 +1,94 @@
+
+> tDarts@beta2.3.5 build
+> next build
+
+   ▲ Next.js 15.3.6
+   - Environments: .env
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/components/admin/CommandPalette.tsx
+Error:   [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4m/Users/tomko/programing/tdarts_torunament/src/components/admin/CommandPalette.tsx[0m:3:1]
+ [2m1[0m | import { useTranslations } from "next-intl";
+ [2m2[0m | 
+ [2m3[0m | "use client"
+   : [35;1m^^^^^^^^^^^^[0m
+ [2m4[0m | 
+ [2m5[0m | import { useState, useEffect, useCallback } from "react"
+ [2m6[0m | import { useRouter } from "next/navigation"
+   `----
+
+Import trace for requested module:
+./src/components/admin/CommandPalette.tsx
+./src/app/[locale]/admin/layout.tsx
+
+./src/components/admin/GlobalTodoShortcut.tsx
+Error:   [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4m/Users/tomko/programing/tdarts_torunament/src/components/admin/GlobalTodoShortcut.tsx[0m:3:1]
+ [2m1[0m | import { useTranslations } from "next-intl";
+ [2m2[0m | 
+ [2m3[0m | "use client"
+   : [35;1m^^^^^^^^^^^^[0m
+ [2m4[0m | 
+ [2m5[0m | import React, { useState, useEffect } from "react"
+ [2m6[0m | import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+   `----
+
+Import trace for requested module:
+./src/components/admin/GlobalTodoShortcut.tsx
+./src/app/[locale]/admin/layout.tsx
+
+./src/components/club/ClubGallerySection.tsx
+Error:   [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4m/Users/tomko/programing/tdarts_torunament/src/components/club/ClubGallerySection.tsx[0m:3:1]
+ [2m1[0m | import { useTranslations } from "next-intl";
+ [2m2[0m | 
+ [2m3[0m | "use client"
+   : [35;1m^^^^^^^^^^^^[0m
+ [2m4[0m | 
+ [2m5[0m | import * as React from "react"
+ [2m6[0m | import axios from "axios"
+   `----
+
+Import trace for requested module:
+./src/components/club/ClubGallerySection.tsx
+./src/components/club/ClubSummarySection.tsx
+./src/app/[locale]/clubs/[code]/page.tsx
+
+./src/components/club/ClubPlayersSection.tsx
+Error:   [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4m/Users/tomko/programing/tdarts_torunament/src/components/club/ClubPlayersSection.tsx[0m:3:1]
+ [2m1[0m | import { useTranslations } from "next-intl";
+ [2m2[0m | 
+ [2m3[0m | "use client"
+   : [35;1m^^^^^^^^^^^^[0m
+ [2m4[0m | 
+ [2m5[0m | import * as React from "react"
+ [2m6[0m | import { IconUsers } from "@tabler/icons-react"
+   `----
+
+Import trace for requested module:
+./src/components/club/ClubPlayersSection.tsx
+./src/app/[locale]/clubs/[code]/page.tsx
+
+./src/components/club/LeagueManager.tsx
+Error:   [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4m/Users/tomko/programing/tdarts_torunament/src/components/club/LeagueManager.tsx[0m:3:1]
+ [2m1[0m | import { useTranslations } from "next-intl";
+ [2m2[0m | 
+ [2m3[0m | 'use client';
+   : [35;1m^^^^^^^^^^^^^[0m
+ [2m4[0m | import React, { useState, useEffect } from 'react';
+ [2m5[0m | import { IconPlus, IconTrophy, IconUsers, IconTrash, IconShare } from '@tabler/icons-react';
+ [2m6[0m | import { Link } from '@/i18n/routing';
+   `----
+
+Import trace for requested module:
+./src/components/club/LeagueManager.tsx
+./src/components/club/ClubLeaguesSection.tsx
+./src/app/[locale]/clubs/[code]/page.tsx
+
+
+> Build failed because of webpack errors

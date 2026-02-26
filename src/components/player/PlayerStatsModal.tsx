@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import React from "react"
 import {
   IconCalendarStats,
@@ -34,6 +35,8 @@ interface PlayerStatsModalProps {
 }
 
 const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, isOacContext }) => {
+  const tTour = useTranslations("Tournament");
+  const t = (key: string, values?: any) => tTour(`player_stats_modal.${key}`, values);
   const [activePlayer, setActivePlayer] = React.useState<Player | null>(player)
   const [navigationHistory, setNavigationHistory] = React.useState<Player[]>([])
   const [playerStats, setPlayerStats] = React.useState<Player | null>(null)
@@ -80,7 +83,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
         }
       } catch (error: any) {
         console.error('Failed to fetch player stats:', error)
-        showErrorToast('Nem sikerült betölteni a játékos statisztikáit', {
+        showErrorToast(t("nem_sikerült_betölteni_76"), {
           error: error?.response?.data?.error,
           context: 'Játékos statisztika betöltése',
           errorName: 'Statisztika betöltése sikertelen',
@@ -208,19 +211,19 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
         variant: "amber"
       },
       {
-        label: "Legjobb helyezés",
+        label: t("legjobb_helyezes_i1t1"),
         value: stats.bestPosition === 999 ? "—" : `#${stats.bestPosition}`,
         icon: IconMedal,
         variant: "blue"
       },
       {
-        label: "Átlagos helyezés",
+        label: t("atlagos_helyezes_ctvu"),
         value: stats.averagePosition ? `#${stats.averagePosition.toFixed(1)}` : "—",
         icon: IconChartBar,
         variant: "emerald"
       },
       {
-        label: "Győzelmi arány",
+        label: t("gyozelmi_arany_vqqj"),
         value:
           stats.totalMatchesWon || stats.totalMatchesLost
             ? `${Math.round(((stats.totalMatchesWon ?? 0) / ((stats.totalMatchesWon ?? 0) + (stats.totalMatchesLost ?? 0))) * 100)}%`
@@ -248,14 +251,14 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 <IconCalendarStats size={16} className="text-primary" />
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Részletes Mutatók</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{t("részletes_mutatók")}</h4>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                <MiniStatBox label="Meccsek" value={`${stats.totalMatchesWon || 0}W / ${stats.totalMatchesLost || 0}L`} />
-                <MiniStatBox label="Legek" value={`${stats.totalLegsWon || stats.legsWon || 0}W / ${stats.totalLegsLost || stats.legsLost || 0}L`} />
-                <MiniStatBox label="180-as dobások" value={stats.oneEightiesCount ?? stats.total180s ?? 0} />
-                <MiniStatBox label="Max kiszálló" value={stats.highestCheckout || "—"} />
-                <MiniStatBox label="Dobás átlag" value={stats.avg ? stats.avg.toFixed(1) : "—"} />
+                <MiniStatBox label={t("meccsek")} value={`${stats.totalMatchesWon || 0}W / ${stats.totalMatchesLost || 0}L`} />
+                <MiniStatBox label={t("legek")} value={`${stats.totalLegsWon || stats.legsWon || 0}W / ${stats.totalLegsLost || stats.legsLost || 0}L`} />
+                <MiniStatBox label={t("as_dobások")} value={stats.oneEightiesCount ?? stats.total180s ?? 0} />
+                <MiniStatBox label={t("max_kiszálló")} value={stats.highestCheckout || "—"} />
+                <MiniStatBox label={t("dobás_átlag")} value={stats.avg ? stats.avg.toFixed(1) : "—"} />
               </div>
             </CardContent>
           </Card>
@@ -282,7 +285,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                     <button 
                       onClick={navigateBack}
                       className="p-1 hover:bg-muted/50 rounded-full transition-colors -ml-1"
-                      title="Vissza"
+                      title={t("vissza")}
                     >
                       <IconChevronDown size={24} className="rotate-90 text-primary" />
                     </button>
@@ -311,7 +314,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                   </Badge>
                 ))}
                 {!honors.length && (
-                  <Badge variant="outline" className="text-[9px] font-bold h-5 px-2 uppercase tracking-widest opacity-40">Kihívó</Badge>
+                  <Badge variant="outline" className="text-[9px] font-bold h-5 px-2 uppercase tracking-widest opacity-40">{t("kihívó")}</Badge>
                 )}
               </div>
             </div>
@@ -319,13 +322,11 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
           <div className="flex gap-3">
             <Badge variant="outline" className="rounded-lg border-primary/20 bg-primary/5 px-4 py-2 text-base font-black text-primary gap-2 shadow-sm">
               <IconTarget size={18} />
-              {displayPlayer.stats?.mmr || 800} MMR
-            </Badge>
+              {displayPlayer.stats?.mmr || 800} {t("mmr")}</Badge>
             {displayPlayer.stats.oacMmr !== 800 && (
               <Badge variant="outline" className="rounded-lg border-blue-500/20 bg-blue-500/5 px-4 py-2 text-base font-black text-blue-500 gap-2 shadow-sm">
                 <IconTarget size={18} />
-                {displayPlayer.stats.oacMmr} OAC MMR
-              </Badge>
+                {displayPlayer.stats.oacMmr} {t("oac_mmr")}</Badge>
             )}
           </div>
         </header>
@@ -333,22 +334,22 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
         {isLoading ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-4">
             <IconLoader2 size={48} className="animate-spin text-primary/50" />
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Adatok szinkronizálása...</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">{t("adatok_szinkronizálása")}</p>
           </div>
         ) : (
         <div className="flex-1 overflow-y-auto px-6 pb-8 pt-6 space-y-8 custom-scrollbar">
             <section className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Statisztikai Időszak</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">{t("statisztikai_időszak")}</h3>
                     <select 
                         value={selectedSeason} 
                         onChange={(e) => setSelectedSeason(e.target.value)}
                         className=""
                     >
-                        <option value="current">Jelenlegi Szezon</option>
-                        <option value="all-time">Összesített</option>
+                        <option value="current">{t("jelenlegi_szezon")}</option>
+                        <option value="all-time">{t("összesített")}</option>
                         {availableYears.filter(y => y !== currentYear.toString()).map(year => (
-                            <option key={year} value={year}>{year} Szezon</option>
+                            <option key={year} value={year}>{year} {t("szezon")}</option>
                         ))}
                     </select>
                 </div>
@@ -361,8 +362,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
               <section className="space-y-4">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                     <IconSword size={14} className="text-primary" />
-                    Legutóbbi Meccsek
-                  </h3>
+                    {t("legutóbbi_meccsek")}</h3>
                   <div className="space-y-2">
                     {matchHistory.length > 0 ? matchHistory.map((match) => (
                         <div key={match._id} className="flex items-center justify-between p-3 bg-card border border-muted/10 rounded-lg">
@@ -376,7 +376,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                             </div>
                         </div>
                     )) : (
-                        <div className="p-8 text-center border border-dashed border-muted/20 rounded-lg text-[10px] uppercase font-bold text-muted-foreground/30">Nincs meccs adat</div>
+                        <div className="p-8 text-center border border-dashed border-muted/20 rounded-lg text-[10px] uppercase font-bold text-muted-foreground/30">{t("nincs_meccs_adat")}</div>
                     )}
                   </div>
               </section>
@@ -386,9 +386,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                         <IconHistory size={14} className="text-primary" />
-                        Események
-                    </h3>
-                    <span className="text-[9px] font-bold text-muted-foreground/40">{activeHistory.length} Torna</span>
+                        {t("események")}</h3>
+                    <span className="text-[9px] font-bold text-muted-foreground/40">{activeHistory.length} {t("torna_13")}</span>
                 </div>
 
                 <div className="space-y-3">
@@ -433,15 +432,15 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                             <div className="px-4 pb-4">
                                 <div className="h-px bg-muted/5 mb-3" />
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    <MiniRowStat label="Meccsek" value={`${history.stats?.matchesWon || 0}W / ${history.stats?.matchesLost || 0}L`} />
+                                    <MiniRowStat label={t("meccsek")} value={`${history.stats?.matchesWon || 0}W / ${history.stats?.matchesLost || 0}L`} />
                                     <MiniRowStat label="180-ak" value={history.stats?.oneEightiesCount || 0} />
-                                    <MiniRowStat label="Kiszálló" value={history.stats?.highestCheckout || '—'} />
-                                    <MiniRowStat label="Átlag" value={history.stats?.average?.toFixed(1) || '—'} />
+                                    <MiniRowStat label={t("kiszálló_62")} value={history.stats?.highestCheckout || '—'} />
+                                    <MiniRowStat label={t("átlag_39")} value={history.stats?.average?.toFixed(1) || '—'} />
                                 </div>
                                 <div className="mt-3 flex justify-between items-center text-[9px] font-black">
-                                     <span className="text-muted-foreground opacity-40 uppercase">Esemény rögzítve</span>
+                                     <span className="text-muted-foreground opacity-40 uppercase">{t("esemény_rögzítve")}</span>
                                      {history.tournamentId && (
-                                         <Link href={`/tournaments/${history.tournamentId}`} className="text-primary hover:underline">MEGTEKINTÉS</Link>
+                                         <Link href={`/tournaments/${history.tournamentId}`} className="text-primary hover:underline">{t("megtekintés")}</Link>
                                      )}
                                 </div>
                             </div>
@@ -450,7 +449,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                     )
                     })
                 ) : (
-                    <div className="p-8 text-center border border-dashed border-muted/20 rounded-lg text-[10px] uppercase font-bold text-muted-foreground/30">Nincsenek eredmények</div>
+                    <div className="p-8 text-center border border-dashed border-muted/20 rounded-lg text-[10px] uppercase font-bold text-muted-foreground/30">{t("nincsenek_eredmények")}</div>
                 )}
                 </div>
               </section>
@@ -460,8 +459,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 <section className="space-y-4 md:col-span-2">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2 border-t border-muted/10 pt-6">
                     <IconUsers size={14} className="text-primary" />
-                    Tagok statisztikái
-                  </h3>
+                    {t("tagok_statisztikái")}</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {members.map((member: any) => (
                       <Card key={member._id} className="bg-card border-muted/10 hover:border-primary/30 transition-all group">
@@ -478,8 +476,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                                 <CountryFlag countryCode={member.country} />
                               </div>
                               <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
-                                {member.stats?.mmr || 800} MMR
-                              </p>
+                                {member.stats?.mmr || 800} {t("mmr")}</p>
                             </div>
                           </div>
                           <Button 
@@ -488,8 +485,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                             className="bg-primary/10 text-primary hover:bg-primary hover:text-white border-0"
                             onClick={() => navigateToPlayer(member)}
                           >
-                            Megtekintés
-                          </Button>
+                            {t("megtekintés_87")}</Button>
                         </CardContent>
                       </Card>
                     ))}
@@ -502,8 +498,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 <section className="space-y-4 md:col-span-2">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2 border-t border-muted/10 pt-6">
                     <IconUsers size={14} className="text-primary" />
-                    Párosaim / Csapataim
-                  </h3>
+                    {t("párosaim_csapataim")}</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {teams.map((team: any) => (
                       <Card 
@@ -524,8 +519,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                                 <CountryFlag countryCode={team.country} />
                               </div>
                               <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
-                                {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
-                              </p>
+                                {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} {t("mmr")}</p>
                             </div>
                           </div>
                           <Button 
@@ -533,8 +527,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                             size="sm" 
                             className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white border-0 transition-all"
                           >
-                            Megtekintés
-                          </Button>
+                            {t("megtekintés_98")}</Button>
                         </CardContent>
                       </Card>
                     ))}

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { IconMedal } from "@tabler/icons-react"
 import LeagueManager from "./LeagueManager"
+import { useTranslations } from "next-intl";
 
 interface ClubLeaguesSectionProps {
   clubId: string
@@ -15,13 +16,14 @@ export function ClubLeaguesSection({
   userRole,
   autoOpenLeagueId,
 }: ClubLeaguesSectionProps) {
+    const t = useTranslations("Club.components");
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
           <IconMedal className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold">Ligák</h2>
+        <h2 className="text-2xl md:text-3xl font-bold">{t("ligak_17po")}</h2>
       </div>
 
       <LeagueManager

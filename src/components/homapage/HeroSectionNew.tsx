@@ -1,25 +1,28 @@
 import React from 'react';
 import { IconTarget, IconPlayerPlay, IconTrophy, IconSparkles, IconArrowRight, IconCheck } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from "@/components/ui/Card";
 import { Separator } from '@/components/ui/separator';
+import { useTranslations } from 'next-intl';
 
 
 
 const HeroSectionNew = () => {
+  const t = useTranslations('Hero');
+
   const stats = [
-    { number: '20+', label: 'Aktív Klub', sublabel: 'országszerte' },
-    { number: '40+', label: 'Verseny', sublabel: 'havonta' },
-    { number: '24/7', label: 'Valós Idejű', sublabel: 'követés' }
+    { number: '150+', label: t('stats_labels.clubs'), sublabel: t('stats_labels.clubs_sub') },
+    { number: '40+', label: t('stats_labels.tournaments'), sublabel: t('stats_labels.tournaments_sub') },
+    { number: '24/7', label: t('stats_labels.realtime'), sublabel: t('stats_labels.realtime_sub') }
   ];
 
   const features = [
-    'Verseny szervezés percek alatt',
-    'Valós idejű eredmények',
-    'Automatikus párosítás',
-    'Részletes statisztikák'
+    t('features.organize'),
+    t('features.results'),
+    t('features.pairing'),
+    t('features.stats')
   ];
 
   return (
@@ -40,28 +43,28 @@ const HeroSectionNew = () => {
               className="px-4 py-2 gap-2 text-sm font-medium border-primary/20 bg-background/50 backdrop-blur-sm"
             >
               <IconSparkles className="w-4 h-4 text-primary" />
-              Professzionális Darts Tournament Platform
+              {t('badge')}
             </Badge>
           </div>
 
           {/* Main Heading */}
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 hover:scale-[1.01] transition-transform duration-500" style={{ animationDelay: '100ms' }}>
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground">
-              TDARTS
-            </h1>
+              {t("tdarts_u6qj")}</h1>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <IconTarget className="w-8 h-8 text-primary" />
               <Separator orientation="vertical" className="h-8 bg-border" />
               <span className="text-2xl sm:text-3xl font-semibold text-muted-foreground">
-                Verseny Platform
+                {t('subtitle_badge')}
               </span>
             </div>
           </div>
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '200ms' }}>
-            A következő generációs <span className="text-foreground font-semibold">darts verseny platform</span>. 
-            Versenykeresés, klub létrehozás, valós idejű eredmények és teljes testreszabhatóság.
+            {t.rich('subtitle', {
+              span: (chunks) => <span className="text-foreground font-semibold">{chunks}</span>
+            })}
           </p>
 
           {/* Feature Pills */}
@@ -82,7 +85,7 @@ const HeroSectionNew = () => {
             <Button size="lg" className="gap-2 group min-w-[160px]" asChild>
               <Link href="/search">
                 <IconPlayerPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                Kezdés Most
+                {t('cta_start')}
                 <IconArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
@@ -90,7 +93,7 @@ const HeroSectionNew = () => {
             <Button size="lg" variant="outline" className="gap-2 group min-w-[160px]" asChild>
               <Link href="/myclub">
                 <IconTrophy className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                Verseny Létrehozása
+                {t('cta_create')}
               </Link>
             </Button>
           </div>
@@ -123,17 +126,17 @@ const HeroSectionNew = () => {
           <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-sm text-muted-foreground animate-in fade-in duration-700" style={{ animationDelay: '600ms' }}>
             <div className="flex items-center gap-2">
               <IconCheck className="w-4 h-4 text-primary" />
-              <span>Ingyenes regisztráció</span>
+              <span>{t('trust.free')}</span>
             </div>
             <Separator orientation="vertical" className="h-4 bg-border" />
             <div className="flex items-center gap-2">
               <IconCheck className="w-4 h-4 text-primary" />
-              <span>Nincs rejtett költség</span>
+              <span>{t('trust.no_hidden')}</span>
             </div>
             <Separator orientation="vertical" className="h-4 bg-border" />
             <div className="flex items-center gap-2">
               <IconCheck className="w-4 h-4 text-primary" />
-              <span>24/7 támogatás</span>
+              <span>{t('trust.support')}</span>
             </div>
           </div>
         </div>

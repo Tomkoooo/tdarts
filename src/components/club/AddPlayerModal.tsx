@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import PlayerSearch from './PlayerSearch'
+import { useTranslations } from 'next-intl'
 
 interface AddPlayerModalProps {
   isOpen: boolean
@@ -28,6 +29,7 @@ export default function AddPlayerModal({
   userId,
   onPlayerAdded,
 }: AddPlayerModalProps) {
+  const t = useTranslations('Club.add_player_modal')
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
@@ -48,7 +50,7 @@ export default function AddPlayerModal({
       onPlayerAdded()
       onClose()
     } catch (error) {
-      console.error('Hiba a játékos hozzáadása során:', error)
+      console.error(t('error_adding'), error)
     } finally {
       setLoading(false)
     }
@@ -58,16 +60,16 @@ export default function AddPlayerModal({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Játékos hozzáadása</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            Keress rá egy regisztrált játékosra vagy adj hozzá egy vendéget a klubodhoz.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <PlayerSearch
             onPlayerSelected={handlePlayerSelected}
-            placeholder="Keress játékost név vagy felhasználónév alapján..."
+            placeholder={t('search_placeholder')}
             className="w-full"
             clubId={clubId}
             isForTournament={false}
@@ -82,7 +84,7 @@ export default function AddPlayerModal({
                 )}
               </div>
               <Badge variant="outline" className="text-xs">
-                {selectedPlayer.isGuest ? 'Vendég' : 'Regisztrált'}
+                {selectedPlayer.isGuest ? t('badge_guest') : t('badge_registered')}
               </Badge>
             </div>
           )}
@@ -90,7 +92,7 @@ export default function AddPlayerModal({
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">
-            Mégse
+            {t('cancel')}
           </Button>
           <Button
             type="button"
@@ -98,7 +100,7 @@ export default function AddPlayerModal({
             disabled={!selectedPlayer || loading}
             className="w-full sm:w-auto"
           >
-            {loading ? 'Hozzáadás...' : 'Hozzáadás'}
+            {loading ? t('adding') : t('add')}
           </Button>
         </DialogFooter>
       </DialogContent>

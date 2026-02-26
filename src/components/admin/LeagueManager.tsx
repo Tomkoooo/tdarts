@@ -1,26 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
 import { IconPlus, IconEdit, IconTrash, IconTrophy, IconChartBar, IconUserPlus } from '@tabler/icons-react';
 import PlayerSearch from '../club/PlayerSearch';
-import Link from 'next/link';
-
-// Validációs sémák - Mértani sorozat verzió
-const createLeagueSchema = z.object({
-  name: z.string().min(1, 'Név megadása kötelező').max(100, 'Név maximum 100 karakter lehet'),
-  description: z.string().max(500, 'Leírás maximum 500 karakter lehet').optional(),
-  pointRules: z.object({
-    groupDropout: z.number().min(0, 'Pontok nem lehetnek negatívak'),
-    firstPlace: z.number().min(0, 'Pontok nem lehetnek negatívak'),
-    multiplier: z.number().min(0.1, 'Szorzó minimum 0.1').max(2, 'Szorzó maximum 2')
-  })
-});
-
-type CreateLeagueData = z.infer<typeof createLeagueSchema>;
+import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 
 interface League {
   _id: string;
@@ -49,6 +37,21 @@ interface LeagueManagerProps {
 }
 
 export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerProps) {
+  const t = useTranslations("Admin.leagues")
+  
+  // Validációs sémák - Move inside to use translations
+  const createLeagueSchema = useMemo(() => z.object({
+    name: z.string().min(1, t('dialog.validation.name_required')).max(100, t('dialog.validation.name_max')),
+    description: z.string().max(500, t('dialog.validation.desc_max')).optional(),
+    pointRules: z.object({
+      groupDropout: z.number().min(0, t('dialog.validation.points_negative')),
+      firstPlace: z.number().min(0, t('dialog.validation.points_negative')),
+      multiplier: z.number().min(0.1, t('dialog.validation.multiplier_min')).max(2, t('dialog.validation.multiplier_max'))
+    })
+  }), [t]);
+
+  type CreateLeagueData = z.infer<typeof createLeagueSchema>;
+
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -105,7 +108,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       }
     } catch (error) {
       console.error('Error checking feature flag:', error);
-      setError('Hiba történt a funkció ellenőrzésekor');
+      setError(t('errors.check_feature'));
     } finally {
       setLoading(false);
     }
@@ -156,7 +159,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       }
     } catch (error: any) {
       console.error('Error saving league:', error);
-      setError(error.response?.data?.error || 'Hiba történt a liga mentésekor');
+      setError(error.response?.data?.error || t('errors.save_error'));
     }
   };
 
@@ -173,7 +176,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
 
   // Liga törlése
   const handleDelete = async (leagueId: string) => {
-    if (!confirm('Biztosan törölni szeretnéd ezt a ligát?')) return;
+    if (!confirm(t('actions.confirm_delete'))) return;
 
     try {
       const response = await axios.delete(`/api/leagues/${leagueId}`);
@@ -182,7 +185,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       }
     } catch (error: any) {
       console.error('Error deleting league:', error);
-      setError(error.response?.data?.error || 'Hiba történt a liga törlésekor');
+      setError(error.response?.data?.error || t('errors.delete_error'));
     }
   };
 
@@ -210,7 +213,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-base-content flex items-center gap-2">
           <IconTrophy className="w-6 h-6" />
-          Liga Kezelés
+          {t('title')}
         </h2>
         {!leagueSystemAccess.requiresSubscription && (
           <button
@@ -218,7 +221,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
             className="admin-btn-primary btn-sm"
           >
             <IconPlus className="w-4 h-4" />
-            Új Liga
+            {t('new_btn')}
           </button>
         )}
       </div>
@@ -237,14 +240,14 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       {leagueSystemAccess.requiresSubscription ? (
         <div className="admin-glass-card text-center py-12">
           <IconTrophy className="w-16 h-16 mx-auto text-primary mb-4" />
-          <h3 className="text-2xl font-bold text-base-content mb-4">Liga Rendszer</h3>
+          <h3 className="text-2xl font-bold text-base-content mb-4">{t('promo.title')}</h3>
           <p className="text-base-content/70 text-lg mb-6 max-w-2xl mx-auto">
-            Indíts ligákat a klubodban! Versenyzők pontozása, rangsorok és automatikus pontszámítás.
+            {t('promo.desc')}
           </p>
           <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-6 mb-6">
-            <h4 className="text-lg font-semibold text-primary mb-3">Előfizetés szükséges</h4>
+            <h4 className="text-lg font-semibold text-primary mb-3">{t('promo.requires_subscription')}</h4>
             <p className="text-base-content/70 mb-4">
-              A ligák rendszer használatához Pro előfizetés szükséges.
+              {t('promo.subscription_desc')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link 
@@ -252,33 +255,33 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                 className="admin-btn-primary btn-lg"
               >
                 <IconTrophy className="w-5 h-5" />
-                Előfizetés
+                {t('promo.subscription_btn')}
               </Link>
               <button 
                 onClick={() => window.open('/#pricing', '_blank')}
                 className="admin-btn-secondary btn-lg"
               >
-                Részletek
+                {t('promo.details_btn')}
               </button>
             </div>
           </div>
           <p className="text-sm text-base-content/50">
-            * A Pro csomag tartalmazza a ligák rendszert és további prémium funkciókat
+            {t('promo.disclaimer')}
           </p>
         </div>
       ) : leagues.length === 0 ? (
         <div className="admin-glass-card text-center py-12">
           <IconTrophy className="w-16 h-16 mx-auto text-base-content/20 mb-4" />
-          <h3 className="text-lg font-semibold text-base-content mb-2">Nincsenek ligák</h3>
+          <h3 className="text-lg font-semibold text-base-content mb-2">{t('empty.title')}</h3>
           <p className="text-base-content/60 mb-4">
-            Hozz létre egy új ligát a versenyzők pontozásához
+            {t('empty.desc')}
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="admin-btn-primary"
           >
             <IconPlus className="w-4 h-4" />
-            Első Liga Létrehozása
+            {t('empty.first_btn')}
           </button>
         </div>
       ) : (
@@ -287,27 +290,25 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
             <div key={league._id} className="admin-glass-card">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold text-base-content">{league.name}</h3>
-                <button
-                    onClick={() => setOpenAddPlayerModal(league._id)}
-                    className="admin-btn-secondary btn-xs"
-                    title="Játékos hozzáadása"
-                >
-                    <IconUserPlus className="w-4 h-4" 
-                    title="Játékos hozzáadása"
-                    />
-                </button>
                 <div className="flex gap-2">
+                  <button
+                      onClick={() => setOpenAddPlayerModal(league._id)}
+                      className="admin-btn-secondary btn-xs"
+                      title={t('actions.add_player')}
+                  >
+                      <IconUserPlus className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => handleEdit(league)}
                     className="admin-btn-secondary btn-xs"
-                    title="Szerkesztés"
+                    title={t('actions.edit')}
                   >
                     <IconEdit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(league._id)}
                     className="admin-btn-error btn-xs"
-                    title="Törlés"
+                    title={t('actions.delete')}
                   >
                     <IconTrash className="w-4 h-4" />
                   </button>
@@ -320,23 +321,23 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Csoportkör kiesők:</span>
-                  <span className="font-semibold">{league.pointRules.groupDropout} pont</span>
+                  <span>{t('card.group_dropout')}</span>
+                  <span className="font-semibold">{t('card.points', { count: league.pointRules.groupDropout })}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Győztes:</span>
-                  <span className="font-semibold text-success">{league.pointRules.firstPlace} pont</span>
+                  <span>{t('card.winner')}</span>
+                  <span className="font-semibold text-success">{t('card.points', { count: league.pointRules.firstPlace })}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Szorzó:</span>
+                  <span>{t('card.multiplier')}</span>
                   <span className="font-semibold text-info">{league.pointRules.multiplier}x</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Versenyek:</span>
+                  <span>{t('card.tournaments')}</span>
                   <span className="font-semibold">{league.tournaments.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Játékosok:</span>
+                  <span>{t('card.players')}</span>
                   <span className="font-semibold">{league.players.length}</span>
                 </div>
               </div>
@@ -346,10 +347,10 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                   <button
                     onClick={() => onLeagueSelect?.(league)}
                     className="admin-btn-info btn-xs"
-                    title="Liga Állás Megtekintése"
+                    title={t('actions.view_standings_title')}
                   >
                     <IconChartBar className="w-4 h-4" />
-                    Állás
+                    {t('actions.view_standings')}
                   </button>
                 </div>
               </div>
@@ -362,13 +363,13 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
         <div className="modal modal-open">
           <div className="modal-box max-w-2xl">
             <h3 className="font-bold text-lg mb-4">
-              Liga játékosainak szerkesztése
+              {t('player_modal.title')}
             </h3>
             <div className="space-y-6">
               {/* Játékos hozzáadása */}
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-medium">Játékos hozzáadása</span>
+                  <span className="label-text font-medium">{t('player_modal.add_player')}</span>
                 </label>
                 <PlayerSearch
                   onPlayerSelected={async (player: any) => {
@@ -381,7 +382,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     // Frissítsd a ligákat
                     fetchLeagues();
                   }}
-                  placeholder="Keress játékost név vagy felhasználónév alapján..."
+                  placeholder={t('player_modal.search_placeholder')}
                   className="w-full"
                   clubId={clubId}
                   isForTournament={false}
@@ -392,15 +393,15 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
               {/* Játékosok listája */}
               <div>
                 <label className="label">
-                  <span className="label-text font-medium">Játékosok a ligában</span>
+                  <span className="label-text font-medium">{t('player_modal.list_title')}</span>
                 </label>
                 <div className="overflow-x-auto">
                   <table className="table w-full">
                     <thead>
                       <tr>
-                        <th>Név</th>
-                        <th>Pontok</th>
-                        <th>Művelet</th>
+                        <th>{t('player_modal.table.name')}</th>
+                        <th>{t('player_modal.table.points')}</th>
+                        <th>{t('player_modal.table.action')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -428,7 +429,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                           <td>
                             <button
                               className="admin-btn-danger btn-xs"
-                              title="Játékos eltávolítása"
+                              title={t('player_modal.remove_title')}
                               onClick={async () => {
                                 await axios.delete(`/api/leagues/${openAddPlayerModal}/players/${player.playerId}`);
                                 fetchLeagues();
@@ -442,7 +443,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                       {editingLeague?.players.length === 0 && (
                         <tr>
                           <td colSpan={3} className="text-center text-base-content/60">
-                            Nincs játékos a ligában.
+                            {t('player_modal.empty_list')}
                           </td>
                         </tr>
                       )}
@@ -457,7 +458,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                   onClick={() => setOpenAddPlayerModal(null)}
                   type="button"
                 >
-                  Bezárás
+                  {t('player_modal.close_btn')}
                 </button>
               </div>
             </div>
@@ -470,7 +471,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
         <div className="modal modal-open">
           <div className="modal-box max-w-2xl">
             <h3 className="font-bold text-lg mb-4">
-              {editingLeague ? 'Liga Szerkesztése' : 'Új Liga Létrehozása'}
+              {editingLeague ? t('dialog.edit_title') : t('dialog.create_title')}
             </h3>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -478,12 +479,12 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
               <div className="space-y-6">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Név *</span>
+                    <span className="label-text font-medium">{t('dialog.form.name')}</span>
                   </label>
                   <input
                     {...register('name')}
                     className="admin-input"
-                    placeholder="Liga neve"
+                    placeholder={t('dialog.form.name_placeholder')}
                   />
                   {errors.name && (
                     <div className="mt-2">
@@ -494,12 +495,12 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Leírás</span>
+                    <span className="label-text font-medium">{t('dialog.form.description')}</span>
                   </label>
                   <input
                     {...register('description')}
                     className="admin-input"
-                    placeholder="Opcionális leírás"
+                    placeholder={t('dialog.form.description_placeholder')}
                   />
                   {errors.description && (
                     <div className="mt-2">
@@ -511,12 +512,12 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
 
               {/* Pontozási rendszer */}
               <div className="space-y-6">
-                <h4 className="font-semibold text-base-content">Pontozási Rendszer</h4>
+                <h4 className="font-semibold text-base-content">{t('dialog.form.point_system')}</h4>
                 
                 {/* Csoportkör */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Csoportkörben kiesők pontja</span>
+                    <span className="label-text font-medium">{t('dialog.form.group_dropout')}</span>
                   </label>
                   <input
                     {...register('pointRules.groupDropout', { valueAsNumber: true })}
@@ -525,14 +526,14 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     className="admin-input"
                   />
                   <label className="label">
-                    <span className="label-text-alt">Alap pont minden csoportkörben kieső játékosnak</span>
+                    <span className="label-text-alt">{t('dialog.form.group_dropout_help')}</span>
                   </label>
                 </div>
 
                 {/* Első hely */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Győztes pontja</span>
+                    <span className="label-text font-medium">{t('dialog.form.winner_points')}</span>
                   </label>
                   <input
                     {...register('pointRules.firstPlace', { valueAsNumber: true })}
@@ -541,14 +542,14 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     className="admin-input"
                   />
                   <label className="label">
-                    <span className="label-text-alt">A győztes játékos pontszáma (legmagasabb pont)</span>
+                    <span className="label-text-alt">{t('dialog.form.winner_points_help')}</span>
                   </label>
                 </div>
 
                 {/* Szorzó */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Szorzó (mértani sorozat)</span>
+                    <span className="label-text font-medium">{t('dialog.form.multiplier')}</span>
                   </label>
                   <input
                     {...register('pointRules.multiplier', { valueAsNumber: true })}
@@ -559,52 +560,52 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     className="admin-input"
                   />
                   <label className="label">
-                    <span className="label-text-alt">0.1 - 2.0 között. Kisebb érték = nagyobb különbség a körök között</span>
+                    <span className="label-text-alt">{t('dialog.form.multiplier_help')}</span>
                   </label>
                 </div>
 
                 {/* Pontok előnézet */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Pontok előnézet</span>
+                    <span className="label-text font-medium">{t('dialog.form.preview')}</span>
                   </label>
                   <div className="bg-base-200 rounded-lg p-4">
                     <div className="text-sm text-base-content/70 mb-3">
-                      Mértani sorozat alapján számított pontok (dinamikusan frissül):
+                      {t('dialog.form.preview_desc')}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
                       <div className="text-center bg-primary/10 rounded-lg p-2">
-                        <div className="font-bold text-primary">1. kör</div>
+                        <div className="font-bold text-primary">{t('dialog.form.rounds.round_1')}</div>
                         <div className="text-base-content/80 font-mono text-sm">
                           {Math.round((watch('pointRules.firstPlace') || 16) * Math.pow(watch('pointRules.multiplier') || 0.5, 5))}
                         </div>
                       </div>
                       <div className="text-center bg-primary/10 rounded-lg p-2">
-                        <div className="font-bold text-primary">2. kör</div>
+                        <div className="font-bold text-primary">{t('dialog.form.rounds.round_2')}</div>
                         <div className="text-base-content/80 font-mono text-sm">
                           {Math.round((watch('pointRules.firstPlace') || 16) * Math.pow(watch('pointRules.multiplier') || 0.5, 4))}
                         </div>
                       </div>
                       <div className="text-center bg-primary/10 rounded-lg p-2">
-                        <div className="font-bold text-primary">3. kör</div>
+                        <div className="font-bold text-primary">{t('dialog.form.rounds.round_3')}</div>
                         <div className="text-base-content/80 font-mono text-sm">
                           {Math.round((watch('pointRules.firstPlace') || 16) * Math.pow(watch('pointRules.multiplier') || 0.5, 3))}
                         </div>
                       </div>
                       <div className="text-center bg-primary/10 rounded-lg p-2">
-                        <div className="font-bold text-primary">Elődöntő</div>
+                        <div className="font-bold text-primary">{t('dialog.form.rounds.semi_final')}</div>
                         <div className="text-base-content/80 font-mono text-sm">
                           {Math.round((watch('pointRules.firstPlace') || 16) * Math.pow(watch('pointRules.multiplier') || 0.5, 2))}
                         </div>
                       </div>
                       <div className="text-center bg-primary/10 rounded-lg p-2">
-                        <div className="font-bold text-primary">Döntő</div>
+                        <div className="font-bold text-primary">{t('dialog.form.rounds.final')}</div>
                         <div className="text-base-content/80 font-mono text-sm">
                           {Math.round((watch('pointRules.firstPlace') || 16) * (watch('pointRules.multiplier') || 0.5))}
                         </div>
                       </div>
                       <div className="text-center bg-success/10 rounded-lg p-2">
-                        <div className="font-bold text-success">Győztes</div>
+                        <div className="font-bold text-success">{t('dialog.form.rounds.winner')}</div>
                         <div className="text-base-content/80 font-mono text-sm">
                           {watch('pointRules.firstPlace') || 16}
                         </div>
@@ -612,7 +613,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     </div>
                     <div className="mt-4 text-center">
                       <div className="text-xs text-base-content/60">
-                        <strong>Mértani sorozat:</strong> 1. körből a győztesig növekednek a pontok ({watch('pointRules.multiplier') || 0.5}-szorosával)
+                        {t('dialog.form.geometric_rule', { val: watch('pointRules.multiplier') || 0.5 })}
                       </div>
                     </div>
                   </div>
@@ -626,7 +627,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                   onClick={handleCloseModal}
                   className="btn btn-ghost"
                 >
-                  Mégse
+                  {t('dialog.actions.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -636,9 +637,9 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                   {isSubmitting ? (
                     <span className="loading loading-spinner loading-sm"></span>
                   ) : editingLeague ? (
-                    'Mentés'
+                    t('dialog.actions.save')
                   ) : (
-                    'Létrehozás'
+                    t('dialog.actions.create')
                   )}
                 </button>
               </div>

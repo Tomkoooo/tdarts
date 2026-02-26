@@ -40,6 +40,7 @@ export interface Club {
   updatedAt: Date;
   isActive: boolean;
   verified: boolean;
+  country: string;
   tournamentPlayers?: Array<{ name: string }>;
   billingInfo?: BillingInfo;
   landingPage?: {

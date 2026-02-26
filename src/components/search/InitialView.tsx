@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { IconFilter } from "@tabler/icons-react"
 import PlayerCard from "@/components/player/PlayerCard"
 import Pagination from "@/components/common/Pagination"
+import { useTranslations, useFormatter } from "next-intl"
 
 
 interface InitialViewProps {
@@ -55,6 +56,9 @@ export function InitialView({
   onToggleShowAll,
   hasActiveQuery,
 }: InitialViewProps) {
+  const t = useTranslations('Search.initial_view')
+  const format = useFormatter()
+
   // Return early if loading
   if (loading) {
     return (
@@ -76,13 +80,10 @@ export function InitialView({
 
   return (
     <div className="space-y-8">
-      {/* Quick Actions - Only show on 'all' or 'tournaments' tab or if explicit? 
-          Actually user implies 'Initial View' has these. Let's keep them at top. 
-      */}
       {onQuickAction && activeTab === 'all' && (
         <section>
           <CardHeader className="px-0">
-            <CardTitle className="text-2xl font-bold">Gyors Műveletek</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t('quick_actions')}</CardTitle>
           </CardHeader>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <Button
@@ -91,7 +92,7 @@ export function InitialView({
               onClick={() => onQuickAction('all-tournaments')}
             >
               <IconTrophy size={24} className="text-primary" />
-              <span className="text-sm font-medium">Összes Torna</span>
+              <span className="text-sm font-medium">{t('all_tournaments')}</span>
             </Button>
             <Button
               variant="outline"
@@ -99,7 +100,7 @@ export function InitialView({
               onClick={() => onQuickAction('todays-tournaments')}
             >
               <IconCalendar size={24} className="text-info" />
-              <span className="text-sm font-medium">Mai Tornák</span>
+              <span className="text-sm font-medium">{t('todays_tournaments')}</span>
             </Button>
             <Button
               variant="outline"
@@ -107,7 +108,7 @@ export function InitialView({
               onClick={() => onQuickAction('active-tournaments')}
             >
               <IconListCheck size={24} className="text-success" />
-              <span className="text-sm font-medium">Aktív Tornák</span>
+              <span className="text-sm font-medium">{t('active_tournaments')}</span>
             </Button>
             <Button
               variant="outline"
@@ -115,7 +116,7 @@ export function InitialView({
               onClick={() => onQuickAction('finished-tournaments')}
             >
               <IconCheck size={24} className="text-warning" />
-              <span className="text-sm font-medium">Lezárt Tornák</span>
+              <span className="text-sm font-medium">{t('finished_tournaments')}</span>
             </Button>
             <Button
               variant="outline"
@@ -123,7 +124,7 @@ export function InitialView({
               onClick={() => onQuickAction('all-clubs')}
             >
               <IconUsers size={24} className="text-accent" />
-              <span className="text-sm font-medium">Összes Klub</span>
+              <span className="text-sm font-medium">{t('all_clubs')}</span>
             </Button>
           </div>
         </section>
@@ -134,7 +135,7 @@ export function InitialView({
         <section className="space-y-6">
           <CardHeader className="px-0">
             <CardTitle className="text-3xl font-bold text-primary-foreground">
-              {hasActiveQuery ? 'Keresési Találatok' : (filters?.status === 'all' ? 'Összes Torna' : 'Közelgő Tornák')}
+              {hasActiveQuery ? t('search_results') : (filters?.status === 'all' ? t('all_tournaments_title') : t('upcoming_tournaments_title'))}
             </CardTitle>
           </CardHeader>
           
@@ -158,7 +159,7 @@ export function InitialView({
       {(activeTab === 'players' || activeTab === 'all') && (
         <section className="space-y-6">
           <CardHeader className="px-0">
-            <CardTitle className="text-2xl font-bold">Top Játékosok</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t('top_players')}</CardTitle>
           </CardHeader>
           <div className="space-y-3">
             {topPlayers.map((player, index) => (
@@ -188,13 +189,13 @@ export function InitialView({
         <section className="space-y-6">
           <CardHeader className="px-0">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">Népszerű klubok</CardTitle>
+              <CardTitle className="text-2xl font-bold">{t('popular_clubs')}</CardTitle>
               {filters && onFilterChange && (
                  <Popover>
                    <PopoverTrigger asChild>
                      <Button variant="outline" size="sm" className="gap-2">
                        <IconFilter className="w-4 h-4" />
-                       Szűrők
+                       {t('filters')}
                      </Button>
                    </PopoverTrigger>
                  <PopoverContent className="w-80 p-0" align="end" sideOffset={8}>
@@ -235,7 +236,7 @@ export function InitialView({
                         </p>
                         <p className="flex items-center gap-1 text-sm text-muted-foreground">
                           <IconUsers className="h-3.5 w-3.5" />
-                          {club.memberCount} tag
+                          {t('member_count', { count: club.memberCount })}
                         </p>
                       </div>
                     </CardContent>
@@ -260,13 +261,13 @@ export function InitialView({
         <section className="space-y-6">
           <CardHeader className="px-0">
              <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">Aktív Ligák</CardTitle>
+              <CardTitle className="text-2xl font-bold">{t('active_leagues')}</CardTitle>
               {filters && onFilterChange && (
                  <Popover>
                    <PopoverTrigger asChild>
                      <Button variant="outline" size="sm" className="gap-2">
                        <IconFilter className="w-4 h-4" />
-                       Szűrők
+                       {t('filters')}
                      </Button>
                    </PopoverTrigger>
                    <PopoverContent className="w-80 p-0" align="end" sideOffset={8}>
@@ -291,7 +292,7 @@ export function InitialView({
                     <div className="flex justify-between items-start mb-4">
                       <h4 className="text-lg font-bold line-clamp-2">{league.name}</h4>
                       {league.verified && (
-                        <span className="badge badge-success badge-sm shrink-0">OAC</span>
+                        <span className="badge badge-success badge-sm shrink-0">{t("oac_1o6p")}</span>
                       )}
                     </div>
                     
@@ -311,15 +312,15 @@ export function InitialView({
                       <div className="flex items-center gap-2">
                         <IconCalendar className="size-4" />
                         <span>
-                          {new Date(league.startDate).toLocaleDateString('hu-HU')} - 
-                          {league.endDate ? new Date(league.endDate).toLocaleDateString('hu-HU') : 'Folyamatos'}
+                          {format.dateTime(new Date(league.startDate))} - 
+                          {league.endDate ? format.dateTime(new Date(league.endDate)) : t('ongoing')}
                         </span>
                       </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-border flex justify-end">
                       <Button variant="ghost" size="sm" className="gap-1">
-                        Megtekintés
+                        {t('view_league')}
                         <IconListCheck className="size-4" />
                       </Button>
                     </div>
@@ -329,7 +330,7 @@ export function InitialView({
             ))}
             {activeLeagues.length === 0 && (
               <div className="col-span-full text-center py-12 text-muted-foreground">
-                Nincsenek aktív ligák jelenleg.
+                {t('no_active_leagues')}
               </div>
             )}
           </div>
@@ -340,4 +341,3 @@ export function InitialView({
 }
 
 export default InitialView
-

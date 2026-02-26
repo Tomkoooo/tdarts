@@ -12,12 +12,14 @@ import { showErrorToast } from "@/lib/toastUtils"
 import { extractMediaIds } from '@/lib/utils'
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Club } from "@/interface/club.interface"
+import { useTranslations } from 'next-intl'
 
 interface ClubNewsSettingsProps {
   club: Club
 }
 
 export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
+  const t = useTranslations('Club.settings.news_form')
   const [loading, setLoading] = useState(false)
   const [posts, setPosts] = useState<any[]>([])
   const [isEditingPost, setIsEditingPost] = useState(false)
@@ -44,7 +46,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
 
   const handleSavePost = async () => {
     if (!postTitle || !postContent) {
-      toast.error("Cím és tartalom kötelező")
+      toast.error(t('validation.title_content_required'))
       return
     }
     setLoading(true)
@@ -79,10 +81,10 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
          }
 
          await axios.put(`/api/clubs/${club._id}/posts/${currentPost._id}`, payload)
-         toast.success("Hír frissítve")
+         toast.success(t('toast.updated'))
       } else {
          await axios.post(`/api/clubs/${club._id}/posts`, payload)
-         toast.success("Hír létrehozva")
+         toast.success(t('toast.created'))
       }
 
       setPostTitle("")
@@ -95,7 +97,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
       setIsEditingPost(false)
       fetchPosts()
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || "Művelet sikertelen")
+      showErrorToast(err.response?.data?.error || t('toast.error'))
     } finally {
       setLoading(false)
     }
@@ -115,7 +117,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
   }
 
   const handleDeletePost = async (post: any) => {
-      if(!confirm("Biztosan törölni szeretnéd ezt a hírt?")) return;
+      if(!confirm(t('confirm_delete'))) return;
       setLoading(true)
       try {
           // Automatic Media Deletion Logic
@@ -131,10 +133,10 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
           }
 
           await axios.delete(`/api/clubs/${club._id}/posts/${post._id}`)
-          toast.success("Hír törölve")
+          toast.success(t('toast.deleted'))
           fetchPosts()
       } catch (err: any) {
-          showErrorToast(err.response?.data?.error || "Törlés sikertelen")
+          showErrorToast(err.response?.data?.error || t('toast.delete_error'))
       } finally {
           setLoading(false)
       }
@@ -145,7 +147,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
     if (!file) return
 
     if (file.size > 15 * 1024 * 1024) {
-      toast.error("A fájl mérete maximum 15MB lehet");
+      toast.error(t('toast.size_error'));
       return;
     }
 
@@ -153,15 +155,15 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
     formData.append('file', file)
     formData.append('clubId', club._id)
 
-    const toastId = toast.loading("Feltöltés...")
+    const toastId = toast.loading(t('toast.uploading'))
     try {
       const res = await axios.post('/api/media', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       setter(res.data.url)
-      toast.success("Sikeres feltöltés", { id: toastId })
+      toast.success(t('toast.upload_success'), { id: toastId })
     } catch {
-      toast.error("Feltöltés sikertelen", { id: toastId })
+      toast.error(t('toast.upload_error'), { id: toastId })
     }
   }
 
@@ -169,8 +171,8 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
     <div className="space-y-6">
        <div className="flex justify-between items-center border-b pb-4">
             <div>
-                <h3 className="text-lg font-semibold">Hírek & Tartalom</h3>
-                <p className="text-sm text-muted-foreground">Kezeld a klub híreit</p>
+                <h3 className="text-lg font-semibold">{t('title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
             </div>
             {!isEditingPost && (
                 <Button onClick={() => {
@@ -181,24 +183,24 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
                     setPostCoverImage2("")
                     setIsEditingPost(true)
                 }}>
-                  <IconPlus className="mr-2 h-4 w-4" /> Új Hír
+                  <IconPlus className="mr-2 h-4 w-4" /> {t('new_post')}
                 </Button>
             )}
        </div>
 
       {isEditingPost ? (
         <div className="space-y-4 border p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">{currentPost ? "Hír Szerkesztése" : "Új Hír Létrehozása"}</h3>
+          <h3 className="text-lg font-semibold">{currentPost ? t('edit_post') : t('create_post')}</h3>
           <div>
-            <Label>Cím</Label>
+            <Label>{t('post_title')}</Label>
             <Input value={postTitle} onChange={(e) => setPostTitle(e.target.value)} />
           </div>
           <div>
-              <Label>Elsődleges Kép (Borítókép)</Label>
+              <Label>{t('cover_image')}</Label>
               <Input type="file" accept="image/*" onChange={(e) => handlePostImageUpload(e, setPostCoverImage)} />
               {postCoverImage && (
                   <div className="relative mt-2 w-full max-w-sm group">
-                    <ImageWithSkeleton src={postCoverImage} alt="Cover 1" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                    <ImageWithSkeleton src={postCoverImage} alt={t("cover_1_rnd5")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                     <Button 
                         type="button"
                         variant="destructive" 
@@ -213,11 +215,11 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
           </div>
 
           <div>
-              <Label>Másodlagos Kép</Label>
+              <Label>{t('secondary_image')}</Label>
               <Input type="file" accept="image/*" onChange={(e) => handlePostImageUpload(e, setPostCoverImage2)} />
               {postCoverImage2 && (
                   <div className="relative mt-2 w-full max-w-sm group">
-                    <ImageWithSkeleton src={postCoverImage2} alt="Cover 2" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                    <ImageWithSkeleton src={postCoverImage2} alt={t("cover_2_rnd5")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                     <Button 
                         type="button"
                         variant="destructive" 
@@ -231,12 +233,12 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
               )}
           </div>
           <div>
-            <Label>Tartalom</Label>
+            <Label>{t('content')}</Label>
             <RichTextEditor value={postContent} onChange={setPostContent} />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleSavePost} disabled={loading}>
-              <IconDeviceFloppy className="mr-2 h-4 w-4" /> Mentés
+              <IconDeviceFloppy className="mr-2 h-4 w-4" /> {t('save')}
             </Button>
             <Button variant="outline" onClick={() => {
                 setIsEditingPost(false)
@@ -245,7 +247,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
                 setPostContent("")
                 setPostCoverImage("")
                 setPostCoverImage2("")
-            }}>Mégse</Button>
+            }}>{t('cancel')}</Button>
           </div>
         </div>
       ) : (
@@ -273,7 +275,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
               </div>
             ))}
             {posts.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">Nincsenek hírek.</div>
+                <div className="text-center py-8 text-muted-foreground">{t('no_posts')}</div>
             )}
           </div>
         </div>

@@ -35,7 +35,7 @@ export const showErrorToast = (message: string, options: ErrorToastOptions = {})
     reportUrl.searchParams.set('page', window.location.pathname);
 
     toast.error(
-      (t) => (
+      (toastObj) => (
         <div className="flex flex-col gap-2 text-black">
           <span className="text-sm font-medium">{message}</span>
           <Button
@@ -44,7 +44,7 @@ export const showErrorToast = (message: string, options: ErrorToastOptions = {})
             className="w-full gap-2 text-white"
             onClick={() => {
               window.location.href = reportUrl.toString();
-              toast.dismiss(t.id);
+              toast.dismiss(toastObj.id);
             }}
           >
             <IconBug size={16} className="text-destructive" />

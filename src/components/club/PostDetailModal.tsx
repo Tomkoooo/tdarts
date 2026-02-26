@@ -1,3 +1,4 @@
+"use client"
 
 import * as React from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -7,6 +8,7 @@ import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import toast from "react-hot-toast"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
+import { useTranslations } from "next-intl"
 
 interface PostDetailModalProps {
   isOpen: boolean
@@ -16,6 +18,7 @@ interface PostDetailModalProps {
 }
 
 export default function PostDetailModal({ isOpen, onClose, post, clubCode }: PostDetailModalProps) {
+  const t = useTranslations('Club.post_detail_modal')
   const [viewImage, setViewImage] = React.useState<string | null>(null)
   
   if (!post) return null
@@ -29,7 +32,7 @@ export default function PostDetailModal({ isOpen, onClose, post, clubCode }: Pos
     const fullUrl = `${url}?postId=${post._id}`
     
     navigator.clipboard.writeText(fullUrl)
-    toast.success("Hír linkje másolva!")
+    toast.success(t('toast_copied'))
   }
 
   return (
@@ -41,13 +44,15 @@ export default function PostDetailModal({ isOpen, onClose, post, clubCode }: Pos
                     <div className="flex-1 min-w-0">
                         <DialogTitle className="text-2xl font-bold mb-2 break-words leading-tight">{post.title}</DialogTitle>
                         <DialogDescription>
-                            Közzétéve: {format(new Date(post.createdAt), 'yyyy. MM. dd.', { locale: hu })} • {post.authorId?.name || 'Ismeretlen'}
+                            {t('published_at', { 
+                                date: format(new Date(post.createdAt), 'yyyy. MM. dd.', { locale: hu })
+                            })} • {post.authorId?.name || t('author_unknown')}
                         </DialogDescription>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         <Button variant="outline" size="sm" onClick={handleShare} className="hidden md:flex gap-2">
                             <Share2 className="w-4 h-4" />
-                            Megosztás
+                            {t('share')}
                         </Button>
                         <Button variant="ghost" size="icon" onClick={handleShare} className="md:hidden">
                             <Share2 className="w-4 h-4" />
@@ -71,7 +76,7 @@ export default function PostDetailModal({ isOpen, onClose, post, clubCode }: Pos
                             >
                                 <ImageWithSkeleton 
                                     src={img} 
-                                    alt={`${post.title} - ${idx + 1}`} 
+                                    alt={t('image_alt', { title: post.title, index: idx + 1 })} 
                                     containerClassName="w-full h-auto max-h-[400px]" 
                                     className="w-full h-full object-cover"
                                 />
@@ -99,7 +104,7 @@ export default function PostDetailModal({ isOpen, onClose, post, clubCode }: Pos
                     {viewImage && (
                         <ImageWithSkeleton 
                             src={viewImage} 
-                            alt="Full size" 
+                            alt={t('full_size_alt')} 
                             containerClassName="w-full h-full flex items-center justify-center bg-transparent"
                             className="max-w-full max-h-full object-contain drop-shadow-2xl cursor-default"
                             onClick={(e: React.MouseEvent) => e.stopPropagation()} 

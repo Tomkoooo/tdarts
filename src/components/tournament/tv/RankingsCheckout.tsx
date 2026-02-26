@@ -1,15 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { IconTrophy } from "@tabler/icons-react"
+import { useTranslations } from "next-intl"
 
 interface RankingsCheckoutProps {
   tournament: any
 }
 
 export default function RankingsCheckout({ tournament }: RankingsCheckoutProps) {
+  const tTour = useTranslations("Tournament")
+  const t = (key: string) => tTour(`tv_views.rankings_checkout.${key}`)
   // Extract and sort players by highest checkout
   const rankings = tournament.tournamentPlayers
     ?.map((tp: any) => ({
-      name: tp.playerReference?.name || 'Unknown',
+      name: tp.playerReference?.name || t('unknown'),
       checkout: tp.stats?.highestCheckout || 0,
     }))
     .filter((p: any) => p.checkout > 0)
@@ -21,12 +24,12 @@ export default function RankingsCheckout({ tournament }: RankingsCheckoutProps) 
       <CardHeader className="pb-2 bg-muted/5">
         <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
           <IconTrophy className="h-5 w-5 text-warning" />
-          Highest Checkout
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="overflow-y-auto h-[calc(100%-3.5rem)] p-2">
         {rankings.length === 0 ? (
-          <p className="text-muted-foreground text-center py-6 text-base">No checkouts yet</p>
+          <p className="text-muted-foreground text-center py-6 text-base">{t("no_data")}</p>
         ) : (
           <div className="space-y-1.5">
             {rankings.map((player: any, index: number) => (

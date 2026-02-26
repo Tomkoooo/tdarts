@@ -3,6 +3,7 @@
 import * as React from "react"
 import { IconRosette, IconMapPin, IconCalendar, IconListCheck } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 interface QuickFiltersProps {
   filters: any
@@ -12,6 +13,7 @@ interface QuickFiltersProps {
 }
 
 export function QuickFilters({ filters, onFilterChange, showAllTournaments, onToggleShowAll }: QuickFiltersProps) {
+  const t = useTranslations('Search.quick_filters')
   const [popularCities, setPopularCities] = React.useState<{city: string, count: number}[]>([])
   const [isLoadingCities, setIsLoadingCities] = React.useState(true)
 
@@ -72,7 +74,7 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
             )}
           >
             <IconCalendar className="w-4 h-4" />
-            Közelgő
+            {t('upcoming')}
           </button>
           <button
             onClick={() => onToggleShowAll(true)}
@@ -84,7 +86,7 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
             )}
           >
             <IconListCheck className="w-4 h-4" />
-            Összes
+            {t('all')}
           </button>
         </div>
       )}
@@ -102,7 +104,7 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
           )}
         >
           <IconRosette className="w-4 h-4" />
-          OAC / Hitelesített Verseny
+          {t('oac_verified')}
         </button>
 
         {/* Separator */}
@@ -118,7 +120,7 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
               : "bg-background border-border hover:border-primary/50 text-muted-foreground"
           )}
         >
-          Amatőr
+          {t('amateur')}
         </button>
 
         {/* Open Toggle */}
@@ -131,7 +133,7 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
               : "bg-background border-border hover:border-primary/50 text-muted-foreground"
           )}
         >
-          Open
+          {t('open')}
         </button>
       </div>
 
@@ -140,7 +142,7 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
         <div className="flex items-center gap-2 py-2 overflow-x-auto no-scrollbar mask-gradient-right">
           <div className="flex items-center text-xs font-semibold text-muted-foreground whitespace-nowrap mr-1">
             <IconMapPin className="w-3 h-3 mr-1" />
-            Népszerű városok:
+            {t('popular_cities')}
           </div>
           {popularCities.map((cityData) => (
             <button

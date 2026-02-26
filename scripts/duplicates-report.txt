@@ -1,0 +1,306 @@
+=== DUPLICATE KEYS ===
+{
+  "frissítés": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.errors",
+    "Admin.settings",
+    "Admin.leagues",
+    "Board"
+  ],
+  "hiba_történt_az": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users"
+  ],
+  "létrehozva": [
+    "Admin.clubs",
+    "Admin.leagues"
+  ],
+  "műveletek": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Club.components"
+  ],
+  "nincs_találat_a": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues"
+  ],
+  "státusz": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues",
+    "Club.components"
+  ],
+  "találat_oldal": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues"
+  ],
+  "törölve": [
+    "Admin.clubs",
+    "Admin.tournaments"
+  ],
+  "versenyek": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Club.components"
+  ],
+  "összesen": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues"
+  ],
+  "aktív": [
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues",
+    "Admin.components"
+  ],
+  "befejezett_x25b": [
+    "Admin.tournaments",
+    "Board"
+  ],
+  "csoportos_cksc": [
+    "Admin.tournaments",
+    "Common"
+  ],
+  "játékosok": [
+    "Admin.tournaments",
+    "Club.components"
+  ],
+  "klub": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "minden_típus": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "platform": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "verified_oac": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "összes": [
+    "Admin.tournaments",
+    "Admin.components"
+  ],
+  "mégse": [
+    "Admin.users",
+    "Admin.emails",
+    "Admin.components",
+    "Club.components",
+    "Board",
+    "Common"
+  ],
+  "tárgy": [
+    "Admin.users",
+    "Admin.emails"
+  ],
+  "hiba_történt": [
+    "Admin.errors",
+    "Admin.settings",
+    "Admin.components",
+    "Common"
+  ],
+  "kategória": [
+    "Admin.errors",
+    "Feedback"
+  ],
+  "újrapróbálás": [
+    "Admin.errors",
+    "Admin.settings",
+    "Admin.components"
+  ],
+  "ligák": [
+    "Admin.settings",
+    "Admin.leagues"
+  ],
+  "inaktív": [
+    "Admin.emails",
+    "Admin.leagues"
+  ],
+  "szerkesztés": [
+    "Admin.emails",
+    "Club.components"
+  ],
+  "betöltés": [
+    "Admin.components",
+    "Club.components",
+    "Common"
+  ],
+  "vissza": [
+    "Tournament.live",
+    "Board"
+  ],
+  "atlag_308n": [
+    "Tournament.components",
+    "Common"
+  ],
+  "betoltes_69f8": [
+    "Tournament.components",
+    "Common"
+  ],
+  "egyenes_kieses_lfsy": [
+    "Tournament.components",
+    "Common"
+  ],
+  "jatekosok_kw3i": [
+    "Tournament.components",
+    "Club.components"
+  ],
+  "legmagasabb_kiszallo_v119": [
+    "Tournament.components",
+    "Common"
+  ],
+  "leírás": [
+    "Club.components",
+    "Common"
+  ],
+  "létrehozás": [
+    "Club.components",
+    "Common"
+  ],
+  "jelszó": [
+    "Board",
+    "Common"
+  ]
+}
+
+
+=== COMMON KEY CANDIDATES (used in 3+ categories) ===
+{
+  "frissítés": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.errors",
+    "Admin.settings",
+    "Admin.leagues",
+    "Board"
+  ],
+  "hiba_történt_az": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users"
+  ],
+  "létrehozva": [
+    "Admin.clubs",
+    "Admin.leagues"
+  ],
+  "műveletek": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Club.components"
+  ],
+  "nincs_találat_a": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues"
+  ],
+  "státusz": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues",
+    "Club.components"
+  ],
+  "találat_oldal": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues"
+  ],
+  "törölve": [
+    "Admin.clubs",
+    "Admin.tournaments"
+  ],
+  "versenyek": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Club.components"
+  ],
+  "összesen": [
+    "Admin.clubs",
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues"
+  ],
+  "aktív": [
+    "Admin.tournaments",
+    "Admin.users",
+    "Admin.leagues",
+    "Admin.components"
+  ],
+  "játékosok": [
+    "Admin.tournaments",
+    "Club.components"
+  ],
+  "klub": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "minden_típus": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "platform": [
+    "Admin.tournaments",
+    "Admin.leagues"
+  ],
+  "összes": [
+    "Admin.tournaments",
+    "Admin.components"
+  ],
+  "mégse": [
+    "Admin.users",
+    "Admin.emails",
+    "Admin.components",
+    "Club.components",
+    "Board",
+    "Common"
+  ],
+  "hiba_történt": [
+    "Admin.errors",
+    "Admin.settings",
+    "Admin.components",
+    "Common"
+  ],
+  "kategória": [
+    "Admin.errors",
+    "Feedback"
+  ],
+  "újrapróbálás": [
+    "Admin.errors",
+    "Admin.settings",
+    "Admin.components"
+  ],
+  "inaktív": [
+    "Admin.emails",
+    "Admin.leagues"
+  ],
+  "betöltés": [
+    "Admin.components",
+    "Club.components",
+    "Common"
+  ]
+}
+
+
+=== STATISTICS ===
+Total unique keys: 759
+Duplicate keys: 37
+Common key candidates: 22

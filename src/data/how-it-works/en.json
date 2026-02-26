@@ -1,0 +1,36 @@
+{
+    "title": "How Does tDarts Work? - FAQ",
+    "subtitle": "Complete guide to using the tDarts platform. Registration, club management, starting tournaments, score logging and league management step by step.",
+    "steps": [
+        {
+            "id": 0,
+            "title": "Account Creation and Authentication",
+            "icon": "IconUserPlus",
+            "description": "Registration and Login",
+            "content": {
+                "sections": [
+                    {
+                        "type": "text",
+                        "content": "Using the tDarts platform is simple and intuitive. Below we present step by step how to register, log in, manage your club, and how to start or participate in tournaments."
+                    }
+                ]
+            }
+        }
+    ],
+    "cta": {
+        "title": "Ready to Start?",
+        "description": "Join the tDarts community and start your first tournament today!",
+        "buttons": [
+            {
+                "text": "Join as Player",
+                "href": "/auth/register",
+                "variant": "primary"
+            },
+            {
+                "text": "Register a Club",
+                "href": "/auth/register?role=club",
+                "variant": "outline"
+            }
+        ]
+    }
+}

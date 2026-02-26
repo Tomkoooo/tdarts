@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { useTranslations } from 'next-intl'
 
 interface ClubShareModalProps {
   isOpen: boolean
@@ -16,6 +17,7 @@ interface ClubShareModalProps {
 }
 
 export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: ClubShareModalProps) {
+  const t = useTranslations('Club.share_modal')
   const [shareType, setShareType] = useState<'public' | 'auth'>('public')
 
   const generateQRCodeData = () => {
@@ -29,7 +31,7 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
   const handleCopyLink = () => {
     const link = generateQRCodeData()
     navigator.clipboard.writeText(link)
-    toast.success('Link másolva!')
+    toast.success(t('toast_copied'))
   }
 
   const handlePrint = () => {
@@ -37,11 +39,15 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
     if (printWindow) {
       const qrData = generateQRCodeData()
       const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`
+      const authTitle = t('print_auth_subtitle')
+      const publicTitle = t('print_public_subtitle')
+      const qrAlt = t('qr_alt')
+      
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>${clubName} - QR Kód</title>
+          <title>${t('print_qr_title', { name: clubName })}</title>
           <style>
             body { font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }
             .container { max-width: 400px; margin: 0 auto; }
@@ -55,9 +61,9 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
         <body>
           <div class="container">
             <div class="title">${clubName}</div>
-            <div class="subtitle">${shareType === 'auth' ? 'Bejelentkezési QR Kód' : 'Nyilvános QR Kód'}</div>
+            <div class="subtitle">${shareType === 'auth' ? authTitle : publicTitle}</div>
             <div class="qr-code">
-              <img src="${qrImageUrl}" alt="QR kód" width="200" height="200" />
+              <img src="${qrImageUrl}" alt="${qrAlt}" width="200" height="200" />
             </div>
             <div class="link">${qrData}</div>
           </div>
@@ -74,9 +80,9 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
       <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 shadow-2xl shadow-black/45">
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         <DialogHeader className="space-y-2">
-          <DialogTitle>Klub megosztása</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            Oszd meg a klubod linkjét vagy QR-kódját a játékosokkal.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -88,7 +94,7 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
               className="flex-1"
               onClick={() => setShareType('public')}
             >
-              Nyilvános
+              {t('public_tab')}
             </Button>
             <Button
               variant={shareType === 'auth' ? 'default' : 'outline'}
@@ -96,14 +102,14 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
               className="flex-1"
               onClick={() => setShareType('auth')}
             >
-              Bejelentkezéssel
+              {t('auth_tab')}
             </Button>
           </div>
 
           <p className="text-sm text-muted-foreground">
             {shareType === 'public'
-              ? 'Nyilvános link – bárki megtekintheti a klubot.'
-              : 'Bejelentkezési link – automatikus átirányítás bejelentkezés után.'}
+              ? t('public_desc')
+              : t('auth_desc')}
           </p>
 
           <div className="flex justify-center">
@@ -113,13 +119,13 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
           </div>
 
           <div className="space-y-2 text-sm">
-            <p className="font-medium text-foreground">Megosztandó link</p>
+            <p className="font-medium text-foreground">{t('link_label')}</p>
             <div className="flex items-start gap-3 rounded-lg bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
               <span className="flex-1 min-w-0 break-all leading-relaxed">
                 {generateQRCodeData()}
               </span>
               <Badge variant="outline" className="shrink-0 whitespace-nowrap px-3 py-1 text-[11px]">
-                {shareType === 'auth' ? 'Bejelentkezés szükséges' : 'Nyilvános'}
+                {shareType === 'auth' ? t('auth_needed_badge') : t('public_badge')}
               </Badge>
             </div>
           </div>
@@ -128,11 +134,11 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
         <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
           <Button variant="outline" className="w-full sm:w-auto bg-card/85 hover:bg-card" onClick={handleCopyLink}>
             <IconCopy className="mr-2 h-4 w-4" />
-            Link másolása
+            {t('copy_link')}
           </Button>
           <Button className="w-full sm:w-auto" onClick={handlePrint}>
             <IconPrinter className="mr-2 h-4 w-4" />
-            Nyomtatás
+            {t('print')}
           </Button>
         </DialogFooter>
         </div>
