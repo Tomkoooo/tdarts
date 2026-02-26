@@ -9,11 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { Button } from "@/components/ui/Button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { getCountryOptions } from "@/lib/countries"
 
 const updateProfileSchema = z.object({
   email: z.string().email("Érvényes email címet adj meg").optional(),
   name: z.string().min(1, "Név kötelező").optional(),
   username: z.string().min(1, "Felhasználónév kötelező").optional(),
+  country: z.string().length(2, "Érvényes országot válassz").nullable().optional(),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
 }).refine((data) => {
@@ -42,6 +51,7 @@ interface ProfileEditFormProps {
     email?: string
     name?: string
     username?: string
+    country?: string | null
   }
   isLoading: boolean
   onSubmit: (data: UpdateProfileFormData) => Promise<void>
@@ -52,12 +62,15 @@ export function ProfileEditForm({
   isLoading,
   onSubmit,
 }: ProfileEditFormProps) {
+  const countryOptions = React.useMemo(() => getCountryOptions("hu"), [])
   const [showPassword, setShowPassword] = React.useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<UpdateProfileFormData>({
     resolver: zodResolver(updateProfileSchema),
@@ -129,6 +142,33 @@ export function ProfileEditForm({
               )}
             </div>
 
+            {/* Country */}
+            <div className="space-y-2">
+              <Label htmlFor="country" className="flex items-center gap-2">
+                <IconUser className="w-4 h-4" />
+                Ország
+              </Label>
+              <Select
+                value={watch("country") || undefined}
+                onValueChange={(value) => setValue("country", value || null, { shouldDirty: true })}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="country">
+                  <SelectValue placeholder="Válassz országot" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {countryOptions.map((country) => (
+                    <SelectItem key={country.value} value={country.value}>
+                      {country.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.country && (
+                <p className="text-sm text-destructive">{errors.country.message}</p>
+              )}
+            </div>
+
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-2">
@@ -165,7 +205,7 @@ export function ProfileEditForm({
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="flex items-center gap-2">
                 <IconLock className="w-4 h-4" />
                 Jelszó megerősítése

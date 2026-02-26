@@ -13,6 +13,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    const googleProviderId = (session.user as any).googleProviderId as string | undefined;
+    if (!googleProviderId) {
+      return NextResponse.json(
+        { error: 'Google provider session is missing. Please start Google sign-in again.' },
+        { status: 400 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -33,10 +41,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Google account already linked' }, { status: 400 });
     }
 
+    // Ellenőrizzük, hogy a Google fiók nincs-e másik fiókhoz kapcsolva
+    const alreadyLinkedUser = await UserModel.findOne({ googleId: googleProviderId });
+    if (alreadyLinkedUser && alreadyLinkedUser._id.toString() !== existingUser._id.toString()) {
+      return NextResponse.json({ error: 'This Google account is already linked to another user' }, { status: 409 });
+    }
+
     // Kapcsoljuk össze a Google OAuth fiókot a meglévő felhasználóval
-    // A session.user.id a MongoDB ObjectId-t tartalmazza, nem a Google ID-t
-    // A Google ID-t a NextAuth callback-ben kellene tárolni, de most csak az email-t használjuk
-    existingUser.googleId = (session.user as any).id || 'linked-via-email';
+    existingUser.googleId = googleProviderId;
     existingUser.isVerified = true;
     if (session.user.image) {
       existingUser.profilePicture = session.user.image;

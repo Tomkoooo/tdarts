@@ -3,12 +3,15 @@ import { AnnouncementService } from '@/database/services/announcement.service';
 import { AuthService } from '@/database/services/auth.service';
 
 // GET - Aktív announcement-ok lekérése (nyilvános)
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const { TournamentService } = await import('@/database/services/tournament.service');
         TournamentService.checkAndSendTournamentReminders().catch(err => console.error('Reminder check failed:', err));
 
-        const announcements = await AnnouncementService.getActiveAnnouncements();
+        const localeHeader = request.headers.get('x-locale') || request.headers.get('accept-language') || 'hu';
+        const normalized = localeHeader.toLowerCase();
+        const locale = normalized.startsWith('de') ? 'de' : normalized.startsWith('en') ? 'en' : 'hu';
+        const announcements = await AnnouncementService.getActiveAnnouncements(locale);
         
         return NextResponse.json({
             success: true,
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { title, description, type, showButton, buttonText, buttonAction, duration, expiresAt } = body;
+        const { title, description, localized, localeVisibilityMode, type, showButton, buttonText, buttonAction, duration, expiresAt } = body;
 
         // Validáció
         if (!title || !description || !expiresAt) {
@@ -63,6 +66,8 @@ export async function POST(request: NextRequest) {
         const announcement = await AnnouncementService.createAnnouncement({
             title,
             description,
+            localized,
+            localeVisibilityMode: localeVisibilityMode || 'strict',
             type: type || 'info',
             showButton: showButton || false,
             buttonText,

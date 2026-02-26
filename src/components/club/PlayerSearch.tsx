@@ -5,6 +5,7 @@ import { IconSearch, IconUserPlus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { Input } from "@/components/ui/Input"
 import { Button } from '@/components/ui/Button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface PlayerSearchProps {
   onPlayerSelected: (player: any) => void
@@ -36,6 +37,14 @@ export default function PlayerSearch({
   const [isOpen, setIsOpen] = useState(false)
   const [addedIds, setAddedIds] = useState<string[]>([])
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'J'
 
   // Helper function to get all possible identifiers from a player object
   const getPlayerIdentifiers = (player: any): string[] => {
@@ -216,16 +225,18 @@ export default function PlayerSearch({
 
   const handleSelect = async (player: any) => {
     let playerData = {
-      _id: player._id,
+      _id: player.playerId || player._id,
       name: player.name,
       userRef: player.userRef,
       username: player.username,
+      profilePicture: player.profilePicture || null,
       isGuest: !player.userRef && !player.username,
     }
 
-    if (player.username && !player.userRef) {
+    if (player.userRef && !player.playerId) {
       try {
-        const playerResponse = await axios.get(`/api/players/find-by-user/${player._id}`)
+        const userId = player.userRef?.toString?.() || player.userRef || player._id
+        const playerResponse = await axios.get(`/api/players/find-by-user/${userId}`)
         if (playerResponse.data.success && playerResponse.data.player) {
           const actualPlayer = playerResponse.data.player
           playerData = {
@@ -233,6 +244,7 @@ export default function PlayerSearch({
             name: actualPlayer.name,
             userRef: actualPlayer.userRef,
             username: player.username,
+            profilePicture: player.profilePicture || null,
             isGuest: false,
           }
         }
@@ -308,26 +320,39 @@ export default function PlayerSearch({
                     : player.name
                   const isJustAdded = justAddedId === playerIdentifier
                   const isLast = index === filteredResults.length - 1
+                  const username = typeof player.username === 'string' && player.username.trim().length > 0
+                    ? player.username.trim()
+                    : null
 
                   return (
                     <div key={playerIdentifier}>
                       <div className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <div className="font-medium text-foreground">{player.name}</div>
-                        <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
-                          {player.username ? (
-                            <>
-                              <span>Regisztrált</span>
-                              {player.clubName && <span>• {player.clubName}</span>}
-                            </>
-                          ) : player.userRef ? (
-                            <>
-                              <span>Regisztrált játékos</span>
-                              {player.clubName && <span>• {player.clubName}</span>}
-                            </>
-                          ) : (
-                            <span>Vendég</span>
-                          )}
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={player.profilePicture || undefined} alt={player.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                            {getInitials(player.name || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-foreground">{player.name}</div>
+                          <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
+                            {player.username ? (
+                              <>
+                                <span>Regisztrált</span>
+                                {username && <span>• @{username}</span>}
+                                {player.clubName && <span>• {player.clubName}</span>}
+                              </>
+                            ) : player.userRef ? (
+                              <>
+                                <span>Regisztrált játékos</span>
+                                {username && <span>• @{username}</span>}
+                                {player.clubName && <span>• {player.clubName}</span>}
+                              </>
+                            ) : (
+                              <span>Vendég</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <Button

@@ -12,6 +12,7 @@ import {
   IconHistory,
   IconMedal,
   IconUsers,
+  IconMail,
 } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -21,6 +22,9 @@ import { cn } from "@/lib/utils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
 import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 import { Player } from "@/interface/player.interface"
+import CountryFlag from "@/components/ui/country-flag"
+import PlayerSearch from "@/components/club/PlayerSearch"
+import { getPlayerTranslations } from "@/data/translations/player"
 import {
   LineChart,
   Line,
@@ -30,7 +34,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts"
 import { TournamentHistory, PlayerHonor } from "@/interface/player.interface"
 
@@ -39,6 +46,7 @@ interface PlayerStatsData {
   player: {
     _id: string
     name: string
+    country?: string | null
     stats: {
         mmr: number
         oacMmr: number
@@ -84,13 +92,68 @@ interface PlayerStatisticsSectionProps {
   onViewLegs: (match: any) => void
 }
 
+interface HeadToHeadData {
+  playerA: { _id: string; name: string; country?: string | null }
+  playerB: { _id: string; name: string; country?: string | null }
+  summary: {
+    matchesPlayed: number
+    playerAWins: number
+    playerBWins: number
+    playerALegsWon: number
+    playerBLegsWon: number
+    playerAAverage: number
+    playerBAverage: number
+    playerAHighestCheckout: number
+    playerBHighestCheckout: number
+    playerAOneEighties: number
+    playerBOneEighties: number
+  }
+  matches: Array<{
+    _id: string
+    date: string
+    tournament: { tournamentId: string; name: string }
+    playerA: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number }
+    playerB: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number }
+    winnerId?: string
+  }>
+}
+
+interface TopOpponentEntry {
+  opponent: { _id: string; name: string; country?: string | null }
+  matchesPlayed: number
+  wins: number
+  losses: number
+  lastPlayedAt?: string
+}
+
+interface PendingInviteEntry {
+  _id: string
+  token: string
+  createdAt: string
+  expiresAt: string
+  tournament: { tournamentId: string; name: string }
+  team: { _id: string; name: string }
+  inviter: { _id: string; name: string; email: string }
+  invitee?: { _id?: string; name?: string; email?: string }
+  inviteType?: "email" | "account"
+}
+
 export function PlayerStatisticsSection({
   playerStats: initialPlayerStats,
   isLoading,
   onViewLegs,
 }: PlayerStatisticsSectionProps) {
+  const t = getPlayerTranslations(typeof navigator !== "undefined" ? navigator.language : "hu")
   const [selectedSeason, setSelectedSeason] = React.useState<string>('current');
   const [selectedTeam, setSelectedTeam] = React.useState<Player | null>(null);
+  const [selectedOpponent, setSelectedOpponent] = React.useState<any | null>(null)
+  const [headToHead, setHeadToHead] = React.useState<HeadToHeadData | null>(null)
+  const [headToHeadLoading, setHeadToHeadLoading] = React.useState(false)
+  const [headToHeadError, setHeadToHeadError] = React.useState("")
+  const [topOpponents, setTopOpponents] = React.useState<TopOpponentEntry[]>([])
+  const [topOpponentsLoading, setTopOpponentsLoading] = React.useState(false)
+  const [pendingInvites, setPendingInvites] = React.useState<PendingInviteEntry[]>([])
+  const [pendingInvitesLoading, setPendingInvitesLoading] = React.useState(false)
 
   // Move all hooks to the top
   const playerStats = React.useMemo(() => initialPlayerStats || { hasPlayer: false } as any, [initialPlayerStats]);
@@ -295,6 +358,84 @@ export function PlayerStatisticsSection({
     })).reverse();
   }, [activeHistory]);
 
+  const fetchHeadToHead = React.useCallback(
+    async (opponentId: string) => {
+      setHeadToHeadLoading(true)
+      setHeadToHeadError("")
+      try {
+        const response = await fetch(`/api/profile/head-to-head?opponentId=${encodeURIComponent(opponentId)}`)
+        const data = await response.json()
+        if (!response.ok || !data.success) {
+          throw new Error(data?.error || t.headToHeadFetchError)
+        }
+        setHeadToHead(data.data)
+      } catch (error: any) {
+        setHeadToHead(null)
+        setHeadToHeadError(error?.message || t.headToHeadFetchError)
+      } finally {
+        setHeadToHeadLoading(false)
+      }
+    },
+    [t.headToHeadFetchError]
+  )
+
+  const fetchTopOpponents = React.useCallback(async () => {
+    setTopOpponentsLoading(true)
+    try {
+      const response = await fetch("/api/profile/head-to-head?mode=top-opponents")
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || t.headToHeadFetchError)
+      }
+      setTopOpponents(data?.data?.topOpponents || [])
+    } catch (error) {
+      console.error("Top opponents fetch error:", error)
+      setTopOpponents([])
+    } finally {
+      setTopOpponentsLoading(false)
+    }
+  }, [t.headToHeadFetchError])
+
+  React.useEffect(() => {
+    if (!playerStats?.hasPlayer) return
+    void fetchTopOpponents()
+  }, [fetchTopOpponents, playerStats?.hasPlayer])
+
+  const fetchPendingInvites = React.useCallback(async () => {
+    setPendingInvitesLoading(true)
+    try {
+      const response = await fetch("/api/profile/pending-invitations")
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || "Failed to fetch pending invitations")
+      }
+      setPendingInvites(data?.data?.invitations || [])
+    } catch (error) {
+      console.error("Pending invites fetch error:", error)
+      setPendingInvites([])
+    } finally {
+      setPendingInvitesLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (!playerStats?.hasPlayer) return
+    void fetchPendingInvites()
+  }, [fetchPendingInvites, playerStats?.hasPlayer])
+
+  const handleClearHeadToHead = React.useCallback(() => {
+    setSelectedOpponent(null)
+    setHeadToHead(null)
+    setHeadToHeadError("")
+  }, [])
+
+  const h2hLeader = React.useMemo(() => {
+    if (!headToHead) return null
+    if (headToHead.summary.playerAWins > headToHead.summary.playerBWins) return "A"
+    if (headToHead.summary.playerBWins > headToHead.summary.playerAWins) return "B"
+    return null
+  }, [headToHead])
+
   if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
@@ -350,13 +491,18 @@ export function PlayerStatisticsSection({
         <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-2xl font-bold">
             <IconTrophy className="w-6 h-6 text-primary" />
-            Játékos statisztikák
+            <span>Játékos statisztikák</span>
+            <CountryFlag countryCode={playerStats.player.country} className="text-base" />
             </CardTitle>
             <div className="flex flex-wrap gap-2 pt-1">
                 {honors.map((honor, i) => (
-                    <Badge key={i} variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] font-black uppercase tracking-tighter gap-1">
+                    <Badge
+                      key={i}
+                      variant="secondary"
+                      className="min-w-0 max-w-full gap-1 overflow-hidden bg-amber-500/10 text-amber-600 border-amber-500/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter h-auto"
+                    >
                         <IconMedal size={10} />
-                        {honor.title}
+                        <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                     </Badge>
                 ))}
             </div>
@@ -381,6 +527,219 @@ export function PlayerStatisticsSection({
       </CardHeader>
       
       <CardContent className="space-y-8 px-0">
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="space-y-3 pb-4">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <IconSword size={16} className="text-primary" />
+                {t.headToHeadTitle}
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={handleClearHeadToHead}>
+                {t.headToHeadClear}
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-1">
+                {playerStats.player.name}
+                {h2hLeader === "A" && <IconTrophy size={13} className="text-amber-500" />}
+              </span>
+              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">vs</span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-1">
+                {headToHead?.playerB?.name || selectedOpponent?.name || t.headToHeadUnknownOpponent}
+                {h2hLeader === "B" && <IconTrophy size={13} className="text-amber-500" />}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <PlayerSearch
+              onPlayerSelected={(player) => {
+                setSelectedOpponent(player)
+                void fetchHeadToHead(player._id)
+              }}
+              placeholder={t.headToHeadSearchPlaceholder}
+              excludePlayerIds={[playerStats.player._id]}
+              showAddGuest={false}
+              isForTournament
+            />
+            {!topOpponentsLoading && topOpponents.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t.headToHeadTopOpponents}</p>
+                <div className="flex flex-wrap gap-2">
+                  {topOpponents.map((entry) => (
+                    <button
+                      key={`quick-${entry.opponent._id}`}
+                      className="cursor-pointer rounded-full border border-muted/20 bg-muted/10 px-3 py-1 text-xs font-semibold hover:border-primary/30 hover:bg-primary/5"
+                      onClick={() => {
+                        setSelectedOpponent(entry.opponent)
+                        void fetchHeadToHead(entry.opponent._id)
+                      }}
+                    >
+                      {entry.opponent.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {headToHeadLoading ? (
+              <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
+            ) : headToHeadError ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
+                <p className="text-xs text-destructive">{headToHeadError}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => selectedOpponent?._id && void fetchHeadToHead(selectedOpponent._id)}
+                >
+                  {t.retry}
+                </Button>
+              </div>
+            ) : !headToHead ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">{t.headToHeadNoSelection}</p>
+                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t.headToHeadTopOpponents}</p>
+                  {topOpponentsLoading ? (
+                    <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
+                  ) : topOpponents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t.headToHeadNoTopOpponents}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {topOpponents.map((entry) => (
+                        <button
+                          key={entry.opponent._id}
+                          className="flex w-full cursor-pointer items-center justify-between rounded-md border border-muted/20 bg-background px-3 py-2 text-left hover:border-primary/30"
+                          onClick={() => {
+                            setSelectedOpponent(entry.opponent)
+                            void fetchHeadToHead(entry.opponent._id)
+                          }}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold">{entry.opponent.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {entry.matchesPlayed} {t.headToHeadMatches.toLowerCase()} • {entry.wins} {t.headToHeadWins.toLowerCase()}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            {entry.lastPlayedAt ? new Date(entry.lastPlayedAt).toLocaleDateString("hu-HU") : ""}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <CircularStatCard label={t.headToHeadPlayed} value={headToHead.summary.matchesPlayed} total={headToHead.summary.matchesPlayed} color="#3b82f6" />
+                  <CircularStatCard label={t.headToHeadWins} value={headToHead.summary.playerAWins} total={headToHead.summary.matchesPlayed} color="#10b981" />
+                  <CircularStatCard label={t.headToHeadLost} value={headToHead.summary.playerBWins} total={headToHead.summary.matchesPlayed} color="#ef4444" />
+                </div>
+
+                <div className="space-y-2">
+                  {headToHead.matches.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-muted/20 p-4 text-xs text-muted-foreground">
+                      {t.headToHeadNoMatches}
+                    </div>
+                  ) : (
+                    headToHead.matches.map((match) => (
+                      <div key={match._id} className="space-y-2 rounded-lg border border-muted/15 bg-muted/10 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold">{match.tournament.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(match.date).toLocaleDateString("hu-HU")}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black">
+                              {match.playerA.legsWon} - {match.playerB.legsWon}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="overflow-hidden rounded-md border border-muted/20">
+                          <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                            <span>{t.headToHeadStatsMetric}</span>
+                            <span className="truncate text-center">{headToHead.playerA.name}</span>
+                            <span className="truncate text-center">{headToHead.playerB.name}</span>
+                          </div>
+                          <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">{t.headToHeadAverage}</span>
+                            <span className="text-center font-semibold">{match.playerA.average ? match.playerA.average.toFixed(1) : "—"}</span>
+                            <span className="text-center font-semibold">{match.playerB.average ? match.playerB.average.toFixed(1) : "—"}</span>
+                          </div>
+                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
+                            <span className="text-center font-semibold">{match.playerA.highestCheckout || "—"}</span>
+                            <span className="text-center font-semibold">{match.playerB.highestCheckout || "—"}</span>
+                          </div>
+                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
+                            <span className="text-center font-semibold">{match.playerA.oneEightiesCount || 0}</span>
+                            <span className="text-center font-semibold">{match.playerB.oneEightiesCount || 0}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Link href={`/tournaments/${match.tournament.tournamentId}`}>
+                            <Button variant="outline" size="sm">
+                              {t.headToHeadOpenTournament}
+                            </Button>
+                          </Link>
+                          <Button variant="outline" size="sm" onClick={() => onViewLegs({ _id: match._id })}>
+                            {t.headToHeadReview}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+              <IconMail size={16} className="text-primary" />
+              {t.pendingInvitesTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingInvitesLoading ? (
+              <p className="text-xs text-muted-foreground">{t.pendingInvitesLoading}</p>
+            ) : pendingInvites.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t.pendingInvitesEmpty}</p>
+            ) : (
+              pendingInvites.map((invite) => (
+                <div key={invite._id} className="flex items-center justify-between rounded-lg border border-muted/20 bg-muted/5 px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-xs font-semibold">{invite.tournament.name}</p>
+                      <Badge variant="outline" className="text-[9px]">
+                        {invite.inviteType === "email" ? t.pendingInvitesTypeEmail : t.pendingInvitesTypeAccount}
+                      </Badge>
+                    </div>
+                    <p className="truncate text-[10px] text-muted-foreground">{invite.team.name}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {t.pendingInvitesFrom} {invite.inviter.name}
+                    </p>
+                    {invite.invitee?.email && (
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {t.pendingInvitesRecipient} {invite.invitee.email}
+                      </p>
+                    )}
+                  </div>
+                  <Link href={`/invitations/${invite.token}`}>
+                    <Button variant="outline" size="sm">
+                      {t.pendingInvitesOpen}
+                    </Button>
+                  </Link>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
         {/* Summary Stats - Flatter Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className={cn("p-5 rounded-xl border transition-all hover:bg-opacity-10", "border-primary/20 bg-primary/5 text-primary")}>
@@ -586,7 +945,10 @@ export function PlayerStatisticsSection({
                                 <div className="flex items-center gap-3">
                                     <SmartAvatar playerId={team._id} name={team.name} size="sm" />
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-bold">{team.name}</span>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs font-bold">{team.name}</span>
+                                          <CountryFlag countryCode={team.country} />
+                                        </div>
                                         <span className="text-[10px] text-muted-foreground uppercase opacity-60">
                                             {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
                                         </span>
@@ -715,6 +1077,33 @@ function SimpleStatRow({ label, value }: { label: string, value: string | number
             <span className="text-sm font-black text-foreground">{value}</span>
         </div>
     );
+}
+
+function CircularStatCard({ label, value, total, color }: { label: string; value: number | string; total: number; color: string }) {
+  const numericValue = typeof value === "number" ? value : Number(value) || 0
+  const safeTotal = Math.max(total || 0, 1)
+  const normalizedValue = Math.max(Math.min(numericValue, safeTotal), 0)
+  const ringData = [
+    { name: "value", value: normalizedValue },
+    { name: "rest", value: Math.max(safeTotal - normalizedValue, 0) },
+  ]
+
+  return (
+    <div className="rounded-xl border border-muted/20 bg-card p-3">
+      <div className="mx-auto h-[90px] w-[90px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={ringData} dataKey="value" innerRadius={28} outerRadius={40} startAngle={90} endAngle={-270}>
+              <Cell fill={color} />
+              <Cell fill="hsl(var(--muted))" />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="mt-1 text-center text-xl font-black">{value}</p>
+      <p className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+    </div>
+  )
 }
 
 export default PlayerStatisticsSection

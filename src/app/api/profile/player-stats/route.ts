@@ -125,6 +125,7 @@ export async function GET(request: NextRequest) {
       player: {
         _id: player._id,
         name: player.name,
+        country: player.country || null,
         type: player.type || 'individual',
         userRef: player.userRef,
         stats: stats,
@@ -151,6 +152,7 @@ export async function GET(request: NextRequest) {
       teams: teams.map(t => ({
         _id: t._id,
         name: t.name,
+        country: t.country || null,
         type: t.type,
         members: t.members,
         stats: t.stats

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { toast } from "react-hot-toast"
-import { IconUsers, IconX, IconUser } from "@tabler/icons-react"
+import { IconUsers, IconX, IconUser, IconMail } from "@tabler/icons-react"
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
@@ -32,6 +32,7 @@ export default function TeamRegistrationModal({
   const [teamName, setTeamName] = useState("")
   const [member1, setMember1] = useState<any>(null)
   const [member2, setMember2] = useState<any>(null)
+  const [partnerEmail, setPartnerEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -49,8 +50,12 @@ export default function TeamRegistrationModal({
         return
       }
     } else {
-      if (!member1) {
-        setError("Kérjük, válassz társat")
+      if (!member1 && !partnerEmail.trim()) {
+        setError("Kérjük, válassz társat vagy add meg az e-mail címét")
+        return
+      }
+      if (partnerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(partnerEmail.trim())) {
+        setError("Kérjük, adj meg egy érvényes e-mail címet")
         return
       }
     }
@@ -64,7 +69,9 @@ export default function TeamRegistrationModal({
             { userRef: member2.userRef, name: member2.name },
           ]
         : [
-            { userRef: member1.userRef, name: member1.name },
+            ...(member1
+              ? [{ userRef: member1.userRef, name: member1.name }]
+              : [{ name: partnerEmail.trim().split("@")[0], email: partnerEmail.trim().toLowerCase() }]),
           ]
 
       const response = await fetch(`/api/tournaments/${tournamentCode}/players`, {
@@ -73,6 +80,7 @@ export default function TeamRegistrationModal({
         body: JSON.stringify({
           name: teamName,
           members,
+          partnerEmail: !isModeratorMode && !member1 ? partnerEmail.trim().toLowerCase() : undefined,
         }),
       })
 
@@ -98,6 +106,7 @@ export default function TeamRegistrationModal({
       setTeamName("")
       setMember1(null)
       setMember2(null)
+      setPartnerEmail("")
     } catch (err: any) {
       setError(err.message || "Hiba történt a csapat regisztráció során")
       toast.error(err.message)
@@ -111,6 +120,7 @@ export default function TeamRegistrationModal({
       setTeamName("")
       setMember1(null)
       setMember2(null)
+      setPartnerEmail("")
       setError("")
       onClose()
     }
@@ -175,6 +185,17 @@ export default function TeamRegistrationModal({
             )}
           </div>
 
+          {!isModeratorMode && !member1 && (
+            <FormField
+              label="Vagy meghívás e-mailben"
+              placeholder="partner@email.com"
+              value={partnerEmail}
+              onChange={(e) => setPartnerEmail(e.target.value)}
+              icon={<IconMail className="h-5 w-5" />}
+              type="email"
+            />
+          )}
+
           {isModeratorMode && (
             <div className="space-y-2">
               <label className="text-sm font-medium">2. csapattag</label>
@@ -222,7 +243,7 @@ export default function TeamRegistrationModal({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={isSubmitting || !teamName || !member1 || (isModeratorMode && !member2)}
+            disabled={isSubmitting || !teamName || (!isModeratorMode && !member1 && !partnerEmail.trim()) || (isModeratorMode && !member2)}
           >
             {isSubmitting ? "Mentés..." : "Csapat létrehozása"}
           </Button>

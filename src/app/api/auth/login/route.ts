@@ -25,6 +25,8 @@ export async function POST(request: Request) {
         email: user.email,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        country: user.country || null,
+        locale: user.locale || 'hu',
       },
     });
 

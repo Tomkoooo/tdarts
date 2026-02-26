@@ -15,6 +15,7 @@ import EmailVerificationSection from "@/components/profile/EmailVerificationSect
 import PlayerStatisticsSection from "@/components/profile/PlayerStatisticsSection"
 import LeagueHistorySection from "@/components/profile/LeagueHistorySection"
 import ProfileActionsSection from "@/components/profile/ProfileActionsSection"
+import GoogleAuthSection from "@/components/profile/GoogleAuthSection"
 import TicketList from "@/components/profile/TicketList"
 import TicketDetail from "@/components/profile/TicketDetail"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, setUser } = useUserContext()
+  const userId = user?._id
   const { logout } = useLogout()
 
   // State
@@ -60,14 +62,15 @@ export default function ProfilePage() {
 
   // Redirect if not logged in
   React.useEffect(() => {
-    if (!user) {
-      router.push("/auth/login")
-    } else {
-      setNeedsEmailVerification(!user.isVerified)
-      loadPlayerStats()
-      loadLeagueHistory()
+    if (!userId) {
+      router.replace(`/auth/login?redirect=${encodeURIComponent("/profile")}`)
+      return
     }
-  }, [user, router])
+
+    setNeedsEmailVerification(!user?.isVerified)
+    loadPlayerStats()
+    loadLeagueHistory()
+  }, [router, user?.isVerified, userId])
 
   // Load player stats
   const loadPlayerStats = async () => {
@@ -108,6 +111,7 @@ export default function ProfilePage() {
         email: data.email,
         name: data.name,
         username: data.username,
+        country: data.country ?? null,
       }
 
       if (data.password && data.password.trim().length > 0) {
@@ -126,6 +130,7 @@ export default function ProfilePage() {
               email: data.email || user!.email,
               name: data.name || user!.name,
               username: data.username || user!.username,
+              country: data.country === undefined ? user!.country : data.country,
               isVerified: data.email && data.email !== user!.email ? false : user!.isVerified,
             })
             setNeedsEmailVerification(data.email !== user!.email && !!data.email)
@@ -188,9 +193,29 @@ export default function ProfilePage() {
   }
 
   // Handle view legs
-  const handleViewLegs = (match: any) => {
-    setSelectedMatch(match)
-    setShowLegsModal(true)
+  const handleViewLegs = async (match: any) => {
+    const matchId = match?._id
+    if (!matchId) return
+
+    try {
+      if (match?.legs && Array.isArray(match.legs)) {
+        setSelectedMatch(match)
+        setShowLegsModal(true)
+        return
+      }
+
+      const response = await axios.get(`/api/matches/${matchId}`)
+      if (response.data?.success && response.data?.match) {
+        setSelectedMatch(response.data.match)
+      } else {
+        setSelectedMatch(match)
+      }
+      setShowLegsModal(true)
+    } catch (error) {
+      console.error("Error loading match details:", error)
+      setSelectedMatch(match)
+      setShowLegsModal(true)
+    }
   }
 
   // Handle close legs modal
@@ -265,10 +290,13 @@ export default function ProfilePage() {
                 email: user.email,
                 name: user.name,
                 username: user.username,
+                country: user.country || null,
               }}
               isLoading={isLoading}
               onSubmit={onProfileSubmit}
             />
+
+            <GoogleAuthSection email={user.email} />
 
             {/* Email Verification */}
             {needsEmailVerification && (

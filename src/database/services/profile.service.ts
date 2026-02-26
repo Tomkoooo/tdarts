@@ -16,6 +16,8 @@ export class ProfileService {
       password?: string;
       profilePicture?: string | null;
       publicConsent?: boolean;
+      country?: string | null;
+      locale?: 'hu' | 'en';
     }
   ): Promise<IUserDocument> {
     await connectMongo();
@@ -52,6 +54,8 @@ export class ProfileService {
     }
     if (updates.name) user.name = updates.name;
     if (updates.username) user.username = updates.username;
+    if (updates.country !== undefined) user.country = updates.country || null;
+    if (updates.locale) user.locale = updates.locale;
     if (updates.password) {
       user.password = updates.password; // A UserModel feltételezi, hogy a jelszó hash-elése a save() metódusban történik
     }
@@ -83,7 +87,12 @@ export class ProfileService {
     await user.save();
 
     // Ha a név vagy kép változott, frissítsük a kapcsolt player dokumentumot is
-    if (updates.name || updates.profilePicture !== undefined || updates.publicConsent !== undefined) {
+    if (
+      updates.name ||
+      updates.profilePicture !== undefined ||
+      updates.publicConsent !== undefined ||
+      updates.country !== undefined
+    ) {
       try {
         const linkedPlayer = await PlayerModel.findOne({ userRef: userId });
         if (linkedPlayer) {
@@ -91,6 +100,7 @@ export class ProfileService {
           if (updates.name) playerUpdates.name = updates.name;
           if (updates.profilePicture !== undefined) playerUpdates.profilePicture = updates.profilePicture;
           if (updates.publicConsent !== undefined) playerUpdates.publicConsent = updates.publicConsent;
+          if (updates.country !== undefined) playerUpdates.country = updates.country || null;
           
           await PlayerModel.findByIdAndUpdate(
             linkedPlayer._id,

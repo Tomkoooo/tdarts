@@ -10,6 +10,7 @@ import PWAProvider from "@/components/providers/PWAProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {  Toaster } from "react-hot-toast";
+import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: {
@@ -26,9 +27,10 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"),
+  metadataBase: new URL(getBaseUrl()),
   alternates: {
-    canonical: "/",
+    canonical: "/hu",
+    languages: buildLocaleAlternates("/"),
   },
   robots: {
     index: true,
@@ -66,7 +68,7 @@ export const metadata: Metadata = {
       openGraph: {
       type: "website",
       locale: "hu_HU",
-      url: "https://tdarts.sironic.hu",
+      url: getBaseUrl(),
       siteName: "tDarts",
     title: "tDarts - Darts Tournament Rendszer",
     description: "A legjobb darts tournament levezető rendszer. Klubok létrehozása, versenyek szervezése, élő követés és statisztikák.",
@@ -100,6 +102,7 @@ export default async function RootLayout({
   // Get pathname from headers for initial body padding (server-side)
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || '';
+  const locale = headersList.get('x-locale') || 'hu';
   
   // Define paths where you don't want to render certain elements
   const hideNavbarPaths = ['/board', '/test', '/tv'];
@@ -122,6 +125,7 @@ export default async function RootLayout({
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
         profilePicture: user.profilePicture,
+        country: user.country || null,
       };
       console.log("Layout - JWT user found:", initialUser._id);
     } catch (error) {
@@ -171,6 +175,7 @@ export default async function RootLayout({
               isVerified: user.isVerified,
               isAdmin: user.isAdmin,
               profilePicture: user.profilePicture,
+              country: user.country || null,
             };
           }
         } catch (error) {
@@ -183,7 +188,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="hu" className="dark">
+    <html lang={locale} className="dark">
       <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="dark" />

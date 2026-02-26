@@ -7,6 +7,7 @@ import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { AuthorizationService } from './authorization.service';
+import { GeocodingService } from './geocoding.service';
 
 //TODO a klubba és a tornákra ezentúl nem a user collectionből vesszük fel az emberekt.
 //Hanem egy köztes kapcsoló Player collectionbe rakjuk és hogyha regisztrált akkor kap egy userRefet
@@ -15,6 +16,8 @@ import { AuthorizationService } from './authorization.service';
 //vagy klubbhoz rendeljük őket akkor igazából a player collectionbe kerülnek fevételre és a klubbon is oda fog tartozni a referencia kivéve az admin és modoknál.
 
 export class ClubService {
+  private static readonly MANUAL_GEOCODE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
   static async createClub(
     creatorId: string,
     clubData: {
@@ -52,10 +55,14 @@ export class ClubService {
     }
 
     // Create club with empty members array (players are added later through other flows)
+    const geocodeResult = await GeocodingService.geocodeAddress(clubData.location, 'user');
     const club = new ClubModel({
       name: clubData.name,
       description: clubData.description,
       location: clubData.location,
+      // Keep legacy compatibility: older reads may still rely on address.
+      address: clubData.location,
+      structuredLocation: geocodeResult.location,
       contact: clubData.contact || {},
       admin: [creatorId], // creator is admin
       members: [], // No initial members, they are added through other flows
@@ -104,6 +111,7 @@ export class ClubService {
       name?: string;
       description?: string;
       location?: string;
+      address?: string;
       contact?: {
         email?: string;
         phone?: string;
@@ -136,10 +144,55 @@ export class ClubService {
 
     if (updates.name) club.name = updates.name;
     if (updates.description) club.description = updates.description;
-    if (updates.location) club.location = updates.location;
+    const locationInput = (updates.location || updates.address || '').trim();
+    if (locationInput) {
+      club.location = locationInput;
+      club.address = locationInput;
+      const geocodeResult = await GeocodingService.geocodeAddress(locationInput, 'user');
+      club.structuredLocation = geocodeResult.location as any;
+    }
     if (updates.contact) club.contact = { ...club.contact, ...updates.contact };
     if (updates.billingInfo) club.billingInfo = { ...club.billingInfo, ...updates.billingInfo };
     //TODO: update the boards from the club.
+    await club.save();
+    return club;
+  }
+
+  static async requestClubGeocode(clubId: string, requesterId: string): Promise<ClubDocument> {
+    await connectMongo();
+    const club = await ClubModel.findById(clubId);
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, clubId);
+    if (!isAuthorized) {
+      throw new AuthorizationError('Only admins or moderators can request geocoding');
+    }
+
+    const locationInput = (club.location || club.address || '').trim();
+    if (!locationInput) {
+      throw new BadRequestError('Club location is missing');
+    }
+
+    const lastRequestedAt = club.structuredLocation?.lastRequestedAt
+      ? new Date(club.structuredLocation.lastRequestedAt).getTime()
+      : 0;
+    const now = Date.now();
+    const remainingMs = lastRequestedAt + this.MANUAL_GEOCODE_COOLDOWN_MS - now;
+    if (remainingMs > 0) {
+      const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+      throw new BadRequestError(`Geocode request cooldown active. Try again in ${remainingHours} hour(s).`);
+    }
+
+    const geocodeResult = await GeocodingService.geocodeAddress(locationInput, 'manual');
+    club.location = locationInput;
+    club.address = locationInput;
+    club.structuredLocation = {
+      ...(club.structuredLocation || {}),
+      ...geocodeResult.location,
+      lastRequestedAt: new Date(),
+    } as any;
     await club.save();
     return club;
   }
@@ -449,6 +502,19 @@ export class ClubService {
       .populate('moderators', 'name username');
     if (!club) {
       throw new BadRequestError('Club not found');
+    }
+
+    const fallbackAddress = (club.location || club.address || '').trim();
+    if (!club.structuredLocation?.rawInput && fallbackAddress) {
+      try {
+        club.location = fallbackAddress;
+        club.address = fallbackAddress;
+        const geocodeResult = await GeocodingService.geocodeAddress(fallbackAddress, 'legacy');
+        club.structuredLocation = geocodeResult.location as any;
+        await club.save();
+      } catch (error) {
+        console.error('Club lazy geocode failed:', error);
+      }
     }
 
     // Lekérjük a klubhoz tartozó tornákat külön

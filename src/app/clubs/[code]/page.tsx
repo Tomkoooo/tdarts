@@ -4,9 +4,11 @@ import * as React from "react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
 import axios from "axios"
 import toast from "react-hot-toast"
-import { showErrorToast } from "@/lib/toastUtils"
+import { showErrorToast, showLocationReviewToast } from "@/lib/toastUtils"
 import { useUserContext } from "@/hooks/useUser"
 import { Club } from "@/interface/club.interface"
+import { shouldPromptLocationReview } from "@/interface/location.interface"
+import { getMapSettingsTranslations } from "@/data/translations/map-settings"
 import ClubLayout from "@/components/club/ClubLayout"
 import ClubSummarySection from "@/components/club/ClubSummarySection"
 import ClubPlayersSection from "@/components/club/ClubPlayersSection"
@@ -18,6 +20,7 @@ import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 
 export default function ClubDetailPage() {
+  const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
   const { user } = useUserContext()
   const router = useRouter()
   const params = useParams()
@@ -51,6 +54,7 @@ export default function ClubDetailPage() {
     hasPlayers: false,
     playersWithEmailCount: 0,
   })
+  const locationToastShown = React.useRef(false)
 
   // Helper to fetch club data
   const fetchClub = async () => {
@@ -112,6 +116,21 @@ export default function ClubDetailPage() {
 
     fetchClubAndRole()
   }, [code, user, router])
+
+  React.useEffect(() => {
+    const canReviewLocation = userRole === 'admin' || userRole === 'moderator'
+    if (!club || !canReviewLocation || locationToastShown.current) return
+    if (!shouldPromptLocationReview(club.structuredLocation, club.location || club.address)) return
+
+    locationToastShown.current = true
+    showLocationReviewToast(
+      t.locationReviewClubMessage,
+      t.locationReviewAction,
+      () => {
+        router.push(`/clubs/${code}?page=settings`)
+      }
+    )
+  }, [club, userRole, router, code, t.locationReviewAction, t.locationReviewClubMessage])
 
   // Action handlers
   const handleLeaveClub = async () => {

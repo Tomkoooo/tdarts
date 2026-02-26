@@ -47,6 +47,14 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
   const [status, setStatus] = React.useState(ticket.status);
   const [priority, setPriority] = React.useState(ticket.priority);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const markedReadTicketRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    setTicket(initialTicket);
+    setStatus(initialTicket.status);
+    setPriority(initialTicket.priority);
+    markedReadTicketRef.current = null;
+  }, [initialTicket]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,17 +67,28 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
   // Mark ticket as read when opened (admin)
   React.useEffect(() => {
     const markAsRead = async () => {
-      if (!ticket.isReadByAdmin) {
+      if (!ticket.isReadByAdmin && markedReadTicketRef.current !== ticket._id) {
         try {
+          markedReadTicketRef.current = ticket._id;
           await axios.post(`/api/feedback/${ticket._id}/mark-read`);
+          setTicket((prev) => ({ ...prev, isReadByAdmin: true }));
           onUpdate?.();
         } catch (error) {
+          markedReadTicketRef.current = null;
           console.error('Error marking ticket as read:', error);
         }
       }
     };
     markAsRead();
-  }, [ticket._id, ticket.isReadByAdmin, onUpdate]);
+  }, [ticket._id, ticket.isReadByAdmin]);
+
+  React.useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onBack();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onBack]);
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,14 +175,22 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-white/10 rounded-lg w-full max-w-4xl h-[85vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onBack();
+      }}
+    >
+      <div
+        className="bg-card border border-white/10 rounded-lg w-full max-w-4xl h-[85vh] flex flex-col"
+        onClick={(event) => event.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={onBack}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -176,7 +203,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
               </div>
             </div>
           </div>
-          <span className={`px-3 py-1 text-xs rounded-full border flex-shrink-0 ${getStatusColor(ticket.status)}`}>
+          <span className={`px-3 py-1 text-xs rounded-full border shrink-0 ${getStatusColor(ticket.status)}`}>
             {getStatusLabel(ticket.status)}
           </span>
         </div>

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import CountryFlag from "@/components/ui/country-flag"
 
 interface PlayerCardProps {
   player: Player
@@ -68,9 +69,12 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="truncate text-base font-semibold text-foreground md:text-lg" title={player.name}>
-                    {player.name}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="truncate text-base font-semibold text-foreground md:text-lg" title={player.name}>
+                      {player.name}
+                    </h2>
+                    <CountryFlag countryCode={player.country} />
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {player.stats?.tournamentsPlayed || 0} torna • {player.stats?.matchesPlayed || 0} meccs
                   </p>
@@ -104,7 +108,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
                     key={`${honor.title}-${honor.year}-${i}`} 
                     variant="secondary" 
                     className={cn(
-                      "gap-1 text-[10px] font-bold uppercase tracking-wider",
+                      "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
                       honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
                       honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
                       "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
@@ -113,7 +117,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, onClick, rank, showGlob
                   >
                     {honor.type === 'rank' && <IconMedal className="h-3 w-3" />}
                     {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" />}
-                    {honor.title}
+                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                   </Badge>
                 ))}
               </div>

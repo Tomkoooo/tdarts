@@ -1,18 +1,13 @@
 import React, { ReactNode } from "react";
 import { Metadata } from "next";
 import { ClubService } from "@/database/services/club.service";
+import { getBaseUrl } from "@/lib/seo";
+import { buildClubMetadataValues } from "@/lib/clubSeo";
 import "./layout.css";
 
 interface LayoutProps {
   children: ReactNode;
   params: Promise<{ code: string }>;
-}
-
-// Helper to build absolute URL for images
-function getAbsoluteUrl(path: string): string {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"}${path}`;
 }
 
 export async function generateMetadata({
@@ -24,25 +19,8 @@ export async function generateMetadata({
   try {
     const club = await ClubService.getClub(code);
     
-    // SEO Fields with fallbacks
-    const name = club.name || "Darts Klub";
-    const title = club.landingPage?.seo?.title || name;
-    const description = club.landingPage?.seo?.description || club.description || `Részletek a(z) ${name} darts klubról.`;
-    const commonKeywords = [name, club.location, 'darts', 'tornák', 'klub'].filter(Boolean);
-    const keywords = club.landingPage?.seo?.keywords || commonKeywords.join(', ');
-    
-    // Use club logo or default image
-    const image = club.landingPage?.coverImage || club.landingPage?.logo || club.logo || "/images/club-default-cover.jpg";
-    const imageUrl = getAbsoluteUrl(image);
-
-    // Location - use address or location
-    const location = club.address || club.location || "Magyarország";
-
-    // Canonical URL
-    const canonicalUrl = getAbsoluteUrl(`/clubs/${code}`);
-
-    // Get club statistics
-    const memberCount = club.members?.length || 0;
+    const { name, title, description, keywords, imageUrl, location, canonicalUrl, memberCount } =
+      buildClubMetadataValues({ ...club, code });
 
     return {
       title: {
@@ -76,7 +54,7 @@ export async function generateMetadata({
         description,
         images: [imageUrl],
       },
-      metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"),
+      metadataBase: new URL(getBaseUrl()),
       other: {
         "og:type": "website",
         "og:site_name": "Darts Club",
@@ -91,6 +69,11 @@ export async function generateMetadata({
     console.error(e);
     return {
       title: 'Club Not Found',
+      description: 'A keresett kluboldal nem található.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 }

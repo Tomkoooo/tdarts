@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,7 +18,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { showErrorToast } from '@/lib/toastUtils'
+import { showErrorToast, showLocationReviewToast } from '@/lib/toastUtils'
+import { getMapSettingsTranslations } from '@/data/translations/map-settings'
+import { shouldPromptLocationReview } from '@/interface/location.interface'
 
 const editClubSchema = z.object({
   name: z.string().min(1, 'A klub neve kötelező'),
@@ -41,11 +43,14 @@ interface ClubGeneralSettingsProps {
 }
 
 export default function ClubGeneralSettings({ club, onClubUpdated, userId }: ClubGeneralSettingsProps) {
+  const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
+  const reviewToastShown = useRef(false)
+  const [isRequestingGeocode, setIsRequestingGeocode] = useState(false)
   const form = useForm<EditClubFormData>({
     resolver: zodResolver(editClubSchema),
     defaultValues: {
       name: club.name,
-      location: club.location,
+      location: club.location || club.address || '',
       contact: {
         email: club.contact?.email || '',
         phone: club.contact?.phone || '',
@@ -58,7 +63,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
     if (club) {
       form.reset({
         name: club.name,
-        location: club.location,
+        location: club.location || club.address || '',
         contact: {
           email: club.contact?.email || '',
           phone: club.contact?.phone || '',
@@ -67,6 +72,57 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
       })
     }
   }, [club, form])
+
+  useEffect(() => {
+    if (club && shouldPromptLocationReview(club.structuredLocation, club.location || club.address) && !reviewToastShown.current) {
+      reviewToastShown.current = true
+      showLocationReviewToast(
+        t.locationReviewClubMessage,
+        t.locationReviewAction,
+        () => {
+          const input = document.querySelector<HTMLInputElement>('input[name="location"]')
+          input?.focus()
+        }
+      )
+    }
+  }, [club, t.locationReviewAction, t.locationReviewClubMessage])
+
+  const geocodeStatusLabel = useMemo(() => {
+    const status = club?.structuredLocation?.geocodeStatus;
+    if (status === 'ok' || status === 'manual') return t.geocodeStatusOk;
+    if (status === 'pending') return t.geocodeStatusPending;
+    if (status === 'needs_review') return t.geocodeStatusNeedsReview;
+    if (status === 'failed') return t.geocodeStatusFailed;
+    return t.geocodeStatusUnknown;
+  }, [club?.structuredLocation?.geocodeStatus, t]);
+
+  const geocodeUpdatedAtLabel = useMemo(() => {
+    const value = club?.structuredLocation?.geocodeUpdatedAt;
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat(
+      typeof navigator !== 'undefined' ? navigator.language : 'hu-HU',
+      { dateStyle: 'medium', timeStyle: 'short' }
+    ).format(date);
+  }, [club?.structuredLocation?.geocodeUpdatedAt]);
+
+  const requestGeocode = async () => {
+    setIsRequestingGeocode(true);
+    try {
+      const response = await axios.post<{ club: Club }>(`/api/clubs/${club._id}/geocode`);
+      onClubUpdated(response.data.club);
+      toast.success(t.geocodeRequestSuccess);
+    } catch (err: any) {
+      showErrorToast(err.response?.data?.error || t.geocodeRequestError, {
+        error: err?.response?.data?.error,
+        context: 'Geocode request',
+        errorName: t.geocodeRequestError,
+      });
+    } finally {
+      setIsRequestingGeocode(false);
+    }
+  };
 
   const onSubmit = async (data: EditClubFormData) => {
     const toastId = toast.loading('Klub adatok frissítése...')
@@ -120,6 +176,24 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
             </FormItem>
           )}
         />
+
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm">
+          <p className="font-medium">{t.geocodeStatusLabel}: {geocodeStatusLabel}</p>
+          <p className="text-muted-foreground mt-1">
+            {t.geocodeLastUpdatedLabel}: {geocodeUpdatedAtLabel}
+          </p>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isRequestingGeocode}
+              onClick={requestGeocode}
+            >
+              {isRequestingGeocode ? t.geocodeRequestingButton : t.geocodeRequestButton}
+            </Button>
+          </div>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <FormField

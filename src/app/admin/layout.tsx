@@ -151,6 +151,7 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user } = useUserContext()
+  const userId = user?._id
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [adminLoading, setAdminLoading] = useState(true)
   const router = useRouter()
@@ -161,9 +162,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   useEffect(() => {
     const checkAdminStatus = async () => {
       setAdminLoading(true)
-      if (!user) {
+      if (!userId) {
         setAdminLoading(false)
-        router.push(`/auth/login?redirect=${encodeURIComponent('/admin')}`)
+        router.replace(`/auth/login?redirect=${encodeURIComponent('/admin')}`)
         return
       }
 
@@ -173,23 +174,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         
         if (!response.data.isAdmin) {
           setAdminLoading(false)
-          router.push('/profile')
+          router.replace('/profile')
           return
         }
       } catch (error) {
         setAdminLoading(false)
         console.error('Error checking admin status:', error)
-        router.push('/profile')
+        router.replace('/profile')
         return
       } finally {
         setAdminLoading(false)
       }
     }
 
-    if (user) {
-      checkAdminStatus()
-    }
-  }, [user, router])
+    checkAdminStatus()
+  }, [router, userId])
 
   // Loading state
   if (adminLoading || isAdmin === null || !user) {

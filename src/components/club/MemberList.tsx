@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { showErrorToast } from '@/lib/toastUtils'
+import CountryFlag from '@/components/ui/country-flag'
 
 interface MemberListProps {
   members: {
@@ -190,6 +191,7 @@ export default function MemberList({
                         <h3 className="text-lg font-semibold text-foreground">
                           {member.name}
                         </h3>
+                          <CountryFlag countryCode={(member as any).country} />
                         <Badge variant="outline" className={cn("gap-1 border-none bg-muted/40", roleBadge.className)}>
                           {roleBadge.icon}
                           {roleBadge.label}

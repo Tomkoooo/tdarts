@@ -42,9 +42,15 @@ export class PlayerService {
       players.map(async (player) => {
         let clubId = null;
         let clubName = null;
+        let username: string | null = null;
+        let profilePicture: string | null = null;
         
         // If player has userRef, find which club this user belongs to
         if (player.userRef) {
+          const linkedUser = await UserModel.findById(player.userRef).select('username profilePicture');
+          username = linkedUser?.username || null;
+          profilePicture = linkedUser?.profilePicture || null;
+
           const club = await ClubModel.findOne({
             $or: [
               { 'members.userRef': player.userRef },
@@ -82,6 +88,8 @@ export class PlayerService {
 
         return {
           ...player.toObject(),
+          username,
+          profilePicture,
           clubId,
           clubName,
           isAdminInAnyClub,

@@ -16,13 +16,23 @@ import type { SearchFilters } from "@/database/services/search.service"
 import { Button } from "@/components/ui/Button"
 import Link from "next/link"
 import { IconArrowLeft } from "@tabler/icons-react"
+import MapExplorer from "@/components/map/MapExplorer"
 
 // Define interfaces locally to avoid server-code import issues if any
 interface TabCounts {
+    global: number;
     tournaments: number;
     players: number;
     clubs: number;
     leagues: number;
+    map: number;
+}
+
+interface GroupedResults {
+    tournaments: any[];
+    players: any[];
+    clubs: any[];
+    leagues: any[];
 }
 
 export default function SearchPage() {
@@ -69,13 +79,16 @@ export default function SearchPage() {
         isOac: searchParams.get("isOac") === "true" || undefined,
         year: Number(searchParams.get("year")) || undefined,
         rankingType: (searchParams.get("rankingType") as "oacMmr" | "leaguePoints") || undefined,
+        playerMode: (searchParams.get("playerMode") as "all" | "individual" | "pair") || undefined,
+        country: searchParams.get("country") || undefined,
         page: Number(searchParams.get("page")) || 1,
         limit: 10
     })
 
     // Data State
     const [results, setResults] = useState<any[]>([])
-    const [counts, setCounts] = useState<TabCounts>({ tournaments: 0, players: 0, clubs: 0, leagues: 0 })
+    const [groupedResults, setGroupedResults] = useState<GroupedResults>({ tournaments: [], players: [], clubs: [], leagues: [] })
+    const [counts, setCounts] = useState<TabCounts>({ global: 0, tournaments: 0, players: 0, clubs: 0, leagues: 0, map: 0 })
     const [metadata, setMetadata] = useState<{ cities: {city: string, count: number}[] }>({ cities: [] })
     const [isLoading, setIsLoading] = useState(false)
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 })
@@ -100,6 +113,23 @@ export default function SearchPage() {
         const fetchData = async () => {
             setIsLoading(true)
             try {
+                if (activeTab === 'map') {
+                    const mapRes = await fetch('/api/map', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: debouncedQuery }),
+                    })
+                    if (!mapRes.ok) throw new Error('Map search failed')
+                    const mapData = await mapRes.json()
+                    setResults(mapData.items || [])
+                    setCounts((prev) => ({
+                        ...prev,
+                        map: mapData?.counts?.total || 0,
+                    }))
+                    setPagination({ total: mapData?.counts?.total || 0, page: 1, limit: 100 })
+                    return
+                }
+
                 // Construct payload
                 const payload = {
                     query: debouncedQuery,
@@ -126,7 +156,11 @@ export default function SearchPage() {
                      setResults(data.results)
                 }
 
-                setCounts(data.counts || { tournaments: 0, players: 0, clubs: 0, leagues: 0 })
+                setCounts((prev) => ({
+                    ...prev,
+                    ...(data.counts || { global: 0, tournaments: 0, players: 0, clubs: 0, leagues: 0 }),
+                }))
+                setGroupedResults(data.groupedResults || { tournaments: [], players: [], clubs: [], leagues: [] })
                 if (data.metadata) setMetadata(data.metadata)
                 if (data.pagination) setPagination(data.pagination)
 
@@ -174,6 +208,8 @@ export default function SearchPage() {
                  type: undefined,
                  tournamentType: undefined,
                  isVerified: undefined,
+                 playerMode: undefined,
+                 country: undefined,
                  page: 1
              }))
              // Clear URL params for filters
@@ -185,6 +221,8 @@ export default function SearchPage() {
              params.delete('verified');
              // params.delete('isOac'); // Keep isOac if present
              params.delete('rankingType'); // Clear detailed filters but maybe keep isOac context? 
+             params.delete('playerMode');
+             params.delete('country');
              // Requirement: "If i search or change filters i still be under the isOac param."
              // So we DO NOT delete 'isOac'.
              params.delete('page'); // Also clear page param
@@ -198,6 +236,11 @@ export default function SearchPage() {
 
     const handleFilterChange = (key: string, value: any) => {
         setResults([]) // Clear results when filters change
+        if (key === 'multiple' && value && typeof value === 'object') {
+            setFilters(prev => ({ ...prev, ...value, page: 1 }))
+            updateUrl({ ...value, page: 1 })
+            return
+        }
         setFilters(prev => ({ ...prev, [key]: value, page: 1 })) 
         const urlKey = key === 'isVerified' ? 'verified' : key
         updateUrl({ [urlKey]: value, page: 1 })
@@ -313,6 +356,31 @@ export default function SearchPage() {
                     )}
 
                     {activeTab === 'tournaments' && <TournamentList tournaments={results} />}
+                    {activeTab === 'global' && (
+                        <div className="space-y-10">
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-bold">Versenyek</h3>
+                                <TournamentList tournaments={groupedResults.tournaments} />
+                            </section>
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-bold">Játékosok</h3>
+                                <PlayerLeaderboard
+                                    players={groupedResults.players}
+                                    isOac={!!filters.isOac}
+                                    rankingType={filters.rankingType || (filters.isOac ? 'oacMmr' : undefined)}
+                                    onRankingChange={(type) => handleFilterChange('rankingType', type)}
+                                />
+                            </section>
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-bold">Klubok</h3>
+                                <ClubList clubs={groupedResults.clubs} />
+                            </section>
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-bold">Ligák</h3>
+                                <LeagueList leagues={groupedResults.leagues} />
+                            </section>
+                        </div>
+                    )}
                     {activeTab === 'players' && (
                         <PlayerLeaderboard 
                             players={results} 
@@ -323,9 +391,10 @@ export default function SearchPage() {
                     )}
                     {activeTab === 'clubs' && <ClubList clubs={results} />}
                     {activeTab === 'leagues' && <LeagueList leagues={results} />}
+                    {activeTab === 'map' && <MapExplorer initialQuery={debouncedQuery} />}
 
                     {/* Load More Trigger / Button */}
-                    {results.length > 0 && results.length < pagination.total && (
+                    {activeTab !== 'map' && activeTab !== 'global' && results.length > 0 && results.length < pagination.total && (
                         <div className="flex justify-center mt-12">
                              <Button 
                                 variant="outline" 

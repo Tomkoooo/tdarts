@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MatchModel } from '@/database/models/match.model';
 import { connectMongo } from '@/lib/mongoose';
 import { eventEmitter, EVENTS } from '@/lib/events';
+import { AuthService } from '@/database/services/auth.service';
+import { PlayerModel } from '@/database/models/player.model';
+import { TournamentModel } from '@/database/models/tournament.model';
+import { AuthorizationService } from '@/database/services/authorization.service';
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +14,10 @@ export async function GET(
   try {
     await connectMongo();
     const { matchId } = await params;
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
     const match = await MatchModel.findById(matchId)
       .populate('player1.playerId', 'name')
@@ -18,6 +26,27 @@ export async function GET(
 
     if (!match) {
       return NextResponse.json({ success: false, error: 'Match not found' }, { status: 404 });
+    }
+
+    const user = await AuthService.verifyToken(token);
+    const tournament = await TournamentModel.findById(match.tournamentRef).select('clubId');
+    if (!tournament) {
+      return NextResponse.json({ success: false, error: 'Tournament not found' }, { status: 404 });
+    }
+
+    const canModerate = await AuthorizationService.checkAdminOrModerator(user._id.toString(), tournament.clubId.toString());
+    const basePlayers = await PlayerModel.find({ userRef: user._id }).select('_id');
+    const baseIds = basePlayers.map((p) => p._id);
+    const teamPlayers = baseIds.length
+      ? await PlayerModel.find({ members: { $in: baseIds } }).select('_id')
+      : [];
+    const userPlayerIds = new Set([...basePlayers, ...teamPlayers].map((p) => p._id.toString()));
+    const player1Id = (match.player1?.playerId as any)?._id?.toString() || (match.player1?.playerId as any)?.toString();
+    const player2Id = (match.player2?.playerId as any)?._id?.toString() || (match.player2?.playerId as any)?.toString();
+    const canViewByParticipation = userPlayerIds.has(player1Id) || userPlayerIds.has(player2Id);
+
+    if (!canModerate && !canViewByParticipation) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
     // Transform the data for the frontend

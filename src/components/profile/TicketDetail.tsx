@@ -38,6 +38,12 @@ export default function TicketDetail({ ticket: initialTicket, onBack, onUpdate }
   const [replyContent, setReplyContent] = React.useState('');
   const [isSending, setIsSending] = React.useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const markedReadTicketRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    setTicket(initialTicket);
+    markedReadTicketRef.current = null;
+  }, [initialTicket]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,17 +56,20 @@ export default function TicketDetail({ ticket: initialTicket, onBack, onUpdate }
   // Mark ticket as read when opened
   React.useEffect(() => {
     const markAsRead = async () => {
-      if (!ticket.isReadByUser) {
+      if (!ticket.isReadByUser && markedReadTicketRef.current !== ticket._id) {
         try {
+          markedReadTicketRef.current = ticket._id;
           await axios.post(`/api/feedback/${ticket._id}/mark-read`);
+          setTicket((prev) => ({ ...prev, isReadByUser: true }));
           onUpdate?.(); // Refresh parent to update unread count
         } catch (error) {
+          markedReadTicketRef.current = null;
           console.error('Error marking ticket as read:', error);
         }
       }
     };
     markAsRead();
-  }, [ticket._id, ticket.isReadByUser, onUpdate]);
+  }, [ticket._id, ticket.isReadByUser]);
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();

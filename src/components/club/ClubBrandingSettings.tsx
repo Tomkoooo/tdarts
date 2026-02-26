@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
+import Cropper from "react-easy-crop"
 import { useForm } from "react-hook-form"
 import axios from "axios"
 import toast from "react-hot-toast"
@@ -14,6 +15,8 @@ import { showErrorToast } from "@/lib/toastUtils"
 import { extractMediaIds } from "@/lib/utils"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Club } from "@/interface/club.interface"
+import getCroppedImg from "@/lib/imageUtils"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface ClubBrandingSettingsProps {
   club: Club
@@ -23,6 +26,12 @@ interface ClubBrandingSettingsProps {
 export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandingSettingsProps) {
   const [loading, setLoading] = useState(false)
   const [lastSavedAboutText, setLastSavedAboutText] = useState(club.landingPage?.aboutText || club.description || "");
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const [cropTargetField, setCropTargetField] = useState<'logo' | 'coverImage' | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+  const [isCropOpen, setIsCropOpen] = useState(false)
 
 
 
@@ -109,19 +118,14 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
       toast.success("Színek alaphelyzetbe állítva (Mentsd el a változtatásokat!)");
   }
 
-  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: 'logo' | 'coverImage') => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const onCropComplete = React.useCallback((_: any, areaPixels: any) => {
+    setCroppedAreaPixels(areaPixels)
+  }, [])
 
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("A fájl mérete maximum 15MB lehet");
-      return;
-    }
-
+  const uploadBlobToMedia = async (blob: Blob, fieldName: 'logo' | 'coverImage') => {
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', blob, `${fieldName}.jpg`)
     formData.append('clubId', club._id)
-
     const toastId = toast.loading("Feltöltés...")
     try {
       const res = await axios.post('/api/media', formData, {
@@ -132,6 +136,39 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
     } catch {
       toast.error("Feltöltés sikertelen", { id: toastId })
     }
+  }
+
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: 'logo' | 'coverImage') => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("A fájl mérete maximum 15MB lehet");
+      return;
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+      setCropTargetField(fieldName)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setIsCropOpen(true)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleConfirmCrop = async () => {
+    if (!cropImageSrc || !cropTargetField || !croppedAreaPixels) return
+    const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels)
+    if (!croppedBlob) {
+      toast.error("Vágás sikertelen")
+      return
+    }
+    await uploadBlobToMedia(croppedBlob, cropTargetField)
+    setIsCropOpen(false)
+    setCropImageSrc(null)
+    setCropTargetField(null)
   }
 
   const onBrandingSubmit = async (data: any) => {
@@ -349,6 +386,47 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                   </Button>
               </div>
         </div>
+
+        <Dialog open={isCropOpen} onOpenChange={setIsCropOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {cropTargetField === 'logo' ? 'Logó vágása (1:1)' : 'Borítókép vágása (16:9)'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="relative h-[420px] w-full overflow-hidden rounded-lg bg-muted">
+              {cropImageSrc && (
+                <Cropper
+                  image={cropImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={cropTargetField === 'logo' ? 1 : 16 / 9}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  showGrid={false}
+                />
+              )}
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(event) => setZoom(Number(event.target.value))}
+              className="w-full"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCropOpen(false)}>
+                Mégse
+              </Button>
+              <Button onClick={handleConfirmCrop}>
+                Vágás és feltöltés
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }

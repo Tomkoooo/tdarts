@@ -58,6 +58,7 @@ export async function GET(
       player: {
         _id: player._id,
         name: player.name,
+        country: player.country || null,
         userRef: player.userRef,
         isRegistered: player.isRegistered,
         stats: player.stats || {},
@@ -71,6 +72,7 @@ export async function GET(
       teams: teams.map(t => ({
         _id: t._id,
         name: t.name,
+        country: t.country || null,
         type: t.type,
         members: t.members,
         stats: t.stats

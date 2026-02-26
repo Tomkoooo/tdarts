@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TournamentSettings } from '@/interface/tournament.interface';
 import { IconTarget, IconExternalLink } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { showLocationReviewToast } from '@/lib/toastUtils';
+import { getMapSettingsTranslations } from '@/data/translations/map-settings';
+import { shouldPromptLocationReview } from '@/interface/location.interface';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -21,6 +24,7 @@ export default function EditTournamentModal({
   userId,
   onTournamentUpdated
 }: EditTournamentModalProps) {
+  const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu');
   const [settings, setSettings] = useState<TournamentSettings>(tournament.tournamentSettings);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -37,6 +41,7 @@ export default function EditTournamentModal({
     maxAllowed: number;
     planName: string;
   } | null>(null);
+  const reviewToastShown = useRef(false);
   const router = useRouter();
 
   // Reset form when tournament changes
@@ -47,6 +52,20 @@ export default function EditTournamentModal({
       setError('');
     }
   }, [tournament]);
+
+  useEffect(() => {
+    if (tournament && shouldPromptLocationReview(tournament.tournamentSettings?.locationData, tournament.tournamentSettings?.location) && !reviewToastShown.current) {
+      reviewToastShown.current = true;
+      showLocationReviewToast(
+        t.locationReviewTournamentMessage,
+        t.locationReviewAction,
+        () => {
+          const input = document.querySelector<HTMLInputElement>('input[placeholder="Pl.: Budapest, Sport Klub"]');
+          input?.focus();
+        }
+      );
+    }
+  }, [tournament, t.locationReviewAction, t.locationReviewTournamentMessage]);
 
   // Update boardCount when boards changes
   useEffect(() => {

@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card } from "@/components/ui/Card"
 import { BadgeCheck } from "lucide-react"
 import { IconTrash } from "@tabler/icons-react"
+import { getCountryOptions } from "@/lib/countries"
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: currentYear - 2023 }, (_, i) => currentYear - i); // [2025, 2024] etc.
+    const countryOptions = getCountryOptions("hu");
 
     return (
         <div className="flex flex-col gap-4 mb-6">
@@ -76,23 +78,47 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
 
                         {/* Player Year Filter */}
                         {activeTab === 'players' && (
-                            <div className="flex flex-col gap-2">
-                                <Label className="text-sm font-semibold">Szezon</Label>
-                                <Select 
-                                    value={filters.year ? String(filters.year) : String(currentYear)} 
-                                    onValueChange={(val) => onFilterChange('year', val === String(currentYear) ? undefined : Number(val))}
-                                >
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Válassz évet" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={String(currentYear)}>Jelenlegi Szezon</SelectItem>
-                                        {years.slice(1).map(year => (
-                                            <SelectItem key={year} value={String(year)}>{year}-es Szezon</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <>
+                                <div className="flex flex-col gap-2">
+                                    <Label className="text-sm font-semibold">Szezon</Label>
+                                    <Select 
+                                        value={filters.year ? String(filters.year) : String(currentYear)} 
+                                        onValueChange={(val) => onFilterChange('year', val === String(currentYear) ? undefined : Number(val))}
+                                    >
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Válassz évet" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={String(currentYear)}>Jelenlegi Szezon</SelectItem>
+                                            {years.slice(1).map(year => (
+                                                <SelectItem key={year} value={String(year)}>{year}-es Szezon</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Separator orientation="vertical" className="hidden md:block h-10" />
+                                <div className="flex flex-col gap-2">
+                                    <Label className="text-sm font-semibold">Játékos típus</Label>
+                                    <RadioGroup
+                                        value={filters.playerMode || 'all'}
+                                        onValueChange={(val) => onFilterChange('playerMode', val === 'all' ? undefined : val)}
+                                        className="flex gap-4"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="all" id="player-type-all" />
+                                            <Label htmlFor="player-type-all" className="cursor-pointer">Összes</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="individual" id="player-type-individual" />
+                                            <Label htmlFor="player-type-individual" className="cursor-pointer">Egyéni</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="pair" id="player-type-pair" />
+                                            <Label htmlFor="player-type-pair" className="cursor-pointer">Páros</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                            </>
                         )}
 
                         {/* Type Filter (Tournaments Only) */}
@@ -119,6 +145,32 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                             <Label htmlFor="open" className="cursor-pointer">Nyílt</Label>
                                         </div>
                                     </RadioGroup>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Country Filter */}
+                        {activeTab !== 'map' && (
+                            <>
+                                <Separator orientation="vertical" className="hidden md:block h-10" />
+                                <div className="flex flex-col gap-2">
+                                    <Label className="text-sm font-semibold">Ország</Label>
+                                    <Select
+                                        value={filters.country || 'all'}
+                                        onValueChange={(val) => onFilterChange('country', val === 'all' ? undefined : val)}
+                                    >
+                                        <SelectTrigger className="w-[210px]">
+                                            <SelectValue placeholder="Minden ország" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-72">
+                                            <SelectItem value="all">Minden ország</SelectItem>
+                                            {countryOptions.map((country) => (
+                                                <SelectItem key={country.value} value={country.value}>
+                                                    {country.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </>
                         )}
@@ -154,7 +206,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                     </div>
 
                     {/* Clear Filters Button */}
-                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || hasActiveQuery) && (
+                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || filters.playerMode || filters.country || hasActiveQuery) && (
                          <Button 
                             variant="ghost" 
                             size="icon" 
@@ -165,6 +217,8 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     isVerified: undefined,
                                     city: undefined,
                                     year: undefined,
+                                    playerMode: undefined,
+                                    country: undefined,
                                     page: 1
                                 });
                                 if (onClearQuery) onClearQuery();

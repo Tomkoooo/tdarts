@@ -79,8 +79,10 @@ export class UserService {
 
         return {
           _id: user._id,
+          playerId: existingPlayer?._id || null,
           name: user.name,
           username: user.username,
+          profilePicture: user.profilePicture || null,
           userRef: user._id, // Add userRef for consistency
           clubId: club?._id,
           clubName: club?.name,

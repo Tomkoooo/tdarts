@@ -24,6 +24,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
+import CountryFlag from "@/components/ui/country-flag"
 
 interface PlayerStatsModalProps {
   player: Player | null
@@ -286,7 +287,10 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                       <IconChevronDown size={24} className="rotate-90 text-primary" />
                     </button>
                   )}
-                  <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase">{displayPlayer.name}</DialogTitle>
+                  <div className="flex items-center gap-2">
+                    <DialogTitle className="text-3xl font-black text-foreground tracking-tighter uppercase">{displayPlayer.name}</DialogTitle>
+                    <CountryFlag countryCode={displayPlayer.country} className="text-xl" />
+                  </div>
                 </div>
               </DialogHeader>
               <div className="flex flex-wrap gap-2">
@@ -297,9 +301,13 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                   </Badge>
                 )}
                 {honors.map((h, i) => (
-                  <Badge key={i} variant="secondary" className="text-[9px] font-black h-5 px-2 bg-amber-500/10 text-amber-600 border-amber-500/20 uppercase tracking-tighter gap-1">
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className="min-w-0 max-w-full gap-1 overflow-hidden bg-amber-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter text-amber-600 border-amber-500/20 h-auto"
+                  >
                     <IconMedal size={10} />
-                    {h.title}
+                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{h.title}</span>
                   </Badge>
                 ))}
                 {!honors.length && (
@@ -465,7 +473,10 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                               size="md"
                             />
                             <div>
-                              <p className="text-sm font-bold">{member.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold">{member.name}</p>
+                                <CountryFlag countryCode={member.country} />
+                              </div>
                               <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
                                 {member.stats?.mmr || 800} MMR
                               </p>
@@ -508,7 +519,10 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                               size="md"
                             />
                             <div>
-                              <p className="text-sm font-bold">{team.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold">{team.name}</p>
+                                <CountryFlag countryCode={team.country} />
+                              </div>
                               <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
                                 {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
                               </p>

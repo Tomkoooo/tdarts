@@ -1,21 +1,34 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/Badge"
+import { getMapSettingsTranslations } from "@/data/translations/map-settings"
 
 interface SearchTabsProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     counts: {
+        global: number;
         tournaments: number;
         players: number;
         clubs: number;
         leagues: number;
+        map?: number;
     };
 }
 
 export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) {
+    const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
     return (
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-base-200/50 backdrop-blur-sm rounded-xl">
+            <TabsList className="grid w-full grid-cols-6 h-auto p-1 bg-base-200/50 backdrop-blur-sm rounded-xl">
+                <TabsTrigger
+                    value="global"
+                    className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-primary/80 data-[state=active]:text-primary-foreground transition-all duration-300"
+                >
+                    <span className="font-medium">Globális</span>
+                    <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
+                        {counts.global}
+                    </Badge>
+                </TabsTrigger>
                 <TabsTrigger 
                     value="tournaments" 
                     className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
@@ -53,6 +66,15 @@ export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) 
                      <span className="font-medium">Ligák</span>
                      <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
                         {counts.leagues}
+                    </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                    value="map"
+                    className="flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-warning/20 data-[state=active]:text-warning-foreground transition-all duration-300"
+                >
+                     <span className="font-medium">{t.mapPageTitle}</span>
+                     <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
+                        {counts.map ?? 0}
                     </Badge>
                 </TabsTrigger>
             </TabsList>

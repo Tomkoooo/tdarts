@@ -23,6 +23,7 @@ import PlayerNotificationModal from "@/components/tournament/PlayerNotificationM
 import PlayerMatchesModal from "@/components/tournament/PlayerMatchesModal"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
 import TeamRegistrationModal from "@/components/tournament/TeamRegistrationModal"
+import HeadToHeadModal from "@/components/tournament/HeadToHeadModal"
 import { useUserContext } from "@/hooks/useUser"
 import {
   Card,
@@ -39,6 +40,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
+import CountryFlag from "@/components/ui/country-flag"
+import { getPlayerTranslations } from "@/data/translations/player"
 
 interface TournamentPlayersProps {
   tournament: any
@@ -65,6 +68,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   status,
   onRefresh,
 }) => {
+  const t = getPlayerTranslations(typeof navigator !== "undefined" ? navigator.language : "hu")
   const { user } = useUserContext()
 
   const [localPlayers, setLocalPlayers] = useState(players)
@@ -73,6 +77,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const [waitingList, setWaitingList] = useState(tournament?.waitingList || [])
   const [selectedPlayerForMatches, setSelectedPlayerForMatches] = useState<{ id: string; name: string } | null>(null)
   const [showPlayerMatchesModal, setShowPlayerMatchesModal] = useState(false)
+  const [headToHeadTarget, setHeadToHeadTarget] = useState<{ id: string; name: string } | null>(null)
   const [notificationModal, setNotificationModal] = useState<{ isOpen: boolean; player: any }>({
     isOpen: false,
     player: null,
@@ -757,6 +762,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               })
               .map(({ player }) => {
               const name = player.playerReference?.name || player.name || player._id
+              const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString() || player._id?.toString()
               const status = player.status || "applied"
               const statusMeta = playerStatusBadge[status]
               const isCurrentUser = localUserPlayerId && (player.playerReference?._id?.toString() === localUserPlayerId.toString() || player._id?.toString() === localUserPlayerId.toString())
@@ -779,6 +785,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                       <div className="flex flex-col gap-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-foreground">{name}</p>
+                          <CountryFlag countryCode={player.playerReference?.country} />
                           {player.playerReference?.type === 'pair' && (
                             <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
                               <IconUsers className="h-3 w-3" />
@@ -821,7 +828,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                                         key={`${honor.title}-${honor.year}-${i}`} 
                                         variant="secondary" 
                                         className={cn(
-                                        "gap-1 text-[10px] font-bold uppercase tracking-wider py-0 h-5",
+                                        "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
                                         honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
                                         honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
                                         "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
@@ -829,7 +836,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                                     >
                                         {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
                                         {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
-                                        {honor.title}
+                                        <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                                     </Badge>
                                 ))}
                       
@@ -851,6 +858,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                       <Button size="sm" variant="outline" onClick={() => handleOpenMatches(player)}>
                         Meccsek
                       </Button>
+                      {Boolean(localUserPlayerId) &&
+                        playerId !== localUserPlayerId?.toString() &&
+                        localUserPlayerStatus !== "none" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setHeadToHeadTarget({ id: playerId, name })}
+                          >
+                            {t.viewHeadToHead}
+                          </Button>
+                        )}
                     </div>
                   </div>
 
@@ -1022,6 +1040,14 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               })
             }
           }}
+        />
+      )}
+
+      {headToHeadTarget && code && (
+        <HeadToHeadModal
+          isOpen={Boolean(headToHeadTarget)}
+          onClose={() => setHeadToHeadTarget(null)}
+          fetchUrl={`/api/tournaments/${code}/head-to-head/${headToHeadTarget.id}`}
         />
       )}
 

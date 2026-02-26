@@ -22,6 +22,7 @@ interface AnnouncementToastProps {
 const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onClose }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(announcement.duration);
+  const isEnglish = typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('en');
 
   // Icon és szín beállítása típus alapján
   const getToastStyles = () => {
@@ -178,7 +179,9 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
 
           {/* Time left indicator */}
           <div className="mt-3 text-xs text-base-content/50">
-            {Math.ceil(timeLeft / 1000)} másodperc múlva automatikusan bezáródik
+            {isEnglish
+              ? `Auto closes in ${Math.ceil(timeLeft / 1000)} seconds`
+              : `${Math.ceil(timeLeft / 1000)} másodperc múlva automatikusan bezáródik`}
           </div>
         </div>
       </div>

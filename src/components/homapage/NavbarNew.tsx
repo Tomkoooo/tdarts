@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop, IconChartBar, IconTicket } from "@tabler/icons-react";
+import { IconSearch, IconTournament, IconUsers, IconMenu2, IconUser, IconHelp, IconSettings, IconBug, IconLogout, IconDeviceDesktop, IconChartBar, IconTicket, IconLanguage } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
 import { useLogout } from "@/hooks/useLogout";
 import IconDart from "./icons/IconDart";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SmartAvatar } from "@/components/ui/smart-avatar";
@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, SupportedLocale, localePath, stripLocalePrefix } from "@/lib/seo";
 
 const NavbarNew = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -27,7 +28,38 @@ const NavbarNew = () => {
   const { user } = useUserContext();
   const { logout } = useLogout();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
+
+  const languageOptions = [
+    { code: "hu", label: "Magyar", enabled: true },
+    { code: "en", label: "English", enabled: true },
+    { code: "de", label: "Deutsch", enabled: true },
+    { code: "sk", label: "Szlovák", enabled: false },
+    { code: "ro", label: "Román", enabled: false },
+    { code: "el", label: "Görög", enabled: false },
+  ] as const;
+
+  const maybeLocale = pathname?.split("/")[1];
+  const currentLocale: SupportedLocale = SUPPORTED_LOCALES.includes(maybeLocale as SupportedLocale)
+    ? (maybeLocale as SupportedLocale)
+    : DEFAULT_LOCALE;
+
+  const toLocalizedHref = (href: string): string => {
+    if (/^https?:\/\//.test(href)) return href;
+    const [pathPart, queryPart] = href.split("?");
+    const localizedPath = localePath(pathPart || "/", currentLocale);
+    return queryPart ? `${localizedPath}?${queryPart}` : localizedPath;
+  };
+
+  const switchLocale = (targetLocale: string) => {
+    if (!SUPPORTED_LOCALES.includes(targetLocale as SupportedLocale)) return;
+    const normalizedPath = stripLocalePrefix(pathname || "/");
+    const targetPath = localePath(normalizedPath, targetLocale as SupportedLocale);
+    const query = searchParams.toString();
+    router.push(query ? `${targetPath}?${query}` : targetPath);
+  };
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -80,7 +112,7 @@ const NavbarNew = () => {
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8" style={{ width: '100%', maxWidth: '100%' }}>
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
+          <Link href="/" className="flex items-center gap-2 shrink-0 group">
             <div className="relative">
               <Image 
                 src="/tdarts_fav.svg" 
@@ -104,12 +136,12 @@ const NavbarNew = () => {
           <div className="hidden lg:flex items-center gap-1 flex-1 justify-center max-w-2xl">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = stripLocalePrefix(pathname || "/") === (item.href.split("?")[0] || "/");
               
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                  href={toLocalizedHref(item.href)}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium",
                     isActive 
@@ -125,16 +157,42 @@ const NavbarNew = () => {
           </div>
 
           {/* Desktop User Menu */}
-          <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <IconLanguage className="w-4 h-4" />
+                  <span className="uppercase">{currentLocale}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {languageOptions.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    className={cn(
+                      "flex items-center justify-between",
+                      !lang.enabled && "opacity-60 cursor-not-allowed"
+                    )}
+                    disabled={!lang.enabled}
+                    onClick={() => {
+                      if (lang.enabled) switchLocale(lang.code);
+                    }}
+                  >
+                    <span>{lang.label}</span>
+                    {!lang.enabled && <span className="text-xs text-muted-foreground">Hamarosan</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {user ? (
               <>
-                <Link href="/myclub">
+                <Link href={toLocalizedHref("/myclub")}>
                   <Button variant={pathname === "/myclub" ? "secondary" : "ghost"} size="sm">
                     <IconDart className="w-4 h-4 mr-2" />
                     <span className="hidden xl:inline">Saját klub</span>
                   </Button>
                 </Link>
-                <Link href="/feedback">
+                <Link href={toLocalizedHref("/feedback")}>
                   <Button variant={pathname === "/feedback" ? "secondary" : "ghost"} size="sm">
                     <IconBug className="w-4 h-4 mr-2" />
                     <span className="hidden xl:inline">Visszajelzés</span>
@@ -160,25 +218,25 @@ const NavbarNew = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/profile" className="cursor-pointer w-full flex items-center">
+                      <Link href={toLocalizedHref("/profile")} className="cursor-pointer w-full flex items-center">
                         <IconUser className="mr-2 h-4 w-4" />
                         Profil
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile?tab=stats" className="cursor-pointer w-full flex items-center">
+                      <Link href={toLocalizedHref("/profile?tab=stats")} className="cursor-pointer w-full flex items-center">
                         <IconChartBar className="mr-2 h-4 w-4" />
                         Statisztika
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile?tab=tickets" className="cursor-pointer w-full flex items-center">
+                      <Link href={toLocalizedHref("/profile?tab=tickets")} className="cursor-pointer w-full flex items-center">
                         <IconTicket className="mr-2 h-4 w-4" />
                         Hibajegyek
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/myclub" className="cursor-pointer w-full flex items-center">
+                      <Link href={toLocalizedHref("/myclub")} className="cursor-pointer w-full flex items-center">
                         <IconDart className="mr-2 h-4 w-4" />
                         Saját klub
                       </Link>
@@ -187,7 +245,7 @@ const NavbarNew = () => {
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href="/admin" className="cursor-pointer w-full flex items-center">
+                          <Link href={toLocalizedHref("/admin")} className="cursor-pointer w-full flex items-center">
                             <IconSettings className="mr-2 h-4 w-4" />
                             Admin
                           </Link>
@@ -208,12 +266,12 @@ const NavbarNew = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/auth/login">
+                  <Link href={toLocalizedHref("/auth/login")}>
                     Bejelentkezés
                   </Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link href="/auth/register">
+                  <Link href={toLocalizedHref("/auth/register")}>
                     Regisztráció
                   </Link>
                 </Button>
@@ -260,14 +318,37 @@ const NavbarNew = () => {
 
                   {/* Navigation Items Mobile */}
                   <div className="space-y-1">
+                    <div className="px-3 pb-2 pt-1 text-xs uppercase tracking-wider text-muted-foreground">
+                      Nyelv
+                    </div>
+                    <div className="space-y-1 pb-3">
+                      {languageOptions.map((lang) => (
+                        <Button
+                          key={lang.code}
+                          variant={currentLocale === lang.code ? "secondary" : "ghost"}
+                          className="w-full justify-between"
+                          disabled={!lang.enabled}
+                          onClick={() => {
+                            if (lang.enabled) {
+                              switchLocale(lang.code);
+                              setIsMobileMenuOpen(false);
+                            }
+                          }}
+                        >
+                          <span>{lang.label}</span>
+                          {!lang.enabled && <span className="text-xs text-muted-foreground">Hamarosan</span>}
+                        </Button>
+                      ))}
+                    </div>
+                    <Separator className="my-2" />
                     {navItems.map((item) => {
                       const Icon = item.icon;
-                      const isActive = pathname === item.href;
+                      const isActive = stripLocalePrefix(pathname || "/") === (item.href.split("?")[0] || "/");
                       
                       return (
                         <Link
                           key={item.name}
-                          href={item.href}
+                          href={toLocalizedHref(item.href)}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium",
@@ -276,7 +357,7 @@ const NavbarNew = () => {
                               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                           )}
                         >
-                          <Icon className="w-5 h-5 flex-shrink-0" />
+                          <Icon className="w-5 h-5 shrink-0" />
                           <span>{item.name}</span>
                         </Link>
                       );
@@ -293,19 +374,19 @@ const NavbarNew = () => {
                         className="w-full justify-start gap-2"
                         asChild
                       >
-                        <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link href={toLocalizedHref("/profile")} onClick={() => setIsMobileMenuOpen(false)}>
                           <IconUser className="w-4 h-4" />
                           Profil
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
-                        <Link href="/profile?tab=stats" className="cursor-pointer w-full flex items-center">
+                        <Link href={toLocalizedHref("/profile?tab=stats")} className="cursor-pointer w-full flex items-center">
                           <IconChartBar className="h-4 w-4" />
                           Statisztika
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
-                        <Link href="/profile?tab=tickets" className="cursor-pointer w-full flex items-center">
+                        <Link href={toLocalizedHref("/profile?tab=tickets")} className="cursor-pointer w-full flex items-center">
                           <IconTicket className="h-4 w-4" />
                           Hibajegyek
                         </Link>
@@ -315,7 +396,7 @@ const NavbarNew = () => {
                         className="w-full justify-start gap-2"
                         asChild
                       >
-                         <Link href="/myclub" onClick={() => setIsMobileMenuOpen(false)}>
+                         <Link href={toLocalizedHref("/myclub")} onClick={() => setIsMobileMenuOpen(false)}>
                           <IconDart className="w-4 h-4" />
                           Saját klub
                         </Link>
@@ -325,7 +406,7 @@ const NavbarNew = () => {
                         className="w-full justify-start gap-2"
                         asChild
                       >
-                        <Link href="/feedback" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link href={toLocalizedHref("/feedback")} onClick={() => setIsMobileMenuOpen(false)}>
                           <IconBug className="w-4 h-4" />
                           Visszajelzés
                         </Link>
@@ -336,7 +417,7 @@ const NavbarNew = () => {
                           className="w-full justify-start gap-2"
                           asChild
                         >
-                          <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
+                          <Link href={toLocalizedHref("/admin")} onClick={() => setIsMobileMenuOpen(false)}>
                             <IconSettings className="w-4 h-4" />
                             Admin
                           </Link>
@@ -358,12 +439,12 @@ const NavbarNew = () => {
                   ) : (
                     <div className="space-y-2">
                       <Button className="w-full" asChild>
-                        <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link href={toLocalizedHref("/auth/login")} onClick={() => setIsMobileMenuOpen(false)}>
                           Bejelentkezés
                         </Link>
                       </Button>
                       <Button variant="outline" className="w-full" asChild>
-                        <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link href={toLocalizedHref("/auth/register")} onClick={() => setIsMobileMenuOpen(false)}>
                           Regisztráció
                         </Link>
                       </Button>

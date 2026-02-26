@@ -11,7 +11,8 @@ export class TeamInvitationService {
     tournamentId: string,
     teamId: string,
     inviterId: string,
-    inviteeId: string
+    inviteeId?: string,
+    inviteeEmail?: string
   ): Promise<ITeamInvitation> {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 2); // Expires in 2 days
@@ -20,7 +21,8 @@ export class TeamInvitationService {
       tournamentId: new Types.ObjectId(tournamentId),
       teamId: new Types.ObjectId(teamId),
       inviterId: new Types.ObjectId(inviterId),
-      inviteeId: new Types.ObjectId(inviteeId),
+      ...(inviteeId ? { inviteeId: new Types.ObjectId(inviteeId) } : {}),
+      inviteeEmail: inviteeEmail?.toLowerCase(),
       token: uuidv4(),
       status: 'pending',
       expiresAt
@@ -41,8 +43,8 @@ export class TeamInvitationService {
       path: 'teamId',
       populate: { path: 'members' } // Populate team members to show names
     })
-    .populate('inviterId', 'name email')
-    .populate('inviteeId', 'name email');
+    .populate('inviterId', 'name email locale')
+    .populate('inviteeId', 'name email locale');
   }
 
   /**
@@ -78,5 +80,23 @@ export class TeamInvitationService {
       expiresAt: { $gt: new Date() }
     });
     return !!invitation;
+  }
+
+  static async getPendingInvitationsForUser(userId: string, email?: string): Promise<ITeamInvitation[]> {
+    const query: any = {
+      status: 'pending',
+      expiresAt: { $gt: new Date() },
+      $or: [{ inviteeId: new Types.ObjectId(userId) }],
+    };
+
+    if (email) {
+      query.$or.push({ inviteeEmail: email.toLowerCase() });
+    }
+
+    return await TeamInvitationModel.find(query)
+      .populate('tournamentId', 'tournamentId tournamentSettings.name tournamentSettings.startDate')
+      .populate('teamId', 'name')
+      .populate('inviterId', 'name email locale')
+      .sort({ createdAt: -1 });
   }
 }

@@ -7,6 +7,7 @@ import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
+import CountryFlag from "@/components/ui/country-flag"
 
 interface PlayerLeaderboardProps {
     players: any[];
@@ -76,6 +77,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                 <div className="flex-grow min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-lg truncate">{player.name}</h3>
+                                        <CountryFlag countryCode={player.country} />
                                         {((isOac ? (player.stats?.oacMmr >= 1000) : (player.stats?.mmr >= 1000))) && (
                                             <IconTrophy className="w-4 h-4 text-warning fill-warning" />
                                         )}
@@ -86,7 +88,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                                 key={`${honor.title}-${honor.year}-${i}`} 
                                                 variant="secondary" 
                                                 className={cn(
-                                                "gap-1 text-[10px] font-bold uppercase tracking-wider py-0 h-5",
+                                                "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
                                                 honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
                                                 honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
                                                 "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
@@ -94,7 +96,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                             >
                                                 {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
                                                 {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
-                                                {honor.title}
+                                                <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                                             </Badge>
                                         ))}
                                     </div>
@@ -112,6 +114,24 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                             </span>
                                         )}
                                     </div>
+                                    {(player.type === 'pair' || player.type === 'team') && Array.isArray(player.members) && player.members.length > 0 && (
+                                        <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-1">
+                                            {player.members
+                                                .filter((member: any) => member?._id && member?.name)
+                                                .map((member: any, index: number, arr: any[]) => (
+                                                    <div key={member._id} className="inline-flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            className="underline-offset-2 hover:text-primary hover:underline transition-colors"
+                                                            onClick={() => setSelectedPlayer({ _id: member._id, name: member.name })}
+                                                        >
+                                                            {member.name}
+                                                        </button>
+                                                        {index < arr.length - 1 && <span>+</span>}
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-4">

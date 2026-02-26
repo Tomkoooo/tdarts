@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema<UserDocument>(
     googleId: { type: String, default: null },
     profilePicture: { type: String, default: null },
     authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+    country: { type: String, default: null },
+    locale: { type: String, enum: ['hu', 'en'], default: 'hu' },
     codes: {
       reset_password: { type: String, default: null },
       verify_email: { type: String, default: null },
@@ -43,17 +45,16 @@ userSchema.pre('save', async function (next) {
     this.password = await bcrypt.hash(this.password, 15);
   }
   
-  // Update linked player document if name changed
-  if (this.isModified('name') && !this.isNew) {
+  // Keep linked player identity fields aligned with the user profile.
+  if ((this.isModified('name') || this.isModified('country')) && !this.isNew) {
     try {
       const { PlayerModel } = await import('./player.model');
       const linkedPlayer = await PlayerModel.findOne({ userRef: this._id });
       if (linkedPlayer) {
-        await PlayerModel.findByIdAndUpdate(
-          linkedPlayer._id,
-          { name: this.name },
-          { new: true }
-        );
+        await PlayerModel.findByIdAndUpdate(linkedPlayer._id, {
+          name: this.name,
+          country: this.country || null,
+        });
         console.log(`Auto-updated player name for user ${this._id} to: ${this.name}`);
       }
     } catch (error) {

@@ -10,6 +10,8 @@ export interface SimplifiedUser {
   isVerified: boolean;
   isAdmin: boolean;
   profilePicture?: string;
+  country?: string | null;
+  locale?: "hu" | "en";
 }
 
 interface UserContextType {

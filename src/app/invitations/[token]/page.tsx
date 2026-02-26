@@ -8,11 +8,13 @@ import { toast } from "react-hot-toast"
 
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card"
+import { useUserContext } from "@/hooks/useUser"
 
 export default function InvitationPage() {
   const params = useParams()
   const token = params?.token as string
   const router = useRouter()
+  const { user } = useUserContext()
 
   const [invitation, setInvitation] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -21,10 +23,15 @@ export default function InvitationPage() {
   const [successMessage, setSuccessMessage] = useState("")
 
   useEffect(() => {
+    if (!token) return
+    if (!user) {
+      router.replace(`/auth/login?redirect=${encodeURIComponent(`/invitations/${token}`)}`)
+      return
+    }
     if (token) {
       fetchInvitation()
     }
-  }, [token])
+  }, [token, user, router])
 
   const fetchInvitation = async () => {
     try {
@@ -57,6 +64,10 @@ export default function InvitationPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 401 && data?.redirectTo) {
+          router.push(data.redirectTo)
+          return
+        }
         throw new Error(data.error || `Hiba történt a ${action === 'accept' ? 'elfogadás' : 'elutasítás'} során`)
       }
 
@@ -87,6 +98,17 @@ export default function InvitationPage() {
         <div className="flex flex-col items-center gap-4">
           <IconLoader2 className="h-10 w-10 animate-spin text-primary" />
           <p className="text-muted-foreground">Meghívó betöltése...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="flex flex-col items-center gap-4">
+          <IconLoader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">Bejelentkezéshez irányítás...</p>
         </div>
       </div>
     )
@@ -184,6 +206,12 @@ export default function InvitationPage() {
                 <p className="text-center text-muted-foreground">
                   <span className="font-semibold text-foreground">{invitation?.inviterId?.name}</span> meghívott, hogy csatlakozz a csapatához.
                 </p>
+                {(invitation?.inviterId?.email || invitation?.inviteeEmail) && (
+                  <div className="mt-2 space-y-1 text-center text-xs text-muted-foreground">
+                    {invitation?.inviterId?.email && <p>Meghívó email: {invitation.inviterId.email}</p>}
+                    {invitation?.inviteeEmail && <p>Címzett email: {invitation.inviteeEmail}</p>}
+                  </div>
+                )}
               </div>
             </div>
           </div>

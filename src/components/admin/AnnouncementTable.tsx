@@ -56,6 +56,12 @@ interface Announcement {
   _id: string
   title: string
   description: string
+  localized?: {
+    hu?: { title?: string; description?: string; buttonText?: string }
+    en?: { title?: string; description?: string; buttonText?: string }
+    de?: { title?: string; description?: string; buttonText?: string }
+  }
+  localeVisibilityMode?: "strict" | "fallback_en"
   type: "info" | "success" | "warning" | "error"
   isActive: boolean
   expiresAt: string
@@ -81,12 +87,19 @@ export default function AnnouncementTable() {
   const [editForm, setEditForm] = useState({
       title: "",
       description: "",
+      titleEn: "",
+      descriptionEn: "",
+      titleDe: "",
+      descriptionDe: "",
       type: "info" as Announcement["type"],
       expiresAt: "",
       showButton: false,
       buttonText: "",
+      buttonTextEn: "",
+      buttonTextDe: "",
       buttonAction: "",
-      duration: 10000
+      duration: 10000,
+      localeVisibilityMode: "strict" as "strict" | "fallback_en",
   })
 
   const limit = 10
@@ -148,12 +161,19 @@ export default function AnnouncementTable() {
       setEditForm({
           title: "",
           description: "",
+          titleEn: "",
+          descriptionEn: "",
+          titleDe: "",
+          descriptionDe: "",
           type: "info",
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // +1 week default
           showButton: false,
           buttonText: "Részletek",
+          buttonTextEn: "Details",
+          buttonTextDe: "Details",
           buttonAction: "",
-          duration: 10000
+          duration: 10000,
+          localeVisibilityMode: "strict",
       })
       setShowModal(true)
   }
@@ -163,13 +183,20 @@ export default function AnnouncementTable() {
       setEditForm({
           title: item.title,
           description: item.description,
+          titleEn: item.localized?.en?.title || "",
+          descriptionEn: item.localized?.en?.description || "",
+          titleDe: item.localized?.de?.title || "",
+          descriptionDe: item.localized?.de?.description || "",
           type: item.type,
           // Format date for datetime-local input: YYYY-MM-DDThh:mm
           expiresAt: new Date(item.expiresAt).toISOString().slice(0, 16),
           showButton: item.showButton || false,
-          buttonText: item.buttonText || "",
+          buttonText: item.localized?.hu?.buttonText || item.buttonText || "",
+          buttonTextEn: item.localized?.en?.buttonText || "",
+          buttonTextDe: item.localized?.de?.buttonText || "",
           buttonAction: item.buttonAction || "",
-          duration: item.duration || 10000
+          duration: item.duration || 10000,
+          localeVisibilityMode: item.localeVisibilityMode || "strict",
       })
       setShowModal(true)
   }
@@ -179,6 +206,24 @@ export default function AnnouncementTable() {
           setIsSaving(true)
           const payload = {
               ...editForm,
+              localized: {
+                hu: {
+                  title: editForm.title,
+                  description: editForm.description,
+                  buttonText: editForm.buttonText || undefined,
+                },
+                en: {
+                  title: editForm.titleEn || undefined,
+                  description: editForm.descriptionEn || undefined,
+                  buttonText: editForm.buttonTextEn || undefined,
+                },
+                de: {
+                  title: editForm.titleDe || undefined,
+                  description: editForm.descriptionDe || undefined,
+                  buttonText: editForm.buttonTextDe || undefined,
+                },
+              },
+              localeVisibilityMode: editForm.localeVisibilityMode,
               expiresAt: new Date(editForm.expiresAt)
           }
 
@@ -340,12 +385,30 @@ export default function AnnouncementTable() {
           <ScrollArea className="flex-1 px-6 py-4">
             <div className="grid gap-4 pb-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Cím</Label>
+                <Label htmlFor="title">Cím (HU)</Label>
                 <Input
                   id="title"
                   value={editForm.title}
                   onChange={(e) => setEditForm({...editForm, title: e.target.value})}
                   placeholder="Hír címe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="titleEn">Title (EN)</Label>
+                <Input
+                  id="titleEn"
+                  value={editForm.titleEn}
+                  onChange={(e) => setEditForm({...editForm, titleEn: e.target.value})}
+                  placeholder="Announcement title in English"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="titleDe">Titel (DE)</Label>
+                <Input
+                  id="titleDe"
+                  value={editForm.titleDe}
+                  onChange={(e) => setEditForm({...editForm, titleDe: e.target.value})}
+                  placeholder="Titel auf Deutsch"
                 />
               </div>
               
@@ -390,7 +453,7 @@ export default function AnnouncementTable() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="description">Leírás</Label>
+                <Label htmlFor="description">Leírás (HU)</Label>
                 <textarea
                   id="description"
                   className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -398,6 +461,41 @@ export default function AnnouncementTable() {
                   onChange={(e) => setEditForm({...editForm, description: e.target.value})}
                   placeholder="Hír szövege..."
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descriptionEn">Description (EN)</Label>
+                <textarea
+                  id="descriptionEn"
+                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editForm.descriptionEn}
+                  onChange={(e) => setEditForm({...editForm, descriptionEn: e.target.value})}
+                  placeholder="Announcement body in English..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descriptionDe">Beschreibung (DE)</Label>
+                <textarea
+                  id="descriptionDe"
+                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editForm.descriptionDe}
+                  onChange={(e) => setEditForm({...editForm, descriptionDe: e.target.value})}
+                  placeholder="Beschreibung auf Deutsch..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="localeVisibilityMode">Locale visibility</Label>
+                <Select
+                  value={editForm.localeVisibilityMode}
+                  onValueChange={(v: any) => setEditForm({...editForm, localeVisibilityMode: v})}
+                >
+                  <SelectTrigger id="localeVisibilityMode">
+                    <SelectValue placeholder="Locale visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="strict">Strict locale only</SelectItem>
+                    <SelectItem value="fallback_en">Fallback to English if locale missing</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-4 pt-2 border-t mt-2">
@@ -413,12 +511,30 @@ export default function AnnouncementTable() {
                 {editForm.showButton && (
                   <div className="grid gap-4 animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-2">
-                      <Label htmlFor="buttonText">Gomb felirata</Label>
+                      <Label htmlFor="buttonText">Gomb felirata (HU)</Label>
                       <Input
                         id="buttonText"
                         value={editForm.buttonText}
                         onChange={(e) => setEditForm({...editForm, buttonText: e.target.value})}
                         placeholder="Pl: Részletek"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="buttonTextEn">Button text (EN)</Label>
+                      <Input
+                        id="buttonTextEn"
+                        value={editForm.buttonTextEn}
+                        onChange={(e) => setEditForm({...editForm, buttonTextEn: e.target.value})}
+                        placeholder="Details"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="buttonTextDe">Button text (DE)</Label>
+                      <Input
+                        id="buttonTextDe"
+                        value={editForm.buttonTextDe}
+                        onChange={(e) => setEditForm({...editForm, buttonTextDe: e.target.value})}
+                        placeholder="Details"
                       />
                     </div>
                     <div className="space-y-2">

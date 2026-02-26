@@ -30,6 +30,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       template,
+      templateGroup: await EmailTemplateService.getTemplateGroupById(id),
     });
   } catch (error) {
     console.error('Error fetching email template:', error);
@@ -60,7 +61,7 @@ export async function PATCH(
 
     // Get update data
     const body = await request.json();
-    const { subject, htmlContent, textContent, isActive, name, description } = body;
+    const { subject, htmlContent, textContent, isActive, name, description, locales } = body;
 
     const updates: any = {};
     if (subject !== undefined) updates.subject = subject;
@@ -70,7 +71,27 @@ export async function PATCH(
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
 
-    // Update template
+    // Support grouped locale updates in one request
+    if (locales && typeof locales === 'object') {
+      const existing = await EmailTemplateService.getTemplateById(id);
+      if (!existing) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      }
+
+      const templateGroup = await EmailTemplateService.upsertTemplateLocales(
+        existing.key,
+        locales,
+        user._id.toString()
+      );
+
+      return NextResponse.json({
+        success: true,
+        template: await EmailTemplateService.getTemplateById(id),
+        templateGroup,
+      });
+    }
+
+    // Update single template fallback (legacy)
     const template = await EmailTemplateService.updateTemplate(
       id,
       updates,
@@ -84,6 +105,7 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       template,
+      templateGroup: await EmailTemplateService.getTemplateGroupById(id),
     });
   } catch (error) {
     console.error('Error updating email template:', error);
@@ -127,7 +149,8 @@ export async function POST(
       // Render with provided variables
       const rendered = await EmailTemplateService.getRenderedTemplate(
         template.key,
-        variables || {}
+        variables || {},
+        { locale: template.locale || 'hu' }
       );
 
       if (!rendered) {

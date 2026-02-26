@@ -3,6 +3,7 @@ import { ProfileService } from '@/database/services/profile.service';
 import { AuthService } from '@/database/services/auth.service';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
+import { isValidCountryCode } from '@/lib/countries';
 
 const updateProfileSchema = z.object({
   email: z.string().email('Invalid email address').optional(),
@@ -12,6 +13,14 @@ const updateProfileSchema = z.object({
   confirmPassword: z.string().optional(),
   profilePicture: z.string().nullable().optional(),
   publicConsent: z.boolean().optional(),
+  country: z
+    .string()
+    .length(2, 'Country must be an ISO-2 code')
+    .transform((value) => value.toUpperCase())
+    .refine((value) => isValidCountryCode(value), 'Invalid country code')
+    .nullable()
+    .optional(),
+  locale: z.enum(['hu', 'en']).optional(),
 }).refine((data) => {
   if (data.password && !data.confirmPassword) {
     return false;
@@ -43,7 +52,16 @@ export async function POST(request: Request) {
 
     const updatedUser = await ProfileService.updateProfile(user._id.toString(), updates);
     return NextResponse.json(
-      { message: 'Profile updated successfully', user: { email: updatedUser.email, name: updatedUser.name, username: updatedUser.username } },
+      {
+        message: 'Profile updated successfully',
+        user: {
+          email: updatedUser.email,
+          name: updatedUser.name,
+          username: updatedUser.username,
+          country: updatedUser.country || null,
+          locale: updatedUser.locale || 'hu',
+        },
+      },
       { status: 200 }
     );
   } catch (error: any) {

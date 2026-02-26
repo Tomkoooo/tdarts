@@ -3,6 +3,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface AnnouncementDocument extends Document {
   title: string;
   description: string;
+  localized?: {
+    hu?: { title?: string; description?: string; buttonText?: string };
+    en?: { title?: string; description?: string; buttonText?: string };
+    de?: { title?: string; description?: string; buttonText?: string };
+  };
+  localeVisibilityMode?: 'strict' | 'fallback_en';
   type: 'info' | 'success' | 'warning' | 'error';
   isActive: boolean;
   showButton: boolean;
@@ -24,6 +30,28 @@ const announcementSchema = new Schema<AnnouncementDocument>({
     type: String,
     required: true,
     maxlength: 500
+  },
+  localized: {
+    hu: {
+      title: { type: String, maxlength: 100 },
+      description: { type: String, maxlength: 500 },
+      buttonText: { type: String, maxlength: 50 },
+    },
+    en: {
+      title: { type: String, maxlength: 100 },
+      description: { type: String, maxlength: 500 },
+      buttonText: { type: String, maxlength: 50 },
+    },
+    de: {
+      title: { type: String, maxlength: 100 },
+      description: { type: String, maxlength: 500 },
+      buttonText: { type: String, maxlength: 50 },
+    },
+  },
+  localeVisibilityMode: {
+    type: String,
+    enum: ['strict', 'fallback_en'],
+    default: 'strict',
   },
   type: {
     type: String,

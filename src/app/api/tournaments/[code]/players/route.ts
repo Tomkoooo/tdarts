@@ -5,11 +5,35 @@ import { PlayerModel } from "@/database/models/player.model";
 
 import { TournamentModel } from "@/database/models/tournament.model";
 import { AuthService } from "@/database/services/auth.service";
+import { AuthorizationService } from "@/database/services/authorization.service";
 import { TeamInvitationService } from '@/database/services/teaminvitation.service';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
 import { sendEmail } from '@/lib/mailer';
 import { UserModel } from '@/database/models/user.model';
+import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from '@/lib/email-layout';
 
+async function getAuthContext(code: string, token: string) {
+  const user = await AuthService.verifyToken(token);
+  const tournament = await TournamentModel.findOne({ tournamentId: code }).select("clubId tournamentSettings tournamentPlayers");
+  if (!tournament) {
+    throw new Error("Tournament not found");
+  }
+
+  const canModerate = await AuthorizationService.checkAdminOrModerator(user._id.toString(), tournament.clubId.toString());
+  return { user, tournament, canModerate };
+}
+
+async function isSelfPlayer(userId: string, playerId: string): Promise<boolean> {
+  const player = await PlayerModel.findById(playerId).select("userRef members");
+  if (!player) return false;
+
+  if (player.userRef?.toString() === userId) return true;
+  if (Array.isArray(player.members) && player.members.length > 0) {
+    const memberPlayers = await PlayerModel.find({ _id: { $in: player.members } }).select("userRef");
+    if (memberPlayers.some((member) => member.userRef?.toString() === userId)) return true;
+  }
+  return false;
+}
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id');
@@ -32,7 +56,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { playerId, userRef, name, members } = await request.json(); // Added members, type
+  const { user, canModerate } = await getAuthContext(code, token);
+
+  const { playerId, userRef, name, members, partnerEmail } = await request.json(); // Added members, type
   
   let player;
   // console.log('Adding player:', { playerId, userRef, name, members, type });
@@ -40,7 +66,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const tournament = await TournamentModel.findOne({ tournamentId: code }).select('tournamentSettings');
   const mode = tournament?.tournamentSettings?.participationMode || 'individual';
 
+  if (mode === 'individual') {
+    const isSelfRegistration = Boolean(userRef && userRef.toString() === user._id.toString());
+    const isGuestRegistration = Boolean(!userRef && !playerId && name);
+
+    if (!canModerate && !isSelfRegistration) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (isGuestRegistration && !canModerate) {
+      return NextResponse.json({ error: "Only moderators can add guest players" }, { status: 403 });
+    }
+
+    if (playerId && !canModerate) {
+      return NextResponse.json({ error: "Only moderators can add players by id" }, { status: 403 });
+    }
+  }
+
   if (mode === 'pair' || mode === 'team') {
+      const isSelfTeamRegistration = Array.isArray(members) && members.some((member: any) => {
+        const memberUserRef = member?.userRef?.toString?.() || member?.userRef;
+        return memberUserRef === user._id.toString();
+      });
+      if (!canModerate && !isSelfTeamRegistration) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
       if (!members || !Array.isArray(members) || members.length < 1) {
            return NextResponse.json({ error: `${mode} requires at least 1 partner` }, { status: 400 });
       }
@@ -80,6 +131,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
              mPlayer = await PlayerModel.findById(m.playerId || m._id);
           } else if (m.userRef && m.name) {
              mPlayer = await PlayerService.findOrCreatePlayerByUserRef(m.userRef, m.name);
+          } else if (m.email && m.name) {
+             const matchedUser = await UserModel.findOne({ email: String(m.email).toLowerCase() }).select("_id name email");
+             if (matchedUser) {
+               m.userRef = matchedUser._id.toString();
+               mPlayer = await PlayerService.findOrCreatePlayerByUserRef(matchedUser._id.toString(), matchedUser.name || m.name);
+             } else {
+               mPlayer = await PlayerService.findOrCreatePlayerByName(m.name);
+             }
           } else if (m.name) {
              mPlayer = await PlayerService.findOrCreatePlayerByName(m.name);
           } else {
@@ -111,18 +170,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       
       // Define partner (the one who is NOT current user)
       let partnerUserId = null;
+      let resolvedPartnerEmail: string | null = typeof partnerEmail === "string" && partnerEmail.includes("@")
+        ? partnerEmail.toLowerCase().trim()
+        : null;
       if (members.length === 1) {
           partnerUserId = members[0].userRef;
       } else {
           // Find the member from input that is NOT the current user
           const partner = members.find((m: any) => m.userRef !== currentUserId && m.userRef !== currentUserId.toString());
           if (partner) partnerUserId = partner.userRef;
+          if (!resolvedPartnerEmail && partner?.email) {
+            resolvedPartnerEmail = String(partner.email).toLowerCase().trim();
+          }
       }
       
-      if (isSelfRegistration && partnerUserId) {
+      if (isSelfRegistration && (partnerUserId || resolvedPartnerEmail)) {
           const user = await AuthService.verifyToken(token);
           const currentUserId = user._id;
           const currentUser = await UserModel.findById(currentUserId);
+          const partnerUser = partnerUserId
+            ? await UserModel.findById(partnerUserId)
+            : resolvedPartnerEmail
+              ? await UserModel.findOne({ email: resolvedPartnerEmail })
+              : null;
+          const finalInviteeId = partnerUser?._id?.toString() || partnerUserId || undefined;
+          const finalInviteeEmail = (partnerUser?.email || resolvedPartnerEmail || "").toLowerCase();
           
           // Invitation Flow
           // Create invitation
@@ -130,34 +202,61 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               tournamentData._id.toString(),
               player._id.toString(),
               currentUserId.toString(),
-              partnerUserId
+              finalInviteeId,
+              finalInviteeEmail
           );
 
           // Send email
-          const partnerUser = await UserModel.findById(partnerUserId);
-          if (partnerUser && partnerUser.email) {
+          if (finalInviteeEmail) {
               const acceptUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/invitations/${invitation.token}`;
               const declineUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/invitations/${invitation.token}?action=decline`;
+              const inviteLocale = normalizeEmailLocale(partnerUser?.locale || currentUser.locale || request.headers.get('accept-language'));
               
               const template = await EmailTemplateService.getRenderedTemplate('team_invitation', {
                   inviterName: currentUser.name,
-                  inviteeName: partnerUser.name,
+                  inviteeName: partnerUser?.name || finalInviteeEmail.split("@")[0],
                   teamName: teamName,
                   tournamentName: tournamentData.tournamentSettings.name,
                   tournamentUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/tournaments/${code}`,
                   acceptUrl,
                   declineUrl,
                   currentYear: new Date().getFullYear()
+              }, {
+                  locale: inviteLocale,
               });
 
-              if (template) {
-                  await sendEmail({
-                      to: [partnerUser.email],
-                      subject: template.subject, // Use template subject
-                      text: template.text,
-                      html: template.html
-                  });
-              }
+              const fallbackText =
+                inviteLocale === 'en'
+                  ? `${currentUser.name} invited you to join team "${teamName}" for ${tournamentData.tournamentSettings.name}.\n\nAccept: ${acceptUrl}\nDecline: ${declineUrl}`
+                  : `${currentUser.name} meghívott a(z) "${teamName}" csapatba a ${tournamentData.tournamentSettings.name} tornára.\n\nElfogadás: ${acceptUrl}\nElutasítás: ${declineUrl}`;
+
+              await sendEmail({
+                  to: [finalInviteeEmail],
+                  subject: template?.subject || (inviteLocale === 'en'
+                    ? `🎯 Team invitation - ${tournamentData.tournamentSettings.name}`
+                    : `🎯 Csapat meghívó - ${tournamentData.tournamentSettings.name}`),
+                  text: template?.text || fallbackText,
+                  html: template?.html || renderMinimalEmailLayout({
+                    locale: inviteLocale,
+                    title: tournamentData.tournamentSettings.name,
+                    heading: inviteLocale === 'en' ? 'Team invitation' : 'Csapat meghívó',
+                    bodyHtml: textToEmailHtml(fallbackText),
+                  }),
+                  resendContext: {
+                    templateKey: 'team_invitation',
+                    variables: {
+                      inviterName: currentUser.name,
+                      inviteeName: partnerUser?.name || finalInviteeEmail.split("@")[0],
+                      teamName: teamName,
+                      tournamentName: tournamentData.tournamentSettings.name,
+                      tournamentUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/tournaments/${code}`,
+                      acceptUrl,
+                      declineUrl,
+                      currentYear: new Date().getFullYear(),
+                    },
+                    locale: inviteLocale,
+                  },
+              });
           }
 
           // Add to Waiting List instead of Main List
@@ -216,6 +315,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { canModerate } = await getAuthContext(code, token);
+  if (!canModerate) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { playerId, status } = await request.json();
   const success = await TournamentService.updateTournamentPlayerStatus(code, playerId, status);
   return NextResponse.json({ success });
@@ -230,8 +334,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-    
+  const { user, canModerate } = await getAuthContext(code, token);
   const { playerId } = await request.json();
+  const canDeleteSelf = await isSelfPlayer(user._id.toString(), playerId);
+  if (!canModerate && !canDeleteSelf) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const success = await TournamentService.removeTournamentPlayer(code, playerId);
   return NextResponse.json({ success });
 }

@@ -4,7 +4,7 @@ import { TournamentModel } from '../models/tournament.model';
 import { ClubModel } from '../models/club.model';
 
 export interface SearchFilters {
-    type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'all';
+    type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'global' | 'all';
     status?: string;
     format?: string;
     dateFrom?: Date;
@@ -21,6 +21,8 @@ export interface SearchFilters {
     limit?: number;
     year?: number;
     rankingType?: 'oacMmr' | 'leaguePoints'; // New filter for player ranking in OAC mode
+    playerMode?: 'all' | 'individual' | 'pair';
+    country?: string;
 }
 
 
@@ -29,6 +31,12 @@ export interface SearchResult {
     tournaments?: any[];
     clubs?: any[];
     leagues?: any[];
+    global?: {
+        tournaments: any[];
+        players: any[];
+        clubs: any[];
+        leagues: any[];
+    };
     totalResults: number;
     totalPages?: number;
     currentPage?: number;
@@ -43,6 +51,7 @@ export class SearchService {
      * This allows showing badges like "Tournaments (5)"
      */
     static async getTabCounts(query: string, filters: SearchFilters = {}): Promise<{
+        global: number;
         tournaments: number;
         players: number;
         clubs: number;
@@ -51,6 +60,7 @@ export class SearchService {
         await connectMongo();
         
         const counts = {
+            global: 0,
             tournaments: 0,
             players: 0,
             clubs: 0,
@@ -68,6 +78,9 @@ export class SearchService {
     // 2. Players Count
     const playerQuery: any = {};
     if (regex) playerQuery.name = regex;
+    if (filters.playerMode && filters.playerMode !== 'all') {
+        playerQuery.type = filters.playerMode;
+    }
     
     if (filters.isOac) {
          // Consistent with searchPlayers logic: check for verified tournament history
@@ -84,6 +97,7 @@ export class SearchService {
         const leagueQuery = this.buildLeagueQuery(query, filters);
         const { LeagueModel } = await import('../models/league.model');
         counts.leagues = await LeagueModel.countDocuments(leagueQuery);
+        counts.global = counts.tournaments + counts.players + counts.clubs + counts.leagues;
 
         return counts;
     }
@@ -159,11 +173,17 @@ export class SearchService {
 
         const queryObj: any = {};
         if (regex) queryObj.name = regex;
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            queryObj.type = filters.playerMode;
+        }
 
         if (filters.isOac) {
             // Requirement: "only want to list those who was once part of a verified tournament"
             // We check 'tournamentHistory' array for at least one item where isVerified is true
             queryObj['tournamentHistory.isVerified'] = true;
+        }
+        if (filters.country) {
+            queryObj.country = filters.country.toUpperCase();
         }
 
         const total = await PlayerModel.countDocuments(queryObj);
@@ -171,7 +191,9 @@ export class SearchService {
         // Fetch all matching players to sort by MMR (handling nulls)
         // Note: For large datasets, this in-memory sort is bad. 
         // Ideally, schema should index 'stats.mmr'. detailed sort logic kept from original.
-        const allPlayers = await PlayerModel.find(queryObj).populate('userRef', 'name email');
+        const allPlayers = await PlayerModel.find(queryObj)
+            .populate('userRef', 'name email')
+            .populate('members', 'name');
         
         const sortedPlayers = allPlayers.sort((a, b) => {
             let aMMR = a.stats?.mmr ?? 800;
@@ -214,6 +236,10 @@ export class SearchService {
                 _id: player._id,
                 name: player.name,
                 type: player.type || 'individual',
+                members: (player.members || []).map((member: any) => ({
+                    _id: member?._id,
+                    name: member?.name || '',
+                })),
                 userRef: player.userRef,
                 stats: stats,
                 mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
@@ -415,10 +441,21 @@ export class SearchService {
             }
         });
         pipeline.push({ $unwind: '$playerInfo' });
+        pipeline.push({
+            $lookup: {
+                from: 'players',
+                localField: 'playerInfo.members',
+                foreignField: '_id',
+                as: 'memberPlayers'
+            }
+        });
 
         // 5. Apply Name Filter (if query exists)
         if (regex) {
              pipeline.push({ $match: { 'playerInfo.name': regex } });
+        }
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            pipeline.push({ $match: { 'playerInfo.type': filters.playerMode } });
         }
 
         // 6. Sort by Points
@@ -448,6 +485,10 @@ export class SearchService {
              _id: item.playerInfo._id,
              name: item.playerInfo.name,
              type: item.playerInfo.type || 'individual',
+             members: (item.memberPlayers || []).map((member: any) => ({
+                _id: member?._id,
+                name: member?.name || '',
+             })),
              userRef: item.playerInfo.userRef,
              stats: {
                  ...item.playerInfo.stats,
@@ -598,6 +639,14 @@ export class SearchService {
         if (filters.tournamentType) {
             matchStage['tournamentSettings.type'] = filters.tournamentType;
         }
+        if (filters.country) {
+            andConditions.push({
+                $or: [
+                    { 'club.billingInfo.country': filters.country.toUpperCase() },
+                    { 'club.location': new RegExp(filters.country, 'i') }
+                ]
+            });
+        }
 
         if (filters.isVerified || filters.isOac) {
              matchStage.isVerified = true;
@@ -635,6 +684,9 @@ export class SearchService {
 
         if (filters.city) {
             q.location = new RegExp(filters.city, 'i');
+        }
+        if (filters.country) {
+            q['billingInfo.country'] = filters.country.toUpperCase();
         }
 
         if (filters.isOac) {
@@ -688,6 +740,30 @@ export class SearchService {
             leagues: l.results,
             totalResults: t.total + p.total + c.total + l.total,
             totalPages: 1 // Dummy
+        };
+    }
+
+    static async searchGlobal(query: string, filters: SearchFilters = {}): Promise<{
+        results: { tournaments: any[]; players: any[]; clubs: any[]; leagues: any[] };
+        total: number;
+    }> {
+        const baseLimit = Math.max(3, Math.floor((filters.limit || 10) / 2));
+        const perTypeFilters = { ...filters, limit: baseLimit, page: 1 };
+        const [tournaments, players, clubs, leagues] = await Promise.all([
+            this.searchTournaments(query, perTypeFilters),
+            this.searchPlayers(query, perTypeFilters),
+            this.searchClubs(query, perTypeFilters),
+            this.searchLeagues(query, perTypeFilters),
+        ]);
+
+        return {
+            results: {
+                tournaments: tournaments.results,
+                players: players.results,
+                clubs: clubs.results,
+                leagues: leagues.results,
+            },
+            total: tournaments.total + players.total + clubs.total + leagues.total,
         };
     }
 
@@ -999,12 +1075,20 @@ export class SearchService {
     /**
      * Get Season Top Players (Historical Leaderboard)
      */
-    static async getSeasonTopPlayers(year: number, limit: number = 10, skip: number = 0): Promise<{ results: any[], total: number }> {
+    static async getSeasonTopPlayers(
+        year: number,
+        limit: number = 10,
+        skip: number = 0,
+        filters: SearchFilters = {}
+    ): Promise<{ results: any[], total: number }> {
         await connectMongo();
 
-        const matchStage = {
+        const matchStage: any = {
             'previousSeasons.year': year
         };
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            matchStage.type = filters.playerMode;
+        }
 
         const pipeline: any[] = [
             { $match: matchStage },
@@ -1034,7 +1118,15 @@ export class SearchService {
                     as: 'user',
                 }
             },
-            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'players',
+                    localField: 'members',
+                    foreignField: '_id',
+                    as: 'memberPlayers'
+                }
+            }
         ];
 
         // Parallel count
@@ -1056,7 +1148,11 @@ export class SearchService {
             return {
                 _id: data._id,
                 name: data.name,
-                type: 'player',
+                type: data.type || 'individual',
+                members: (data.memberPlayers || []).map((member: any) => ({
+                    _id: member?._id,
+                    name: member?.name || '',
+                })),
                 userRef: data.user,
                 stats: stats,
                 mmr: stats.mmr,
