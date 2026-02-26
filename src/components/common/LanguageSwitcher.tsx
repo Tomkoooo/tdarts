@@ -29,8 +29,7 @@ export function LanguageSwitcher() {
 
   const handleLanguageChange = (lang: typeof languages[0]) => {
     if (lang.comingSoon) return;
-    // @ts-expect-error - locale parameter needed for routing
-    router.replace({ pathname, query: params }, { locale: lang.code });
+    router.replace({ pathname, query: params as any }, { locale: lang.code });
   };
 
   const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
