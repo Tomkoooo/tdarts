@@ -22,10 +22,21 @@ fi
 echo "🔧 Node: $($NODE_BIN -v)"
 echo "🔧 Npm: $($NPM_BIN -v)"
 
+# On Apple Silicon, force arm64 execution so native optional deps resolve correctly.
+RUNNER=""
+if [ "$(uname -m)" = "arm64" ] && [ -x "/usr/bin/arch" ]; then
+  RUNNER="/usr/bin/arch -arm64"
+  echo "🔧 Exec mode: arm64"
+fi
+
 # Run lint
 echo ""
 echo "📝 Running ESLint..."
-"$NPM_BIN" run lint || {
+if [ -n "$RUNNER" ]; then
+  $RUNNER "$NPM_BIN" run lint
+else
+  "$NPM_BIN" run lint
+fi || {
   echo ""
   echo "❌ ESLint failed. Please fix the errors before pushing."
   echo "Run 'npm run lint' to see the errors."
@@ -35,7 +46,11 @@ echo "📝 Running ESLint..."
 # Run build
 echo ""
 echo "🏗️  Running production build..."
-"$NPM_BIN" run build || {
+if [ -n "$RUNNER" ]; then
+  $RUNNER "$NPM_BIN" run build
+else
+  "$NPM_BIN" run build
+fi || {
   echo ""
   echo "❌ Build failed. Please fix the errors before pushing."
   echo "Run 'npm run build' to see the errors."
