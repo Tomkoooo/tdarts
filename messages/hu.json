@@ -310,7 +310,8 @@
         "tdarts_vlt8": "tDarts.",
         "magyar_darts_szovetseg_1x63": "Magyar Darts Szövetség",
         "dartsbarlang_slgh": "DartsBarlang",
-        "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- és Eseményközpont"
+        "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- és Eseményközpont",
+        "efott_partner": "EFOTT"
     },
     "Auth": {
         "login": {
@@ -1365,6 +1366,46 @@
             "scan_to_join": "Scan to join",
             "tournament_not_found": "Tournament not found"
         },
+        "tv_slideshow": {
+            "rankings_180_title": "180 ranglista",
+            "rankings_checkout_title": "Legmagasabb kiszálló ranglista",
+            "groups_title": "Csoportállás",
+            "board_status_title": "Táblák állapota",
+            "waiting_label": "Várakozik",
+            "knockout_title": "Kieséses ág",
+            "knockout_left": "Bal oldal",
+            "knockout_right": "Jobb oldal",
+            "knockout_full": "Teljes ág",
+            "knockout_final_title": "Döntő fókusz",
+            "no_knockout": "Nincs kieséses adat",
+            "milestone_title": "Élő mérföldkő",
+            "new_checkout": "Új legmagasabb kiszálló",
+            "new_180": "Új 180 növekmény",
+            "unknown_player": "Ismeretlen játékos",
+            "no_slide_title": "Nincs engedélyezett slide",
+            "no_slide_description": "Kapcsolj be legalább egy slide-ot a TV beállításokban.",
+            "live_priority": "Élő prioritás",
+            "rotation": "Forgás",
+            "next_slide": "Következő slide",
+            "settings": "Beállítások",
+            "base_interval": "Alap slide idő (ms)",
+            "urgent_interval": "Sürgős slide idő (ms)",
+            "knockout_split_threshold": "Kieséses felosztási küszöb",
+            "high_alert_interrupts": "Magas prioritású megszakítások",
+            "board_interrupts": "Tábla megszakítások",
+            "milestone_interrupts": "Mérföldkő megszakítások",
+            "show_qr": "QR mutatása",
+            "reset_defaults": "Alapbeállítások visszaállítása",
+            "slide_names": {
+                "rankings180": "180 ranglista",
+                "rankingsCheckout": "Kiszálló ranglista",
+                "groups": "Csoportok",
+                "boardStatus": "Tábla állapot",
+                "knockoutLeft": "Kieséses bal/teljes",
+                "knockoutRight": "Kieséses jobb",
+                "knockoutFinal": "Kieséses döntő"
+            }
+        },
         "components": {
             "180_ak_szama_r1fz": "180-ak száma",
             "adj_meg_hany_ures_2wq7": "Adj meg hány üres kört szeretnél létrehozni a manuális párosításhoz.",
@@ -2130,17 +2171,6 @@
                 "menu": "menü",
                 "hello": "Szia,"
             },
-            "sidebar_dashboard_a3kc": "sidebar.dashboard",
-            "sidebar_users_arcp": "sidebar.users",
-            "sidebar_clubs_b1d5": "sidebar.clubs",
-            "sidebar_tournaments_6vcv": "sidebar.tournaments",
-            "sidebar_leagues_xluc": "sidebar.leagues",
-            "sidebar_feedback_ic83": "sidebar.feedback",
-            "sidebar_errors_e0kt": "sidebar.errors",
-            "sidebar_announcements_pvfc": "sidebar.announcements",
-            "sidebar_todos_arz2": "sidebar.todos",
-            "sidebar_emails_dxiv": "sidebar.emails",
-            "sidebar_settings_psqa": "sidebar.settings",
             "tdarts_f0pi": "tDarts"
         },
         "dashboard": {

@@ -97,6 +97,28 @@ const NavbarNew = () => {
     { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
   ];
 
+  const normalizedPath = stripLocalePrefix(pathname || "/");
+  const currentSearchTab = searchParams.get("tab");
+
+  const isNavItemActive = (href: string) => {
+    const [itemPath, itemQuery] = href.split("?");
+    if (normalizedPath !== (itemPath || "/")) {
+      return false;
+    }
+
+    // Special handling for /search menu tabs:
+    // - /search?tab=tournaments => active only on tab=tournaments
+    // - /search?tab=clubs => active only on tab=clubs
+    // - /search => active only when there is no tab (plain search)
+    if ((itemPath || "/") === "/search") {
+      const itemTab = new URLSearchParams(itemQuery || "").get("tab");
+      if (itemTab) return currentSearchTab === itemTab;
+      return !currentSearchTab;
+    }
+
+    return true;
+  };
+
 
 
   return (
@@ -136,7 +158,7 @@ const NavbarNew = () => {
           <div className="hidden lg:flex items-center gap-1 flex-1 justify-center max-w-2xl">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = stripLocalePrefix(pathname || "/") === (item.href.split("?")[0] || "/");
+              const isActive = isNavItemActive(item.href);
               
               return (
                 <Link
@@ -343,7 +365,7 @@ const NavbarNew = () => {
                     <Separator className="my-2" />
                     {navItems.map((item) => {
                       const Icon = item.icon;
-                      const isActive = stripLocalePrefix(pathname || "/") === (item.href.split("?")[0] || "/");
+                      const isActive = isNavItemActive(item.href);
                       
                       return (
                         <Link

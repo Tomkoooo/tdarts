@@ -310,7 +310,8 @@
         "tdarts_vlt8": "tDarts.",
         "magyar_darts_szovetseg_1x63": "Hungarian Darts Association",
         "dartsbarlang_slgh": "DartsCave",
-        "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sports and Events Center"
+        "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sports and Events Center",
+        "efott_partner": "EFOTT"
     },
     "Auth": {
         "login": {
@@ -1364,6 +1365,46 @@
             "open_qr": "Open QR",
             "scan_to_join": "Scan to join",
             "tournament_not_found": "Tournament not found"
+        },
+        "tv_slideshow": {
+            "rankings_180_title": "180 Ranking",
+            "rankings_checkout_title": "Highest Checkout Ranking",
+            "groups_title": "Group Standings",
+            "board_status_title": "Board Status",
+            "waiting_label": "Waiting",
+            "knockout_title": "Knockout Bracket",
+            "knockout_left": "Left Side",
+            "knockout_right": "Right Side",
+            "knockout_full": "Full Bracket",
+            "knockout_final_title": "Final Focus",
+            "no_knockout": "No knockout data available",
+            "milestone_title": "Live Milestone",
+            "new_checkout": "New Highest Checkout",
+            "new_180": "New 180 Count",
+            "unknown_player": "Unknown player",
+            "no_slide_title": "No Slides Enabled",
+            "no_slide_description": "Enable at least one slide in TV settings.",
+            "live_priority": "Live Priority",
+            "rotation": "Rotation",
+            "next_slide": "Next slide",
+            "settings": "Settings",
+            "base_interval": "Base slide duration (ms)",
+            "urgent_interval": "Urgent slide duration (ms)",
+            "knockout_split_threshold": "Knockout split threshold",
+            "high_alert_interrupts": "High-alert interrupts",
+            "board_interrupts": "Board urgency interrupts",
+            "milestone_interrupts": "Milestone interrupts",
+            "show_qr": "Show QR",
+            "reset_defaults": "Reset defaults",
+            "slide_names": {
+                "rankings180": "180 ranking",
+                "rankingsCheckout": "Checkout ranking",
+                "groups": "Groups",
+                "boardStatus": "Board status",
+                "knockoutLeft": "Knockout left/full",
+                "knockoutRight": "Knockout right",
+                "knockoutFinal": "Knockout final"
+            }
         },
         "components": {
             "180_ak_szama_r1fz": "Number of 180s",

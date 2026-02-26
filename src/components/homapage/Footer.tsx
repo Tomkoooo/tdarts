@@ -6,9 +6,27 @@ import { useTranslations } from 'next-intl';
 
 export default function Footer() {
   const t = useTranslations('Footer');
+  const partners = [
+    {
+      src: '/partners/mdsz_logo.png',
+      alt: t("magyar_darts_szovetseg_1x63"),
+    },
+    {
+      src: '/partners/dartsbarlang_logo.png',
+      alt: t("dartsbarlang_slgh"),
+    },
+    {
+      src: '/partners/remiz_logo.png',
+      alt: t("remiz_sport_es_esemenykozpont_7fgn"),
+    },
+    {
+      src: '/partners/efott_logo.png',
+      alt: "EFOTT",
+    },
+  ];
 
   return (
-    <footer className="relative z-10 bg-[#4a2828] text-foreground border-t border-border mt-auto w-full">
+    <footer className=" z-10 bg-[#4a2828] text-foreground border-t border-border mt-auto w-full">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
@@ -67,31 +85,20 @@ export default function Footer() {
           {/* Column 3: Partners */}
           <div className="flex flex-col space-y-4">
             <h3 className="font-bold text-lg mb-2">{t('partners_title')}</h3>
-            <div className="grid grid-cols-3 gap-4 items-center">
-              <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
-                <Image 
-                  src="/partners/mdsz_logo.png" 
-                  alt={t("magyar_darts_szovetseg_1x63")} 
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
-              <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
-                <Image 
-                  src="/partners/dartsbarlang_logo.png" 
-                  alt={t("dartsbarlang_slgh")} 
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
-              <div className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 w-20 relative">
-                <Image 
-                  src="/partners/remiz_logo.png" 
-                  alt={t("remiz_sport_es_esemenykozpont_7fgn")} 
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
+              {partners.map((partner) => (
+                <div
+                  key={partner.src}
+                  className="bg-white p-2 rounded-lg transition duration-300 flex items-center justify-center h-20 sm:h-24 w-full relative"
+                >
+                  <Image
+                    src={partner.src}
+                    alt={partner.alt}
+                    fill
+                    className="object-contain p-1"
+                  />
+                </div>
+              ))}
             </div>
             
             <p className="text-xs text-muted-foreground mt-2">

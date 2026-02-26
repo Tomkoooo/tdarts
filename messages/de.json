@@ -310,7 +310,8 @@
         "tdarts_vlt8": "tDarts.",
         "magyar_darts_szovetseg_1x63": "Ungarischer Dartverband",
         "dartsbarlang_slgh": "DartsCave",
-        "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- und Veranstaltungszentrum"
+        "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- und Veranstaltungszentrum",
+        "efott_partner": "EFOTT"
     },
     "Auth": {
         "login": {
@@ -1364,6 +1365,46 @@
             "open_qr": "QR öffnen",
             "scan_to_join": "Zum Beitreten scannen",
             "tournament_not_found": "Turnier nicht gefunden"
+        },
+        "tv_slideshow": {
+            "rankings_180_title": "180 Rangliste",
+            "rankings_checkout_title": "Höchster Checkout Rangliste",
+            "groups_title": "Gruppenstände",
+            "board_status_title": "Board-Status",
+            "waiting_label": "Wartet",
+            "knockout_title": "K.-o.-Baum",
+            "knockout_left": "Linke Seite",
+            "knockout_right": "Rechte Seite",
+            "knockout_full": "Voller Baum",
+            "knockout_final_title": "Finale Fokus",
+            "no_knockout": "Keine K.-o.-Daten verfügbar",
+            "milestone_title": "Live-Meilenstein",
+            "new_checkout": "Neuer höchster Checkout",
+            "new_180": "Neuer 180-Zuwachs",
+            "unknown_player": "Unbekannter Spieler",
+            "no_slide_title": "Keine Slides aktiviert",
+            "no_slide_description": "Aktiviere mindestens eine Slide in den TV-Einstellungen.",
+            "live_priority": "Live-Priorität",
+            "rotation": "Rotation",
+            "next_slide": "Nächste Slide",
+            "settings": "Einstellungen",
+            "base_interval": "Basis-Slide-Dauer (ms)",
+            "urgent_interval": "Dringende Slide-Dauer (ms)",
+            "knockout_split_threshold": "K.-o.-Split-Schwelle",
+            "high_alert_interrupts": "High-Alert-Unterbrechungen",
+            "board_interrupts": "Board-Unterbrechungen",
+            "milestone_interrupts": "Meilenstein-Unterbrechungen",
+            "show_qr": "QR anzeigen",
+            "reset_defaults": "Standard zurücksetzen",
+            "slide_names": {
+                "rankings180": "180 Rangliste",
+                "rankingsCheckout": "Checkout Rangliste",
+                "groups": "Gruppen",
+                "boardStatus": "Board-Status",
+                "knockoutLeft": "K.-o. links/voll",
+                "knockoutRight": "K.-o. rechts",
+                "knockoutFinal": "K.-o. Finale"
+            }
         },
         "components": {
             "180_ak_szama_r1fz": "Anzahl der 180er",

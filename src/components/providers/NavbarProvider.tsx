@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import NavbarNew from '@/components/homapage/NavbarNew'
 import Footer from '@/components/homapage/Footer'
+import { stripLocalePrefix } from "@/lib/seo"
 
 export function NavbarProvider({ 
   children, 
@@ -19,12 +20,17 @@ export function NavbarProvider({
   useEffect(() => {
     if (!pathname) return;
 
+    const normalizedPath = stripLocalePrefix(pathname);
+
     const hideNavbarPaths = ['/board', '/test', '/tv', '/api/admin']
-    const shouldHide = hideNavbarPaths.some(path => pathname.startsWith(path)) || pathname.includes('/tv')
+    const shouldHide = hideNavbarPaths.some(path => normalizedPath.startsWith(path)) || normalizedPath.includes('/tv')
     
     // Footer visibility logic
     const shownFooterPaths = ['/search', '/profile', '/club'];
-    const shouldShowFooter = shownFooterPaths.some(path => pathname.startsWith(path)) || pathname === '/';
+    const shouldShowFooter =
+      shownFooterPaths.some(path => normalizedPath.startsWith(path)) || normalizedPath === '/';
+
+      console.log("NavbarProvider - Normalized Path:", normalizedPath, "Should Show Footer:", shouldShowFooter, "should hide:", shouldHide);
     
     // console.log("NavbarProvider - Pathname:", pathname, "Should Hide:", shouldHide, "Show Footer:", shouldShowFooter);
     
