@@ -51,7 +51,7 @@ interface TournamentPlayersProps {
   onRefresh?: () => void
 }
 
-const getPlayerStatusBadge = (status: string): { label?: string; variant: "default" | "outline" | "secondary" | "destructive" } => {
+const getPlayerStatusBadge = (status: string, tTour: any): { label?: string; variant: "default" | "outline" | "secondary" | "destructive" } => {
   const badges: Record<string, { label?: string; variant: "default" | "outline" | "secondary" | "destructive" }> = {
     applied: { label: tTour('status.applied'), variant: "secondary" },
     "checked-in": { variant: "default" },
@@ -762,7 +762,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               .map(({ player }) => {
               const name = player.playerReference?.name || player.name || player._id
               const status = player.status || "applied"
-              const statusMeta = getPlayerStatusBadge(status)
+              const statusMeta = getPlayerStatusBadge(status, tTour)
               const isCurrentUser = localUserPlayerId && (player.playerReference?._id?.toString() === localUserPlayerId.toString() || player._id?.toString() === localUserPlayerId.toString())
 
               return (
