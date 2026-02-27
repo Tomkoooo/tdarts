@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (mode === "top-opponents") {
       const topOpponents = await TournamentService.getTopHeadToHeadOpponents(currentPlayer._id.toString(), {
         season: Number.isFinite(season) ? season : undefined,
-        limit: 5,
+        limit: 500,
       });
       return NextResponse.json({ success: true, data: { topOpponents } });
     }

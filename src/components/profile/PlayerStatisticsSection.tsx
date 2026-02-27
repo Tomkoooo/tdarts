@@ -108,6 +108,26 @@ interface HeadToHeadData {
     playerAOneEighties: number
     playerBOneEighties: number
   }
+  allTimeComparison: {
+    playerA: {
+      matchesPlayed: number
+      wins: number
+      losses: number
+      winRate: number
+      avg: number
+      highestCheckout: number
+      oneEightiesCount: number
+    }
+    playerB: {
+      matchesPlayed: number
+      wins: number
+      losses: number
+      winRate: number
+      avg: number
+      highestCheckout: number
+      oneEightiesCount: number
+    }
+  }
   matches: Array<{
     _id: string
     date: string
@@ -123,6 +143,7 @@ interface TopOpponentEntry {
   matchesPlayed: number
   wins: number
   losses: number
+  winRate?: number
   lastPlayedAt?: string
 }
 
@@ -154,14 +175,14 @@ export function PlayerStatisticsSection({
   const [topOpponentsLoading, setTopOpponentsLoading] = React.useState(false)
   const [pendingInvites, setPendingInvites] = React.useState<PendingInviteEntry[]>([])
   const [pendingInvitesLoading, setPendingInvitesLoading] = React.useState(false)
+  const [topTournamentLimit, setTopTournamentLimit] = React.useState(3)
+  const [topMatchLimit, setTopMatchLimit] = React.useState(3)
 
   // Move all hooks to the top
   const playerStats = React.useMemo(() => initialPlayerStats || { hasPlayer: false } as any, [initialPlayerStats]);
   
   const previousSeasons = React.useMemo(() => playerStats?.player?.previousSeasons || [], [playerStats]);
-  console.log(playerStats)
   const honors = React.useMemo(() => playerStats?.player?.honors || [], [playerStats]);
-  console.log(honors)
   const currentYear = React.useMemo(() => new Date().getFullYear(), []);
   
   const availableYears = React.useMemo(() => {
@@ -436,6 +457,69 @@ export function PlayerStatisticsSection({
     return null
   }, [headToHead])
 
+  const topOpponentsByWinRate = React.useMemo(() => {
+    return [...topOpponents]
+      .map((entry) => {
+        const total = Math.max(entry.matchesPlayed || 0, 1)
+        const winRate = Number(((entry.wins / total) * 100).toFixed(1))
+        return { ...entry, winRate }
+      })
+      .sort((a, b) => {
+        if ((b.winRate || 0) !== (a.winRate || 0)) return (b.winRate || 0) - (a.winRate || 0)
+        if (b.matchesPlayed !== a.matchesPlayed) return b.matchesPlayed - a.matchesPlayed
+        return (new Date(b.lastPlayedAt || 0).getTime() || 0) - (new Date(a.lastPlayedAt || 0).getTime() || 0)
+      })
+  }, [topOpponents])
+
+  const mostPlayedTop5 = React.useMemo(() => {
+    return [...topOpponents]
+      .sort((a, b) => b.matchesPlayed - a.matchesPlayed)
+      .slice(0, 5)
+  }, [topOpponents])
+
+  const tournamentAveragesAll = React.useMemo(() => {
+    return activeHistory
+      .map((entry: any) => {
+        const avg = Number(entry?.stats?.average || entry?.stats?.avg || entry?.average || 0)
+        return {
+          id: `${entry?.tournamentId || entry?._id || entry?.name || "tournament"}-${entry?.startDate || entry?.date || ""}`,
+          tournamentId: entry?.tournamentId || undefined,
+          name: entry?.tournamentName || entry?.name || "Ismeretlen torna",
+          date: entry?.startDate || entry?.date,
+          finalPosition: entry?.finalPosition || entry?.position,
+          mmrChange: entry?.mmrChange,
+          oacMmrChange: entry?.oacMmrChange,
+          matchesWon: Number(entry?.stats?.matchesWon || 0),
+          matchesLost: Number(entry?.stats?.matchesLost || 0),
+          legsWon: Number(entry?.stats?.legsWon || 0),
+          legsLost: Number(entry?.stats?.legsLost || 0),
+          oneEightiesCount: Number(entry?.stats?.oneEightiesCount || 0),
+          highestCheckout: Number(entry?.stats?.highestCheckout || 0),
+          avg,
+        }
+      })
+      .filter((entry: { avg: number }) => entry.avg > 0)
+      .sort((a: { avg: number }, b: { avg: number }) => b.avg - a.avg)
+  }, [activeHistory])
+
+  const topThreeAverages = React.useMemo(() => {
+    return tournamentAveragesAll.slice(0, topTournamentLimit)
+  }, [tournamentAveragesAll, topTournamentLimit])
+
+  const matchAveragesAll = React.useMemo(() => {
+    return (playerStats.matchHistory || [])
+      .map((match: any) => ({
+        ...match,
+        average: Number(match?.average || 0),
+      }))
+      .filter((match: any) => match.average > 0)
+      .sort((a: any, b: any) => b.average - a.average)
+  }, [playerStats.matchHistory])
+
+  const topThreeMatchAverages = React.useMemo(() => {
+    return matchAveragesAll.slice(0, topMatchLimit)
+  }, [matchAveragesAll, topMatchLimit])
+
   if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
@@ -561,11 +645,11 @@ export function PlayerStatisticsSection({
               showAddGuest={false}
               isForTournament
             />
-            {!topOpponentsLoading && topOpponents.length > 0 && (
+            {!topOpponentsLoading && mostPlayedTop5.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t.headToHeadTopOpponents}</p>
                 <div className="flex flex-wrap gap-2">
-                  {topOpponents.map((entry) => (
+                  {mostPlayedTop5.map((entry) => (
                     <button
                       key={`quick-${entry.opponent._id}`}
                       className="cursor-pointer rounded-full border border-muted/20 bg-muted/10 px-3 py-1 text-xs font-semibold hover:border-primary/30 hover:bg-primary/5"
@@ -598,14 +682,16 @@ export function PlayerStatisticsSection({
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">{t.headToHeadNoSelection}</p>
                 <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t.headToHeadTopOpponents}</p>
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    Összes ellenfél (győzelmi ráta szerint)
+                  </p>
                   {topOpponentsLoading ? (
                     <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
-                  ) : topOpponents.length === 0 ? (
+                  ) : topOpponentsByWinRate.length === 0 ? (
                     <p className="text-xs text-muted-foreground">{t.headToHeadNoTopOpponents}</p>
                   ) : (
-                    <div className="space-y-2">
-                      {topOpponents.map((entry) => (
+                    <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+                      {topOpponentsByWinRate.map((entry) => (
                         <button
                           key={entry.opponent._id}
                           className="flex w-full cursor-pointer items-center justify-between rounded-md border border-muted/20 bg-background px-3 py-2 text-left hover:border-primary/30"
@@ -617,7 +703,7 @@ export function PlayerStatisticsSection({
                           <div className="min-w-0">
                             <p className="truncate text-xs font-semibold">{entry.opponent.name}</p>
                             <p className="text-[10px] text-muted-foreground">
-                              {entry.matchesPlayed} {t.headToHeadMatches.toLowerCase()} • {entry.wins} {t.headToHeadWins.toLowerCase()}
+                              {entry.matchesPlayed} {t.headToHeadMatches.toLowerCase()} • {entry.wins} {t.headToHeadWins.toLowerCase()} • {entry.winRate?.toFixed(1)}% WR
                             </p>
                           </div>
                           <span className="text-[10px] text-muted-foreground">
@@ -631,6 +717,89 @@ export function PlayerStatisticsSection({
               </div>
             ) : (
               <div className="space-y-4">
+                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    All-time összehasonlítás
+                  </p>
+                  <div className="overflow-hidden rounded-md border border-muted/20">
+                    <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      <span>{t.headToHeadStatsMetric}</span>
+                      <span className="truncate text-center">{headToHead.playerA.name}</span>
+                      <span className="truncate text-center">{headToHead.playerB.name}</span>
+                    </div>
+                    <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadAverage}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerAAverage ? headToHead.summary.playerAAverage.toFixed(1) : "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerBAverage ? headToHead.summary.playerBAverage.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">Winrate</span>
+                      <span className="text-center font-semibold">
+                        {headToHead.summary.matchesPlayed > 0
+                          ? `${((headToHead.summary.playerAWins / headToHead.summary.matchesPlayed) * 100).toFixed(1)}%`
+                          : "—"}
+                      </span>
+                      <span className="text-center font-semibold">
+                        {headToHead.summary.matchesPlayed > 0
+                          ? `${((headToHead.summary.playerBWins / headToHead.summary.matchesPlayed) * 100).toFixed(1)}%`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerAOneEighties || 0}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerBOneEighties || 0}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerAHighestCheckout || "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerBHighestCheckout || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    Játékosok egyéni all-time stat összehasonlítás
+                  </p>
+                  <div className="overflow-hidden rounded-md border border-muted/20">
+                    <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      <span>{t.headToHeadStatsMetric}</span>
+                      <span className="truncate text-center">{headToHead.playerA.name}</span>
+                      <span className="truncate text-center">{headToHead.playerB.name}</span>
+                    </div>
+                    <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadAverage}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.avg ? headToHead.allTimeComparison.playerA.avg.toFixed(1) : "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.avg ? headToHead.allTimeComparison.playerB.avg.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">Winrate</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.winRate.toFixed(1)}%</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.winRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.oneEightiesCount || 0}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.oneEightiesCount || 0}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.highestCheckout || "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.highestCheckout || "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadMatches}</span>
+                      <span className="text-center font-semibold">
+                        {headToHead.allTimeComparison.playerA.matchesPlayed} ({headToHead.allTimeComparison.playerA.wins}W-{headToHead.allTimeComparison.playerA.losses}L)
+                      </span>
+                      <span className="text-center font-semibold">
+                        {headToHead.allTimeComparison.playerB.matchesPlayed} ({headToHead.allTimeComparison.playerB.wins}W-{headToHead.allTimeComparison.playerB.losses}L)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <CircularStatCard label={t.headToHeadPlayed} value={headToHead.summary.matchesPlayed} total={headToHead.summary.matchesPlayed} color="#3b82f6" />
                   <CircularStatCard label={t.headToHeadWins} value={headToHead.summary.playerAWins} total={headToHead.summary.matchesPlayed} color="#10b981" />
@@ -693,6 +862,160 @@ export function PlayerStatisticsSection({
                   )}
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <IconTrendingUp size={16} className="text-primary" />
+                Top torna átlagok
+              </CardTitle>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setTopTournamentLimit((prev) => Math.min(prev + 5, tournamentAveragesAll.length || 5))}>
+                  Következő 5 betöltése
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setTopTournamentLimit(3)}>
+                  reset
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topThreeAverages.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nincs elég adat az átlag rangsorhoz.</p>
+            ) : (
+              topThreeAverages.map((entry: {
+                id: string
+                tournamentId?: string
+                name: string
+                date?: string
+                avg: number
+                finalPosition?: number
+                mmrChange?: number
+                oacMmrChange?: number
+                matchesWon: number
+                matchesLost: number
+                legsWon: number
+                legsLost: number
+                oneEightiesCount: number
+                highestCheckout: number
+              }, index: number) => (
+                <div key={entry.id} className="group bg-card border border-muted/10 rounded-xl p-4 hover:border-primary/30 hover:bg-muted/5 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{index + 1}</Badge>
+                        <h4 className="text-xs font-black tracking-tight truncate">{entry.name}</h4>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {entry.finalPosition ? (
+                          <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{entry.finalPosition}.</Badge>
+                        ) : null}
+                        {entry.mmrChange !== undefined ? (
+                          <span className={cn("text-[10px] font-bold", entry.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                            {entry.mmrChange >= 0 ? "+" : ""}{entry.mmrChange} MMR
+                          </span>
+                        ) : null}
+                        {entry.oacMmrChange !== undefined ? (
+                          <span className={cn("text-[10px] font-bold", entry.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
+                            {entry.oacMmrChange >= 0 ? "+" : ""}{entry.oacMmrChange} OAC MMR
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    {entry.tournamentId ? (
+                      <Link href={`/tournaments/${entry.tournamentId}`}>
+                        <Button variant="outline" size="sm">
+                          Megnyitás
+                        </Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mt-3 pt-3 border-t border-muted/5">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Meccsek</span>
+                      <span className="text-[11px] font-bold">{entry.matchesWon}W - {entry.matchesLost}L</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Legek</span>
+                      <span className="text-[11px] font-bold text-muted-foreground">{entry.legsWon}W - {entry.legsLost}L</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Átlag</span>
+                      <span className="text-[11px] font-bold">{entry.avg.toFixed(1)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">180-ak</span>
+                      <span className="text-[11px] font-bold">{entry.oneEightiesCount}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Checkout</span>
+                      <span className="text-[11px] font-bold">{entry.highestCheckout || "—"}</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Dátum</span>
+                      <span className="text-[11px] font-bold opacity-60">{entry.date ? new Date(entry.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' }) : '—'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <IconSword size={16} className="text-primary" />
+                Top meccs átlagok
+              </CardTitle>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setTopMatchLimit((prev) => Math.min(prev + 5, matchAveragesAll.length || 5))}>
+                  Következő 5 betöltése
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setTopMatchLimit(3)}>
+                  reset
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topThreeMatchAverages.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nincs elérhető meccs átlag adat.</p>
+            ) : (
+              topThreeMatchAverages.map((match: any, index: number) => (
+                <div key={`top-match-${match._id}`} className="group rounded-xl border border-muted/10 bg-card p-3 hover:border-primary/30 hover:bg-muted/5 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">
+                          #{index + 1}
+                        </Badge>
+                        <p className="truncate text-xs font-black flex items-center gap-1">{match.opponent} {match.winner === "user" && <IconTrophy size={11} className="text-amber-500" />}</p>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground space-y-0.5">
+                        <p className="flex items-center gap-1">
+                         {match.userScore ?? match.player1Score} - {match.opponentScore ?? match.player2Score}
+                        </p>
+                        <p className="flex items-center gap-1">
+                         
+                        </p>
+                        <p>{new Date(match.date).toLocaleDateString("hu-HU")}</p>
+                      </div>
+                    </div>
+                    <span className="text-base font-black text-primary">{Number(match.average).toFixed(1)}</span>
+                  </div>
+                  <div className="mt-2 flex justify-end">
+                    <Button variant="outline" size="sm" onClick={() => onViewLegs(match)}>
+                      Meccs statisztika
+                    </Button>
+                  </div>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>

@@ -19,6 +19,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, SupportedLocale, localePath, stripLocalePrefix } from "@/lib/seo";
 
@@ -344,23 +351,30 @@ const NavbarNew = () => {
                       Nyelv
                     </div>
                     <div className="space-y-1 pb-3">
-                      {languageOptions.map((lang) => (
-                        <Button
-                          key={lang.code}
-                          variant={currentLocale === lang.code ? "secondary" : "ghost"}
-                          className="w-full justify-between"
-                          disabled={!lang.enabled}
-                          onClick={() => {
-                            if (lang.enabled) {
-                              switchLocale(lang.code);
-                              setIsMobileMenuOpen(false);
-                            }
-                          }}
-                        >
-                          <span>{lang.label}</span>
-                          {!lang.enabled && <span className="text-xs text-muted-foreground">Hamarosan</span>}
-                        </Button>
-                      ))}
+                      <Select
+                        value={currentLocale}
+                        onValueChange={(value) => {
+                          const selectedLang = languageOptions.find((lang) => lang.code === value);
+                          if (selectedLang?.enabled) {
+                            switchLocale(value);
+                            setIsMobileMenuOpen(false);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Nyelv kiválasztása" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {languageOptions.map((lang) => (
+                            <SelectItem key={lang.code} value={lang.code} disabled={!lang.enabled}>
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <span>{lang.label}</span>
+                                {!lang.enabled && <span className="text-xs text-muted-foreground">Hamarosan</span>}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <Separator className="my-2" />
                     {navItems.map((item) => {
@@ -402,13 +416,13 @@ const NavbarNew = () => {
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
-                        <Link href={toLocalizedHref("/profile?tab=stats")} className="cursor-pointer w-full flex items-center">
+                        <Link href={toLocalizedHref("/profile?tab=stats")} className="cursor-pointer w-full flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconChartBar className="h-4 w-4" />
                           Statisztika
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
-                        <Link href={toLocalizedHref("/profile?tab=tickets")} className="cursor-pointer w-full flex items-center">
+                        <Link href={toLocalizedHref("/profile?tab=tickets")} className="cursor-pointer w-full flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconTicket className="h-4 w-4" />
                           Hibajegyek
                         </Link>

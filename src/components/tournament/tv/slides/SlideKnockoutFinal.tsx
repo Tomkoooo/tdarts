@@ -5,12 +5,16 @@ interface SlideKnockoutFinalProps {
   title: string;
   finalMatch?: KnockoutMatchDisplay;
   emptyLabel: string;
+  scorerLabel: string;
+  scorerFallback: string;
 }
 
 export default function SlideKnockoutFinal({
   title,
   finalMatch,
   emptyLabel,
+  scorerLabel,
+  scorerFallback,
 }: SlideKnockoutFinalProps) {
   return (
     <SlideFrame title={title} accentClassName="from-warning/25 to-background">
@@ -31,6 +35,9 @@ export default function SlideKnockoutFinal({
               </div>
             </div>
             <div className="mt-5 text-center text-lg text-muted-foreground">{finalMatch.boardLabel}</div>
+            <div className="mt-2 text-center text-lg text-muted-foreground">
+              {scorerLabel}: {finalMatch.scorerName || scorerFallback}
+            </div>
           </div>
         </div>
       )}

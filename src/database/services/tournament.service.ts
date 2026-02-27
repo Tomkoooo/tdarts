@@ -3453,6 +3453,26 @@ export class TournamentService {
             playerAOneEighties: number;
             playerBOneEighties: number;
         };
+        allTimeComparison: {
+            playerA: {
+                matchesPlayed: number;
+                wins: number;
+                losses: number;
+                winRate: number;
+                avg: number;
+                highestCheckout: number;
+                oneEightiesCount: number;
+            };
+            playerB: {
+                matchesPlayed: number;
+                wins: number;
+                losses: number;
+                winRate: number;
+                avg: number;
+                highestCheckout: number;
+                oneEightiesCount: number;
+            };
+        };
         matches: Array<{
             _id: string;
             date: Date;
@@ -3489,6 +3509,55 @@ export class TournamentService {
         if (!playerA || !playerB) {
             throw new BadRequestError("Player not found");
         }
+
+        const aggregateCareerStats = (player: any) => {
+            const current = player?.stats || {};
+            const previous = player?.previousSeasons || [];
+
+            const currentWins = Number(current.totalMatchesWon || 0);
+            const currentLosses = Number(current.totalMatchesLost || 0);
+            const currentMatchesPlayed = Number(current.matchesPlayed || currentWins + currentLosses);
+
+            let totalWins = currentWins;
+            let totalLosses = currentLosses;
+            let weightedAvgSum = Number(current.avg || 0) * currentMatchesPlayed;
+            let totalMatchesForAvg = currentMatchesPlayed;
+            let highestCheckout = Number(current.highestCheckout || 0);
+            let oneEightiesCount = Number(current.total180s || current.oneEightiesCount || 0);
+
+            for (const season of previous) {
+                const seasonStats = season?.stats || {};
+                const seasonWins = Number(seasonStats.totalMatchesWon || 0);
+                const seasonLosses = Number(seasonStats.totalMatchesLost || 0);
+                const seasonMatchesPlayed = Number(seasonStats.matchesPlayed || seasonWins + seasonLosses);
+
+                totalWins += seasonWins;
+                totalLosses += seasonLosses;
+                weightedAvgSum += Number(seasonStats.avg || 0) * seasonMatchesPlayed;
+                totalMatchesForAvg += seasonMatchesPlayed;
+                highestCheckout = Math.max(highestCheckout, Number(seasonStats.highestCheckout || 0));
+                oneEightiesCount += Number(seasonStats.total180s || seasonStats.oneEightiesCount || 0);
+            }
+
+            const matchesPlayed = totalWins + totalLosses;
+            const winRate = matchesPlayed > 0 ? Number(((totalWins / matchesPlayed) * 100).toFixed(1)) : 0;
+            const avg = totalMatchesForAvg > 0 ? Number((weightedAvgSum / totalMatchesForAvg).toFixed(2)) : 0;
+
+            return {
+                matchesPlayed,
+                wins: totalWins,
+                losses: totalLosses,
+                winRate,
+                avg,
+                highestCheckout,
+                oneEightiesCount,
+            };
+        };
+
+        const [playerAWithStats, playerBWithStats] = await Promise.all([
+            PlayerModel.findById(playerAId).select("stats previousSeasons"),
+            PlayerModel.findById(playerBId).select("stats previousSeasons"),
+        ]);
 
         const query: any = {
             status: "finished",
@@ -3624,6 +3693,10 @@ export class TournamentService {
                 playerBHighestCheckout,
                 playerAOneEighties,
                 playerBOneEighties,
+            },
+            allTimeComparison: {
+                playerA: aggregateCareerStats(playerAWithStats),
+                playerB: aggregateCareerStats(playerBWithStats),
             },
             matches: mappedMatches,
         };

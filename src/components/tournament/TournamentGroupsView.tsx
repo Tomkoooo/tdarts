@@ -167,7 +167,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     if (!selectedMatch) return;
 
     if (player1Legs === player2Legs) {
-      toast.error(tTour('groups.error_tie'));
+      toast.error(tTour('groups.dialog.error_tie'));
       return;
     }
 
@@ -195,7 +195,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
       setShowAdminModal(false);
       setSelectedMatch(null);
-      toast.success(tTour('groups.success_saved'));
+      toast.success(tTour('groups.dialog.success_saved'));
       window.location.reload();
     } catch (err: any) {
       showErrorToast(err?.message || tTour('groups.error_save'), {
@@ -389,10 +389,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">{tTour('groups.status.all')}</SelectItem>
-                              <SelectItem value="pending">{tTour('groups.status.pending')}</SelectItem>
-                              <SelectItem value="ongoing">{tTour('groups.status.ongoing')}</SelectItem>
-                              <SelectItem value="finished">{tTour('groups.status.finished')}</SelectItem>
+                              <SelectItem value="all">{tTour('status.all')}</SelectItem>
+                              <SelectItem value="pending">{tTour('status.pending')}</SelectItem>
+                              <SelectItem value="ongoing">{tTour('status.ongoing')}</SelectItem>
+                              <SelectItem value="finished">{tTour('status.finished')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

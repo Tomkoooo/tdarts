@@ -22,6 +22,11 @@ interface TournamentBoardsViewProps {
 
 
 const getPlayerName = (player: any) => player?.playerId?.name || player?.name || "N/A"
+const LEGACY_DEFAULT_BOARD_NAME_KEYS = new Set([
+  "Club.create_tournament_modal.boards.default_board_name",
+  "create_tournament_modal.boards.default_board_name",
+  "boards.default_board_name",
+]);
 
 export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
   const tTour = useTranslations("Tournament");
@@ -70,7 +75,7 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
   const handleEditClick = (board: any) => {
       setEditingBoard(board);
       setEditForm({ 
-          name: board.name || '', 
+          name: LEGACY_DEFAULT_BOARD_NAME_KEYS.has((board.name || '').trim()) ? '' : (board.name || ''), 
           scoliaSerialNumber: board.scoliaSerialNumber || '', 
           scoliaAccessToken: board.scoliaAccessToken || '' 
       });
@@ -100,6 +105,15 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
   };
 
   const canEdit = userClubRole === 'admin' || userClubRole === 'moderator';
+  const getDefaultBoardLabel = (boardNumber: number) =>
+    tTour('boards_view.board_number', { number: boardNumber });
+  const resolveBoardName = (board: any) => {
+    const rawName = typeof board?.name === "string" ? board.name.trim() : "";
+    if (!rawName || LEGACY_DEFAULT_BOARD_NAME_KEYS.has(rawName)) {
+      return getDefaultBoardLabel(board.boardNumber);
+    }
+    return rawName;
+  };
 
   if (boards.length === 0) {
     return (
@@ -139,9 +153,7 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2 pr-8">
                 <CardTitle className="text-lg font-semibold text-foreground">
-                  {board.name && board.name !== tTour('boards_view.board_number', { number: board.boardNumber })
-                    ? board.name
-                    : tTour('boards_view.board_number', { number: board.boardNumber })}
+                  {resolveBoardName(board)}
                 </CardTitle>
                 <Badge variant="outline" className={statusInfo.badgeClass}>
                   {statusInfo.label}

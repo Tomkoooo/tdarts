@@ -316,7 +316,7 @@ export default function ClubDetailPage() {
         <div className="text-4xl font-bold mb-4 flex flex-col">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
         </div>
-        <div className="text-xl mb-4">{t("klub_betöltése_folyamatban")}</div>
+        <div className="text-xl mb-4">{t("loading_club")}</div>
       </div>
     </div>
   )

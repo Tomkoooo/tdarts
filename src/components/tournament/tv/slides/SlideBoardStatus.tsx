@@ -6,6 +6,8 @@ interface SlideBoardStatusProps {
   title: string;
   emptyLabel: string;
   waitingLabel: string;
+  scorerLabel: string;
+  scorerFallback: string;
 }
 
 export default function SlideBoardStatus({
@@ -13,6 +15,8 @@ export default function SlideBoardStatus({
   title,
   emptyLabel,
   waitingLabel,
+  scorerLabel,
+  scorerFallback,
 }: SlideBoardStatusProps) {
   return (
     <SlideFrame
@@ -31,9 +35,9 @@ export default function SlideBoardStatus({
               <div className="mt-2 text-2xl">
                 {board.player1Name} vs {board.player2Name}
               </div>
-              {board.scorerName ? (
-                <div className="mt-2 text-lg text-muted-foreground">Scorer: {board.scorerName}</div>
-              ) : null}
+              <div className="mt-2 text-lg text-muted-foreground">
+                {scorerLabel}: {board.scorerName || scorerFallback}
+              </div>
             </div>
           ))}
         </div>

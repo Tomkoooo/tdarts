@@ -5,5 +5,4 @@ export { default as SlideBoardStatus } from "./SlideBoardStatus";
 export { default as SlideKnockoutBracket } from "./SlideKnockoutBracket";
 export { default as SlideKnockoutFinal } from "./SlideKnockoutFinal";
 export { default as SlideMilestoneFlash } from "./SlideMilestoneFlash";
-export { default as SlideRankings180 } from "./SlideRankings180";
-export { default as SlideRankingsCheckout } from "./SlideRankingsCheckout";
+export { default as SlideRankingsCombined } from "./SlideRankingsCombined";

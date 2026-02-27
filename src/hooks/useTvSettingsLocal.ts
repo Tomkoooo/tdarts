@@ -5,18 +5,29 @@ import { getDefaultTvSettings, TvSettings } from "@/lib/tv/slideshow";
 
 const SETTINGS_KEY_PREFIX = "tv-slideshow-settings";
 
-const mergeSettings = (base: TvSettings, incoming: Partial<TvSettings>): TvSettings => ({
-  ...base,
-  ...incoming,
-  enabledSlides: {
-    ...base.enabledSlides,
-    ...(incoming.enabledSlides || {}),
-  },
-  perSlideDurationMs: {
-    ...base.perSlideDurationMs,
-    ...(incoming.perSlideDurationMs || {}),
-  },
-});
+const mergeSettings = (base: TvSettings, incoming: Partial<TvSettings>): TvSettings => {
+  const incomingSlides = (incoming as any)?.enabledSlides;
+  const migratedSlides =
+    incomingSlides && typeof incomingSlides === "object" && !("rankings" in incomingSlides)
+      ? {
+          ...incomingSlides,
+          rankings: Boolean(incomingSlides.rankings180) || Boolean(incomingSlides.rankingsCheckout),
+        }
+      : incoming.enabledSlides;
+
+  return {
+    ...base,
+    ...incoming,
+    enabledSlides: {
+      ...base.enabledSlides,
+      ...(migratedSlides || {}),
+    },
+    perSlideDurationMs: {
+      ...base.perSlideDurationMs,
+      ...(incoming.perSlideDurationMs || {}),
+    },
+  };
+};
 
 export const useTvSettingsLocal = (tournamentCode?: string) => {
   const key = useMemo(

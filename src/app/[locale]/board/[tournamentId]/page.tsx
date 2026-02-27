@@ -120,6 +120,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [localMatchId, setLocalMatchId] = useState<string>("");
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
+  const getBoardLabel = (boardNumber: number, name?: string) =>
+    name || t("tabla_sorszam", { number: boardNumber });
 
   // Check URL parameters for QR code authentication
   useEffect(() => {
@@ -522,7 +524,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                       <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
                       {t("bejelentkezés")}</>
                   ) : (
-                    "Bejelentkezés"
+                    t("bejelentkezés")
                   )}
                 </Button>
               </div>
@@ -601,7 +603,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold">
-                          {board.name || `Tábla ${board.boardNumber}`}
+                          {getBoardLabel(board.boardNumber, board.name)}
                         </h2>
                         <Badge variant={config.variant}>{config.label}</Badge>
                       </div>
@@ -689,7 +691,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               {t("vissza_a_táblákhoz")}</Button>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                 <h1 className="text-xl sm:text-2xl font-bold">
-                {selectedBoard.name || `Tábla ${selectedBoard.boardNumber}`}
+                {getBoardLabel(selectedBoard.boardNumber, selectedBoard.name)}
               </h1>
                 <div className="flex items-center gap-2">
               <Button
@@ -754,7 +756,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                             {match.player1.playerId.name} vs {match.player2.playerId.name}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {t("író")}{match.scorer?.name ? match.scorer.name : 'Előző kör vesztese'}
+                            {t("író")}{match.scorer?.name ? match.scorer.name : t("elozo_kor_vesztese")}
                           </p>
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -950,7 +952,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                         <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
                         {t("mentés")}</>
                     ) : (
-                      "Meccs befejezése"
+                      t("meccs_befejezese")
                     )}
                   </Button>
                 </DialogFooter>
@@ -979,14 +981,14 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     <IconArrowLeft size={18} />
                     {t("vissza")}</Button>
                   <h2 className="text-lg font-bold">
-                    {selectedBoard?.name || `Tábla ${selectedBoard?.boardNumber}`}
+                    {selectedBoard ? getBoardLabel(selectedBoard.boardNumber, selectedBoard.name) : ""}
                   </h2>
                 </div>
                 <div className="text-center space-y-2">
                   <CardTitle className="text-xl">
                     {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
                   </CardTitle>
-                  <CardDescription>{t("író")}{selectedMatch.scorer ? selectedMatch.scorer.name : "Előző kör vesztese"}</CardDescription>
+                  <CardDescription>{t("író")}{selectedMatch.scorer ? selectedMatch.scorer.name : t("elozo_kor_vesztese")}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1078,7 +1080,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-muted-foreground">{t("tábla")}</span>
                   <span className="text-sm font-semibold text-foreground">
-                    {selectedBoard?.name || `Tábla ${selectedBoard?.boardNumber}`}
+                    {selectedBoard ? getBoardLabel(selectedBoard.boardNumber, selectedBoard.name) : ""}
                   </span>
                 </div>
                 <div className="flex items-start justify-between pt-2 border-t border-border/40">
@@ -1112,7 +1114,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
                     <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
                     {t("indítás")}</>
                 ) : (
-                  "Meccs indítása"
+                  t("meccs_indítása")
                 )}
               </Button>
             </DialogFooter>

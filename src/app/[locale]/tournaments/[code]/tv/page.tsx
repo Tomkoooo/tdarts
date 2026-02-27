@@ -1,17 +1,13 @@
 "use client"
 import { useTranslations } from "next-intl";
 
-import { useEffect, useState, useCallback, useMemo } from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import { useParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
-import { IconAdjustments, IconGripVertical, IconPlayerSkipForward, IconQrcode, IconX } from "@tabler/icons-react"
+import { IconAdjustments, IconGripVertical, IconPlayerPause, IconPlayerPlay, IconPlayerSkipForward, IconQrcode, IconX } from "@tabler/icons-react"
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
 import axios from "axios"
 import QRCode from 'react-qr-code'
-import Rankings180 from "@/components/tournament/tv/Rankings180"
-import RankingsCheckout from "@/components/tournament/tv/RankingsCheckout"
-import BoardStatus from "@/components/tournament/tv/BoardStatus"
-import GroupsDisplay from "@/components/tournament/tv/GroupsDisplay"
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/switch";
@@ -37,139 +33,13 @@ import {
   SlideKnockoutBracket,
   SlideKnockoutFinal,
   SlideMilestoneFlash,
-  SlideRankings180,
-  SlideRankingsCheckout,
+  SlideRankingsCombined,
 } from "@/components/tournament/tv/slides";
-
-const LEGACY_MODE = "legacy";
-const SLIDESHOW_MODE = "slideshow";
-
-function LegacyTVLayout({
-  code,
-  tournament,
-  qrExpanded,
-  setQrExpanded,
-  qrPosition,
-  qrSize,
-  isDragging,
-  handleMouseDown,
-  handleResizeMouseDown,
-  handleExit,
-  t,
-}: {
-  code: string;
-  tournament: any;
-  qrExpanded: boolean;
-  setQrExpanded: (value: boolean) => void;
-  qrPosition: { x: number; y: number } | null;
-  qrSize: number;
-  isDragging: boolean;
-  handleMouseDown: (e: React.MouseEvent) => void;
-  handleResizeMouseDown: (e: React.MouseEvent) => void;
-  handleExit: () => void;
-  t: (key: string) => string;
-}) {
-  const boardSectionHeight = useMemo(() => {
-    if (!tournament?.boards) return 45
-    const waitingBoards = tournament.boards.filter((b: any) => b.status === 'waiting')
-    const boardCount = waitingBoards.length
-
-    if (boardCount === 0) return 30
-    if (boardCount <= 2) return 35
-    if (boardCount <= 4) return 42
-    if (boardCount <= 6) return 48
-    return 50
-  }, [tournament?.boards])
-
-  const tournamentUrl = process.env.NEXT_PUBLIC_NODE_ENV === 'development'
-    ? `http://localhost:3000/tournaments/${code}`
-    : `https://tdarts.sironic.hu/tournaments/${code}`
-
-  return (
-    <div className="h-screen w-screen overflow-hidden bg-background text-foreground relative">
-      <header className="h-[5vh] px-6 flex items-center justify-between bg-muted/5">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">{tournament.tournamentSettings?.name || 'Tournament'}</h1>
-          <span className="text-sm text-muted-foreground uppercase tracking-wider">
-            {tournament.tournamentSettings?.status || 'Live'}
-          </span>
-        </div>
-        <button
-          onClick={handleExit}
-          className="flex items-center gap-2 px-4 py-2 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors"
-        >
-          <IconX className="h-5 w-5" />
-          <span>{t("exit")}</span>
-        </button>
-      </header>
-
-      <main className="h-[95vh] p-4 flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-4" style={{ height: `${boardSectionHeight}vh` }}>
-          <Rankings180 tournament={tournament} />
-          <RankingsCheckout tournament={tournament} />
-          <BoardStatus tournament={tournament} />
-        </div>
-
-        <div className="overflow-hidden" style={{ height: `calc(95vh - ${boardSectionHeight}vh - 1rem)` }}>
-          <GroupsDisplay tournament={tournament} />
-        </div>
-      </main>
-
-      <div
-        className="fixed z-50 select-none"
-        style={{
-          left: qrPosition !== null ? qrPosition.x : 'auto',
-          right: qrPosition !== null ? 'auto' : '24px',
-          top: qrPosition !== null ? qrPosition.y : 'auto',
-          bottom: qrPosition !== null ? 'auto' : '24px',
-          cursor: isDragging ? 'grabbing' : 'grab'
-        }}
-      >
-        {qrExpanded ? (
-          <div className="bg-white p-4 rounded-xl shadow-2xl border-4 border-primary relative">
-            <div
-              className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
-              onMouseDown={handleMouseDown}
-            >
-              <IconGripVertical className="h-4 w-4 text-gray-600" />
-              <button
-                onClick={() => setQrExpanded(false)}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <IconX className="h-4 w-4" />
-              </button>
-            </div>
-            <QRCode value={tournamentUrl} size={qrSize} level="H" />
-            <div className="text-center mt-2 text-xs font-semibold text-gray-800">
-              {t("scan_to_join")}
-            </div>
-            <div
-              onMouseDown={handleResizeMouseDown}
-              className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full cursor-nwse-resize hover:bg-primary/80 transition-colors shadow-lg flex items-center justify-center"
-              style={{ touchAction: 'none' }}
-            >
-              <div className="w-2 h-2 border-r-2 border-b-2 border-white" />
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setQrExpanded(true)}
-            className="bg-primary text-primary-content px-4 py-2 rounded-lg shadow-xl hover:bg-primary/90 transition-colors flex items-center gap-2"
-          >
-            <IconQrcode className="h-5 w-5" />
-            <span className="font-semibold">{t("open_qr")}</span>
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export default function TVModePage() {
   const t = useTranslations("Tournament.tv");
   const tTour = useTranslations("Tournament");
   const { code } = useParams()
-  const searchParams = useSearchParams()
   const router = useRouter()
   const [tournament, setTournament] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -181,9 +51,10 @@ export default function TVModePage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [resizeStart, setResizeStart] = useState({ size: 160, x: 0, y: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [knockoutRequiredDisplayMs, setKnockoutRequiredDisplayMs] = useState(0);
+  const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdAppliedSlideIdRef = useRef<string>("");
   const tournamentCode = typeof code === "string" ? code : "";
-  const displayMode = searchParams.get("mode") === SLIDESHOW_MODE ? SLIDESHOW_MODE : LEGACY_MODE;
-  const isSlideshowMode = displayMode === SLIDESHOW_MODE;
   const { settings, setSettings, resetSettings, loaded: settingsLoaded } = useTvSettingsLocal(tournamentCode);
   const urgentQueue = useUrgentQueue({ cooldownMs: 20000, maxQueueSize: 30 });
 
@@ -206,9 +77,10 @@ export default function TVModePage() {
   const scheduler = useSlideScheduler({
     baseSlides,
     settings,
-    enabled: isSlideshowMode && !!tournament,
+    enabled: !!tournament && settingsLoaded,
     consumeUrgent: consumeUrgentSlide,
   });
+  const activeSlide = scheduler.activeSlide;
 
   // Fetch tournament data
   const fetchTournament = useCallback(async () => {
@@ -230,7 +102,7 @@ export default function TVModePage() {
       const res = await axios.get(`/api/tournaments/${code}`)
       setTournament(res.data)
 
-      if (isSlideshowMode && tournament) {
+      if (tournament) {
         const urgentEvents = buildUrgentEvents(tournament, res.data, settings);
         const added = urgentQueue.enqueueMany(urgentEvents);
         if (added > 0 && settings.highAlertInterrupts) {
@@ -240,7 +112,7 @@ export default function TVModePage() {
     } catch (error) {
       console.error('Silent refresh error:', error)
     }
-  }, [code, tournament, isSlideshowMode, settings, urgentQueue, scheduler])
+  }, [code, tournament, settings, urgentQueue, scheduler])
 
   useEffect(() => {
     fetchTournament()
@@ -316,6 +188,53 @@ export default function TVModePage() {
     }
   }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
 
+  useEffect(() => {
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+
+    const isKnockoutBracketSlide = activeSlide.type === "knockoutLeft" || activeSlide.type === "knockoutRight";
+    if (!isKnockoutBracketSlide || settings.freezeBaseRotation) {
+      holdAppliedSlideIdRef.current = "";
+      scheduler.resume();
+      return;
+    }
+
+    const baseDuration =
+      activeSlide.durationMs ??
+      (activeSlide.kind === "urgent" ? settings.urgentIntervalMs : settings.baseIntervalMs);
+
+    if (knockoutRequiredDisplayMs <= baseDuration) {
+      holdAppliedSlideIdRef.current = "";
+      scheduler.resume();
+      return;
+    }
+
+    if (holdAppliedSlideIdRef.current === activeSlide.id) return;
+    holdAppliedSlideIdRef.current = activeSlide.id;
+
+    scheduler.pause();
+    holdTimeoutRef.current = setTimeout(() => {
+      scheduler.resume();
+      scheduler.nextSlide();
+    }, knockoutRequiredDisplayMs);
+
+    return () => {
+      if (holdTimeoutRef.current) {
+        clearTimeout(holdTimeoutRef.current);
+        holdTimeoutRef.current = null;
+      }
+    };
+  }, [
+    activeSlide,
+    knockoutRequiredDisplayMs,
+    scheduler,
+    settings.baseIntervalMs,
+    settings.urgentIntervalMs,
+    settings.freezeBaseRotation,
+  ]);
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-background flex items-center justify-center">
@@ -332,28 +251,30 @@ export default function TVModePage() {
     )
   }
 
+  if (!settingsLoaded) {
+    return (
+      <div className="h-screen w-screen bg-background flex items-center justify-center">
+        <div className="text-foreground text-2xl">{t("loading")}</div>
+      </div>
+    );
+  }
+
   const tournamentUrl = process.env.NEXT_PUBLIC_NODE_ENV === 'development'
     ? `http://localhost:3000/tournaments/${code}`
     : `https://tdarts.sironic.hu/tournaments/${code}`
 
   const tournamentName = tournament.tournamentSettings?.name || "Tournament";
-  const activeSlide = scheduler.activeSlide;
 
   const slideContent = (() => {
     switch (activeSlide.type) {
-      case "rankings180":
+      case "rankings":
         return (
-          <SlideRankings180
-            rows={rankings180}
-            title={tTour("tv_slideshow.rankings_180_title")}
-            emptyLabel={tTour("tv_views.rankings_180.no_data")}
-          />
-        );
-      case "rankingsCheckout":
-        return (
-          <SlideRankingsCheckout
-            rows={rankingsCheckout}
-            title={tTour("tv_slideshow.rankings_checkout_title")}
+          <SlideRankingsCombined
+            rows180={rankings180}
+            rowsCheckout={rankingsCheckout}
+            title={tTour("tv_slideshow.rankings_title")}
+            title180={tTour("tv_slideshow.rankings_180_title")}
+            titleCheckout={tTour("tv_slideshow.rankings_checkout_title")}
             emptyLabel={tTour("tv_views.rankings_checkout.no_data")}
           />
         );
@@ -373,6 +294,8 @@ export default function TVModePage() {
             title={tTour("tv_slideshow.board_status_title")}
             emptyLabel={tTour("tv_views.board_status.no_boards")}
             waitingLabel={tTour("tv_slideshow.waiting_label")}
+            scorerLabel={tTour("tv_slideshow.scorer_label")}
+            scorerFallback={tTour("tv_slideshow.scorer_fallback")}
           />
         );
       case "knockoutLeft":
@@ -390,6 +313,9 @@ export default function TVModePage() {
                 : knockoutDisplay.allRounds
             }
             emptyLabel={tTour("tv_slideshow.no_knockout")}
+            scorerLabel={tTour("tv_slideshow.scorer_label")}
+            scorerFallback={tTour("tv_slideshow.scorer_fallback")}
+            onRequiredDisplayMsChange={setKnockoutRequiredDisplayMs}
           />
         );
       case "knockoutRight":
@@ -399,6 +325,9 @@ export default function TVModePage() {
             sideLabel={tTour("tv_slideshow.knockout_right")}
             rounds={knockoutDisplay.rightRounds}
             emptyLabel={tTour("tv_slideshow.no_knockout")}
+            scorerLabel={tTour("tv_slideshow.scorer_label")}
+            scorerFallback={tTour("tv_slideshow.scorer_fallback")}
+            onRequiredDisplayMsChange={setKnockoutRequiredDisplayMs}
           />
         );
       case "knockoutFinal":
@@ -407,6 +336,8 @@ export default function TVModePage() {
             title={tTour("tv_slideshow.knockout_final_title")}
             finalMatch={knockoutDisplay.finalMatch}
             emptyLabel={tTour("tv_slideshow.no_knockout")}
+            scorerLabel={tTour("tv_slideshow.scorer_label")}
+            scorerFallback={tTour("tv_slideshow.scorer_fallback")}
           />
         );
       case "milestoneFlash":
@@ -436,24 +367,6 @@ export default function TVModePage() {
     }
   })();
 
-  if (!isSlideshowMode || !settingsLoaded) {
-    return (
-      <LegacyTVLayout
-        code={tournamentCode}
-        tournament={tournament}
-        qrExpanded={qrExpanded}
-        setQrExpanded={setQrExpanded}
-        qrPosition={qrPosition}
-        qrSize={qrSize}
-        isDragging={isDragging}
-        handleMouseDown={handleMouseDown}
-        handleResizeMouseDown={handleResizeMouseDown}
-        handleExit={handleExit}
-        t={t}
-      />
-    );
-  }
-
   const updateSlideEnabled = (slide: TvBaseSlideType, checked: boolean) => {
     setSettings({ enabledSlides: { ...settings.enabledSlides, [slide]: checked } });
   };
@@ -482,6 +395,19 @@ export default function TVModePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setSettings({ freezeBaseRotation: !settings.freezeBaseRotation })}
+          >
+            {settings.freezeBaseRotation ? (
+              <IconPlayerPlay className="mr-2 h-4 w-4" />
+            ) : (
+              <IconPlayerPause className="mr-2 h-4 w-4" />
+            )}
+            {settings.freezeBaseRotation
+              ? tTour("tv_slideshow.unfreeze_rotation")
+              : tTour("tv_slideshow.freeze_current_slide")}
+          </Button>
           <Button variant="outline" onClick={() => scheduler.nextSlide()}>
             <IconPlayerSkipForward className="mr-2 h-4 w-4" />
             {tTour("tv_slideshow.next_slide")}
@@ -554,6 +480,13 @@ export default function TVModePage() {
                 </div>
 
                 <div className="space-y-3 rounded-xl border border-muted/20 p-3">
+                  <div className="flex items-center justify-between">
+                    <span>{tTour("tv_slideshow.freeze_rotation")}</span>
+                    <Switch
+                      checked={settings.freezeBaseRotation}
+                      onCheckedChange={(checked) => setSettings({ freezeBaseRotation: checked })}
+                    />
+                  </div>
                   <div className="flex items-center justify-between">
                     <span>{tTour("tv_slideshow.high_alert_interrupts")}</span>
                     <Switch

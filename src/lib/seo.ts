@@ -9,12 +9,14 @@ export const stripLocalePrefix = (pathname: string): string => {
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
   const parts = normalizedPath.split('/').filter(Boolean);
 
-  if (parts.length > 0 && SUPPORTED_LOCALES.includes(parts[0] as SupportedLocale)) {
-    const withoutLocale = `/${parts.slice(1).join('/')}`;
-    return withoutLocale === '/' ? '/' : withoutLocale;
+  // Be tolerant of broken URLs like /hu/hu/clubs/... and strip all leading locale segments.
+  let startIndex = 0;
+  while (startIndex < parts.length && SUPPORTED_LOCALES.includes(parts[startIndex] as SupportedLocale)) {
+    startIndex += 1;
   }
 
-  return normalizedPath;
+  const withoutLocale = `/${parts.slice(startIndex).join('/')}`;
+  return withoutLocale === '/' ? '/' : withoutLocale;
 };
 
 export const localePath = (pathname: string, locale: SupportedLocale): string => {

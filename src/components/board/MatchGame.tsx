@@ -72,8 +72,7 @@ interface MatchGameProps {
 }
 
 const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, clubId, scoliaConfig }) => {
-  const tTour = useTranslations("Tournament");
-  const t = (key: string, values?: any) => tTour(`match.${key}`, values);
+  const t = useTranslations("Board");
   // Helper to format full names as initials + last name (e.g., "D. S. Erika")
   const formatName = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
@@ -822,7 +821,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     }
 
     localStorage.removeItem(`match_game_${match._id}`);
-    toast.success(`Meccs vége! ${pendingMatchWinner === 1 ? player1.name : player2.name} nyert!`);
+    toast.success(t("meccs_vege_nyertes", { winner: pendingMatchWinner === 1 ? player1.name : player2.name }));
     
     // Call onMatchFinished callback if provided to refresh matches
     if (onMatchFinished) {
@@ -1248,7 +1247,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                   disabled={editingThrow ? !editScoreInput || parseInt(editScoreInput) > 180 : !scoreInput || parseInt(scoreInput) > 180}
                   className="bg-primary hover:bg-primary-dark text-primary-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl sm:text-lg md:text-xl rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingThrow ? 'SAVE' : 'SEND'}
+                  {editingThrow ? t("mentés") : t("küldés")}
               </button>
             </div>
           </div>
@@ -1407,7 +1406,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                 }}
                 disabled={isSavingSettings}
               >
-                {isSavingSettings ? 'Mentés...' : 'Mentés'}
+                {isSavingSettings ? t("mentés_folyamatban") : t("mentés")}
               </Button>
               
               <Button 
@@ -1419,7 +1418,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
               <Button 
                 variant="destructive" 
                 onClick={() => {
-                  if (window.confirm('Biztosan ki szeretnél lépni a meccsből? A jelenlegi állás nem kerül mentésre.')) {
+                  if (window.confirm(t("biztosan_kilepnel_a_meccsbol"))) {
                     onBack();
                   }
                 }}
@@ -1484,7 +1483,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                 onClick={confirmLegEnd}
                 disabled={isSavingLeg}
               >
-                {isSavingLeg ? 'Mentés...' : 'Igen'}
+                {isSavingLeg ? t("mentés_folyamatban") : t("igen")}
               </Button>
             </div>
           </div>
@@ -1515,7 +1514,7 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                 onClick={confirmMatchEnd}
                 disabled={isSavingMatch}
               >
-                {isSavingMatch ? 'Mentés...' : 'Igen'}
+                {isSavingMatch ? t("mentés_folyamatban") : t("igen")}
               </Button>
             </div>
           </div>

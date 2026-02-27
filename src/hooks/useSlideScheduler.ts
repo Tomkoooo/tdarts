@@ -28,6 +28,7 @@ export const useSlideScheduler = ({
   const baseIndexRef = useRef(0);
   const consecutiveUrgentRef = useRef(0);
   const activeSlideRef = useRef<SlideDefinition | null>(null);
+  const frozenBaseRef = useRef<SlideDefinition | null>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -38,12 +39,34 @@ export const useSlideScheduler = ({
 
   const pickBase = useCallback(() => {
     if (!baseSlides.length) return FALLBACK_SLIDE;
+
+    if (settings.freezeBaseRotation) {
+      const active = activeSlideRef.current;
+      if (active?.kind === "base") {
+        frozenBaseRef.current = active;
+        consecutiveUrgentRef.current = 0;
+        return active;
+      }
+
+      const frozen = frozenBaseRef.current;
+      if (frozen && baseSlides.some((slide) => slide.id === frozen.id)) {
+        consecutiveUrgentRef.current = 0;
+        return frozen;
+      }
+
+      const selected = baseSlides[baseIndexRef.current % baseSlides.length];
+      frozenBaseRef.current = selected;
+      consecutiveUrgentRef.current = 0;
+      return selected;
+    }
+
     const idx = baseIndexRef.current % baseSlides.length;
     const selected = baseSlides[idx];
     baseIndexRef.current = (idx + 1) % baseSlides.length;
+    frozenBaseRef.current = null;
     consecutiveUrgentRef.current = 0;
     return selected;
-  }, [baseSlides]);
+  }, [baseSlides, settings.freezeBaseRotation]);
 
   const pickNext = useCallback(
     (preferUrgent = true) => {
@@ -128,6 +151,17 @@ export const useSlideScheduler = ({
       baseIndexRef.current = 0;
     }
   }, [enabled, baseSlides]);
+
+  useEffect(() => {
+    if (!settings.freezeBaseRotation) {
+      frozenBaseRef.current = null;
+      return;
+    }
+
+    if (frozenBaseRef.current && !baseSlides.some((slide) => slide.id === frozenBaseRef.current?.id)) {
+      frozenBaseRef.current = baseSlides[0] ?? null;
+    }
+  }, [settings.freezeBaseRotation, baseSlides]);
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 

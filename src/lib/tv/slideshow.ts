@@ -1,6 +1,5 @@
 export type TvBaseSlideType =
-  | "rankings180"
-  | "rankingsCheckout"
+  | "rankings"
   | "groups"
   | "boardStatus"
   | "knockoutLeft"
@@ -36,6 +35,7 @@ export interface TvSettings {
   highAlertInterrupts: boolean;
   boardUrgencyEnabled: boolean;
   milestoneUrgencyEnabled: boolean;
+  freezeBaseRotation: boolean;
   showQr: boolean;
 }
 
@@ -124,8 +124,7 @@ const toRoundLabel = (index: number, totalRounds: number) => {
 
 export const getDefaultTvSettings = (): TvSettings => ({
   enabledSlides: {
-    rankings180: true,
-    rankingsCheckout: true,
+    rankings: true,
     groups: true,
     boardStatus: true,
     knockoutLeft: true,
@@ -140,6 +139,7 @@ export const getDefaultTvSettings = (): TvSettings => ({
   highAlertInterrupts: true,
   boardUrgencyEnabled: true,
   milestoneUrgencyEnabled: true,
+  freezeBaseRotation: false,
   showQr: true,
 });
 
@@ -237,14 +237,18 @@ export const getKnockoutDisplay = (tournament: any, splitThreshold: number): Kno
   });
 
   const shouldSplit = roundDisplays.some((round: KnockoutRoundDisplay) => round.matches.length > splitThreshold);
-  const leftRounds = roundDisplays.map((round: KnockoutRoundDisplay) => ({
-    ...round,
-    matches: round.matches.slice(0, Math.ceil(round.matches.length / 2)),
-  }));
-  const rightRounds = roundDisplays.map((round: KnockoutRoundDisplay) => ({
-    ...round,
-    matches: round.matches.slice(Math.ceil(round.matches.length / 2)),
-  }));
+  const leftRounds = roundDisplays
+    .map((round: KnockoutRoundDisplay) => ({
+      ...round,
+      matches: round.matches.length > 1 ? round.matches.slice(0, Math.ceil(round.matches.length / 2)) : [],
+    }))
+    .filter((round: KnockoutRoundDisplay) => round.matches.length > 0);
+  const rightRounds = roundDisplays
+    .map((round: KnockoutRoundDisplay) => ({
+      ...round,
+      matches: round.matches.length > 1 ? round.matches.slice(Math.ceil(round.matches.length / 2)) : [],
+    }))
+    .filter((round: KnockoutRoundDisplay) => round.matches.length > 0);
   const finalRound = roundDisplays[roundDisplays.length - 1];
 
   return {
@@ -294,22 +298,27 @@ export const buildBaseSlides = (tournament: any, settings: TvSettings): SlideDef
   const tournamentStatus = tournament?.tournamentSettings?.status || tournament?.status;
   const isKnockout = tournamentStatus === "knockout" || tournamentStatus === "finished";
   const knockout = getKnockoutDisplay(tournament, settings.knockoutSplitThreshold);
+  const boardSummary = getBoardSummary(tournament);
+  const isFinalLive = isKnockout && knockout.finalMatch?.status === "ongoing";
 
-  if (settings.enabledSlides.rankings180) {
-    slides.push({
-      id: "base-rankings-180",
-      type: "rankings180",
-      kind: "base",
-      durationMs: settings.perSlideDurationMs.rankings180,
-    });
+  // During a live final, keep TV focus on the final score only.
+  if (isFinalLive) {
+    return [
+      {
+        id: "base-knockout-final-live-focus",
+        type: "knockoutFinal",
+        kind: "base",
+        durationMs: settings.perSlideDurationMs.knockoutFinal,
+      },
+    ];
   }
 
-  if (settings.enabledSlides.rankingsCheckout) {
+  if (settings.enabledSlides.rankings) {
     slides.push({
-      id: "base-rankings-checkout",
-      type: "rankingsCheckout",
+      id: "base-rankings",
+      type: "rankings",
       kind: "base",
-      durationMs: settings.perSlideDurationMs.rankingsCheckout,
+      durationMs: settings.perSlideDurationMs.rankings,
     });
   }
 
@@ -335,6 +344,16 @@ export const buildBaseSlides = (tournament: any, settings: TvSettings): SlideDef
       });
     }
 
+    if (split && (settings.enabledSlides.knockoutLeft || settings.enabledSlides.knockoutRight)) {
+      slides.push({
+        id: "base-knockout-full-after-split",
+        type: "knockoutLeft",
+        kind: "base",
+        payload: { mode: "full" },
+        durationMs: settings.perSlideDurationMs.knockoutLeft,
+      });
+    }
+
     if (settings.enabledSlides.knockoutFinal && knockout.finalMatch) {
       slides.push({
         id: "base-knockout-final",
@@ -352,7 +371,7 @@ export const buildBaseSlides = (tournament: any, settings: TvSettings): SlideDef
     });
   }
 
-  if (settings.enabledSlides.boardStatus) {
+  if (settings.enabledSlides.boardStatus && boardSummary.waitingCount > 0) {
     slides.push({
       id: "base-board-status",
       type: "boardStatus",
@@ -370,6 +389,13 @@ export const buildUrgentEvents = (
   settings: TvSettings
 ): UrgentEvent[] => {
   if (!prevTournament) return [];
+
+  const nextKnockout = getKnockoutDisplay(nextTournament, settings.knockoutSplitThreshold);
+  const nextStatus = nextTournament?.tournamentSettings?.status || nextTournament?.status;
+  const isKnockout = nextStatus === "knockout" || nextStatus === "finished";
+  if (isKnockout && nextKnockout.finalMatch?.status === "ongoing") {
+    return [];
+  }
 
   const urgent: UrgentEvent[] = [];
 
