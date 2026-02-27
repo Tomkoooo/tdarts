@@ -1,27 +1,28 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserContext } from './useUser';
 import axios from 'axios';
 
+const syncedSessionUsers = new Set<string>();
+
 export const useAuthSync = () => {
   const { data: session, status } = useSession();
-  const { user, setUser } = useUserContext();
-  const syncedRef = useRef(false);
+  const { setUser } = useUserContext();
+  const sessionEmail = session?.user?.email || '';
 
   useEffect(() => {
     const syncAuth = async () => {
       console.log('AuthSync - Effect triggered:', {
         hasSession: !!session?.user,
-        hasUser: !!user,
         status,
         sessionUser: session?.user ? { email: session.user.email, name: session.user.name } : null
       });
       
-      // Always try to sync if there's a NextAuth session but no JWT token in context
-      if (session?.user && status === 'authenticated' && !syncedRef.current) {
+      // In dev StrictMode, effects remount; keep sync idempotent per session email.
+      if (session?.user && status === 'authenticated' && sessionEmail && !syncedSessionUsers.has(sessionEmail)) {
         console.log('AuthSync - NextAuth session found, syncing with context:', session.user);
-        syncedRef.current = true;
+        syncedSessionUsers.add(sessionEmail);
         
         try {
           // Hívjuk meg a Google OAuth callback API-t a JWT token generálásához
@@ -43,21 +44,13 @@ export const useAuthSync = () => {
             console.log('AuthSync - User not found, creating new user...');
             // Itt lehetne egy modal-t megjeleníteni a fiók létrehozásához
           }
+          syncedSessionUsers.delete(sessionEmail);
         }
-      }
-      
-      // Ha nincs NextAuth session és van user a context-ben, akkor töröljük
-      // DE csak akkor, ha a user Google OAuth-val jelentkezett be
-      if (!session && user && status === 'unauthenticated') {
-        // Ellenőrizzük, hogy a user Google OAuth-val jelentkezett be
-        // Ha igen, akkor töröljük, ha nem, akkor megtartjuk (manuális bejelentkezés)
-        console.log('AuthSync - No NextAuth session, but keeping user in context (manual login)');
-        // setUser(undefined); // Kommenteltük ki, hogy ne törölje a manuális bejelentkezést
       }
     };
 
     syncAuth();
-  }, [session, user, setUser, status]);
+  }, [session, sessionEmail, setUser, status]);
 
-  return { session, user, status };
+  return { session, status };
 };

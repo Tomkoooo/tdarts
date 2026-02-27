@@ -91,3 +91,25 @@ export const updateToast = (toastId: string, type: 'success' | 'error', message:
     showErrorToast(message, { reportable: false });
   }
 };
+
+export const showLocationReviewToast = (message: string, actionLabel: string, onAction: () => void) => {
+  toast(
+    (t) => (
+      <div className="flex flex-col gap-2 text-black">
+        <span className="text-sm font-medium">{message}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-white"
+          onClick={() => {
+            onAction();
+            toast.dismiss(t.id);
+          }}
+        >
+          {actionLabel}
+        </Button>
+      </div>
+    ),
+    { duration: 9000, id: `location-review-${Date.now()}` }
+  );
+};

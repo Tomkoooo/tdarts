@@ -14,6 +14,18 @@ export async function POST(request: Request) {
         const activeTab = tab || 'tournaments';
 
         switch (activeTab) {
+            case 'global': {
+                const globalResults = await SearchService.searchGlobal(query || '', filters);
+                const flattened = [
+                    ...globalResults.results.tournaments.map((item) => ({ ...item, __entityType: 'tournament' })),
+                    ...globalResults.results.players.map((item) => ({ ...item, __entityType: 'player' })),
+                    ...globalResults.results.clubs.map((item) => ({ ...item, __entityType: 'club' })),
+                    ...globalResults.results.leagues.map((item) => ({ ...item, __entityType: 'league' })),
+                ];
+
+                resultsData = { results: flattened, total: globalResults.total };
+                break;
+            }
             case 'tournaments':
                 resultsData = await SearchService.searchTournaments(query || '', filters);
                 break;
@@ -22,7 +34,8 @@ export async function POST(request: Request) {
                     resultsData = await SearchService.getSeasonTopPlayers(
                         Number(filters.year), 
                         filters.limit || 10, 
-                        ((filters.page || 1) - 1) * (filters.limit || 10)
+                        ((filters.page || 1) - 1) * (filters.limit || 10),
+                        filters
                     );
                 } else {
                     resultsData = await SearchService.searchPlayers(query || '', filters);
@@ -49,7 +62,15 @@ export async function POST(request: Request) {
                 limit: filters?.limit || 10
             },
             counts: counts,
-            metadata: metadata
+            metadata: metadata,
+            groupedResults: tab === 'global'
+                ? {
+                    tournaments: resultsData.results.filter((item) => item.__entityType === 'tournament'),
+                    players: resultsData.results.filter((item) => item.__entityType === 'player'),
+                    clubs: resultsData.results.filter((item) => item.__entityType === 'club'),
+                    leagues: resultsData.results.filter((item) => item.__entityType === 'league'),
+                }
+                : undefined
         });
 
     } catch (error) {

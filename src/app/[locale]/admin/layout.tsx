@@ -38,59 +38,65 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
   const pathname = usePathname()
   const t = useTranslations("Admin.layout")
 
-  const sidebarItems = useMemo(() => ([
+  type SidebarItem = {
+    title: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+  };
+
+  const sidebarItems = useMemo<SidebarItem[]>(() => ([
     {
-      title: "sidebar_dashboard_a3kc",
+      title: "sidebar.dashboard",
       href: "/admin",
       icon: IconLayoutDashboard,
     },
     {
-      title: "sidebar_users_arcp",
+      title: "sidebar.users",
       href: "/admin/users",
       icon: IconUsers,
     },
     {
-      title: "sidebar_clubs_b1d5",
+      title: "sidebar.clubs",
       href: "/admin/clubs",
       icon: IconBuilding,
     },
     {
-      title: "sidebar_tournaments_6vcv",
+      title: "sidebar.tournaments",
       href: "/admin/tournaments",
       icon: IconTrophy,
     },
     {
-      title: "sidebar_leagues_xluc",
+      title: "sidebar.leagues",
       href: "/admin/leagues",
       icon: IconMedal,
     },
     {
-      title: "sidebar_feedback_ic83",
+      title: "sidebar.feedback",
       href: "/admin/feedback",
       icon: IconMessageCircle,
     },
     {
-      title: "sidebar_errors_e0kt",
+      title: "sidebar.errors",
       href: "/admin/errors",
       icon: IconAlertTriangle,
     },
     {
-      title: "sidebar_announcements_pvfc",
+      title: "sidebar.announcements",
       href: "/admin/announcements",
       icon: IconSpeakerphone,
     },
     {
-      title: "sidebar_todos_arz2",
+      title: "sidebar.todos",
       href: "/admin/todos",
       icon: IconCheck,
     },
     {
-      title: "sidebar_emails_dxiv",
+      title: "sidebar.emails",
       href: "/admin/emails",
       icon: IconMail,
     },
     {
-      title: "sidebar_settings_psqa",
+      title: "sidebar.settings",
       href: "/admin/settings",
       icon: IconSettings,
     },
@@ -118,8 +124,8 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
               isCollapsed && "justify-center px-3"
             )}
           >
-            <Icon className={cn("h-5 w-5 flex-shrink-0")} />
-            {!isCollapsed && <span className="truncate">{t(item.title as any)}</span>}
+            <Icon className={cn("h-5 w-5 shrink-0")} />
+            {!isCollapsed && <span className="truncate">{t(item.title)}</span>}
           </Link>
         )
       })}
@@ -154,6 +160,7 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const t = useTranslations("Admin.layout");
   const { user } = useUserContext()
+  const userId = user?._id
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [adminLoading, setAdminLoading] = useState(true)
   const router = useRouter()
@@ -163,9 +170,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   useEffect(() => {
     const checkAdminStatus = async () => {
       setAdminLoading(true)
-      if (!user) {
+      if (!userId) {
         setAdminLoading(false)
-        router.push(`/auth/login?redirect=${encodeURIComponent('/admin')}`)
+        router.replace(`/auth/login?redirect=${encodeURIComponent('/admin')}`)
         return
       }
 
@@ -175,23 +182,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         
         if (!response.data.isAdmin) {
           setAdminLoading(false)
-          router.push('/profile')
+          router.replace('/profile')
           return
         }
       } catch (error) {
         setAdminLoading(false)
         console.error('Error checking admin status:', error)
-        router.push('/profile')
+        router.replace('/profile')
         return
       } finally {
         setAdminLoading(false)
       }
     }
 
-    if (user) {
-      checkAdminStatus()
-    }
-  }, [user, router])
+    checkAdminStatus()
+  }, [router, userId])
 
   // Loading state
   if (adminLoading || isAdmin === null || !user) {

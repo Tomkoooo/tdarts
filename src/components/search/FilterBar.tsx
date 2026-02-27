@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card } from "@/components/ui/Card"
 import { BadgeCheck } from "lucide-react"
 import { IconTrash } from "@tabler/icons-react"
+import { getCountryOptions } from "@/lib/countries"
 import {
   Select,
   SelectContent,
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useTranslations } from "next-intl"
 
 interface FilterBarProps {
     activeTab: string;
@@ -26,19 +26,20 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiveQuery, onClearQuery }: FilterBarProps) {
-    const t = useTranslations('Search.filter_bar')
+    // Removed: if (activeTab === 'players') return null;
 
     const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: currentYear - 2023 }, (_, i) => currentYear - i);
+    const years = Array.from({ length: currentYear - 2023 }, (_, i) => currentYear - i); // [2025, 2024] etc.
+    const countryOptions = getCountryOptions("hu");
 
     return (
         <div className="flex flex-col gap-4 mb-6">
             
             {/* City Filters - Horizontal Scrolling Chips */}
-            {(activeTab === 'tournaments' || activeTab === 'clubs' || activeTab === 'leagues') && cities.length > 0 && (
+            {(activeTab === 'tournaments' || activeTab === 'clubs') && cities.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                         <Label className="text-sm font-medium text-muted-foreground">{t('popular_cities')}</Label>
+                         <Label className="text-sm font-medium text-muted-foreground">Népszerű városok</Label>
                     </div>
                     <CityChips 
                         cities={cities} 
@@ -49,40 +50,15 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
             )}
 
             {/* Stacked Filter Controls */}
-            {activeTab && (
+            {(activeTab === 'tournaments' || activeTab === 'players') && (
             <Card className="p-4 bg-base-100 border-base-200 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex flex-wrap gap-8 items-center">
                         
-                        {/* Country Filter */}
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-sm font-semibold">{t('country_label')}</Label>
-                            <Select 
-                                value={filters.country || 'all'} 
-                                onValueChange={(val) => onFilterChange('country', val === 'all' ? undefined : val)}
-                            >
-                                <SelectTrigger className="w-[200px]">
-                                    <SelectValue placeholder={t('country_placeholder')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">{t('country_all')}</SelectItem>
-                                    <SelectItem value="hu">{t('country_hu')}</SelectItem>
-                                    <SelectItem value="de">{t('country_de')}</SelectItem>
-                                    <SelectItem value="at">{t('country_at')}</SelectItem>
-                                    <SelectItem value="sk">{t('country_sk')}</SelectItem>
-                                    <SelectItem value="ro">{t('country_ro')}</SelectItem>
-                                    <SelectItem value="hr">{t('country_hr')}</SelectItem>
-                                    <SelectItem value="si">{t('country_si')}</SelectItem>
-                                    <SelectItem value="nl">{t('country_nl')}</SelectItem>
-                                    <SelectItem value="el">{t('country_el')}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
                         {/* Status Filter (Tournaments Only) */}
                         {activeTab === 'tournaments' && (
                             <div className="flex flex-col gap-2">
-                                <Label className="text-sm font-semibold">{t('time_label')}</Label>
+                                <Label className="text-sm font-semibold">Időpont</Label>
                                 <RadioGroup 
                                     value={filters.status === 'all' ? 'all' : 'upcoming'} 
                                     onValueChange={(val) => onFilterChange('status', val)}
@@ -90,11 +66,11 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                 >
                                     <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="upcoming" id="upcoming" />
-                                        <Label htmlFor="upcoming" className="cursor-pointer">{t('upcoming')}</Label>
+                                        <Label htmlFor="upcoming" className="cursor-pointer">Közelgő</Label>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="all" id="all" />
-                                        <Label htmlFor="all" className="cursor-pointer">{t('all')}</Label>
+                                        <Label htmlFor="all" className="cursor-pointer">Összes</Label>
                                     </div>
                                 </RadioGroup>
                             </div>
@@ -102,23 +78,47 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
 
                         {/* Player Year Filter */}
                         {activeTab === 'players' && (
-                            <div className="flex flex-col gap-2">
-                                <Label className="text-sm font-semibold">{t('season_label')}</Label>
-                                <Select 
-                                    value={filters.year ? String(filters.year) : String(currentYear)} 
-                                    onValueChange={(val) => onFilterChange('year', val === String(currentYear) ? undefined : Number(val))}
-                                >
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder={t('select_year')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={String(currentYear)}>{t('current_season')}</SelectItem>
-                                        {years.slice(1).map(year => (
-                                            <SelectItem key={year} value={String(year)}>{t('year_season', { year })}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <>
+                                <div className="flex flex-col gap-2">
+                                    <Label className="text-sm font-semibold">Szezon</Label>
+                                    <Select 
+                                        value={filters.year ? String(filters.year) : String(currentYear)} 
+                                        onValueChange={(val) => onFilterChange('year', val === String(currentYear) ? undefined : Number(val))}
+                                    >
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Válassz évet" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={String(currentYear)}>Jelenlegi Szezon</SelectItem>
+                                            {years.slice(1).map(year => (
+                                                <SelectItem key={year} value={String(year)}>{year}-es Szezon</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Separator orientation="vertical" className="hidden md:block h-10" />
+                                <div className="flex flex-col gap-2">
+                                    <Label className="text-sm font-semibold">Játékos típus</Label>
+                                    <RadioGroup
+                                        value={filters.playerMode || 'all'}
+                                        onValueChange={(val) => onFilterChange('playerMode', val === 'all' ? undefined : val)}
+                                        className="flex gap-4"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="all" id="player-type-all" />
+                                            <Label htmlFor="player-type-all" className="cursor-pointer">Összes</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="individual" id="player-type-individual" />
+                                            <Label htmlFor="player-type-individual" className="cursor-pointer">Egyéni</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="pair" id="player-type-pair" />
+                                            <Label htmlFor="player-type-pair" className="cursor-pointer">Páros</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                            </>
                         )}
 
                         {/* Type Filter (Tournaments Only) */}
@@ -126,7 +126,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                             <>
                                 <Separator orientation="vertical" className="hidden md:block h-10" />
                                 <div className="flex flex-col gap-2">
-                                    <Label className="text-sm font-semibold">{t('type_label')}</Label>
+                                    <Label className="text-sm font-semibold">Típus</Label>
                                     <RadioGroup 
                                         value={filters.tournamentType || 'all'} 
                                         onValueChange={(val) => onFilterChange('tournamentType', val === 'all' ? undefined : val)}
@@ -134,20 +134,44 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     >
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="all" id="type-all" />
-                                            <Label htmlFor="type-all" className="cursor-pointer">{t('type_all')}</Label>
+                                            <Label htmlFor="type-all" className="cursor-pointer">Mind</Label>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="amateur" id="amateur" />
-                                            <Label htmlFor="amateur" className="cursor-pointer">{t('type_amateur')}</Label>
+                                            <Label htmlFor="amateur" className="cursor-pointer">Amatőr</Label>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="open" id="open" />
-                                            <Label htmlFor="open" className="cursor-pointer">{t('type_open')}</Label>
+                                            <Label htmlFor="open" className="cursor-pointer">Nyílt</Label>
                                         </div>
                                     </RadioGroup>
                                 </div>
                             </>
                         )}
+
+                        {/* Country Filter */}
+                        <>
+                            <Separator orientation="vertical" className="hidden md:block h-10" />
+                            <div className="flex flex-col gap-2">
+                                <Label className="text-sm font-semibold">Ország</Label>
+                                <Select
+                                    value={filters.country || 'all'}
+                                    onValueChange={(val) => onFilterChange('country', val === 'all' ? undefined : val)}
+                                >
+                                    <SelectTrigger className="w-[210px]">
+                                        <SelectValue placeholder="Minden ország" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-72">
+                                        <SelectItem value="all">Minden ország</SelectItem>
+                                        {countryOptions.map((country) => (
+                                            <SelectItem key={country.value} value={country.value}>
+                                                {country.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </>
 
                         {/* Verified Toggle (Tournaments Only) */}
                         {activeTab === 'tournaments' && (
@@ -155,7 +179,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                         <Separator orientation="vertical" className="hidden md:block h-10" />
                         <div className="flex flex-col gap-2">
                              <Label className="text-sm font-semibold flex items-center gap-1.5">
-                                {t('verification_label')}
+                                Hitelesítés
                              </Label>
                             <div className="flex items-center space-x-3 h-6">
                                 <Checkbox 
@@ -166,10 +190,10 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                 <Label htmlFor="verified" className="cursor-pointer font-normal flex items-center gap-1.5 text-muted-foreground">
                                     {filters.isVerified ? (
                                         <span className="text-blue-600 font-medium flex items-center gap-1">
-                                            <BadgeCheck className="w-4 h-4" /> {t('verified_showing')}
+                                            <BadgeCheck className="w-4 h-4" /> Hitelesített megjelenítése
                                         </span>
                                     ) : (
-                                        t('verified_only')
+                                        "Csak hitelesített"
                                     )}
                                 </Label>
                             </div>
@@ -180,7 +204,7 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                     </div>
 
                     {/* Clear Filters Button */}
-                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || filters.country || hasActiveQuery) && (
+                    {(filters.status === 'all' || filters.tournamentType || filters.isVerified || filters.city || filters.year || filters.playerMode || filters.country || hasActiveQuery) && (
                          <Button 
                             variant="ghost" 
                             size="icon" 
@@ -191,13 +215,14 @@ export function FilterBar({ activeTab, filters, onFilterChange, cities, hasActiv
                                     isVerified: undefined,
                                     city: undefined,
                                     year: undefined,
+                                    playerMode: undefined,
                                     country: undefined,
                                     page: 1
                                 });
                                 if (onClearQuery) onClearQuery();
                             }}
                             className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                            title={t('clear_filters_title')}
+                            title="Szűrők törlése"
                         >
                             <IconTrash className="w-5 h-5" />
                         </Button>

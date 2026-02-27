@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { showErrorToast } from '@/lib/toastUtils'
-import { useTranslations } from 'next-intl'
+import CountryFlag from '@/components/ui/country-flag'
 
 interface MemberListProps {
   members: {
@@ -48,66 +48,65 @@ export default function MemberList({
   onClubUpdated,
   showActions = true,
 }: MemberListProps) {
-  const t = useTranslations('Club.members')
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
   const [showStatsModal, setShowStatsModal] = useState(false)
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!userId) return
-    const toastId = toast.loading(t('toast.removing'))
+    const toastId = toast.loading('Tag törlése...')
     try {
       const response = await axios.post<Club>(`/api/clubs/${clubId}/removeMember`, {
         userId: memberId,
         requesterId: userId,
       })
       onClubUpdated(response.data)
-      toast.success(t('toast.removed', { name: memberName }), { id: toastId })
+      toast.success(`${memberName} törölve!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || t('toast.remove_error'), {
+      showErrorToast(err.response?.data?.error || 'Tag törlése sikertelen', {
         error: err?.response?.data?.error,
-        context: t('toast.remove_context'),
-        errorName: t('toast.remove_error'),
+        context: 'Tag törlése',
+        errorName: 'Tag törlése sikertelen',
       })
     }
   }
 
   const handleAddModerator = async (memberId: string, memberName: string) => {
     if (!userId) return
-    const toastId = toast.loading(t('toast.adding_mod'))
+    const toastId = toast.loading('Moderátor hozzáadása...')
     try {
       const response = await axios.post<Club>(`/api/clubs/${clubId}/addModerator`, {
         userId: memberId,
         requesterId: userId,
       })
       onClubUpdated(response.data)
-      toast.success(t('toast.added_mod', { name: memberName }), { id: toastId })
+      toast.success(`${memberName} moderátorrá nevezve!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || t('toast.add_mod_error'), {
+      showErrorToast(err.response?.data?.error || 'Moderátor hozzáadása sikertelen', {
         error: err?.response?.data?.error,
-        context: t('toast.add_mod_context'),
-        errorName: t('toast.add_mod_error'),
+        context: 'Moderátor hozzáadása',
+        errorName: 'Moderátor hozzáadása sikertelen',
       })
     }
   }
 
   const handleRemoveModerator = async (memberId: string, memberName: string) => {
     if (!userId) return
-    const toastId = toast.loading(t('toast.removing_mod'))
+    const toastId = toast.loading('Moderátor törlése...')
     try {
       const response = await axios.post<Club>(`/api/clubs/${clubId}/removeModerator`, {
         userId: memberId,
         requesterId: userId,
       })
       onClubUpdated(response.data)
-      toast.success(t('toast.removed_mod', { name: memberName }), { id: toastId })
+      toast.success(`${memberName} moderátori jogai visszavonva!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || t('toast.remove_mod_error'), {
+      showErrorToast(err.response?.data?.error || 'Moderátor törlése sikertelen', {
         error: err?.response?.data?.error,
-        context: t('toast.remove_mod_context'),
-        errorName: t('toast.remove_mod_error'),
+        context: 'Moderátor törlése',
+        errorName: 'Moderátor törlése sikertelen',
       })
     }
   }
@@ -122,19 +121,19 @@ export default function MemberList({
       case 'admin':
         return {
           icon: <IconCrown className="w-3 h-3" />,
-          label: t('roles.admin'),
+          label: 'Adminisztrátor',
           className: 'bg-destructive/10 text-destructive border-destructive/20',
         }
       case 'moderator':
         return {
           icon: <IconShield className="w-3 h-3" />,
-          label: t('roles.moderator'),
+          label: 'Moderátor',
           className: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
         }
       default:
         return {
           icon: <IconUser className="w-3 h-3" />,
-          label: t('roles.member'),
+          label: 'Tag',
           className: 'bg-muted text-muted-foreground',
         }
     }
@@ -148,9 +147,9 @@ export default function MemberList({
         <Card className="bg-muted/15">
           <CardContent className="py-12 flex flex-col items-center justify-center text-muted-foreground">
             <IconUser className="w-12 h-12 mb-4" />
-            <p className="text-lg font-medium">{t('no_members')}</p>
+            <p className="text-lg font-medium">Nincsenek tagok.</p>
             <p className="text-sm text-muted-foreground/80">
-              {t('add_members_prompt')}
+              Adj hozzá játékosokat a klubodhoz, hogy elkezdhesd a közös munkát.
             </p>
           </CardContent>
         </Card>
@@ -192,6 +191,7 @@ export default function MemberList({
                         <h3 className="text-lg font-semibold text-foreground">
                           {member.name}
                         </h3>
+                          <CountryFlag countryCode={(member as any).country} />
                         <Badge variant="outline" className={cn("gap-1 border-none bg-muted/40", roleBadge.className)}>
                           {roleBadge.icon}
                           {roleBadge.label}
@@ -200,12 +200,12 @@ export default function MemberList({
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         {isGuest ? (
                           <Badge variant="outline" className="border-none bg-muted/40 text-muted-foreground">
-                            {t('guest')}
+                            Vendég
                           </Badge>
                         ) : (
                           <>
                             <Badge variant="outline" className="border-none bg-emerald-500/10 text-emerald-500">
-                              {t('registered')}
+                              Regisztrált
                             </Badge>
                             <span>@{member.username}</span>
                           </>
@@ -222,7 +222,7 @@ export default function MemberList({
                       className="gap-2"
                     >
                       <IconChartBar className="w-4 h-4" />
-                      {t('stats')}
+                      Statisztikák
                     </Button>
 
                     {showActions && canManageMembers && !isSelf && (
@@ -239,7 +239,7 @@ export default function MemberList({
                               className="gap-2"
                             >
                               <IconShield className="w-4 h-4" />
-                              {t('promote_moderator')}
+                              Moderátorrá tétel
                             </DropdownMenuItem>
                           )}
                           {canDemote && (
@@ -248,7 +248,7 @@ export default function MemberList({
                               className="gap-2 text-warning focus:text-warning"
                             >
                               <IconShield className="w-4 h-4" />
-                              {t('demote_moderator')}
+                              Moderátor jog elvétel
                             </DropdownMenuItem>
                           )}
                           {canRemove && (
@@ -257,7 +257,7 @@ export default function MemberList({
                               className="gap-2 text-destructive focus:text-destructive"
                             >
                               <IconTrash className="w-4 h-4" />
-                              {t('remove_member')}
+                              Tag törlése
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
+import Cropper from "react-easy-crop"
 import { useForm } from "react-hook-form"
 import axios from "axios"
 import toast from "react-hot-toast"
@@ -14,7 +15,8 @@ import { showErrorToast } from "@/lib/toastUtils"
 import { extractMediaIds } from "@/lib/utils"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Club } from "@/interface/club.interface"
-import { useTranslations } from 'next-intl'
+import getCroppedImg from "@/lib/imageUtils"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface ClubBrandingSettingsProps {
   club: Club
@@ -22,9 +24,16 @@ interface ClubBrandingSettingsProps {
 }
 
 export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandingSettingsProps) {
-  const t = useTranslations('Club.settings.branding_form')
   const [loading, setLoading] = useState(false)
   const [lastSavedAboutText, setLastSavedAboutText] = useState(club.landingPage?.aboutText || club.description || "");
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const [cropTargetField, setCropTargetField] = useState<'logo' | 'coverImage' | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+  const [isCropOpen, setIsCropOpen] = useState(false)
+
+
 
   const { register, handleSubmit, setValue, watch, reset } = useForm({
     defaultValues: {
@@ -89,9 +98,9 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
         try {
             const data = JSON.parse(event.target?.result as string);
             reset(data);
-            toast.success(t('toast.imported'));
+            toast.success("Beállítások betöltve");
         } catch {
-            toast.error(t('toast.import_error'));
+            toast.error("Hibás fájl formátum");
         }
     };
     reader.readAsText(file);
@@ -99,14 +108,34 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
   };
 
   const handleResetDefaults = () => {
-      if(!confirm(t('confirm_reset'))) return;
+      if(!confirm("Biztosan visszaállítasz mindent alaphelyzetbe? A mentés gomb megnyomásáig nem végleges.")) return;
       setValue("primaryColor", "");
       setValue("secondaryColor", "");
       setValue("backgroundColor", "");
       setValue("foregroundColor", "");
       setValue("cardColor", "");
       setValue("cardForegroundColor", "");
-      toast.success(t('toast.reset_success'));
+      toast.success("Színek alaphelyzetbe állítva (Mentsd el a változtatásokat!)");
+  }
+
+  const onCropComplete = React.useCallback((_: any, areaPixels: any) => {
+    setCroppedAreaPixels(areaPixels)
+  }, [])
+
+  const uploadBlobToMedia = async (blob: Blob, fieldName: 'logo' | 'coverImage') => {
+    const formData = new FormData()
+    formData.append('file', blob, `${fieldName}.jpg`)
+    formData.append('clubId', club._id)
+    const toastId = toast.loading("Feltöltés...")
+    try {
+      const res = await axios.post('/api/media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setValue(fieldName, res.data.url)
+      toast.success("Sikeres feltöltés", { id: toastId })
+    } catch {
+      toast.error("Feltöltés sikertelen", { id: toastId })
+    }
   }
 
   const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: 'logo' | 'coverImage') => {
@@ -114,24 +143,32 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
     if (!file) return
 
     if (file.size > 15 * 1024 * 1024) {
-      toast.error(t('toast.size_error'));
+      toast.error("A fájl mérete maximum 15MB lehet");
       return;
     }
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('clubId', club._id)
-
-    const toastId = toast.loading(t('toast.uploading'))
-    try {
-      const res = await axios.post('/api/media', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setValue(fieldName, res.data.url)
-      toast.success(t('toast.upload_success'), { id: toastId })
-    } catch {
-      toast.error(t('toast.upload_error'), { id: toastId })
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+      setCropTargetField(fieldName)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setIsCropOpen(true)
     }
+    reader.readAsDataURL(file)
+  }
+
+  const handleConfirmCrop = async () => {
+    if (!cropImageSrc || !cropTargetField || !croppedAreaPixels) return
+    const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels)
+    if (!croppedBlob) {
+      toast.error("Vágás sikertelen")
+      return
+    }
+    await uploadBlobToMedia(croppedBlob, cropTargetField)
+    setIsCropOpen(false)
+    setCropImageSrc(null)
+    setCropTargetField(null)
   }
 
   const onBrandingSubmit = async (data: any) => {
@@ -154,10 +191,10 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
       })
       
       setLastSavedAboutText(newAboutText); // Update reference for next save
-      toast.success(t('toast.saved'))
+      toast.success("Beállítások mentve")
       onClubUpdated()
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || t('toast.upload_error'))
+      showErrorToast(err.response?.data?.error || "Mentés sikertelen")
     } finally {
       setLoading(false)
     }
@@ -167,8 +204,8 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
             <div>
-                <h3 className="text-lg font-semibold">{t('title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+                <h3 className="text-lg font-semibold">Arculat & Info</h3>
+                <p className="text-sm text-muted-foreground">Kezeld a klub nyilvános megjelenését</p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Input 
@@ -179,13 +216,13 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                   onChange={handleImportConfig}
                 />
                 <Button variant="outline" size="sm" onClick={() => document.getElementById('config-import')?.click()}>
-                    {t('import')}
+                    Import
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleExportConfig}>
-                    {t('export')}
+                    Export
                 </Button>
                 <Button variant="destructive" size="sm" onClick={handleResetDefaults}>
-                    {t('reset')}
+                    Alaphelyzet
                 </Button>
             </div>
         </div>
@@ -193,7 +230,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
         <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
-                    <Label>{t('primary_color')}</Label>
+                    <Label>Elsődleges Szín (Primary)</Label>
                     <div className="flex gap-2">
                         <Input 
                             type="color" 
@@ -205,7 +242,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                     </div>
                  </div>
                  <div>
-                    <Label>{t('secondary_color')}</Label>
+                    <Label>Másodlagos Szín (Secondary)</Label>
                     <div className="flex gap-2">
                         <Input 
                             type="color" 
@@ -213,16 +250,16 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                             onChange={(e) => setValue("secondaryColor", e.target.value)}
                             className="w-12 h-10 p-1 cursor-pointer" 
                         />
-                        <Input {...register("secondaryColor")} value={watch("secondaryColor")} placeholder={t("ffffff_4mgq")} />
+                        <Input {...register("secondaryColor")} value={watch("secondaryColor")} placeholder="#ffffff" />
                     </div>
                  </div>
               </div>
 
               <div className="border-t pt-4 mt-4">
-                  <h3 className="text-sm font-medium mb-3">{t('advanced_colors')}</h3>
+                  <h3 className="text-sm font-medium mb-3">Haladó Színek</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>{t('bg_color')}</Label>
+                        <Label>Háttérszín (Background)</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -230,11 +267,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("backgroundColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("backgroundColor")} value={watch("backgroundColor")} placeholder={t('default_placeholder')} />
+                            <Input {...register("backgroundColor")} value={watch("backgroundColor")} placeholder="Alapértelmezett" />
                         </div>
                      </div>
                      <div>
-                        <Label>{t('fg_color')}</Label>
+                        <Label>Szövegszín (Foreground)</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -242,11 +279,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("foregroundColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("foregroundColor")} value={watch("foregroundColor")} placeholder={t('default_placeholder')} />
+                            <Input {...register("foregroundColor")} value={watch("foregroundColor")} placeholder="Alapértelmezett" />
                         </div>
                      </div>
                      <div>
-                        <Label>{t('card_color')}</Label>
+                        <Label>Kártya Háttér (Card)</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -254,11 +291,11 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("cardColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("cardColor")} value={watch("cardColor")} placeholder={t('default_placeholder')} />
+                            <Input {...register("cardColor")} value={watch("cardColor")} placeholder="Alapértelmezett" />
                         </div>
                      </div>
                      <div>
-                        <Label>{t('card_fg_color')}</Label>
+                        <Label>Kártya Szöveg (Card Foreground)</Label>
                         <div className="flex gap-2">
                             <Input 
                                 type="color" 
@@ -266,7 +303,7 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                                 onChange={(e) => setValue("cardForegroundColor", e.target.value)}
                                 className="w-12 h-10 p-1 cursor-pointer" 
                             />
-                            <Input {...register("cardForegroundColor")} value={watch("cardForegroundColor")} placeholder={t('default_placeholder')} />
+                            <Input {...register("cardForegroundColor")} value={watch("cardForegroundColor")} placeholder="Alapértelmezett" />
                         </div>
                      </div>
                   </div>
@@ -274,12 +311,12 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                      <Label>{t('logo')}</Label>
+                      <Label>Logó</Label>
                       <Input type="file" accept="image/*" onChange={(e) => handleMediaUpload(e, 'logo')} />
                       <input type="hidden" {...register("logo")} />
                       {watch("logo") && (
                         <div className="relative mt-2 w-fit group">
-                            <ImageWithSkeleton src={watch("logo")} alt={t("logo_1evu")} className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
+                            <ImageWithSkeleton src={watch("logo")} alt="Logo" className="h-20 w-20 object-contain border rounded bg-black/20" containerClassName="h-20 w-20" />
                             <Button 
                                 type="button"
                                 variant="destructive" 
@@ -293,12 +330,12 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
                       )}
                   </div>
                   <div>
-                      <Label>{t('cover')}</Label>
+                      <Label>Borítókép</Label>
                       <Input type="file" accept="image/*" onChange={(e) => handleMediaUpload(e, 'coverImage')} />
                       <input type="hidden" {...register("coverImage")} />
                       {watch("coverImage") && (
                         <div className="relative mt-2 w-full max-w-sm group">
-                            <ImageWithSkeleton src={watch("coverImage")} alt={t("cover_12vl")} className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
+                            <ImageWithSkeleton src={watch("coverImage")} alt="Cover" className="h-32 w-full object-cover border rounded bg-black/20" containerClassName="h-32 w-full" />
                              <Button 
                                 type="button"
                                 variant="destructive" 
@@ -314,41 +351,82 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
               </div>
 
               <div>
-                  <Label>{t('about')}</Label>
+                  <Label>Rólunk (Szöveg)</Label>
                   <RichTextEditor 
                     value={watch("aboutText")} 
                     onChange={(val) => setValue("aboutText", val)} 
-                    placeholder={t('about_placeholder')} 
+                    placeholder="Írj a klubról..." 
                   />
               </div>
 
               <div className="border-t pt-4 mt-4">
-                  <h3 className="text-sm font-medium mb-3">{t('seo_title')}</h3>
+                  <h3 className="text-sm font-medium mb-3">SEO Beállítások</h3>
                   <div className="space-y-4">
                       <div>
-                        <Label>{t('meta_title')}</Label>
-                        <Input {...register("seo.title")} placeholder={t('meta_title_placeholder')} />
-                        <p className="text-[10px] text-muted-foreground mt-1">{t('meta_title_desc')}</p>
+                        <Label>Meta Title (SEO Cím)</Label>
+                        <Input {...register("seo.title")} placeholder="Keresőmotorokban megjelenő cím" />
+                        <p className="text-[10px] text-muted-foreground mt-1">Alapértelmezett: a klub neve. Maximális hossz: 100 karakter.</p>
                       </div>
                       <div>
-                        <Label>{t('meta_desc')}</Label>
-                        <Input {...register("seo.description")} placeholder={t('meta_desc_placeholder')} />
-                        <p className="text-[10px] text-muted-foreground mt-1">{t('meta_desc_desc')}</p>
+                        <Label>Meta Description (SEO Leírás)</Label>
+                        <Input {...register("seo.description")} placeholder="Rövid leírás a keresőknek" />
+                        <p className="text-[10px] text-muted-foreground mt-1">Alapértelmezett: a klub leírása. Maximális hossz: 200 karakter.</p>
                       </div>
                       <div>
-                        <Label>{t('keywords')}</Label>
-                        <Input {...register("seo.keywords")} placeholder={t('keywords_placeholder')} />
-                        <p className="text-[10px] text-muted-foreground mt-1">{t('keywords_desc')}</p>
+                        <Label>Kulcsszavak (Keywords)</Label>
+                        <Input {...register("seo.keywords")} placeholder="darts, tornák, klub, helyszín..." />
+                        <p className="text-[10px] text-muted-foreground mt-1">Vesszővel elválasztva.</p>
                       </div>
                   </div>
               </div>
 
               <div className="flex justify-end">
                   <Button onClick={handleSubmit(onBrandingSubmit)} disabled={loading}>
-                    <IconDeviceFloppy className="mr-2 h-4 w-4" /> {t('save')}
+                    <IconDeviceFloppy className="mr-2 h-4 w-4" /> Mentés
                   </Button>
               </div>
         </div>
+
+        <Dialog open={isCropOpen} onOpenChange={setIsCropOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {cropTargetField === 'logo' ? 'Logó vágása (1:1)' : 'Borítókép vágása (16:9)'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="relative h-[420px] w-full overflow-hidden rounded-lg bg-muted">
+              {cropImageSrc && (
+                <Cropper
+                  image={cropImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={cropTargetField === 'logo' ? 1 : 16 / 9}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  showGrid={false}
+                />
+              )}
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(event) => setZoom(Number(event.target.value))}
+              className="w-full"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCropOpen(false)}>
+                Mégse
+              </Button>
+              <Button onClick={handleConfirmCrop}>
+                Vágás és feltöltés
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }

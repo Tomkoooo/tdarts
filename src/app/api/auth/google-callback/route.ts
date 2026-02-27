@@ -113,7 +113,9 @@ export async function POST() {
         isAdmin: user.isAdmin,
         isVerified: user.isVerified,
         profilePicture: user.profilePicture,
-        authProvider: user.authProvider
+        country: user.country || null,
+        authProvider: user.authProvider,
+        locale: user.locale || 'hu'
       }
     });
     

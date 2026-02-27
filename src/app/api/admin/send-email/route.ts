@@ -3,6 +3,8 @@ import { AuthService } from '@/database/services/auth.service';
 import { sendEmail } from '@/lib/mailer';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
+import { EmailTemplateService } from '@/database/services/emailtemplate.service';
+import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from '@/lib/email-layout';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,78 +46,49 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Function to make URLs clickable
-    const makeUrlsClickable = (text: string) => {
-      const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-      return text.replace(urlRegex, (url) => {
-        const href = url.startsWith('http') ? url : `https://${url}`;
-        return `<a href="${href}" target="_blank" style="color: #b62441; text-decoration: underline;">${url}</a>`;
-      });
-    };
+    const resolvedLocale = normalizeEmailLocale(
+      targetUser.locale || language || request.headers.get('accept-language')
+    );
+    const template = await EmailTemplateService.getRenderedTemplate(
+      'admin_user_notification',
+      {
+        userName: targetUser.name || targetUser.username || 'User',
+        customSubject: subject,
+        customMessage: message,
+        language: resolvedLocale,
+      },
+      {
+        locale: resolvedLocale,
+      }
+    );
 
-    // Generate email content based on language preference
-    const isHungarian = language === 'hu';
-    
-    const emailContent = `
-      <div class="email-content" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #b62441 0%, #8a1b31 100%); color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px; font-weight: bold;">
-            ${isHungarian ? 'tDarts - Admin Értesítés' : 'tDarts - Admin Notification'}
-          </h1>
-        </div>
-        
-        <!-- Content -->
-        <div style="padding: 30px;">
-          ${isHungarian ? `
-            <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Kedves ${targetUser.name}!</h2>
-            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
-              A tDarts platform adminisztrátoraként szeretnénk értesíteni Önt a következőről:
-            </p>
-            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
-              <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
-              <p style="color: #374151; margin: 0; white-space: pre-line;">${makeUrlsClickable(message)}</p>
-            </div>
-            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
-              Ha bármilyen kérdése van, kérjük, lépjen kapcsolatba velünk.
-            </p>
-            <p style="color: #374151; line-height: 1.6;">
-              Üdvözlettel,<br>
-              A tDarts admin csapat
-            </p>
-          ` : `
-            <h2 style="color: #b62441; font-size: 20px; margin-bottom: 16px;">Dear ${targetUser.name}!</h2>
-            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
-              As a tDarts platform administrator, we would like to inform you about the following:
-            </p>
-            <div style="background: #f9fafb; border-left: 4px solid #b62441; padding: 16px; margin: 20px 0;">
-              <h3 style="color: #b62441; margin: 0 0 8px 0; font-size: 16px;">${subject}</h3>
-              <p style="color: #374151; margin: 0; white-space: pre-line;">${makeUrlsClickable(message)}</p>
-            </div>
-            <p style="color: #374151; line-height: 1.6; margin-bottom: 16px;">
-              If you have any questions, please contact us.
-            </p>
-            <p style="color: #374151; line-height: 1.6;">
-              Best regards,<br>
-              The tDarts admin team
-            </p>
-          `}
-        </div>
-        
-        <!-- Footer -->
-        <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 12px; margin: 0;">
-            © 2024 tDarts. Minden jog fenntartva.
-          </p>
-        </div>
-      </div>
-    `;
+    const fallbackText =
+      resolvedLocale === 'en'
+        ? `Dear ${targetUser.name || targetUser.username || 'User'},\n\n${subject}\n${message}\n\nBest regards,\ntDarts Admin Team`
+        : `Kedves ${targetUser.name || targetUser.username || 'Felhasználó'},\n\n${subject}\n${message}\n\nÜdvözlettel,\ntDarts Admin csapat`;
 
     await sendEmail({
       to: [targetUser.email],
-      subject: `[tDarts Admin] ${subject}`,
-      text: "",
-      html: emailContent,
+      subject: template?.subject || `[tDarts Admin] ${subject}`,
+      text: template?.text || fallbackText,
+      html:
+        template?.html ||
+        renderMinimalEmailLayout({
+          locale: resolvedLocale,
+          title: `[tDarts Admin] ${subject}`,
+          heading: subject,
+          bodyHtml: textToEmailHtml(fallbackText),
+        }),
+      resendContext: {
+        templateKey: 'admin_user_notification',
+        variables: {
+          userName: targetUser.name || targetUser.username || 'User',
+          customSubject: subject,
+          customMessage: message,
+          language: resolvedLocale,
+        },
+        locale: resolvedLocale,
+      },
     });
 
     return NextResponse.json({ 

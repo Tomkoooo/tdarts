@@ -6,6 +6,7 @@ import { IconAlertCircle, IconArrowLeft, IconSearch } from '@tabler/icons-react'
 
 export default function LiveNotFound() {
     const t = useTranslations("Tournament.live");
+    const tCommon = useTranslations("Common");
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full shadow-xl">
@@ -33,12 +34,12 @@ export default function LiveNotFound() {
             <Button asChild className="flex-1 gap-2">
               <Link href="/tournaments">
                 <IconArrowLeft className="w-4 h-4" />
-                {t("vissza")}</Link>
+                {tCommon("vissza")}</Link>
             </Button>
             <Button asChild variant="outline" className="flex-1 gap-2">
               <Link href="/search">
                 <IconSearch className="w-4 h-4" />
-                {t("keresés")}</Link>
+                {tCommon("keresés")}</Link>
             </Button>
           </div>
 

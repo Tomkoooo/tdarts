@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IconX, IconInfoCircle, IconCircleDashedCheck, IconAlertTriangle, IconAlertOctagon } from '@tabler/icons-react';
 import { Button } from "@/components/ui/Button";
-import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/routing';
 
 interface Announcement {
   _id: string;
@@ -22,10 +20,9 @@ interface AnnouncementToastProps {
 }
 
 const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onClose }) => {
-  const t = useTranslations('Announcements');
-  const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(announcement.duration);
+  const isEnglish = typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('en');
 
   // Icon és szín beállítása típus alapján
   const getToastStyles = () => {
@@ -75,8 +72,8 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       // Hozzáadom a kilépő animációt
       const toastElement = document.querySelector(`[data-toast-id="${announcement._id}"]`);
       if (toastElement) {
-        toastElement.classList.remove(t("animate_slideinfromleft_zbfn"));
-        toastElement.classList.add(t("animate_slideouttoleft_om3m"));
+        toastElement.classList.remove('animate-slideInFromLeft');
+        toastElement.classList.add('animate-slideOutToLeft');
       }
       // Animáció után töröljük a toast-ot
       setTimeout(() => {
@@ -106,7 +103,7 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
       if (announcement.buttonAction.startsWith('http')) {
         window.open(announcement.buttonAction, '_blank');
       } else if (announcement.buttonAction.startsWith('/')) {
-        router.push(announcement.buttonAction);
+        window.location.href = announcement.buttonAction;
       }
     }
   };
@@ -116,8 +113,8 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
     // Hozzáadom a kilépő animációt
     const toastElement = document.querySelector(`[data-toast-id="${announcement._id}"]`);
     if (toastElement) {
-      toastElement.classList.remove(t("animate_slideinfromleft_zbfn"));
-      toastElement.classList.add(t("animate_slideouttoleft_om3m"));
+      toastElement.classList.remove('animate-slideInFromLeft');
+      toastElement.classList.add('animate-slideOutToLeft');
     }
     setTimeout(() => onClose(announcement._id), 500);
   };
@@ -182,7 +179,9 @@ const AnnouncementToast: React.FC<AnnouncementToastProps> = ({ announcement, onC
 
           {/* Time left indicator */}
           <div className="mt-3 text-xs text-base-content/50">
-            {t('auto_close', { seconds: Math.ceil(timeLeft / 1000) })}
+            {isEnglish
+              ? `Auto closes in ${Math.ceil(timeLeft / 1000)} seconds`
+              : `${Math.ceil(timeLeft / 1000)} másodperc múlva automatikusan bezáródik`}
           </div>
         </div>
       </div>

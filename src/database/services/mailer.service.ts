@@ -1,4 +1,5 @@
 import { sendEmail } from '@/lib/mailer';
+import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from '@/lib/email-layout';
 
 export class MailerService {
     /**
@@ -11,6 +12,7 @@ export class MailerService {
             tournamentCode: string;
             freeSpots: number;
             userName: string;
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -26,6 +28,8 @@ export class MailerService {
                 userName: data.userName,
                 tournamentUrl,
                 currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
             });
 
             if (template) {
@@ -34,7 +38,19 @@ export class MailerService {
                     to: [email],
                     subject: template.subject,
                     text: template.text,
-                    html: template.html
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'tournament_spot_available',
+                        variables: {
+                            tournamentName: data.tournamentName,
+                            tournamentCode: data.tournamentCode,
+                            freeSpots: data.freeSpots,
+                            userName: data.userName,
+                            tournamentUrl,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
                 });
             }
 
@@ -189,7 +205,19 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
                 to: [email],
                 subject,
                 text,
-                html
+                html,
+                resendContext: {
+                    templateKey: 'tournament_spot_available',
+                    variables: {
+                        tournamentName: data.tournamentName,
+                        tournamentCode: data.tournamentCode,
+                        freeSpots: data.freeSpots,
+                        userName: data.userName,
+                        tournamentUrl,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale: data.locale,
+                },
             });
         } catch (error) {
             console.error('Failed to send tournament spot available email:', error);
@@ -209,6 +237,7 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
             clubUrl: string;
             profileUrl: string;
             howItWorksUrl: string;
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -224,6 +253,8 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
                 profileUrl: data.profileUrl,
                 howItWorksUrl: data.howItWorksUrl,
                 currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
             });
 
             if (template) {
@@ -231,7 +262,21 @@ Ha nem szeretnél több értesítést kapni erről a tornáról, leiratkozhatsz 
                     to: [email],
                     subject: template.subject,
                     text: template.text,
-                    html: template.html
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'club_registration',
+                        variables: {
+                            clubName: data.clubName,
+                            email,
+                            password: data.password,
+                            loginUrl: data.loginUrl,
+                            clubUrl: data.clubUrl,
+                            profileUrl: data.profileUrl,
+                            howItWorksUrl: data.howItWorksUrl,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
                 });
             }
 
@@ -327,7 +372,21 @@ tDarts Csapat
                 to: [email],
                 subject,
                 text,
-                html
+                html,
+                resendContext: {
+                    templateKey: 'club_registration',
+                    variables: {
+                        clubName: data.clubName,
+                        email,
+                        password: data.password,
+                        loginUrl: data.loginUrl,
+                        clubUrl: data.clubUrl,
+                        profileUrl: data.profileUrl,
+                        howItWorksUrl: data.howItWorksUrl,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale: data.locale,
+                },
             });
         } catch (error) {
             console.error('Failed to send club registration email:', error);
@@ -343,6 +402,7 @@ tDarts Csapat
         data: {
             clubName: string;
             clubUrl: string;
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -353,6 +413,8 @@ tDarts Csapat
                 clubName: data.clubName,
                 clubUrl: data.clubUrl,
                 currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
             });
 
             if (template) {
@@ -360,7 +422,16 @@ tDarts Csapat
                     to: [email],
                     subject: template.subject,
                     text: template.text,
-                    html: template.html
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'club_verification',
+                        variables: {
+                            clubName: data.clubName,
+                            clubUrl: data.clubUrl,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
                 });
             }
 
@@ -430,7 +501,16 @@ tDarts Csapat
                 to: [email],
                 subject,
                 text,
-                html
+                html,
+                resendContext: {
+                    templateKey: 'club_verification',
+                    variables: {
+                        clubName: data.clubName,
+                        clubUrl: data.clubUrl,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale: data.locale,
+                },
             });
         } catch (error) {
             console.error('Failed to send club verification email:', error);
@@ -447,6 +527,7 @@ tDarts Csapat
             tournamentCode: string;
             tournamentDate: string;
             userName: string;
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -459,6 +540,8 @@ tDarts Csapat
                 tournamentUrl,
                 userName: data.userName,
                 currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
             });
 
             if (template) {
@@ -466,15 +549,53 @@ tDarts Csapat
                     to: [email],
                     subject: template.subject,
                     text: template.text,
-                    html: template.html
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'tournament_reminder',
+                        variables: {
+                            tournamentName: data.tournamentName,
+                            tournamentDate: data.tournamentDate,
+                            tournamentUrl,
+                            userName: data.userName,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
                 });
             }
+
+            const locale = normalizeEmailLocale(data.locale);
+            const fallbackSubject =
+                locale === 'en'
+                    ? `🎯 Reminder: Your tournament is today! - ${data.tournamentName}`
+                    : `🎯 Emlékeztető: Ma versenyed van! - ${data.tournamentName}`;
+            const fallbackText =
+                locale === 'en'
+                    ? `Dear ${data.userName}!\n\nThis is a reminder that your tournament ${data.tournamentName} is happening today.\n\nTime: ${data.tournamentDate}\nDetails: ${tournamentUrl}\n\nGood luck!\ntDarts Team`
+                    : `Kedves ${data.userName}!\n\nEmlékeztetni szeretnénk, hogy ma kerül megrendezésre a ${data.tournamentName} verseny!\n\nIdőpont: ${data.tournamentDate}\nTovábbi részletek: ${tournamentUrl}\n\nSok sikert a versenyen!\ntDarts Csapat`;
 
             // Fallback
             return await sendEmail({
                 to: [email],
-                subject: `🎯 Emlékeztető: Ma versenyed van! - ${data.tournamentName}`,
-                text: `Kedves ${data.userName}!\n\nEmlékeztetni szeretnénk, hogy ma kerül megrendezésre a ${data.tournamentName} verseny!\n\nIdőpont: ${data.tournamentDate}\nTovábbi részletek: ${tournamentUrl}\n\nSok sikert a versenyen!\ntDarts Csapat`,
+                subject: fallbackSubject,
+                text: fallbackText,
+                html: renderMinimalEmailLayout({
+                    locale,
+                    title: fallbackSubject,
+                    heading: fallbackSubject,
+                    bodyHtml: textToEmailHtml(fallbackText),
+                }),
+                resendContext: {
+                    templateKey: 'tournament_reminder',
+                    variables: {
+                        tournamentName: data.tournamentName,
+                        tournamentDate: data.tournamentDate,
+                        tournamentUrl,
+                        userName: data.userName,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale,
+                },
             });
         } catch (error) {
             console.error('Failed to send tournament reminder email:', error);
@@ -490,6 +611,7 @@ tDarts Csapat
         data: {
             userName: string;
             verificationCode: string;
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -499,6 +621,8 @@ tDarts Csapat
                 userName: data.userName,
                 verificationCode: data.verificationCode,
                 currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
             });
 
             if (template) {
@@ -506,24 +630,46 @@ tDarts Csapat
                     to: [email],
                     subject: template.subject,
                     text: template.text,
-                    html: template.html
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'email_verification',
+                        variables: {
+                            userName: data.userName,
+                            verificationCode: data.verificationCode,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
                 });
             }
+
+            const locale = normalizeEmailLocale(data.locale);
+            const fallbackSubject = locale === 'en' ? '🎯 tDarts Email Verification' : '🎯 TDarts Email Verifikáció';
+            const fallbackText =
+                locale === 'en'
+                    ? `Dear ${data.userName}!\n\nUse this verification code to confirm your email address:\n\n${data.verificationCode}`
+                    : `Kedves ${data.userName}!\n\nKérjük, erősítse meg email címét az alábbi verifikációs kóddal:\n\n${data.verificationCode}`;
 
             // Fallback
             return await sendEmail({
                 to: [email],
-                subject: '🎯 TDarts Email Verifikáció',
-                html: `
-                    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
-                        <h2 style="color: #cc3333;">Email Verifikáció</h2>
-                        <p>Kedves ${data.userName}!</p>
-                        <p>Kérjük, erősítse meg email címét az alábbi verifikációs kóddal:</p>
-                        <h3 style="color: #cc3333;">${data.verificationCode}</h3>
-                        <p>Üdvözlettel,<br>TDarts Csapat</p>
-                    </div>
-                `,
-                text: `Kedves ${data.userName}!\n\nVerifikációs kódod: ${data.verificationCode}`
+                subject: fallbackSubject,
+                html: renderMinimalEmailLayout({
+                    locale,
+                    title: fallbackSubject,
+                    heading: fallbackSubject,
+                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p>${locale === 'en' ? 'Use this code to verify your email address:' : 'Kérjük, használd az alábbi kódot az email címed megerősítéséhez:'}</p><p style="font-size:24px;font-weight:700;letter-spacing:0.12em;">${data.verificationCode}</p>`,
+                }),
+                text: fallbackText,
+                resendContext: {
+                    templateKey: 'email_verification',
+                    variables: {
+                        userName: data.userName,
+                        verificationCode: data.verificationCode,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale,
+                },
             });
         } catch (error) {
             console.error('Failed to send verification email:', error);
@@ -539,6 +685,7 @@ tDarts Csapat
         data: {
             userName: string;
             resetCode: string;
+            locale?: 'hu' | 'en' | 'de';
         }
     ): Promise<boolean> {
         try {
@@ -548,6 +695,8 @@ tDarts Csapat
                 userName: data.userName,
                 resetCode: data.resetCode,
                 currentYear: new Date().getFullYear(),
+            }, {
+                locale: data.locale,
             });
 
             if (template) {
@@ -555,24 +704,46 @@ tDarts Csapat
                     to: [email],
                     subject: template.subject,
                     text: template.text,
-                    html: template.html
+                    html: template.html,
+                    resendContext: {
+                        templateKey: 'password_reset',
+                        variables: {
+                            userName: data.userName,
+                            resetCode: data.resetCode,
+                            currentYear: new Date().getFullYear(),
+                        },
+                        locale: data.locale || template.locale,
+                    },
                 });
             }
+
+            const locale = normalizeEmailLocale(data.locale);
+            const fallbackSubject = locale === 'en' ? '🎯 tDarts Password Reset' : '🎯 TDarts Jelszó Visszaállítás';
+            const fallbackText =
+                locale === 'en'
+                    ? `Dear ${data.userName}!\n\nUse the following code to reset your password:\n\n${data.resetCode}`
+                    : `Kedves ${data.userName}!\n\nKérjük, használja az alábbi kódot a jelszó visszaállításához:\n\n${data.resetCode}`;
 
             // Fallback
             return await sendEmail({
                 to: [email],
-                subject: '🎯 TDarts Jelszó Visszaállítás',
-                html: `
-                    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0c1414; color: #f2f2f2;">
-                        <h2 style="color: #cc3333;">Jelszó visszaállítás</h2>
-                        <p>Kedves ${data.userName}!</p>
-                        <p>Kérjük, használja az alábbi kódot a jelszó visszaállításához:</p>
-                        <h3 style="color: #cc3333;">${data.resetCode}</h3>
-                        <p>Üdvözlettel,<br>TDarts Csapat</p>
-                    </div>
-                `,
-                text: `Kedves ${data.userName}!\n\nJelszó visszaállító kódod: ${data.resetCode}`
+                subject: fallbackSubject,
+                html: renderMinimalEmailLayout({
+                    locale,
+                    title: fallbackSubject,
+                    heading: fallbackSubject,
+                    bodyHtml: `<p>${locale === 'en' ? `Dear ${data.userName}!` : `Kedves ${data.userName}!`}</p><p>${locale === 'en' ? 'Use this code to reset your password:' : 'Kérjük, használd az alábbi kódot a jelszó visszaállításához:'}</p><p style="font-size:24px;font-weight:700;letter-spacing:0.12em;">${data.resetCode}</p>`,
+                }),
+                text: fallbackText,
+                resendContext: {
+                    templateKey: 'password_reset',
+                    variables: {
+                        userName: data.userName,
+                        resetCode: data.resetCode,
+                        currentYear: new Date().getFullYear(),
+                    },
+                    locale,
+                },
             });
         } catch (error) {
             console.error('Failed to send password reset email:', error);

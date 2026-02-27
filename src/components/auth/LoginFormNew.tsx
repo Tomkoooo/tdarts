@@ -4,13 +4,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconEye, IconEyeOff, IconLogin, IconMail, IconLock, IconBrandGoogle } from '@tabler/icons-react';
-import { Link } from '@/i18n/routing';
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FormField } from '@/components/ui/form-field';
 import { Separator } from '@/components/ui/separator';
-import { useTranslations } from 'next-intl';
+import { getAuthTranslations } from '@/data/translations/auth';
 
 
 type LoginFormData = {
@@ -30,19 +30,18 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
   isLoading = false,
   redirectPath,
 }) => {
-  const t = useTranslations('Auth.login');
-  const tv = useTranslations('Auth.validation');
   const [showPassword, setShowPassword] = useState(false);
-
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
+  const t = getAuthTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu');
   const loginSchema = z.object({
     email: z
       .string()
-      .email(tv('email_invalid'))
-      .min(1, tv('email_required')),
+      .email(t.validEmailError)
+      .min(1, t.emailRequiredError),
     password: z
       .string()
-      .min(6, tv('password_min'))
-      .min(1, tv('password_required')),
+      .min(6, t.passwordMinLengthError)
+      .min(1, t.passwordRequiredError),
   });
 
   const {
@@ -85,117 +84,132 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
           <IconLogin className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <CardTitle className="text-3xl">{t('title')}</CardTitle>
+          <CardTitle className="text-3xl">{t.loginTitle}</CardTitle>
           <CardDescription className="text-base mt-2">
-            {t('subtitle')}
+            {t.loginSubtitle}
           </CardDescription>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <FormField
-            {...register('email')}
-            type="email"
-            label={t('email_label')}
-            placeholder={t('email_placeholder')}
-            error={errors.email?.message}
-            icon={<IconMail className="w-5 h-5" />}
-            disabled={isLoading}
-            required
-          />
-
-          <div className="space-y-2">
-            <FormField
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
-              label={t('password_label')}
-              placeholder={t('password_placeholder')}
-              error={errors.password?.message}
-              icon={<IconLock className="w-5 h-5" />}
-              disabled={isLoading}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-              disabled={isLoading}
-            >
-              {showPassword ? (
-                <>
-                  <IconEyeOff className="w-4 h-4" />
-                  {t('hide_password')}
-                </>
-              ) : (
-                <>
-                  <IconEye className="w-4 h-4" />
-                  {t('show_password')}
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Link
-              href="/auth/forgot-password"
-              className="text-sm text-primary hover:underline transition-colors"
-            >
-              {t('forgot_password')}
-            </Link>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                {t('submitting')}
-              </>
-            ) : (
-              <>
-                <IconLogin className="w-5 h-5" />
-                {t('submit')}
-              </>
-            )}
-          </Button>
-        </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">{t('separator')}</span>
-          </div>
-        </div>
-
         <Button
           type="button"
-          variant="outline"
           className="w-full"
           size="lg"
           onClick={handleGoogleLogin}
           disabled={isLoading}
         >
           <IconBrandGoogle className="w-5 h-5" />
-          {t('google')}
+          {t.loginWithGoogle}
         </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={() => setShowEmailLogin((prev) => !prev)}
+          disabled={isLoading}
+        >
+          <IconMail className="w-5 h-5" />
+          {showEmailLogin ? t.hideEmailLogin : t.loginWithEmail}
+        </Button>
+
+        {showEmailLogin && (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">{t.emailAndPassword}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+              <FormField
+                {...register('email')}
+                type="email"
+                label={t.emailLabel}
+                placeholder={t.emailPlaceholder}
+                error={errors.email?.message}
+                icon={<IconMail className="w-5 h-5" />}
+                disabled={isLoading}
+                required
+              />
+
+              <div className="space-y-2">
+                <FormField
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  label={t.passwordLabel}
+                  placeholder={t.passwordPlaceholder}
+                  error={errors.password?.message}
+                  icon={<IconLock className="w-5 h-5" />}
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <>
+                      <IconEyeOff className="w-4 h-4" />
+                      {t.hidePassword}
+                    </>
+                  ) : (
+                    <>
+                      <IconEye className="w-4 h-4" />
+                      {t.showPassword}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline transition-colors"
+                >
+                  {t.forgotPassword}
+                </Link>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    {t.loggingIn}
+                  </>
+                ) : (
+                  <>
+                    <IconLogin className="w-5 h-5" />
+                    {t.loginButton}
+                  </>
+                )}
+              </Button>
+            </form>
+          </>
+        )}
       </CardContent>
 
       <CardFooter className="flex-col space-y-2">
         <Separator />
         <p className="text-sm text-center text-muted-foreground">
-          {t('no_account')}{' '}
+          {t.noAccount}{' '}
           <Link
             href={`/auth/register${redirectPath ? `?redirect=${redirectPath}` : ''}`}
             className="text-primary hover:underline font-medium transition-colors"
           >
-            {t('register_link')}
+            {t.registerHere}
           </Link>
         </p>
       </CardFooter>
@@ -204,3 +218,4 @@ const LoginFormNew: React.FC<LoginFormNewProps> = ({
 };
 
 export default LoginFormNew;
+

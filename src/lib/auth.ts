@@ -39,7 +39,8 @@ export const authOptions: NextAuthOptions = {
               googleId: account.providerAccountId,
               isVerified: true, // Google OAuth esetén automatikusan verifikált
               profilePicture: user.image,
-              authProvider: 'google'
+              authProvider: 'google',
+              country: null,
             });
             
             console.log('Google OAuth user created:', newUser._id);
@@ -69,6 +70,8 @@ export const authOptions: NextAuthOptions = {
       // Csak akkor frissítsük a token-t, ha új bejelentkezés történt
       if (user && account?.provider === 'google') {
         try {
+          (token as any).googleProviderId = account.providerAccountId;
+
           await connectMongo();
           const dbUser = await UserModel.findOne({ 
             $or: [
@@ -86,6 +89,7 @@ export const authOptions: NextAuthOptions = {
             token.email = dbUser.email;
             token.name = dbUser.name;
             token.username = dbUser.username;
+            token.country = dbUser.country || null;
           }
         } catch (error) {
           console.error('JWT callback error:', error);
@@ -102,6 +106,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).email = token.email as string;
         (session.user as any).name = token.name as string;
         (session.user as any).username = token.username as string;
+        (session.user as any).country = (token.country as string) || null;
+        (session.user as any).googleProviderId = (token as any).googleProviderId as string | undefined;
         
         console.log('Session callback - Updated session:', {
           id: (session.user as any).id,

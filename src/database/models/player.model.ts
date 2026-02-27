@@ -77,7 +77,7 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
     }],
     profilePicture: { type: String, default: null },
     publicConsent: { type: Boolean, default: false },
-    country: { type: String, default: 'hu' }
+    country: { type: String, default: null },
 }, {collection: 'players'});
 
 export const PlayerModel = mongoose.models.Player || mongoose.model<PlayerDocument>("Player", PlayerSchema);

@@ -16,7 +16,9 @@ import {
   IconUsers,
   IconCheck,
   IconX,
-  IconDotsVertical
+  IconDotsVertical,
+  IconLock,
+  IconSend,
 } from "@tabler/icons-react"
 import toast from "react-hot-toast"
 import { Card, CardContent, CardHeader } from "@/components/ui/Card"
@@ -56,6 +58,16 @@ interface AdminUser {
   isVerified: boolean
   createdAt: string
   lastLogin?: string
+  playerProfile?: {
+    _id: string
+    name: string
+    honors: Array<{
+      title: string
+      year: number
+      type: "rank" | "tournament" | "special"
+      description?: string
+    }>
+  } | null
 }
 
 interface UserStats {
@@ -137,6 +149,85 @@ export default function AdminUsersPage() {
       toast.success(t("felhasználó_deaktiválva"))
     } catch {
       toast.error(t("hiba_történt_a_29"))
+    }
+  }
+
+  const toggleVerifiedStatus = async (user: AdminUser) => {
+    try {
+      await axios.patch(`/api/admin/users/${user._id}`, { isVerified: !user.isVerified })
+      fetchUsers(page, searchTerm, roleFilter)
+      toast.success(!user.isVerified ? "Email megerősítve" : "Email megerősítés visszavonva")
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Hiba történt az ellenőrzés során")
+    }
+  }
+
+  const setUserPassword = async (user: AdminUser) => {
+    const newPassword = window.prompt(`Adj meg új jelszót a felhasználóhoz (${user.email})`)
+    if (!newPassword) return
+    if (newPassword.length < 8) {
+      toast.error("A jelszónak legalább 8 karakteresnek kell lennie")
+      return
+    }
+
+    try {
+      await axios.post(`/api/admin/users/${user._id}/set-password`, { newPassword })
+      toast.success("Jelszó sikeresen frissítve")
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Jelszó frissítése sikertelen")
+    }
+  }
+
+  const sendResetPassword = async (user: AdminUser) => {
+    if (!window.confirm(`Reset jelszó email küldése ennek a felhasználónak?\n${user.email}`)) return
+
+    try {
+      await axios.post(`/api/admin/users/${user._id}/send-reset`)
+      toast.success("Reset email elküldve")
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Reset email küldése sikertelen")
+    }
+  }
+
+  const editPlayerName = async (user: AdminUser) => {
+    if (!user.playerProfile?._id) {
+      toast.error("Ehhez a felhasználóhoz nem található játékos profil")
+      return
+    }
+
+    const newName = window.prompt("Új játékos profil név", user.playerProfile.name || user.name)
+    if (!newName || newName.trim().length < 2) return
+
+    try {
+      await axios.patch(`/api/admin/players/${user.playerProfile._id}`, { name: newName.trim() })
+      fetchUsers(page, searchTerm, roleFilter)
+      toast.success("Játékos profil név frissítve")
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Játékos név frissítése sikertelen")
+    }
+  }
+
+  const editPlayerHonors = async (user: AdminUser) => {
+    if (!user.playerProfile?._id) {
+      toast.error("Ehhez a felhasználóhoz nem található játékos profil")
+      return
+    }
+
+    const currentHonors = user.playerProfile.honors || []
+    const input = window.prompt(
+      "Honors szerkesztése JSON-ben (title, year, type, description?).",
+      JSON.stringify(currentHonors, null, 2)
+    )
+
+    if (input === null) return
+
+    try {
+      const parsedHonors = JSON.parse(input)
+      await axios.patch(`/api/admin/players/${user.playerProfile._id}`, { honors: parsedHonors })
+      fetchUsers(page, searchTerm, roleFilter)
+      toast.success("Játékos honors frissítve")
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Hibás JSON vagy mentési hiba")
     }
   }
 
@@ -266,7 +357,7 @@ export default function AdminUsersPage() {
                 users.map((user) => (
                   <TableRow key={user._id} className="group hover:bg-muted/30 transition-colors">
                     <TableCell>
-                      <div className="size-9 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-xs font-bold text-primary border border-white/10">
+                      <div className="size-9 rounded-full bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-xs font-bold text-primary border border-white/10">
                         {user.name.slice(0, 2).toUpperCase()}
                       </div>
                     </TableCell>
@@ -316,6 +407,27 @@ export default function AdminUsersPage() {
                           <DropdownMenuItem onClick={() => toggleAdminStatus(user._id, user.isAdmin)}>
                             <IconShield className="size-4 mr-2" />
                             {user.isAdmin ? "Admin jog elvétele" : "Adminná tétel"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleVerifiedStatus(user)}>
+                            <IconCheck className="size-4 mr-2" />
+                            {user.isVerified ? "Email megerősítés visszavonása" : "Email manuális megerősítése"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setUserPassword(user)}>
+                            <IconLock className="size-4 mr-2" />
+                            Jelszó közvetlen beállítása
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => sendResetPassword(user)}>
+                            <IconSend className="size-4 mr-2" />
+                            Jelszó reset email küldése
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => editPlayerName(user)}>
+                            <IconUser className="size-4 mr-2" />
+                            Játékos profil név szerkesztése
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => editPlayerHonors(user)}>
+                            <IconCrown className="size-4 mr-2" />
+                            Játékos honors szerkesztése
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => deactivateUser(user._id)}>
                             <IconTrash className="size-4 mr-2" />

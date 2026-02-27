@@ -8,7 +8,6 @@ import { useUserContext } from '@/hooks/useUser';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { useTranslations } from 'next-intl';
 
 interface Message {
   _id?: string;
@@ -41,8 +40,6 @@ interface AdminTicketDetailProps {
 }
 
 export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpdate }: AdminTicketDetailProps) {
-  const t = useTranslations("Admin.tickets");
-  const tf = useTranslations("Admin.feedback");
   const { user } = useUserContext();
   const [ticket, setTicket] = React.useState(initialTicket);
   const [replyContent, setReplyContent] = React.useState('');
@@ -50,6 +47,14 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
   const [status, setStatus] = React.useState(ticket.status);
   const [priority, setPriority] = React.useState(ticket.priority);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const markedReadTicketRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    setTicket(initialTicket);
+    setStatus(initialTicket.status);
+    setPriority(initialTicket.priority);
+    markedReadTicketRef.current = null;
+  }, [initialTicket]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,23 +67,34 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
   // Mark ticket as read when opened (admin)
   React.useEffect(() => {
     const markAsRead = async () => {
-      if (!ticket.isReadByAdmin) {
+      if (!ticket.isReadByAdmin && markedReadTicketRef.current !== ticket._id) {
         try {
+          markedReadTicketRef.current = ticket._id;
           await axios.post(`/api/feedback/${ticket._id}/mark-read`);
+          setTicket((prev) => ({ ...prev, isReadByAdmin: true }));
           onUpdate?.();
         } catch (error) {
+          markedReadTicketRef.current = null;
           console.error('Error marking ticket as read:', error);
         }
       }
     };
     markAsRead();
-  }, [ticket._id, ticket.isReadByAdmin, onUpdate]);
+  }, [ticket._id, ticket.isReadByAdmin]);
+
+  React.useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onBack();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onBack]);
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!replyContent.trim()) {
-      toast.error(t('toasts.empty_message'));
+      toast.error('Az üzenet nem lehet üres');
       return;
     }
 
@@ -91,12 +107,12 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
       if (response.data.success) {
         setTicket(response.data.data);
         setReplyContent('');
-        toast.success(t('toasts.reply_success'));
+        toast.success('Válasz elküldve');
         onUpdate?.();
       }
     } catch (error: any) {
       console.error('Error sending reply:', error);
-      toast.error(error.response?.data?.error || t('toasts.reply_error'));
+      toast.error(error.response?.data?.error || 'Hiba történt az üzenet küldése során');
     } finally {
       setIsSending(false);
     }
@@ -104,7 +120,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
 
   const handleStatusChange = async () => {
     if (status === ticket.status && priority === ticket.priority) {
-      toast.error(t('toasts.no_change'));
+      toast.error('Nincs változás');
       return;
     }
 
@@ -115,7 +131,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
         emailNotification: 'status'
       });
 
-      toast.success(t('toasts.status_updated'));
+      toast.success('Státusz frissítve');
       // Refresh ticket to get updated messages
       const response = await axios.get(`/api/admin/feedback/${ticket._id}`);
       if (response.data.success) {
@@ -124,7 +140,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
       onUpdate?.();
     } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error(t('toasts.status_error'));
+      toast.error('Hiba a státusz frissítése során');
     }
   };
 
@@ -147,15 +163,34 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
     return colors[status] || colors.pending;
   };
 
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'pending': 'Függőben',
+      'in-progress': 'Folyamatban',
+      'resolved': 'Megoldva',
+      'rejected': 'Elutasítva',
+      'closed': 'Lezárva'
+    };
+    return labels[status] || status;
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-white/10 rounded-lg w-full max-w-4xl h-[85vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onBack();
+      }}
+    >
+      <div
+        className="bg-card border border-white/10 rounded-lg w-full max-w-4xl h-[85vh] flex flex-col"
+        onClick={(event) => event.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={onBack}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -168,8 +203,8 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
               </div>
             </div>
           </div>
-          <span className={`px-3 py-1 text-xs rounded-full border flex-shrink-0 ${getStatusColor(ticket.status)}`}>
-            {tf(`statuses.${ticket.status}` as any)}
+          <span className={`px-3 py-1 text-xs rounded-full border shrink-0 ${getStatusColor(ticket.status)}`}>
+            {getStatusLabel(ticket.status)}
           </span>
         </div>
 
@@ -189,7 +224,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
               }
 
               const isOwn = isOwnMessage(message);
-              const senderName = message.sender?.name || t('detail.system_sender');
+              const senderName = message.sender?.name || 'Rendszer';
               const isAdmin = message.sender?.isAdmin;
 
               return (
@@ -220,7 +255,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
             })
           ) : (
             <div className="text-center text-gray-400 py-8">
-              {t('detail.no_messages')}
+              Még nincs üzenet ebben a ticketben
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -231,32 +266,32 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
           {/* Status & Priority Controls */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs">{t('detail.status')}</Label>
+              <Label className="text-xs">Státusz</Label>
               <Select value={status} onValueChange={(v: any) => setStatus(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">{tf('statuses.pending')}</SelectItem>
-                  <SelectItem value="in-progress">{tf('statuses.in-progress')}</SelectItem>
-                  <SelectItem value="resolved">{tf('statuses.resolved')}</SelectItem>
-                  <SelectItem value="rejected">{tf('statuses.rejected')}</SelectItem>
-                  <SelectItem value="closed">{tf('statuses.closed')}</SelectItem>
+                  <SelectItem value="pending">Függőben</SelectItem>
+                  <SelectItem value="in-progress">Folyamatban</SelectItem>
+                  <SelectItem value="resolved">Megoldva</SelectItem>
+                  <SelectItem value="rejected">Elutasítva</SelectItem>
+                  <SelectItem value="closed">Lezárva</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs">{t('detail.priority')}</Label>
+              <Label className="text-xs">Prioritás</Label>
               <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">{tf('priorities.low')}</SelectItem>
-                  <SelectItem value="medium">{tf('priorities.medium')}</SelectItem>
-                  <SelectItem value="high">{tf('priorities.high')}</SelectItem>
-                  <SelectItem value="critical">{tf('priorities.critical')}</SelectItem>
+                  <SelectItem value="low">Alacsony</SelectItem>
+                  <SelectItem value="medium">Közepes</SelectItem>
+                  <SelectItem value="high">Magas</SelectItem>
+                  <SelectItem value="critical">Kritikus</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -268,7 +303,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
               className="w-full"
               variant="secondary"
             >
-              {t('detail.save_status')}
+              Státusz mentése
             </Button>
           )}
 
@@ -279,7 +314,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
                 type="text"
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                placeholder={t('detail.reply_placeholder')}
+                placeholder="Írj egy üzenetet..."
                 disabled={isSending}
                 className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-accent disabled:opacity-50"
               />
@@ -289,7 +324,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
                 className="px-4 py-2 bg-accent hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                {t('detail.send_btn')}
+                Küldés
               </button>
             </form>
           )}

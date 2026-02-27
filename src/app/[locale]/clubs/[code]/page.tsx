@@ -6,7 +6,9 @@ import { useRouter } from "@/i18n/routing"
 import { useParams, useSearchParams } from "next/navigation"
 import axios from "axios"
 import toast from "react-hot-toast"
-import { showErrorToast } from "@/lib/toastUtils"
+import { showErrorToast, showLocationReviewToast } from "@/lib/toastUtils"
+import { shouldPromptLocationReview } from "@/interface/location.interface"
+import { getMapSettingsTranslations } from "@/data/translations/map-settings"
 import { useUserContext } from "@/hooks/useUser"
 import { Club } from "@/interface/club.interface"
 import ClubLayout from "@/components/club/ClubLayout"
@@ -21,11 +23,13 @@ import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 
 export default function ClubDetailPage() {
     const t = useTranslations("Club.pages");
+  const mt = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
   const { user } = useUserContext()
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
   const code = params.code as string
+  const locationToastShown = React.useRef(false)
 
   // State
   const [club, setClub] = React.useState<Club | null>(null)
@@ -115,6 +119,22 @@ export default function ClubDetailPage() {
 
     fetchClubAndRole()
   }, [code, user, router])
+
+  // Location review prompt for admins/moderators
+  React.useEffect(() => {
+    const canReviewLocation = userRole === 'admin' || userRole === 'moderator'
+    if (!club || !canReviewLocation || locationToastShown.current) return
+    if (!shouldPromptLocationReview(club.structuredLocation, club.location || club.address)) return
+
+    locationToastShown.current = true
+    showLocationReviewToast(
+      mt.locationReviewClubMessage,
+      mt.locationReviewAction,
+      () => {
+        router.push(`/clubs/${code}?page=settings`)
+      }
+    )
+  }, [club, userRole, router, code, mt.locationReviewAction, mt.locationReviewClubMessage])
 
   // Action handlers
   const handleLeaveClub = async () => {
@@ -296,7 +316,7 @@ export default function ClubDetailPage() {
         <div className="text-4xl font-bold mb-4 flex flex-col">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
         </div>
-        <div className="text-xl mb-4">{t("klub_betöltése_folyamatban")}</div>
+        <div className="text-xl mb-4">{t("loading_club")}</div>
       </div>
     </div>
   )

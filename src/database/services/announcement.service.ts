@@ -4,6 +4,12 @@ import { AnnouncementModel, AnnouncementDocument } from '../models/announcement.
 export interface CreateAnnouncementData {
   title: string;
   description: string;
+  localized?: {
+    hu?: { title?: string; description?: string; buttonText?: string };
+    en?: { title?: string; description?: string; buttonText?: string };
+    de?: { title?: string; description?: string; buttonText?: string };
+  };
+  localeVisibilityMode?: 'strict' | 'fallback_en';
   type: 'info' | 'success' | 'warning' | 'error';
   showButton?: boolean;
   buttonText?: string;
@@ -15,6 +21,12 @@ export interface CreateAnnouncementData {
 export interface UpdateAnnouncementData {
   title?: string;
   description?: string;
+  localized?: {
+    hu?: { title?: string; description?: string; buttonText?: string };
+    en?: { title?: string; description?: string; buttonText?: string };
+    de?: { title?: string; description?: string; buttonText?: string };
+  };
+  localeVisibilityMode?: 'strict' | 'fallback_en';
   type?: 'info' | 'success' | 'warning' | 'error';
   isActive?: boolean;
   showButton?: boolean;
@@ -25,14 +37,43 @@ export interface UpdateAnnouncementData {
 }
 
 export class AnnouncementService {
-  static async getActiveAnnouncements(): Promise<AnnouncementDocument[]> {
+  private static resolveLocaleFields(announcement: any, locale: 'hu' | 'en' | 'de') {
+    const localized = announcement.localized || {};
+    const mode = announcement.localeVisibilityMode || 'strict';
+    const current = localized[locale] || {};
+    const hasCurrent = Boolean(current.title || current.description || current.buttonText);
+    const fallbackEn = localized.en || {};
+    const hasFallbackEn = Boolean(fallbackEn.title || fallbackEn.description || fallbackEn.buttonText);
+
+    if (!hasCurrent && mode === 'strict') {
+      return null;
+    }
+
+    const resolved = hasCurrent ? current : (mode === 'fallback_en' ? fallbackEn : {});
+    if (!hasCurrent && mode === 'fallback_en' && !hasFallbackEn) {
+      return null;
+    }
+
+    return {
+      ...announcement,
+      title: resolved.title || announcement.title,
+      description: resolved.description || announcement.description,
+      buttonText: resolved.buttonText || announcement.buttonText,
+    };
+  }
+
+  static async getActiveAnnouncements(locale: 'hu' | 'en' | 'de' = 'hu'): Promise<any[]> {
     await connectMongo();
     
     const now = new Date();
-    return await AnnouncementModel.find({
+    const announcements = await AnnouncementModel.find({
       isActive: true,
       expiresAt: { $gt: now }
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).lean();
+
+    return announcements
+      .map((announcement: any) => this.resolveLocaleFields(announcement, locale))
+      .filter(Boolean);
   }
 
   static async getAllAnnouncements(): Promise<AnnouncementDocument[]> {
@@ -48,7 +89,13 @@ export class AnnouncementService {
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { description: { $regex: search, $options: 'i' } },
+        { 'localized.hu.title': { $regex: search, $options: 'i' } },
+        { 'localized.hu.description': { $regex: search, $options: 'i' } },
+        { 'localized.en.title': { $regex: search, $options: 'i' } },
+        { 'localized.en.description': { $regex: search, $options: 'i' } },
+        { 'localized.de.title': { $regex: search, $options: 'i' } },
+        { 'localized.de.description': { $regex: search, $options: 'i' } },
       ];
     }
 

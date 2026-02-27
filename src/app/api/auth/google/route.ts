@@ -45,6 +45,7 @@ export async function POST() {
         isAdmin: user.isAdmin,
         isVerified: user.isVerified,
         profilePicture: user.profilePicture,
+        country: user.country || null,
         authProvider: user.authProvider
       }
     });

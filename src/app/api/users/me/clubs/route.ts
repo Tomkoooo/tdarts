@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
       name: club.name,
       description: club.description,
       location: club.location,
+      billingCountry: club.billingInfo?.country || null,
+      hasBillingCountry: !!club.billingInfo?.country,
       role: club.admin.includes(userId as any) ? 'admin' : 
             club.moderators.includes(userId as any) ? 'moderator' : 'member'
     }));

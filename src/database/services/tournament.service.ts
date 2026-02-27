@@ -15,6 +15,7 @@ import { OacMmrService } from './oac-mmr.service';
 import { TournamentGroupService } from './tournament-group.service';
 import { TournamentStatsService } from './tournament-stats.service';
 import { TournamentPlayerService } from './tournament-player.service';
+import { GeocodingService } from './geocoding.service';
 
 export class TournamentService {
     // Initialize indexes when the service is first used
@@ -81,6 +82,17 @@ export class TournamentService {
         // Ensure no code field is present (to avoid duplicate key errors)
         const tournamentData = { ...tournament };
         delete (tournamentData as any).code;
+
+        const locationInput = tournamentData.tournamentSettings?.location;
+        if (typeof locationInput === 'string' && locationInput.trim()) {
+            const geocodeResult = await GeocodingService.geocodeAddress(locationInput, 'user');
+            if (tournamentData.tournamentSettings) {
+                tournamentData.tournamentSettings = {
+                    ...tournamentData.tournamentSettings,
+                    locationData: geocodeResult.location,
+                } as TournamentSettings;
+            }
+        }
 
         // Sandbox check: Limit to 5 per month per club
         if (tournamentData.clubId && tournamentData.isSandbox) {
@@ -252,6 +264,16 @@ export class TournamentService {
                         await match.populate('scorer');
                     }
                 }
+            }
+        }
+
+        if (!tournament.tournamentSettings?.locationData?.rawInput && tournament.tournamentSettings?.location) {
+            try {
+                const geocodeResult = await GeocodingService.geocodeAddress(tournament.tournamentSettings.location, 'legacy');
+                tournament.tournamentSettings.locationData = geocodeResult.location as any;
+                await tournament.save();
+            } catch (error) {
+                console.error('Tournament lazy geocode failed:', error);
             }
         }
         return tournament;
@@ -3411,6 +3433,381 @@ export class TournamentService {
         }
     }
 
+    static async getHeadToHead(
+        playerAId: string,
+        playerBId: string,
+        options?: { season?: number; tournamentCode?: string }
+    ): Promise<{
+        playerA: { _id: string; name: string; country?: string | null };
+        playerB: { _id: string; name: string; country?: string | null };
+        summary: {
+            matchesPlayed: number;
+            playerAWins: number;
+            playerBWins: number;
+            playerALegsWon: number;
+            playerBLegsWon: number;
+            playerAAverage: number;
+            playerBAverage: number;
+            playerAHighestCheckout: number;
+            playerBHighestCheckout: number;
+            playerAOneEighties: number;
+            playerBOneEighties: number;
+        };
+        allTimeComparison: {
+            playerA: {
+                matchesPlayed: number;
+                wins: number;
+                losses: number;
+                winRate: number;
+                avg: number;
+                highestCheckout: number;
+                oneEightiesCount: number;
+            };
+            playerB: {
+                matchesPlayed: number;
+                wins: number;
+                losses: number;
+                winRate: number;
+                avg: number;
+                highestCheckout: number;
+                oneEightiesCount: number;
+            };
+        };
+        matches: Array<{
+            _id: string;
+            date: Date;
+            type: string;
+            round: number;
+            winnerId?: string;
+            tournament: {
+                _id: string;
+                tournamentId: string;
+                name: string;
+                startDate?: Date;
+            };
+            playerA: {
+                legsWon: number;
+                average: number;
+                highestCheckout: number;
+                oneEightiesCount: number;
+            };
+            playerB: {
+                legsWon: number;
+                average: number;
+                highestCheckout: number;
+                oneEightiesCount: number;
+            };
+        }>;
+    }> {
+        await connectMongo();
+
+        const [playerA, playerB] = await Promise.all([
+            PlayerModel.findById(playerAId).select("_id name country"),
+            PlayerModel.findById(playerBId).select("_id name country"),
+        ]);
+
+        if (!playerA || !playerB) {
+            throw new BadRequestError("Player not found");
+        }
+
+        const aggregateCareerStats = (player: any) => {
+            const current = player?.stats || {};
+            const previous = player?.previousSeasons || [];
+
+            const currentWins = Number(current.totalMatchesWon || 0);
+            const currentLosses = Number(current.totalMatchesLost || 0);
+            const currentMatchesPlayed = Number(current.matchesPlayed || currentWins + currentLosses);
+
+            let totalWins = currentWins;
+            let totalLosses = currentLosses;
+            let weightedAvgSum = Number(current.avg || 0) * currentMatchesPlayed;
+            let totalMatchesForAvg = currentMatchesPlayed;
+            let highestCheckout = Number(current.highestCheckout || 0);
+            let oneEightiesCount = Number(current.total180s || current.oneEightiesCount || 0);
+
+            for (const season of previous) {
+                const seasonStats = season?.stats || {};
+                const seasonWins = Number(seasonStats.totalMatchesWon || 0);
+                const seasonLosses = Number(seasonStats.totalMatchesLost || 0);
+                const seasonMatchesPlayed = Number(seasonStats.matchesPlayed || seasonWins + seasonLosses);
+
+                totalWins += seasonWins;
+                totalLosses += seasonLosses;
+                weightedAvgSum += Number(seasonStats.avg || 0) * seasonMatchesPlayed;
+                totalMatchesForAvg += seasonMatchesPlayed;
+                highestCheckout = Math.max(highestCheckout, Number(seasonStats.highestCheckout || 0));
+                oneEightiesCount += Number(seasonStats.total180s || seasonStats.oneEightiesCount || 0);
+            }
+
+            const matchesPlayed = totalWins + totalLosses;
+            const winRate = matchesPlayed > 0 ? Number(((totalWins / matchesPlayed) * 100).toFixed(1)) : 0;
+            const avg = totalMatchesForAvg > 0 ? Number((weightedAvgSum / totalMatchesForAvg).toFixed(2)) : 0;
+
+            return {
+                matchesPlayed,
+                wins: totalWins,
+                losses: totalLosses,
+                winRate,
+                avg,
+                highestCheckout,
+                oneEightiesCount,
+            };
+        };
+
+        const [playerAWithStats, playerBWithStats] = await Promise.all([
+            PlayerModel.findById(playerAId).select("stats previousSeasons"),
+            PlayerModel.findById(playerBId).select("stats previousSeasons"),
+        ]);
+
+        const query: any = {
+            status: "finished",
+            $or: [
+                { "player1.playerId": playerA._id, "player2.playerId": playerB._id },
+                { "player1.playerId": playerB._id, "player2.playerId": playerA._id },
+            ],
+        };
+
+        if (options?.tournamentCode) {
+            const tournament = await TournamentModel.findOne({ tournamentId: options.tournamentCode }).select("_id");
+            if (!tournament) {
+                throw new BadRequestError("Tournament not found");
+            }
+            query.tournamentRef = tournament._id;
+        }
+
+        if (options?.season) {
+            const seasonStart = new Date(options.season, 0, 1);
+            const seasonEnd = new Date(options.season + 1, 0, 1);
+            query.createdAt = { $gte: seasonStart, $lt: seasonEnd };
+        }
+
+        const matches = await MatchModel.find(query)
+            .populate("player1.playerId", "name country")
+            .populate("player2.playerId", "name country")
+            .populate("tournamentRef", "tournamentId tournamentSettings.name tournamentSettings.startDate")
+            .sort({ createdAt: -1 });
+
+        let playerAWins = 0;
+        let playerBWins = 0;
+        let playerALegsWon = 0;
+        let playerBLegsWon = 0;
+        let playerAAverageSum = 0;
+        let playerBAverageSum = 0;
+        let playerAAverageCount = 0;
+        let playerBAverageCount = 0;
+        let playerAHighestCheckout = 0;
+        let playerBHighestCheckout = 0;
+        let playerAOneEighties = 0;
+        let playerBOneEighties = 0;
+
+        const mappedMatches = matches.map((match: any) => {
+            const player1Id = match.player1?.playerId?._id?.toString() || match.player1?.playerId?.toString();
+            const isAPlayer1 = player1Id === playerA._id.toString();
+            const aData = isAPlayer1 ? match.player1 : match.player2;
+            const bData = isAPlayer1 ? match.player2 : match.player1;
+
+            const aLegsWon = aData?.legsWon || 0;
+            const bLegsWon = bData?.legsWon || 0;
+            const aAvg = aData?.average || 0;
+            const bAvg = bData?.average || 0;
+            const aCheckout = aData?.highestCheckout || 0;
+            const bCheckout = bData?.highestCheckout || 0;
+            const aOneEighties = aData?.oneEightiesCount || 0;
+            const bOneEighties = bData?.oneEightiesCount || 0;
+
+            playerALegsWon += aLegsWon;
+            playerBLegsWon += bLegsWon;
+            playerAHighestCheckout = Math.max(playerAHighestCheckout, aCheckout);
+            playerBHighestCheckout = Math.max(playerBHighestCheckout, bCheckout);
+            playerAOneEighties += aOneEighties;
+            playerBOneEighties += bOneEighties;
+
+            if (aAvg > 0) {
+                playerAAverageSum += aAvg;
+                playerAAverageCount += 1;
+            }
+
+            if (bAvg > 0) {
+                playerBAverageSum += bAvg;
+                playerBAverageCount += 1;
+            }
+
+            const winnerId = match.winnerId?.toString();
+            if (winnerId) {
+                if (winnerId === playerA._id.toString()) {
+                    playerAWins += 1;
+                } else if (winnerId === playerB._id.toString()) {
+                    playerBWins += 1;
+                }
+            }
+
+            const tournament = match.tournamentRef;
+
+            return {
+                _id: match._id.toString(),
+                date: match.createdAt,
+                type: match.type,
+                round: match.round,
+                winnerId,
+                tournament: {
+                    _id: tournament?._id?.toString() || "",
+                    tournamentId: tournament?.tournamentId || "",
+                    name: tournament?.tournamentSettings?.name || tournament?.tournamentId || "Unknown tournament",
+                    startDate: tournament?.tournamentSettings?.startDate,
+                },
+                playerA: {
+                    legsWon: aLegsWon,
+                    average: aAvg,
+                    highestCheckout: aCheckout,
+                    oneEightiesCount: aOneEighties,
+                },
+                playerB: {
+                    legsWon: bLegsWon,
+                    average: bAvg,
+                    highestCheckout: bCheckout,
+                    oneEightiesCount: bOneEighties,
+                },
+            };
+        });
+
+        return {
+            playerA: {
+                _id: playerA._id.toString(),
+                name: playerA.name,
+                country: playerA.country || null,
+            },
+            playerB: {
+                _id: playerB._id.toString(),
+                name: playerB.name,
+                country: playerB.country || null,
+            },
+            summary: {
+                matchesPlayed: mappedMatches.length,
+                playerAWins,
+                playerBWins,
+                playerALegsWon,
+                playerBLegsWon,
+                playerAAverage: playerAAverageCount > 0 ? Number((playerAAverageSum / playerAAverageCount).toFixed(2)) : 0,
+                playerBAverage: playerBAverageCount > 0 ? Number((playerBAverageSum / playerBAverageCount).toFixed(2)) : 0,
+                playerAHighestCheckout,
+                playerBHighestCheckout,
+                playerAOneEighties,
+                playerBOneEighties,
+            },
+            allTimeComparison: {
+                playerA: aggregateCareerStats(playerAWithStats),
+                playerB: aggregateCareerStats(playerBWithStats),
+            },
+            matches: mappedMatches,
+        };
+    }
+
+    static async getTopHeadToHeadOpponents(
+        playerId: string,
+        options?: { season?: number; limit?: number }
+    ): Promise<Array<{
+        opponent: { _id: string; name: string; country?: string | null };
+        matchesPlayed: number;
+        wins: number;
+        losses: number;
+        lastPlayedAt?: Date;
+    }>> {
+        await connectMongo();
+
+        const player = await PlayerModel.findById(playerId).select("_id");
+        if (!player) {
+            throw new BadRequestError("Player not found");
+        }
+
+        const query: any = {
+            status: "finished",
+            $or: [{ "player1.playerId": player._id }, { "player2.playerId": player._id }],
+        };
+
+        if (options?.season) {
+            const seasonStart = new Date(options.season, 0, 1);
+            const seasonEnd = new Date(options.season + 1, 0, 1);
+            query.createdAt = { $gte: seasonStart, $lt: seasonEnd };
+        }
+
+        const matches = await MatchModel.find(query)
+            .select("player1.playerId player2.playerId winnerId createdAt")
+            .sort({ createdAt: -1 });
+
+        const byOpponent = new Map<
+            string,
+            { matchesPlayed: number; wins: number; losses: number; lastPlayedAt?: Date }
+        >();
+        const currentPlayerId = player._id.toString();
+
+        for (const match of matches as any[]) {
+            const player1Id = match.player1?.playerId?.toString();
+            const player2Id = match.player2?.playerId?.toString();
+            const isPlayer1 = player1Id === currentPlayerId;
+            const opponentId = isPlayer1 ? player2Id : player1Id;
+
+            if (!opponentId) continue;
+
+            const current = byOpponent.get(opponentId) || {
+                matchesPlayed: 0,
+                wins: 0,
+                losses: 0,
+                lastPlayedAt: undefined,
+            };
+
+            current.matchesPlayed += 1;
+            if (!current.lastPlayedAt || (match.createdAt && new Date(match.createdAt) > current.lastPlayedAt)) {
+                current.lastPlayedAt = match.createdAt;
+            }
+
+            const winnerId = match.winnerId?.toString();
+            if (winnerId) {
+                if (winnerId === currentPlayerId) current.wins += 1;
+                if (winnerId === opponentId) current.losses += 1;
+            }
+
+            byOpponent.set(opponentId, current);
+        }
+
+        const limit = Math.max(1, options?.limit || 5);
+        const sorted = Array.from(byOpponent.entries())
+            .sort((a, b) => {
+                if (b[1].matchesPlayed !== a[1].matchesPlayed) {
+                    return b[1].matchesPlayed - a[1].matchesPlayed;
+                }
+                return (b[1].lastPlayedAt?.getTime() || 0) - (a[1].lastPlayedAt?.getTime() || 0);
+            })
+            .slice(0, limit);
+
+        const opponentIds = sorted.map(([id]) => id);
+        const opponents = await PlayerModel.find({ _id: { $in: opponentIds } }).select("_id name country");
+        const opponentMap = new Map(opponents.map((op: any) => [op._id.toString(), op]));
+
+        return sorted
+            .map(([opponentId, stats]) => {
+                const opponent = opponentMap.get(opponentId);
+                if (!opponent) return null;
+                return {
+                    opponent: {
+                        _id: opponent._id.toString(),
+                        name: opponent.name,
+                        country: opponent.country || null,
+                    },
+                    matchesPlayed: stats.matchesPlayed,
+                    wins: stats.wins,
+                    losses: stats.losses,
+                    lastPlayedAt: stats.lastPlayedAt,
+                };
+            })
+            .filter(Boolean) as Array<{
+            opponent: { _id: string; name: string; country?: string | null };
+            matchesPlayed: number;
+            wins: number;
+            losses: number;
+            lastPlayedAt?: Date;
+        }>;
+    }
+
     static async movePlayerInGroup(tournamentCode: string, groupId: string, playerId: string, direction: 'up' | 'down'): Promise<boolean> {
         try {
             const tournament = await TournamentService.getTournament(tournamentCode);
@@ -4437,6 +4834,11 @@ export class TournamentService {
 
             // Update tournament settings
             const updatedSettings = { ...tournament.tournamentSettings, ...settings };
+
+            if (typeof settings.location === 'string' && settings.location.trim()) {
+                const geocodeResult = await GeocodingService.geocodeAddress(settings.location, 'user');
+                (updatedSettings as any).locationData = geocodeResult.location;
+            }
             
             // Check subscription limits if start date is being changed
             if (settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {

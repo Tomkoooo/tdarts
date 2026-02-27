@@ -14,6 +14,7 @@ import { Club } from "@/interface/club.interface"
 import { differenceInDays, format } from "date-fns"
 import { useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
+import { stripLocalePrefix } from "@/lib/seo"
 
 // ... imports
 import ClubGallerySection from "@/components/club/ClubGallerySection"
@@ -65,7 +66,8 @@ export default function ClubSummarySection({
 
   const handleToggleSubscription = async () => {
       if (!user) {
-          router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`)
+          const normalizedPath = stripLocalePrefix(window.location.pathname || "/")
+          router.push(`/auth/login?redirect=${encodeURIComponent(normalizedPath)}`)
           return
       }
 
@@ -109,7 +111,9 @@ export default function ClubSummarySection({
       const url = new URL(window.location.href)
       if (url.searchParams.has('postId')) {
           url.searchParams.delete('postId')
-          router.replace(url.toString(), { scroll: false })
+          const normalizedPath = stripLocalePrefix(url.pathname || "/")
+          const nextUrl = `${normalizedPath}${url.search}`
+          router.replace(nextUrl, { scroll: false })
       }
   }
 

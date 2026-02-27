@@ -21,8 +21,7 @@ interface LocalMatchGameProps {
 }
 
 const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsToWin, startingScore, onBack, onRematch }) => {
-  const tTour = useTranslations("Tournament");
-  const t = (key: string, values?: any) => tTour(`local_match.${key}`, values);
+  const t = useTranslations("Board");
   // --- Game State via Custom Hook ---
   const { 
     gameState, 
@@ -602,7 +601,7 @@ const LocalMatchGame: React.FC<LocalMatchGameProps> = ({ legsToWin: initialLegsT
                   disabled={editingThrow ? !editScoreInput || parseInt(editScoreInput) > 180 : !scoreInput || parseInt(scoreInput) > 180}
                   className="bg-primary hover:bg-primary-dark text-primary-content font-bold text-lg portrait:sm:text-xl portrait:md:text-2xl sm:text-lg md:text-xl rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingThrow ? 'SAVE' : 'SEND'}
+                  {editingThrow ? t("mentés") : t("küldés")}
                 </button>
               </div>
             </div>

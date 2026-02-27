@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 export interface IEmailTemplate {
   _id: mongoose.Types.ObjectId;
   key: string; // Unique identifier (e.g., 'tournament_spot_available')
+  locale?: 'hu' | 'en' | 'de';
   name: string; // Human-readable name
   description: string; // Template purpose
   category: 'tournament' | 'club' | 'feedback' | 'admin' | 'system' | 'auth';
@@ -23,7 +24,6 @@ const EmailTemplateSchema = new mongoose.Schema<IEmailTemplate>(
     key: {
       type: String,
       required: true,
-      unique: true,
       index: true,
       default: () => {
         // Generate a random 4-character alphanumeric string (letters and numbers)
@@ -34,6 +34,12 @@ const EmailTemplateSchema = new mongoose.Schema<IEmailTemplate>(
         }
         return result;
       }
+    },
+    locale: {
+      type: String,
+      enum: ['hu', 'en', 'de'],
+      default: 'hu',
+      index: true,
     },
     name: {
       type: String,
@@ -87,6 +93,8 @@ const EmailTemplateSchema = new mongoose.Schema<IEmailTemplate>(
     timestamps: true,
   }
 );
+
+EmailTemplateSchema.index({ key: 1, locale: 1 }, { unique: true });
 
 export const EmailTemplateModel =
   (mongoose.models.EmailTemplate as mongoose.Model<IEmailTemplate>) ||

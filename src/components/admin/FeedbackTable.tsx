@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import toast from "react-hot-toast"
 import {
@@ -85,7 +85,7 @@ export default function FeedbackTable() {
 
   const limit = 10
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const params: any = {
@@ -109,11 +109,15 @@ export default function FeedbackTable() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, search, statusFilter, priorityFilter, categoryFilter])
 
   useEffect(() => {
     fetchData()
-  }, [page, search, statusFilter, priorityFilter, categoryFilter])
+  }, [fetchData])
+  const handleDetailUpdate = useCallback(() => {
+    fetchData()
+  }, [fetchData])
+
   
   useEffect(() => {
     setPage(1)
@@ -350,9 +354,7 @@ export default function FeedbackTable() {
         <AdminTicketDetail
           ticket={editingFeedback as any}
           onBack={() => setEditingFeedback(null)}
-          onUpdate={() => {
-            fetchData();
-          }}
+          onUpdate={handleDetailUpdate}
         />
       )}
     </div>

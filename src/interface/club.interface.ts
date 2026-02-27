@@ -1,4 +1,5 @@
 import { Types, Document } from 'mongoose';
+import { StructuredLocation } from './location.interface';
 
 export interface BillingInfo {
   type: 'individual' | 'company';
@@ -16,6 +17,7 @@ export interface Club {
   name: string;
   description: string;
   location: string;
+  structuredLocation?: StructuredLocation;
   address?: string; // Optional detailed address
   logo?: string; // Optional club logo URL
   contact: {

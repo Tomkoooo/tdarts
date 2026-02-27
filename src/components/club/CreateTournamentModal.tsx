@@ -733,7 +733,7 @@ export default function CreateTournamentModal({
                       <FormField
                         label={t('billing.email_label')}
                         type="email"
-                        placeholder={t("szamla_pelda_hu_b6eg")}
+                        placeholder={t('billing.email_placeholder')}
                         value={settings.billingInfo.email}
                         onChange={(e) => handleBillingChange("email", e.target.value)}
                         required
@@ -763,7 +763,7 @@ export default function CreateTournamentModal({
                       <div className="md:col-span-2">
                         <FormField
                           label={t('billing.city_label')}
-                          placeholder={t("budapest_p4cf")}
+                          placeholder={t('billing.city_placeholder')}
                           value={settings.billingInfo.city}
                           onChange={(e) => handleBillingChange("city", e.target.value)}
                           required
@@ -773,7 +773,7 @@ export default function CreateTournamentModal({
 
                     <FormField
                       label={t('billing.address_label')}
-                      placeholder={t("fo_utca_1_4oqc")}
+                      placeholder={t('billing.address_placeholder')}
                       value={settings.billingInfo.address}
                       onChange={(e) => handleBillingChange("address", e.target.value)}
                       required

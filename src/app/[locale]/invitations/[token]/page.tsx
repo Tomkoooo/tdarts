@@ -9,12 +9,14 @@ import { toast } from "react-hot-toast"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card"
 import { useTranslations } from "next-intl";
+import { useUserContext } from "@/hooks/useUser"
 
 export default function InvitationPage() {
   const t = useTranslations("Common");
   const params = useParams()
   const token = params?.token as string
   const router = useRouter()
+  const { user } = useUserContext()
 
   const [invitation, setInvitation] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -23,10 +25,13 @@ export default function InvitationPage() {
   const [successMessage, setSuccessMessage] = useState("")
 
   useEffect(() => {
-    if (token) {
-      fetchInvitation()
+    if (!token) return
+    if (!user) {
+      router.replace(`/auth/login?redirect=${encodeURIComponent(`/invitations/${token}`)}`)
+      return
     }
-  }, [token])
+    fetchInvitation()
+  }, [token, user, router])
 
   const fetchInvitation = async () => {
     try {

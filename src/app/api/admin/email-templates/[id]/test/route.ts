@@ -4,6 +4,7 @@ import { EmailTemplateModel } from '@/database/models/emailtemplate.model';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
 import { sendEmail } from '@/lib/mailer';
 import { AuthService } from '@/database/services/auth.service';
+import { normalizeEmailLocale } from '@/lib/email-layout';
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +23,7 @@ export async function POST(
       }
   
 
-    const { recipientEmail } = await req.json();
+    const { recipientEmail, locale } = await req.json();
     if (!recipientEmail) {
       return NextResponse.json({ success: false, message: 'Recipient email is required' }, { status: 400 });
     }
@@ -31,10 +32,12 @@ export async function POST(
 
     await connectMongo();
     const template = await EmailTemplateModel.findById(id);
-
     if (!template) {
       return NextResponse.json({ success: false, message: 'Template not found' }, { status: 404 });
     }
+    const resolvedLocale = normalizeEmailLocale(locale || template.locale || 'hu');
+    const localeTemplate =
+      (await EmailTemplateModel.findOne({ key: template.key, locale: resolvedLocale })) || template;
 
     // Generate dummy data for all variables
     const dummyData: Record<string, string> = {
@@ -44,7 +47,7 @@ export async function POST(
       freeSpots: '5',
       tournamentUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.hu'}/tournaments/TD-WINTER-2024`,
       currentYear: new Date().getFullYear().toString(),
-      currentDate: new Date().toLocaleDateString('hu-HU'),
+      currentDate: new Date().toLocaleDateString(resolvedLocale === 'de' ? 'de-DE' : resolvedLocale === 'en' ? 'en-US' : 'hu-HU'),
       clubName: 'TDarts Sportegyesület',
       feedbackTitle: 'Tapasztalatok a tornával kapcsolatban',
       feedbackId: '65e1234567890abcdef12345',
@@ -58,9 +61,9 @@ export async function POST(
     };
 
     // Render template
-    const subject = EmailTemplateService.renderTemplate(template.subject, dummyData);
-    const html = EmailTemplateService.renderTemplate(template.htmlContent, dummyData);
-    const text = EmailTemplateService.renderTemplate(template.textContent, dummyData);
+    const subject = EmailTemplateService.renderTemplate(localeTemplate.subject, dummyData);
+    const html = EmailTemplateService.renderTemplate(localeTemplate.htmlContent, dummyData);
+    const text = EmailTemplateService.renderTemplate(localeTemplate.textContent, dummyData);
 
     // Send email
     const success = await sendEmail({

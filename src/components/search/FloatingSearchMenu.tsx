@@ -14,6 +14,7 @@ interface FloatingSearchMenuProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     counts: {
+        global: number;
         tournaments: number;
         players: number;
         clubs: number;
@@ -86,7 +87,7 @@ export function FloatingSearchMenu({
                         </div>
 
                         {/* Tabs */}
-                        <div className="mb-4 [&_.grid-cols-4]:grid-cols-1">
+                        <div className="mb-4">
                             <SearchTabs
                                 activeTab={activeTab}
                                 onTabChange={onTabChange}

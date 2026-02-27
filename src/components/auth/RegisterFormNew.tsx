@@ -4,14 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IconEye, IconEyeOff, IconUserPlus, IconMail, IconLock, IconUser, IconBrandGoogle } from '@tabler/icons-react';
-import { Link } from '@/i18n/routing';
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FormField } from '@/components/ui/form-field';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useTranslations } from 'next-intl';
+import { getAuthTranslations } from '@/data/translations/auth';
 
 type RegisterFormData = {
   username: string;
@@ -34,36 +34,35 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
   redirectPath,
   error: externalError,
 }) => {
-  const t = useTranslations('Auth.register');
-  const tv = useTranslations('Auth.validation');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showEmailRegister, setShowEmailRegister] = useState(false);
   const [error, setError] = useState<string | null>(externalError || null);
-
+  const t = getAuthTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu');
   const registerSchema = z.object({
     username: z
       .string()
-      .regex(/^[a-zA-Z0-9_]+$/, tv('username_invalid'))
-      .regex(/^[^\s]+$/, tv('username_no_spaces'))
-      .min(3, tv('username_min'))
-      .min(1, tv('username_required')),
+      .regex(/^[a-zA-Z0-9_]+$/, t.usernameFormatError)
+      .regex(/^[^\s]+$/, t.usernameNoSpacesError)
+      .min(3, t.usernameMinLengthError)
+      .min(1, t.usernameRequiredError),
     name: z
       .string()
-      .min(2, tv('name_min'))
-      .min(1, tv('name_required')),
+      .min(2, t.nameMinLengthError)
+      .min(1, t.nameRequiredError),
     email: z
       .string()
-      .email(tv('email_invalid'))
-      .min(1, tv('email_required')),
+      .email(t.validEmailError)
+      .min(1, t.emailRequiredError),
     password: z
       .string()
-      .min(6, tv('password_min'))
-      .min(1, tv('password_required')),
+      .min(6, t.passwordMinLengthError)
+      .min(1, t.passwordRequiredError),
     confirmPassword: z
       .string()
-      .min(1, tv('confirm_password_required')),
+      .min(1, t.confirmPasswordRequiredError),
   }).refine((data) => data.password === data.confirmPassword, {
-    message: tv('passwords_mismatch'),
+    message: t.passwordsDoNotMatchError,
     path: ["confirmPassword"],
   });
 
@@ -89,7 +88,7 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
         await onSubmit(data);
       }
     } catch (error: any) {
-      setError(error.message || t('error_generic'));
+      setError(error.message || t.registerGenericError);
       console.error('Register error:', error);
     }
   };
@@ -102,7 +101,7 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
       });
     } catch (error) {
       console.error('Google signup error:', error);
-      setError(t('error_google'));
+      setError(t.registerGoogleError);
     }
   };
 
@@ -113,9 +112,9 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           <IconUserPlus className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <CardTitle className="text-3xl">{t('title')}</CardTitle>
+          <CardTitle className="text-3xl">{t.registerTitle}</CardTitle>
           <CardDescription className="text-base mt-2">
-            {t('subtitle')}
+            {t.registerSubtitle}
           </CardDescription>
         </div>
       </CardHeader>
@@ -127,153 +126,168 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <FormField
-            {...register('username')}
-            type="text"
-            label={t('username_label')}
-            placeholder={t('username_placeholder')}
-            error={errors.username?.message}
-            icon={<IconUser className="w-5 h-5" />}
-            disabled={isLoading}
-            required
-          />
-
-          <FormField
-            {...register('name')}
-            type="text"
-            label={t('name_label')}
-            placeholder={t('name_placeholder')}
-            error={errors.name?.message}
-            icon={<IconUser className="w-5 h-5" />}
-            disabled={isLoading}
-            required
-          />
-
-          <FormField
-            {...register('email')}
-            type="email"
-            label={t('email_label')}
-            placeholder={t('email_placeholder')}
-            error={errors.email?.message}
-            icon={<IconMail className="w-5 h-5" />}
-            disabled={isLoading}
-            required
-          />
-
-          <div className="space-y-2">
-            <FormField
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
-              label={t('password_label')}
-              placeholder={t('password_placeholder')}
-              error={errors.password?.message}
-              icon={<IconLock className="w-5 h-5" />}
-              disabled={isLoading}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-              disabled={isLoading}
-            >
-              {showPassword ? (
-                <>
-                  <IconEyeOff className="w-4 h-4" />
-                  {t('hide_password')}
-                </>
-              ) : (
-                <>
-                  <IconEye className="w-4 h-4" />
-                  {t('show_password')}
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <FormField
-              {...register('confirmPassword')}
-              type={showConfirmPassword ? 'text' : 'password'}
-              label={t('confirm_password_label')}
-              placeholder={t('password_placeholder')}
-              error={errors.confirmPassword?.message}
-              icon={<IconLock className="w-5 h-5" />}
-              disabled={isLoading}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-              disabled={isLoading}
-            >
-              {showConfirmPassword ? (
-                <>
-                  <IconEyeOff className="w-4 h-4" />
-                  {t('hide_password')}
-                </>
-              ) : (
-                <>
-                  <IconEye className="w-4 h-4" />
-                  {t('show_password')}
-                </>
-              )}
-            </button>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                {t('submitting')}
-              </>
-            ) : (
-              <>
-                <IconUserPlus className="w-5 h-5" />
-                {t('submit')}
-              </>
-            )}
-          </Button>
-        </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">{t('separator')}</span>
-          </div>
-        </div>
-
         <Button
           type="button"
-          variant="outline"
           className="w-full"
           size="lg"
           onClick={handleGoogleSignup}
           disabled={isLoading}
         >
           <IconBrandGoogle className="w-5 h-5" />
-          {t('google')}
+          {t.registerWithGoogle}
         </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={() => setShowEmailRegister((prev) => !prev)}
+          disabled={isLoading}
+        >
+          <IconMail className="w-5 h-5" />
+          {showEmailRegister ? t.hideEmailRegister : t.registerWithEmail}
+        </Button>
+
+        {showEmailRegister && (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">{t.emailAndPassword}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+              <FormField
+                {...register('username')}
+                type="text"
+                label={t.usernameLabel}
+                placeholder={t.usernamePlaceholder}
+                error={errors.username?.message}
+                icon={<IconUser className="w-5 h-5" />}
+                disabled={isLoading}
+                required
+              />
+
+              <FormField
+                {...register('name')}
+                type="text"
+                label={t.fullNameLabel}
+                placeholder={t.fullNamePlaceholder}
+                error={errors.name?.message}
+                icon={<IconUser className="w-5 h-5" />}
+                disabled={isLoading}
+                required
+              />
+
+              <FormField
+                {...register('email')}
+                type="email"
+                label={t.emailLabel}
+                placeholder={t.emailPlaceholder}
+                error={errors.email?.message}
+                icon={<IconMail className="w-5 h-5" />}
+                disabled={isLoading}
+                required
+              />
+
+              <div className="space-y-2">
+                <FormField
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  label={t.passwordLabel}
+                  placeholder={t.passwordPlaceholder}
+                  error={errors.password?.message}
+                  icon={<IconLock className="w-5 h-5" />}
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <>
+                      <IconEyeOff className="w-4 h-4" />
+                      {t.hidePassword}
+                    </>
+                  ) : (
+                    <>
+                      <IconEye className="w-4 h-4" />
+                      {t.showPassword}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <FormField
+                  {...register('confirmPassword')}
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  label={t.confirmPasswordLabel}
+                  placeholder={t.passwordPlaceholder}
+                  error={errors.confirmPassword?.message}
+                  icon={<IconLock className="w-5 h-5" />}
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? (
+                    <>
+                      <IconEyeOff className="w-4 h-4" />
+                      {t.hidePassword}
+                    </>
+                  ) : (
+                    <>
+                      <IconEye className="w-4 h-4" />
+                      {t.showPassword}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    {t.registering}
+                  </>
+                ) : (
+                  <>
+                    <IconUserPlus className="w-5 h-5" />
+                    {t.registerButton}
+                  </>
+                )}
+              </Button>
+            </form>
+          </>
+        )}
       </CardContent>
 
       <CardFooter className="flex-col space-y-2">
         <Separator />
         <p className="text-sm text-center text-muted-foreground">
-          {t('has_account')}{' '}
+          {t.alreadyHasAccount}{' '}
           <Link
             href={`/auth/login${redirectPath ? `?redirect=${redirectPath}` : ''}`}
             className="text-primary hover:underline font-medium transition-colors"
           >
-            {t('login_link')}
+            {t.loginHere}
           </Link>
         </p>
       </CardFooter>
@@ -282,3 +296,4 @@ const RegisterFormNew: React.FC<RegisterFormNewProps> = ({
 };
 
 export default RegisterFormNew;
+

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,15 +18,23 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { showErrorToast } from '@/lib/toastUtils'
-import { useTranslations } from 'next-intl'
+import { showErrorToast, showLocationReviewToast } from '@/lib/toastUtils'
+import { getMapSettingsTranslations } from '@/data/translations/map-settings'
+import { shouldPromptLocationReview } from '@/interface/location.interface'
+
+const editClubSchema = z.object({
+  name: z.string().min(1, 'A klub neve kötelező'),
+  location: z.string().min(1, 'A helyszín kötelező'),
+  contact: z
+    .object({
+      email: z.string().email('Érvényes email címet adj meg').optional().or(z.literal('')),
+      phone: z.string().optional(),
+      website: z.string().url('Érvényes weboldal URL-t adj meg').optional().or(z.literal('')),
+    })
+    .optional(),
+})
+
+type EditClubFormData = z.infer<typeof editClubSchema>
 
 interface ClubGeneralSettingsProps {
   club: Club
@@ -35,29 +43,14 @@ interface ClubGeneralSettingsProps {
 }
 
 export default function ClubGeneralSettings({ club, onClubUpdated, userId }: ClubGeneralSettingsProps) {
-  const t = useTranslations('Club.settings.general_form')
-
-  const editClubSchema = z.object({
-    name: z.string().min(1, t('validation.name_required')),
-    location: z.string().min(1, t('validation.location_required')),
-    country: z.string().optional(),
-    contact: z
-      .object({
-        email: z.string().email(t('validation.email_invalid')).optional().or(z.literal('')),
-        phone: z.string().optional(),
-        website: z.string().url(t('validation.url_invalid')).optional().or(z.literal('')),
-      })
-      .optional(),
-  })
-
-  type EditClubFormData = z.infer<typeof editClubSchema>
-
+  const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
+  const reviewToastShown = useRef(false)
+  const [isRequestingGeocode, setIsRequestingGeocode] = useState(false)
   const form = useForm<EditClubFormData>({
     resolver: zodResolver(editClubSchema),
     defaultValues: {
       name: club.name,
-      location: club.location,
-      country: club.country || 'hu',
+      location: club.location || club.address || '',
       contact: {
         email: club.contact?.email || '',
         phone: club.contact?.phone || '',
@@ -70,8 +63,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
     if (club) {
       form.reset({
         name: club.name,
-        location: club.location,
-        country: club.country || 'hu',
+        location: club.location || club.address || '',
         contact: {
           email: club.contact?.email || '',
           phone: club.contact?.phone || '',
@@ -81,21 +73,72 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
     }
   }, [club, form])
 
+  useEffect(() => {
+    if (club && shouldPromptLocationReview(club.structuredLocation, club.location || club.address) && !reviewToastShown.current) {
+      reviewToastShown.current = true
+      showLocationReviewToast(
+        t.locationReviewClubMessage,
+        t.locationReviewAction,
+        () => {
+          const input = document.querySelector<HTMLInputElement>('input[name="location"]')
+          input?.focus()
+        }
+      )
+    }
+  }, [club, t.locationReviewAction, t.locationReviewClubMessage])
+
+  const geocodeStatusLabel = useMemo(() => {
+    const status = club?.structuredLocation?.geocodeStatus;
+    if (status === 'ok' || status === 'manual') return t.geocodeStatusOk;
+    if (status === 'pending') return t.geocodeStatusPending;
+    if (status === 'needs_review') return t.geocodeStatusNeedsReview;
+    if (status === 'failed') return t.geocodeStatusFailed;
+    return t.geocodeStatusUnknown;
+  }, [club?.structuredLocation?.geocodeStatus, t]);
+
+  const geocodeUpdatedAtLabel = useMemo(() => {
+    const value = club?.structuredLocation?.geocodeUpdatedAt;
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat(
+      typeof navigator !== 'undefined' ? navigator.language : 'hu-HU',
+      { dateStyle: 'medium', timeStyle: 'short' }
+    ).format(date);
+  }, [club?.structuredLocation?.geocodeUpdatedAt]);
+
+  const requestGeocode = async () => {
+    setIsRequestingGeocode(true);
+    try {
+      const response = await axios.post<{ club: Club }>(`/api/clubs/${club._id}/geocode`);
+      onClubUpdated(response.data.club);
+      toast.success(t.geocodeRequestSuccess);
+    } catch (err: any) {
+      showErrorToast(err.response?.data?.error || t.geocodeRequestError, {
+        error: err?.response?.data?.error,
+        context: 'Geocode request',
+        errorName: t.geocodeRequestError,
+      });
+    } finally {
+      setIsRequestingGeocode(false);
+    }
+  };
+
   const onSubmit = async (data: EditClubFormData) => {
-    const toastId = toast.loading(t('toast.loading'))
+    const toastId = toast.loading('Klub adatok frissítése...')
     try {
       const response = await axios.post<Club>(`/api/clubs`, {
         userId,
         updates: { ...data, _id: club._id },
       })
       onClubUpdated(response.data)
-      toast.success(t('toast.success'), { id: toastId })
+      toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || t('toast.error'), {
+      showErrorToast(err.response?.data?.error || 'Klub frissítése sikertelen', {
         error: err?.response?.data?.error,
-        context: t('toast.context'),
-        errorName: t('toast.error'),
+        context: 'Klub szerkesztése',
+        errorName: 'Klub frissítése sikertelen',
       })
     }
   }
@@ -109,9 +152,9 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('name')}</FormLabel>
+              <FormLabel>Klub neve</FormLabel>
               <FormControl>
-                <Input placeholder={t('name')} {...field} />
+                <Input placeholder="Klub neve" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -125,41 +168,32 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('location')}</FormLabel>
+              <FormLabel>Helyszín</FormLabel>
               <FormControl>
-                <Input placeholder={t('location_placeholder')} {...field} />
+                <Input placeholder="Város, cím" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="country"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('country')}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('country_placeholder')} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="hu">Magyarország</SelectItem>
-                  <SelectItem value="at">Ausztria</SelectItem>
-                  <SelectItem value="de">Németország</SelectItem>
-                  <SelectItem value="sk">Szlovákia</SelectItem>
-                  <SelectItem value="ro">Románia</SelectItem>
-                  <SelectItem value="hr">Horvátország</SelectItem>
-                  <SelectItem value="si">Szlovénia</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm">
+          <p className="font-medium">{t.geocodeStatusLabel}: {geocodeStatusLabel}</p>
+          <p className="text-muted-foreground mt-1">
+            {t.geocodeLastUpdatedLabel}: {geocodeUpdatedAtLabel}
+          </p>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isRequestingGeocode}
+              onClick={requestGeocode}
+            >
+              {isRequestingGeocode ? t.geocodeRequestingButton : t.geocodeRequestButton}
+            </Button>
+          </div>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
@@ -167,9 +201,9 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
             name="contact.email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('email')}</FormLabel>
+                <FormLabel>Kapcsolat email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder={t("email_example_com_oyiv")} {...field} />
+                  <Input type="email" placeholder="email@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -180,7 +214,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
             name="contact.phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('phone')}</FormLabel>
+                <FormLabel>Telefonszám</FormLabel>
                 <FormControl>
                   <Input placeholder="+36301234567" {...field} />
                 </FormControl>
@@ -195,9 +229,9 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
           name="contact.website"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('website')}</FormLabel>
+              <FormLabel>Weboldal</FormLabel>
               <FormControl>
-                <Input placeholder={t("https_example_com_ags5")} {...field} />
+                <Input placeholder="https://example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -208,7 +242,7 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
         <div className="flex justify-end">
           <Button type="submit" size="sm" className="w-full sm:w-auto shadow-lg shadow-primary/30">
             <IconDeviceFloppy className="mr-2 h-4 w-4" />
-            {t('save')}
+            Mentés
           </Button>
         </div>
       </form>

@@ -38,7 +38,11 @@ const HomePage = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await axios.get('/api/announcements');
+        const response = await axios.get('/api/announcements', {
+          headers: {
+            'Accept-Language': typeof navigator !== 'undefined' ? navigator.language : 'hu',
+          },
+        });
         if (response.data.success) {
           // Csak az aktív és nem lejárt announcement-okat jelenítjük meg
           const now = new Date();

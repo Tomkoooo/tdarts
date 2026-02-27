@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '@/database/models/player.model';
 import { MatchModel } from '@/database/models/match.model';
+import '@/database/models/tournament.model';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerService } from '@/database/services/player.service';
@@ -92,24 +93,37 @@ export async function GET(request: NextRequest) {
     })
     .populate('player1.playerId', 'name')
     .populate('player2.playerId', 'name')
-    .select('player1 player2 legs createdAt')
+    .populate('tournamentRef', 'tournamentId tournamentSettings.name')
+    .select('player1 player2 legs createdAt tournamentRef')
     .sort({ createdAt: -1 })
-    .limit(5);
+    .limit(30);
 
     const matchHistory = recentMatches.map(match => {
       const p1Id = match.player1?.playerId?._id?.toString() || match.player1?.playerId?.toString();
       const isPlayer1 = p1Id === player._id.toString();
       const opponent = isPlayer1 ? match.player2 : match.player1;
       const playerData = isPlayer1 ? match.player1 : match.player2;
+      const opponentData = isPlayer1 ? match.player2 : match.player1;
+      const tournament = match.tournamentRef as any;
+      const userScore = Number(playerData?.legsWon || 0);
+      const opponentScore = Number(opponentData?.legsWon || 0);
       
       return {
         _id: match._id,
         opponent: opponent?.playerId?.name || 'Ismeretlen',
         player1Score: match.player1?.legsWon || 0,
         player2Score: match.player2?.legsWon || 0,
-        won: (playerData?.legsWon || 0) > (isPlayer1 ? (match.player2?.legsWon || 0) : (match.player1?.legsWon || 0)),
+        won: userScore > opponentScore,
+        userScore,
+        opponentScore,
+        winner: userScore === opponentScore ? 'draw' : userScore > opponentScore ? 'user' : 'opponent',
         date: match.createdAt,
-        legs: match.legs?.length || 0
+        legs: match.legs?.length || 0,
+        average: Number(playerData?.average || 0),
+        highestCheckout: Number(playerData?.highestCheckout || 0),
+        oneEightiesCount: Number(playerData?.oneEightiesCount || 0),
+        tournamentId: tournament?.tournamentId || undefined,
+        tournamentName: tournament?.tournamentSettings?.name || undefined,
       };
     });
 
@@ -125,6 +139,7 @@ export async function GET(request: NextRequest) {
       player: {
         _id: player._id,
         name: player.name,
+        country: player.country || null,
         type: player.type || 'individual',
         userRef: player.userRef,
         stats: stats,
@@ -151,6 +166,7 @@ export async function GET(request: NextRequest) {
       teams: teams.map(t => ({
         _id: t._id,
         name: t.name,
+        country: t.country || null,
         type: t.type,
         members: t.members,
         stats: t.stats

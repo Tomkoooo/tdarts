@@ -857,6 +857,87 @@ tDarts Csapat
   },
 ];
 
+const englishTemplateVariants = [
+  {
+    key: 'email_verification',
+    locale: 'en',
+    name: 'Email Verification (EN)',
+    description: 'English verification code email',
+    category: 'auth',
+    subject: '🎯 tDarts Email Verification',
+    variables: ['userName', 'verificationCode', 'currentYear'],
+    textContent: `Dear {userName},
+
+Use this code to verify your email address:
+{verificationCode}
+
+Best regards,
+tDarts Team`,
+    htmlContent: `<p>Dear {userName},</p><p>Use this code to verify your email address:</p><p style="font-size:24px;font-weight:bold;letter-spacing:0.1em;">{verificationCode}</p><p>Best regards,<br/>tDarts Team</p>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'password_reset',
+    locale: 'en',
+    name: 'Password Reset (EN)',
+    description: 'English password reset code email',
+    category: 'auth',
+    subject: '🎯 tDarts Password Reset',
+    variables: ['userName', 'resetCode', 'currentYear'],
+    textContent: `Dear {userName},
+
+Use this code to reset your password:
+{resetCode}
+
+Best regards,
+tDarts Team`,
+    htmlContent: `<p>Dear {userName},</p><p>Use this code to reset your password:</p><p style="font-size:24px;font-weight:bold;letter-spacing:0.1em;">{resetCode}</p><p>Best regards,<br/>tDarts Team</p>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'admin_user_notification',
+    locale: 'en',
+    name: 'Admin to User Notification (EN)',
+    description: 'English admin notification email',
+    category: 'admin',
+    subject: '[tDarts Admin] {customSubject}',
+    variables: ['userName', 'customSubject', 'customMessage', 'language'],
+    textContent: `Dear {userName},
+
+As a tDarts admin we would like to inform you:
+{customSubject}
+{customMessage}
+
+Best regards,
+tDarts Admin Team`,
+    htmlContent: `<p>Dear {userName},</p><p>As a tDarts admin we would like to inform you:</p><h3>{customSubject}</h3><p style="white-space:pre-line;">{customMessage}</p><p>Best regards,<br/>tDarts Admin Team</p>`,
+    isActive: true,
+    isDefault: true,
+  },
+  {
+    key: 'player_tournament_notification',
+    locale: 'en',
+    name: 'Player Tournament Notification (EN)',
+    description: 'English player tournament notification',
+    category: 'tournament',
+    subject: '[{tournamentName}] {customSubject}',
+    variables: ['tournamentName', 'playerName', 'customSubject', 'customMessage', 'language'],
+    textContent: `Dear {playerName},
+
+Regarding the {tournamentName} tournament:
+{customSubject}
+{customMessage}
+
+Best regards,
+tDarts Team`,
+    htmlContent: `<p>Dear {playerName},</p><p>Regarding the <strong>{tournamentName}</strong> tournament:</p><h3>{customSubject}</h3><p style="white-space:pre-line;">{customMessage}</p><p>Best regards,<br/>tDarts Team</p>`,
+    isActive: true,
+    isDefault: true,
+  },
+];
+
 async function seedEmailTemplates() {
   try {
     console.log('🔌 Connecting to MongoDB...');
@@ -866,7 +947,7 @@ async function seedEmailTemplates() {
     await EmailTemplateModel.deleteMany({});
     
     console.log('📧 Seeding email templates...');
-    for (const template of defaultTemplates) {
+    for (const template of [...defaultTemplates, ...englishTemplateVariants]) {
       await EmailTemplateModel.create(template);
       console.log(`  ✅ Created template: ${template.name}`);
     }

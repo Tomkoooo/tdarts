@@ -5,7 +5,7 @@ import { IconSearch, IconUserPlus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { Input } from "@/components/ui/Input"
 import { Button } from '@/components/ui/Button'
-import { useTranslations } from 'next-intl'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface PlayerSearchProps {
   onPlayerSelected: (player: any) => void
@@ -22,7 +22,7 @@ interface PlayerSearchProps {
 
 export default function PlayerSearch({
   onPlayerSelected,
-  placeholder,
+  placeholder = 'Játékos keresése...',
   className = '',
   showAddGuest = true,
   clubId,
@@ -31,13 +31,20 @@ export default function PlayerSearch({
   excludedPlayers = [],
   excludeGuests = false,
 }: PlayerSearchProps) {
-  const t = useTranslations('Club.player_search')
   const [searchTerm, setSearchTerm] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [addedIds, setAddedIds] = useState<string[]>([])
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'J'
 
   // Helper function to get all possible identifiers from a player object
   const getPlayerIdentifiers = (player: any): string[] => {
@@ -200,13 +207,13 @@ export default function PlayerSearch({
 
         setResults(combined)
       } catch (error) {
-        console.error(t('error'), error)
+        console.error('Keresési hiba:', error)
         setResults([])
       } finally {
         setIsLoading(false)
       }
     },
-    [clubId, isForTournament, excludePlayerIds, excludedPlayers, addedIds, isPlayerExcluded, t]
+    [clubId, isForTournament, excludePlayerIds, excludedPlayers, addedIds, isPlayerExcluded]
   )
 
   useEffect(() => {
@@ -218,16 +225,18 @@ export default function PlayerSearch({
 
   const handleSelect = async (player: any) => {
     let playerData = {
-      _id: player._id,
+      _id: player.playerId || player._id,
       name: player.name,
       userRef: player.userRef,
       username: player.username,
+      profilePicture: player.profilePicture || null,
       isGuest: !player.userRef && !player.username,
     }
 
-    if (player.username && !player.userRef) {
+    if (player.userRef && !player.playerId) {
       try {
-        const playerResponse = await axios.get(`/api/players/find-by-user/${player._id}`)
+        const userId = player.userRef?.toString?.() || player.userRef || player._id
+        const playerResponse = await axios.get(`/api/players/find-by-user/${userId}`)
         if (playerResponse.data.success && playerResponse.data.player) {
           const actualPlayer = playerResponse.data.player
           playerData = {
@@ -235,6 +244,7 @@ export default function PlayerSearch({
             name: actualPlayer.name,
             userRef: actualPlayer.userRef,
             username: player.username,
+            profilePicture: player.profilePicture || null,
             isGuest: false,
           }
         }
@@ -298,7 +308,7 @@ export default function PlayerSearch({
         <div className="relative z-50 w-full mt-2 shadow-2xl shadow-black/30 bg-background/95 backdrop-blur-xl">
           <div className="max-h-72 overflow-y-auto">
             {isLoading ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">{t('searching')}</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">Keresés...</div>
             ) : results.length > 0 ? (
               results
                 .filter((player) => !isPlayerExcluded(player))
@@ -310,26 +320,39 @@ export default function PlayerSearch({
                     : player.name
                   const isJustAdded = justAddedId === playerIdentifier
                   const isLast = index === filteredResults.length - 1
+                  const username = typeof player.username === 'string' && player.username.trim().length > 0
+                    ? player.username.trim()
+                    : null
 
                   return (
                     <div key={playerIdentifier}>
                       <div className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <div className="font-medium text-foreground">{player.name}</div>
-                        <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
-                          {player.username ? (
-                            <>
-                              <span>{t('registered')}</span>
-                              {player.clubName && <span>{t('club_member', { clubName: player.clubName })}</span>}
-                            </>
-                          ) : player.userRef ? (
-                            <>
-                              <span>{t('registered_player')}</span>
-                              {player.clubName && <span>{t('club_member', { clubName: player.clubName })}</span>}
-                            </>
-                          ) : (
-                            <span>{t('guest')}</span>
-                          )}
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={player.profilePicture || undefined} alt={player.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                            {getInitials(player.name || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-foreground">{player.name}</div>
+                          <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
+                            {player.username ? (
+                              <>
+                                <span>Regisztrált</span>
+                                {username && <span>• @{username}</span>}
+                                {player.clubName && <span>• {player.clubName}</span>}
+                              </>
+                            ) : player.userRef ? (
+                              <>
+                                <span>Regisztrált játékos</span>
+                                {username && <span>• @{username}</span>}
+                                {player.clubName && <span>• {player.clubName}</span>}
+                              </>
+                            ) : (
+                              <span>Vendég</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <Button
@@ -338,7 +361,7 @@ export default function PlayerSearch({
                         disabled={isJustAdded}
                         className={cn('h-8 text-xs px-3', isJustAdded && 'pointer-events-none')}
                       >
-                        {isJustAdded ? t('added') : t('add')}
+                        {isJustAdded ? 'Hozzáadva' : 'Hozzáadás'}
                       </Button>
                       </div>
                       {!isLast && (
@@ -354,14 +377,14 @@ export default function PlayerSearch({
                 onClick={handleAddGuest}
               >
                 <IconUserPlus className="h-4 w-4" />
-                {t('add_guest', { name: searchTerm })}
+                Vendég játékos hozzáadása: {searchTerm}
               </Button>
             ) : (
-              <div className="py-6 text-center text-sm text-muted-foreground">{t('no_results')}</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">Nincs találat</div>
             )}
           </div>
         </div>
       )}
     </div>
   )
-}
+} 

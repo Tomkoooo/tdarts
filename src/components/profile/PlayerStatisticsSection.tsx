@@ -12,6 +12,7 @@ import {
   IconHistory,
   IconMedal,
   IconUsers,
+  IconMail,
 } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -21,6 +22,9 @@ import { cn } from "@/lib/utils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
 import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 import { Player } from "@/interface/player.interface"
+import CountryFlag from "@/components/ui/country-flag"
+import PlayerSearch from "@/components/club/PlayerSearch"
+import { getPlayerTranslations } from "@/data/translations/player"
 import {
   LineChart,
   Line,
@@ -30,16 +34,19 @@ import {
   Tooltip,
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts"
 import { TournamentHistory, PlayerHonor } from "@/interface/player.interface"
-import { useTranslations, useLocale } from "next-intl"
 
 interface PlayerStatsData {
   hasPlayer: boolean
   player: {
     _id: string
     name: string
+    country?: string | null
     stats: {
         mmr: number
         oacMmr: number
@@ -85,23 +92,97 @@ interface PlayerStatisticsSectionProps {
   onViewLegs: (match: any) => void
 }
 
+interface HeadToHeadData {
+  playerA: { _id: string; name: string; country?: string | null }
+  playerB: { _id: string; name: string; country?: string | null }
+  summary: {
+    matchesPlayed: number
+    playerAWins: number
+    playerBWins: number
+    playerALegsWon: number
+    playerBLegsWon: number
+    playerAAverage: number
+    playerBAverage: number
+    playerAHighestCheckout: number
+    playerBHighestCheckout: number
+    playerAOneEighties: number
+    playerBOneEighties: number
+  }
+  allTimeComparison: {
+    playerA: {
+      matchesPlayed: number
+      wins: number
+      losses: number
+      winRate: number
+      avg: number
+      highestCheckout: number
+      oneEightiesCount: number
+    }
+    playerB: {
+      matchesPlayed: number
+      wins: number
+      losses: number
+      winRate: number
+      avg: number
+      highestCheckout: number
+      oneEightiesCount: number
+    }
+  }
+  matches: Array<{
+    _id: string
+    date: string
+    tournament: { tournamentId: string; name: string }
+    playerA: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number }
+    playerB: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number }
+    winnerId?: string
+  }>
+}
+
+interface TopOpponentEntry {
+  opponent: { _id: string; name: string; country?: string | null }
+  matchesPlayed: number
+  wins: number
+  losses: number
+  winRate?: number
+  lastPlayedAt?: string
+}
+
+interface PendingInviteEntry {
+  _id: string
+  token: string
+  createdAt: string
+  expiresAt: string
+  tournament: { tournamentId: string; name: string }
+  team: { _id: string; name: string }
+  inviter: { _id: string; name: string; email: string }
+  invitee?: { _id?: string; name?: string; email?: string }
+  inviteType?: "email" | "account"
+}
+
 export function PlayerStatisticsSection({
   playerStats: initialPlayerStats,
   isLoading,
   onViewLegs,
 }: PlayerStatisticsSectionProps) {
-  const t = useTranslations("Profile.stats")
-  const locale = useLocale()
+  const t = getPlayerTranslations(typeof navigator !== "undefined" ? navigator.language : "hu")
   const [selectedSeason, setSelectedSeason] = React.useState<string>('current');
   const [selectedTeam, setSelectedTeam] = React.useState<Player | null>(null);
+  const [selectedOpponent, setSelectedOpponent] = React.useState<any | null>(null)
+  const [headToHead, setHeadToHead] = React.useState<HeadToHeadData | null>(null)
+  const [headToHeadLoading, setHeadToHeadLoading] = React.useState(false)
+  const [headToHeadError, setHeadToHeadError] = React.useState("")
+  const [topOpponents, setTopOpponents] = React.useState<TopOpponentEntry[]>([])
+  const [topOpponentsLoading, setTopOpponentsLoading] = React.useState(false)
+  const [pendingInvites, setPendingInvites] = React.useState<PendingInviteEntry[]>([])
+  const [pendingInvitesLoading, setPendingInvitesLoading] = React.useState(false)
+  const [topTournamentLimit, setTopTournamentLimit] = React.useState(3)
+  const [topMatchLimit, setTopMatchLimit] = React.useState(3)
 
   // Move all hooks to the top
   const playerStats = React.useMemo(() => initialPlayerStats || { hasPlayer: false } as any, [initialPlayerStats]);
   
   const previousSeasons = React.useMemo(() => playerStats?.player?.previousSeasons || [], [playerStats]);
-  console.log(playerStats)
   const honors = React.useMemo(() => playerStats?.player?.honors || [], [playerStats]);
-  console.log(honors)
   const currentYear = React.useMemo(() => new Date().getFullYear(), []);
   
   const availableYears = React.useMemo(() => {
@@ -119,7 +200,7 @@ export function PlayerStatisticsSection({
     [...previousSeasons].sort((a: any, b: any) => a.year - b.year).forEach((season: any) => {
         let seasonMmr = 800;
         history.push({
-            display: `${season.year} ${t("career")}`,
+            display: `${season.year} Start`,
             mmr: 800,
             year: season.year,
             fullDate: `${season.year}.01.01.`
@@ -132,7 +213,7 @@ export function PlayerStatisticsSection({
                 display: t.tournamentName || (t as any).name,
                 mmr: seasonMmr,
                 year: season.year,
-                fullDate: new Date(t.date || (t as any).startDate).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US'),
+                fullDate: new Date(t.date || (t as any).startDate).toLocaleDateString('hu-HU'),
                 change: t.mmrChange
             });
         });
@@ -141,7 +222,7 @@ export function PlayerStatisticsSection({
     // 2. Process current season
     let currentSeasonMmr = 800;
     history.push({
-        display: `${currentYear} ${t("career")}`,
+        display: `${currentYear} Start`,
         mmr: 800,
         year: currentYear,
         fullDate: `${currentYear}.01.01.`
@@ -153,13 +234,13 @@ export function PlayerStatisticsSection({
             display: t.name || t.tournamentName,
             mmr: currentSeasonMmr,
             year: currentYear,
-            fullDate: new Date(t.startDate || t.date).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US'),
+            fullDate: new Date(t.startDate || t.date).toLocaleDateString('hu-HU'),
             change: t.mmrChange
         });
     });
 
     return history;
-  }, [playerStats, currentYear, previousSeasons, t, locale]);
+  }, [playerStats, currentYear, previousSeasons]);
 
   const allTimeSummary = React.useMemo(() => {
     if (!playerStats?.player) return { totalTournaments: 0, wins: 0, losses: 0, totalLegsWon: 0, totalLegsLost: 0, winRate: 0, legWinRate: 0 };
@@ -294,9 +375,150 @@ export function PlayerStatisticsSection({
         name: t.tournamentName || t.name || 'Unknown',
         avg: (t.stats?.average || t.average || 0),
         oneEighties: (t.stats?.oneEightiesCount || t.oneEightiesCount || 0),
-        date: new Date(t.date || t.startDate).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US', { month: 'short', day: 'numeric' })
+        date: new Date(t.date || t.startDate).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })
     })).reverse();
-  }, [activeHistory, locale]);
+  }, [activeHistory]);
+
+  const fetchHeadToHead = React.useCallback(
+    async (opponentId: string) => {
+      setHeadToHeadLoading(true)
+      setHeadToHeadError("")
+      try {
+        const response = await fetch(`/api/profile/head-to-head?opponentId=${encodeURIComponent(opponentId)}`)
+        const data = await response.json()
+        if (!response.ok || !data.success) {
+          throw new Error(data?.error || t.headToHeadFetchError)
+        }
+        setHeadToHead(data.data)
+      } catch (error: any) {
+        setHeadToHead(null)
+        setHeadToHeadError(error?.message || t.headToHeadFetchError)
+      } finally {
+        setHeadToHeadLoading(false)
+      }
+    },
+    [t.headToHeadFetchError]
+  )
+
+  const fetchTopOpponents = React.useCallback(async () => {
+    setTopOpponentsLoading(true)
+    try {
+      const response = await fetch("/api/profile/head-to-head?mode=top-opponents")
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || t.headToHeadFetchError)
+      }
+      setTopOpponents(data?.data?.topOpponents || [])
+    } catch (error) {
+      console.error("Top opponents fetch error:", error)
+      setTopOpponents([])
+    } finally {
+      setTopOpponentsLoading(false)
+    }
+  }, [t.headToHeadFetchError])
+
+  React.useEffect(() => {
+    if (!playerStats?.hasPlayer) return
+    void fetchTopOpponents()
+  }, [fetchTopOpponents, playerStats?.hasPlayer])
+
+  const fetchPendingInvites = React.useCallback(async () => {
+    setPendingInvitesLoading(true)
+    try {
+      const response = await fetch("/api/profile/pending-invitations")
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || "Failed to fetch pending invitations")
+      }
+      setPendingInvites(data?.data?.invitations || [])
+    } catch (error) {
+      console.error("Pending invites fetch error:", error)
+      setPendingInvites([])
+    } finally {
+      setPendingInvitesLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (!playerStats?.hasPlayer) return
+    void fetchPendingInvites()
+  }, [fetchPendingInvites, playerStats?.hasPlayer])
+
+  const handleClearHeadToHead = React.useCallback(() => {
+    setSelectedOpponent(null)
+    setHeadToHead(null)
+    setHeadToHeadError("")
+  }, [])
+
+  const h2hLeader = React.useMemo(() => {
+    if (!headToHead) return null
+    if (headToHead.summary.playerAWins > headToHead.summary.playerBWins) return "A"
+    if (headToHead.summary.playerBWins > headToHead.summary.playerAWins) return "B"
+    return null
+  }, [headToHead])
+
+  const topOpponentsByWinRate = React.useMemo(() => {
+    return [...topOpponents]
+      .map((entry) => {
+        const total = Math.max(entry.matchesPlayed || 0, 1)
+        const winRate = Number(((entry.wins / total) * 100).toFixed(1))
+        return { ...entry, winRate }
+      })
+      .sort((a, b) => {
+        if ((b.winRate || 0) !== (a.winRate || 0)) return (b.winRate || 0) - (a.winRate || 0)
+        if (b.matchesPlayed !== a.matchesPlayed) return b.matchesPlayed - a.matchesPlayed
+        return (new Date(b.lastPlayedAt || 0).getTime() || 0) - (new Date(a.lastPlayedAt || 0).getTime() || 0)
+      })
+  }, [topOpponents])
+
+  const mostPlayedTop5 = React.useMemo(() => {
+    return [...topOpponents]
+      .sort((a, b) => b.matchesPlayed - a.matchesPlayed)
+      .slice(0, 5)
+  }, [topOpponents])
+
+  const tournamentAveragesAll = React.useMemo(() => {
+    return activeHistory
+      .map((entry: any) => {
+        const avg = Number(entry?.stats?.average || entry?.stats?.avg || entry?.average || 0)
+        return {
+          id: `${entry?.tournamentId || entry?._id || entry?.name || "tournament"}-${entry?.startDate || entry?.date || ""}`,
+          tournamentId: entry?.tournamentId || undefined,
+          name: entry?.tournamentName || entry?.name || "Ismeretlen torna",
+          date: entry?.startDate || entry?.date,
+          finalPosition: entry?.finalPosition || entry?.position,
+          mmrChange: entry?.mmrChange,
+          oacMmrChange: entry?.oacMmrChange,
+          matchesWon: Number(entry?.stats?.matchesWon || 0),
+          matchesLost: Number(entry?.stats?.matchesLost || 0),
+          legsWon: Number(entry?.stats?.legsWon || 0),
+          legsLost: Number(entry?.stats?.legsLost || 0),
+          oneEightiesCount: Number(entry?.stats?.oneEightiesCount || 0),
+          highestCheckout: Number(entry?.stats?.highestCheckout || 0),
+          avg,
+        }
+      })
+      .filter((entry: { avg: number }) => entry.avg > 0)
+      .sort((a: { avg: number }, b: { avg: number }) => b.avg - a.avg)
+  }, [activeHistory])
+
+  const topThreeAverages = React.useMemo(() => {
+    return tournamentAveragesAll.slice(0, topTournamentLimit)
+  }, [tournamentAveragesAll, topTournamentLimit])
+
+  const matchAveragesAll = React.useMemo(() => {
+    return (playerStats.matchHistory || [])
+      .map((match: any) => ({
+        ...match,
+        average: Number(match?.average || 0),
+      }))
+      .filter((match: any) => match.average > 0)
+      .sort((a: any, b: any) => b.average - a.average)
+  }, [playerStats.matchHistory])
+
+  const topThreeMatchAverages = React.useMemo(() => {
+    return matchAveragesAll.slice(0, topMatchLimit)
+  }, [matchAveragesAll, topMatchLimit])
 
   if (isLoading) {
     return (
@@ -353,28 +575,33 @@ export function PlayerStatisticsSection({
         <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-2xl font-bold">
             <IconTrophy className="w-6 h-6 text-primary" />
-            {t("title")}
+            <span>Játékos statisztikák</span>
+            <CountryFlag countryCode={playerStats.player.country} className="text-base" />
             </CardTitle>
             <div className="flex flex-wrap gap-2 pt-1">
                 {honors.map((honor, i) => (
-                    <Badge key={i} variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] font-black uppercase tracking-tighter gap-1">
+                    <Badge
+                      key={i}
+                      variant="secondary"
+                      className="min-w-0 max-w-full gap-1 overflow-hidden bg-amber-500/10 text-amber-600 border-amber-500/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter h-auto"
+                    >
                         <IconMedal size={10} />
-                        {honor.title}
+                        <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                     </Badge>
                 ))}
             </div>
         </div>
         
         <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">{t("period")}</span>
+            <span className="text-sm font-medium text-muted-foreground">Időszak:</span>
             <select 
                 value={selectedSeason} 
                 onChange={(e) => setSelectedSeason(e.target.value)}
                 className="h-9 w-[160px] rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
-                <option value="current">{t("seasons.current")}</option>
-                <option value="all-time">{t("seasons.all_time")}</option>
-                <optgroup label={t("seasons.previous")}>
+                <option value="current">Jelenlegi Szezon</option>
+                <option value="all-time">Összesített</option>
+                <optgroup label="Korábbi évek">
                     {availableYears.filter(y => y !== currentYear.toString()).map(year => (
                         <option key={year} value={year}>{year}</option>
                     ))}
@@ -384,12 +611,464 @@ export function PlayerStatisticsSection({
       </CardHeader>
       
       <CardContent className="space-y-8 px-0">
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="space-y-3 pb-4">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <IconSword size={16} className="text-primary" />
+                {t.headToHeadTitle}
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={handleClearHeadToHead}>
+                {t.headToHeadClear}
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-1">
+                {playerStats.player.name}
+                {h2hLeader === "A" && <IconTrophy size={13} className="text-amber-500" />}
+              </span>
+              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">vs</span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/30 px-2 py-1">
+                {headToHead?.playerB?.name || selectedOpponent?.name || t.headToHeadUnknownOpponent}
+                {h2hLeader === "B" && <IconTrophy size={13} className="text-amber-500" />}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <PlayerSearch
+              onPlayerSelected={(player) => {
+                setSelectedOpponent(player)
+                void fetchHeadToHead(player._id)
+              }}
+              placeholder={t.headToHeadSearchPlaceholder}
+              excludePlayerIds={[playerStats.player._id]}
+              showAddGuest={false}
+              isForTournament
+            />
+            {!topOpponentsLoading && mostPlayedTop5.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t.headToHeadTopOpponents}</p>
+                <div className="flex flex-wrap gap-2">
+                  {mostPlayedTop5.map((entry) => (
+                    <button
+                      key={`quick-${entry.opponent._id}`}
+                      className="cursor-pointer rounded-full border border-muted/20 bg-muted/10 px-3 py-1 text-xs font-semibold hover:border-primary/30 hover:bg-primary/5"
+                      onClick={() => {
+                        setSelectedOpponent(entry.opponent)
+                        void fetchHeadToHead(entry.opponent._id)
+                      }}
+                    >
+                      {entry.opponent.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {headToHeadLoading ? (
+              <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
+            ) : headToHeadError ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
+                <p className="text-xs text-destructive">{headToHeadError}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => selectedOpponent?._id && void fetchHeadToHead(selectedOpponent._id)}
+                >
+                  {t.retry}
+                </Button>
+              </div>
+            ) : !headToHead ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">{t.headToHeadNoSelection}</p>
+                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    Összes ellenfél (győzelmi ráta szerint)
+                  </p>
+                  {topOpponentsLoading ? (
+                    <p className="text-xs text-muted-foreground">{t.headToHeadLoading}</p>
+                  ) : topOpponentsByWinRate.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t.headToHeadNoTopOpponents}</p>
+                  ) : (
+                    <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+                      {topOpponentsByWinRate.map((entry) => (
+                        <button
+                          key={entry.opponent._id}
+                          className="flex w-full cursor-pointer items-center justify-between rounded-md border border-muted/20 bg-background px-3 py-2 text-left hover:border-primary/30"
+                          onClick={() => {
+                            setSelectedOpponent(entry.opponent)
+                            void fetchHeadToHead(entry.opponent._id)
+                          }}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold">{entry.opponent.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {entry.matchesPlayed} {t.headToHeadMatches.toLowerCase()} • {entry.wins} {t.headToHeadWins.toLowerCase()} • {entry.winRate?.toFixed(1)}% WR
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            {entry.lastPlayedAt ? new Date(entry.lastPlayedAt).toLocaleDateString("hu-HU") : ""}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    All-time összehasonlítás
+                  </p>
+                  <div className="overflow-hidden rounded-md border border-muted/20">
+                    <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      <span>{t.headToHeadStatsMetric}</span>
+                      <span className="truncate text-center">{headToHead.playerA.name}</span>
+                      <span className="truncate text-center">{headToHead.playerB.name}</span>
+                    </div>
+                    <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadAverage}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerAAverage ? headToHead.summary.playerAAverage.toFixed(1) : "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerBAverage ? headToHead.summary.playerBAverage.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">Winrate</span>
+                      <span className="text-center font-semibold">
+                        {headToHead.summary.matchesPlayed > 0
+                          ? `${((headToHead.summary.playerAWins / headToHead.summary.matchesPlayed) * 100).toFixed(1)}%`
+                          : "—"}
+                      </span>
+                      <span className="text-center font-semibold">
+                        {headToHead.summary.matchesPlayed > 0
+                          ? `${((headToHead.summary.playerBWins / headToHead.summary.matchesPlayed) * 100).toFixed(1)}%`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerAOneEighties || 0}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerBOneEighties || 0}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerAHighestCheckout || "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.summary.playerBHighestCheckout || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-muted/20 bg-muted/5 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    Játékosok egyéni all-time stat összehasonlítás
+                  </p>
+                  <div className="overflow-hidden rounded-md border border-muted/20">
+                    <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      <span>{t.headToHeadStatsMetric}</span>
+                      <span className="truncate text-center">{headToHead.playerA.name}</span>
+                      <span className="truncate text-center">{headToHead.playerB.name}</span>
+                    </div>
+                    <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadAverage}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.avg ? headToHead.allTimeComparison.playerA.avg.toFixed(1) : "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.avg ? headToHead.allTimeComparison.playerB.avg.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">Winrate</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.winRate.toFixed(1)}%</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.winRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.oneEightiesCount || 0}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.oneEightiesCount || 0}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.highestCheckout || "—"}</span>
+                      <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.highestCheckout || "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">{t.headToHeadMatches}</span>
+                      <span className="text-center font-semibold">
+                        {headToHead.allTimeComparison.playerA.matchesPlayed} ({headToHead.allTimeComparison.playerA.wins}W-{headToHead.allTimeComparison.playerA.losses}L)
+                      </span>
+                      <span className="text-center font-semibold">
+                        {headToHead.allTimeComparison.playerB.matchesPlayed} ({headToHead.allTimeComparison.playerB.wins}W-{headToHead.allTimeComparison.playerB.losses}L)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <CircularStatCard label={t.headToHeadPlayed} value={headToHead.summary.matchesPlayed} total={headToHead.summary.matchesPlayed} color="#3b82f6" />
+                  <CircularStatCard label={t.headToHeadWins} value={headToHead.summary.playerAWins} total={headToHead.summary.matchesPlayed} color="#10b981" />
+                  <CircularStatCard label={t.headToHeadLost} value={headToHead.summary.playerBWins} total={headToHead.summary.matchesPlayed} color="#ef4444" />
+                </div>
+
+                <div className="space-y-2">
+                  {headToHead.matches.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-muted/20 p-4 text-xs text-muted-foreground">
+                      {t.headToHeadNoMatches}
+                    </div>
+                  ) : (
+                    headToHead.matches.map((match) => (
+                      <div key={match._id} className="space-y-2 rounded-lg border border-muted/15 bg-muted/10 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold">{match.tournament.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(match.date).toLocaleDateString("hu-HU")}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black">
+                              {match.playerA.legsWon} - {match.playerB.legsWon}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="overflow-hidden rounded-md border border-muted/20">
+                          <div className="grid grid-cols-3 bg-muted/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                            <span>{t.headToHeadStatsMetric}</span>
+                            <span className="truncate text-center">{headToHead.playerA.name}</span>
+                            <span className="truncate text-center">{headToHead.playerB.name}</span>
+                          </div>
+                          <div className="grid grid-cols-3 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">{t.headToHeadAverage}</span>
+                            <span className="text-center font-semibold">{match.playerA.average ? match.playerA.average.toFixed(1) : "—"}</span>
+                            <span className="text-center font-semibold">{match.playerB.average ? match.playerB.average.toFixed(1) : "—"}</span>
+                          </div>
+                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
+                            <span className="text-center font-semibold">{match.playerA.highestCheckout || "—"}</span>
+                            <span className="text-center font-semibold">{match.playerB.highestCheckout || "—"}</span>
+                          </div>
+                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">{t.headToHeadOneEighties}</span>
+                            <span className="text-center font-semibold">{match.playerA.oneEightiesCount || 0}</span>
+                            <span className="text-center font-semibold">{match.playerB.oneEightiesCount || 0}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Link href={`/tournaments/${match.tournament.tournamentId}`}>
+                            <Button variant="outline" size="sm">
+                              {t.headToHeadOpenTournament}
+                            </Button>
+                          </Link>
+                          <Button variant="outline" size="sm" onClick={() => onViewLegs({ _id: match._id })}>
+                            {t.headToHeadReview}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <IconTrendingUp size={16} className="text-primary" />
+                Top torna átlagok
+              </CardTitle>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setTopTournamentLimit((prev) => Math.min(prev + 5, tournamentAveragesAll.length || 5))}>
+                  Következő 5 betöltése
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setTopTournamentLimit(3)}>
+                  reset
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topThreeAverages.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nincs elég adat az átlag rangsorhoz.</p>
+            ) : (
+              topThreeAverages.map((entry: {
+                id: string
+                tournamentId?: string
+                name: string
+                date?: string
+                avg: number
+                finalPosition?: number
+                mmrChange?: number
+                oacMmrChange?: number
+                matchesWon: number
+                matchesLost: number
+                legsWon: number
+                legsLost: number
+                oneEightiesCount: number
+                highestCheckout: number
+              }, index: number) => (
+                <div key={entry.id} className="group bg-card border border-muted/10 rounded-xl p-4 hover:border-primary/30 hover:bg-muted/5 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{index + 1}</Badge>
+                        <h4 className="text-xs font-black tracking-tight truncate">{entry.name}</h4>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {entry.finalPosition ? (
+                          <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{entry.finalPosition}.</Badge>
+                        ) : null}
+                        {entry.mmrChange !== undefined ? (
+                          <span className={cn("text-[10px] font-bold", entry.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                            {entry.mmrChange >= 0 ? "+" : ""}{entry.mmrChange} MMR
+                          </span>
+                        ) : null}
+                        {entry.oacMmrChange !== undefined ? (
+                          <span className={cn("text-[10px] font-bold", entry.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
+                            {entry.oacMmrChange >= 0 ? "+" : ""}{entry.oacMmrChange} OAC MMR
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    {entry.tournamentId ? (
+                      <Link href={`/tournaments/${entry.tournamentId}`}>
+                        <Button variant="outline" size="sm">
+                          Megnyitás
+                        </Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mt-3 pt-3 border-t border-muted/5">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Meccsek</span>
+                      <span className="text-[11px] font-bold">{entry.matchesWon}W - {entry.matchesLost}L</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Legek</span>
+                      <span className="text-[11px] font-bold text-muted-foreground">{entry.legsWon}W - {entry.legsLost}L</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Átlag</span>
+                      <span className="text-[11px] font-bold">{entry.avg.toFixed(1)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">180-ak</span>
+                      <span className="text-[11px] font-bold">{entry.oneEightiesCount}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Checkout</span>
+                      <span className="text-[11px] font-bold">{entry.highestCheckout || "—"}</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[9px] text-muted-foreground uppercase opacity-60">Dátum</span>
+                      <span className="text-[11px] font-bold opacity-60">{entry.date ? new Date(entry.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' }) : '—'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <IconSword size={16} className="text-primary" />
+                Top meccs átlagok
+              </CardTitle>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setTopMatchLimit((prev) => Math.min(prev + 5, matchAveragesAll.length || 5))}>
+                  Következő 5 betöltése
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setTopMatchLimit(3)}>
+                  reset
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topThreeMatchAverages.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nincs elérhető meccs átlag adat.</p>
+            ) : (
+              topThreeMatchAverages.map((match: any, index: number) => (
+                <div key={`top-match-${match._id}`} className="group rounded-xl border border-muted/10 bg-card p-3 hover:border-primary/30 hover:bg-muted/5 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">
+                          #{index + 1}
+                        </Badge>
+                        <p className="truncate text-xs font-black flex items-center gap-1">{match.opponent} {match.winner === "user" && <IconTrophy size={11} className="text-amber-500" />}</p>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground space-y-0.5">
+                        <p className="flex items-center gap-1">
+                         {match.userScore ?? match.player1Score} - {match.opponentScore ?? match.player2Score}
+                        </p>
+                        <p className="flex items-center gap-1">
+                         
+                        </p>
+                        <p>{new Date(match.date).toLocaleDateString("hu-HU")}</p>
+                      </div>
+                    </div>
+                    <span className="text-base font-black text-primary">{Number(match.average).toFixed(1)}</span>
+                  </div>
+                  <div className="mt-2 flex justify-end">
+                    <Button variant="outline" size="sm" onClick={() => onViewLegs(match)}>
+                      Meccs statisztika
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-muted/20 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
+              <IconMail size={16} className="text-primary" />
+              {t.pendingInvitesTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingInvitesLoading ? (
+              <p className="text-xs text-muted-foreground">{t.pendingInvitesLoading}</p>
+            ) : pendingInvites.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t.pendingInvitesEmpty}</p>
+            ) : (
+              pendingInvites.map((invite) => (
+                <div key={invite._id} className="flex items-center justify-between rounded-lg border border-muted/20 bg-muted/5 px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-xs font-semibold">{invite.tournament.name}</p>
+                      <Badge variant="outline" className="text-[9px]">
+                        {invite.inviteType === "email" ? t.pendingInvitesTypeEmail : t.pendingInvitesTypeAccount}
+                      </Badge>
+                    </div>
+                    <p className="truncate text-[10px] text-muted-foreground">{invite.team.name}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {t.pendingInvitesFrom} {invite.inviter.name}
+                    </p>
+                    {invite.invitee?.email && (
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {t.pendingInvitesRecipient} {invite.invitee.email}
+                      </p>
+                    )}
+                  </div>
+                  <Link href={`/invitations/${invite.token}`}>
+                    <Button variant="outline" size="sm">
+                      {t.pendingInvitesOpen}
+                    </Button>
+                  </Link>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
         {/* Summary Stats - Flatter Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className={cn("p-5 rounded-xl border transition-all hover:bg-opacity-10", "border-primary/20 bg-primary/5 text-primary")}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
-                {selectedSeason === 'current' || selectedSeason === 'all-time' ? t("mmr.current") : t("mmr.season_end")}
+                {selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Aktuális MMR' : 'Szezon végi MMR'}
               </span>
               <div className="opacity-50"><IconTarget className="w-4 h-4" /></div>
             </div>
@@ -398,39 +1077,39 @@ export function PlayerStatisticsSection({
                 <div className="text-2xl font-black text-primary ">
                   {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.stats.mmr : (activeStats.mmr || 800)}
                 </div>
-                <span className="text-[10px] font-bold uppercase opacity-60">{t("mmr_1n02")}</span>
+                <span className="text-[10px] font-bold uppercase opacity-60">MMR</span>
               </div>
               {((selectedSeason === 'current' || selectedSeason === 'all-time') && playerStats.player.stats.oacMmr !== 800) && (
                 <div className="flex items-center gap-2 pt-1">
                   <div className="text-lg font-black text-primary">
                     {playerStats.player.stats.oacMmr}
                   </div>
-                  <span className="text-[9px] font-bold uppercase text-primary/70">{t("oac_mmr_g66r")}</span>
+                  <span className="text-[9px] font-bold uppercase text-primary/70">OAC MMR</span>
                 </div>
               )}
             </div>
             <div className="text-[10px] font-bold uppercase tracking-tighter mt-1 opacity-60">
-              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : t("mmr.archived")}
+              {selectedSeason === 'current' || selectedSeason === 'all-time' ? playerStats.player.mmrTier.name : 'Archivált'}
             </div>
           </div>
           <StatCard 
-            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? t("rank") : t("rank_end")}
+            label={selectedSeason === 'current' || selectedSeason === 'all-time' ? 'Rangsor' : 'Végezte'}
             value={selectedSeason === 'current' || selectedSeason === 'all-time' ? `#${playerStats.player.globalRank || '—'}` : '—'}
-            subtext={t("global_list")}
+            subtext="Globális lista"
             icon={<IconTrendingUp className="w-4 h-4" />}
             variant="blue"
           />
           <StatCard 
-            label={t("tournaments")}
+            label="Tornák"
             value={activeSummary.totalTournaments}
-            subtext={selectedSeason === 'all-time' ? t("career") : t("term")}
+            subtext={selectedSeason === 'all-time' ? 'Pályafutás' : 'Időszak'}
             icon={<IconCalendar className="w-4 h-4" />}
             variant="amber"
           />
           <StatCard 
-            label={t("win_rate")}
+            label="Győzelmi ráta"
             value={`${activeSummary.winRate}%`}
-            subtext={`${activeSummary.wins} ${t("wins")}`}
+            subtext={`${activeSummary.wins} Győzelem`}
             icon={<IconSword className="w-4 h-4" />}
             variant="emerald"
           />
@@ -441,7 +1120,7 @@ export function PlayerStatisticsSection({
             <Card className="bg-card border-muted/20 shadow-sm">
                 <CardHeader className="py-4 border-b border-muted/10">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                        {t("charts.form")}
+                        Forma (Átlag)
                         <IconChartBar size={14} className="text-blue-500" />
                     </CardTitle>
                 </CardHeader>
@@ -473,7 +1152,7 @@ export function PlayerStatisticsSection({
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30">
-                            <span className="text-xs font-bold uppercase tracking-widest">{t("charts.no_data")}</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">Nincs adat</span>
                         </div>
                     )}
                 </CardContent>
@@ -482,7 +1161,7 @@ export function PlayerStatisticsSection({
             <Card className="bg-card border-muted/20 shadow-sm">
                 <CardHeader className="py-4 border-b border-muted/10">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                        {t("charts.mmr_history")}
+                        MMR Alakulás
                         <IconTarget size={14} className="text-emerald-500" />
                     </CardTitle>
                 </CardHeader>
@@ -499,11 +1178,12 @@ export function PlayerStatisticsSection({
                                         const data = props.payload;
                                         return [
                                             <div key="mmr-tip" className="space-y-1">
-                                                <div className="font-bold">{value} {t("mmr_1n02")}</div>
+                                                <div className="font-bold">{value} MMR</div>
                                                 <div className="text-[10px] text-muted-foreground">{data.display}</div>
                                                 {data.change !== undefined && (
                                                     <div className={cn("text-[10px] font-bold", data.change >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                                        {data.change >= 0 ? "+" : ""}{data.change} {t("mmr_1n02")}</div>
+                                                        {data.change >= 0 ? "+" : ""}{data.change} MMR
+                                                    </div>
                                                 )}
                                             </div>,
                                             null
@@ -522,7 +1202,7 @@ export function PlayerStatisticsSection({
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30">
-                            <span className="text-xs font-bold uppercase tracking-widest">{t("charts.no_history")}</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">Nincs MMR történet</span>
                         </div>
                     )}
                 </CardContent>
@@ -534,14 +1214,14 @@ export function PlayerStatisticsSection({
           <div className="space-y-6">
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
               <IconChartBar size={16} className="text-primary" />
-              {t("metrics.title")}
+              Szezonális Mutatók
             </h3>
             <div className="bg-card border border-muted/20 rounded-xl overflow-hidden divide-y divide-muted/10">
-                <SimpleStatRow label={t("metrics.avg")} value={activeStats.avg?.toFixed(1) || '—'} />
-                <SimpleStatRow label={t("metrics.one_eighties")} value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
-                <SimpleStatRow label={t("metrics.best_pos")} value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
-                <SimpleStatRow label={t("metrics.avg_pos")} value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />
-                <SimpleStatRow label={t("metrics.max_checkout")} value={activeStats.highestCheckout || '—'} />
+                <SimpleStatRow label="Átlag" value={activeStats.avg?.toFixed(1) || '—'} />
+                <SimpleStatRow label="180-as Dobások" value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
+                <SimpleStatRow label="Legjobb Helyezés" value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
+                <SimpleStatRow label="Átlagos Helyezés" value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />
+                <SimpleStatRow label="Max Kiszálló" value={activeStats.highestCheckout || '—'} />
             </div>
 
             {/* Recent Matches Restoration */}
@@ -549,7 +1229,7 @@ export function PlayerStatisticsSection({
                 <>
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
                         <IconSword size={16} className="text-primary" />
-                        {t("matches.title")}
+                        Legutóbbi Meccsek
                     </h3>
                     <div className="space-y-2">
                         {playerStats.matchHistory.map((match: any) => (
@@ -560,7 +1240,7 @@ export function PlayerStatisticsSection({
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-xs font-black font-mono">{match.player1Score} - {match.player2Score}</span>
-                                    <span className="text-[10px] text-muted-foreground opacity-60">{new Date(match.date).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US', { month: '2-digit', day: '2-digit' })}</span>
+                                    <span className="text-[10px] text-muted-foreground opacity-60">{new Date(match.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' })}</span>
                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onViewLegs(match)}>
                                         <IconHistory size={14} />
                                     </Button>
@@ -576,7 +1256,7 @@ export function PlayerStatisticsSection({
                 <>
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pt-4">
                         <IconUsers size={16} className="text-primary" />
-                        {t("teams.title")}
+                        Párosaim / Csapataim
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {playerStats.teams.map((team: any) => (
@@ -588,9 +1268,13 @@ export function PlayerStatisticsSection({
                                 <div className="flex items-center gap-3">
                                     <SmartAvatar playerId={team._id} name={team.name} size="sm" />
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-bold">{team.name}</span>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs font-bold">{team.name}</span>
+                                          <CountryFlag countryCode={team.country} />
+                                        </div>
                                         <span className="text-[10px] text-muted-foreground uppercase opacity-60">
-                                            {team.type === 'pair' ? t("teams.pair") : t("teams.team")} • {team.stats?.mmr || 800} {t("mmr_1n02")}</span>
+                                            {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} MMR
+                                        </span>
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -607,9 +1291,9 @@ export function PlayerStatisticsSection({
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <IconCalendar size={16} className="text-primary" />
-                {t("history.title")}
+                Esemény Napló
               </div>
-              <span className="text-[10px] opacity-40">{t("history.tournaments_count", { count: activeHistory.length })}</span>
+              <span className="text-[10px] opacity-40">{activeHistory.length} Torna</span>
             </h3>
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {activeHistory.length > 0 ? activeHistory.map((tournament: any, index: number) => (
@@ -626,50 +1310,52 @@ export function PlayerStatisticsSection({
                          <Badge variant="outline" className="text-[10px] h-5 py-0 border-amber-500/20 text-amber-600 bg-amber-500/5">#{tournament.finalPosition || tournament.position}.</Badge>
                          {tournament.mmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.mmrChange >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} {t("mmr_1n02")}</span>
+                                {tournament.mmrChange >= 0 ? "+" : ""}{tournament.mmrChange} MMR
+                            </span>
                          )}
                          {tournament.oacMmrChange !== undefined && (
                             <span className={cn("text-[10px] font-bold", tournament.oacMmrChange >= 0 ? "text-blue-500" : "text-red-500")}>
-                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} {t("oac_mmr_g66r")}</span>
+                                {tournament.oacMmrChange >= 0 ? "+" : ""}{tournament.oacMmrChange} OAC MMR
+                            </span>
                          )}
                       </div>
                     </div>
                     <Link href={`/tournaments/${tournament.tournamentId}`}>
                        <Button variant="outline" size="sm" className="">
-                         {t("history.open_button")}
+                         Megnyitás
                        </Button>
                     </Link>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mt-3 pt-3 border-t border-muted/5">
-                       <div className="flex flex-col">
-                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.matches")}</span>
-                           <span className="text-[11px] font-bold">{tournament.stats?.matchesWon || 0}W - {tournament.stats?.matchesLost || 0}L</span>
-                       </div>
-                       <div className="flex flex-col">
-                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.legs")}</span>
-                           <span className="text-[11px] font-bold text-muted-foreground">{tournament.stats?.legsWon || 0}W - {tournament.stats?.legsLost || 0}L</span>
-                       </div>
-                       <div className="flex flex-col">
-                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.avg")}</span>
-                           <span className="text-[11px] font-bold">{tournament.stats?.average?.toFixed(1) || tournament.stats?.avg?.toFixed(1) || '—'}</span>
-                       </div>
-                       <div className="flex flex-col">
-                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.one_eighties")}</span>
-                           <span className="text-[11px] font-bold">{tournament.stats?.oneEightiesCount || 0}</span>
-                       </div>
-                       <div className="flex flex-col">
-                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.checkout")}</span>
-                           <span className="text-[11px] font-bold">{tournament.stats?.highestCheckout || '—'}</span>
-                       </div>
-                       <div className="flex flex-col text-right">
-                           <span className="text-[9px] text-muted-foreground uppercase opacity-60">{t("history.date")}</span>
-                           <span className="text-[11px] font-bold opacity-60">{new Date(tournament.startDate || tournament.date).toLocaleDateString(locale === 'hu' ? 'hu-HU' : 'en-US', { month: '2-digit', day: '2-digit' })}</span>
-                       </div>
-                   </div>
+                      <div className="flex flex-col">
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Meccsek</span>
+                          <span className="text-[11px] font-bold">{tournament.stats?.matchesWon || 0}W - {tournament.stats?.matchesLost || 0}L</span>
+                      </div>
+                      <div className="flex flex-col">
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Legek</span>
+                          <span className="text-[11px] font-bold text-muted-foreground">{tournament.stats?.legsWon || 0}W - {tournament.stats?.legsLost || 0}L</span>
+                      </div>
+                      <div className="flex flex-col">
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Átlag</span>
+                          <span className="text-[11px] font-bold">{tournament.stats?.average?.toFixed(1) || tournament.stats?.avg?.toFixed(1) || '—'}</span>
+                      </div>
+                      <div className="flex flex-col">
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">180-ak</span>
+                          <span className="text-[11px] font-bold">{tournament.stats?.oneEightiesCount || 0}</span>
+                      </div>
+                      <div className="flex flex-col">
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Checkout</span>
+                          <span className="text-[11px] font-bold">{tournament.stats?.highestCheckout || '—'}</span>
+                      </div>
+                      <div className="flex flex-col text-right">
+                          <span className="text-[9px] text-muted-foreground uppercase opacity-60">Dátum</span>
+                          <span className="text-[11px] font-bold opacity-60">{new Date(tournament.startDate || tournament.date).toLocaleDateString('hu-HU', { month: '2-digit', day: '2-digit' })}</span>
+                      </div>
+                  </div>
                 </div>
               )) : (
                 <div className="py-10 text-center text-muted-foreground/30 border border-dashed border-muted/10 rounded-xl">
-                    <span className="text-xs font-bold uppercase tracking-widest">{t("history.empty")}</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">Üres lista</span>
                 </div>
               )}
             </div>
@@ -714,6 +1400,33 @@ function SimpleStatRow({ label, value }: { label: string, value: string | number
             <span className="text-sm font-black text-foreground">{value}</span>
         </div>
     );
+}
+
+function CircularStatCard({ label, value, total, color }: { label: string; value: number | string; total: number; color: string }) {
+  const numericValue = typeof value === "number" ? value : Number(value) || 0
+  const safeTotal = Math.max(total || 0, 1)
+  const normalizedValue = Math.max(Math.min(numericValue, safeTotal), 0)
+  const ringData = [
+    { name: "value", value: normalizedValue },
+    { name: "rest", value: Math.max(safeTotal - normalizedValue, 0) },
+  ]
+
+  return (
+    <div className="rounded-xl border border-muted/20 bg-card p-3">
+      <div className="mx-auto h-[90px] w-[90px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={ringData} dataKey="value" innerRadius={28} outerRadius={40} startAngle={90} endAngle={-270}>
+              <Cell fill={color} />
+              <Cell fill="hsl(var(--muted))" />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="mt-1 text-center text-xl font-black">{value}</p>
+      <p className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+    </div>
+  )
 }
 
 export default PlayerStatisticsSection

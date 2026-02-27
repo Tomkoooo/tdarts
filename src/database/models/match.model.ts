@@ -125,5 +125,7 @@ matchSchema.index({ tournamentRef: 1, manualOverride: 1 });
 matchSchema.index({ manualChangeType: 1 });
 matchSchema.index({ manualChangedBy: 1 });
 matchSchema.index({ tournamentRef: 1, status: 1 });
+matchSchema.index({ 'player1.playerId': 1, 'player2.playerId': 1, status: 1, createdAt: -1 });
+matchSchema.index({ 'player2.playerId': 1, 'player1.playerId': 1, status: 1, createdAt: -1 });
 
 export const MatchModel = mongoose.models.Match || mongoose.model<MatchDocument>('Match', matchSchema);

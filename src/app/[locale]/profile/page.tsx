@@ -19,12 +19,16 @@ import LegsViewModal from "@/components/tournament/LegsViewModal"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
 import { useTranslations } from 'next-intl'
+import GoogleAuthSection from "@/components/profile/GoogleAuthSection"
+import { useLogout } from "@/hooks/useLogout"
 
 export default function ProfilePage() {
   const t = useTranslations("Profile")
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, setUser } = useUserContext()
+  const userId = user?._id
+  const { logout } = useLogout()
 
   // State
   const [activeTab, setActiveTab] = React.useState<'details' | 'stats' | 'tickets'>('details')
@@ -60,15 +64,15 @@ export default function ProfilePage() {
 
   // Redirect if not logged in
   React.useEffect(() => {
-    if (!user) {
-      router.push("/auth/login")
-    } else {
-      setNeedsEmailVerification(!user.isVerified)
-      loadPlayerStats()
-      loadLeagueHistory()
-      loadTickets()
+    if (!userId) {
+      router.replace(`/auth/login?redirect=${encodeURIComponent("/profile")}`)
+      return
     }
-  }, [user, router])
+    setNeedsEmailVerification(!user?.isVerified)
+    loadPlayerStats()
+    loadLeagueHistory()
+    loadTickets()
+  }, [router, user?.isVerified, userId])
 
   // Load player stats
   const loadPlayerStats = async () => {
@@ -95,27 +99,6 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error loading tickets:', error)
     } finally {
-    }
-  }
-
-  // Handle reply to ticket
-  const handleReplyToTicket = async (ticket: any, content: string) => {
-    setIsLoading(true)
-    try {
-      if (ticket.status === 'closed') {
-        toast.error(t("tickets.toasts.closed_error"))
-        return
-      }
-      const response = await axios.post(`/api/profile/tickets/${ticket.id}/reply`, { content })
-      if (response.data.success) {
-        setSelectedTicket(response.data.data)
-        // Update the ticket in the list as well
-        setTickets(tickets.map(tk => tk.id === ticket.id ? response.data.data : tk))
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || t("tickets.toasts.reply_error"))
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -211,9 +194,29 @@ export default function ProfilePage() {
   }
 
   // Handle view legs
-  const handleViewLegs = (match: any) => {
-    setSelectedMatch(match)
-    setShowLegsModal(true)
+  const handleViewLegs = async (match: any) => {
+    const matchId = match?._id
+    if (!matchId) return
+
+    try {
+      if (match?.legs && Array.isArray(match.legs)) {
+        setSelectedMatch(match)
+        setShowLegsModal(true)
+        return
+      }
+
+      const response = await axios.get(`/api/matches/${matchId}`)
+      if (response.data?.success && response.data?.match) {
+        setSelectedMatch(response.data.match)
+      } else {
+        setSelectedMatch(match)
+      }
+      setShowLegsModal(true)
+    } catch (error) {
+      console.error("Error loading match details:", error)
+      setSelectedMatch(match)
+      setShowLegsModal(true)
+    }
   }
 
   // Handle close legs modal
@@ -244,9 +247,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     setIsLoading(true)
     try {
-      await axios.post("/api/auth/logout")
+      await logout()
       toast.success(t("toasts.logout_success"))
-      window.location.href = "/"
     } catch {
       toast.error(t("toasts.logout_error"))
     } finally {
@@ -289,6 +291,8 @@ export default function ProfilePage() {
               isLoading={isLoading}
               onSubmit={onProfileSubmit}
             />
+
+            <GoogleAuthSection email={user.email} />
 
             {/* Email Verification */}
             {needsEmailVerification && (
@@ -334,12 +338,10 @@ export default function ProfilePage() {
             <TicketDetail 
               ticket={selectedTicket} 
               onBack={() => setSelectedTicket(null)}
-              onSendMessage={(content) => handleReplyToTicket(selectedTicket, content)}
               onUpdate={() => {
                 refreshUnreadCount();
                 loadTickets();
               }}
-              isLoading={isLoading}
             />
           ) : (
             <TicketList 

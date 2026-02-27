@@ -22,7 +22,10 @@ export class AuthService {
           username: user.username
         });
       }
-      const newUser = await UserModel.create(user);
+      const newUser = await UserModel.create({
+        ...user,
+        country: null,
+      });
       return await this.sendVerificationEmail(newUser);
     } catch (error: any) {
       if (error.code === 11000) {
@@ -35,7 +38,7 @@ export class AuthService {
     }
   }
 
-  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean}}> {
+  static async login(email: string, password: string): Promise<{token: string, user: {_id: string, username: string, email: string, name: string, isAdmin: boolean, isVerified: boolean, country?: string | null, locale?: 'hu' | 'en' | 'de'}}> {
     await connectMongo();
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
@@ -67,7 +70,8 @@ export class AuthService {
     
     await MailerService.sendVerificationEmail(user.email, {
       userName: user.name || user.username || 'Játékos',
-      verificationCode
+      verificationCode,
+      locale: user.locale || 'hu',
     });
     
     return verificationCode;
@@ -108,7 +112,8 @@ export class AuthService {
     const { MailerService } = await import('@/database/services/mailer.service');
     await MailerService.sendPasswordResetEmail(email, {
       userName: user.name || user.username || 'Játékos',
-      resetCode
+      resetCode,
+      locale: user.locale || 'hu',
     });
   }
 

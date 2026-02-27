@@ -15,12 +15,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch all email templates
+    // Fetch all email templates + grouped locale view
     const templates = await EmailTemplateService.getAllTemplates();
+    const groupedTemplates = await EmailTemplateService.getGroupedTemplates();
 
     return NextResponse.json({
       success: true,
       templates,
+      groupedTemplates,
     });
   } catch (error) {
     console.error('Error fetching email templates:', error);

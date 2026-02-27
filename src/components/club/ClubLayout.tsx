@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import { useRouter } from "@/i18n/routing"
-import { useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { IconHome, IconTrophy, IconUsers, IconSettings, IconMedal } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { useTranslations } from "next-intl"
+import { stripLocalePrefix } from "@/lib/seo"
 
 interface ClubLayoutProps {
   userRole: 'admin' | 'moderator' | 'member' | 'none'
@@ -47,6 +48,7 @@ export default function ClubLayout({
 }: ClubLayoutProps) {
   const t = useTranslations('Club.layout')
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = React.useState<string>(defaultPage)
 
@@ -61,8 +63,8 @@ export default function ClubLayout({
   // Update URL when tab changes
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
-    const currentPath = window.location.pathname
-    router.push(`${currentPath}?page=${tab}`, { scroll: false })
+    const normalizedPath = stripLocalePrefix(pathname || window.location.pathname || "/")
+    router.push(`${normalizedPath}?page=${tab}`, { scroll: false })
   }
 
   const tabs = [

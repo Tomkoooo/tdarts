@@ -4,7 +4,7 @@ import { TournamentModel } from '../models/tournament.model';
 import { ClubModel } from '../models/club.model';
 
 export interface SearchFilters {
-    type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'all';
+    type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'global' | 'all';
     status?: string;
     format?: string;
     dateFrom?: Date;
@@ -21,6 +21,7 @@ export interface SearchFilters {
     limit?: number;
     year?: number;
     rankingType?: 'oacMmr' | 'leaguePoints'; // New filter for player ranking in OAC mode
+    playerMode?: 'all' | 'individual' | 'pair';
     country?: string;
 }
 
@@ -30,6 +31,12 @@ export interface SearchResult {
     tournaments?: any[];
     clubs?: any[];
     leagues?: any[];
+    global?: {
+        tournaments: any[];
+        players: any[];
+        clubs: any[];
+        leagues: any[];
+    };
     totalResults: number;
     totalPages?: number;
     currentPage?: number;
@@ -44,6 +51,7 @@ export class SearchService {
      * This allows showing badges like "Tournaments (5)"
      */
     static async getTabCounts(query: string, filters: SearchFilters = {}): Promise<{
+        global: number;
         tournaments: number;
         players: number;
         clubs: number;
@@ -52,6 +60,7 @@ export class SearchService {
         await connectMongo();
         
         const counts = {
+            global: 0,
             tournaments: 0,
             players: 0,
             clubs: 0,
@@ -69,41 +78,26 @@ export class SearchService {
     // 2. Players Count
     const playerQuery: any = {};
     if (regex) playerQuery.name = regex;
+    if (filters.playerMode && filters.playerMode !== 'all') {
+        playerQuery.type = filters.playerMode;
+    }
     
     if (filters.isOac) {
+         // Consistent with searchPlayers logic: check for verified tournament history
          playerQuery['tournamentHistory.isVerified'] = true;
-    }
-    if (filters.country) {
-        playerQuery.country = filters.country;
     }
 
     counts.players = await PlayerModel.countDocuments(playerQuery);
 
-    // 3. Clubs Count
-    const clubQuery = this.buildClubQuery(query, filters);
-    counts.clubs = await ClubModel.countDocuments(clubQuery);
+        // 3. Clubs Count
+        const clubQuery = this.buildClubQuery(query, filters);
+        counts.clubs = await ClubModel.countDocuments(clubQuery);
 
-    // 4. Leagues Count
-    const { LeagueModel } = await import('../models/league.model');
-    // Using simple query if no country filter, otherwise needs aggregation
-    if (filters.country) {
-        const leaguePipeline: any[] = [];
-        if (regex) leaguePipeline.push({ $match: { name: regex } });
-        leaguePipeline.push(
-            { $lookup: { from: 'clubs', localField: 'club', foreignField: '_id', as: 'clubData' } },
-            { $unwind: '$clubData' },
-            { $match: { 'clubData.country': filters.country } }
-        );
-        if (filters.isVerified || filters.isOac) {
-            leaguePipeline.push({ $match: { verified: true } });
-        }
-        leaguePipeline.push({ $count: 'total' });
-        const leagueCountResult = await LeagueModel.aggregate(leaguePipeline);
-        counts.leagues = leagueCountResult[0]?.total || 0;
-    } else {
+        // 4. Leagues Count
         const leagueQuery = this.buildLeagueQuery(query, filters);
+        const { LeagueModel } = await import('../models/league.model');
         counts.leagues = await LeagueModel.countDocuments(leagueQuery);
-    }
+        counts.global = counts.tournaments + counts.players + counts.clubs + counts.leagues;
 
         return counts;
     }
@@ -179,15 +173,17 @@ export class SearchService {
 
         const queryObj: any = {};
         if (regex) queryObj.name = regex;
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            queryObj.type = filters.playerMode;
+        }
 
         if (filters.isOac) {
             // Requirement: "only want to list those who was once part of a verified tournament"
             // We check 'tournamentHistory' array for at least one item where isVerified is true
             queryObj['tournamentHistory.isVerified'] = true;
         }
-
         if (filters.country) {
-            queryObj.country = filters.country;
+            queryObj.country = filters.country.toUpperCase();
         }
 
         const total = await PlayerModel.countDocuments(queryObj);
@@ -195,7 +191,9 @@ export class SearchService {
         // Fetch all matching players to sort by MMR (handling nulls)
         // Note: For large datasets, this in-memory sort is bad. 
         // Ideally, schema should index 'stats.mmr'. detailed sort logic kept from original.
-        const allPlayers = await PlayerModel.find(queryObj).populate('userRef', 'name email');
+        const allPlayers = await PlayerModel.find(queryObj)
+            .populate('userRef', 'name email')
+            .populate('members', 'name');
         
         const sortedPlayers = allPlayers.sort((a, b) => {
             let aMMR = a.stats?.mmr ?? 800;
@@ -238,6 +236,10 @@ export class SearchService {
                 _id: player._id,
                 name: player.name,
                 type: player.type || 'individual',
+                members: (player.members || []).map((member: any) => ({
+                    _id: member?._id,
+                    name: member?.name || '',
+                })),
                 userRef: player.userRef,
                 stats: stats,
                 mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
@@ -334,61 +336,26 @@ export class SearchService {
         const limit = filters.limit || 10;
         const skip = (page - 1) * limit;
 
-        const pipeline: any[] = [];
+        const queryObj = this.buildLeagueQuery(query, filters);
 
-        // 1. Initial Match (Name search if query exists)
-        const initialMatch: any = {};
-        if (query) {
-            initialMatch.name = new RegExp(query, 'i');
-        }
-        if (Object.keys(initialMatch).length > 0) {
-            pipeline.push({ $match: initialMatch });
+        // Ensure OAC filter is applied if active (verified only)
+        if (filters.isOac) {
+            queryObj.verified = true;
         }
 
-        // 2. Lookup Club
-        pipeline.push(
-            {
-                $lookup: {
-                    from: 'clubs',
-                    localField: 'club',
-                    foreignField: '_id',
-                    as: 'clubData'
-                }
-            },
-            { $unwind: { path: '$clubData', preserveNullAndEmptyArrays: true } }
-        );
+        const total = await LeagueModel.countDocuments(queryObj);
 
-        // 3. Filter by country and verification
-        const filterMatch: any = {};
-        if (filters.country) {
-            filterMatch['clubData.country'] = filters.country;
-        }
-        if (filters.isVerified || filters.isOac) {
-            filterMatch.verified = true;
-        }
-        if (Object.keys(filterMatch).length > 0) {
-            pipeline.push({ $match: filterMatch });
-        }
-
-        // 4. Count total
-        const countPipeline = [...pipeline, { $count: 'total' }];
-        const countResult = await LeagueModel.aggregate(countPipeline);
-        const total = countResult.length > 0 ? countResult[0].total : 0;
-
-        // 5. Pagination and sorting
-        pipeline.push(
-            { $sort: { isActive: -1, createdAt: -1 } },
-            { $skip: skip },
-            { $limit: limit }
-        );
-
-        const leagues = await LeagueModel.aggregate(pipeline);
+        const leagues = await LeagueModel.find(queryObj)
+            .populate('club', 'name location verified')
+            .sort({ isActive: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
         const results = leagues.map(l => ({
             _id: l._id,
             name: l.name,
             description: l.description,
-            club: l.clubData,
+            club: l.club,
             verified: l.verified,
             isActive: l.isActive,
             pointSystemType: l.pointSystemType,
@@ -474,10 +441,21 @@ export class SearchService {
             }
         });
         pipeline.push({ $unwind: '$playerInfo' });
+        pipeline.push({
+            $lookup: {
+                from: 'players',
+                localField: 'playerInfo.members',
+                foreignField: '_id',
+                as: 'memberPlayers'
+            }
+        });
 
         // 5. Apply Name Filter (if query exists)
         if (regex) {
              pipeline.push({ $match: { 'playerInfo.name': regex } });
+        }
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            pipeline.push({ $match: { 'playerInfo.type': filters.playerMode } });
         }
 
         // 6. Sort by Points
@@ -507,6 +485,10 @@ export class SearchService {
              _id: item.playerInfo._id,
              name: item.playerInfo.name,
              type: item.playerInfo.type || 'individual',
+             members: (item.memberPlayers || []).map((member: any) => ({
+                _id: member?._id,
+                name: member?.name || '',
+             })),
              userRef: item.playerInfo.userRef,
              stats: {
                  ...item.playerInfo.stats,
@@ -654,22 +636,16 @@ export class SearchService {
             matchStage.city = new RegExp(filters.city, 'i');
         }
 
-        if (filters.country) {
-            if (filters.country === 'hu') {
-                // For Hungary (default), also include tournaments that don't have a linked club
-                andConditions.push({
-                    $or: [
-                        { 'club.country': 'hu' },
-                        { 'club': null }
-                    ]
-                });
-            } else {
-                andConditions.push({ 'club.country': filters.country });
-            }
-        }
-
         if (filters.tournamentType) {
             matchStage['tournamentSettings.type'] = filters.tournamentType;
+        }
+        if (filters.country) {
+            andConditions.push({
+                $or: [
+                    { 'club.billingInfo.country': filters.country.toUpperCase() },
+                    { 'club.location': new RegExp(filters.country, 'i') }
+                ]
+            });
         }
 
         if (filters.isVerified || filters.isOac) {
@@ -709,6 +685,9 @@ export class SearchService {
         if (filters.city) {
             q.location = new RegExp(filters.city, 'i');
         }
+        if (filters.country) {
+            q['billingInfo.country'] = filters.country.toUpperCase();
+        }
 
         if (filters.isOac) {
             q.verified = true;
@@ -716,10 +695,6 @@ export class SearchService {
 
         if (filters.isVerified) {
             q.verified = true;
-        }
-
-        if (filters.country) {
-            q.country = filters.country;
         }
 
         return q;
@@ -739,16 +714,6 @@ export class SearchService {
 
         if (filters.isVerified) {
             q.verified = true;
-        }
-
-        if (filters.country) {
-            // Need to lookup club country for leagues. Let's do that at the caller if needed, or by passing in populated fields.
-            // Simplified for now, assuming club country might need aggregation later if leagues don't have country directly.
-            // Actually, we should add country to League model or just fetch and filter. The requirement is just Search, but keeping it simple.
-            // Let's rely on club country. To do this perfectly, `searchLeagues` needs an aggregation pipeline.
-            // We'll leave it out of `buildLeagueQuery` and handle it in `searchLeagues` if we add pipeline, but for now we'll add it to the query assuming we might add country to league model later, or we can just ignore league country filtering if not explicitly requested (the request says "list clubs/tournaments/leagues from hungary". 
-            // Better to change searchLeagues to use aggregation or populate and filter.
-            // For now, let's just add it to the query and if it fails, we'll implement aggregation.
         }
 
         // Default to active unless specified? Plan didn't specify, assume all or only active?
@@ -775,6 +740,30 @@ export class SearchService {
             leagues: l.results,
             totalResults: t.total + p.total + c.total + l.total,
             totalPages: 1 // Dummy
+        };
+    }
+
+    static async searchGlobal(query: string, filters: SearchFilters = {}): Promise<{
+        results: { tournaments: any[]; players: any[]; clubs: any[]; leagues: any[] };
+        total: number;
+    }> {
+        const baseLimit = Math.max(3, Math.floor((filters.limit || 10) / 2));
+        const perTypeFilters = { ...filters, limit: baseLimit, page: 1 };
+        const [tournaments, players, clubs, leagues] = await Promise.all([
+            this.searchTournaments(query, perTypeFilters),
+            this.searchPlayers(query, perTypeFilters),
+            this.searchClubs(query, perTypeFilters),
+            this.searchLeagues(query, perTypeFilters),
+        ]);
+
+        return {
+            results: {
+                tournaments: tournaments.results,
+                players: players.results,
+                clubs: clubs.results,
+                leagues: leagues.results,
+            },
+            total: tournaments.total + players.total + clubs.total + leagues.total,
         };
     }
 
@@ -1086,12 +1075,20 @@ export class SearchService {
     /**
      * Get Season Top Players (Historical Leaderboard)
      */
-    static async getSeasonTopPlayers(year: number, limit: number = 10, skip: number = 0): Promise<{ results: any[], total: number }> {
+    static async getSeasonTopPlayers(
+        year: number,
+        limit: number = 10,
+        skip: number = 0,
+        filters: SearchFilters = {}
+    ): Promise<{ results: any[], total: number }> {
         await connectMongo();
 
-        const matchStage = {
+        const matchStage: any = {
             'previousSeasons.year': year
         };
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            matchStage.type = filters.playerMode;
+        }
 
         const pipeline: any[] = [
             { $match: matchStage },
@@ -1121,7 +1118,15 @@ export class SearchService {
                     as: 'user',
                 }
             },
-            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'players',
+                    localField: 'members',
+                    foreignField: '_id',
+                    as: 'memberPlayers'
+                }
+            }
         ];
 
         // Parallel count
@@ -1143,7 +1148,11 @@ export class SearchService {
             return {
                 _id: data._id,
                 name: data.name,
-                type: 'player',
+                type: data.type || 'individual',
+                members: (data.memberPlayers || []).map((member: any) => ({
+                    _id: member?._id,
+                    name: member?.name || '',
+                })),
                 userRef: data.user,
                 stats: stats,
                 mmr: stats.mmr,

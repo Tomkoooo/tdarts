@@ -197,7 +197,22 @@ export async function PATCH(
             to: [updatedFeedback.email],
             subject: subject,
             text: emailText || subject, 
-            html: emailHtml
+            html: emailHtml,
+            resendContext: isCustom
+              ? {
+                  templateKey: 'feedback_admin_reply',
+                  variables: {
+                    customSubject: subject,
+                    customMessage: customEmailMessage,
+                    feedbackId: String(updatedFeedback._id),
+                    feedbackTitle: updatedFeedback.title,
+                    feedbackStatus: status || updatedFeedback.status,
+                    feedbackResolution: resolution || '',
+                    adminNotes: adminNotes || '',
+                  },
+                  locale: 'hu',
+                }
+              : undefined,
           });
         }
       }

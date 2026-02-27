@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        country: user.country || null,
       }
     }, { status: 200 });
 

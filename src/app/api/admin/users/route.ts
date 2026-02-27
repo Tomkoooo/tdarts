@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
+import { PlayerModel } from '@/database/models/player.model';
 import jwt from 'jsonwebtoken';
 
 export async function GET(request: NextRequest) {
@@ -73,10 +74,36 @@ export async function GET(request: NextRequest) {
       UserModel.countDocuments(query)
     ]);
 
+    const userIds = usersData.map((user: any) => user._id);
+    const linkedPlayers = await PlayerModel.find({
+      userRef: { $in: userIds },
+      type: 'individual',
+    })
+      .select('_id userRef name honors')
+      .lean();
+
+    const playerByUserId = new Map(
+      linkedPlayers.map((player: any) => [String(player.userRef), player])
+    );
+
+    const usersWithPlayerData = usersData.map((user: any) => {
+      const linkedPlayer = playerByUserId.get(String(user._id));
+      return {
+        ...user,
+        playerProfile: linkedPlayer
+          ? {
+              _id: linkedPlayer._id,
+              name: linkedPlayer.name,
+              honors: linkedPlayer.honors || [],
+            }
+          : null,
+      };
+    });
+
     const globalStats = stats[0] || { total: 0, admins: 0, verified: 0, unverified: 0 };
 
     return NextResponse.json({
-      users: usersData,
+      users: usersWithPlayerData,
       pagination: {
         total: filteredTotal, // Total matches for search
         page,

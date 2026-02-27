@@ -9,13 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { Button } from "@/components/ui/Button"
-import { useTranslations } from "next-intl"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { getCountryOptions } from "@/lib/countries"
 
-const createUpdateProfileSchema = (t: any) => z.object({
-  email: z.string().email(t("validation.email")).optional().or(z.literal('')),
-  name: z.string().min(1, t("validation.name_required")).optional().or(z.literal('')),
-  username: z.string().min(1, t("validation.username_required")).optional().or(z.literal('')),
-  country: z.string().optional().or(z.literal('')),
+const updateProfileSchema = z.object({
+  email: z.string().email("Érvényes email címet adj meg").optional(),
+  name: z.string().min(1, "Név kötelező").optional(),
+  username: z.string().min(1, "Felhasználónév kötelező").optional(),
+  country: z.string().length(2, "Érvényes országot válassz").nullable().optional(),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
 }).refine((data) => {
@@ -33,41 +40,40 @@ const createUpdateProfileSchema = (t: any) => z.object({
   }
   return true
 }, {
-  message: t("validation.password_mismatch"),
+  message: "A jelszavak nem egyeznek vagy a jelszó túl rövid",
   path: ["confirmPassword"],
 })
 
-type UpdateProfileFormData = z.infer<ReturnType<typeof createUpdateProfileSchema>>
+type UpdateProfileFormData = z.infer<typeof updateProfileSchema>
 
 interface ProfileEditFormProps {
   defaultValues: {
     email?: string
     name?: string
     username?: string
-    country?: string
+    country?: string | null
   }
   isLoading: boolean
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: UpdateProfileFormData) => Promise<void>
 }
 
-function ProfileEditForm({
+export function ProfileEditForm({
   defaultValues,
   isLoading,
   onSubmit,
 }: ProfileEditFormProps) {
-  const t = useTranslations("Profile.edit")
-  const tc = useTranslations("Profile.countries")
+  const countryOptions = React.useMemo(() => getCountryOptions("hu"), [])
   const [showPassword, setShowPassword] = React.useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
-
-  const schema = React.useMemo(() => createUpdateProfileSchema(t), [t])
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<UpdateProfileFormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(updateProfileSchema),
     defaultValues,
   })
 
@@ -76,7 +82,7 @@ function ProfileEditForm({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconEdit className="w-5 h-5" />
-          {t("title")}
+          Profil szerkesztése
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -86,13 +92,13 @@ function ProfileEditForm({
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <IconMail className="w-4 h-4" />
-                {t("email")}
+                Új email cím
               </Label>
               <Input
                 id="email"
                 {...register("email")}
                 type="email"
-                placeholder={t("placeholders.email")}
+                placeholder="email@example.com"
                 disabled={isLoading}
               />
               {errors.email && (
@@ -104,13 +110,13 @@ function ProfileEditForm({
             <div className="space-y-2">
               <Label htmlFor="name" className="flex items-center gap-2">
                 <IconUser className="w-4 h-4" />
-                {t("name")}
+                Teljes név
               </Label>
               <Input
                 id="name"
                 {...register("name")}
                 type="text"
-                placeholder={t("placeholders.name")}
+                placeholder="Teljes név"
                 disabled={isLoading}
               />
               {errors.name && (
@@ -122,13 +128,13 @@ function ProfileEditForm({
             <div className="space-y-2">
               <Label htmlFor="username" className="flex items-center gap-2">
                 <IconUser className="w-4 h-4" />
-                {t("username")}
+                Felhasználónév
               </Label>
               <Input
                 id="username"
                 {...register("username")}
                 type="text"
-                placeholder={t("placeholders.username")}
+                placeholder="Felhasználónév"
                 disabled={isLoading}
               />
               {errors.username && (
@@ -140,22 +146,24 @@ function ProfileEditForm({
             <div className="space-y-2">
               <Label htmlFor="country" className="flex items-center gap-2">
                 <IconUser className="w-4 h-4" />
-                {t("country")}
+                Ország
               </Label>
-              <select
-                id="country"
-                {...register("country")}
+              <Select
+                value={watch("country") || undefined}
+                onValueChange={(value) => setValue("country", value || null, { shouldDirty: true })}
                 disabled={isLoading}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="hu">{tc("hu")}</option>
-                <option value="at">{tc("at")}</option>
-                <option value="de">{tc("de")}</option>
-                <option value="sk">{tc("sk")}</option>
-                <option value="ro">{tc("ro")}</option>
-                <option value="hr">{tc("hr")}</option>
-                <option value="si">{tc("si")}</option>
-              </select>
+                <SelectTrigger id="country">
+                  <SelectValue placeholder="Válassz országot" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {countryOptions.map((country) => (
+                    <SelectItem key={country.value} value={country.value}>
+                      {country.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.country && (
                 <p className="text-sm text-destructive">{errors.country.message}</p>
               )}
@@ -165,14 +173,14 @@ function ProfileEditForm({
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-2">
                 <IconLock className="w-4 h-4" />
-                {t("password")}
+                Új jelszó (opcionális)
               </Label>
               <div className="relative">
                 <Input
                   id="password"
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
-                  placeholder={t("placeholders.password")}
+                  placeholder="••••••••"
                   disabled={isLoading}
                   className="pr-10"
                 />
@@ -197,17 +205,17 @@ function ProfileEditForm({
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="flex items-center gap-2">
                 <IconLock className="w-4 h-4" />
-                {t("confirm_password")}
+                Jelszó megerősítése
               </Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   {...register("confirmPassword")}
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder={t("placeholders.password")}
+                  placeholder="••••••••"
                   disabled={isLoading}
                   className="pr-10"
                 />
@@ -236,12 +244,12 @@ function ProfileEditForm({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                {t("updating")}
+                Frissítés...
               </>
             ) : (
               <>
                 <IconUser className="w-4 h-4 mr-2" />
-                {t("update_button")}
+                Profil frissítése
               </>
             )}
           </Button>

@@ -1,5 +1,6 @@
 import { Document, Types } from 'mongoose';
 import { BillingInfo } from './club.interface';
+import { StructuredLocation } from './location.interface';
 
 // Plain types (API, DTO, stb.)
 export interface TournamentPlayer {
@@ -73,7 +74,8 @@ export interface TournamentSettings {
     knockoutMethod?: 'automatic' | 'manual';
     boardCount: number;
     entryFee: number;
-    location: string;
+    location?: string;
+    locationData?: StructuredLocation;
     type: 'amateur' | 'open';
     registrationDeadline: Date;
     coverImage?: string; // Optional cover image for SEO

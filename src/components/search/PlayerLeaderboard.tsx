@@ -7,7 +7,7 @@ import PlayerStatsModal from "@/components/player/PlayerStatsModal"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
-import { useTranslations } from "next-intl"
+import CountryFlag from "@/components/ui/country-flag"
 
 interface PlayerLeaderboardProps {
     players: any[];
@@ -17,9 +17,9 @@ interface PlayerLeaderboardProps {
 }
 
 export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange }: PlayerLeaderboardProps) {
-    const t = useTranslations('Search.player_leaderboard')
     const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null)
 
+    // Derived active tab for internal logic if needed, but we rely on parent
     const activeRanking = rankingType || 'oacMmr';
 
     return (
@@ -37,11 +37,11 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="oacMmr">
                                 <IconChartBar className="w-4 h-4 mr-2" />
-                                {t('oac_mmr_ranking')}
+                                OAC MMR Rangsor
                             </TabsTrigger>
                             <TabsTrigger value="leaguePoints">
                                 <IconListNumbers className="w-4 h-4 mr-2" />
-                                {t('league_points_ranking')}
+                                Liga Pontverseny
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -53,15 +53,15 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                     <div className="w-16 h-16 rounded-full bg-base-200 flex items-center justify-center mx-auto mb-4">
                         <IconUser className="w-8 h-8 text-base-content/50" />
                     </div>
-                    <h3 className="text-lg font-bold">{t('no_results')}</h3>
-                    {isOac && <p className="text-sm text-muted-foreground mt-2">{t('no_results_oac')}</p>}
+                    <h3 className="text-lg font-bold">Nincsenek találatok</h3>
+                    {isOac && <p className="text-sm text-muted-foreground mt-2">Próbálj más szűrési feltételeket a hitelesített játékosok között.</p>}
                 </div>
             ) : (
                 <div className="grid gap-4">
                     {players.map((player) => (
                         <Card key={player._id} className={cn(
                             "overflow-hidden transition-all hover:shadow-md border-base-200",
-                            isOac && "border-primary/20 bg-primary/5"
+                            isOac && "border-primary/20 bg-primary/5" // Highlight OAC cards slightly
                         )}>
                             <CardContent className="p-4 flex items-center gap-4">
                                 <div className="flex-shrink-0 font-mono text-2xl font-bold text-base-content/20 w-8 text-center">
@@ -77,6 +77,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                 <div className="flex-grow min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-lg truncate">{player.name}</h3>
+                                        <CountryFlag countryCode={player.country} />
                                         {((isOac ? (player.stats?.oacMmr >= 1000) : (player.stats?.mmr >= 1000))) && (
                                             <IconTrophy className="w-4 h-4 text-warning fill-warning" />
                                         )}
@@ -87,7 +88,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                                 key={`${honor.title}-${honor.year}-${i}`} 
                                                 variant="secondary" 
                                                 className={cn(
-                                                "gap-1 text-[10px] font-bold uppercase tracking-wider py-0 h-5",
+                                                "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
                                                 honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
                                                 honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
                                                 "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
@@ -95,7 +96,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                             >
                                                 {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
                                                 {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
-                                                {honor.title}
+                                                <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                                             </Badge>
                                         ))}
                                     </div>
@@ -103,16 +104,34 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                         {(player.type === 'pair' || player.type === 'team') && (
                                             <Badge variant="outline" className="gap-1 text-[9px] font-black h-5 px-2 bg-indigo-500/5 text-indigo-500 border-indigo-500/20 uppercase tracking-tighter">
                                                 <IconSword size={10} />
-                                                {player.type === 'pair' ? t('pair') : t('team')}
+                                                {player.type === 'pair' ? 'Páros' : 'Csapat'}
                                             </Badge>
                                         )}
-                                        <span>{player.userRef ? t('registered_player') : (player.type === 'pair' || player.type === 'team' ? '' : t('guest_player'))}</span>
+                                        <span>{player.userRef ? 'Regisztrált játékos' : (player.type === 'pair' || player.type === 'team' ? '' : 'Vendég játékos')}</span>
                                         {isOac && rankingType === 'leaguePoints' && player.leagues && (
                                             <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                                                {t('active_in_leagues', { count: player.leagues.length })}
+                                                {player.leagues.length} ligában aktív
                                             </span>
                                         )}
                                     </div>
+                                    {(player.type === 'pair' || player.type === 'team') && Array.isArray(player.members) && player.members.length > 0 && (
+                                        <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-1">
+                                            {player.members
+                                                .filter((member: any) => member?._id && member?.name)
+                                                .map((member: any, index: number, arr: any[]) => (
+                                                    <div key={member._id} className="inline-flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            className="underline-offset-2 hover:text-primary hover:underline transition-colors"
+                                                            onClick={() => setSelectedPlayer({ _id: member._id, name: member.name })}
+                                                        >
+                                                            {member.name}
+                                                        </button>
+                                                        {index < arr.length - 1 && <span>+</span>}
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-4">
@@ -123,7 +142,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                                     {player.leaguePoints ?? 0}
                                                 </div>
                                                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                                    {t('league_points_label')}
+                                                    Liga Pont
                                                 </div>
                                             </>
                                         ) : (
@@ -132,7 +151,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                                     {isOac ? (player.stats?.oacMmr ?? 800) : (player.stats?.mmr ?? 0)}
                                                 </div>
                                                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                                    {isOac ? t('mmr_oac_label') : t('mmr_label')}
+                                                    {isOac ? 'OAC MMR' : 'MMR Pont'}
                                                 </div>
                                             </>
                                         )}
@@ -157,6 +176,9 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                 <PlayerStatsModal 
                     player={selectedPlayer} 
                     onClose={() => setSelectedPlayer(null)} 
+                    // Pass isOac context to modal strictly if needed, or component handles it internally?
+                    // Implementation plan said: "Filter tournamentList ... to show only verified tournaments if isOac context is active"
+                    // So we must pass it.
                     isOacContext={isOac} 
                 />
             )}

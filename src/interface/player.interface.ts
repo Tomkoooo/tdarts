@@ -113,7 +113,7 @@ export interface PlayerDocument {
     previousSeasons?: PlayerSeasonStats[];
     profilePicture?: string;
     publicConsent?: boolean;
-    country: string;
+    country?: string;
 }
 
 export interface Player {
@@ -147,5 +147,5 @@ export interface Player {
     previousSeasons?: PlayerSeasonStats[];
     profilePicture?: string;
     publicConsent?: boolean;
-    country: string;
+    country?: string;
 }

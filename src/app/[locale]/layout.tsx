@@ -14,10 +14,14 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
+import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const baseUrl = getBaseUrl();
+  const localeAlternates = buildLocaleAlternates('/');
+  const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
 
   return {
     title: {
@@ -34,9 +38,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       address: false,
       telephone: false,
     },
-    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://tdarts.hu"),
+    metadataBase: new URL(baseUrl),
     alternates: {
-      canonical: "/",
+      canonical: `${baseUrl}/${locale}`,
+      languages: {
+        ...Object.fromEntries(
+          Object.entries(localeAlternates).map(([loc, path]) => [loc, `${baseUrl}${path}`])
+        ),
+        'x-default': `${baseUrl}/hu`,
+      },
     },
     robots: {
       index: true,
@@ -73,14 +83,17 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     applicationName: "tDarts",
     openGraph: {
       type: "website",
-      locale: locale === 'hu' ? 'hu_HU' : 'en_US',
-      url: "https://tdarts.sironic.hu",
+      locale: ogLocale,
+      alternateLocale: routing.locales.filter(l => l !== locale).map(l =>
+        l === 'hu' ? 'hu_HU' : l === 'de' ? 'de_DE' : 'en_US'
+      ),
+      url: `${baseUrl}/${locale}`,
       siteName: "tDarts",
       title: t('og_title'),
       description: t('description'),
       images: [
         {
-          url: "/og-image.png",
+          url: `${baseUrl}/og-image.png`,
           width: 1200,
           height: 630,
           alt: t('og_title'),
@@ -91,7 +104,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       card: "summary_large_image",
       title: t('og_title'),
       description: t('twitter_description'),
-      images: ["/og-image.png"],
+      images: [`${baseUrl}/og-image.png`],
       creator: "@tdarts",
     },
     verification: {

@@ -2,9 +2,8 @@
 
 import React, { useMemo, useState } from "react"
 import axios from "axios"
-import { Link } from "@/i18n/routing"
-import { useRouter } from "@/i18n/routing"
-import { useTranslations } from "next-intl"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   IconCheck,
   IconMail,
@@ -24,6 +23,7 @@ import PlayerNotificationModal from "@/components/tournament/PlayerNotificationM
 import PlayerMatchesModal from "@/components/tournament/PlayerMatchesModal"
 import LegsViewModal from "@/components/tournament/LegsViewModal"
 import TeamRegistrationModal from "@/components/tournament/TeamRegistrationModal"
+import HeadToHeadModal from "@/components/tournament/HeadToHeadModal"
 import { useUserContext } from "@/hooks/useUser"
 import {
   Card,
@@ -40,6 +40,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from "@/lib/utils"
 import { showErrorToast } from "@/lib/toastUtils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
+import CountryFlag from "@/components/ui/country-flag"
+import { getPlayerTranslations } from "@/data/translations/player"
 
 interface TournamentPlayersProps {
   tournament: any
@@ -51,13 +53,10 @@ interface TournamentPlayersProps {
   onRefresh?: () => void
 }
 
-const getPlayerStatusBadge = (status: string, tTour: any): { label?: string; variant: "default" | "outline" | "secondary" | "destructive" } => {
-  const badges: Record<string, { label?: string; variant: "default" | "outline" | "secondary" | "destructive" }> = {
-    applied: { label: tTour('status.applied'), variant: "secondary" },
-    "checked-in": { variant: "default" },
-    none: { label: "", variant: "default" },
-  }
-  return badges[status] || badges.none
+const playerStatusBadge: Record<string, { label?: string; variant: "default" | "outline" | "secondary" | "destructive" }> = {
+  applied: { label: "Jelentkezett", variant: "secondary" },
+  "checked-in": { variant: "default" },
+  none: { label: "", variant: "default" },
 }
 
 const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
@@ -69,15 +68,16 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   status,
   onRefresh,
 }) => {
-  const t = useTranslations("Tournament.components");
-  const tTour = useTranslations("Tournament");
+  const t = getPlayerTranslations(typeof navigator !== "undefined" ? navigator.language : "hu")
   const { user } = useUserContext()
+
   const [localPlayers, setLocalPlayers] = useState(players)
   const [localUserPlayerStatus, setLocalUserPlayerStatus] = useState(userPlayerStatus)
   const [localUserPlayerId, setLocalUserPlayerId] = useState(userPlayerId)
   const [waitingList, setWaitingList] = useState(tournament?.waitingList || [])
   const [selectedPlayerForMatches, setSelectedPlayerForMatches] = useState<{ id: string; name: string } | null>(null)
   const [showPlayerMatchesModal, setShowPlayerMatchesModal] = useState(false)
+  const [headToHeadTarget, setHeadToHeadTarget] = useState<{ id: string; name: string } | null>(null)
   const [notificationModal, setNotificationModal] = useState<{ isOpen: boolean; player: any }>({
     isOpen: false,
     player: null,
@@ -198,13 +198,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
            setLocalUserPlayerStatus('applied')
            setLocalUserPlayerId(newPlayer._id)
         }
-        toast.success(tTour('players.successfully_added'))
+        toast.success("Játékos sikeresen hozzáadva")
         if (onRefresh) onRefresh()
         router.refresh()
       }
     } catch (error: any) {
       console.error("Error adding player:", error)
-      toast.error(error.response?.data?.error || tTour('players.error_add'))
+      toast.error(error.response?.data?.error || "Hiba történt a játékos hozzáadása közben")
     }
   }
 
@@ -214,19 +214,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       const response = await axios.delete(`/api/tournaments/${code}/players`, { data: { playerId } })
       if (response.data.success) {
         setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== playerId))
-        toast.success(tTour('players.successfully_removed'))
+        toast.success('Játékos sikeresen eltávolítva!')
       } else {
-        showErrorToast(tTour('players.error_remove'), {
+        showErrorToast('Nem sikerült eltávolítani a játékost.', {
           error: response.data?.error,
-          context: tTour('players.remove_player'),
-          errorName: tTour('players.error_remove'),
+          context: 'Játékos eltávolítása',
+          errorName: 'Játékos eltávolítása sikertelen',
         })
       }
     } catch (error: any) {
-      showErrorToast(tTour('players.error_remove'), {
+      showErrorToast('Nem sikerült eltávolítani a játékost.', {
         error: error?.response?.data?.error,
-        context: tTour('players.remove_player'),
-        errorName: tTour('players.error_remove'),
+        context: 'Játékos eltávolítása',
+        errorName: 'Játékos eltávolítása sikertelen',
       })
     }
   }
@@ -242,19 +242,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalPlayers((prev) =>
           prev.map((p) => (p.playerReference._id === playerId ? { ...p, status: 'checked-in' } : p)),
         )
-        toast.success(tTour('players.successfully_checked_in'))
+        toast.success('Játékos sikeresen check-inelve!')
       } else {
-        showErrorToast(tTour('players.error_check_in'), {
+        showErrorToast('Nem sikerült check-inelni a játékost.', {
           error: response.data?.error,
-          context: tTour('common.check_in'),
-          errorName: tTour('players.error_check_in'),
+          context: 'Játékos check-in',
+          errorName: 'Check-in sikertelen',
         })
       }
     } catch (error: any) {
-      showErrorToast(tTour('players.error_check_in'), {
+      showErrorToast('Nem sikerült check-inelni a játékost.', {
         error: error?.response?.data?.error,
-        context: tTour('common.check_in'),
-        errorName: tTour('players.error_check_in'),
+        context: 'Játékos check-in',
+        errorName: 'Check-in sikertelen',
       })
     }
   }
@@ -279,19 +279,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalPlayers((prev) => [...prev, newPlayer])
         setLocalUserPlayerStatus('applied')
         setLocalUserPlayerId(response.data.playerId)
-        toast.success(tTour('registration.sign_up_success'))
+        toast.success('Sikeresen jelentkeztél a tornára!')
       } else {
-        showErrorToast(tTour('registration.error_sign_up'), {
+        showErrorToast('Nem sikerült jelentkezni a tornára.', {
           error: response.data?.error,
-          context: tTour('registration.sign_up'),
-          errorName: tTour('registration.error_sign_up'),
+          context: 'Saját jelentkezés',
+          errorName: 'Jelentkezés sikertelen',
         })
       }
     } catch (error: any) {
-      showErrorToast(tTour('registration.error_sign_up'), {
+      showErrorToast('Nem sikerült jelentkezni a tornára.', {
         error: error?.response?.data?.error,
-        context: tTour('registration.sign_up'),
-        errorName: tTour('registration.error_sign_up'),
+        context: 'Saját jelentkezés',
+        errorName: 'Jelentkezés sikertelen',
       })
     }
   }
@@ -306,19 +306,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== localUserPlayerId))
         setLocalUserPlayerStatus('none')
         setLocalUserPlayerId(null)
-        toast.success(tTour('registration.withdraw_success'))
+        toast.success('Jelentkezés sikeresen visszavonva!')
       } else {
-        showErrorToast(tTour('registration.error_withdraw'), {
+        showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
           error: response.data?.error,
-          context: tTour('registration.withdraw'),
-          errorName: tTour('registration.error_withdraw'),
+          context: 'Jelentkezés visszavonása',
+          errorName: 'Visszavonás sikertelen',
         })
       }
     } catch (error: any) {
-      showErrorToast(tTour('registration.error_withdraw'), {
+      showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
         error: error?.response?.data?.error,
-        context: tTour('registration.withdraw'),
-        errorName: tTour('registration.error_withdraw'),
+        context: 'Jelentkezés visszavonása',
+        errorName: 'Visszavonás sikertelen',
       })
     }
   }
@@ -334,7 +334,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       setSelectedPlayerForMatches({ id: playerId, name: playerName })
       setShowPlayerMatchesModal(true)
     } else {
-      showErrorToast(t("nem_sikerult_megnyitni_a_ms3l"), {
+      showErrorToast('Nem sikerült megnyitni a meccseket: hiányzó játékos azonosító', {
         context: 'Játékos meccs megnyitása',
         errorName: 'Meccsek megnyitása sikertelen',
       })
@@ -354,7 +354,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         if (user && (playerId === localUserPlayerId?.toString() || waitingList.some((p: any) => p.playerReference?._id?.toString() === playerId && p.playerReference?.userRef?.toString() === user._id?.toString()))) {
           setIsOnWaitingList(false)
         }
-        toast.success(tTour('waiting_list.unsubscribe_success'))
+        toast.success('Sikeresen lekerültél a várólistáról!')
       }
     } catch (err: any) {
       showErrorToast(err.response?.data?.error || 'Nem sikerült lekerülni a várólistáról.', {
@@ -385,7 +385,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             setLocalUserPlayerStatus('applied')
             setLocalUserPlayerId(playerId)
           }
-          toast.success(tTour('players.successfully_promoted'))
+          toast.success('Játékos sikeresen áthelyezve a tornára!')
         }
       }
     } catch (err: any) {
@@ -437,10 +437,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         }
         setWaitingList((prev: any[]) => [...prev, newWaitingPlayer])
         setIsOnWaitingList(true)
-        toast.success(tTour('waiting_list.subscribe_success'))
+        toast.success('Sikeresen feliratkoztál a várólistára!')
       }
     } catch (error: any) {
-      showErrorToast(t("nem_sikerult_feliratkozni_a_dbkc"), {
+      showErrorToast('Nem sikerült feliratkozni a várólistára.', {
         error: error?.response?.data?.error,
         context: 'Várólista feliratkozás',
         errorName: 'Várólista feliratkozás sikertelen',
@@ -455,10 +455,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       const response = await axios.post(`/api/tournaments/${code}/notifications`)
       if (response.data.success) {
         setIsSubscribedToNotifications(true)
-        toast.success(tTour('notifications.subscribe_success'))
+        toast.success('Sikeresen feliratkoztál az értesítésekre!')
       }
     } catch (error: any) {
-      showErrorToast(t("nem_sikerult_feliratkozni_az_6n4g"), {
+      showErrorToast('Nem sikerült feliratkozni az értesítésekre.', {
         error: error?.response?.data?.error,
         context: 'Értesítés feliratkozás',
         errorName: 'Értesítés feliratkozás sikertelen',
@@ -475,10 +475,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       const response = await axios.delete(`/api/tournaments/${code}/notifications`)
       if (response.data.success) {
         setIsSubscribedToNotifications(false)
-        toast.success(tTour('notifications.unsubscribe_success'))
+        toast.success('Sikeresen leiratkoztál az értesítésekről!')
       }
     } catch (error: any) {
-      showErrorToast(t("nem_sikerult_leiratkozni_az_hnr8"), {
+      showErrorToast('Nem sikerült leiratkozni az értesítésekről.', {
         error: error?.response?.data?.error,
         context: 'Értesítés leiratkozás',
         errorName: 'Értesítés leiratkozás sikertelen',
@@ -514,10 +514,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleCopyPlayers = () => {
     try{
       navigator.clipboard.writeText(localPlayers.map((player) => player.playerReference?.name).join('\n'))
-      toast.success(tTour('players.successfully_copied'))
+      toast.success('Játékosok sikeresen másolva.')
     }catch(err){
       console.error(err)
-      toast.error(t("nem_sikerult_masolni_a_jh9g"))
+      toast.error('Nem sikerült másolni a játékosokat.')
     }
     
 
@@ -546,14 +546,15 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               onClick={() => handleCheckInPlayer(playerId)}
             >
               <IconCheck className="h-3 w-3" />
-              {t("check_in_qhhd")}</Button>
+              Check-in
+            </Button>
           )
         )}
         {canManagePlayers && status === "pending" && (
           <div className="flex items-center gap-1">
             <Button size="sm" variant="info" onClick={() => handleNotifyPlayer(player)} className="gap-1">
               <IconMail className="h-3 w-3" />
-              {tTour('common.message')}
+              Üzenet
             </Button>
             <Button
               size="sm"
@@ -581,13 +582,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           <CardHeader>
             <CardTitle className="text-base">
               {participationMode === 'pair' || participationMode === 'team' 
-                ? (participationMode === 'pair' ? tTour('players.add_pair') : tTour('players.add_team'))
-                : tTour('players.add_player')}
+                ? (participationMode === 'pair' ? 'Páros hozzáadása' : 'Csapat hozzáadása')
+                : 'Játékos hozzáadása'}
             </CardTitle>
             <CardDescription>
               {participationMode === 'pair' || participationMode === 'team'
-                ? tTour('players.search_prompt_team')
-                : tTour('players.search_prompt')}
+                ? 'Kattints a gombra páros/csapat hozzáadásához.'
+                : 'Keress rá egy játékosra vagy vedd fel kézzel a tornára.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -600,7 +601,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 className="w-full gap-2"
               >
                 <IconUsers className="h-4 w-4" />
-                {participationMode === 'pair' ? tTour('players.add_pair') : tTour('players.add_team')}
+                {participationMode === 'pair' ? 'Páros hozzáadása' : 'Csapat hozzáadása'}
               </Button>
             ) : (
               <PlayerSearch
@@ -623,9 +624,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             {isOnWaitingList ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">{tTour('waiting_list.on_waiting_list')}</p>
+                  <p className="text-sm font-semibold text-white">A várólistán vagy.</p>
                   <p className="text-xs text-white/70">
-                    {tTour('waiting_list.on_waiting_list_subtitle')}
+                    Értesítést kapsz, ha bekerülsz a tornára vagy ha új helyek szabadulnak fel.
                   </p>
                 </div>
                 {/* Find the waiting entry ID to allow withdrawal */}
@@ -645,20 +646,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     }
                   }}
                 >
-                  {tTour('waiting_list.unsubscribe')}
+                  Leiratkozás a várólistáról
                 </Button>
               </div>
             ) : localUserPlayerId && localUserPlayerStatus !== 'none' ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">{tTour('registration.already_registered')}</p>
+                  <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
                   <p className="text-xs text-white/70">
-                    {tTour('registration.already_registered_subtitle')}
+                    Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.
                   </p>
                 </div>
                 {localUserPlayerStatus === 'applied' && (
                   <Button size="sm" variant="warning" onClick={handleSelfWithdraw}>
-                    {tTour('registration.withdraw')}
+                    Jelentkezés visszavonása
                   </Button>
                 )}
               </div>
@@ -678,12 +679,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 {isSubscribedToNotifications ? (
                   <>
                     <IconBellOff className="h-4 w-4" />
-                    {tTour('notifications.unsubscribe')}
+                    Értesítések kikapcsolása
                   </>
                 ) : (
                   <>
                     <IconBell className="h-4 w-4" />
-                    {tTour('notifications.subscribe')}
+                    Értesítések bekapcsolása
                   </>
                 )}
               </Button>
@@ -706,17 +707,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 setShowTeamRegistrationModal(true);
               }} disabled={!hasFreeSpots} className="gap-2">
                 <IconUsers className="h-4 w-4" />
-                {participationMode === 'pair' ? tTour('players.pair_registration') : tTour('players.team_registration')}
+                {participationMode === 'pair' ? 'Páros nevezés' : 'Csapat nevezés'}
               </Button>
             ) : (
               <Button onClick={handleSelfSignUp} disabled={!hasFreeSpots}>
-                {tTour('registration.sign_up')}
+                Jelentkezés a tornára
               </Button>
             )
           ) : (
             <Button asChild>
               <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}?tab=players`)}`}>
-                {tTour('registration.login_to_register')}
+                Jelentkezéshez lépj be
               </Link>
             </Button>
           )}
@@ -727,7 +728,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <IconUsers className="h-4 w-4" />
-            {localPlayers.length} / {maxPlayers || "∞"} {tTour('players.title').toLowerCase()}
+            {localPlayers.length} / {maxPlayers || "∞"} játékos
             <button onClick={handleCopyPlayers} className="btn btn-sm btn-ghost">
               <IconCopyCheck/>
             </button>
@@ -739,13 +740,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               hasFreeSpots ? "bg-success/15 text-success" : "bg-warning/15 text-warning",
             )}
           >
-            {hasFreeSpots ? tTour('status.has_free_spots') : tTour('status.full')}
+            {hasFreeSpots ? "Van szabad hely" : "Megtelt"}
           </Badge>
         </CardHeader>
         <CardContent className="max-h-[480px] space-y-3 overflow-y-auto">
           {localPlayers.length === 0 ? (
             <div className="rounded-xl bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
-              {tTour('players.no_players')}
+              Még nincsenek játékosok.
             </div>
           ) : (
             localPlayers
@@ -761,8 +762,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               })
               .map(({ player }) => {
               const name = player.playerReference?.name || player.name || player._id
+              const playerId = player.playerReference?._id?.toString() || player.playerReference?.toString() || player._id?.toString()
               const status = player.status || "applied"
-              const statusMeta = getPlayerStatusBadge(status, tTour)
+              const statusMeta = playerStatusBadge[status]
               const isCurrentUser = localUserPlayerId && (player.playerReference?._id?.toString() === localUserPlayerId.toString() || player._id?.toString() === localUserPlayerId.toString())
 
               return (
@@ -783,16 +785,17 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                       <div className="flex flex-col gap-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-foreground">{name}</p>
+                          <CountryFlag countryCode={player.playerReference?.country} />
                           {player.playerReference?.type === 'pair' && (
                             <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
                               <IconUsers className="h-3 w-3" />
-                              {tTour('teams.pair_badge')}
+                              PÁROS
                             </Badge>
                           )}
                           {player.playerReference?.type === 'team' && (
                             <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0 bg-purple-500/10 text-purple-600 border-purple-500/20">
                               <IconUsers className="h-3 w-3" />
-                              {tTour('teams.team_badge')}
+                              CSAPAT
                             </Badge>
                           )}
                           {statusMeta?.label && (
@@ -807,7 +810,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                          Array.isArray(player.playerReference.members) && 
                          player.playerReference.members.length > 0 && (
                           <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                            <span className="font-medium">{t("tagok_tq3m")}</span>
+                            <span className="font-medium">Tagok:</span>
                             {player.playerReference.members.map((member: any, idx: number) => (
                               <span key={member._id || idx}>
                                 {member.name || member}
@@ -825,7 +828,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                                         key={`${honor.title}-${honor.year}-${i}`} 
                                         variant="secondary" 
                                         className={cn(
-                                        "gap-1 text-[10px] font-bold uppercase tracking-wider py-0 h-5",
+                                        "min-w-0 max-w-full gap-1 overflow-hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider h-auto",
                                         honor.type === 'rank' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
                                         honor.type === 'tournament' ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" : 
                                         "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
@@ -833,7 +836,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                                     >
                                         {honor.type === 'rank' && <IconMedal className="h-3 w-3" /> }
                                         {honor.type === 'tournament' && <IconTrophy className="h-3 w-3" /> }
-                                        {honor.title}
+                                        <span className="truncate max-w-[120px] sm:max-w-[180px]">{honor.title}</span>
                                     </Badge>
                                 ))}
                       
@@ -841,7 +844,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       {player.tournamentStanding && (
                         <span>
-                          {t("top_1t11")}<span className="font-semibold text-primary">{player.tournamentStanding}</span>
+                          Top <span className="font-semibold text-primary">{player.tournamentStanding}</span>
                         </span>
                       )}
                       <span>
@@ -853,7 +856,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     </div>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <Button size="sm" variant="outline" onClick={() => handleOpenMatches(player)}>
-                        {t("meccsek_ryjy")}</Button>
+                        Meccsek
+                      </Button>
+                      {Boolean(localUserPlayerId) &&
+                        playerId !== localUserPlayerId?.toString() &&
+                        localUserPlayerStatus !== "none" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setHeadToHeadTarget({ id: playerId, name })}
+                          >
+                            {t.viewHeadToHead}
+                          </Button>
+                        )}
                     </div>
                   </div>
 
@@ -874,7 +889,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {user && localUserPlayerStatus === 'none' && !isOnWaitingList && isPending && (
         <Card className="border-dashed border-primary/30 bg-primary/5">
           <CardHeader>
-            <CardTitle className="text-base">{t("varolistara_feliratkozas_7cah")}</CardTitle>
+            <CardTitle className="text-base">Várólistára feliratkozás</CardTitle>
             <CardDescription>
               {hasFreeSpots
                 ? "Jelentkezhetsz közvetlenül a tornára, de ha szeretnéd, feliratkozhatsz a várólistára is. Ha betelik a torna, automatikusan értesítünk, ha szabad hely születik."
@@ -884,7 +899,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           <CardContent>
             <Button onClick={handleSubscribeToWaitlist} className="gap-2">
               <IconPlus className="h-4 w-4" />
-              {t("feliratkozas_a_varolistara_94fl")}</Button>
+              Feliratkozás a várólistára
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -901,7 +917,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         <Card className="bg-card/88 shadow-md shadow-black/25">
           <CardHeader className="px-4 py-3">
             <CardTitle className="text-sm font-semibold text-muted-foreground">
-              {t("varolistan_levo_jatekosok_d12f")}{waitingList.length}
+              Várólistán lévő játékosok: {waitingList.length}
             </CardTitle>
           </CardHeader>
           <CardContent className="max-h-[360px] space-y-3 overflow-y-auto px-4">
@@ -926,27 +942,30 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-foreground">{name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t("felveve_1k3a")}{waitingPlayer.addedAt ? new Date(waitingPlayer.addedAt).toLocaleDateString("hu-HU") : "Ismeretlen"}
+                        Felvéve: {waitingPlayer.addedAt ? new Date(waitingPlayer.addedAt).toLocaleDateString("hu-HU") : "Ismeretlen"}
                       </p>
                       {waitingPlayer.note && (
-                        <p className="mt-1 text-xs text-muted-foreground/80">{t("megjegyzes_tf0a")}{waitingPlayer.note}</p>
+                        <p className="mt-1 text-xs text-muted-foreground/80">Megjegyzés: {waitingPlayer.note}</p>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-xs text-muted-foreground">
                     <Badge variant="outline" className="rounded-full border-none bg-warning/15 px-3 py-0 text-warning">
-                      {t("varolista_s58e")}{index + 1}
+                      Várólista #{index + 1}
                     </Badge>
                     {isCurrentUser && (
                       <Button size="sm" variant="outline" onClick={() => handleSelfWithdrawFromWaiting(waitingPlayer)}>
-                        {t("leiratkozas_z3ge")}</Button>
+                        Leiratkozás
+                      </Button>
                     )}
                     {allowAdminActions && (
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="outline" onClick={() => handleApproveWaitingPlayer(waitingPlayer)}>
-                          {t("elfogadas_qikd")}</Button>
+                          Elfogadás
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => handleRemoveWaitingPlayer(waitingPlayer)}>
-                          {t("eltavolitas_cmzb")}</Button>
+                          Eltávolítás
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -964,10 +983,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'registered' | 'waiting')} className="space-y-4">
         <TabsList className="w-full">
           <TabsTrigger value="registered" className="flex-1">
-            {tTour('players.title')} ({localPlayers.length})
+            Játékosok ({localPlayers.length})
           </TabsTrigger>
           <TabsTrigger value="waiting" className="flex-1">
-            {tTour('waiting_list.title')} ({waitingList.length})
+            Várólista ({waitingList.length})
           </TabsTrigger>
         </TabsList>
 
@@ -978,8 +997,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       {!allowPlayerRegistration && isPending && (
         <Alert>
           <AlertDescription>
-            {tTour('registration.closed')} {registrationDeadline
-              ? tTour('registration.deadline', { date: new Date(registrationDeadline).toLocaleDateString('hu-HU') })
+            A nevezés lezárult. {registrationDeadline
+              ? `Határidő: ${new Date(registrationDeadline).toLocaleDateString('hu-HU')}`
               : ''}
           </AlertDescription>
         </Alert>
@@ -1014,13 +1033,21 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
               }
             } catch (err: any) {
               console.error('Error fetching match details:', err)
-              showErrorToast(t("nem_sikerult_betolteni_a_cia4"), {
+              showErrorToast('Nem sikerült betölteni a meccs részleteit', {
                 error: err?.response?.data?.error,
                 context: 'Meccs részletek',
                 errorName: 'Meccs részletei sikertelenek',
               })
             }
           }}
+        />
+      )}
+
+      {headToHeadTarget && code && (
+        <HeadToHeadModal
+          isOpen={Boolean(headToHeadTarget)}
+          onClose={() => setHeadToHeadTarget(null)}
+          fetchUrl={`/api/tournaments/${code}/head-to-head/${headToHeadTarget.id}`}
         />
       )}
 
@@ -1041,10 +1068,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{tTour('players.remove_player')}</DialogTitle>
+            <DialogTitle>Játékos eltávolítása</DialogTitle>
             <DialogDescription>
-              {tTour('players.remove_confirm', { playerName: removeConfirm.playerName || tTour('players.default_player') })}{' '}
-              {tTour('players.remove_confirm_subtitle')}
+              Biztosan el szeretnéd távolítani{' '}
+              <span className="font-semibold text-foreground">{removeConfirm.playerName}</span> játékost a tornáról?
+              A művelet nem visszavonható.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -1056,7 +1084,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                 setRemoveConfirm({ isOpen: false })
               }}
             >
-              {t("eltavolitas_cmzb")}</Button>
+              Eltávolítás
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
