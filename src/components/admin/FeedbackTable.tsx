@@ -69,7 +69,7 @@ interface Feedback {
 }
 
 export default function FeedbackTable() {
-  const t = useTranslations("Admin.feedback")
+  const t = useTranslations("Admin.dashboard.feedback")
   const [data, setData] = useState<Feedback[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)

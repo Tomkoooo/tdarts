@@ -288,7 +288,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           {isLoading ? (
             <div className="flex items-center space-x-2">
               <span className="loading loading-spinner w-4 h-4"></span>
-              <span>{t('register.registering')}</span>
+              <span>{t('register.submitting')}</span>
             </div>
           ) : (
             <div className="flex items-center space-x-2">

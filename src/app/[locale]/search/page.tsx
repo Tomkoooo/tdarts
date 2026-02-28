@@ -319,11 +319,11 @@ export default function SearchPage() {
                     {activeTab === 'global' && (
                         <div className="space-y-10">
                             <section className="space-y-4">
-                                <h3 className="text-xl font-bold">{t('tournaments')}</h3>
+                                <h3 className="text-xl font-bold">{t('tabs.tournaments')}</h3>
                                 <TournamentList tournaments={groupedResults.tournaments} />
                             </section>
                             <section className="space-y-4">
-                                <h3 className="text-xl font-bold">{t('players')}</h3>
+                                <h3 className="text-xl font-bold">{t('tabs.players')}</h3>
                                 <PlayerLeaderboard
                                     players={groupedResults.players}
                                     isOac={!!filters.isOac}
@@ -332,11 +332,11 @@ export default function SearchPage() {
                                 />
                             </section>
                             <section className="space-y-4">
-                                <h3 className="text-xl font-bold">{t('clubs')}</h3>
+                                <h3 className="text-xl font-bold">{t('tabs.clubs')}</h3>
                                 <ClubList clubs={groupedResults.clubs} />
                             </section>
                             <section className="space-y-4">
-                                <h3 className="text-xl font-bold">{t('leagues')}</h3>
+                                <h3 className="text-xl font-bold">{t('tabs.leagues')}</h3>
                                 <LeagueList leagues={groupedResults.leagues} />
                             </section>
                         </div>

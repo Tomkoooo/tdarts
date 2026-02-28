@@ -37,7 +37,7 @@ interface LeagueManagerProps {
 }
 
 export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerProps) {
-  const t = useTranslations("Admin.leagues")
+  const t = useTranslations("Admin.dashboard.leagues")
   
   // Validációs sémák - Move inside to use translations
   const createLeagueSchema = useMemo(() => z.object({

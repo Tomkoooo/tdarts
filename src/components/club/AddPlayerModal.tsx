@@ -29,7 +29,7 @@ export default function AddPlayerModal({
   userId,
   onPlayerAdded,
 }: AddPlayerModalProps) {
-  const t = useTranslations('Club.add_player_modal')
+  const t = useTranslations('Club.settings.add_player_modal')
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 

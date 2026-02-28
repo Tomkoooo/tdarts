@@ -171,7 +171,7 @@ export default function GoogleAccountLinkModal({
               {isLoading ? (
                 <div className="flex items-center gap-2">
                   <span className="loading loading-spinner w-4 h-4"></span>
-                  <span>{t('link.linking')}</span>
+                  <span>{t('link.submitting')}</span>
                 </div>
               ) : (
                 t('link.submit')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { AuthService } from "@/database/services/auth.service";
+import { PlayerService } from "@/database/services/player.service";
 import { PlayerModel } from "@/database/models/player.model";
 import { TournamentService } from "@/database/services/tournament.service";
 
@@ -21,6 +22,18 @@ export async function GET(
 
     const user = await AuthService.verifyToken(token);
     const tournament = await TournamentService.getTournament(code);
+    const currentPlayer = await PlayerService.findPlayerByUserId(user._id.toString());
+    if (!currentPlayer) {
+      return NextResponse.json({ success: false, error: "Player profile not found" }, { status: 404 });
+    }
+
+    const getRefId = (value: any) => {
+      if (!value) return "";
+      if (typeof value === "string") return value;
+      if (typeof value?.toString === "function" && value?.constructor?.name === "ObjectId") return value.toString();
+      if (value?._id) return value._id.toString();
+      return value.toString?.() || "";
+    };
 
     const basePlayers = await PlayerModel.find({ userRef: user._id }).select("_id");
     const baseIds = basePlayers.map((p) => p._id);
@@ -30,25 +43,18 @@ export async function GET(
     const userPlayerIds = new Set([...basePlayers, ...teamPlayers].map((p) => p._id.toString()));
 
     const userTournamentPlayer = tournament.tournamentPlayers.find((tp: any) =>
-      userPlayerIds.has(tp.playerReference?.toString())
+      userPlayerIds.has(getRefId(tp.playerReference))
     );
 
-    if (!userTournamentPlayer) {
-      return NextResponse.json(
-        { success: false, error: "Only tournament participants can view head-to-head from this screen" },
-        { status: 403 }
-      );
-    }
-
     const targetInTournament = tournament.tournamentPlayers.some(
-      (tp: any) => tp.playerReference?.toString() === playerId.toString()
+      (tp: any) => getRefId(tp.playerReference) === playerId.toString()
     );
     if (!targetInTournament) {
       return NextResponse.json({ success: false, error: "Target player is not in this tournament" }, { status: 404 });
     }
 
     const data = await TournamentService.getHeadToHead(
-      userTournamentPlayer.playerReference.toString(),
+      userTournamentPlayer ? getRefId(userTournamentPlayer.playerReference) : currentPlayer._id.toString(),
       playerId
     );
 

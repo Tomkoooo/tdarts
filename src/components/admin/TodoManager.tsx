@@ -62,7 +62,7 @@ interface CreateTodoData {
 }
 
 export default function TodoManager() {
-  const t = useTranslations("Admin.todos");
+  const t = useTranslations("Admin.dashboard.todos");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [stats, setStats] = useState<TodoStats | null>(null);
   const [loading, setLoading] = useState(true);
