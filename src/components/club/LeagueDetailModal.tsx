@@ -61,7 +61,7 @@ export default function LeagueDetailModal({
   readOnly = false,
 }: LeagueDetailModalProps) {
   const tTour = useTranslations("Tournament");
-  const t = (key: string, values?: any) => tTour(`league_modal.${key}`, values);
+  const t = (key: string, values?: any) => tTour(`components.${key}`, values);
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
   const [leagueStats, setLeagueStats] = useState<LeagueStatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -337,7 +337,7 @@ const StatsOverview = ({
   isLoading: boolean;
 }) => {
     const tTour = useTranslations("Tournament");
-    const t = (key: string, values?: any) => tTour(`league_modal.${key}`, values);
+  const t = (key: string, values?: any) => tTour(`components.${key}`, values);
   const items = [
     {
       icon: <IconUsers className="h-5 w-5" />,
