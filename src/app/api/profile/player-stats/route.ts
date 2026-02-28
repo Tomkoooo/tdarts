@@ -75,7 +75,8 @@ export async function GET(request: NextRequest) {
         legsLost: history.stats.legsLost || 0,
         oneEightiesCount: history.stats.oneEightiesCount || 0,
         highestCheckout: history.stats.highestCheckout || 0,
-        average: history.stats.average || 0
+        average: history.stats.average || 0,
+        firstNineAvg: history.stats.firstNineAvg || 0,
       },
       finalPosition: history.position,
       mmrChange: history.mmrChange,
@@ -120,6 +121,7 @@ export async function GET(request: NextRequest) {
         date: match.createdAt,
         legs: match.legs?.length || 0,
         average: Number(playerData?.average || 0),
+        firstNineAvg: Number(playerData?.firstNineAvg || 0),
         highestCheckout: Number(playerData?.highestCheckout || 0),
         oneEightiesCount: Number(playerData?.oneEightiesCount || 0),
         tournamentId: tournament?.tournamentId || undefined,

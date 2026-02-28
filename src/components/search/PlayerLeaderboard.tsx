@@ -34,12 +34,12 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                         onValueChange={(v) => onRankingChange(v as any)}
                         className="w-full max-w-md"
                     >
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="oacMmr">
+                        <TabsList className="flex w-full min-w-max gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                            <TabsTrigger value="oacMmr" className="shrink-0 min-w-[150px]">
                                 <IconChartBar className="w-4 h-4 mr-2" />
                                 OAC MMR Rangsor
                             </TabsTrigger>
-                            <TabsTrigger value="leaguePoints">
+                            <TabsTrigger value="leaguePoints" className="shrink-0 min-w-[150px]">
                                 <IconListNumbers className="w-4 h-4 mr-2" />
                                 Liga Pontverseny
                             </TabsTrigger>
@@ -64,7 +64,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                             isOac && "border-primary/20 bg-primary/5" // Highlight OAC cards slightly
                         )}>
                             <CardContent className="p-4 flex items-center gap-4">
-                                <div className="flex-shrink-0 font-mono text-2xl font-bold text-base-content/20 w-8 text-center">
+                                <div className="shrink-0 font-mono text-2xl font-bold text-base-content/20 w-8 text-center">
                                     {player.globalRank || '#'}
                                 </div>
                                 
@@ -74,7 +74,7 @@ export function PlayerLeaderboard({ players, isOac, rankingType, onRankingChange
                                     size="lg"
                                 />
 
-                                <div className="flex-grow min-w-0">
+                                <div className="grow min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-lg truncate">{player.name}</h3>
                                         <CountryFlag countryCode={player.country} />

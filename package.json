@@ -10,6 +10,7 @@
     "lint": "next lint",
     "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts",
     "backfill:locations": "npx tsx scripts/backfill-structured-locations.ts",
+    "backfill:first-nine-avg": "npx tsx scripts/backfill-first-nine-avg.ts",
     "overwrite:emails": "npx tsx scripts/overwrite-email-templates.ts",
     "prepare": "husky",
     "husky": ".husky/pre-push"

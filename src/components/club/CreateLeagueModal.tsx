@@ -127,6 +127,26 @@ export default function CreateLeagueModal({
     }));
   };
 
+  const platformPlacements = [1, 2, 3, 4, 8, 16, 32];
+  const isPlacementMode = formData.pointsConfig?.useFixedRanks !== false;
+  const updatePlacementPoint = (placement: number, value: number | '') => {
+    setFormData((prev) => {
+      const nextFixedRanks = {
+        ...(prev.pointsConfig?.fixedRankPoints || {}),
+        [placement]: value === '' ? 0 : value,
+      };
+
+      return {
+        ...prev,
+        pointsConfig: {
+          ...prev.pointsConfig!,
+          useFixedRanks: true,
+          fixedRankPoints: nextFixedRanks,
+        },
+      };
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl shadow-primary/20">
@@ -186,7 +206,7 @@ export default function CreateLeagueModal({
                 : formData.pointSystemType === 'ontour' 
                 ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont' 
                 : formData.pointSystemType === 'platform'
-                  ? 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'
+                  ? 'Helyezés alapú pontozás: add meg, melyik helyezés hány pontot ér. A csoportból kiesők külön fix pontot kapnak.'
                   : getPointSystemDefinition(formData.pointSystemType).description}
             </p>
           </div>
@@ -200,92 +220,114 @@ export default function CreateLeagueModal({
               </span>
             </div>
 
+            <div className="rounded-md border border-muted bg-muted/30 p-3 text-sm">
+              <label className="flex items-center gap-2 font-medium">
+                <input
+                  type="checkbox"
+                  checked={!isPlacementMode}
+                  onChange={(e) => updatePointsConfig('useFixedRanks', !e.target.checked)}
+                  className="h-4 w-4 rounded accent-primary"
+                />
+                Legacy geometrikus mód (átmeneti kompatibilitás)
+              </label>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
-              {[
-                {
-                  label: t("csoportkorbol_kiesok_pontjai_x3re"),
-                  field: 'groupDropoutPoints',
-                  min: 0,
-                  max: 100,
-                  helper: 'Fix pontszám a csoportkörben kiesőknek.',
-                },
-                {
-                  label: t("egyenes_kieses_alappont_kkrk"),
-                  field: 'knockoutBasePoints',
-                  min: 1,
-                  max: 100,
-                  helper: 'Az első kieső kör pontszáma.',
-                },
-                {
-                  label: t("szorzo_tenyezo_fyk4"),
-                  field: 'knockoutMultiplier',
-                  min: 1.1,
-                  max: 3.0,
-                  step: 0.1,
-                  helper: 'Minden további kör pontszáma ezzel szorozódik.',
-                },
-                {
-                  label: t("gyoztes_bonusz_pzwy"),
-                  field: 'winnerBonus',
-                  min: 0,
-                  max: 100,
-                  helper: 'Extra pontok a bajnoknak.',
-                },
-                {
-                  label: t("max_kiesos_korok_j57q"),
-                  field: 'maxKnockoutRounds',
-                  min: 1,
-                  max: 10,
-                  helper: 'Maximális egyenes kiesős körök száma.',
-                },
-              ].map((config) => (
-                <div key={config.field} className="space-y-2">
-                  <Label className="text-sm font-medium">{config.label}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={config.max}
-                    step={config.step ?? 1}
-                    value={(formData.pointsConfig as any)?.[config.field] ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      updatePointsConfig(
-                        config.field,
-                        val === '' ? '' : (config.step ? parseFloat(val) : parseInt(val))
-                      );
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">{config.helper}</p>
-                </div>
-              ))}
+              {isPlacementMode ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t("csoportkorbol_kiesok_pontjai_x3re")}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={(formData.pointsConfig as any)?.groupDropoutPoints ?? 0}
+                      onChange={(e) =>
+                        updatePointsConfig(
+                          'groupDropoutPoints',
+                          e.target.value === '' ? '' : parseInt(e.target.value, 10)
+                        )
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Fix pontszám azoknak, akik nem jutnak tovább a kieséses szakaszba.
+                    </p>
+                  </div>
+
+                  {platformPlacements.map((placement) => (
+                    <div key={placement} className="space-y-2">
+                      <Label className="text-sm font-medium">{placement}. helyezés pontja</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={500}
+                        value={((formData.pointsConfig?.fixedRankPoints as any)?.[placement] ?? 0) as number}
+                        onChange={(e) =>
+                          updatePlacementPoint(
+                            placement,
+                            e.target.value === '' ? '' : parseInt(e.target.value, 10)
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {[
+                    { key: 'groupDropoutPoints', label: t("csoportkorbol_kiesok_pontjai_x3re") },
+                    { key: 'knockoutBasePoints', label: t("egyenes_kieses_alappont_kkrk") },
+                    { key: 'knockoutMultiplier', label: t("szorzo_tenyezo_fyk4"), step: 0.1 },
+                    { key: 'winnerBonus', label: t("gyoztes_bonusz_pzwy") },
+                    { key: 'maxKnockoutRounds', label: t("max_kiesos_korok_j57q") },
+                  ].map((config) => (
+                    <div key={config.key} className="space-y-2">
+                      <Label className="text-sm font-medium">{config.label}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={config.step ?? 1}
+                        value={(formData.pointsConfig as any)?.[config.key] ?? 0}
+                        onChange={(e) =>
+                          updatePointsConfig(
+                            config.key,
+                            e.target.value === '' ? '' : (config.step ? parseFloat(e.target.value) : parseInt(e.target.value, 10))
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
             <Card className="bg-gradient-to-br from-primary/5 to-transparent shadow-md shadow-primary/10">
               <CardContent className="pt-6 space-y-2 text-sm text-muted-foreground">
                 <h5 className="font-medium text-foreground">{t("pontszámítás_előnézet")}</h5>
-                <p>{t("csoportkör_kiesés")}<span className="font-mono">{formData.pointsConfig?.groupDropoutPoints || 0} {t("pont")}</span></p>
-                <p>{t("kör_kiesés")}<span className="font-mono">{formData.pointsConfig?.knockoutBasePoints || 0} {t("pont")}</span></p>
-                <p>{t("kör_kiesés_1")}<span className="font-mono">{Math.round((formData.pointsConfig?.knockoutBasePoints || 0) * (formData.pointsConfig?.knockoutMultiplier || 1.5))} {t("pont")}</span></p>
                 <p>
-                  {t("döntő_kiesés")}{' '}
-                  <span className="font-mono">
-                    {Math.round(
-                      (formData.pointsConfig?.knockoutBasePoints || 0) *
-                        Math.pow(formData.pointsConfig?.knockoutMultiplier || 1.5, (formData.pointsConfig?.maxKnockoutRounds || 5) - 1),
-                    )}{' '}
-                    {t("pont")}</span>
+                  Csoportból kieső:{' '}
+                  <span className="font-mono">{formData.pointsConfig?.groupDropoutPoints || 0} {t("pont")}</span>
                 </p>
-                <p>
-                  {t("győztes")}{' '}
-                  <span className="font-mono">
-                    {Math.round(
-                      (formData.pointsConfig?.knockoutBasePoints || 0) *
-                        Math.pow(formData.pointsConfig?.knockoutMultiplier || 1.5, (formData.pointsConfig?.maxKnockoutRounds || 5) - 1),
-                    ) + (formData.pointsConfig?.winnerBonus || 0)}{' '}
-                    {t("pont")}</span>
-                </p>
+                {isPlacementMode ? (
+                  <>
+                    <p>
+                      1. hely:{' '}
+                      <span className="font-mono">{(formData.pointsConfig?.fixedRankPoints as any)?.[1] || 0} {t("pont")}</span>
+                    </p>
+                    <p>Ha nincs bronzmeccs, mindkét elődöntő-vesztes 4. helyezés pontot kap.</p>
+                    <p className="text-warning">
+                      Figyelmeztetés: a helyezés pontok a végső helyezésre mennek. A csoportból kiesőkre mindig a fenti fix kieső pont vonatkozik.
+                    </p>
+                  </>
+                ) : (
+                  <p>Legacy geometrikus mód aktív (szorzós pontszámítás).</p>
+                )}
               </CardContent>
             </Card>
+
+            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-muted-foreground">
+              A régi geometrikus (szorzós) platform mód átmenetileg támogatott meglévő ligákhoz. Új ligához a helyezés alapú beállítás ajánlott.
+            </div>
           </div>
           )}
 

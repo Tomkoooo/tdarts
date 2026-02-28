@@ -55,6 +55,7 @@ interface Match {
   round?: string;
   groupName?: string;
   average?: number;
+  firstNineAvg?: number;
   checkout?: string;
 }
 
@@ -242,6 +243,10 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
                                 <div className="text-center">
                                   <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('avg')}</p>
                                   <p className="text-sm font-black">{match.average ? match.average.toFixed(1) : "—"}</p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">F9</p>
+                                  <p className="text-sm font-black">{typeof match.firstNineAvg === "number" ? match.firstNineAvg.toFixed(1) : "—"}</p>
                                 </div>
                                 <div className="text-center">
                                   <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('checkout')}</p>

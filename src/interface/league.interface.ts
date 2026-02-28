@@ -137,7 +137,16 @@ export const DEFAULT_LEAGUE_POINTS_CONFIG: LeaguePointsConfig = {
   knockoutMultiplier: 1.5,
   winnerBonus: 20,
   maxKnockoutRounds: 5,
-  useFixedRanks: false,
+  fixedRankPoints: {
+    1: 100,
+    2: 80,
+    3: 70,
+    4: 60,
+    8: 40,
+    16: 20,
+    32: 10,
+  },
+  useFixedRanks: true,
 };
 
 // API DTOs for League Management

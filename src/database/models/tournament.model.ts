@@ -35,6 +35,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             legsWon: { type: Number, required: true, default: 0 },
             legsLost: { type: Number, required: true, default: 0 },
             avg: { type: Number, required: true, default: 0 },
+            firstNineAvg: { type: Number, required: false, default: 0 },
             oneEightiesCount: { type: Number, required: true, default: 0 },
             highestCheckout: { type: Number, required: true, default: 0 },
         }

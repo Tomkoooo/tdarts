@@ -122,6 +122,7 @@ export class YearWrapService {
                 oneEightiesCount: 0,
                 highestCheckout: 0,
                 avg: 0,
+                firstNineAvg: 0,
                 averagePosition: 0,
                 bestPosition: 999, // Reset best position
                 totalMatchesWon: 0,

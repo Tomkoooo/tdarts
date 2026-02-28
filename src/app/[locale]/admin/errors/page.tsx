@@ -36,6 +36,11 @@ interface ErrorLog {
   level: string
   category: string
   message: string
+  errorType?: string
+  errorCode?: string
+  expected?: boolean
+  operation?: string
+  httpStatus?: number
   error?: string
   stack?: string
   userId?: string
@@ -63,6 +68,7 @@ export default function AdminErrorsPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>("all")
   const [dateRange, setDateRange] = useState<number>(7)
   const [showAuthErrors, setShowAuthErrors] = useState<boolean>(false)
+  const [showExpectedErrors, setShowExpectedErrors] = useState<boolean>(false)
   const [expandedError, setExpandedError] = useState<string | null>(null)
 
   const fetchErrorData = async () => {
@@ -74,6 +80,7 @@ export default function AdminErrorsPage() {
         category: selectedCategory,
         level: selectedLevel,
         showAuthErrors: showAuthErrors.toString(),
+        showExpectedErrors: showExpectedErrors.toString(),
       })
 
       const [statsResponse] = await Promise.all([axios.get(`/api/admin/errors/stats?${params}`)])
@@ -89,7 +96,7 @@ export default function AdminErrorsPage() {
 
   useEffect(() => {
     fetchErrorData()
-  }, [dateRange, selectedCategory, selectedLevel, showAuthErrors])
+  }, [dateRange, selectedCategory, selectedLevel, showAuthErrors, showExpectedErrors])
 
   const getCategoryConfig = (category: string) => {
     const configs: Record<string, { icon: any; color: string; label: string }> = {
@@ -204,7 +211,7 @@ export default function AdminErrorsPage() {
       {/* Daily Chart */}
       <DailyChart
         title={t("hibák_napi_előfordulása")}
-        apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}`}
+        apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}&showExpectedErrors=${showExpectedErrors}`}
         color="error"
       />
 
@@ -216,7 +223,7 @@ export default function AdminErrorsPage() {
             {t("szűrők")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label className="font-semibold">{t("időszak")}</Label>
               <Select value={dateRange.toString()} onValueChange={(value) => setDateRange(Number(value))}>
@@ -275,6 +282,21 @@ export default function AdminErrorsPage() {
                 />
                 <Label htmlFor="showAuthErrors" className="cursor-pointer">
                   {showAuthErrors ? "Megjelenítés" : "Elrejtés"}
+                </Label>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Expected</Label>
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="showExpectedErrors"
+                  checked={showExpectedErrors}
+                  onChange={(e) => setShowExpectedErrors(e.target.checked)}
+                  className="size-4 rounded border-border"
+                />
+                <Label htmlFor="showExpectedErrors" className="cursor-pointer">
+                  {showExpectedErrors ? "Megjelenítés" : "Elrejtés"}
                 </Label>
               </div>
             </div>
@@ -379,6 +401,17 @@ export default function AdminErrorsPage() {
                             <div className="flex flex-wrap items-center gap-2 mb-2">
                               <Badge className={levelConfig.color}>{error.level}</Badge>
                               <Badge variant="outline">{error.category}</Badge>
+                              {error.expected !== undefined && (
+                                <Badge variant={error.expected ? "secondary" : "destructive"}>
+                                  {error.expected ? "expected" : "unexpected"}
+                                </Badge>
+                              )}
+                              {error.errorCode && (
+                                <Badge variant="outline">{error.errorCode}</Badge>
+                              )}
+                              {error.httpStatus && (
+                                <Badge variant="outline">HTTP {error.httpStatus}</Badge>
+                              )}
                               {error.method && error.endpoint && (
                                 <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
                                   {error.method} {error.endpoint}
@@ -420,6 +453,18 @@ export default function AdminErrorsPage() {
                           <div className="flex items-center gap-1">
                             <IconTrophy className="size-4" />
                             <span>{t("tournament")}{error.tournamentId.slice(0, 8)}...</span>
+                          </div>
+                        )}
+                        {error.operation && (
+                          <div className="flex items-center gap-1">
+                            <IconCode className="size-4" />
+                            <span>{error.operation}</span>
+                          </div>
+                        )}
+                        {error.errorType && (
+                          <div className="flex items-center gap-1">
+                            <IconBug className="size-4" />
+                            <span>{error.errorType}</span>
                           </div>
                         )}
                       </div>

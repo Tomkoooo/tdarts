@@ -128,6 +128,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
       oneEightiesCount: (current.oneEightiesCount || current.total180s || 0) + previous.reduce((acc, s) => acc + (s.stats.oneEightiesCount || s.stats.total180s || 0), 0),
       highestCheckout: Math.max(current.highestCheckout || 0, ...previous.map(s => s.stats.highestCheckout || 0)),
       avg: current.avg || 0,
+      firstNineAvg: current.firstNineAvg || 0,
       bestPosition: Math.min(current.bestPosition || 999, ...previous.map(s => s.stats.bestPosition || 999)),
       averagePosition: current.averagePosition || 0
     };
@@ -135,6 +136,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
     // Weighted Average Calculation
     let totalMatchesForAvg = (current.matchesPlayed || (current.totalMatchesWon || 0) + (current.totalMatchesLost || 0));
     let weightedAvgSum = (current.avg || 0) * totalMatchesForAvg;
+    let weightedFirstNineAvgSum = (current.firstNineAvg || 0) * totalMatchesForAvg;
     
     let totalTournamentsForPos = (current.tournamentsPlayed || 0);
     let weightedPosSum = (current.averagePosition || 0) * totalTournamentsForPos;
@@ -143,6 +145,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
         const m = s.stats.matchesPlayed || (s.stats.totalMatchesWon || 0) + (s.stats.totalMatchesLost || 0);
         if (m > 0) {
             weightedAvgSum += (s.stats.avg || 0) * m;
+            weightedFirstNineAvgSum += (s.stats.firstNineAvg || 0) * m;
             totalMatchesForAvg += m;
         }
 
@@ -154,6 +157,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
     });
 
     if (totalMatchesForAvg > 0) allTime.avg = weightedAvgSum / totalMatchesForAvg;
+    if (totalMatchesForAvg > 0) allTime.firstNineAvg = weightedFirstNineAvgSum / totalMatchesForAvg;
     if (totalTournamentsForPos > 0) allTime.averagePosition = weightedPosSum / totalTournamentsForPos;
 
     return allTime;
@@ -259,6 +263,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 <MiniStatBox label={t("as_dobások")} value={stats.oneEightiesCount ?? stats.total180s ?? 0} />
                 <MiniStatBox label={t("max_kiszálló")} value={stats.highestCheckout || "—"} />
                 <MiniStatBox label={t("dobás_átlag")} value={stats.avg ? stats.avg.toFixed(1) : "—"} />
+                <MiniStatBox label="First 9 Avg" value={typeof stats.firstNineAvg === "number" ? stats.firstNineAvg.toFixed(1) : "—"} />
               </div>
             </CardContent>
           </Card>

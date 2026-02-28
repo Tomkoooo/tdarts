@@ -3424,6 +3424,7 @@ export class TournamentService {
                 // Use stored average from match model
                 const playerData = isPlayer1 ? match.player1 : match.player2;
                 const average = playerData?.average || 0;
+                const firstNineAvg = playerData?.firstNineAvg || 0;
 
                 // Calculate highest checkout from legs (using actual darts used)
                 let highestCheckout = 0;
@@ -3481,6 +3482,7 @@ export class TournamentService {
                 return {
                     ...match.toObject(),
                     average: Math.round(average * 100) / 100, // Round to 2 decimal places
+                    firstNineAvg: Math.round(firstNineAvg * 100) / 100,
                     checkout: highestCheckout > 0 ? highestCheckout.toString() : undefined,
                     round,
                     groupName,
@@ -3512,6 +3514,8 @@ export class TournamentService {
             playerBHighestCheckout: number;
             playerAOneEighties: number;
             playerBOneEighties: number;
+                playerAFirstNineAvg: number;
+                playerBFirstNineAvg: number;
         };
         allTimeComparison: {
             playerA: {
@@ -3520,6 +3524,7 @@ export class TournamentService {
                 losses: number;
                 winRate: number;
                 avg: number;
+                firstNineAvg: number;
                 highestCheckout: number;
                 oneEightiesCount: number;
             };
@@ -3529,6 +3534,7 @@ export class TournamentService {
                 losses: number;
                 winRate: number;
                 avg: number;
+                firstNineAvg: number;
                 highestCheckout: number;
                 oneEightiesCount: number;
             };
@@ -3548,12 +3554,14 @@ export class TournamentService {
             playerA: {
                 legsWon: number;
                 average: number;
+                firstNineAvg: number;
                 highestCheckout: number;
                 oneEightiesCount: number;
             };
             playerB: {
                 legsWon: number;
                 average: number;
+                firstNineAvg: number;
                 highestCheckout: number;
                 oneEightiesCount: number;
             };
@@ -3581,6 +3589,7 @@ export class TournamentService {
             let totalWins = currentWins;
             let totalLosses = currentLosses;
             let weightedAvgSum = Number(current.avg || 0) * currentMatchesPlayed;
+            let weightedFirstNineAvgSum = Number(current.firstNineAvg || 0) * currentMatchesPlayed;
             let totalMatchesForAvg = currentMatchesPlayed;
             let highestCheckout = Number(current.highestCheckout || 0);
             let oneEightiesCount = Number(current.total180s || current.oneEightiesCount || 0);
@@ -3594,6 +3603,7 @@ export class TournamentService {
                 totalWins += seasonWins;
                 totalLosses += seasonLosses;
                 weightedAvgSum += Number(seasonStats.avg || 0) * seasonMatchesPlayed;
+                weightedFirstNineAvgSum += Number(seasonStats.firstNineAvg || 0) * seasonMatchesPlayed;
                 totalMatchesForAvg += seasonMatchesPlayed;
                 highestCheckout = Math.max(highestCheckout, Number(seasonStats.highestCheckout || 0));
                 oneEightiesCount += Number(seasonStats.total180s || seasonStats.oneEightiesCount || 0);
@@ -3602,6 +3612,7 @@ export class TournamentService {
             const matchesPlayed = totalWins + totalLosses;
             const winRate = matchesPlayed > 0 ? Number(((totalWins / matchesPlayed) * 100).toFixed(1)) : 0;
             const avg = totalMatchesForAvg > 0 ? Number((weightedAvgSum / totalMatchesForAvg).toFixed(2)) : 0;
+            const firstNineAvg = totalMatchesForAvg > 0 ? Number((weightedFirstNineAvgSum / totalMatchesForAvg).toFixed(2)) : 0;
 
             return {
                 matchesPlayed,
@@ -3609,6 +3620,7 @@ export class TournamentService {
                 losses: totalLosses,
                 winRate,
                 avg,
+                firstNineAvg,
                 highestCheckout,
                 oneEightiesCount,
             };
@@ -3655,6 +3667,10 @@ export class TournamentService {
         let playerBAverageSum = 0;
         let playerAAverageCount = 0;
         let playerBAverageCount = 0;
+        let playerAFirstNineAverageSum = 0;
+        let playerBFirstNineAverageSum = 0;
+        let playerAFirstNineAverageCount = 0;
+        let playerBFirstNineAverageCount = 0;
         let playerAHighestCheckout = 0;
         let playerBHighestCheckout = 0;
         let playerAOneEighties = 0;
@@ -3670,6 +3686,8 @@ export class TournamentService {
             const bLegsWon = bData?.legsWon || 0;
             const aAvg = aData?.average || 0;
             const bAvg = bData?.average || 0;
+            const aFirstNineAvg = aData?.firstNineAvg || 0;
+            const bFirstNineAvg = bData?.firstNineAvg || 0;
             const aCheckout = aData?.highestCheckout || 0;
             const bCheckout = bData?.highestCheckout || 0;
             const aOneEighties = aData?.oneEightiesCount || 0;
@@ -3690,6 +3708,14 @@ export class TournamentService {
             if (bAvg > 0) {
                 playerBAverageSum += bAvg;
                 playerBAverageCount += 1;
+            }
+            if (aFirstNineAvg > 0) {
+                playerAFirstNineAverageSum += aFirstNineAvg;
+                playerAFirstNineAverageCount += 1;
+            }
+            if (bFirstNineAvg > 0) {
+                playerBFirstNineAverageSum += bFirstNineAvg;
+                playerBFirstNineAverageCount += 1;
             }
 
             const winnerId = match.winnerId?.toString();
@@ -3718,12 +3744,14 @@ export class TournamentService {
                 playerA: {
                     legsWon: aLegsWon,
                     average: aAvg,
+                    firstNineAvg: aFirstNineAvg,
                     highestCheckout: aCheckout,
                     oneEightiesCount: aOneEighties,
                 },
                 playerB: {
                     legsWon: bLegsWon,
                     average: bAvg,
+                    firstNineAvg: bFirstNineAvg,
                     highestCheckout: bCheckout,
                     oneEightiesCount: bOneEighties,
                 },
@@ -3753,6 +3781,8 @@ export class TournamentService {
                 playerBHighestCheckout,
                 playerAOneEighties,
                 playerBOneEighties,
+                playerAFirstNineAvg: playerAFirstNineAverageCount > 0 ? Number((playerAFirstNineAverageSum / playerAFirstNineAverageCount).toFixed(2)) : 0,
+                playerBFirstNineAvg: playerBFirstNineAverageCount > 0 ? Number((playerBFirstNineAverageSum / playerBFirstNineAverageCount).toFixed(2)) : 0,
             },
             allTimeComparison: {
                 playerA: aggregateCareerStats(playerAWithStats),
@@ -4175,6 +4205,7 @@ export class TournamentService {
             // Step 6: Get stats from actual matches
             const playerStats = new Map<string, {
                 average: number;
+                firstNineAvg: number;
                 checkoutRate: number;
                 legsWon: number;
                 legsPlayed: number;
@@ -4184,6 +4215,8 @@ export class TournamentService {
                 oneEighties: number;
                 tournamentTotal: number;
                 tournamentMatches: number;
+                firstNineTotal: number;
+                firstNineMatches: number;
             }>();
 
             // Initialize all players with zero stats
@@ -4192,6 +4225,7 @@ export class TournamentService {
                 if (playerId) {
                     playerStats.set(playerId, {
                         average: 0,
+                        firstNineAvg: 0,
                         checkoutRate: 0,
                         legsWon: 0,
                         legsPlayed: 0,
@@ -4201,6 +4235,8 @@ export class TournamentService {
                         oneEighties: 0,
                         tournamentTotal: 0,
                         tournamentMatches: 0,
+                        firstNineTotal: 0,
+                        firstNineMatches: 0,
                     });
                 }
             });
@@ -4243,6 +4279,7 @@ export class TournamentService {
             // Separate stats for group stage only (for group standings) and overall tournament stats
             const groupStageStats = new Map<string, {
                 average: number;
+                firstNineAvg: number;
                 checkoutRate: number;
                 legsWon: number;
                 legsPlayed: number;
@@ -4252,6 +4289,8 @@ export class TournamentService {
                 oneEighties: number;
                 tournamentTotal: number;
                 tournamentMatches: number;
+                firstNineTotal: number;
+                firstNineMatches: number;
             }>();
 
             // Initialize group stage stats
@@ -4260,6 +4299,7 @@ export class TournamentService {
                 if (playerId) {
                     groupStageStats.set(playerId, {
                         average: 0,
+                        firstNineAvg: 0,
                         checkoutRate: 0,
                         legsWon: 0,
                         legsPlayed: 0,
@@ -4269,6 +4309,8 @@ export class TournamentService {
                         oneEighties: 0,
                         tournamentTotal: 0,
                         tournamentMatches: 0,
+                        firstNineTotal: 0,
+                        firstNineMatches: 0,
                     });
                 }
             });
@@ -4299,12 +4341,19 @@ export class TournamentService {
                 // Calculate match average for each player
                 let player1TotalScore = 0;
                 let player1TotalThrows = 0;
+                let player1FirstNineScore = 0;
+                let player1FirstNineThrows = 0;
                 let player2TotalScore = 0;
                 let player2TotalThrows = 0;
+                let player2FirstNineScore = 0;
+                let player2FirstNineThrows = 0;
 
                 if (match.legs && Array.isArray(match.legs)) {
                     for (const leg of match.legs) {
                         if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
+                            const firstNineThrows = leg.player1Throws.slice(0, 3);
+                            player1FirstNineScore += firstNineThrows.reduce((sum: number, throwData: any) => sum + Number(throwData?.score || 0), 0);
+                            player1FirstNineThrows += firstNineThrows.length;
                             for (const throwData of leg.player1Throws) {
                                 player1TotalScore += throwData.score || 0;
                                 player1TotalThrows++;
@@ -4319,6 +4368,9 @@ export class TournamentService {
                         }
 
                         if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
+                            const firstNineThrows = leg.player2Throws.slice(0, 3);
+                            player2FirstNineScore += firstNineThrows.reduce((sum: number, throwData: any) => sum + Number(throwData?.score || 0), 0);
+                            player2FirstNineThrows += firstNineThrows.length;
                             for (const throwData of leg.player2Throws) {
                                 player2TotalScore += throwData.score || 0;
                                 player2TotalThrows++;
@@ -4348,11 +4400,21 @@ export class TournamentService {
                     player1GroupStats.tournamentTotal += matchAverage;
                     player1GroupStats.tournamentMatches++;
                 }
+                if (player1FirstNineThrows > 0) {
+                    const firstNineAverage = player1FirstNineScore / player1FirstNineThrows;
+                    player1GroupStats.firstNineTotal += firstNineAverage;
+                    player1GroupStats.firstNineMatches++;
+                }
 
                 if (player2TotalThrows > 0) {
                     const matchAverage = player2TotalScore / player2TotalThrows;
                     player2GroupStats.tournamentTotal += matchAverage;
                     player2GroupStats.tournamentMatches++;
+                }
+                if (player2FirstNineThrows > 0) {
+                    const firstNineAverage = player2FirstNineScore / player2FirstNineThrows;
+                    player2GroupStats.firstNineTotal += firstNineAverage;
+                    player2GroupStats.firstNineMatches++;
                 }
             }
 
@@ -4362,6 +4424,11 @@ export class TournamentService {
                     stats.average = stats.tournamentTotal / stats.tournamentMatches;
                 } else {
                     stats.average = 0;
+                }
+                if (stats.firstNineMatches > 0) {
+                    stats.firstNineAvg = stats.firstNineTotal / stats.firstNineMatches;
+                } else {
+                    stats.firstNineAvg = 0;
                 }
             }
 
@@ -4392,14 +4459,21 @@ export class TournamentService {
                 // === 2. CALCULATE MATCH AVERAGE FOR EACH PLAYER ===
                 let player1TotalScore = 0;
                 let player1TotalThrows = 0;
+                let player1FirstNineScore = 0;
+                let player1FirstNineThrows = 0;
                 let player2TotalScore = 0;
                 let player2TotalThrows = 0;
+                let player2FirstNineScore = 0;
+                let player2FirstNineThrows = 0;
 
                 // Process legs
                 if (match.legs && Array.isArray(match.legs)) {
                     for (const leg of match.legs) {
                         // Player 1 leg processing
                         if (leg.player1Throws && Array.isArray(leg.player1Throws)) {
+                            const firstNineThrows = leg.player1Throws.slice(0, 3);
+                            player1FirstNineScore += firstNineThrows.reduce((sum: number, throwData: any) => sum + Number(throwData?.score || 0), 0);
+                            player1FirstNineThrows += firstNineThrows.length;
                             for (const throwData of leg.player1Throws) {
                                 player1TotalScore += throwData.score || 0;
                                 player1TotalThrows++;
@@ -4419,6 +4493,9 @@ export class TournamentService {
 
                         // Player 2 leg processing
                         if (leg.player2Throws && Array.isArray(leg.player2Throws)) {
+                            const firstNineThrows = leg.player2Throws.slice(0, 3);
+                            player2FirstNineScore += firstNineThrows.reduce((sum: number, throwData: any) => sum + Number(throwData?.score || 0), 0);
+                            player2FirstNineThrows += firstNineThrows.length;
                             for (const throwData of leg.player2Throws) {
                                 player2TotalScore += throwData.score || 0;
                                 player2TotalThrows++;
@@ -4454,11 +4531,21 @@ export class TournamentService {
                     player1Stats.tournamentTotal += matchAverage;
                     player1Stats.tournamentMatches++;
                 }
+                if (player1FirstNineThrows > 0) {
+                    const firstNineAverage = player1FirstNineScore / player1FirstNineThrows;
+                    player1Stats.firstNineTotal += firstNineAverage;
+                    player1Stats.firstNineMatches++;
+                }
 
                 if (player2TotalThrows > 0) {
                     const matchAverage = player2TotalScore / player2TotalThrows;
                     player2Stats.tournamentTotal += matchAverage;
                     player2Stats.tournamentMatches++;
+                }
+                if (player2FirstNineThrows > 0) {
+                    const firstNineAverage = player2FirstNineScore / player2FirstNineThrows;
+                    player2Stats.firstNineTotal += firstNineAverage;
+                    player2Stats.firstNineMatches++;
                 }
             }
 
@@ -4470,6 +4557,11 @@ export class TournamentService {
                     stats.average = stats.tournamentTotal / stats.tournamentMatches;
                 } else {
                     stats.average = 0;
+                }
+                if (stats.firstNineMatches > 0) {
+                    stats.firstNineAvg = stats.firstNineTotal / stats.firstNineMatches;
+                } else {
+                    stats.firstNineAvg = 0;
                 }
             }
             /* eslint-enable @typescript-eslint/no-unused-vars */
@@ -4499,6 +4591,7 @@ export class TournamentService {
                             legsWon: groupStats?.legsWon || 0,
                             legsLost: groupStats?.legsPlayed ? groupStats.legsPlayed - groupStats.legsWon : 0,
                             avg: groupStats?.average || 0, // Group stage average only
+                            firstNineAvg: groupStats?.firstNineAvg || 0,
                             oneEightiesCount: groupStats?.oneEighties || 0,
                             highestCheckout: groupStats?.highestCheckout || 0,
                         },
@@ -4584,9 +4677,11 @@ export class TournamentService {
                             const historyCount = player.tournamentHistory.length;
                             if (historyCount > 0) {
                                 player.stats.avg = ((player.stats.avg * historyCount) + stats.average) / (historyCount + 1);
+                                player.stats.firstNineAvg = (((player.stats.firstNineAvg || 0) * historyCount) + (stats.firstNineAvg || 0)) / (historyCount + 1);
                                 player.stats.averagePosition = ((player.stats.averagePosition * historyCount) + placement) / (historyCount + 1);
                             } else {
                                 player.stats.avg = stats.average;
+                                player.stats.firstNineAvg = stats.firstNineAvg || 0;
                                 player.stats.averagePosition = placement;
                             }
 
@@ -4628,6 +4723,7 @@ export class TournamentService {
                                  oneEightiesCount: stats.oneEighties,
                                  highestCheckout: stats.highestCheckout,
                                  average: stats.average,
+                                 firstNineAvg: stats.firstNineAvg || 0,
                              },
                              date: new Date(),
                              verified: tournament.verified || false,
@@ -4827,8 +4923,18 @@ export class TournamentService {
             .populate('player1.playerId')
             .populate('player2.playerId')
             .sort({ updatedAt: -1 });
-            
-            return liveMatches;
+
+            return liveMatches.map((match: any) => {
+                const player1LegsWon = Number(match?.player1?.legsWon || 0);
+                const player2LegsWon = Number(match?.player2?.legsWon || 0);
+                return {
+                    ...match.toObject(),
+                    currentLeg: player1LegsWon + player2LegsWon + 1,
+                    player1Remaining: 501,
+                    player2Remaining: 501,
+                    lastUpdate: match.updatedAt || match.createdAt,
+                };
+            });
         } catch (error) {
             console.error('getLiveMatches error:', error);
             throw error;
@@ -5184,6 +5290,7 @@ export class TournamentService {
                 legsWon: 0,
                 legsLost: 0,
                 avg: 0,
+                firstNineAvg: 0,
                 oneEightiesCount: 0,
                 highestCheckout: 0,
             }

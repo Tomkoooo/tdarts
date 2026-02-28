@@ -861,14 +861,14 @@ export class LeagueService {
     totalPlayers: number,
     config: LeaguePointsConfig
   ): number {
+    // Group-stage eliminations use dedicated dropout points regardless of placement map.
+    if (eliminatedIn === 'group' || eliminatedIn.includes('group')) {
+      return config.groupDropoutPoints;
+    }
+
     // If using fixed rank points
     if (config.useFixedRanks && config.fixedRankPoints) {
       return config.fixedRankPoints[position] || 0;
-    }
-
-    // If eliminated in group stage
-    if (eliminatedIn === 'group' || eliminatedIn.includes('group')) {
-      return config.groupDropoutPoints;
     }
 
     // For knockout stage eliminations

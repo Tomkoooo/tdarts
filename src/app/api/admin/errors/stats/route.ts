@@ -3,8 +3,9 @@ import { connectMongo } from '@/lib/mongoose';
 import { LogModel } from '@/database/models/log.model';
 import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+export const GET = withApiTelemetry('/api/admin/errors/stats', async (request: NextRequest) => {
   try {
     await connectMongo();
     
@@ -101,4 +102,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

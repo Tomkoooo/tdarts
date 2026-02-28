@@ -8,6 +8,18 @@ import { connectMongo } from "@/lib/mongoose";
 import { eventEmitter, EVENTS } from "@/lib/events";
 
 export class MatchService {
+    private static calculateFirstNineForLeg(throws: any[] | undefined) {
+        if (!throws || throws.length === 0) return { score: 0, darts: 0 };
+        const firstVisits = throws.slice(0, 3);
+        const score = firstVisits.reduce((sum: number, t: any) => sum + Number(t?.score || 0), 0);
+        const darts = firstVisits.reduce((sum: number, t: any) => sum + Number(t?.darts || 3), 0);
+        return { score, darts };
+    }
+
+    private static toThreeDartAverage(score: number, darts: number) {
+        return darts > 0 ? Math.round((score / darts) * 3 * 100) / 100 : 0;
+    }
+
     // Get all matches for a board that haven't finished yet
     static async getBoardMatches(tournamentId: string, clubId: string, boardNumber: number): Promise<Match[]> {
         const tournament = await TournamentService.getTournament(tournamentId);
@@ -268,11 +280,15 @@ export class MatchService {
 
         let player1TotalScore = 0;
         let p1TotalDartsCount = 0;
+        let player1FirstNineScore = 0;
+        let player1FirstNineDarts = 0;
         let player1OneEighties = 0;
         let player1HighestCheckout = 0;
 
         let player2TotalScore = 0;
         let p2TotalDartsCount = 0;
+        let player2FirstNineScore = 0;
+        let player2FirstNineDarts = 0;
         let player2OneEighties = 0;
         let player2HighestCheckout = 0;
 
@@ -292,6 +308,9 @@ export class MatchService {
             if (leg.player1Score) player1TotalScore += leg.player1Score;
             if (leg.player1Throws) {
                 p1TotalDartsCount += calculateLegDarts(leg.player1Throws, 1, leg);
+                const p1FirstNine = this.calculateFirstNineForLeg(leg.player1Throws);
+                player1FirstNineScore += p1FirstNine.score;
+                player1FirstNineDarts += p1FirstNine.darts;
                 leg.player1Throws.forEach((t: any) => {
                     if (t.score === 180) player1OneEighties++;
                 });
@@ -304,6 +323,9 @@ export class MatchService {
             if (leg.player2Score) player2TotalScore += leg.player2Score;
             if (leg.player2Throws) {
                 p2TotalDartsCount += calculateLegDarts(leg.player2Throws, 2, leg);
+                const p2FirstNine = this.calculateFirstNineForLeg(leg.player2Throws);
+                player2FirstNineScore += p2FirstNine.score;
+                player2FirstNineDarts += p2FirstNine.darts;
                 leg.player2Throws.forEach((t: any) => {
                     if (t.score === 180) player2OneEighties++;
                 });
@@ -313,11 +335,11 @@ export class MatchService {
             }
         }
 
-        const newP1Average = p1TotalDartsCount > 0 ? 
-            Math.round((player1TotalScore / p1TotalDartsCount) * 3 * 100) / 100 : 0;
+        const newP1Average = this.toThreeDartAverage(player1TotalScore, p1TotalDartsCount);
+        const newP1FirstNineAverage = this.toThreeDartAverage(player1FirstNineScore, player1FirstNineDarts);
         
-        const newP2Average = p2TotalDartsCount > 0 ? 
-            Math.round((player2TotalScore / p2TotalDartsCount) * 3 * 100) / 100 : 0;
+        const newP2Average = this.toThreeDartAverage(player2TotalScore, p2TotalDartsCount);
+        const newP2FirstNineAverage = this.toThreeDartAverage(player2FirstNineScore, player2FirstNineDarts);
 
         // ATOMIC UPDATE
         // Only update if the leg number does NOT exist
@@ -332,12 +354,14 @@ export class MatchService {
                     "player1.legsWon": newP1LegsWon,
                     "player1.legsLost": newP1LegsLost,
                     "player1.average": newP1Average,
+                    "player1.firstNineAvg": newP1FirstNineAverage,
                     "player1.highestCheckout": player1HighestCheckout,
                     "player1.oneEightiesCount": player1OneEighties,
 
                     "player2.legsWon": newP2LegsWon,
                     "player2.legsLost": newP2LegsLost,
                     "player2.average": newP2Average,
+                    "player2.firstNineAvg": newP2FirstNineAverage,
                     "player2.highestCheckout": player2HighestCheckout,
                     "player2.oneEightiesCount": player2OneEighties
                 }
@@ -362,7 +386,8 @@ export class MatchService {
             {
                 highestCheckout: player1HighestCheckout,
                 oneEightiesCount: player1OneEighties,
-                average: newP1Average
+                average: newP1Average,
+                firstNineAvg: newP1FirstNineAverage
             }
         );
         await this.updateTournamentPlayerStats(
@@ -371,7 +396,8 @@ export class MatchService {
             {
                 highestCheckout: player2HighestCheckout,
                 oneEightiesCount: player2OneEighties,
-                average: newP2Average
+                average: newP2Average,
+                firstNineAvg: newP2FirstNineAverage
             }
         );
 
@@ -592,11 +618,15 @@ export class MatchService {
         // Calculate match-wide statistics from ALL saved (and validated) legs
         let player1TotalScore = 0;
         let player1TotalDarts = 0;
+        let player1FirstNineScore = 0;
+        let player1FirstNineDarts = 0;
         let player1OneEighties = 0;
         let player1HighestCheckout = 0;
 
         let player2TotalScore = 0;
         let player2TotalDarts = 0;
+        let player2FirstNineScore = 0;
+        let player2FirstNineDarts = 0;
         let player2OneEighties = 0;
         let player2HighestCheckout = 0;
 
@@ -607,6 +637,9 @@ export class MatchService {
                 if (leg.player1Score) player1TotalScore += leg.player1Score;
                 if (leg.player1Throws) {
                     player1TotalDarts += calculateLegDarts(leg.player1Throws, 1, leg);
+                    const p1FirstNine = this.calculateFirstNineForLeg(leg.player1Throws);
+                    player1FirstNineScore += p1FirstNine.score;
+                    player1FirstNineDarts += p1FirstNine.darts;
                     leg.player1Throws.forEach((t: any) => {
                         if (t.score === 180) player1OneEighties++;
                     });
@@ -620,6 +653,9 @@ export class MatchService {
                 if (leg.player2Score) player2TotalScore += leg.player2Score;
                 if (leg.player2Throws) {
                     player2TotalDarts += calculateLegDarts(leg.player2Throws, 2, leg);
+                    const p2FirstNine = this.calculateFirstNineForLeg(leg.player2Throws);
+                    player2FirstNineScore += p2FirstNine.score;
+                    player2FirstNineDarts += p2FirstNine.darts;
                     leg.player2Throws.forEach((t: any) => {
                         if (t.score === 180) player2OneEighties++;
                     });
@@ -634,13 +670,13 @@ export class MatchService {
         // Update aggregated stats on match object
         match.player1.highestCheckout = player1HighestCheckout;
         match.player1.oneEightiesCount = player1OneEighties;
-        match.player1.average = player1TotalDarts > 0 ? 
-            Math.round((player1TotalScore / player1TotalDarts) * 3 * 100) / 100 : 0;
+        match.player1.average = this.toThreeDartAverage(player1TotalScore, player1TotalDarts);
+        match.player1.firstNineAvg = this.toThreeDartAverage(player1FirstNineScore, player1FirstNineDarts);
 
         match.player2.highestCheckout = player2HighestCheckout;
         match.player2.oneEightiesCount = player2OneEighties;
-        match.player2.average = player2TotalDarts > 0 ? 
-            Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
+        match.player2.average = this.toThreeDartAverage(player2TotalScore, player2TotalDarts);
+        match.player2.firstNineAvg = this.toThreeDartAverage(player2FirstNineScore, player2FirstNineDarts);
 
         match.status = 'finished';
         await match.save();
@@ -652,7 +688,8 @@ export class MatchService {
             {
                 highestCheckout: player1HighestCheckout,
                 oneEightiesCount: player1OneEighties,
-                average: match.player1.average
+                average: match.player1.average,
+                firstNineAvg: match.player1.firstNineAvg || 0
             }
         );
         await this.updateTournamentPlayerStats(
@@ -661,7 +698,8 @@ export class MatchService {
             {
                 highestCheckout: player2HighestCheckout,
                 oneEightiesCount: player2OneEighties,
-                average: match.player2.average
+                average: match.player2.average,
+                firstNineAvg: match.player2.firstNineAvg || 0
             }
         );
 
@@ -783,12 +821,16 @@ export class MatchService {
         // Recalculate match-wide statistics from the remaining legs
         let player1TotalScore = 0;
         let player1TotalDarts = 0;
+        let player1FirstNineScore = 0;
+        let player1FirstNineDarts = 0;
         let player1OneEighties = 0;
         let player1HighestCheckout = 0;
         let p1LegsWon = 0;
 
         let player2TotalScore = 0;
         let player2TotalDarts = 0;
+        let player2FirstNineScore = 0;
+        let player2FirstNineDarts = 0;
         let player2OneEighties = 0;
         let player2HighestCheckout = 0;
         let p2LegsWon = 0;
@@ -802,6 +844,9 @@ export class MatchService {
             if (leg.player1Score) player1TotalScore += leg.player1Score;
             if (leg.player1Throws) {
                 player1TotalDarts += calculateLegDarts(leg.player1Throws, 1, leg);
+                const p1FirstNine = this.calculateFirstNineForLeg(leg.player1Throws);
+                player1FirstNineScore += p1FirstNine.score;
+                player1FirstNineDarts += p1FirstNine.darts;
                 leg.player1Throws.forEach((t: any) => {
                     if (t.score === 180) player1OneEighties++;
                 });
@@ -814,6 +859,9 @@ export class MatchService {
             if (leg.player2Score) player2TotalScore += leg.player2Score;
             if (leg.player2Throws) {
                 player2TotalDarts += calculateLegDarts(leg.player2Throws, 2, leg);
+                const p2FirstNine = this.calculateFirstNineForLeg(leg.player2Throws);
+                player2FirstNineScore += p2FirstNine.score;
+                player2FirstNineDarts += p2FirstNine.darts;
                 leg.player2Throws.forEach((t: any) => {
                     if (t.score === 180) player2OneEighties++;
                 });
@@ -828,15 +876,15 @@ export class MatchService {
         match.player1.legsLost = p2LegsWon;
         match.player1.highestCheckout = player1HighestCheckout;
         match.player1.oneEightiesCount = player1OneEighties;
-        match.player1.average = player1TotalDarts > 0 ? 
-            Math.round((player1TotalScore / player1TotalDarts) * 3 * 100) / 100 : 0;
+        match.player1.average = this.toThreeDartAverage(player1TotalScore, player1TotalDarts);
+        match.player1.firstNineAvg = this.toThreeDartAverage(player1FirstNineScore, player1FirstNineDarts);
 
         match.player2.legsWon = p2LegsWon;
         match.player2.legsLost = p1LegsWon;
         match.player2.highestCheckout = player2HighestCheckout;
         match.player2.oneEightiesCount = player2OneEighties;
-        match.player2.average = player2TotalDarts > 0 ? 
-            Math.round((player2TotalScore / player2TotalDarts) * 3 * 100) / 100 : 0;
+        match.player2.average = this.toThreeDartAverage(player2TotalScore, player2TotalDarts);
+        match.player2.firstNineAvg = this.toThreeDartAverage(player2FirstNineScore, player2FirstNineDarts);
 
         await match.save();
 
@@ -847,7 +895,8 @@ export class MatchService {
             {
                 highestCheckout: player1HighestCheckout,
                 oneEightiesCount: player1OneEighties,
-                average: match.player1.average
+                average: match.player1.average,
+                firstNineAvg: match.player1.firstNineAvg || 0
             }
         );
         await this.updateTournamentPlayerStats(
@@ -856,7 +905,8 @@ export class MatchService {
             {
                 highestCheckout: player2HighestCheckout,
                 oneEightiesCount: player2OneEighties,
-                average: match.player2.average
+                average: match.player2.average,
+                firstNineAvg: match.player2.firstNineAvg || 0
             }
         );
 
@@ -872,6 +922,7 @@ export class MatchService {
             highestCheckout: number;
             oneEightiesCount: number;
             average: number;
+            firstNineAvg: number;
         }
     ) {
         const tournament = await TournamentModel.findById(tournamentId);
@@ -889,6 +940,8 @@ export class MatchService {
         let totalOneEighties = 0;
         let totalScore = 0;
         let totalDarts = 0;
+        let totalFirstNineScore = 0;
+        let totalFirstNineDarts = 0;
 
         // Get all finished matches for this player in this tournament
         const playerMatches = await MatchModel.find({
@@ -912,6 +965,9 @@ export class MatchService {
                 for (const leg of match.legs) {
                     if (isPlayer1) {
                         if (leg.player1Score) totalScore += leg.player1Score;
+                        const p1FirstNine = this.calculateFirstNineForLeg(leg.player1Throws);
+                        totalFirstNineScore += p1FirstNine.score;
+                        totalFirstNineDarts += p1FirstNine.darts;
                         // Use stored totalDarts if available, fallback to calculation
                         if ((leg as any).player1TotalDarts) {
                             totalDarts += (leg as any).player1TotalDarts;
@@ -920,6 +976,9 @@ export class MatchService {
                         }
                     } else {
                         if (leg.player2Score) totalScore += leg.player2Score;
+                        const p2FirstNine = this.calculateFirstNineForLeg(leg.player2Throws);
+                        totalFirstNineScore += p2FirstNine.score;
+                        totalFirstNineDarts += p2FirstNine.darts;
                         // Use stored totalDarts if available, fallback to calculation
                         if ((leg as any).player2TotalDarts) {
                             totalDarts += (leg as any).player2TotalDarts;
@@ -932,16 +991,16 @@ export class MatchService {
         }
 
         // Calculate overall average
-        const overallAverage = totalDarts > 0 
-            ? Math.round(((totalScore / totalDarts) * 3) * 100) / 100 
-            : 0;
+        const overallAverage = this.toThreeDartAverage(totalScore, totalDarts);
+        const overallFirstNineAverage = this.toThreeDartAverage(totalFirstNineScore, totalFirstNineDarts);
 
         // Update tournament player stats
         tournament.tournamentPlayers[playerIndex].stats = {
             ...tournament.tournamentPlayers[playerIndex].stats,
             highestCheckout: totalHighestCheckout,
             oneEightiesCount: totalOneEighties,
-            avg: overallAverage
+            avg: overallAverage,
+            firstNineAvg: overallFirstNineAverage
         };
 
         await tournament.save();
@@ -1009,6 +1068,7 @@ export class MatchService {
                         legsWon: match.player1?.legsWon || 0,
                         legsLost: match.player1?.legsLost || 0,
                         average: match.player1?.average || 0,
+                        firstNineAvg: match.player1?.firstNineAvg || 0,
                         highestCheckout: match.player1?.highestCheckout || 0,
                         oneEightiesCount: match.player1?.oneEightiesCount || 0,
                     };
@@ -1033,6 +1093,7 @@ export class MatchService {
                         legsWon: match.player2?.legsWon || 0,
                         legsLost: match.player2?.legsLost || 0,
                         average: match.player2?.average || 0,
+                        firstNineAvg: match.player2?.firstNineAvg || 0,
                         highestCheckout: match.player2?.highestCheckout || 0,
                         oneEightiesCount: match.player2?.oneEightiesCount || 0,
                     };

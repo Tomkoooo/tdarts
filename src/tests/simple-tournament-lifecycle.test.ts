@@ -89,12 +89,12 @@ async function playMatchFast(tournamentCode: string, matchId: string, winner: 1 
 }
 
 function calculatePlatformPoints(position: number, eliminatedIn: string, totalPlayers: number, config: any): number {
-  if (config.useFixedRanks && config.fixedRankPoints) {
-    return config.fixedRankPoints[position] || 0;
-  }
-
   if (eliminatedIn === 'group' || eliminatedIn.includes('group')) {
     return config.groupDropoutPoints;
+  }
+
+  if (config.useFixedRanks && config.fixedRankPoints) {
+    return config.fixedRankPoints[position] || 0;
   }
 
   if (position === 1) {

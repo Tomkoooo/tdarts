@@ -20,13 +20,15 @@ interface HeadToHeadResponse {
     playerBHighestCheckout: number;
     playerAOneEighties: number;
     playerBOneEighties: number;
+    playerAFirstNineAvg: number;
+    playerBFirstNineAvg: number;
   };
   matches: Array<{
     _id: string;
     date: string;
     tournament: { tournamentId: string; name: string };
-    playerA: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number };
-    playerB: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number };
+    playerA: { legsWon: number; average: number; firstNineAvg?: number; highestCheckout: number; oneEightiesCount: number };
+    playerB: { legsWon: number; average: number; firstNineAvg?: number; highestCheckout: number; oneEightiesCount: number };
   }>;
 }
 
@@ -94,6 +96,8 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
               <StatBox icon={<IconTrophy size={14} />} label={`${data.playerB.name} ${t.headToHeadWins}`} value={data.summary.playerBWins} />
               <StatBox icon={<IconChartBar size={14} />} label={`${data.playerA.name} ${t.headToHeadAverage}`} value={data.summary.playerAAverage ? data.summary.playerAAverage.toFixed(2) : "—"} />
               <StatBox icon={<IconChartBar size={14} />} label={`${data.playerB.name} ${t.headToHeadAverage}`} value={data.summary.playerBAverage ? data.summary.playerBAverage.toFixed(2) : "—"} />
+              <StatBox icon={<IconChartBar size={14} />} label={`${data.playerA.name} F9`} value={data.summary.playerAFirstNineAvg ? data.summary.playerAFirstNineAvg.toFixed(2) : "—"} />
+              <StatBox icon={<IconChartBar size={14} />} label={`${data.playerB.name} F9`} value={data.summary.playerBFirstNineAvg ? data.summary.playerBFirstNineAvg.toFixed(2) : "—"} />
             </div>
 
             <div className="space-y-2">
@@ -116,6 +120,9 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
                           </p>
                           <p className="text-[10px] text-muted-foreground">
                             {t.headToHeadAverage}: {match.playerA.average ? match.playerA.average.toFixed(1) : "—"} / {match.playerB.average ? match.playerB.average.toFixed(1) : "—"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            F9: {typeof match.playerA.firstNineAvg === "number" ? match.playerA.firstNineAvg.toFixed(1) : "—"} / {typeof match.playerB.firstNineAvg === "number" ? match.playerB.firstNineAvg.toFixed(1) : "—"}
                           </p>
                         </div>
                       </div>

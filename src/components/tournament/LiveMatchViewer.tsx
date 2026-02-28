@@ -112,16 +112,16 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
         if (data.match.player1?.playerId?.name) setCurrentPlayer1(data.match.player1.playerId);
         if (data.match.player2?.playerId?.name) setCurrentPlayer2(data.match.player2.playerId);
         
-        const dbPlayer1LegsWon = data.match.player1?.legsWon || 0;
-        const dbPlayer2LegsWon = data.match.player2?.legsWon || 0;
+        const dbPlayer1LegsWon = Number(data.match.player1?.legsWon ?? 0);
+        const dbPlayer2LegsWon = Number(data.match.player2?.legsWon ?? 0);
         
         setMatchState(prev => ({
           ...prev,
           player1LegsWon: dbPlayer1LegsWon,
           player2LegsWon: dbPlayer2LegsWon,
-          legsToWin: data.match.legsToWin || 3,
+          legsToWin: data.match.legsToWin ?? 3,
           currentLeg: dbPlayer1LegsWon + dbPlayer2LegsWon + 1,
-          completedLegs: data.match.legs || []
+          completedLegs: data.match.legs ?? []
         }));
       }
     } catch (error) {
@@ -147,9 +147,9 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
         setMatchState(prev => ({
           ...prev,
           ...data.state,
-          player1LegsWon: prev.player1LegsWon || data.state.player1LegsWon || 0,
-          player2LegsWon: prev.player2LegsWon || data.state.player2LegsWon || 0,
-          completedLegs: prev.completedLegs.length > 0 ? prev.completedLegs : data.state.completedLegs || []
+          player1LegsWon: data.state.player1LegsWon ?? prev.player1LegsWon ?? 0,
+          player2LegsWon: data.state.player2LegsWon ?? prev.player2LegsWon ?? 0,
+          completedLegs: data.state.completedLegs ?? prev.completedLegs ?? []
         }));
       }
       setIsLoading(false);
@@ -163,9 +163,9 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       setMatchState(prev => ({
         ...prev,
         ...state,
-        player1LegsWon: prev.player1LegsWon || state.player1LegsWon || 0,
-        player2LegsWon: prev.player2LegsWon || state.player2LegsWon || 0,
-        completedLegs: prev.completedLegs.length > 0 ? prev.completedLegs : state.completedLegs || []
+        player1LegsWon: state.player1LegsWon ?? prev.player1LegsWon ?? 0,
+        player2LegsWon: state.player2LegsWon ?? prev.player2LegsWon ?? 0,
+        completedLegs: state.completedLegs ?? prev.completedLegs ?? []
       }));
     }
 
@@ -217,7 +217,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     if (!matchData) return 1;
     const currentLegNumber = matchState.currentLeg;
     if (currentLegNumber === 1) {
-      return matchData.startingPlayer || 1;
+      return matchData.startingPlayer ?? 1;
     }
      return matchData.startingPlayer === 1 
       ? (currentLegNumber % 2 === 1 ? 1 : 2)
@@ -265,8 +265,8 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     );
   }
 
-  const p1Throws = matchState.currentLegData.player1Throws || [];
-  const p2Throws = matchState.currentLegData.player2Throws || [];
+  const p1Throws = matchState.currentLegData.player1Throws ?? [];
+  const p2Throws = matchState.currentLegData.player2Throws ?? [];
   const maxThrows = Math.max(p1Throws.length, p2Throws.length);
   
   // Last 6 rounds, but displayed in chronological order (top to bottom)
@@ -326,7 +326,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
             <div className={`p-2 sm:p-4 flex flex-col items-center relative transition-colors ${matchState.currentLegData.currentPlayer === 1 ? 'bg-primary/5' : ''}`}>
                {/* Name */}
                <div className="flex items-center gap-1 mb-2 w-full justify-center px-1 max-w-full">
-                 {getCurrentLegStarter() === 1 && <IconPencil size={10} className="text-muted-foreground flex-shrink-0" />}
+                 {getCurrentLegStarter() === 1 && <IconPencil size={10} className="text-muted-foreground shrink-0" />}
                  <span className="font-bold text-sm sm:text-lg text-center truncate leading-none max-w-full">{getPlayer1Name()}</span>
                </div>
                
@@ -352,7 +352,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
                {/* Name */}
                <div className="flex items-center gap-1 mb-2 w-full justify-center px-1 max-w-full">
                  <span className="font-bold text-sm sm:text-lg text-center truncate leading-none max-w-full">{getPlayer2Name()}</span>
-                 {getCurrentLegStarter() === 2 && <IconPencil size={10} className="text-muted-foreground flex-shrink-0" />}
+                 {getCurrentLegStarter() === 2 && <IconPencil size={10} className="text-muted-foreground shrink-0" />}
                </div>
                
                {/* Big Score */}

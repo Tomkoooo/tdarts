@@ -14,6 +14,7 @@ export interface TournamentHistory {
         oneEightiesCount: number;
         highestCheckout: number;
         average: number; // Tornához tartozó átlag (meccs átlagok átlaga)
+        firstNineAvg?: number;
     };
     date: Date;
     verified: boolean;
@@ -36,6 +37,7 @@ export interface PlayerSeasonStats {
         legsWon: number;
         legsLost: number;
         avg: number;
+        firstNineAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
         averagePosition: number;
@@ -91,6 +93,7 @@ export interface PlayerDocument {
         legsWon: number;
         legsLost: number;
         avg: number;
+        firstNineAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
         averagePosition: number;
@@ -127,6 +130,7 @@ export interface Player {
         legsWon: number;
         legsLost: number;
         avg: number;
+        firstNineAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
         averagePosition: number;

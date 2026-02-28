@@ -13,7 +13,7 @@ export const POINT_SYSTEMS: PointSystemDefinition[] = [
   {
     id: 'platform',
     label: 'Platform',
-    description: 'Geometric progression based points for knockout progression and winner bonus.'
+    description: 'Placement based points: configure rank-to-point values and separate fixed points for group-stage dropouts.'
   },
   {
     id: 'remiz_christmas',

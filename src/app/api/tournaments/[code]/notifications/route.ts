@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { AuthService } from '@/database/services/auth.service';
 import { getRequestLogContext, handleError } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // POST /api/tournaments/[code]/notifications - Subscribe to tournament notifications
-export async function POST(
+export const POST = withApiTelemetry('/api/tournaments/[code]/notifications', async (
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
-) {
+) => {
   const { code } = await params;
   try {
     const token = request.cookies.get('token')?.value;
@@ -39,13 +40,13 @@ export async function POST(
     const { status, body } = handleError(error, context);
     return NextResponse.json({ success: false, ...body }, { status });
   }
-}
+});
 
 // DELETE /api/tournaments/[code]/notifications - Unsubscribe from tournament notifications
-export async function DELETE(
+export const DELETE = withApiTelemetry('/api/tournaments/[code]/notifications', async (
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
-) {
+) => {
   const { code } = await params;
   try {
     const token = request.cookies.get('token')?.value;
@@ -69,5 +70,5 @@ export async function DELETE(
     const { status, body } = handleError(error, context);
     return NextResponse.json({ success: false, ...body }, { status });
   }
-}
+});
 

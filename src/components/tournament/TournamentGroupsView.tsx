@@ -26,6 +26,7 @@ interface Player {
   legsWon?: number;
   legsLost?: number;
   average?: number;
+  firstNineAvg?: number;
   highestCheckout?: number;
   oneEightiesCount?: number;
 }
@@ -287,6 +288,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                             <TableHead className="text-center">{tTour('groups.table.legs_lost')}</TableHead>
                             <TableHead className="text-center">{tTour('groups.table.leg_diff')}</TableHead>
                             <TableHead className="text-center">{tTour('groups.table.average')}</TableHead>
+                            <TableHead className="text-center">F9</TableHead>
                             <TableHead className="text-center">{tTour('groups.table.180s')}</TableHead>
                             <TableHead className="text-center">{tTour('groups.table.max_checkout')}</TableHead>
                           </TableRow>
@@ -355,6 +357,9 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                   {stats.avg ? stats.avg.toFixed(1) : (stats.average ? stats.average.toFixed(1) : '0.0')}
                                 </TableCell>
                                 <TableCell className="text-center">
+                                  {typeof stats.firstNineAvg === 'number' ? Number(stats.firstNineAvg).toFixed(1) : '0.0'}
+                                </TableCell>
+                                <TableCell className="text-center">
                                   {stats.oneEightiesCount || 0}
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -407,6 +412,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                   <TableHead>{t("pontozo_kzfn")}</TableHead>
                                   <TableHead className="text-center">{t("allapot_qn05")}</TableHead>
                                   <TableHead className="text-center">{t("atlag_308n")}</TableHead>
+                                  <TableHead className="text-center">F9</TableHead>
                                   <TableHead className="text-center">{t("eredmeny_hu1y")}</TableHead>
                                   <TableHead className="text-center">{t("muveletek_t2dg")}</TableHead>
                                 </TableRow>
@@ -442,6 +448,15 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                                       {match.player1.average && match.player2.average ? (
                                         <span>
                                           {match.player1.average?.toFixed(1)} - {match.player2.average?.toFixed(1)}
+                                        </span>
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {(typeof match.player1.firstNineAvg === "number" || typeof match.player2.firstNineAvg === "number") ? (
+                                        <span>
+                                          {typeof match.player1.firstNineAvg === "number" ? match.player1.firstNineAvg.toFixed(1) : "0.0"} - {typeof match.player2.firstNineAvg === "number" ? match.player2.firstNineAvg.toFixed(1) : "0.0"}
                                         </span>
                                       ) : (
                                         '-'

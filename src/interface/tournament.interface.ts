@@ -29,6 +29,7 @@ export interface TournamentPlayer {
         legsWon: number;
         legsLost: number;
         avg: number;
+        firstNineAvg?: number;
         oneEightiesCount: number;
         highestCheckout: number;
     };

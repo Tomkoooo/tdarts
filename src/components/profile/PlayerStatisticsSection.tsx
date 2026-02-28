@@ -83,6 +83,7 @@ interface PlayerStatsData {
     totalLegsWon: number
     totalLegsLost: number
     avg?: number
+    firstNineAvg?: number
   }
 }
 
@@ -107,6 +108,8 @@ interface HeadToHeadData {
     playerBHighestCheckout: number
     playerAOneEighties: number
     playerBOneEighties: number
+    playerAFirstNineAvg: number
+    playerBFirstNineAvg: number
   }
   allTimeComparison: {
     playerA: {
@@ -115,6 +118,7 @@ interface HeadToHeadData {
       losses: number
       winRate: number
       avg: number
+      firstNineAvg?: number
       highestCheckout: number
       oneEightiesCount: number
     }
@@ -124,6 +128,7 @@ interface HeadToHeadData {
       losses: number
       winRate: number
       avg: number
+      firstNineAvg?: number
       highestCheckout: number
       oneEightiesCount: number
     }
@@ -132,8 +137,8 @@ interface HeadToHeadData {
     _id: string
     date: string
     tournament: { tournamentId: string; name: string }
-    playerA: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number }
-    playerB: { legsWon: number; average: number; highestCheckout: number; oneEightiesCount: number }
+    playerA: { legsWon: number; average: number; firstNineAvg?: number; highestCheckout: number; oneEightiesCount: number }
+    playerB: { legsWon: number; average: number; firstNineAvg?: number; highestCheckout: number; oneEightiesCount: number }
     winnerId?: string
   }>
 }
@@ -511,6 +516,7 @@ export function PlayerStatisticsSection({
       .map((match: any) => ({
         ...match,
         average: Number(match?.average || 0),
+        firstNineAvg: Number(match?.firstNineAvg || 0),
       }))
       .filter((match: any) => match.average > 0)
       .sort((a: any, b: any) => b.average - a.average)
@@ -733,6 +739,11 @@ export function PlayerStatisticsSection({
                       <span className="text-center font-semibold">{headToHead.summary.playerBAverage ? headToHead.summary.playerBAverage.toFixed(1) : "—"}</span>
                     </div>
                     <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">First 9 Avg</span>
+                      <span className="text-center font-semibold">{typeof headToHead.summary.playerAFirstNineAvg === "number" ? headToHead.summary.playerAFirstNineAvg.toFixed(1) : "—"}</span>
+                      <span className="text-center font-semibold">{typeof headToHead.summary.playerBFirstNineAvg === "number" ? headToHead.summary.playerBFirstNineAvg.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
                       <span className="text-muted-foreground">Winrate</span>
                       <span className="text-center font-semibold">
                         {headToHead.summary.matchesPlayed > 0
@@ -772,6 +783,11 @@ export function PlayerStatisticsSection({
                       <span className="text-muted-foreground">{t.headToHeadAverage}</span>
                       <span className="text-center font-semibold">{headToHead.allTimeComparison.playerA.avg ? headToHead.allTimeComparison.playerA.avg.toFixed(1) : "—"}</span>
                       <span className="text-center font-semibold">{headToHead.allTimeComparison.playerB.avg ? headToHead.allTimeComparison.playerB.avg.toFixed(1) : "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                      <span className="text-muted-foreground">First 9 Avg</span>
+                      <span className="text-center font-semibold">{typeof headToHead.allTimeComparison.playerA.firstNineAvg === "number" ? headToHead.allTimeComparison.playerA.firstNineAvg.toFixed(1) : "—"}</span>
+                      <span className="text-center font-semibold">{typeof headToHead.allTimeComparison.playerB.firstNineAvg === "number" ? headToHead.allTimeComparison.playerB.firstNineAvg.toFixed(1) : "—"}</span>
                     </div>
                     <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
                       <span className="text-muted-foreground">Winrate</span>
@@ -835,6 +851,11 @@ export function PlayerStatisticsSection({
                             <span className="text-muted-foreground">{t.headToHeadAverage}</span>
                             <span className="text-center font-semibold">{match.playerA.average ? match.playerA.average.toFixed(1) : "—"}</span>
                             <span className="text-center font-semibold">{match.playerB.average ? match.playerB.average.toFixed(1) : "—"}</span>
+                          </div>
+                          <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
+                            <span className="text-muted-foreground">First 9 Avg</span>
+                            <span className="text-center font-semibold">{typeof match.playerA.firstNineAvg === "number" ? match.playerA.firstNineAvg.toFixed(1) : "—"}</span>
+                            <span className="text-center font-semibold">{typeof match.playerB.firstNineAvg === "number" ? match.playerB.firstNineAvg.toFixed(1) : "—"}</span>
                           </div>
                           <div className="grid grid-cols-3 border-t border-muted/20 px-2 py-1 text-[11px]">
                             <span className="text-muted-foreground">{t.headToHeadHighestCheckout}</span>
@@ -1007,7 +1028,12 @@ export function PlayerStatisticsSection({
                         <p>{new Date(match.date).toLocaleDateString("hu-HU")}</p>
                       </div>
                     </div>
-                    <span className="text-base font-black text-primary">{Number(match.average).toFixed(1)}</span>
+                    <div className="text-right">
+                      <span className="text-base font-black text-primary">{Number(match.average).toFixed(1)}</span>
+                      <div className="text-[10px] font-bold text-muted-foreground">
+                        F9: {typeof match.firstNineAvg === "number" ? Number(match.firstNineAvg).toFixed(1) : "—"}
+                      </div>
+                    </div>
                   </div>
                   <div className="mt-2 flex justify-end">
                     <Button variant="outline" size="sm" onClick={() => onViewLegs(match)}>
@@ -1218,6 +1244,7 @@ export function PlayerStatisticsSection({
             </h3>
             <div className="bg-card border border-muted/20 rounded-xl overflow-hidden divide-y divide-muted/10">
                 <SimpleStatRow label="Átlag" value={activeStats.avg?.toFixed(1) || '—'} />
+                <SimpleStatRow label="First 9 Átlag" value={activeStats.firstNineAvg?.toFixed(1) || '—'} />
                 <SimpleStatRow label="180-as Dobások" value={activeStats.total180s || activeStats.oneEightiesCount || 0} />
                 <SimpleStatRow label="Legjobb Helyezés" value={activeStats.bestPosition !== 999 ? `#${activeStats.bestPosition}` : '—'} />
                 <SimpleStatRow label="Átlagos Helyezés" value={activeStats.averagePosition ? `#${activeStats.averagePosition.toFixed(1)}` : '—'} />

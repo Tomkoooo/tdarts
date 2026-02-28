@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { SubscriptionService } from "@/database/services/subscription.service";
 import { getRequestLogContext, handleError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from "@/lib/api-telemetry";
 
-export async function GET(
+export const GET = withApiTelemetry('/api/tournaments/[code]', async (
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
-) {
+) => {
   const { code } = await params;
   try {
     const tournament: any = await TournamentService.getTournament(code) // Populate players for frontend display
@@ -24,15 +25,14 @@ export async function GET(
     const { status, body } = handleError(error, context);
     return NextResponse.json(body, { status });
   }
-}
+});
 
-export async function PUT(
+export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
-) {
+) => {
+  const { code } = await params;
   try {
-    const { code } = await params;
-    
     // Get user ID from request
     const { AuthorizationService } = await import('@/database/services/authorization.service');
     const requesterId = await AuthorizationService.getUserIdFromRequest(request);
@@ -160,15 +160,14 @@ export async function PUT(
     const { status, body } = handleError(error, context);
     return NextResponse.json(body, { status });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withApiTelemetry('/api/tournaments/[code]', async (
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
-) {
+) => {
+  const { code } = await params;
   try {
-    const { code } = await params;
-    
     // Get user ID from request
     const { AuthorizationService } = await import('@/database/services/authorization.service');
     const requesterId = await AuthorizationService.getUserIdFromRequest(request);
@@ -188,8 +187,10 @@ export async function DELETE(
     const context = getRequestLogContext(request, {
       operation: 'api.tournament.delete',
       entityType: 'tournament',
+      tournamentId: code,
+      entityId: code,
     });
     const { status, body } = handleError(error, context);
     return NextResponse.json(body, { status });
   }
-}
+});

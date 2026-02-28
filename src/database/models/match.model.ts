@@ -30,6 +30,7 @@ const matchPlayerSchema = new mongoose.Schema({
   legsWon: { type: Number, default: 0 },
   legsLost: { type: Number, default: 0 },
   average: { type: Number, default: 0 },
+  firstNineAvg: { type: Number, default: 0 },
   highestCheckout: { type: Number, default: 0 },
   oneEightiesCount: { type: Number, default: 0 },
 }, { _id: false });

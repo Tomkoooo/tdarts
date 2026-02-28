@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET() {
+export const GET = withApiTelemetry('/api/admin/charts/users', async (_request: NextRequest) => {
+  void _request;
   try {
     await connectMongo();
     
@@ -46,4 +48,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

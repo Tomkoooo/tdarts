@@ -981,11 +981,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   return (
     <div id="registration" className="space-y-4">
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'registered' | 'waiting')} className="space-y-4">
-        <TabsList className="w-full">
-          <TabsTrigger value="registered" className="flex-1">
+        <TabsList className="flex w-full min-w-max gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <TabsTrigger value="registered" className="shrink-0 min-w-[170px]">
             Játékosok ({localPlayers.length})
           </TabsTrigger>
-          <TabsTrigger value="waiting" className="flex-1">
+          <TabsTrigger value="waiting" className="shrink-0 min-w-[170px]">
             Várólista ({waitingList.length})
           </TabsTrigger>
         </TabsList>

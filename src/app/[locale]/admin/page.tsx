@@ -71,6 +71,19 @@ interface ActivityItem {
   highlight?: boolean
 }
 
+interface TopApiRoute {
+  routeKey: string
+  method: string
+  count: number
+  errorCount: number
+  errorRate: number
+  avgDurationMs: number
+  maxDurationMs: number
+  totalTrafficKb: number
+}
+
+type TelemetryRange = "24h" | "7d" | "30d" | "90d" | "custom"
+
 // --- Mock Data Helpers (Replace with real API later) ---
 
 export default function AdminDashboardPage() {
@@ -82,6 +95,14 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [userChartData, setUserChartData] = useState<ChartData | null>(null)
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null)
+  const [apiRequestsChartData, setApiRequestsChartData] = useState<ChartData | null>(null)
+  const [apiLatencyChartData, setApiLatencyChartData] = useState<ChartData | null>(null)
+  const [apiPayloadChartData, setApiPayloadChartData] = useState<ChartData | null>(null)
+  const [topApiRoutes, setTopApiRoutes] = useState<TopApiRoute[]>([])
+  const [telemetryRange, setTelemetryRange] = useState<TelemetryRange>("24h")
+  const [customStart, setCustomStart] = useState("")
+  const [customEnd, setCustomEnd] = useState("")
+  const [telemetryTimezone, setTelemetryTimezone] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC")
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [alerts, setAlerts] = useState<{ errors24h: number; pendingFeedback: number } | null>(null)
@@ -89,16 +110,33 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsRefreshing(true)
+      const telemetryParams = new URLSearchParams({
+        range: telemetryRange,
+        tz: telemetryTimezone,
+      })
+      if (telemetryRange === "custom" && customStart && customEnd) {
+        telemetryParams.set("start", new Date(customStart).toISOString())
+        telemetryParams.set("end", new Date(customEnd).toISOString())
+      }
+
       const [
         statsResponse, 
         userChartResponse, 
         tournamentChartResponse,
+        apiRequestsResponse,
+        apiLatencyResponse,
+        apiPayloadResponse,
+        topApiRoutesResponse,
         activitiesResponse,
         alertsResponse
       ] = await Promise.all([
         axios.get("/api/admin/stats"),
         axios.get("/api/admin/charts/users"),
         axios.get("/api/admin/charts/tournaments"),
+        axios.get(`/api/admin/charts/api-traffic/requests?${telemetryParams.toString()}`),
+        axios.get(`/api/admin/charts/api-traffic/latency?${telemetryParams.toString()}`),
+        axios.get(`/api/admin/charts/api-traffic/payload?${telemetryParams.toString()}`),
+        axios.get(`/api/admin/charts/api-traffic/top-routes?${telemetryParams.toString()}&limit=8`),
         axios.get("/api/admin/activities"),
         axios.get("/api/admin/alerts")
       ])
@@ -115,6 +153,10 @@ export default function AdminDashboardPage() {
 
       setUserChartData(extractChartData(userChartResponse))
       setTournamentChartData(extractChartData(tournamentChartResponse))
+      setApiRequestsChartData(extractChartData(apiRequestsResponse))
+      setApiLatencyChartData(extractChartData(apiLatencyResponse))
+      setApiPayloadChartData(extractChartData(apiPayloadResponse))
+      setTopApiRoutes(topApiRoutesResponse.data?.data || [])
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error)
@@ -126,8 +168,9 @@ export default function AdminDashboardPage() {
   }
 
   useEffect(() => {
+    if (telemetryRange === "custom") return
     fetchDashboardData()
-  }, [])
+  }, [telemetryRange, telemetryTimezone])
 
   if (loading) {
     return (
@@ -249,11 +292,17 @@ export default function AdminDashboardPage() {
   )
 
   const SimpleChart = ({ title, data, color }: any) => {
-    // Transform chart data logic
-    const chartData = data && data.datasets ? data.labels.map((label: any, index: any) => ({
-      name: label,
-      value: data.datasets[0].data[index]
-    })) : []
+    const chartData = data && data.datasets
+      ? data.labels.map((label: any, index: any) => {
+          const point: Record<string, any> = { name: label }
+          data.datasets.forEach((dataset: any, datasetIndex: number) => {
+            point[`d${datasetIndex}`] = dataset.data[index] ?? 0
+          })
+          return point
+        })
+      : []
+
+    const safeGradientId = title.replace(/[^a-zA-Z0-9_-]/g, "_")
 
     return (
       <Card className="backdrop-blur-sm bg-card/50">
@@ -265,7 +314,7 @@ export default function AdminDashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={`gradient-${safeGradientId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
                     <stop offset="95%" stopColor={color} stopOpacity={0}/>
                   </linearGradient>
@@ -277,14 +326,19 @@ export default function AdminDashboardPage() {
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
                   itemStyle={{ color: color }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke={color} 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill={`url(#gradient-${title})`} 
-                />
+                {data?.datasets?.map((dataset: any, datasetIndex: number) => (
+                  <Area
+                    key={`${title}-${dataset.label}-${datasetIndex}`}
+                    type="monotone"
+                    dataKey={`d${datasetIndex}`}
+                    stroke={dataset.borderColor || color}
+                    strokeWidth={datasetIndex === 0 ? 2 : 1.5}
+                    strokeDasharray={datasetIndex === 0 ? undefined : "5 5"}
+                    fillOpacity={datasetIndex === 0 ? 1 : 0}
+                    fill={datasetIndex === 0 ? `url(#gradient-${safeGradientId})` : "transparent"}
+                    name={dataset.label}
+                  />
+                ))}
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -293,7 +347,46 @@ export default function AdminDashboardPage() {
     )
   }
 
+  const ApiTopRoutesCard = () => (
+    <Card className="backdrop-blur-sm bg-card/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">Top API route-ok ({telemetryRange === "custom" ? "egyedi intervallum" : telemetryRange})</CardTitle>
+        <CardDescription>Leggyakoribb és legnehezebb útvonalak</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {topApiRoutes.length > 0 ? (
+            topApiRoutes.map((row, idx) => (
+              <div key={`${row.method}-${row.routeKey}-${idx}`} className="rounded-lg border border-border/50 p-3 bg-muted/20">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <code className="text-xs">{row.method} {row.routeKey}</code>
+                  <Badge variant={row.errorRate > 0 ? "destructive" : "secondary"}>{row.errorRate}% err</Badge>
+                </div>
+                <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
+                  <span>{row.count} hívás</span>
+                  <span>avg {row.avgDurationMs}ms</span>
+                  <span>max {row.maxDurationMs}ms</span>
+                  <span>{row.totalTrafficKb} KB</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">Nincs még API telemetry adat.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   // --- Sub-components (Chart wrappers) ---
+
+  const telemetryRangeOptions: Array<{ value: TelemetryRange; label: string }> = [
+    { value: "24h", label: "Utolsó 24 óra" },
+    { value: "7d", label: "Utolsó 7 nap" },
+    { value: "30d", label: "Utolsó 30 nap" },
+    { value: "90d", label: "Utolsó 90 nap" },
+    { value: "custom", label: "Egyedi intervallum" },
+  ]
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
@@ -400,6 +493,65 @@ export default function AdminDashboardPage() {
             <SimpleChart title={t("charts.users")} data={userChartData} color="#3b82f6" />
             <SimpleChart title={t("charts.tournaments")} data={tournamentChartData} color="#f59e0b" />
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <SimpleChart title="API hívások" data={apiRequestsChartData} color="#6366f1" />
+            <SimpleChart title="API átlag késleltetés (ms)" data={apiLatencyChartData} color="#f97316" />
+            <SimpleChart title="API payload (KB)" data={apiPayloadChartData} color="#10b981" />
+          </div>
+
+          <Card className="backdrop-blur-sm bg-card/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">API telemetry szűrők</CardTitle>
+              <CardDescription>Időtartomány + időzóna beállítások, valamint egyedi intervallum elemzés</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <select
+                value={telemetryRange}
+                onChange={(e) => setTelemetryRange(e.target.value as TelemetryRange)}
+                className="border border-border bg-background rounded px-3 py-2 text-sm"
+              >
+                {telemetryRangeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <select
+                value={telemetryTimezone}
+                onChange={(e) => setTelemetryTimezone(e.target.value)}
+                className="border border-border bg-background rounded px-3 py-2 text-sm"
+              >
+                <option value="UTC">UTC</option>
+                <option value="Europe/Budapest">Europe/Budapest</option>
+                <option value="Europe/Berlin">Europe/Berlin</option>
+                <option value="America/New_York">America/New_York</option>
+              </select>
+              <input
+                type="datetime-local"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                disabled={telemetryRange !== "custom"}
+                className="border border-border bg-background rounded px-3 py-2 text-sm disabled:opacity-50"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="datetime-local"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  disabled={telemetryRange !== "custom"}
+                  className="border border-border bg-background rounded px-3 py-2 text-sm disabled:opacity-50 flex-1"
+                />
+                <Button
+                  type="button"
+                  disabled={telemetryRange !== "custom" || !customStart || !customEnd || isRefreshing}
+                  onClick={() => fetchDashboardData()}
+                >
+                  Alkalmaz
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <ApiTopRoutesCard />
           
           <Card className="backdrop-blur-sm bg-card/50">
             <CardHeader className="pb-3">

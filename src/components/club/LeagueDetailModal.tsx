@@ -1099,6 +1099,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
       isActive: league.isActive ?? true,
     });
   }, [league]);
+  const isPlacementMode = formData.pointsConfig?.useFixedRanks !== false;
 
   const handleUndoAdjustment = async (playerId: string, adjustmentIndex: number) => {
     if (!confirm('Biztosan visszavonod ezt a pontszám módosítást?')) return;
@@ -1441,43 +1442,112 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                 : formData.pointSystemType === 'ontour'
                   ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont'
                   : formData.pointSystemType === 'platform'
-                    ? 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'
+                    ? 'Helyezés alapú pontozás: add meg, melyik helyezés hány pontot ér, a csoportkiesők külön fix pontot kapnak.'
                     : getPointSystemDefinition(formData.pointSystemType).description}
             </p>
           </div>
 
           {formData.pointSystemType === 'platform' && (
             <div className="space-y-3">
+              <div className="rounded-md border border-muted bg-muted/30 p-3 text-sm">
+                <label className="flex items-center gap-2 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={!isPlacementMode}
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        pointsConfig: {
+                          ...formData.pointsConfig,
+                          useFixedRanks: !event.target.checked,
+                        },
+                      })
+                    }
+                    className="h-4 w-4 rounded accent-primary"
+                  />
+                  Legacy geometrikus mód (átmeneti kompatibilitás)
+                </label>
+              </div>
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <IconInfoCircle className="h-4 w-4" /> {t("pontszámítás_beállítások")}</div>
               <div className="grid gap-4 md:grid-cols-2">
-                {[
-                  { key: 'groupDropoutPoints', label: t("csoportkor_kieses_pontjai_1yik") },
-                  { key: 'knockoutBasePoints', label: t("egyenes_kieses_alappont_kkrk") },
-                  { key: 'knockoutMultiplier', label: t("szorzo_tenyezo_fyk4"), step: 0.1 },
-                  { key: 'winnerBonus', label: t("gyoztes_bonusz_pzwy") },
-                  { key: 'maxKnockoutRounds', label: t("max_kiesos_korok_j57q") },
-                ].map((config) => (
-                  <div key={config.key} className="space-y-2">
-                    <Label>{config.label}</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={config.step ?? 1}
-                      value={(formData.pointsConfig as any)[config.key] ?? ''}
-                      onChange={(event) => {
-                        const val = event.target.value;
-                        setFormData({
-                          ...formData,
-                          pointsConfig: {
-                            ...formData.pointsConfig,
-                            [config.key]: val === '' ? '' : (config.step ? parseFloat(val) : parseInt(val, 10)),
-                          },
-                        });
-                      }}
-                    />
-                  </div>
-                ))}
+                {isPlacementMode ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label>{t("csoportkor_kieses_pontjai_1yik")}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={(formData.pointsConfig as any).groupDropoutPoints ?? 0}
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          setFormData({
+                            ...formData,
+                            pointsConfig: {
+                              ...formData.pointsConfig,
+                              groupDropoutPoints: val === '' ? 0 : parseInt(val, 10),
+                            },
+                          });
+                        }}
+                      />
+                    </div>
+
+                    {[1, 2, 3, 4, 8, 16, 32].map((placement) => (
+                      <div key={placement} className="space-y-2">
+                        <Label>{placement}. helyezés pontja</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={((formData.pointsConfig?.fixedRankPoints as any)?.[placement] ?? 0) as number}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            setFormData({
+                              ...formData,
+                              pointsConfig: {
+                                ...formData.pointsConfig,
+                                useFixedRanks: true,
+                                fixedRankPoints: {
+                                  ...(formData.pointsConfig?.fixedRankPoints || {}),
+                                  [placement]: val === '' ? 0 : parseInt(val, 10),
+                                }
+                              },
+                            });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {[
+                      { key: 'groupDropoutPoints', label: t("csoportkor_kieses_pontjai_1yik") },
+                      { key: 'knockoutBasePoints', label: t("egyenes_kieses_alappont_kkrk") },
+                      { key: 'knockoutMultiplier', label: t("szorzo_tenyezo_fyk4"), step: 0.1 },
+                      { key: 'winnerBonus', label: t("gyoztes_bonusz_pzwy") },
+                      { key: 'maxKnockoutRounds', label: t("max_kiesos_korok_j57q") },
+                    ].map((config) => (
+                      <div key={config.key} className="space-y-2">
+                        <Label>{config.label}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={config.step ?? 1}
+                          value={(formData.pointsConfig as any)[config.key] ?? 0}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            setFormData({
+                              ...formData,
+                              pointsConfig: {
+                                ...formData.pointsConfig,
+                                [config.key]: val === '' ? 0 : (config.step ? parseFloat(val) : parseInt(val, 10)),
+                              },
+                            });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -1485,7 +1555,10 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
           {formData.pointSystemType === 'platform' && (
             <Alert className="border-primary/30 bg-primary/5">
               <AlertDescription>
-                {t("tippek_tartsd_alacsonyan")}</AlertDescription>
+                {isPlacementMode
+                  ? 'Ha nincs bronzmeccs, a két elődöntő-vesztes 4. helyezés pontot kap. A csoportkiesők mindig a fix kieső pontot kapják.'
+                  : 'Legacy geometrikus mód aktív. A helyezéses mód ajánlott új ligákhoz.'}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -1537,14 +1610,26 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
           </div>
           {league.pointSystemType === 'platform' && (
             <div className="grid gap-3 md:grid-cols-2">
-              <InfoRow label={t("csoportkör_kiesés_pontjai")} value={league.pointsConfig.groupDropoutPoints} />
-              <InfoRow label={t("egyenes_kiesés_alappont")} value={league.pointsConfig.knockoutBasePoints} />
-              <InfoRow
-                label={t("szorzó_tényező")}
-                value={(league.pointsConfig.knockoutMultiplier || 0).toFixed(2)}
-              />
-              <InfoRow label={t("győztes_bónusz")} value={league.pointsConfig.winnerBonus} />
-              <InfoRow label={t("max_kiesős_körök")} value={league.pointsConfig.maxKnockoutRounds} />
+              {league.pointsConfig.useFixedRanks !== false ? (
+                <>
+                  <InfoRow label={t("csoportkör_kiesés_pontjai")} value={league.pointsConfig.groupDropoutPoints} />
+                  <InfoRow label="1. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[1] || 0} />
+                  <InfoRow label="2. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[2] || 0} />
+                  <InfoRow label="3. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[3] || 0} />
+                  <InfoRow label="4. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[4] || 0} />
+                  <InfoRow label="8. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[8] || 0} />
+                  <InfoRow label="16. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[16] || 0} />
+                  <InfoRow label="32. hely" value={(league.pointsConfig.fixedRankPoints as any)?.[32] || 0} />
+                </>
+              ) : (
+                <>
+                  <InfoRow label={t("csoportkör_kiesés_pontjai")} value={league.pointsConfig.groupDropoutPoints} />
+                  <InfoRow label={t("egyenes_kiesés_alappont")} value={league.pointsConfig.knockoutBasePoints} />
+                  <InfoRow label={t("szorzó_tényező")} value={(league.pointsConfig.knockoutMultiplier || 0).toFixed(2)} />
+                  <InfoRow label={t("győztes_bónusz")} value={league.pointsConfig.winnerBonus} />
+                  <InfoRow label={t("max_kiesős_körök")} value={league.pointsConfig.maxKnockoutRounds} />
+                </>
+              )}
             </div>
           )}
         </div>

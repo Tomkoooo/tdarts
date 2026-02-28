@@ -170,6 +170,14 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
     return calculatedDarts > 0 ? Math.round(((totalScore / calculatedDarts) * 3) * 100) / 100 : 0
   }
 
+  const calculateFirstNineAverage = (throws: Throw[]) => {
+    if (throws.length === 0) return 0
+    const firstNine = throws.slice(0, 3)
+    const score = firstNine.reduce((sum, t) => sum + t.score, 0)
+    const darts = firstNine.reduce((sum, t) => sum + (t.darts || 3), 0)
+    return darts > 0 ? Math.round(((score / darts) * 3) * 100) / 100 : 0
+  }
+
   // Calculate throw-by-throw 3-dart averages within each leg
   const calculateThrowByThrowAverages = (throws: Throw[]) => {
     const averages: number[] = []
@@ -351,11 +359,13 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
   const latestPlayer2Average = player2Cumulative[player2Cumulative.length - 1] ?? 0
   const bestLegPlayer1 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
   const bestLegPlayer2 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
+  const player1FirstNineAvg = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player1Throws), 0) / legs.length) * 100) / 100 : 0
+  const player2FirstNineAvg = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player2Throws), 0) / legs.length) * 100) / 100 : 0
 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "overview" | "legs")} className="flex flex-col h-full">
-        <TabsList className="mb-4 flex-shrink-0">
+        <TabsList className="mb-4 shrink-0">
           <TabsTrigger value="overview" className="gap-2">
             <IconChartLine className="h-4 w-4" />
             {t("tabs.overview")}
@@ -370,7 +380,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
           <div className="space-y-4 pb-4">
           {/* Statistics summary */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-0">
+            <Card className="bg-linear-to-br from-primary/10 to-primary/5 border-0">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg text-primary truncate" title={player1Name}>
@@ -380,7 +390,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="bg-card rounded-lg p-3 text-center">
                     <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.final_avg")}</div>
                     <div className="text-2xl font-bold text-primary">
@@ -393,11 +403,17 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                       {bestLegPlayer1.toFixed(1)}
                     </div>
                   </div>
+                  <div className="bg-card rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">First 9 Avg</div>
+                    <div className="text-2xl font-bold text-primary">
+                      {player1FirstNineAvg.toFixed(1)}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-destructive/10 to-destructive/5 border-0">
+            <Card className="bg-linear-to-br from-destructive/10 to-destructive/5 border-0">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg text-destructive truncate" title={player2Name}>
@@ -407,7 +423,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="bg-card rounded-lg p-3 text-center">
                     <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.final_avg")}</div>
                     <div className="text-2xl font-bold text-destructive">
@@ -418,6 +434,12 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                     <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.max_leg_avg")}</div>
                     <div className="text-2xl font-bold text-info">
                       {bestLegPlayer2.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="bg-card rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">First 9 Avg</div>
+                    <div className="text-2xl font-bold text-destructive">
+                      {player2FirstNineAvg.toFixed(1)}
                     </div>
                   </div>
                 </div>
@@ -488,7 +510,7 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
                         <span className="text-base font-bold text-primary">{legIndex + 1}</span>
                       </div>
 
