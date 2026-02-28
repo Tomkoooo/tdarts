@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { AuthService } from '@/database/services/auth.service';
+import { getRequestLogContext, handleError } from '@/middleware/errorHandle';
 
 // POST /api/tournaments/[code]/notifications - Subscribe to tournament notifications
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const { code } = await params;
   try {
-    const { code } = await params;
-
     const token = request.cookies.get('token')?.value;
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,12 +29,15 @@ export async function POST(
     await TournamentService.subscribeToNotifications(code, userId, userEmail);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Subscribe to notifications error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to subscribe to notifications' },
-      { status: error.statusCode || 500 }
-    );
+  } catch (error) {
+    const context = getRequestLogContext(request, {
+      tournamentId: code,
+      operation: 'api.tournament.notifications.subscribe',
+      entityType: 'tournament',
+      entityId: code,
+    });
+    const { status, body } = handleError(error, context);
+    return NextResponse.json({ success: false, ...body }, { status });
   }
 }
 
@@ -43,9 +46,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const { code } = await params;
   try {
-    const { code } = await params;
-
     const token = request.cookies.get('token')?.value;
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,12 +59,15 @@ export async function DELETE(
     await TournamentService.unsubscribeFromNotifications(code, userId);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Unsubscribe from notifications error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to unsubscribe from notifications' },
-      { status: error.statusCode || 500 }
-    );
+  } catch (error) {
+    const context = getRequestLogContext(request, {
+      tournamentId: code,
+      operation: 'api.tournament.notifications.unsubscribe',
+      entityType: 'tournament',
+      entityId: code,
+    });
+    const { status, body } = handleError(error, context);
+    return NextResponse.json({ success: false, ...body }, { status });
   }
 }
 

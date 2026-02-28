@@ -4,6 +4,14 @@ export interface ILog extends Document {
   level: 'error' | 'warn' | 'info' | 'debug';
   category: 'auth' | 'club' | 'tournament' | 'player' | 'user' | 'api' | 'system' | 'database';
   message: string;
+  errorType?: string;
+  errorCode?: string;
+  expected?: boolean;
+  operation?: string;
+  entityType?: string;
+  entityId?: string;
+  requestId?: string;
+  httpStatus?: number;
   error?: string;
   stack?: string;
   userId?: string;
@@ -37,6 +45,31 @@ const LogSchema = new Schema<ILog>({
   message: {
     type: String,
     required: true
+  },
+  errorType: {
+    type: String
+  },
+  errorCode: {
+    type: String
+  },
+  expected: {
+    type: Boolean,
+    default: false
+  },
+  operation: {
+    type: String
+  },
+  entityType: {
+    type: String
+  },
+  entityId: {
+    type: String
+  },
+  requestId: {
+    type: String
+  },
+  httpStatus: {
+    type: Number
   },
   error: {
     type: String
@@ -95,5 +128,10 @@ LogSchema.index({ level: 1 });
 LogSchema.index({ category: 1 });
 LogSchema.index({ userId: 1 });
 LogSchema.index({ clubId: 1 });
+LogSchema.index({ expected: 1 });
+LogSchema.index({ errorCode: 1 });
+LogSchema.index({ operation: 1 });
+LogSchema.index({ entityType: 1, entityId: 1 });
+LogSchema.index({ requestId: 1 });
 
 export const LogModel = mongoose.models.Log || mongoose.model<ILog>('Log', LogSchema);

@@ -131,4 +131,7 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
     },
 }, { collection: 'tournaments' });
 
+// Improves subscription checks and idempotent update query performance.
+tournamentSchema.index({ tournamentId: 1, 'notificationSubscribers.userRef': 1 });
+
 export const TournamentModel = mongoose.models.Tournament || mongoose.model<TournamentDocument>('Tournament', tournamentSchema);

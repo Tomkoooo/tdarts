@@ -1,18 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { SubscriptionService } from "@/database/services/subscription.service";
-import { BadRequestError } from "@/middleware/errorHandle";
+import { getRequestLogContext, handleError } from "@/middleware/errorHandle";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params;
-  const tournament: any = await TournamentService.getTournament(code) // Populate players for frontend display
-  if (!tournament) {
-    return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+  try {
+    const tournament: any = await TournamentService.getTournament(code) // Populate players for frontend display
+    if (!tournament) {
+      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+    }
+    return NextResponse.json(tournament);
+  } catch (error) {
+    const context = getRequestLogContext(request, {
+      tournamentId: code,
+      operation: 'api.tournament.get',
+      entityType: 'tournament',
+      entityId: code,
+    });
+    const { status, body } = handleError(error, context);
+    return NextResponse.json(body, { status });
   }
-  return NextResponse.json(tournament);
 }
 
 export async function PUT(
@@ -140,11 +151,14 @@ export async function PUT(
     });
     return NextResponse.json(updatedTournament);
   } catch (error) {
-    if (error instanceof BadRequestError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error updating tournament:', error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const context = getRequestLogContext(request, {
+      tournamentId: code,
+      operation: 'api.tournament.put',
+      entityType: 'tournament',
+      entityId: code,
+    });
+    const { status, body } = handleError(error, context);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -171,10 +185,11 @@ export async function DELETE(
     
     return NextResponse.json({ success: true, message: "Tournament deleted successfully" });
   } catch (error) {
-    if (error instanceof BadRequestError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error deleting tournament:', error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const context = getRequestLogContext(request, {
+      operation: 'api.tournament.delete',
+      entityType: 'tournament',
+    });
+    const { status, body } = handleError(error, context);
+    return NextResponse.json(body, { status });
   }
 }

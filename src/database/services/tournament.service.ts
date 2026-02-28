@@ -16,6 +16,7 @@ import { TournamentGroupService } from './tournament-group.service';
 import { TournamentStatsService } from './tournament-stats.service';
 import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
+import { ErrorService } from './error.service';
 
 export class TournamentService {
     // Initialize indexes when the service is first used
@@ -41,7 +42,17 @@ export class TournamentService {
             this.indexesInitialized = true;
             console.log('✅ Tournament indexes initialized');
         } catch (error) {
-            console.error('❌ Failed to initialize tournament indexes:', error);
+            await ErrorService.logError(
+                'Failed to initialize tournament indexes',
+                error as Error,
+                'database',
+                {
+                    errorCode: 'TOURNAMENT_INDEX_INIT_FAILED',
+                    expected: false,
+                    operation: 'tournament.ensureIndexes',
+                    entityType: 'tournament',
+                }
+            );
         }
     }
     
@@ -250,7 +261,14 @@ export class TournamentService {
                 ]
             });
             if (!tournament) {
-                throw new BadRequestError('Tournament not found - TournamentService');
+                throw new BadRequestError('Tournament not found', 'tournament', {
+                    tournamentId,
+                    errorCode: 'TOURNAMENT_NOT_FOUND',
+                    expected: true,
+                    operation: 'tournament.getTournament',
+                    entityType: 'tournament',
+                    entityId: tournamentId,
+                });
             }
         }
         // Deep populate matches' player fields
@@ -273,7 +291,21 @@ export class TournamentService {
                 tournament.tournamentSettings.locationData = geocodeResult.location as any;
                 await tournament.save();
             } catch (error) {
-                console.error('Tournament lazy geocode failed:', error);
+                await ErrorService.logWarning(
+                    'Tournament lazy geocode failed',
+                    'tournament',
+                    {
+                        tournamentId: tournament.tournamentId,
+                        errorCode: 'TOURNAMENT_LAZY_GEOCODE_FAILED',
+                        expected: true,
+                        operation: 'tournament.getTournament',
+                        entityType: 'tournament',
+                        entityId: tournament.tournamentId,
+                        metadata: {
+                            reason: error instanceof Error ? error.message : String(error),
+                        },
+                    }
+                );
             }
         }
         return tournament;
@@ -312,24 +344,52 @@ export class TournamentService {
     }
 
     static async validateTournamentByPassword(tournamentId: string, password: string): Promise<boolean> {
-        try {
-            await connectMongo();
-            const tournament = await TournamentModel.findOne({ 
-                tournamentId: tournamentId,
-                isDeleted: { $ne: true },
-                isArchived: { $ne: true }
-            });
-            if (!tournament) {
-                throw new BadRequestError('Tournament not found');
-            }
-            if (tournament.tournamentSettings.tournamentPassword !== password) {
-                throw new BadRequestError('Invalid password');
-            }
-            return true;
-        } catch (err) {
-            console.error('validateTournamentByPassword error:', err);
+        await connectMongo();
+        const tournament = await TournamentModel.findOne({
+            tournamentId: tournamentId,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true }
+        });
+
+        if (!tournament) {
+            await ErrorService.logError(
+                'Tournament not found',
+                undefined,
+                'tournament',
+                {
+                    tournamentId,
+                    operation: 'tournament.validatePassword',
+                    errorCode: 'TOURNAMENT_NOT_FOUND',
+                    errorType: 'expected_user_error',
+                    expected: true,
+                    entityType: 'tournament',
+                    entityId: tournamentId,
+                    httpStatus: 404,
+                }
+            );
             return false;
         }
+
+        if (tournament.tournamentSettings.tournamentPassword !== password) {
+            await ErrorService.logError(
+                'Invalid tournament password',
+                undefined,
+                'auth',
+                {
+                    tournamentId,
+                    operation: 'tournament.validatePassword',
+                    errorCode: 'TOURNAMENT_INVALID_PASSWORD',
+                    errorType: 'expected_user_error',
+                    expected: true,
+                    entityType: 'tournament',
+                    entityId: tournamentId,
+                    httpStatus: 401,
+                }
+            );
+            return false;
+        }
+
+        return true;
     }
 
     static async getBoards(tournamentId: string): Promise<any> {
@@ -5142,7 +5202,21 @@ export class TournamentService {
         if (freeSpots <= 10) {
             // We call it even if spots decreased, as per user request "no matter the change"
             this.notifySubscribersAboutAvailableSpots(tournamentCode, freeSpots)
-                .catch(err => console.error('Failed to notify subscribers:', err));
+                .catch((err) =>
+                    ErrorService.logError(
+                        'Failed to notify subscribers',
+                        err as Error,
+                        'tournament',
+                        {
+                            tournamentId: tournamentCode,
+                            errorCode: 'TOURNAMENT_NOTIFY_SUBSCRIBERS_FAILED',
+                            expected: false,
+                            operation: 'tournament.notifySubscribersAboutAvailableSpots',
+                            entityType: 'tournament',
+                            entityId: tournamentCode,
+                        }
+                    ).catch(console.error)
+                );
         }
     }
 
@@ -5157,34 +5231,61 @@ export class TournamentService {
         email: string
     ): Promise<void> {
         await connectMongo();
-        
-        const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
-        if (!tournament) {
-            throw new BadRequestError('Tournament not found');
-        }
 
-        // Initialize notificationSubscribers if it doesn't exist
-        if (!tournament.notificationSubscribers) {
-            tournament.notificationSubscribers = [];
-        }
-
-        // Check if already subscribed
-        const existingSubscriber = tournament.notificationSubscribers.find(
-            (s: any) => s.userRef.toString() === userId
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const addResult = await TournamentModel.updateOne(
+            {
+                tournamentId: tournamentCode,
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                'notificationSubscribers.userRef': { $ne: userObjectId },
+            },
+            {
+                $push: {
+                    notificationSubscribers: {
+                        userRef: userObjectId,
+                        email,
+                        subscribedAt: new Date(),
+                    },
+                },
+            }
         );
 
-        if (existingSubscriber) {
-            throw new BadRequestError('Already subscribed to notifications');
+        if (addResult.modifiedCount > 0) {
+            return;
         }
 
-        // Add subscriber
-        tournament.notificationSubscribers.push({
-            userRef: userId as any,
-            email,
-            subscribedAt: new Date()
-        } as any);
+        const tournament = await TournamentModel.findOne({
+            tournamentId: tournamentCode,
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+        }).select('_id notificationSubscribers.userRef');
 
-        await tournament.save();
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId: tournamentCode,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.subscribeToNotifications',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
+        }
+
+        const alreadySubscribed = (tournament.notificationSubscribers || []).some(
+            (s: any) => s.userRef?.toString() === userId
+        );
+        if (alreadySubscribed) {
+            throw new BadRequestError('Already subscribed to notifications', 'tournament', {
+                tournamentId: tournamentCode,
+                userId,
+                errorCode: 'TOURNAMENT_ALREADY_SUBSCRIBED',
+                expected: true,
+                operation: 'tournament.subscribeToNotifications',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
+        }
     }
 
     /**
@@ -5198,11 +5299,27 @@ export class TournamentService {
         
         const tournament = await TournamentModel.findOne({ tournamentId: tournamentCode });
         if (!tournament) {
-            throw new BadRequestError('Tournament not found');
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId: tournamentCode,
+                userId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.unsubscribeFromNotifications',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
         }
 
         if (!tournament.notificationSubscribers || tournament.notificationSubscribers.length === 0) {
-            throw new BadRequestError('No subscribers found');
+            throw new BadRequestError('No subscribers found', 'tournament', {
+                tournamentId: tournamentCode,
+                userId,
+                errorCode: 'TOURNAMENT_NO_SUBSCRIBERS',
+                expected: true,
+                operation: 'tournament.unsubscribeFromNotifications',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
         }
 
         // Find subscriber
@@ -5211,7 +5328,15 @@ export class TournamentService {
         );
 
         if (subscriberIndex === -1) {
-            throw new BadRequestError('Not subscribed to notifications');
+            throw new BadRequestError('Not subscribed to notifications', 'tournament', {
+                tournamentId: tournamentCode,
+                userId,
+                errorCode: 'TOURNAMENT_NOT_SUBSCRIBED',
+                expected: true,
+                operation: 'tournament.unsubscribeFromNotifications',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
         }
 
         // Remove subscriber

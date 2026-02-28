@@ -43,7 +43,10 @@ export class AuthService {
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
       throw new BadRequestError('Invalid email or password', 'auth', {
-        email
+        email,
+        errorCode: 'AUTH_INVALID_CREDENTIALS',
+        expected: true,
+        operation: 'auth.login',
       });
     }
     await user.updateLastLogin();
@@ -56,7 +59,10 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
-        email
+        email,
+        errorCode: 'AUTH_USER_NOT_FOUND',
+        expected: true,
+        operation: 'auth.verifyEmail',
       });
     }
     await user.verifyEmail(code);
@@ -88,14 +94,20 @@ export class AuthService {
       const user = await UserModel.findById(decoded.id);
       if (!user) {
         throw new BadRequestError('User not found', 'auth', {
-          userId: decoded.id
+          userId: decoded.id,
+          errorCode: 'AUTH_USER_NOT_FOUND',
+          expected: true,
+          operation: 'auth.verifyToken',
         });
       }
       await user.updateLastLogin();
       return user;
-    } catch (error) {
-      throw new BadRequestError('Invalid token', 'auth');
-      console.error('Verify token error:', error);
+    } catch {
+      throw new BadRequestError('Invalid token', 'auth', {
+        errorCode: 'AUTH_INVALID_TOKEN',
+        expected: true,
+        operation: 'auth.verifyToken',
+      });
     }
   }
 
@@ -104,7 +116,10 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
-        email
+        email,
+        errorCode: 'AUTH_USER_NOT_FOUND',
+        expected: true,
+        operation: 'auth.forgotPassword',
       });
     }
     const resetCode = await user.generateResetPasswordCode();
@@ -122,12 +137,18 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
-        email
+        email,
+        errorCode: 'AUTH_USER_NOT_FOUND',
+        expected: true,
+        operation: 'auth.resetPassword',
       });
     }
     if (user.codes.reset_password !== code) {
       throw new BadRequestError('Invalid reset code', 'auth', {
-        email
+        email,
+        errorCode: 'AUTH_INVALID_RESET_CODE',
+        expected: true,
+        operation: 'auth.resetPassword',
       });
     }
     await user.resetPassword(newPassword, code);

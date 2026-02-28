@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils"
 // Use common Pagination if exists, otherwise assume implementation or import
 import Pagination from "@/components/common/Pagination"
+import { getPointSystemDefinition } from "@/lib/leaguePointSystems"
 
 interface League {
   _id: string;
@@ -235,7 +236,7 @@ export default function AdminLeaguesPage() {
                         "font-normal",
                         league.pointSystemType === 'remiz_christmas' ? "border-warning/50 text-warning bg-warning/5" : "text-muted-foreground"
                       )}>
-                        {league.pointSystemType === 'remiz_christmas' ? 'Remiz Karácsony' : league.pointSystemType === 'ontour' ? 'DartsBarlang onTour' : 'Platform'}
+                        {getPointSystemDefinition(league.pointSystemType).label}
                       </Badge>
                     </TableCell>
                     <TableCell>

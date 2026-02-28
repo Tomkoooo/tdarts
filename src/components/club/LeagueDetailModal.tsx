@@ -21,6 +21,7 @@ import {
   LeagueStatsResponse,
 } from '@/interface/league.interface';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
+import { POINT_SYSTEMS, PointSystemId, getPointSystemDefinition } from '@/lib/leaguePointSystems';
 import {
   Dialog,
   DialogContent,
@@ -760,7 +761,7 @@ interface TournamentsTabProps {
   clubId: string;
   leagueId: string;
   onTournamentAttached: () => void;
-  pointSystemType?: 'platform' | 'remiz_christmas' | 'ontour' | 'gold_fisch';
+  pointSystemType?: PointSystemId;
 }
 
 function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournamentAttached, pointSystemType = 'platform' }: TournamentsTabProps) {
@@ -1001,7 +1002,9 @@ function TournamentsTab({ tournaments, canManage, clubId, leagueId, onTournament
                   <p className="text-xs text-muted-foreground">
                     {pointSystemType === 'remiz_christmas'
                       ? 'Remiz Christmas Series pontszámítás (20 pont részvétel + csoport pontok + helyezési pontok)'
-                      : 'Platform pontszámítás (geometrikus progresszió)'}
+                      : pointSystemType === 'platform'
+                        ? 'Platform pontszámítás (geometrikus progresszió)'
+                        : getPointSystemDefinition(pointSystemType).description}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 shadow-sm shadow-black/5">
@@ -1417,19 +1420,29 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             <select
               id="point-system-type"
               value={formData.pointSystemType || 'platform'}
-              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' | 'ontour' | 'gold_fisch' }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as PointSystemId }))}
               className="w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              <option value="platform">{t("platform_pontszámítás")}</option>
-              <option value="remiz_christmas">{t("remiz_christmas_series")}</option>
-              <option value="ontour">{t("dartsbarlang_ontour_pontszámítás")}</option>
+              {POINT_SYSTEMS.map((system) => (
+                <option key={system.id} value={system.id}>
+                  {system.id === 'platform'
+                    ? t("platform_pontszámítás")
+                    : system.id === 'remiz_christmas'
+                      ? t("remiz_christmas_series")
+                      : system.id === 'ontour'
+                        ? t("dartsbarlang_ontour_pontszámítás")
+                        : system.label}
+                </option>
+              ))}
             </select>
             <p className="text-xs text-muted-foreground">
               {formData.pointSystemType === 'remiz_christmas'
                 ? 'Fix pontrendszer: 20 pont részvétel, csoport pontok a csoport mérete és győzelmek alapján, helyezési pontok a végső helyezés alapján.'
                 : formData.pointSystemType === 'ontour'
                   ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont'
-                  : 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
+                  : formData.pointSystemType === 'platform'
+                    ? 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'
+                    : getPointSystemDefinition(formData.pointSystemType).description}
             </p>
           </div>
 
@@ -1513,7 +1526,9 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
             <p className="text-base text-foreground">
               {league.pointSystemType === 'remiz_christmas'
                 ? 'Remiz Christmas Series pontszámítás'
-                : 'Platform pontszámítás'}
+                : league.pointSystemType === 'platform'
+                  ? 'Platform pontszámítás'
+                  : getPointSystemDefinition(league.pointSystemType).label}
             </p>
             {league.pointSystemType === 'remiz_christmas' && (
               <p className="text-xs text-muted-foreground mt-1">

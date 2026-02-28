@@ -1,5 +1,6 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { UserModel } from '@/database/models/user.model';
 import { ClubModel } from '@/database/models/club.model';
 import { PlayerModel } from '@/database/models/player.model';
@@ -10,29 +11,46 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { MatchService } from '@/database/services/match.service';
 import { LeagueService } from '@/database/services/league.service';
 import { connectMongo } from '@/lib/mongoose';
-import bcrypt from 'bcryptjs';
+import { PointSystemId, POINT_SYSTEM_IDS, normalizePointSystemId } from '@/lib/leaguePointSystems';
 
-// Simple Tournament Configuration - EASILY CONFIGURABLE
-const SIMPLE_CONFIG = {
-  playerCount: 24, // 8 players - MODIFY THIS
-  boardCount: 4, // 2 boards - MODIFY THIS
+const TEST_CONFIG = {
+  playerCount: 16,
+  boardCount: 4,
   legsToWin: 2,
-  delayBetweenRequests: 100,
-  delayBetweenSteps: 500,
 };
 
-// Helper functions
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Test data storage
 let testUser: any;
 let testClub: any;
 
-// Setup helper - creates user, club, and player for tests
+type PlayerId = string;
+
+function parsePointSystemsFromEnv(): PointSystemId[] {
+  const raw = process.env.LIFECYCLE_POINT_SYSTEMS;
+  if (!raw || raw.trim() === '' || raw.toLowerCase() === 'none') {
+    return [];
+  }
+
+  if (raw.toLowerCase() === 'all') {
+    return [...POINT_SYSTEM_IDS];
+  }
+
+  return raw
+    .split(',')
+    .map((value) => normalizePointSystemId(value.trim()))
+    .filter((value, index, self) => self.indexOf(value) === index);
+}
+
+const calculateKnockoutPlayersCount = (totalPlayers: number): number => {
+  let playersCount = 1;
+  while (playersCount * 2 <= totalPlayers) {
+    playersCount *= 2;
+  }
+  return Math.max(4, Math.min(playersCount, totalPlayers));
+};
+
 const setupTestData = async () => {
   await connectMongo();
-  
-  // Create test user
+
   const hashedPassword = await bcrypt.hash('testuser123', 10);
   testUser = await UserModel.create({
     email: 'lifecycle-test@test.com',
@@ -43,7 +61,6 @@ const setupTestData = async () => {
     isAdmin: false
   });
 
-  // Create test club
   testClub = await ClubModel.create({
     name: 'Test Club for Lifecycle',
     description: 'Automated test club',
@@ -60,151 +77,169 @@ const setupTestData = async () => {
     userRef: testUser._id,
     isRegistered: true
   });
-
-  console.log('✅ Test data setup complete');
-  return true;
 };
 
-// Generate realistic throw scores for leg simulation
-const generateThrows = () => {
-  const throwScores = [];
-  const throwCount = Math.floor(Math.random() * 15) + 9; // 9-24 throws
-  
-  for (let i = 0; i < throwCount; i++) {
-    throwScores.push(Math.floor(Math.random() * 60) + 1);
-  }
-  
-  return throwScores;
-};
-
-const calculateKnockoutPlayersCount = (totalPlayers: number): number => {
-  // Calculate the nearest power of 2
-  let playersCount = 1;
-  while (playersCount * 2 <= totalPlayers) {
-    playersCount *= 2;
-  }
-  
-  // Ensure we have at least 4 players for knockout
-  if (playersCount < 4) {
-    playersCount = 4;
-  }
-  
-  // Ensure we don't exceed total players
-  if (playersCount > totalPlayers) {
-    playersCount = Math.floor(totalPlayers / 2) * 2; // Round down to even number
-    if (playersCount < 4) playersCount = 4;
-  }
-  
-  return playersCount;
-};
-
-const logStep = async (step: string, message: string) => {
-  console.log(`\n${step} ${message}`);
-  await sleep(100); // Small delay to ensure console output is processed
-};
-
-const logSuccess = async (message: string) => {
-  console.log(`✅ ${message}`);
-  await sleep(100);
-};
-
-const logError = async (message: string, error?: any) => {
-  console.error(`❌ ${message}`, error?.response?.data || error?.message || error);
-  await sleep(100);
-};
-
-// Point calculation helpers for league testing
-interface TournamentResults {
-  players: Array<{
-    playerId: string;
-    playerName: string;
-    groupStanding: number;
-    knockoutRound: number; // 0 = didn't qualify, 1+ = round number
-    finalPlacement: number;
-    isWinner: boolean;
-  }>;
+async function playMatchFast(tournamentCode: string, matchId: string, winner: 1 | 2): Promise<void> {
+  await MatchService.startMatch(tournamentCode, matchId, TEST_CONFIG.legsToWin, 1);
+  await MatchService.finishMatch(matchId, {
+    player1LegsWon: winner === 1 ? TEST_CONFIG.legsToWin : 0,
+    player2LegsWon: winner === 2 ? TEST_CONFIG.legsToWin : 0,
+    allowManualFinish: true
+  });
 }
 
-function collectTournamentResults(tournament: any): TournamentResults {
-  const players: TournamentResults['players'] = [];
-  
-  for (const tp of tournament.tournamentPlayers) {
-    const playerId = tp.playerReference._id?.toString() || tp.playerReference.toString();
-    const playerName = tp.playerReference.name || 'Unknown';
-    
-    players.push({
-      playerId,
-      playerName,
-      groupStanding: tp.groupStanding || 0,
-      knockoutRound: tp.knockoutRound || 0,
-      finalPlacement: tp.finalPlacement || 99,
-      isWinner: tp.finalPlacement === 1
-    });
+function calculatePlatformPoints(position: number, eliminatedIn: string, totalPlayers: number, config: any): number {
+  if (config.useFixedRanks && config.fixedRankPoints) {
+    return config.fixedRankPoints[position] || 0;
   }
-  
-  return { players };
+
+  if (eliminatedIn === 'group' || eliminatedIn.includes('group')) {
+    return config.groupDropoutPoints;
+  }
+
+  if (position === 1) {
+    const highestGeometric = config.knockoutBasePoints * Math.pow(config.knockoutMultiplier, config.maxKnockoutRounds - 1);
+    return Math.round(highestGeometric + config.winnerBonus);
+  }
+
+  let knockoutRound = 1;
+  if (position === 2) knockoutRound = config.maxKnockoutRounds;
+  else knockoutRound = Math.max(1, config.maxKnockoutRounds - Math.floor(Math.log2(position - 1)));
+
+  const points = config.knockoutBasePoints * Math.pow(config.knockoutMultiplier, Math.max(1, knockoutRound) - 1);
+  return Math.round(points);
 }
 
-function calculateExpectedPlatformPoints(results: TournamentResults): Map<string, number> {
-  const pointsMap = new Map<string, number>();
-  
-  const pointsTable: { [key: number]: number } = {
-    1: 100,
-    2: 70,
-    3: 50,
-    4: 50,
-    5: 30,
-    6: 30,
-    7: 30,
-    8: 30
-  };
-  
-  for (const player of results.players) {
-    const points = pointsTable[player.finalPlacement] || 5;
-    pointsMap.set(player.playerId, points);
+function calculateOntourPoints(position: number): number {
+  switch (position) {
+    case 1: return 45;
+    case 2: return 32;
+    case 3: return 24;
+    case 4: return 20;
+    case 8: return 16;
+    case 16: return 10;
+    case 32: return 4;
+    case 48: return 2;
+    default: return 0;
   }
-  
-  return pointsMap;
 }
 
-function calculateExpectedRemizPoints(results: TournamentResults): Map<string, number> {
-  const pointsMap = new Map<string, number>();
-  
-  for (const player of results.players) {
-    let points = 0;
-    
-    // Group points (1st: 10, 2nd: 8, 3rd: 6, 4th: 4, 5th: 2)
-    const groupPoints = [10, 8, 6, 4, 2];
-    if (player.groupStanding > 0 && player.groupStanding <= 5) {
-      points += groupPoints[player.groupStanding - 1];
+function calculateGoldfischPoints(position: number, totalPlayers: number): number {
+  if (totalPlayers < 8) {
+    switch (position) {
+      case 1: return 10;
+      case 2: return 8;
+      case 3: return 6;
+      case 4: return 5;
+      case 5: return 4;
+      case 6: return 3;
+      case 7: return 2;
+      default: return 0;
     }
-    
-    // Knockout points
-    if (player.knockoutRound === 1) points += 5;  // Quarter-finals
-    else if (player.knockoutRound === 2) points += 10; // Semi-finals
-    else if (player.knockoutRound === 3) points += 15; // Finals
-    
-    // Winner bonus
-    if (player.isWinner) points += 50;
-    
-    pointsMap.set(player.playerId, points);
   }
-  
-  return pointsMap;
+
+  switch (position) {
+    case 1: return 15;
+    case 2: return 12;
+    case 4: return 10;
+    case 8: return 8;
+    case 16: return 6;
+    case 32: return 4;
+    case 64: return 2;
+    case 128: return 1;
+    default: return 0;
+  }
 }
 
+function getRemizGroupPoints(groupSize: number, wins: number): number {
+  const pointsMap: Record<number, Record<number, number>> = {
+    3: { 0: 0, 1: 30, 2: 60 },
+    4: { 0: 0, 1: 20, 2: 40, 3: 60 },
+    5: { 0: 0, 1: 15, 2: 30, 3: 45, 4: 60 },
+    6: { 0: 0, 1: 12, 2: 24, 3: 36, 4: 48, 5: 60 },
+  };
 
-// Simple Tournament Lifecycle Test
+  const groupMap = pointsMap[groupSize];
+  if (!groupMap) return 0;
+  if (groupMap[wins] !== undefined) return groupMap[wins];
+  const maxWins = Math.max(...Object.keys(groupMap).map(Number));
+  if (wins > maxWins) return groupMap[maxWins];
+  return 0;
+}
+
+function getRemizPlacementPoints(position: number): number {
+  if (position === 1) return 100;
+  if (position === 2) return 60;
+  if (position === 4) return 40;
+  if (position === 8) return 30;
+  if (position === 16) return 20;
+  if (position === 32) return 10;
+  return 0;
+}
+
+async function calculateExpectedPoints(system: PointSystemId, tournament: any, leagueConfig: any): Promise<Map<PlayerId, number>> {
+  const checkedInPlayers = tournament.tournamentPlayers.filter(
+    (player: any) => player.status === 'checked-in' || player.status === 'eliminated' || player.status === 'winner'
+  );
+  const totalPlayers = checkedInPlayers.length;
+  const points = new Map<PlayerId, number>();
+
+  const groupMatchesByGroup = new Map<string, any[]>();
+  if (system === 'remiz_christmas') {
+    for (const group of tournament.groups || []) {
+      const groupId = group._id.toString();
+      const matches = await MatchModel.find({
+        _id: { $in: group.matches || [] },
+        type: 'group'
+      });
+      groupMatchesByGroup.set(groupId, matches);
+    }
+  }
+
+  for (const tp of checkedInPlayers) {
+    const playerId = tp.playerReference?._id?.toString() || tp.playerReference.toString();
+    const position = tp.tournamentStanding || tp.finalPosition || 999;
+    const eliminatedIn = tp.eliminatedIn || 'unknown';
+
+    let playerPoints = 0;
+    switch (system) {
+      case 'remiz_christmas': {
+        playerPoints = 20;
+        const groupId = tp.groupId?.toString();
+        if (groupId) {
+          const groupPlayers = checkedInPlayers.filter((p: any) => p.groupId?.toString() === groupId);
+          const groupMatches = groupMatchesByGroup.get(groupId) || [];
+          const wins = groupMatches.filter((m: any) => m.winnerId?.toString() === playerId).length;
+          playerPoints += getRemizGroupPoints(groupPlayers.length, wins);
+        }
+        playerPoints += getRemizPlacementPoints(position);
+        break;
+      }
+      case 'ontour':
+        playerPoints = calculateOntourPoints(position);
+        break;
+      case 'goldfisch':
+        playerPoints = calculateGoldfischPoints(position, totalPlayers);
+        break;
+      default:
+        playerPoints = calculatePlatformPoints(position, eliminatedIn, totalPlayers, leagueConfig);
+        break;
+    }
+
+    points.set(playerId, playerPoints);
+  }
+
+  return points;
+}
+
 describe('Simple Tournament Lifecycle Test', () => {
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
-    // Disconnect any existing connection first
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
-    
-    // Start in-memory MongoDB
+
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
     await mongoose.connect(mongoUri);
@@ -214,523 +249,178 @@ describe('Simple Tournament Lifecycle Test', () => {
     await mongoose.disconnect();
     await mongoServer.stop();
   });
-  test('Complete Simple Tournament Lifecycle', async () => {
-    jest.setTimeout(300000); // 5 minutes
-    
-    await logStep('🚀', `Starting simple tournament lifecycle test with ${SIMPLE_CONFIG.playerCount} players on ${SIMPLE_CONFIG.boardCount} boards...`);
 
-    // Step 0: Setup test data
-    await logStep('🔐', 'Step 0: Setting up test data...');
-    const setupSuccess = await setupTestData();
-    if (!setupSuccess) {
-      throw new Error('Test data setup failed - cannot proceed with test');
-    }
+  test('Complete lifecycle and optional point-system matrix', async () => {
+    jest.setTimeout(300000);
+    await setupTestData();
 
-    // Step 1: Create Tournament using service
-    await logStep('📝', 'Step 1: Creating tournament with boards...');
-    
-    // Create boards directly for the tournament
-    const tournamentBoards = Array.from({ length: SIMPLE_CONFIG.boardCount }, (_, i) => ({
-      boardNumber: i + 1,
-      name: `Tábla ${i + 1}`,
+    const tournamentBoards = Array.from({ length: TEST_CONFIG.boardCount }, (_, index) => ({
+      boardNumber: index + 1,
+      name: `Tabla ${index + 1}`,
       isActive: true,
       status: 'idle' as const
     }));
-    
-    let tournament: any;
-    let tournamentId: string;
-    try {
-      tournament = await TournamentService.createTournament({
-        clubId: testClub._id,
-        tournamentPlayers: [],
-        groups: [],
-        knockout: [],
-        boards: tournamentBoards,
-        tournamentSettings: {
-          status: 'pending',
-          name: `Simple Test Tournament - ${Date.now()}`,
-          description: `Automated simple test tournament with ${SIMPLE_CONFIG.playerCount} players`,
-          startDate: new Date(),
-          maxPlayers: SIMPLE_CONFIG.playerCount,
-          format: 'group_knockout',
-          startingScore: 501,
-          boardCount: SIMPLE_CONFIG.boardCount,
-          entryFee: 1000,
-          tournamentPassword: 'test123',
-          location: 'Test Location',
-          type: 'amateur',
-          registrationDeadline: new Date(Date.now() + 60 * 60 * 1000)
-        },
-        isSandbox: true,
-        verified: false,
-        isActive: true
-      });
-      
-      tournamentId = tournament._id.toString();
-      await logSuccess(`Tournament created: ${tournament.tournamentId}`);
-    } catch (error) {
-      await logError('Failed to create tournament', error);
-      throw error;
+
+    const tournament = await TournamentService.createTournament({
+      clubId: testClub._id,
+      tournamentPlayers: [],
+      groups: [],
+      knockout: [],
+      boards: tournamentBoards,
+      tournamentSettings: {
+        status: 'pending',
+        name: `Simple Lifecycle Tournament - ${Date.now()}`,
+        description: `Automated lifecycle test with ${TEST_CONFIG.playerCount} players`,
+        startDate: new Date(),
+        maxPlayers: TEST_CONFIG.playerCount,
+        format: 'group_knockout',
+        startingScore: 501,
+        boardCount: TEST_CONFIG.boardCount,
+        entryFee: 1000,
+        tournamentPassword: 'test123',
+        location: 'Test Location',
+        type: 'amateur',
+        registrationDeadline: new Date(Date.now() + 60 * 60 * 1000)
+      },
+      isSandbox: false,
+      verified: false,
+      isActive: true
+    });
+
+    const tournamentCode = tournament.tournamentId;
+    const tournamentId = tournament._id.toString();
+
+    const createdPlayers = await Promise.all(
+      Array.from({ length: TEST_CONFIG.playerCount }, (_, index) =>
+        PlayerModel.create({ name: `Lifecycle Player ${index + 1}`, isRegistered: false })
+      )
+    );
+
+    for (const player of createdPlayers) {
+      await TournamentService.addTournamentPlayer(tournamentCode, player._id.toString());
+      await TournamentService.updateTournamentPlayerStatus(tournamentCode, player._id.toString(), 'checked-in');
     }
 
-    // Step 2: Add Players using service
-    await logStep('👥', `Step 2: Adding ${SIMPLE_CONFIG.playerCount} players...`);
-    
-    const testPlayers = Array.from({ length: SIMPLE_CONFIG.playerCount }, (_, i) => ({
-      name: `Simple Player ${i + 1}`,
-    }));
-    
-    try {
-      for (const playerData of testPlayers) {
-        // Create player
-        const player = await PlayerModel.create({
-          name: playerData.name,
-          isRegistered: false // Guest player
-        });
-        
-        // Add player to tournament
-        await TournamentService.addTournamentPlayer(
-          tournament.tournamentId,
-          player._id.toString()
-        );
-      }
-      
-      await logSuccess(`Added ${testPlayers.length} players`);
-    } catch (error) {
-      await logError('Failed to add players', error);
-      throw error;
+    await TournamentService.generateGroups(tournamentCode, testUser._id.toString());
+
+    let currentTournament = await TournamentModel.findById(tournamentId);
+    expect(currentTournament?.groups?.length).toBeGreaterThan(0);
+
+    const groupMatchIds = (currentTournament?.groups || []).flatMap((group: any) =>
+      (group.matches || []).map((matchId: any) => matchId.toString())
+    );
+
+    for (let index = 0; index < groupMatchIds.length; index++) {
+      const matchId = groupMatchIds[index];
+      await playMatchFast(tournamentCode, matchId, index % 2 === 0 ? 1 : 2);
     }
 
-    // Step 3: Check-in Players using service
-    await logStep('✅', 'Step 3: Checking-in all players...');
-    
-    try {
-      tournament = await TournamentModel.findById(tournamentId);
-      const players = tournament.tournamentPlayers || [];
+    await TournamentService.updateGroupStanding(tournamentCode);
 
-      for (const player of players) {
-        const playerId = player.playerReference._id || player.playerReference;
-        await TournamentService.updateTournamentPlayerStatus(
-          tournament.tournamentId,
-          playerId.toString(),
-          'checked-in'
-        );
-      }
+    currentTournament = await TournamentModel.findById(tournamentId);
+    const checkedInCount = (currentTournament?.tournamentPlayers || []).filter((p: any) => p.status === 'checked-in').length;
+    const knockoutPlayers = calculateKnockoutPlayersCount(checkedInCount);
 
-      await logSuccess(`Checked-in ${players.length} players`);
-    } catch (error) {
-      await logError('Failed to check-in players', error);
-      throw error;
-    }
+    await TournamentService.generateKnockout(tournamentCode, testUser._id.toString(), {
+      playersCount: knockoutPlayers
+    });
 
-    // Step 4: Generate Groups using service
-    await logStep('🏆', 'Step 4: Generating groups...');
-    
-    try {
-      await TournamentService.generateGroups(tournament.tournamentId, testUser._id.toString());
-      await logSuccess('Groups generated');
-    } catch (error) {
-      await logError('Failed to generate groups', error);
-      throw error;
-    }
+    while (true) {
+      const knockoutTournament = await TournamentModel.findById(tournamentId);
+      const playableByRound = new Map<number, string[]>();
 
-    // Step 5: Play Group Matches using MatchService
-    await logStep('🎯', 'Step 5: Playing group matches...');
-    
-    try {
-      // Reload tournament with populated groups
-      tournament = await TournamentModel.findById(tournamentId).populate('groups.matches');
-      expect(tournament.groups).toBeDefined();
-      expect(tournament.groups.length).toBeGreaterThan(0);
+      for (const round of knockoutTournament?.knockout || []) {
+        for (const knockoutMatch of round.matches || []) {
+          const matchId = knockoutMatch.matchReference?.toString();
+          if (!matchId) continue;
 
-      // Collect all group matches
-      const allGroupMatches: any[] = [];
-      for (const group of tournament.groups) {
-        if (group.matches && group.matches.length > 0) {
-          allGroupMatches.push(...group.matches);
+          const matchDoc = await MatchModel.findById(matchId);
+          if (!matchDoc) continue;
+          if (matchDoc.status === 'finished') continue;
+          if (!matchDoc.player1?.playerId || !matchDoc.player2?.playerId) continue;
+
+          const roundMatches = playableByRound.get(round.round) || [];
+          roundMatches.push(matchId);
+          playableByRound.set(round.round, roundMatches);
         }
       }
 
-      await logSuccess(`Found ${allGroupMatches.length} group matches`);
+      if (playableByRound.size === 0) break;
 
-      // Play each match using service
-      for (const match of allGroupMatches) {
-        const matchId = match._id.toString();
-        const matchDoc = await MatchModel.findById(matchId).populate('player1.playerId player2.playerId');
-        
-        if (!matchDoc) continue;
-        
-        const player1Name = matchDoc.player1?.playerId?.name || 'Unknown';
-        const player2Name = matchDoc.player2?.playerId?.name || 'Unknown';
-        await logStep('🎮', `Playing match: ${player1Name} vs ${player2Name}`);
-        
-        try {
-          // Start match
-          await MatchService.startMatch(
-            tournament.tournamentId,
-            matchId.toString(),
-            SIMPLE_CONFIG.legsToWin,
-            1 // startingPlayer
-          );
-
-          // Play legs until match is won
-          let currentMatch = await MatchModel.findById(matchId);
-          let legNumber = 1;
-          
-          while (
-            currentMatch && 
-            currentMatch.player1LegsWon < SIMPLE_CONFIG.legsToWin &&
-            currentMatch.player2LegsWon < SIMPLE_CONFIG.legsToWin
-          ) {
-            // Randomly determine leg winner
-            const winner = Math.random() > 0.5 ? 1 : 2;
-            
-            // Finish the leg
-            await MatchService.finishLeg(matchId, {
-              winner,
-              player1Throws: generateThrows(),
-              player2Throws: generateThrows(),
-              winnerArrowCount: Math.floor(Math.random() * 15) + 9,
-              legNumber
-            });
-            
-            // Reload match to check scores
-            currentMatch = await MatchModel.findById(matchId);
-            legNumber++;
-          }
-
-          // Finish the match with legs won
-          await MatchService.finishMatch(matchId, {
-            player1LegsWon: currentMatch.player1LegsWon,
-            player2LegsWon: currentMatch.player2LegsWon
-          });
-
-          await sleep(SIMPLE_CONFIG.delayBetweenRequests);
-        } catch (error) {
-          await logError(`Failed to play match ${matchId}`, error);
-        }
+      const nextRound = Math.min(...Array.from(playableByRound.keys()));
+      const matchesInRound = playableByRound.get(nextRound) || [];
+      for (let index = 0; index < matchesInRound.length; index++) {
+        await playMatchFast(tournamentCode, matchesInRound[index], index % 2 === 0 ? 1 : 2);
       }
-
-      await logSuccess('All group matches completed');
-    } catch (error) {
-      await logError('Failed to process group matches', error);
-      throw error;
     }
 
-    // NEW: Update group standings before generating knockout
-    await logStep('📊', 'Updating group standings...');
-    await TournamentService.updateGroupStanding(tournament.tournamentId);
-    await logSuccess('Group standings updated successfully');
+    await TournamentService.finishTournament(tournamentCode, testUser._id.toString());
 
-    // Step 6: Generate Knockout using service
-    await logStep('🥊', 'Step 6: Generating knockout stage...');
-    
-    try {
-      tournament = await TournamentModel.findById(tournamentId);
-      const totalPlayers = tournament.tournamentPlayers.filter((p: any) => p.status === 'checked-in').length;
-      const playersCount = calculateKnockoutPlayersCount(totalPlayers);
-      
-      await logSuccess(`Calculated playersCount: ${playersCount} (from ${totalPlayers} total players)`);
-      
-      await TournamentService.generateKnockout(
-        tournament.tournamentId,
-        testUser._id.toString(),
-        {
-          playersCount: playersCount
-        }
-      );
-      
-      await logSuccess('Knockout stage generated');
-      
-      // Validate knockout bracket structure
-      await logStep('🔍', 'Validating knockout bracket structure...');
-      tournament = await TournamentModel.findById(tournamentId);
-      
-      const groupCount = tournament.groups?.length || 0;
-      if (groupCount > 0) {
-        await logSuccess(`Found ${groupCount} groups - knockout bracket validated`);
-      }
-      
-      if (tournament.knockout && tournament.knockout.length > 0) {
-        const firstRound = tournament.knockout.find((r: any) => r.round === 1);
-        if (firstRound && firstRound.matches) {
-          await logSuccess(`Found ${firstRound.matches.length} matches in first round`);
-        }
-      }
-    } catch (error) {
-      await logError('Failed to generate knockout', error);
-      throw error;
-    }
+    const finishedTournament = await TournamentModel.findById(tournamentId);
+    expect(finishedTournament?.tournamentSettings?.status).toBe('finished');
+    expect(finishedTournament?.tournamentPlayers?.length).toBe(TEST_CONFIG.playerCount);
 
-    // Step 7: Play Knockout Matches using modern automatic bracket
-    await logStep('🎯', 'Step 7: Playing knockout matches...');
-    
-    try {
-      // Modern knockout system: bracket is fully generated upfront
-      // Just play through all matches in all rounds
-      tournament = await TournamentModel.findById(tournamentId);
-      
-      if (!tournament.knockout || tournament.knockout.length === 0) {
-        await logSuccess('No knockout stage (groups-only tournament)');
-      } else {
-        // Play all knockout rounds
-        for (const roundData of tournament.knockout) {
-          await logStep('🎯', `Playing knockout round ${roundData.round}...`);
-          
-          const matches = roundData.matches || [];
-          await logSuccess(`Found ${matches.length} matches in round ${roundData.round}`);
-          
-          // Play each match in this round
-          for (let matchIndex = 0; matchIndex < matches.length; matchIndex++) {
-            const knockoutMatch = matches[matchIndex];
-            const matchId = knockoutMatch.matchReference;
-            
-            // Use direct MatchModel to stay synced with DB
-            const matchDoc = await MatchModel.findById(matchId);
-            if (!matchDoc) continue;
-            
-            // Skip finished matches or byes
-            if (matchDoc.status === 'finished' || !matchDoc.player1?.playerId || !matchDoc.player2?.playerId) {
-              await logSuccess(`Skipping completed or bye match ${matchId}`);
-              continue;
-            }
+    const pointSystemsToTest = parsePointSystemsFromEnv();
+    for (let index = 0; index < pointSystemsToTest.length; index++) {
+      const pointSystemType = pointSystemsToTest[index];
 
-            const player1Name = matchDoc.player1?.playerId?.name || 'Unknown';
-            const player2Name = matchDoc.player2?.playerId?.name || 'Unknown';
-            await logStep('🎮', `Playing round ${roundData.round}: ${player1Name} vs ${player2Name}`);
-            
-            try {
-              // Start match
-              await MatchService.startMatch(
-                tournament.tournamentId,
-                matchId.toString(),
-                SIMPLE_CONFIG.legsToWin,
-                1
-              );
-
-              // Play legs until match is won
-              let currentMatch = await MatchModel.findById(matchId);
-              let legNumber = 1;
-              
-              while (
-                currentMatch && 
-                currentMatch.player1LegsWon < SIMPLE_CONFIG.legsToWin &&
-                currentMatch.player2LegsWon < SIMPLE_CONFIG.legsToWin
-              ) {
-                const winner = Math.random() > 0.5 ? 1 : 2;
-                
-                await MatchService.finishLeg(matchId.toString(), {
-                  winner,
-                  player1Throws: generateThrows(),
-                  player2Throws: generateThrows(),
-                  winnerArrowCount: Math.floor(Math.random() * 15) + 9,
-                  legNumber
-                });
-                
-                currentMatch = await MatchModel.findById(matchId);
-                legNumber++;
-              }
-
-              // Finish the match
-              await MatchService.finishMatch(matchId.toString(), {
-                player1LegsWon: currentMatch.player1LegsWon,
-                player2LegsWon: currentMatch.player2LegsWon
-              });
-
-              await sleep(SIMPLE_CONFIG.delayBetweenRequests);
-            } catch (error) {
-              await logError(`Failed to play knockout match ${matchId}`, error);
-            }
-          }
-          
-          await logSuccess(`Completed knockout round ${roundData.round}`);
-        }
-        
-        await logSuccess('All knockout matches completed');
-      }
-    } catch (error) {
-      await logError('Failed to process knockout matches', error);
-      throw error;
-    }
-
-    // Step 8: Finish Tournament using service
-    await logStep('🏁', 'Step 8: Finishing tournament...');
-    
-    try {
-      await TournamentService.finishTournament(
-        tournament.tournamentId,
-        testUser._id.toString()
-      );
-      await logSuccess('Tournament finished');
-    } catch (error) {
-      await logError('Failed to finish tournament', error);
-      throw error;
-    }
-
-    // Step 9: Verify Final Tournament State
-    await logStep('📊', 'Step 9: Verifying final tournament state...');
-    
-    try {
-      const finalTournament = await TournamentModel.findById(tournamentId);
-      expect(finalTournament.tournamentSettings.status).toBe('finished');
-      expect(finalTournament.tournamentPlayers.length).toBe(SIMPLE_CONFIG.playerCount);
-
-      await logSuccess('Simple tournament lifecycle test completed successfully!');
-      console.log(`\n📈 Final tournament status: ${finalTournament.tournamentSettings.status}`);
-      console.log(`👥 Total players: ${finalTournament.tournamentPlayers.length}`);
-      console.log(`🎯 Tournament ID: ${tournamentId}`);
-      console.log(`🎯 Group matches played: ${finalTournament.groups?.reduce((acc: number, group: any) => acc + (group.matches?.length || 0), 0) || 0}`);
-      console.log(`🥊 Knockout matches played: ${finalTournament.knockout?.reduce((acc: number, round: any) => acc + (round.matches?.length || 0), 0) || 0}`);
-    } catch (error) {
-      await logError('Failed to verify final tournament state', error);
-      throw error;
-    }
-
-    // Step 10: Test Platform League Points
-    await logStep('🏆', 'Step 10: Testing platform league points...');
-    
-    let platformLeagueId: string;
-    try {
-      // Reload tournament and collect results for backtracking
-      const tournamentForPlatform = await TournamentModel.findById(tournamentId);
-      const tournamentResults = collectTournamentResults(tournamentForPlatform);
-      
-      // Create platform league
-      const platformLeague = await LeagueService.createLeague(
+      const league = await LeagueService.createLeague(
         testClub._id.toString(),
         testUser._id.toString(),
         {
-          name: `Test Platform League - ${Date.now()}`,
-          description: 'Testing platform point system',
-          pointSystemType: 'platform'
+          name: `Lifecycle ${pointSystemType} League ${Date.now()}-${index}`,
+          description: `Lifecycle test league for ${pointSystemType}`,
+          pointSystemType
         }
       );
-      platformLeagueId = platformLeague._id.toString();
-      
-      await logSuccess(`Platform league created: ${platformLeague.name}`);
-      
-      // Attach tournament to league and trigger point calculation
-      await TournamentModel.findByIdAndUpdate(tournamentId, {
-        league: platformLeague._id
-      });
-      
-      // Reopen and reclose to trigger point calculation
-      await TournamentService.reopenTournament(tournament.tournamentId, testUser._id.toString());
-      await TournamentService.finishTournament(tournament.tournamentId, testUser._id.toString());
-      
-      await logSuccess('Tournament reopened and reclosed - platform points calculated');
-      
-      // Verify points
-      const updatedPlatformLeague = await LeagueModel.findById(platformLeagueId);
-      const actualPlatformStandings = updatedPlatformLeague.players.map((p: any) => ({
-        playerId: p.player.toString(),
-        points: p.points
-      }));
-      
-      const expectedPlatformPoints = calculateExpectedPlatformPoints(tournamentResults);
-      
-      // Compare expected vs actual
-      let platformPointsMatch = true;
-      for (const standing of actualPlatformStandings) {
-        const expected = expectedPlatformPoints.get(standing.playerId);
-        if (expected !== undefined && standing.points !== expected) {
-          console.warn(`❌ Platform points mismatch for player ${standing.playerId}: expected ${expected}, got ${standing.points}`);
-          platformPointsMatch = false;
-        }
-      }
-      
-      if (platformPointsMatch) {
-        await logSuccess(`✅ Platform points verified (${actualPlatformStandings.length} players)`);
-      } else {
-        throw new Error('Platform points verification failed');
-      }
-    } catch (error) {
-      await logError('Failed to test platform league points', error);
-      throw error;
-    }
 
-    // Step 11: Test Remiz League Points
-    await logStep('🎄', 'Step 11: Testing remiz christmas league points...');
-    
-    try {
-      // Reload tournament results
-      const tournamentForRemiz = await TournamentModel.findById(tournamentId);
-      const tournamentResults = collectTournamentResults(tournamentForRemiz);
-      
-      // Create remiz league
-      const remizLeague = await LeagueService.createLeague(
-        testClub._id.toString(),
+      await LeagueService.attachTournamentToLeague(
+        league._id.toString(),
+        tournamentId,
         testUser._id.toString(),
-        {
-          name: `Test Remiz League - ${Date.now()}`,
-          description: 'Testing remiz christmas point system',
-          pointSystemType: 'remiz_christmas'
-        }
+        false
       );
-      
-      await logSuccess(`Remiz league created: ${remizLeague.name}`);
-      
-      // Switch tournament to remiz league
-      await TournamentModel.findByIdAndUpdate(tournamentId, {
-        league: remizLeague._id
-      });
-      
-      // Reopen and reclose to recalculate with remiz points
-      await TournamentService.reopenTournament(tournament.tournamentId, testUser._id.toString());
-      await TournamentService.finishTournament(tournament.tournamentId, testUser._id.toString());
-      
-      await logSuccess('Tournament reopened and reclosed - remiz points calculated');
-      
-      // Verify remiz points
-      const updatedRemizLeague = await LeagueModel.findById(remizLeague._id);
-      const actualRemizStandings = updatedRemizLeague.players.map((p: any) => ({
-        playerId: p.player.toString(),
-        points: p.points
-      }));
-      
-      const expectedRemizPoints = calculateExpectedRemizPoints(tournamentResults);
-      
-      // Compare expected vs actual
-      let remizPointsMatch = true;
-      for (const standing of actualRemizStandings) {
-        const expected = expectedRemizPoints.get(standing.playerId);
-        if (expected !== undefined && standing.points !== expected) {
-          console.warn(`❌ Remiz points mismatch for player ${standing.playerId}: expected ${expected}, got ${standing.points}`);
-          remizPointsMatch = false;
-        }
+
+      await TournamentService.reopenTournament(tournamentCode, testUser._id.toString());
+      await TournamentService.finishTournament(tournamentCode, testUser._id.toString());
+
+      const recalculatedTournament = await TournamentModel.findById(tournamentId);
+      const refreshedLeague = await LeagueModel.findById(league._id);
+      const expected = await calculateExpectedPoints(
+        pointSystemType,
+        recalculatedTournament,
+        refreshedLeague?.pointsConfig
+      );
+
+      const actual = new Map<string, number>();
+      const leaguePlayers = refreshedLeague?.players || [];
+      for (const playerEntry of leaguePlayers) {
+        const playerId = playerEntry.player.toString();
+        const tournamentPointsEntry = (playerEntry.tournamentPoints || []).find(
+          (entry: any) => entry.tournament.toString() === tournamentId
+        );
+        actual.set(playerId, tournamentPointsEntry?.points || 0);
       }
-      
-      if (remizPointsMatch) {
-        await logSuccess(`✅ Remiz points verified (${actualRemizStandings.length} players)`);
-      } else {
-        throw new Error('Remiz points verification failed');
+
+      for (const [playerId, expectedPoints] of expected.entries()) {
+        expect(actual.get(playerId)).toBe(expectedPoints);
       }
-    } catch (error) {
-      await logError('Failed to test remiz league points', error);
-      throw error;
+
+      if (index < pointSystemsToTest.length - 1) {
+        await LeagueService.detachTournamentFromLeague(
+          league._id.toString(),
+          tournamentId,
+          testUser._id.toString()
+        );
+      }
     }
-
-    await logSuccess('✅ Complete tournament lifecycle with both league point systems verified successfully!');
-
-  }, 300000); // 5 minute timeout
+  }, 300000);
 });
 
-
-
-// Configuration test
 describe('Test Configuration', () => {
-  test('Configuration is valid', async () => {
-    expect(SIMPLE_CONFIG.playerCount).toBeGreaterThan(0);
-    expect(SIMPLE_CONFIG.boardCount).toBeGreaterThan(0);
-    expect(SIMPLE_CONFIG.legsToWin).toBeGreaterThan(0);
-    expect(SIMPLE_CONFIG.delayBetweenRequests).toBeGreaterThan(0);
-    expect(SIMPLE_CONFIG.delayBetweenSteps).toBeGreaterThan(0);
-    
-    console.log(`\n📋 Simple Test Configuration:`);
-    console.log(`👥 Player Count: ${SIMPLE_CONFIG.playerCount}`);
-    console.log(`🎯 Board Count: ${SIMPLE_CONFIG.boardCount}`);
-    console.log(`🎮 Legs to Win: ${SIMPLE_CONFIG.legsToWin}`);
-    console.log(`⏱️  Request Delay: ${SIMPLE_CONFIG.delayBetweenRequests}ms`);
-    console.log(`⏱️  Step Delay: ${SIMPLE_CONFIG.delayBetweenSteps}ms`);
+  test('Configuration is valid', () => {
+    expect(TEST_CONFIG.playerCount).toBeGreaterThan(0);
+    expect(TEST_CONFIG.boardCount).toBeGreaterThan(0);
+    expect(TEST_CONFIG.legsToWin).toBeGreaterThan(0);
   });
 });

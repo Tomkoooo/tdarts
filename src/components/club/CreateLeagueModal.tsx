@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { CreateLeagueRequest, DEFAULT_LEAGUE_POINTS_CONFIG } from '@/interface/league.interface';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
+import { POINT_SYSTEMS, getPointSystemDefinition, PointSystemId } from '@/lib/leaguePointSystems';
 import {
   Dialog,
   DialogContent,
@@ -164,19 +165,29 @@ export default function CreateLeagueModal({
             <select
               id="point-system-type"
               value={formData.pointSystemType || 'platform'}
-              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as 'platform' | 'remiz_christmas' | 'ontour'}))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, pointSystemType: e.target.value as PointSystemId }))}
               className="w-full rounded-md bg-background px-3 py-2 text-sm outline-none shadow-sm shadow-black/10 focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              <option value="platform">{t("platform_pontszámítás")}</option>
-              <option value="remiz_christmas">{t("remiz_christmas_series")}</option>
-              <option value="ontour">{t("dartsbarlang_ontour_pontszámítás")}</option>
+              {POINT_SYSTEMS.map((system) => (
+                <option key={system.id} value={system.id}>
+                  {system.id === 'platform'
+                    ? t("platform_pontszámítás")
+                    : system.id === 'remiz_christmas'
+                      ? t("remiz_christmas_series")
+                      : system.id === 'ontour'
+                        ? t("dartsbarlang_ontour_pontszámítás")
+                        : system.label}
+                </option>
+              ))}
             </select>
             <p className="text-xs text-muted-foreground">
               {formData.pointSystemType === 'remiz_christmas' 
                 ? 'Fix pontrendszer: 20 pont részvétel, csoport pontok a csoport mérete és győzelmek alapján, helyezési pontok a végső helyezés alapján.'
                 : formData.pointSystemType === 'ontour' 
                 ? 'Fix pontrendszer: 1. 45pont 2. 32pont 3. 24pont 4. 20pont 8. 16pont 16. 10pont 32. 4pont 48. 2 pont' 
-                :'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'}
+                : formData.pointSystemType === 'platform'
+                  ? 'Geometrikus progresszió alapú pontszámítás a csoportkör és egyenes kiesés eredményei alapján.'
+                  : getPointSystemDefinition(formData.pointSystemType).description}
             </p>
           </div>
 

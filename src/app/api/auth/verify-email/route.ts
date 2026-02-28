@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
 import { connectMongo } from '@/lib/mongoose';
-import { BadRequestError, handleError } from '@/middleware/errorHandle';
+import { BadRequestError, getRequestLogContext, handleError } from '@/middleware/errorHandle';
 
 // POST /api/auth/verify-email végpont az email verifikációhoz
 export async function POST(request: NextRequest) {
@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    const { status, body } = handleError(error);
+    const context = getRequestLogContext(request, {
+      operation: 'api.auth.verifyEmail',
+      entityType: 'user',
+    });
+    const { status, body } = handleError(error, context);
     return NextResponse.json(body, { status });
   }
 }

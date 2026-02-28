@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { LeagueDocument, DEFAULT_LEAGUE_POINTS_CONFIG } from '@/interface/league.interface';
+import { POINT_SYSTEM_IDS } from '@/lib/leaguePointSystems';
 
 // Points Configuration Schema
 const pointsConfigSchema = new mongoose.Schema({
@@ -56,7 +57,7 @@ const leagueSchema = new mongoose.Schema({
   players: [leaguePlayerSchema],
   removedPlayers: [removedPlayerSchema],
   pointsConfig: { type: pointsConfigSchema, required: true, default: DEFAULT_LEAGUE_POINTS_CONFIG },
-  pointSystemType: { type: String, enum: ['platform', 'remiz_christmas', 'ontour', 'goldfisch'], required: true, default: 'platform' },
+  pointSystemType: { type: String, enum: [...POINT_SYSTEM_IDS, 'gold_fisch'], required: true, default: 'platform' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   isActive: { type: Boolean, default: true },
   verified: { type: Boolean, default: false },

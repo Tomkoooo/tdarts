@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge"
 import { IconShieldCheck } from "@tabler/icons-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { getPointSystemDefinition } from "@/lib/leaguePointSystems"
 
 interface LeagueListProps {
     leagues: any[];
@@ -40,7 +41,7 @@ export function LeagueList({ leagues }: LeagueListProps) {
                                         {league.isActive ? t('status_active') : t('status_closed')}
                                     </Badge>
                                     <Badge variant="outline">
-                                        {league.pointSystemType}
+                                        {getPointSystemDefinition(league.pointSystemType).label}
                                     </Badge>
                                 </div>
                             </div>

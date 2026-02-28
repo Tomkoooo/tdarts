@@ -19,6 +19,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { BadRequestError, AuthorizationError } from '@/middleware/errorHandle';
 import { AuthorizationService } from './authorization.service';
 import { TournamentService } from './tournament.service';
+import { normalizePointSystemId } from '@/lib/leaguePointSystems';
 
 export class LeagueService {
 
@@ -91,7 +92,7 @@ export class LeagueService {
       description: leagueData.description,
       club: clubId,
       pointsConfig,
-      pointSystemType: leagueData.pointSystemType || 'platform',
+      pointSystemType: normalizePointSystemId(leagueData.pointSystemType),
       createdBy: creatorId,
       startDate: leagueData.startDate,
       endDate: leagueData.endDate,
@@ -149,7 +150,9 @@ export class LeagueService {
     if (updates.isActive !== undefined) league.isActive = updates.isActive;
     if (updates.startDate !== undefined) league.startDate = updates.startDate;
     if (updates.endDate !== undefined) league.endDate = updates.endDate;
-    if (updates.pointSystemType !== undefined) league.pointSystemType = updates.pointSystemType;
+    if (updates.pointSystemType !== undefined) {
+      league.pointSystemType = normalizePointSystemId(updates.pointSystemType);
+    }
 
     if (updates.pointsConfig) {
       league.pointsConfig = {
@@ -483,7 +486,9 @@ export class LeagueService {
 
       let points: number;
 
-      switch (league.pointSystemType) {
+      const pointSystemType = normalizePointSystemId(league.pointSystemType);
+
+      switch (pointSystemType) {
         case 'remiz_christmas':
           points = await this.calculateRemizChristmasPoints(
             tournamentPlayer,
@@ -498,7 +503,7 @@ export class LeagueService {
             position,
           );
           break;
-        case 'gold_fisch':
+        case 'goldfisch':
           points = await this.calculateGoldFischPoints(
             tournamentPlayer,
             tournament,
@@ -513,27 +518,6 @@ export class LeagueService {
             league.pointsConfig
           );
           break;
-      }
-
-      if (league.pointSystemType === 'remiz_christmas') {
-        points = await this.calculateRemizChristmasPoints(
-          tournamentPlayer,
-          tournament,
-          position,
-        );
-      } else if (league.pointSystemType === 'ontour') {
-        points = await this.calculateOntourPoints(
-          tournamentPlayer,
-          tournament,
-          position,
-        );
-      } else {
-        points = this.calculatePlayerPointsForTournament(
-          position,
-          eliminatedIn,
-          checkedInPlayers.length,
-          league.pointsConfig
-        );
       }
 
       // National League Constraint: If league is verified and less than 16 players, points are 0

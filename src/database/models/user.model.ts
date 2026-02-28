@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { UserDocument } from '@/interface/user.interface';
+import { ValidationError } from '@/middleware/errorHandle';
 
 const userSchema = new mongoose.Schema<UserDocument>(
   {
@@ -96,29 +97,33 @@ userSchema.methods.generateTwoFactorAuthCode = async function (): Promise<string
 };
 
 userSchema.methods.verifyEmail = async function (code: string): Promise<void> {
-  try {
-    if (this.codes.verify_email !== code) {
-      throw new Error('Invalid verification code');
-    }
-    this.isVerified = true;
-    this.codes.verify_email = null;
-    await this.save();
-  } catch (error: any) {
-    throw new Error(`Email verification failed: ${error.message}`);
+  if (this.codes.verify_email !== code) {
+    throw new ValidationError('Invalid verification code', 'auth', {
+      userId: this._id?.toString(),
+      errorCode: 'AUTH_INVALID_VERIFICATION_CODE',
+      expected: true,
+      operation: 'user.verifyEmail',
+    });
   }
+
+  this.isVerified = true;
+  this.codes.verify_email = null;
+  await this.save();
 };
 
 userSchema.methods.resetPassword = async function (newPassword: string, code: string): Promise<void> {
-  try {
-    if (this.codes.reset_password !== code) {
-      throw new Error('Invalid reset password code');
-    }
-    this.password = newPassword; // Set the new password to trigger pre('save') hashing
-    this.codes.reset_password = null;
-    await this.save();
-  } catch (error: any) {
-    throw new Error(`Password reset failed: ${error.message}`);
+  if (this.codes.reset_password !== code) {
+    throw new ValidationError('Invalid reset password code', 'auth', {
+      userId: this._id?.toString(),
+      errorCode: 'AUTH_INVALID_RESET_CODE',
+      expected: true,
+      operation: 'user.resetPassword',
+    });
   }
+
+  this.password = newPassword; // Set the new password to trigger pre('save') hashing
+  this.codes.reset_password = null;
+  await this.save();
 };
 
 userSchema.methods.verifyTwoFactorAuth = async function (code: string): Promise<boolean> {

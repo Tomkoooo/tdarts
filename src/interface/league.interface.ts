@@ -1,9 +1,10 @@
 import { Document, Types } from 'mongoose';
 import { PlayerDocument } from './player.interface';
 import { TournamentDocument } from './tournament.interface';
+import { PointSystemId } from '@/lib/leaguePointSystems';
 
 // Point System Type
-export type PointSystemType = 'platform' | 'remiz_christmas' | 'ontour' | 'gold_fisch';
+export type PointSystemType = PointSystemId;
 
 // League Points Configuration Interface
 export interface LeaguePointsConfig {

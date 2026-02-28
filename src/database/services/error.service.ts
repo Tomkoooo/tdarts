@@ -2,6 +2,14 @@ import { connectMongo } from '@/lib/mongoose';
 import { LogModel, ILog } from '../models/log.model';
 
 export interface LogContext {
+  errorType?: string;
+  errorCode?: string;
+  expected?: boolean;
+  operation?: string;
+  entityType?: string;
+  entityId?: string;
+  requestId?: string;
+  httpStatus?: number;
   userId?: string;
   userRole?: string;
   clubId?: string;
@@ -18,6 +26,48 @@ export interface LogContext {
 }
 
 export class ErrorService {
+  private static async createLog(
+    level: ILog['level'],
+    message: string,
+    category: ILog['category'],
+    context?: LogContext,
+    error?: Error | string
+  ): Promise<void> {
+    await connectMongo();
+
+    const normalizedContext: LogContext = {
+      ...context,
+    };
+
+    // Expected user flow failures are intentionally kept at error level,
+    // but marked as expected_user_error for easy filtering.
+    if (level === 'error' && normalizedContext.expected === true && !normalizedContext.errorType) {
+      normalizedContext.errorType = 'expected_user_error';
+    }
+
+    const logData: Partial<ILog> = {
+      level,
+      category,
+      message,
+      timestamp: new Date(),
+      ...normalizedContext,
+    };
+
+    if (error) {
+      if (typeof error === 'string') {
+        logData.error = error;
+      } else {
+        logData.error = error.message;
+        logData.stack = error.stack;
+        if (!logData.errorType) {
+          logData.errorType = error.name;
+        }
+      }
+    }
+
+    await LogModel.create(logData);
+  }
+
   static async logError(
     message: string,
     error?: Error | string,
@@ -25,26 +75,7 @@ export class ErrorService {
     context?: LogContext
   ): Promise<void> {
     try {
-      await connectMongo();
-      
-      const logData: Partial<ILog> = {
-        level: 'error',
-        category,
-        message,
-        timestamp: new Date(),
-        ...context
-      };
-
-      if (error) {
-        if (typeof error === 'string') {
-          logData.error = error;
-        } else {
-          logData.error = error.message;
-          logData.stack = error.stack;
-        }
-      }
-
-      await LogModel.create(logData);
+      await this.createLog('error', message, category, context, error);
     } catch (logError) {
       // Fallback to console if database logging fails
       console.error('Failed to log error to database:', logError);
@@ -58,17 +89,7 @@ export class ErrorService {
     context?: LogContext
   ): Promise<void> {
     try {
-      await connectMongo();
-      
-      const logData: Partial<ILog> = {
-        level: 'warn',
-        category,
-        message,
-        timestamp: new Date(),
-        ...context
-      };
-
-      await LogModel.create(logData);
+      await this.createLog('warn', message, category, context);
     } catch (logError) {
       console.warn('Failed to log warning to database:', logError);
       console.warn('Original warning:', message);
@@ -81,17 +102,7 @@ export class ErrorService {
     context?: LogContext
   ): Promise<void> {
     try {
-      await connectMongo();
-      
-      const logData: Partial<ILog> = {
-        level: 'info',
-        category,
-        message,
-        timestamp: new Date(),
-        ...context
-      };
-
-      await LogModel.create(logData);
+      await this.createLog('info', message, category, context);
     } catch (logError) {
       console.info('Failed to log info to database:', logError);
       console.info('Original info:', message);
@@ -104,17 +115,7 @@ export class ErrorService {
     context?: LogContext
   ): Promise<void> {
     try {
-      await connectMongo();
-      
-      const logData: Partial<ILog> = {
-        level: 'debug',
-        category,
-        message,
-        timestamp: new Date(),
-        ...context
-      };
-
-      await LogModel.create(logData);
+      await this.createLog('debug', message, category, context);
     } catch (logError) {
       console.debug('Failed to log debug to database:', logError);
       console.debug('Original debug:', message);
