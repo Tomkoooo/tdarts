@@ -4630,8 +4630,36 @@ export class TournamentService {
                     
                     // Keep group-only stats available, but persist final tournament stats on `stats`
                     // so finished standings/TV surfaces include knockout contributions too.
-                    const groupStats = groupOnlyStats || {};
-                    const finalStats = overallStats || {};
+                    const groupStats = groupOnlyStats || {
+                        average: 0,
+                        firstNineAvg: 0,
+                        checkoutRate: 0,
+                        legsWon: 0,
+                        legsPlayed: 0,
+                        matchesWon: 0,
+                        matchesPlayed: 0,
+                        highestCheckout: 0,
+                        oneEighties: 0,
+                        tournamentTotal: 0,
+                        tournamentMatches: 0,
+                        firstNineTotal: 0,
+                        firstNineMatches: 0,
+                    };
+                    const finalStats = overallStats || {
+                        average: 0,
+                        firstNineAvg: 0,
+                        checkoutRate: 0,
+                        legsWon: 0,
+                        legsPlayed: 0,
+                        matchesWon: 0,
+                        matchesPlayed: 0,
+                        highestCheckout: 0,
+                        oneEighties: 0,
+                        tournamentTotal: 0,
+                        tournamentMatches: 0,
+                        firstNineTotal: 0,
+                        firstNineMatches: 0,
+                    };
                     
                     return {
                         ...player,

@@ -7,7 +7,6 @@ import { AuthService } from '@/database/services/auth.service';
 async function __GET(request: NextRequest) {
   try {
    const token = request.cookies.get('token')?.value;
-   console.log('token', token);
    if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
    }

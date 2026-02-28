@@ -2834,6 +2834,12 @@
       "player_vgc0": "Player",
       "rendszer_hibák_monitorozása": "Rendszer hibák monitorozása és kezelése",
       "stack_trace": "Stack Trace:",
+      "schema": {
+        "title": "Log séma",
+        "all": "Összes log",
+        "new": "Új strukturált",
+        "legacy": "Legacy"
+      },
       "system_ttqf": "System",
       "szint": "Szint",
       "szűrők": "Szűrők",

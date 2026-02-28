@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
 
 type ApiHandler<TArgs extends any[]> = (
@@ -47,7 +47,7 @@ async function estimateRequestBytes(request: NextRequest): Promise<number> {
   }
 }
 
-async function estimateResponseBytes(response?: NextResponse): Promise<number> {
+async function estimateResponseBytes(response?: Response): Promise<number> {
   if (!response) return 0;
 
   if (response.status === 204 || response.status === 304) return 0;

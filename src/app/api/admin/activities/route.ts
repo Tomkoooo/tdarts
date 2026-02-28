@@ -9,6 +9,16 @@ import { FeedbackModel } from '@/database/models/feedback.model';
 import jwt from 'jsonwebtoken';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
+function buildStructuredMatcher() {
+  return [
+    { errorCode: { $exists: true, $nin: [null, ''] } },
+    { operation: { $exists: true, $nin: [null, ''] } },
+    { requestId: { $exists: true, $nin: [null, ''] } },
+    { errorType: { $exists: true, $nin: [null, ''] } },
+    { expected: { $exists: true } },
+  ];
+}
+
 async function __GET(request: NextRequest) {
   try {
     await connectMongo();
@@ -34,6 +44,7 @@ async function __GET(request: NextRequest) {
 
     // Summarize events from the last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const structuredMatcher = buildStructuredMatcher();
 
     const [
       newUsers,
@@ -47,7 +58,7 @@ async function __GET(request: NextRequest) {
       ClubModel.countDocuments({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }),
       FeedbackModel.find({ createdAt: { $gte: oneDayAgo } }).select('message userId').populate('userId', 'name'),
-      LogModel.countDocuments({ level: 'error', timestamp: { $gte: oneDayAgo } }),
+      LogModel.countDocuments({ level: 'error', timestamp: { $gte: oneDayAgo }, $or: structuredMatcher }),
       // For specific club names if needed, or just count. User asked for "REMZ events and 10 other clubs". 
       // Let's get a few club names.
       ClubModel.find({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }).select('name').limit(3)

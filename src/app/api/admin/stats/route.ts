@@ -8,6 +8,16 @@ import { FeedbackModel } from '@/database/models/feedback.model';
 import jwt from 'jsonwebtoken';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
+function buildStructuredMatcher() {
+  return [
+    { errorCode: { $exists: true, $nin: [null, ''] } },
+    { operation: { $exists: true, $nin: [null, ''] } },
+    { requestId: { $exists: true, $nin: [null, ''] } },
+    { errorType: { $exists: true, $nin: [null, ''] } },
+    { expected: { $exists: true } },
+  ];
+}
+
 export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequest) => {
   try {
     await connectMongo();
@@ -37,6 +47,8 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
     const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+    const structuredMatcher = buildStructuredMatcher();
+
     // Fetch all statistics in parallel
     const [
       totalUsers,
@@ -63,7 +75,7 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       UserModel.countDocuments(),
       ClubModel.countDocuments({ isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ isDeleted: { $ne: true } }),
-      LogModel.countDocuments({ level: 'error', category: { $ne: 'auth' } }),
+      LogModel.countDocuments({ level: 'error', category: { $ne: 'auth' }, $or: structuredMatcher }),
       FeedbackModel.countDocuments(),
       UserModel.countDocuments({ createdAt: { $gte: currentMonth } }),
       ClubModel.countDocuments({ 
@@ -77,7 +89,8 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       LogModel.countDocuments({ 
         level: 'error',
         category: { $ne: 'auth' },
-        timestamp: { $gte: currentMonth }
+        timestamp: { $gte: currentMonth },
+        $or: structuredMatcher,
       }),
       FeedbackModel.countDocuments({ createdAt: { $gte: currentMonth } }),
       UserModel.countDocuments({ createdAt: { $gte: previousMonth, $lt: currentMonth } }),
@@ -92,7 +105,8 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       LogModel.countDocuments({ 
         level: 'error',
         category: { $ne: 'auth' },
-        timestamp: { $gte: previousMonth, $lt: currentMonth }
+        timestamp: { $gte: previousMonth, $lt: currentMonth },
+        $or: structuredMatcher,
       }),
       FeedbackModel.countDocuments({ createdAt: { $gte: previousMonth, $lt: currentMonth } }),
       UserModel.countDocuments({ createdAt: { $gte: twentyFourHoursAgo } }),
@@ -107,7 +121,8 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       LogModel.countDocuments({ 
         level: 'error',
         category: { $ne: 'auth' },
-        timestamp: { $gte: twentyFourHoursAgo }
+        timestamp: { $gte: twentyFourHoursAgo },
+        $or: structuredMatcher,
       }),
       FeedbackModel.countDocuments({ createdAt: { $gte: twentyFourHoursAgo } })
     ]);

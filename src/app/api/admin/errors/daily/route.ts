@@ -5,6 +5,33 @@ import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
+type SchemaVersion = 'all' | 'new' | 'legacy';
+
+function resolveSchemaVersion(searchParams: URLSearchParams): SchemaVersion {
+  const raw = (searchParams.get('schemaVersion') || 'all').toLowerCase();
+  if (raw === 'new' || raw === 'legacy') return raw;
+  return 'all';
+}
+
+function buildStructuredMatcher() {
+  return [
+    { errorCode: { $exists: true, $nin: [null, ''] } },
+    { operation: { $exists: true, $nin: [null, ''] } },
+    { requestId: { $exists: true, $nin: [null, ''] } },
+    { errorType: { $exists: true, $nin: [null, ''] } },
+    { expected: { $exists: true } },
+  ];
+}
+
+function applySchemaVersionFilter(matchCriteria: Record<string, any>, schemaVersion: SchemaVersion) {
+  const structuredMatcher = buildStructuredMatcher();
+  if (schemaVersion === 'new') {
+    matchCriteria.$or = structuredMatcher;
+  } else if (schemaVersion === 'legacy') {
+    matchCriteria.$nor = structuredMatcher;
+  }
+}
+
 export const GET = withApiTelemetry('/api/admin/errors/daily', async (request: NextRequest) => {
   try {
     await connectMongo();
@@ -27,6 +54,7 @@ export const GET = withApiTelemetry('/api/admin/errors/daily', async (request: N
     const days = parseInt(searchParams.get('days') || '7');
     const showAuthErrors = searchParams.get('showAuthErrors') === 'true';
     const showExpectedErrors = searchParams.get('showExpectedErrors') === 'true';
+    const schemaVersion = resolveSchemaVersion(searchParams);
 
     // Calculate date range
     const endDate = new Date();
@@ -48,6 +76,8 @@ export const GET = withApiTelemetry('/api/admin/errors/daily', async (request: N
     if (!showExpectedErrors) {
       matchCriteria.expected = { $ne: true };
     }
+
+    applySchemaVersionFilter(matchCriteria, schemaVersion);
 
     // Get daily error breakdown
     const dailyErrors = await LogModel.aggregate([

@@ -81,8 +81,8 @@ export class BadRequestError extends Error {
   ) {
     super(message);
     this.name = 'BadRequestError';
-    this.category = options?.category || category;
-    this.context = options?.context || context;
+    this.category = category;
+    this.context = context;
     this.statusCode = 400;
     this.errorCode = options?.errorCode || 'BAD_REQUEST';
     this.expected = options?.expected ?? true;
@@ -106,8 +106,8 @@ export class ValidationError extends Error {
   ) {
     super(message);
     this.name = 'ValidationError';
-    this.category = options?.category || category;
-    this.context = options?.context || context;
+    this.category = category;
+    this.context = context;
     this.statusCode = 400;
     this.errorCode = options?.errorCode || 'VALIDATION_ERROR';
     this.expected = options?.expected ?? true;
@@ -131,8 +131,8 @@ export class AuthorizationError extends Error {
   ) {
     super(message);
     this.name = 'AuthorizationError';
-    this.category = options?.category || category;
-    this.context = options?.context || context;
+    this.category = category;
+    this.context = context;
     this.statusCode = 403;
     this.errorCode = options?.errorCode || 'AUTHORIZATION_ERROR';
     this.expected = options?.expected ?? true;

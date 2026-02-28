@@ -40,6 +40,7 @@ interface ErrorLog {
   errorCode?: string
   expected?: boolean
   operation?: string
+  requestId?: string
   httpStatus?: number
   error?: string
   stack?: string
@@ -58,7 +59,14 @@ interface ErrorStats {
   errorsByCategory: Record<string, number>
   errorsByLevel: Record<string, number>
   recentErrors: ErrorLog[]
+  structuredCounts?: {
+    all: number
+    new: number
+    legacy: number
+  }
 }
+
+type SchemaVersion = "all" | "new" | "legacy"
 
 export default function AdminErrorsPage() {
     const t = useTranslations("Admin.errors");
@@ -69,6 +77,7 @@ export default function AdminErrorsPage() {
   const [dateRange, setDateRange] = useState<number>(7)
   const [showAuthErrors, setShowAuthErrors] = useState<boolean>(false)
   const [showExpectedErrors, setShowExpectedErrors] = useState<boolean>(false)
+  const [schemaVersion, setSchemaVersion] = useState<SchemaVersion>("new")
   const [expandedError, setExpandedError] = useState<string | null>(null)
 
   const fetchErrorData = async () => {
@@ -81,6 +90,7 @@ export default function AdminErrorsPage() {
         level: selectedLevel,
         showAuthErrors: showAuthErrors.toString(),
         showExpectedErrors: showExpectedErrors.toString(),
+        schemaVersion,
       })
 
       const [statsResponse] = await Promise.all([axios.get(`/api/admin/errors/stats?${params}`)])
@@ -96,7 +106,16 @@ export default function AdminErrorsPage() {
 
   useEffect(() => {
     fetchErrorData()
-  }, [dateRange, selectedCategory, selectedLevel, showAuthErrors, showExpectedErrors])
+  }, [dateRange, selectedCategory, selectedLevel, showAuthErrors, showExpectedErrors, schemaVersion])
+
+  const isStructuredLog = (error: ErrorLog) =>
+    Boolean(
+      error.errorCode ||
+      error.operation ||
+      error.requestId ||
+      error.errorType ||
+      typeof error.expected === "boolean"
+    )
 
   const getCategoryConfig = (category: string) => {
     const configs: Record<string, { icon: any; color: string; label: string }> = {
@@ -180,7 +199,7 @@ export default function AdminErrorsPage() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card  className="backdrop-blur-xl bg-card/30">
           <CardContent className="p-6 text-center">
             <div className="size-14 backdrop-blur-md bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -188,6 +207,24 @@ export default function AdminErrorsPage() {
             </div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("összes_hiba")}</h3>
             <p className="text-4xl font-bold text-destructive">{errorStats.totalErrors}</p>
+          </CardContent>
+        </Card>
+        <Card className="backdrop-blur-xl bg-card/30">
+          <CardContent className="p-6 text-center">
+            <div className="size-14 backdrop-blur-md bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconCode className="size-7 text-primary" />
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("schema.new")}</h3>
+            <p className="text-4xl font-bold text-primary">{errorStats.structuredCounts?.new ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card className="backdrop-blur-xl bg-card/30">
+          <CardContent className="p-6 text-center">
+            <div className="size-14 backdrop-blur-md bg-muted/40 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconDatabase className="size-7 text-muted-foreground" />
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("schema.legacy")}</h3>
+            <p className="text-4xl font-bold text-muted-foreground">{errorStats.structuredCounts?.legacy ?? 0}</p>
           </CardContent>
         </Card>
         {Object.entries(errorStats.errorsByLevel)
@@ -211,7 +248,7 @@ export default function AdminErrorsPage() {
       {/* Daily Chart */}
       <DailyChart
         title={t("hibák_napi_előfordulása")}
-        apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}&showExpectedErrors=${showExpectedErrors}`}
+        apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}&showExpectedErrors=${showExpectedErrors}&schemaVersion=${schemaVersion}`}
         color="error"
       />
 
@@ -223,7 +260,7 @@ export default function AdminErrorsPage() {
             {t("szűrők")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-2">
               <Label className="font-semibold">{t("időszak")}</Label>
               <Select value={dateRange.toString()} onValueChange={(value) => setDateRange(Number(value))}>
@@ -299,6 +336,19 @@ export default function AdminErrorsPage() {
                   {showExpectedErrors ? "Megjelenítés" : "Elrejtés"}
                 </Label>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">{t("schema.title")}</Label>
+              <Select value={schemaVersion} onValueChange={(value) => setSchemaVersion(value as SchemaVersion)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("schema.all")}</SelectItem>
+                  <SelectItem value="new">{t("schema.new")}</SelectItem>
+                  <SelectItem value="legacy">{t("schema.legacy")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -393,8 +443,8 @@ export default function AdminErrorsPage() {
                     <CardContent className="p-5 backdrop-blur-md bg-muted/20">
                       {/* Header */}
                       <div className="flex items-start justify-between gap-4 mb-3">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className={cn("p-2 rounded-lg flex-shrink-0", categoryConfig.color)}>
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className={cn("p-2 rounded-lg shrink-0", categoryConfig.color)}>
                           <categoryConfig.icon className="size-5" />
                         </div>
                           <div className="flex-1 min-w-0">
@@ -406,6 +456,9 @@ export default function AdminErrorsPage() {
                                   {error.expected ? "expected" : "unexpected"}
                                 </Badge>
                               )}
+                              <Badge variant={isStructuredLog(error) ? "default" : "outline"}>
+                                {isStructuredLog(error) ? t("schema.new") : t("schema.legacy")}
+                              </Badge>
                               {error.errorCode && (
                                 <Badge variant="outline">{error.errorCode}</Badge>
                               )}
@@ -418,13 +471,13 @@ export default function AdminErrorsPage() {
                                 </code>
                               )}
                             </div>
-                            <p className="font-bold text-foreground break-words">{error.message}</p>
+                            <p className="font-bold text-foreground wrap-break-word">{error.message}</p>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="flex-shrink-0"
+                          className="shrink-0"
                           onClick={() => setExpandedError(isExpanded ? null : error._id)}
                         >
                           {isExpanded ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}

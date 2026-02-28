@@ -7,6 +7,16 @@ import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
+function buildStructuredMatcher() {
+  return [
+    { errorCode: { $exists: true, $nin: [null, ''] } },
+    { operation: { $exists: true, $nin: [null, ''] } },
+    { requestId: { $exists: true, $nin: [null, ''] } },
+    { errorType: { $exists: true, $nin: [null, ''] } },
+    { expected: { $exists: true } },
+  ];
+}
+
 async function __GET(request: NextRequest) {
   try {
     await connectMongo();
@@ -32,9 +42,11 @@ async function __GET(request: NextRequest) {
 
     // 1. System Errors (Last 24h)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const structuredMatcher = buildStructuredMatcher();
     const errorCount = await LogModel.countDocuments({
       level: 'error',
-      timestamp: { $gte: oneDayAgo }
+      timestamp: { $gte: oneDayAgo },
+      $or: structuredMatcher,
     });
 
     // 2. Unread/Pending Feedback

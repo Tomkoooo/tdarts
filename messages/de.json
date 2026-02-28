@@ -2829,6 +2829,12 @@
       "player_vgc0": "Spieler",
       "rendszer_hibák_monitorozása": "Überwachung und Management von Systemfehlern",
       "stack_trace": "Stack-Trace:",
+      "schema": {
+        "title": "Log-Schema",
+        "all": "Alle Logs",
+        "new": "Neu strukturiert",
+        "legacy": "Legacy"
+      },
       "system_ttqf": "System",
       "szint": "Ebene",
       "szűrők": "Filter",

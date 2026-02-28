@@ -2845,6 +2845,12 @@
       "player_vgc0": "Player",
       "rendszer_hibák_monitorozása": "Monitoring and management of system errors",
       "stack_trace": "Stack Trace:",
+      "schema": {
+        "title": "Log schema",
+        "all": "All logs",
+        "new": "New structured",
+        "legacy": "Legacy"
+      },
       "system_ttqf": "System",
       "szint": "Level",
       "szűrők": "Filters",
