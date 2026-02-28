@@ -5,8 +5,9 @@ import { EmailTemplateService } from '@/database/services/emailtemplate.service'
 import { sendEmail } from '@/lib/mailer';
 import { AuthService } from '@/database/services/auth.service';
 import { normalizeEmailLocale } from '@/lib/email-layout';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -83,3 +84,5 @@ export async function POST(
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/admin/email-templates/[id]/test', __POST as any);

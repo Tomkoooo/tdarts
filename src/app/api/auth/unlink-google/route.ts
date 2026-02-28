@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST() {
+async function __POST() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -49,3 +50,5 @@ export async function POST() {
     return NextResponse.json({ error: error.message || 'Failed to unlink Google account' }, { status: error.status || 400 });
   }
 }
+
+export const POST = withApiTelemetry('/api/auth/unlink-google', __POST as any);

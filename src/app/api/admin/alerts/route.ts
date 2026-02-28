@@ -5,8 +5,9 @@ import { LogModel } from '@/database/models/log.model';
 import { FeedbackModel } from '@/database/models/feedback.model';
 import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
 
@@ -57,3 +58,5 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/alerts', __GET as any);

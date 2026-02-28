@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { AuthService } from "@/database/services/auth.service";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
   try {
     const { token } = await request.json();
 
@@ -24,3 +25,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/auth/verify-token', __POST as any);

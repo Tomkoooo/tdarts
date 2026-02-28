@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { YearWrapService } from "@/database/services/year-wrap.service";
 import { UserModel } from "@/database/models/user.model";
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
     try {
   // Verify admin access
     const token = req.cookies.get('token')?.value;
@@ -38,3 +39,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
     }
 }
+
+export const POST = withApiTelemetry('/api/admin/year-wrap', __POST as any);

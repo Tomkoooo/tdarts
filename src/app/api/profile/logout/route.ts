@@ -4,8 +4,9 @@ import { AuthService } from '@/database/services/auth.service';
 import { cookies } from 'next/headers';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST() {
+async function __POST() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -85,3 +86,5 @@ export async function POST() {
     return NextResponse.json({ error: error.message || 'Failed to logout' }, { status: error.status || 400 });
   }
 }
+
+export const POST = withApiTelemetry('/api/profile/logout', __POST as any);

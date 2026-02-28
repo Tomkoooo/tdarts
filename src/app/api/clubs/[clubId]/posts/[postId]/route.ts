@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectMongo } from "@/lib/mongoose";
 import { PostModel } from "@/database/models/post.model";
 import { Types } from "mongoose";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string; postId: string }> }
 ) {
@@ -32,7 +33,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
+async function __PUT(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string; postId: string }> }
 ) {
@@ -63,7 +64,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+async function __DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string; postId: string }> }
 ) {
@@ -92,3 +93,6 @@ export async function DELETE(
 import { AuthorizationService } from "@/database/services/authorization.service";
 import { PostService } from "@/database/services/post.service";
 
+export const GET = withApiTelemetry('/api/clubs/[clubId]/posts/[postId]', __GET as any);
+export const PUT = withApiTelemetry('/api/clubs/[clubId]/posts/[postId]', __PUT as any);
+export const DELETE = withApiTelemetry('/api/clubs/[clubId]/posts/[postId]', __DELETE as any);

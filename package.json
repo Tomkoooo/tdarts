@@ -7,10 +7,11 @@
     "dev": "NEXT_PUBLIC_ENABLE_SOCKET=true next dev",
     "build": "next build",
     "start": "NODE_ENV=production next start",
-    "lint": "next lint",
+    "lint": "next lint && node scripts/check-api-telemetry-coverage.js",
     "test": "jest --runInBand src/tests/auth.service.test.ts src/tests/club.service.test.ts src/tests/profile.service.test.ts src/tests/oac-mmr.service.test.ts src/tests/tournament-paywall.test.ts",
     "backfill:locations": "npx tsx scripts/backfill-structured-locations.ts",
     "backfill:first-nine-avg": "npx tsx scripts/backfill-first-nine-avg.ts",
+    "backfill:match-averages": "npx tsx scripts/backfill-match-averages.ts",
     "overwrite:emails": "npx tsx scripts/overwrite-email-templates.ts",
     "prepare": "husky",
     "husky": ".husky/pre-push"

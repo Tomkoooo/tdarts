@@ -4,9 +4,10 @@ import { AuthorizationService } from '@/database/services/authorization.service'
 import { UpdateLeagueRequest } from '@/interface/league.interface';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET /api/clubs/[clubId]/leagues/[leagueId] - Get league details with stats
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -35,7 +36,7 @@ export async function GET(
 }
 
 // PUT /api/clubs/[clubId]/leagues/[leagueId] - Update league
-export async function PUT(
+async function __PUT(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -102,7 +103,7 @@ export async function PUT(
 }
 
 // DELETE /api/clubs/[clubId]/leagues/[leagueId] - Soft delete league
-export async function DELETE(
+async function __DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -143,3 +144,7 @@ export async function DELETE(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]', __GET as any);
+export const PUT = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]', __PUT as any);
+export const DELETE = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]', __DELETE as any);

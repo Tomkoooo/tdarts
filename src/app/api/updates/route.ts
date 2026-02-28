@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eventEmitter, EVENTS } from '@/lib/events';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // Helper to format SSE message
 const formatMessage = (event: string, data: any) => {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 };
 
-export async function GET(req: NextRequest) {
+async function __GET(req: NextRequest) {
   const encoder = new TextEncoder();
   const customReadable = new ReadableStream({
     async start(controller) {
@@ -71,3 +72,5 @@ export async function GET(req: NextRequest) {
     },
   });
 }
+
+export const GET = withApiTelemetry('/api/updates', __GET as any);

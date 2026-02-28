@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { ClubService } from "@/database/services/club.service";
 import { AuthService } from "@/database/services/auth.service";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+async function __GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
     const token = await request.cookies.get('token')?.value;
@@ -54,3 +55,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/getUserRole', __GET as any);

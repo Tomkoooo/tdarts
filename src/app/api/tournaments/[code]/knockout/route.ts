@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+async function __GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
     try {
         const { code } = await params;
 
@@ -37,4 +38,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             { status: 400 }
         );
     }
-} 
+}
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/knockout', __GET as any);

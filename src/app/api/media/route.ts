@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MediaService } from '@/database/services/media.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
   try {
     const userId = await AuthorizationService.getUserIdFromRequest(req);
     if (!userId) {
@@ -42,3 +43,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/media', __POST as any);

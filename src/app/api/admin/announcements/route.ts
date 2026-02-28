@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnnouncementService } from '@/database/services/announcement.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET - Összes announcement lekérése (admin only)
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
     try {
         const token = await request.cookies.get('token')?.value;
         if (!token) {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Új announcement létrehozása (admin only)
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
     try {
         const token = await request.cookies.get('token')?.value;
         if (!token) {
@@ -80,3 +81,6 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+export const GET = withApiTelemetry('/api/admin/announcements', __GET as any);
+export const POST = withApiTelemetry('/api/admin/announcements', __POST as any);

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { BadRequestError } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -18,3 +19,5 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]', __GET as any);

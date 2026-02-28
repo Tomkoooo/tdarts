@@ -3,12 +3,13 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { ClubService } from '@/database/services/club.service';
 import { SubscriptionService } from '@/database/services/subscription.service';
 import Stripe from 'stripe';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia' as any,
 });
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -227,3 +228,5 @@ export async function POST(
     
     return NextResponse.json(newTournament);
 }
+
+export const POST = withApiTelemetry('/api/clubs/[clubId]/createTournament', __POST as any);

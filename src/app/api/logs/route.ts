@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ErrorService } from '@/database/services/error.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
@@ -42,3 +43,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/logs', __GET as any);

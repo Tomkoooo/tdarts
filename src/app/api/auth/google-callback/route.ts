@@ -4,8 +4,9 @@ import { authOptions } from '@/lib/auth';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+async function __POST() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -138,3 +139,6 @@ export async function POST() {
     }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/auth/google-callback', __GET as any);
+export const POST = withApiTelemetry('/api/auth/google-callback', __POST as any);

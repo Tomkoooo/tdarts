@@ -37,6 +37,7 @@ interface PlayerStatsModalProps {
 const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, isOacContext }) => {
   const tTour = useTranslations("Tournament");
   const t = (key: string, values?: any) => tTour(`player_stats_modal.${key}`, values);
+  const tStats = (key: string, values?: any) => tTour(`statistics.${key}`, values);
   const [activePlayer, setActivePlayer] = React.useState<Player | null>(player)
   const [navigationHistory, setNavigationHistory] = React.useState<Player[]>([])
   const [playerStats, setPlayerStats] = React.useState<Player | null>(null)
@@ -209,7 +210,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
   const renderStatsContent = (stats: any, isCareer: boolean) => {
     const highlightCards = [
       {
-        label: isCareer ? "Összes torna" : "Szezon tornák",
+        label: isCareer ? tStats("total_tournaments") : tStats("season_tournaments"),
         value: stats.tournamentsPlayed ?? stats.totalTournaments ?? 0,
         icon: IconTrophy,
         variant: "amber"
@@ -263,7 +264,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 <MiniStatBox label={t("as_dobások")} value={stats.oneEightiesCount ?? stats.total180s ?? 0} />
                 <MiniStatBox label={t("max_kiszálló")} value={stats.highestCheckout || "—"} />
                 <MiniStatBox label={t("dobás_átlag")} value={stats.avg ? stats.avg.toFixed(1) : "—"} />
-                <MiniStatBox label="First 9 Avg" value={typeof stats.firstNineAvg === "number" ? stats.firstNineAvg.toFixed(1) : "—"} />
+                <MiniStatBox label={tStats("first_nine_avg")} value={typeof stats.firstNineAvg === "number" ? stats.firstNineAvg.toFixed(1) : "—"} />
               </div>
             </CardContent>
           </Card>
@@ -305,7 +306,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                 {isTeam && (
                   <Badge className="text-[10px] font-black h-5 px-2 bg-indigo-500/10 text-indigo-600 border-indigo-500/20 uppercase tracking-tighter gap-1">
                     <IconSword size={10} />
-                    {displayPlayer.type === 'pair' ? 'Páros' : 'Csapat'}
+                    {displayPlayer.type === 'pair' ? tStats("pair") : tStats("team")}
                   </Badge>
                 )}
                 {honors.map((h, i) => (
@@ -438,7 +439,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                                 <div className="h-px bg-muted/5 mb-3" />
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <MiniRowStat label={t("meccsek")} value={`${history.stats?.matchesWon || 0}W / ${history.stats?.matchesLost || 0}L`} />
-                                    <MiniRowStat label="180-ak" value={history.stats?.oneEightiesCount || 0} />
+                                    <MiniRowStat label={tStats("one_eighties")} value={history.stats?.oneEightiesCount || 0} />
                                     <MiniRowStat label={t("kiszálló_62")} value={history.stats?.highestCheckout || '—'} />
                                     <MiniRowStat label={t("átlag_39")} value={history.stats?.average?.toFixed(1) || '—'} />
                                 </div>
@@ -524,7 +525,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
                                 <CountryFlag countryCode={team.country} />
                               </div>
                               <p className="text-[10px] text-muted-foreground uppercase font-black opacity-50 tracking-wider">
-                                {team.type === 'pair' ? 'Páros' : 'Csapat'} • {team.stats?.mmr || 800} {t("mmr")}</p>
+                                {team.type === 'pair' ? tStats("pair") : tStats("team")} • {team.stats?.mmr || 800} {t("mmr")}</p>
                             </div>
                           </div>
                           <Button 

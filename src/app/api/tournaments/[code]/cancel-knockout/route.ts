@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { withTournamentPermission, PermissionResult } from '@/lib/permissionMiddleware';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export const POST = withTournamentPermission(async (
+const __POST = withTournamentPermission(async (
   request,
   params,
   { user }: PermissionResult
@@ -24,3 +25,5 @@ export const POST = withTournamentPermission(async (
     }, { status: 500 });
   }
 });
+
+export const POST = withApiTelemetry('/api/tournaments/[code]/cancel-knockout', __POST as any);

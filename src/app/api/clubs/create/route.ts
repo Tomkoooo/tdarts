@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { BadRequestError } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
   try {
     const { creatorId, clubData } = await req.json();
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+async function __GET(req: NextRequest) {
     try {
         const clubId = req.nextUrl.searchParams.get('clubId');
         if (!clubId) {
@@ -76,3 +77,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
     }
+
+export const POST = withApiTelemetry('/api/clubs/create', __POST as any);
+export const GET = withApiTelemetry('/api/clubs/create', __GET as any);

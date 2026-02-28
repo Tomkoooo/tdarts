@@ -3,8 +3,9 @@ import { LeagueService } from '@/database/services/league.service';
 import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -61,3 +62,4 @@ export async function POST(
   }
 }
 
+export const POST = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]/undo-removal', __POST as any);

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // POST /api/tournaments/[code]/waitlist - Add player to waiting list
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -36,7 +37,7 @@ export async function POST(
 }
 
 // DELETE /api/tournaments/[code]/waitlist - Remove player from waiting list
-export async function DELETE(
+async function __DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -64,3 +65,5 @@ export async function DELETE(
   }
 }
 
+export const POST = withApiTelemetry('/api/tournaments/[code]/waitlist', __POST as any);
+export const DELETE = withApiTelemetry('/api/tournaments/[code]/waitlist', __DELETE as any);

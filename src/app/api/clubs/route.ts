@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { errorHandle } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(req: NextRequest) {
+async function __GET(req: NextRequest) {
   try {
     const clubId = req.nextUrl.searchParams.get('clubId');
     if (!clubId) {
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
   try {
     const { userId, updates } = await req.json();
     if (!userId || !updates) {
@@ -31,3 +32,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(body, { status });
   }
 }
+
+export const GET = withApiTelemetry('/api/clubs', __GET as any);
+export const POST = withApiTelemetry('/api/clubs', __POST as any);

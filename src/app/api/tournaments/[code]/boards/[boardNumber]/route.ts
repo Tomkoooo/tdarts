@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { z } from 'zod';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const updateBoardSchema = z.object({
     name: z.string().optional(),
@@ -9,7 +10,7 @@ const updateBoardSchema = z.object({
     scoliaAccessToken: z.string().optional(),
 });
 
-export async function PATCH(
+async function __PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ code: string; boardNumber: string }> }
 ) {
@@ -41,3 +42,5 @@ export async function PATCH(
         );
     }
 }
+
+export const PATCH = withApiTelemetry('/api/tournaments/[code]/boards/[boardNumber]', __PATCH as any);

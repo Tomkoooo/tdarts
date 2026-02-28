@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TodoService } from '@/database/services/todo.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -34,7 +35,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
+async function __PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -83,7 +84,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+async function __DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -111,3 +112,7 @@ export async function DELETE(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/todos/[id]', __GET as any);
+export const PUT = withApiTelemetry('/api/admin/todos/[id]', __PUT as any);
+export const DELETE = withApiTelemetry('/api/admin/todos/[id]', __DELETE as any);

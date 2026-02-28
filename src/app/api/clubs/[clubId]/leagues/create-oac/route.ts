@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { LeagueModel } from '@/database/models/league.model';
 import { connectMongo } from '@/lib/mongoose';
 import { DEFAULT_LEAGUE_POINTS_CONFIG } from '@/interface/league.interface';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: Request,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -81,3 +82,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/clubs/[clubId]/leagues/create-oac', __POST as any);

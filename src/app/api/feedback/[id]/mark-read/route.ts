@@ -3,8 +3,9 @@ import { FeedbackService } from '@/database/services/feedback.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { UserModel } from '@/database/models/user.model';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+async function __POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
     const params = await props.params;
     const userId = await AuthorizationService.getUserIdFromRequest(request);
@@ -57,3 +58,5 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/feedback/[id]/mark-read', __POST as any);

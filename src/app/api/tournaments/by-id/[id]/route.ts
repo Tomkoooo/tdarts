@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentModel } from "@/database/models/tournament.model";
 import { connectMongo } from "@/lib/mongoose";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -32,3 +33,5 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/tournaments/by-id/[id]', __GET as any);

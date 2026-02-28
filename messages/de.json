@@ -291,7 +291,10 @@
     "register": "Anmeldung",
     "offline": "Offline",
     "tdarts_f0pi": "tDarts",
-    "tdarts_logo_wslq": "tDarts-Logo"
+    "tdarts_logo_wslq": "tDarts-Logo",
+    "language": "Sprache",
+    "select_language": "Sprache auswählen",
+    "coming_soon": "Bald verfügbar"
   },
   "Footer": {
     "legal_title": "Information",
@@ -1331,7 +1334,43 @@
         }
       }
     },
-    "match_stats": {},
+    "match_stats": {
+      "charts": {
+        "avg_axis": "Durchschnitt",
+        "leg_axis": "Legs",
+        "throw_axis": "Aufnahmen"
+      },
+      "tabs": {
+        "overview": "Übersicht",
+        "legs": "Leg-Details"
+      },
+      "overview": {
+        "running_avg_suffix": "laufender Schnitt",
+        "final_avg": "Endschnitt",
+        "max_leg_avg": "Bester Leg-Schnitt",
+        "perf_title": "Leistung pro Leg",
+        "perf_desc": "Durchschnittstrend pro Leg",
+        "perf_note": "Tipp: Höhere und stabilere Linien bedeuten meist mehr Konstanz.",
+        "cum_title": "Kumulativer Durchschnittstrend",
+        "cum_desc": "Wie sich die Durchschnitte im Match entwickeln",
+        "cum_note": "Hinweis: So sieht man, wer sich im Matchverlauf besser anpasst."
+      },
+      "legs": {
+        "leg_title": "Leg {number}",
+        "throw_label": "Aufnahme {number}",
+        "leg_avgs": "Leg-Durchschnitte",
+        "arrows": "{count} Darts",
+        "points": "{count} Rest",
+        "collapse": "Einklappen",
+        "details": "Details",
+        "throw_avgs": "Durchschnitt pro Aufnahme",
+        "tip_title": "So liest du das",
+        "tip_desc": "Vergleiche die Linien je Aufnahme, um Momentumwechsel zu erkennen.",
+        "checkout_desc": "{name} checkte mit {count} Darts",
+        "remaining_desc": "{count} Punkte Rest beim Gegner",
+        "no_data": "Für dieses Match sind keine Wurfdaten verfügbar."
+      }
+    },
     "live": {
       "a_bal_oldali": "Sie können aus der Liste links auswählen.",
       "a_keresett_élő": "Die von Ihnen gesuchte Live-Streaming-Seite existiert nicht oder ist nicht verfügbar.",
@@ -1501,6 +1540,48 @@
       "varolista_s58e": "Warteliste #",
       "varolistan_levo_jatekosok_d12f": "Spieler auf der Warteliste:",
       "varolistara_feliratkozas_7cah": "Tragen Sie sich in die Warteliste ein"
+    },
+    "player_stats_modal": {
+      "mmr": "MMR",
+      "oac_mmr": "OAC MMR",
+      "nem_sikerült_betölteni_76": "Spielerstatistiken konnten nicht geladen werden",
+      "legjobb_helyezes_i1t1": "Beste Platzierung",
+      "atlagos_helyezes_ctvu": "Durchschnittliche Platzierung",
+      "gyozelmi_arany_vqqj": "Siegquote",
+      "részletes_mutatók": "Detaillierte Kennzahlen",
+      "meccsek": "Spiele",
+      "legek": "Legs",
+      "as_dobások": "180er",
+      "max_kiszálló": "Höchstes Checkout",
+      "dobás_átlag": "Durchschnitt",
+      "vissza": "Zurück",
+      "kihívó": "Herausforderer",
+      "adatok_szinkronizálása": "Daten werden synchronisiert...",
+      "statisztikai_időszak": "Statistikzeitraum",
+      "jelenlegi_szezon": "Aktuelle Saison",
+      "összesített": "Gesamt",
+      "szezon": "Saison",
+      "legutóbbi_meccsek": "Letzte Spiele",
+      "nincs_meccs_adat": "Keine Spieldaten",
+      "események": "Ereignisse",
+      "torna_13": "Turnier",
+      "kiszálló_62": "Checkout",
+      "átlag_39": "Durchschnitt",
+      "esemény_rögzítve": "Ereignis aufgezeichnet",
+      "megtekintés": "Ansehen",
+      "nincsenek_eredmények": "Keine Ergebnisse",
+      "tagok_statisztikái": "Mitgliederstatistiken",
+      "megtekintés_87": "Ansehen",
+      "párosaim_csapataim": "Meine Paare und Teams",
+      "megtekintés_98": "Ansehen"
+    },
+    "statistics": {
+      "total_tournaments": "Turniere gesamt",
+      "season_tournaments": "Saisonturniere",
+      "first_nine_avg": "First 9 Avg",
+      "pair": "Paar",
+      "team": "Team",
+      "one_eighties": "180er"
     }
   },
   "Club": {
@@ -1636,7 +1717,18 @@
         "loading": "Verein gründen...",
         "success": "Club erfolgreich erstellt!",
         "error": "Beim Erstellen des Clubs ist ein Fehler aufgetreten"
-      }
+      },
+      "email_label": "E-Mail-Adresse",
+      "phone_label": "Telefonnummer",
+      "email_example_com_oyiv": "email@example.com",
+      "https_example_com_ags5": "https://example.com",
+      "magyarorszag_fm30": "Ungarn",
+      "ausztria_okn5": "Österreich",
+      "nemetorszag_vpgb": "Deutschland",
+      "szlovakia_o5lp": "Slowakei",
+      "romania_kni2": "Rumänien",
+      "horvatorszag_86m1": "Kroatien",
+      "szlovenia_o5gj": "Slowenien"
     },
     "settings": {
       "title": "Clubeinstellungen",
@@ -2164,6 +2256,7 @@
         "todos": "Dinge zu tun",
         "emails": "E-Mail-Vorlagen",
         "settings": "Einstellungen",
+        "telemetry": "Telemetrie",
         "collapse": "Falten",
         "title": "tDarts-Administrator"
       },
@@ -2229,7 +2322,13 @@
         "clubs": "Vereine",
         "todos": "Dinge zu tun",
         "news": "Nachricht",
-        "settings": "Einstellungen"
+        "settings": "Einstellungen",
+        "telemetry": "API Telemetrie"
+      },
+      "telemetry": {
+        "title": "API-Telemetrie im Detail",
+        "description": "Öffnen Sie die dedizierte Telemetrie-Seite für routebasierte Verkehrs-, Latenz- und Payload-Analysen.",
+        "open_page": "Telemetrie-Seite öffnen"
       },
       "announcements": {
         "title": "Nachrichtenmanagement",
@@ -2859,6 +2958,7 @@
       "tags": "Schlagworte:",
       "todos_1c7q": "Todos",
       "tournaments_e65c": "Turniere",
+      "telemetry_fm2a": "Telemetrie",
       "trend": "Trend",
       "type_to_search": "Zum Suchen eingeben...",
       "törli": "löscht es",
@@ -2880,6 +2980,64 @@
       "írd_be_természetes": "Geben Sie in natürlicher Sprache ein: &quot;Serverwartung !!! morgen #dev&quot;",
       "összes": "Alle",
       "összesen_nap": "Gesamt (30 Tage)"
+    },
+    "telemetry": {
+      "title": "API-Telemetrie",
+      "description": "Analysieren Sie Routenverkehr, Latenz und Payload-Trends mit historischen Filtern.",
+      "loading": "Telemetrie wird geladen...",
+      "error_loading": "Telemetriedaten konnten nicht geladen werden",
+      "refresh": "Telemetrie aktualisieren",
+      "filters": {
+        "title": "Filter",
+        "description": "Wählen Sie Zeitraum, Zeitzone oder ein benutzerdefiniertes Intervall.",
+        "range": "Zeitraum",
+        "timezone": "Zeitzone",
+        "method": "Methode",
+        "all_methods": "Alle Methoden",
+        "granularity": "Granularität",
+        "granularity_minute": "Pro Minute",
+        "granularity_hour": "Pro Stunde",
+        "granularity_day": "Pro Tag",
+        "route": "Route",
+        "all_routes": "Alle Routen",
+        "clear_route": "Route löschen",
+        "custom_start": "Benutzerdefinierter Start",
+        "custom_end": "Benutzerdefiniertes Ende",
+        "apply": "Anwenden"
+      },
+      "ranges": {
+        "24h": "Letzte 24 Stunden",
+        "7d": "Letzte 7 Tage",
+        "30d": "Letzte 30 Tage",
+        "90d": "Letzte 90 Tage",
+        "custom": "Benutzerdefiniertes Intervall"
+      },
+      "charts": {
+        "requests": "API-Aufrufe",
+        "latency": "Durchschnittliche Latenz (ms)",
+        "payload": "Payload (KB)",
+        "throughput": "Daten-Durchsatz (Bytes)"
+      },
+      "metrics": {
+        "incoming_total_kb": "Eingehend gesamt (KB)",
+        "outgoing_total_kb": "Ausgehend gesamt (KB)",
+        "total_moved": "Insgesamt verschobene Daten",
+        "avg_package_size": "Durchschnittliche Paketgröße",
+        "avg_incoming_package": "Durchschnittliches eingehendes Paket",
+        "avg_outgoing_package": "Durchschnittliches ausgehendes Paket"
+      },
+      "top_routes": {
+        "title": "Top-API-Routen",
+        "description": "Die aktivsten und ressourcenintensivsten Routen im gewählten Zeitraum.",
+        "empty": "Noch keine API-Telemetriedaten.",
+        "calls": "Aufrufe",
+        "avg": "avg",
+        "max": "max",
+        "error_rate": "Fehler",
+        "incoming": "ein",
+        "outgoing": "aus",
+        "total": "gesamt"
+      }
     }
   },
   "Profile": {
@@ -3259,5 +3417,21 @@
     "válassz_eszközt": "Wählen Sie ein Gerät",
     "érintett_oldal_opcionális": "Betroffene Seite (optional)",
     "írd_le_részletesen": "Beschreiben Sie im Detail, was passiert ist..."
+  },
+  "Auto": {
+    "club_not_found_ecjo": "Club nicht gefunden",
+    "hogyan_mukodik_247b": "Wie es funktioniert",
+    "élő_meccs_követés": "Live-Match-Tracking",
+    "ez_a_klub": "Dieser Club hat kein Live-Tracking aktiviert.",
+    "pro_előfizetés_előnyei": "Vorteile des Pro-Abos",
+    "élő_meccs_követés_59": "Live-Match-Tracking",
+    "dobásonkénti_statisztikák": "Statistiken pro Wurf",
+    "speciális_elemző_eszközök": "Erweiterte Analysetools",
+    "részletes_játékos_adatok": "Detaillierte Spielerdaten",
+    "vissza_a_tornához": "Zurück zum Turnier",
+    "kapcsolat": "Kontakt",
+    "ha_már_pro": "Wenn Sie bereits Pro haben, kontaktieren Sie den Support.",
+    "hiba_történt_20": "Es ist ein Fehler aufgetreten",
+    "nem_sikerült_betölteni_8": "Live-Seite konnte nicht geladen werden"
   }
 }

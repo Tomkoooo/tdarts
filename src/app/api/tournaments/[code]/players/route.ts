@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { PlayerService } from "@/database/services/player.service";
 import { PlayerModel } from "@/database/models/player.model";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 import { TournamentModel } from "@/database/models/tournament.model";
 import { AuthService } from "@/database/services/auth.service";
@@ -35,7 +36,7 @@ async function isSelfPlayer(userId: string, playerId: string): Promise<boolean> 
   return false;
 }
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id');
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(player._id);
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+async function __POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   
   // Get user from JWT token
@@ -306,7 +307,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ success, playerId: player._id});
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+async function __PUT(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   
   // Get user from JWT token
@@ -325,7 +326,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json({ success });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+async function __DELETE(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   
   // Get user from JWT token
@@ -344,3 +345,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const success = await TournamentService.removeTournamentPlayer(code, playerId);
   return NextResponse.json({ success });
 }
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/players', __GET as any);
+export const POST = withApiTelemetry('/api/tournaments/[code]/players', __POST as any);
+export const PUT = withApiTelemetry('/api/tournaments/[code]/players', __PUT as any);
+export const DELETE = withApiTelemetry('/api/tournaments/[code]/players', __DELETE as any);

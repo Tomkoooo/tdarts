@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -50,3 +51,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/profile/resend-verification', __POST as any);

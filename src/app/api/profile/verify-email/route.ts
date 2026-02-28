@@ -3,12 +3,13 @@ import { ProfileService } from '@/database/services/profile.service';
 import { AuthService } from '@/database/services/auth.service';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const verifyEmailSchema = z.object({
   code: z.string().min(1, 'Verification code is required'),
 });
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -26,3 +27,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Failed to verify email' }, { status: error.status || 400 });
   }
 }
+
+export const POST = withApiTelemetry('/api/profile/verify-email', __POST as any);

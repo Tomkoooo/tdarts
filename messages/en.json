@@ -148,7 +148,7 @@
       "no_hidden": "There are no hidden costs",
       "support": "24/7 support"
     },
-    "tdarts_u6qj": "GO ON"
+    "tdarts_u6qj": "tDarts"
   },
   "HowItWorks": {
     "hero": {
@@ -289,6 +289,9 @@
     "logout": "Checkout",
     "login": "Login",
     "register": "Registration",
+    "language": "Language",
+    "select_language": "Select language",
+    "coming_soon": "Coming soon",
     "offline": "Offline",
     "tdarts_f0pi": "tDarts",
     "tdarts_logo_wslq": "tDarts Logo"
@@ -1347,7 +1350,43 @@
         }
       }
     },
-    "match_stats": {},
+    "match_stats": {
+      "charts": {
+        "avg_axis": "Average",
+        "leg_axis": "Legs",
+        "throw_axis": "Throws"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "legs": "Leg Details"
+      },
+      "overview": {
+        "running_avg_suffix": "running avg",
+        "final_avg": "Final Avg",
+        "max_leg_avg": "Best Leg Avg",
+        "perf_title": "Leg-by-leg performance",
+        "perf_desc": "Average trend by legs",
+        "perf_note": "Tip: Higher and more stable lines indicate better consistency.",
+        "cum_title": "Cumulative average trend",
+        "cum_desc": "How averages evolve through the match",
+        "cum_note": "Insight: This highlights who adapts better as the match progresses."
+      },
+      "legs": {
+        "leg_title": "Leg {number}",
+        "throw_label": "Throw {number}",
+        "leg_avgs": "Leg averages",
+        "arrows": "{count} arrows",
+        "points": "{count} remaining",
+        "collapse": "Collapse",
+        "details": "Details",
+        "throw_avgs": "Throw-by-throw averages",
+        "tip_title": "How to read this",
+        "tip_desc": "Track momentum swings by comparing throw-level average lines.",
+        "checkout_desc": "{name} checked out with {count} arrows",
+        "remaining_desc": "{count} points left for opponent",
+        "no_data": "No throw data available for this match."
+      }
+    },
     "live": {
       "a_bal_oldali": "You can choose from the list on the left.",
       "a_keresett_élő": "The live streaming page you are looking for does not exist or is not available.",
@@ -1551,6 +1590,14 @@
       "megtekintés_87": "View",
       "párosaim_csapataim": "My pairs and teams",
       "megtekintés_98": "View"
+    },
+    "statistics": {
+      "total_tournaments": "Total tournaments",
+      "season_tournaments": "Season tournaments",
+      "first_nine_avg": "First 9 Avg",
+      "pair": "Pair",
+      "team": "Team",
+      "one_eighties": "180s"
     }
   },
   "Club": {
@@ -2141,7 +2188,7 @@
       "footer": {
         "cancel": "Don't cancel",
         "back": "Back",
-        "next": "Go on",
+        "next": "tDarts",
         "submit_oac": "Payment and creation",
         "submit_normal": "Create a tournament",
         "submitting": "Creating...",
@@ -2225,6 +2272,7 @@
         "todos": "Things to do",
         "emails": "Email Templates",
         "settings": "Settings",
+        "telemetry": "Telemetry",
         "collapse": "Folding",
         "title": "tDarts Admin"
       },
@@ -2290,7 +2338,13 @@
         "clubs": "Clubs",
         "todos": "Things to do",
         "news": "News",
-        "settings": "Settings"
+        "settings": "Settings",
+        "telemetry": "API Telemetry"
+      },
+      "telemetry": {
+        "title": "API telemetry deep dive",
+        "description": "Open the dedicated telemetry page for route-level traffic, latency, and payload analytics.",
+        "open_page": "Open telemetry page"
       },
       "announcements": {
         "title": "News Management",
@@ -2920,6 +2974,7 @@
       "tags": "Tags:",
       "todos_1c7q": "Todos",
       "tournaments_e65c": "Tournaments",
+      "telemetry_fm2a": "Telemetry",
       "trend": "Trend",
       "type_to_search": "Type to search...",
       "törli": "deletes it",
@@ -2941,6 +2996,64 @@
       "írd_be_természetes": "Type in natural language: &quot;Server maintenance !!! tomorrow #dev&quot;",
       "összes": "All",
       "összesen_nap": "Total (30 days)"
+    },
+    "telemetry": {
+      "title": "API telemetry",
+      "description": "Analyze route traffic, latency, and payload trends with historical filters.",
+      "loading": "Loading telemetry...",
+      "error_loading": "Failed to load telemetry data",
+      "refresh": "Refresh telemetry",
+      "filters": {
+        "title": "Filters",
+        "description": "Select time range, timezone, or custom interval.",
+        "range": "Range",
+        "timezone": "Timezone",
+        "method": "Method",
+        "all_methods": "All methods",
+        "granularity": "Granularity",
+        "granularity_minute": "Per minute",
+        "granularity_hour": "Per hour",
+        "granularity_day": "Per day",
+        "route": "Route",
+        "all_routes": "All routes",
+        "clear_route": "Clear route",
+        "custom_start": "Custom start",
+        "custom_end": "Custom end",
+        "apply": "Apply"
+      },
+      "ranges": {
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "custom": "Custom interval"
+      },
+      "charts": {
+        "requests": "API requests",
+        "latency": "Average latency (ms)",
+        "payload": "Payload (KB)",
+        "throughput": "Traffic throughput (bytes)"
+      },
+      "metrics": {
+        "incoming_total_kb": "Incoming total (KB)",
+        "outgoing_total_kb": "Outgoing total (KB)",
+        "total_moved": "Total moved data",
+        "avg_package_size": "Average package size",
+        "avg_incoming_package": "Average incoming package",
+        "avg_outgoing_package": "Average outgoing package"
+      },
+      "top_routes": {
+        "title": "Top API routes",
+        "description": "Most active and resource-intensive routes in the selected window.",
+        "empty": "No API telemetry data yet.",
+        "calls": "calls",
+        "avg": "avg",
+        "max": "max",
+        "error_rate": "err",
+        "incoming": "in",
+        "outgoing": "out",
+        "total": "total"
+      }
     }
   },
   "Profile": {

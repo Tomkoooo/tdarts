@@ -10,18 +10,22 @@ export default function Footer() {
     {
       src: '/partners/mdsz_logo.png',
       alt: t("magyar_darts_szovetseg_1x63"),
+      href: "https://magyardarts.hu",
     },
     {
       src: '/partners/dartsbarlang_logo.png',
       alt: t("dartsbarlang_slgh"),
+      href: "https://dartsbarlang.hu",
     },
     {
       src: '/partners/remiz_logo.png',
       alt: t("remiz_sport_es_esemenykozpont_7fgn"),
+      href: "https://www.facebook.com/p/Remiz-Event-61571072083039/",
     },
     {
       src: '/partners/efott_logo.png',
       alt: "EFOTT",
+      href:"https://hookalapitvany.hu"
     },
   ];
 
@@ -95,7 +99,8 @@ export default function Footer() {
                     src={partner.src}
                     alt={partner.alt}
                     fill
-                    className="object-contain p-1"
+                    className="object-contain p-1 cursor-pointer"
+                    onClick={() => window.open(partner.href, '_blank')}
                   />
                 </div>
               ))}

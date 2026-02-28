@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     // Check authentication
     const token = request.cookies.get('token')?.value;
@@ -32,3 +33,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/email-templates', __GET as any);

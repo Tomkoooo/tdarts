@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { SearchService } from '@/database/services/search.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: Request) {
+async function __GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const showFinished = searchParams.get('showFinished') === 'true';
@@ -20,3 +21,5 @@ export async function GET(request: Request) {
         );
     }
 }
+
+export const GET = withApiTelemetry('/api/search/metadata', __GET as any);

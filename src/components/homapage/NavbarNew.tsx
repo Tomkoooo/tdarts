@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Separator } from "@/components/ui/separator";
+import { useTranslations } from "next-intl";
 
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ const NavbarNew = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
+  const t = useTranslations("Navbar");
 
   const languageOptions = [
     { code: "hu", label: "Magyar", enabled: true },
@@ -97,11 +99,11 @@ const NavbarNew = () => {
   // const isAdminPage = pathname?.startsWith('/admin'); // User requested normal navbar on admin pages
 
   const navItems = [
-    { name: "Versenyek", icon: IconTournament, href: "/search?tab=tournaments" },
-    { name: "Klubok", icon: IconUsers, href: "/search?tab=clubs" },
-    { name: isOnline ? "Tábla" : "Helyi Tábla (Offline)", icon: IconDeviceDesktop, href: "/board" },
-    { name: "Keresés", icon: IconSearch, href: "/search" },
-    { name: "Hogyan működik", icon: IconHelp, href: "/how-it-works" },
+    { name: t("tournaments"), icon: IconTournament, href: "/search?tab=tournaments" },
+    { name: t("clubs"), icon: IconUsers, href: "/search?tab=clubs" },
+    { name: isOnline ? t("board") : t("board_offline"), icon: IconDeviceDesktop, href: "/board" },
+    { name: t("search"), icon: IconSearch, href: "/search" },
+    { name: t("how_it_works"), icon: IconHelp, href: "/how-it-works" },
   ];
 
   const normalizedPath = stripLocalePrefix(pathname || "/");
@@ -156,7 +158,7 @@ const NavbarNew = () => {
             </span>
             {!isOnline && (
               <span className="ml-2 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wider animate-pulse border border-destructive/20">
-                Offline
+                {t("offline")}
               </span>
             )}
           </Link>
@@ -208,7 +210,7 @@ const NavbarNew = () => {
                     }}
                   >
                     <span>{lang.label}</span>
-                    {!lang.enabled && <span className="text-xs text-muted-foreground">Hamarosan</span>}
+                    {!lang.enabled && <span className="text-xs text-muted-foreground">{t("coming_soon")}</span>}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -218,13 +220,13 @@ const NavbarNew = () => {
                 <Link href={toLocalizedHref("/myclub")}>
                   <Button variant={pathname === "/myclub" ? "secondary" : "ghost"} size="sm">
                     <IconDart className="w-4 h-4 mr-2" />
-                    <span className="hidden xl:inline">Saját klub</span>
+                    <span className="hidden xl:inline">{t("my_club")}</span>
                   </Button>
                 </Link>
                 <Link href={toLocalizedHref("/feedback")}>
                   <Button variant={pathname === "/feedback" ? "secondary" : "ghost"} size="sm">
                     <IconBug className="w-4 h-4 mr-2" />
-                    <span className="hidden xl:inline">Visszajelzés</span>
+                    <span className="hidden xl:inline">{t("feedback")}</span>
                   </Button>
                 </Link>
                 
@@ -249,25 +251,25 @@ const NavbarNew = () => {
                     <DropdownMenuItem asChild>
                       <Link href={toLocalizedHref("/profile")} className="cursor-pointer w-full flex items-center">
                         <IconUser className="mr-2 h-4 w-4" />
-                        Profil
+                        {t("profile")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href={toLocalizedHref("/profile?tab=stats")} className="cursor-pointer w-full flex items-center">
                         <IconChartBar className="mr-2 h-4 w-4" />
-                        Statisztika
+                        {t("stats")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href={toLocalizedHref("/profile?tab=tickets")} className="cursor-pointer w-full flex items-center">
                         <IconTicket className="mr-2 h-4 w-4" />
-                        Hibajegyek
+                        {t("tickets")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href={toLocalizedHref("/myclub")} className="cursor-pointer w-full flex items-center">
                         <IconDart className="mr-2 h-4 w-4" />
-                        Saját klub
+                        {t("my_club")}
                       </Link>
                     </DropdownMenuItem>
                     {user.isAdmin && (
@@ -276,7 +278,7 @@ const NavbarNew = () => {
                         <DropdownMenuItem asChild>
                           <Link href={toLocalizedHref("/admin")} className="cursor-pointer w-full flex items-center">
                             <IconSettings className="mr-2 h-4 w-4" />
-                            Admin
+                            {t("admin")}
                           </Link>
                         </DropdownMenuItem>
                       </>
@@ -287,7 +289,7 @@ const NavbarNew = () => {
                       onClick={() => logout()}
                     >
                       <IconLogout className="mr-2 h-4 w-4" />
-                      Kijelentkezés
+                      {t("logout")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -296,12 +298,12 @@ const NavbarNew = () => {
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
                   <Link href={toLocalizedHref("/auth/login")}>
-                    Bejelentkezés
+                    {t("login")}
                   </Link>
                 </Button>
                 <Button size="sm" asChild>
                   <Link href={toLocalizedHref("/auth/register")}>
-                    Regisztráció
+                    {t("register")}
                   </Link>
                 </Button>
               </div>
@@ -348,7 +350,7 @@ const NavbarNew = () => {
                   {/* Navigation Items Mobile */}
                   <div className="space-y-1">
                     <div className="px-3 pb-2 pt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                      Nyelv
+                      {t("language")}
                     </div>
                     <div className="space-y-1 pb-3">
                       <Select
@@ -362,14 +364,14 @@ const NavbarNew = () => {
                         }}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Nyelv kiválasztása" />
+                          <SelectValue placeholder={t("select_language")} />
                         </SelectTrigger>
                         <SelectContent>
                           {languageOptions.map((lang) => (
                             <SelectItem key={lang.code} value={lang.code} disabled={!lang.enabled}>
                               <div className="flex items-center justify-between w-full gap-2">
                                 <span>{lang.label}</span>
-                                {!lang.enabled && <span className="text-xs text-muted-foreground">Hamarosan</span>}
+                                {!lang.enabled && <span className="text-xs text-muted-foreground">{t("coming_soon")}</span>}
                               </div>
                             </SelectItem>
                           ))}
@@ -412,19 +414,19 @@ const NavbarNew = () => {
                       >
                         <Link href={toLocalizedHref("/profile")} onClick={() => setIsMobileMenuOpen(false)}>
                           <IconUser className="w-4 h-4" />
-                          Profil
+                          {t("profile")}
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
                         <Link href={toLocalizedHref("/profile?tab=stats")} className="cursor-pointer w-full flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconChartBar className="h-4 w-4" />
-                          Statisztika
+                          {t("stats")}
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" className="w-full justify-start gap-2">
                         <Link href={toLocalizedHref("/profile?tab=tickets")} className="cursor-pointer w-full flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
                           <IconTicket className="h-4 w-4" />
-                          Hibajegyek
+                          {t("tickets")}
                         </Link>
                       </Button>
                       <Button 
@@ -434,7 +436,7 @@ const NavbarNew = () => {
                       >
                          <Link href={toLocalizedHref("/myclub")} onClick={() => setIsMobileMenuOpen(false)}>
                           <IconDart className="w-4 h-4" />
-                          Saját klub
+                          {t("my_club")}
                         </Link>
                       </Button>
                        <Button 
@@ -444,7 +446,7 @@ const NavbarNew = () => {
                       >
                         <Link href={toLocalizedHref("/feedback")} onClick={() => setIsMobileMenuOpen(false)}>
                           <IconBug className="w-4 h-4" />
-                          Visszajelzés
+                          {t("feedback")}
                         </Link>
                       </Button>
                       {user.isAdmin && (
@@ -455,7 +457,7 @@ const NavbarNew = () => {
                         >
                           <Link href={toLocalizedHref("/admin")} onClick={() => setIsMobileMenuOpen(false)}>
                             <IconSettings className="w-4 h-4" />
-                            Admin
+                            {t("admin")}
                           </Link>
                         </Button>
                       )}
@@ -469,19 +471,19 @@ const NavbarNew = () => {
                         }}
                       >
                         <IconLogout className="w-4 h-4" />
-                        Kijelentkezés
+                        {t("logout")}
                       </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Button className="w-full" asChild>
                         <Link href={toLocalizedHref("/auth/login")} onClick={() => setIsMobileMenuOpen(false)}>
-                          Bejelentkezés
+                          {t("login")}
                         </Link>
                       </Button>
                       <Button variant="outline" className="w-full" asChild>
                         <Link href={toLocalizedHref("/auth/register")} onClick={() => setIsMobileMenuOpen(false)}>
-                          Regisztráció
+                          {t("register")}
                         </Link>
                       </Button>
                     </div>

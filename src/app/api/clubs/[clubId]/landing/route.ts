@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -21,7 +22,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
+async function __PUT(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -59,3 +60,6 @@ export async function PUT(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]/landing', __GET as any);
+export const PUT = withApiTelemetry('/api/clubs/[clubId]/landing', __PUT as any);

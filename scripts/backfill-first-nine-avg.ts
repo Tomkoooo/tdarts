@@ -1,8 +1,14 @@
+import path from "path";
+import dotenv from "dotenv";
 import { connectMongo } from "@/lib/mongoose";
 import { MatchModel } from "@/database/models/match.model";
 import { TournamentModel } from "@/database/models/tournament.model";
 import { PlayerModel } from "@/database/models/player.model";
 import mongoose from "mongoose";
+
+// Standalone scripts don't always auto-load Next env files.
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 type ScoreDarts = { score: number; darts: number };
 
@@ -286,6 +292,11 @@ async function backfillPlayers(dryRun: boolean) {
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   console.log(`Starting firstNineAvg backfill (dryRun=${dryRun}) ...`);
+  if (!process.env.MONGODB_URI) {
+    throw new Error(
+      "MONGODB_URI is missing. Put it in .env.local/.env or run with MONGODB_URI=... npm run backfill:first-nine-avg"
+    );
+  }
   await connectMongo();
 
   await backfillMatches(dryRun);

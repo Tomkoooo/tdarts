@@ -53,6 +53,11 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  const host = self.location.hostname;
+  const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+
+  // Never intercept local development traffic.
+  if (isLocalhost) return;
 
   // Skip dev server overhead
   if (url.pathname.includes('webpack-hmr') || url.pathname.includes('hot-update')) return;

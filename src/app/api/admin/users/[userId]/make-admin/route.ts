@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
@@ -55,3 +56,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/admin/users/[userId]/make-admin', __POST as any);

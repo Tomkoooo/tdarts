@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnnouncementService } from '@/database/services/announcement.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // POST - Announcement aktiválás/deaktiválás (admin only)
-export async function POST(
+async function __POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -54,3 +55,5 @@ export async function POST(
         );
     }
 }
+
+export const POST = withApiTelemetry('/api/announcements/[id]/toggle', __POST as any);

@@ -3,39 +3,10 @@ import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
+import { resolveGranularity, resolveRouteFilters, resolveTimeRange } from '@/lib/admin-telemetry';
 
-function resolveTimeRange(searchParams: URLSearchParams): { startDate: Date; endDate: Date } {
-  const start = searchParams.get('start');
-  const end = searchParams.get('end');
-  if (start && end) {
-    return {
-      startDate: new Date(start),
-      endDate: new Date(end),
-    };
-  }
-
-  const range = searchParams.get('range') || '24h';
-  const endDate = new Date();
-  const startDate = new Date(endDate);
-
-  switch (range) {
-    case '7d':
-      startDate.setDate(startDate.getDate() - 7);
-      break;
-    case '30d':
-      startDate.setDate(startDate.getDate() - 30);
-      break;
-    case '90d':
-      startDate.setDate(startDate.getDate() - 90);
-      break;
-    default:
-      startDate.setDate(startDate.getDate() - 1);
-      break;
-  }
-  return { startDate, endDate };
-}
-
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
 
@@ -48,10 +19,17 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(50, Math.max(5, parseInt(searchParams.get('limit') || '10', 10)));
+    const granularity = resolveGranularity(searchParams);
+    void granularity;
     const { startDate, endDate } = resolveTimeRange(searchParams);
+    const { routeKey, method } = resolveRouteFilters(searchParams);
+
+    const matchCriteria: Record<string, any> = { bucket: { $gte: startDate, $lte: endDate } };
+    if (routeKey) matchCriteria.routeKey = routeKey;
+    if (method) matchCriteria.method = method;
 
     const topRoutes = await ApiRequestMetricModel.aggregate([
-      { $match: { bucket: { $gte: startDate, $lte: endDate } } },
+      { $match: matchCriteria },
       {
         $group: {
           _id: { routeKey: '$routeKey', method: '$method' },
@@ -70,7 +48,9 @@ export async function GET(request: NextRequest) {
     const data = topRoutes.map((row) => {
       const avgDurationMs = row.count > 0 ? row.totalDurationMs / row.count : 0;
       const errorRate = row.count > 0 ? (row.errorCount / row.count) * 100 : 0;
-      const totalTrafficKb = ((row.totalRequestBytes || 0) + (row.totalResponseBytes || 0)) / 1024;
+      const requestTrafficKb = (row.totalRequestBytes || 0) / 1024;
+      const responseTrafficKb = (row.totalResponseBytes || 0) / 1024;
+      const totalTrafficKb = requestTrafficKb + responseTrafficKb;
       return {
         routeKey: row._id.routeKey,
         method: row._id.method,
@@ -79,6 +59,8 @@ export async function GET(request: NextRequest) {
         errorRate: Math.round(errorRate * 100) / 100,
         avgDurationMs: Math.round(avgDurationMs * 100) / 100,
         maxDurationMs: row.maxDurationMs || 0,
+        requestTrafficKb: Math.round(requestTrafficKb * 100) / 100,
+        responseTrafficKb: Math.round(responseTrafficKb * 100) / 100,
         totalTrafficKb: Math.round(totalTrafficKb * 100) / 100,
       };
     });
@@ -89,3 +71,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch top api routes' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/charts/api-traffic/top-routes', __GET as any);

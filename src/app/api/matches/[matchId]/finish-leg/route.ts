@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
@@ -42,4 +43,6 @@ export async function POST(
     console.error('finish-leg error:', error);
     return NextResponse.json({ error: 'Failed to finish leg' }, { status: 500 });
   }
-} 
+}
+
+export const POST = withApiTelemetry('/api/matches/[matchId]/finish-leg', __POST as any);

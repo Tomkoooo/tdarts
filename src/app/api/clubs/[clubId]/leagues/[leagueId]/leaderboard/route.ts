@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LeagueService } from '@/database/services/league.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET /api/clubs/[clubId]/leagues/[leagueId]/leaderboard - Get league leaderboard
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -30,3 +31,5 @@ export async function GET(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]/leaderboard', __GET as any);

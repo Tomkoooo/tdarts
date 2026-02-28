@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MediaService } from '@/database/services/media.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   req: NextRequest,
   { params }: { params: Promise<{ mediaId: string }> }
 ) {
@@ -41,7 +42,7 @@ export async function GET(
   }
 }
 
-export async function DELETE(
+async function __DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ mediaId: string }> }
 ) {
@@ -57,3 +58,6 @@ export async function DELETE(
         return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 });
     }
 }
+
+export const GET = withApiTelemetry('/api/media/[mediaId]', __GET as any);
+export const DELETE = withApiTelemetry('/api/media/[mediaId]', __DELETE as any);

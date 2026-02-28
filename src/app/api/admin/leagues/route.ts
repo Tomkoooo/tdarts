@@ -3,8 +3,9 @@ import { LeagueModel } from '@/database/models/league.model';
 import { UserModel } from '@/database/models/user.model';
 import { connectMongo } from '@/lib/mongoose';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(req: NextRequest) {
+async function __GET(req: NextRequest) {
   try {
     await connectMongo();
 
@@ -144,3 +145,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/leagues', __GET as any);

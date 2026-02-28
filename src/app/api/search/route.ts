@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { SearchService } from '@/database/services/search.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
     try {
         const body = await request.json();
         const { query, filters, tab } = body;
@@ -81,3 +82,5 @@ export async function POST(request: Request) {
         );
     }
 }
+
+export const POST = withApiTelemetry('/api/search', __POST as any);

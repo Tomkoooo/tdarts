@@ -3,8 +3,9 @@ import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -104,3 +105,5 @@ function formatUptime(seconds: number): string {
     return `${minutes} perc`;
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/system-info', __GET as any);

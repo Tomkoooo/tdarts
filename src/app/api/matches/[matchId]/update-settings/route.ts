@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MatchService } from '@/database/services/match.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
@@ -64,3 +65,5 @@ export async function POST(
     }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/matches/[matchId]/update-settings', __POST as any);

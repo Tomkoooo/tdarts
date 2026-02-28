@@ -3,9 +3,10 @@ import { LeagueService } from '@/database/services/league.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // POST /api/clubs/[clubId]/leagues/[leagueId]/detach-tournament - Detach tournament from league
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -60,3 +61,4 @@ export async function POST(
   }
 }
 
+export const POST = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]/detach-tournament', __POST as any);

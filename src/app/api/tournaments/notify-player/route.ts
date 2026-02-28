@@ -7,8 +7,9 @@ import { PlayerModel } from '@/database/models/player.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
 import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from '@/lib/email-layout';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -120,3 +121,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/tournaments/notify-player', __POST as any);

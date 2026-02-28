@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET /api/clubs/[clubId]/tournaments - Get all tournaments for a club
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -50,3 +51,4 @@ export async function GET(
   }
 }
 
+export const GET = withApiTelemetry('/api/clubs/[clubId]/tournaments', __GET as any);

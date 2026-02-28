@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { TournamentService } from '@/database/services/tournament.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -17,4 +18,4 @@ export async function GET(
   }
 }
 
-
+export const GET = withApiTelemetry('/api/tournaments/[code]/manualGroups/context', __GET as any);

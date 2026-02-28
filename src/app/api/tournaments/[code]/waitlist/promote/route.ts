@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // POST /api/tournaments/[code]/waitlist/promote - Move player from waiting list to tournament
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -44,3 +45,4 @@ export async function POST(
   }
 }
 
+export const POST = withApiTelemetry('/api/tournaments/[code]/waitlist/promote', __POST as any);

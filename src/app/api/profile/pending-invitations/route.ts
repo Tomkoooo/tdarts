@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 import { AuthService } from "@/database/services/auth.service";
 import { TeamInvitationService } from "@/database/services/teaminvitation.service";
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     const token = request.cookies.get("token")?.value;
     if (!token) {
@@ -60,3 +61,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/profile/pending-invitations', __GET as any);

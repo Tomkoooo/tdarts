@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '@/database/models/player.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
@@ -41,3 +42,5 @@ export async function GET(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/players/find-by-user/[userId]', __GET as any);

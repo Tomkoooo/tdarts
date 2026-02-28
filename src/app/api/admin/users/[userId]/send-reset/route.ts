@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 async function requireAdmin(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
@@ -19,7 +20,7 @@ async function requireAdmin(request: NextRequest) {
   return { ok: true as const };
 }
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
@@ -48,3 +49,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/admin/users/[userId]/send-reset', __POST as any);

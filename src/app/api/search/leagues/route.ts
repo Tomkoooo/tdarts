@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { LeagueModel } from '@/database/models/league.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -47,3 +48,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/search/leagues', __GET as any);

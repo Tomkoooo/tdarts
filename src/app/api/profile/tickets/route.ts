@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackService } from '@/database/services/feedback.service';
-import { AuthorizationService } from '@/database/services/authorization.service';
-import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+import { AuthService } from '@/database/services/auth.service';
+
+async function __GET(request: NextRequest) {
   try {
-    const userId = await AuthorizationService.getUserIdFromRequest(request);
-    
-    // Ensure database connection
-    await connectMongo();
+   const token = request.cookies.get('token')?.value;
+   console.log('token', token);
+   if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+   }
+   const userId = await AuthService.verifyToken(token);
 
-    // Check if user is authenticated
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const tickets = await FeedbackService.getFeedbackByUserId(userId);
+    const tickets = await FeedbackService.getFeedbackByUserId(userId._id.toString());
 
     return NextResponse.json({
       success: true,
@@ -27,3 +25,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/profile/tickets', __GET as any);

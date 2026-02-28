@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }) {
+async function __POST(request: NextRequest, { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }) {
     try {
         const { tournamentId } = await params;
         const { matchId, legsToWin, startingPlayer } = await request.json();
@@ -19,3 +20,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         return NextResponse.json({ error: 'Failed to start match' }, { status: 500 });
     }
 }
+
+export const POST = withApiTelemetry('/api/boards/[tournamentId]/[boardNumber]/start', __POST as any);

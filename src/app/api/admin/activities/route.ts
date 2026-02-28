@@ -7,8 +7,9 @@ import { ClubModel } from '@/database/models/club.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { FeedbackModel } from '@/database/models/feedback.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -116,3 +117,5 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/activities', __GET as any);

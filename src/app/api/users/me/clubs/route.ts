@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { BadRequestError } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(req: NextRequest) {
+async function __GET(req: NextRequest) {
   try {
     const userId = await AuthorizationService.getUserIdFromRequest(req);
     if (!userId) {
@@ -33,3 +34,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/users/me/clubs', __GET as any);

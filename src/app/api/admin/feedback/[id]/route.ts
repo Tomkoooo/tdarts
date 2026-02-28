@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackService } from '@/database/services/feedback.service';
 import { sendEmail } from '@/lib/mailer';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -39,7 +40,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
+async function __PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -234,7 +235,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
+async function __DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -266,3 +267,7 @@ export async function DELETE(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/feedback/[id]', __GET as any);
+export const PATCH = withApiTelemetry('/api/admin/feedback/[id]', __PATCH as any);
+export const DELETE = withApiTelemetry('/api/admin/feedback/[id]', __DELETE as any);

@@ -273,7 +273,7 @@ export default function SearchPage() {
                         </div>
                     </div>
 
-                    <div className="max-w-4xl mx-auto">
+                    <div className="max-w-4xl mx-auto overflow-x-scroll">
                         <SearchTabs 
                             activeTab={activeTab} 
                             onTabChange={handleTabChange} 

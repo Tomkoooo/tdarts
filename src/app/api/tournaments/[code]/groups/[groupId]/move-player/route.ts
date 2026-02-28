@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function PATCH(
+async function __PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ code: string; groupId: string }> }
 ) {
@@ -45,3 +46,5 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const PATCH = withApiTelemetry('/api/tournaments/[code]/groups/[groupId]/move-player', __PATCH as any);

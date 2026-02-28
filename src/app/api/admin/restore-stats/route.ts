@@ -3,8 +3,9 @@ import { connectMongo } from "@/lib/mongoose";
 import { PlayerModel } from "@/database/models/player.model";
 import jwt from 'jsonwebtoken';
 import { UserModel } from "@/database/models/user.model";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
     try {
         // Auth Check
         const token = req.cookies.get('token')?.value;
@@ -228,3 +229,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export const POST = withApiTelemetry('/api/admin/restore-stats', __POST as any);

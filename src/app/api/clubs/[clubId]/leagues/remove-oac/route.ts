@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { LeagueModel } from '@/database/models/league.model';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function DELETE(
+async function __DELETE(
   request: Request,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -73,3 +74,5 @@ export async function DELETE(
     );
   }
 }
+
+export const DELETE = withApiTelemetry('/api/clubs/[clubId]/leagues/remove-oac', __DELETE as any);

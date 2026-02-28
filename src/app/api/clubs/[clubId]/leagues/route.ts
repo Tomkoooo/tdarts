@@ -5,9 +5,10 @@ import { CreateLeagueRequest } from '@/interface/league.interface';
 import { ClubService } from '@/database/services/club.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET /api/clubs/[clubId]/leagues - Get all leagues for a club
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -39,7 +40,7 @@ export async function GET(
 }
 
 // POST /api/clubs/[clubId]/leagues - Create a new league
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -109,3 +110,6 @@ export async function POST(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]/leagues', __GET as any);
+export const POST = withApiTelemetry('/api/clubs/[clubId]/leagues', __POST as any);

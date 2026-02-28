@@ -289,6 +289,9 @@
     "logout": "Kijelentkezés",
     "login": "Bejelentkezés",
     "register": "Regisztráció",
+    "language": "Nyelv",
+    "select_language": "Nyelv kiválasztása",
+    "coming_soon": "Hamarosan",
     "offline": "Offline",
     "tdarts_f0pi": "tDarts",
     "tdarts_logo_wslq": "tDarts Logo"
@@ -1347,7 +1350,43 @@
         }
       }
     },
-    "match_stats": {},
+    "match_stats": {
+      "charts": {
+        "avg_axis": "Átlag",
+        "leg_axis": "Legek",
+        "throw_axis": "Dobások"
+      },
+      "tabs": {
+        "overview": "Áttekintés",
+        "legs": "Leg részletek"
+      },
+      "overview": {
+        "running_avg_suffix": "futó átlag",
+        "final_avg": "Végső átlag",
+        "max_leg_avg": "Legjobb leg átlag",
+        "perf_title": "Legenkénti teljesítmény",
+        "perf_desc": "Átlag trend legenként",
+        "perf_note": "Tipp: A magasabb és stabilabb vonal jobb konzisztenciát jelez.",
+        "cum_title": "Kumulatív átlag trend",
+        "cum_desc": "Hogyan változik az átlag a mérkőzés során",
+        "cum_note": "Megfigyelés: Jól látszik, ki tud jobban alkalmazkodni a meccs előrehaladtával."
+      },
+      "legs": {
+        "leg_title": "{number}. leg",
+        "throw_label": "{number}. dobás",
+        "leg_avgs": "Leg átlagok",
+        "arrows": "{count} nyíl",
+        "points": "{count} maradt",
+        "collapse": "Bezárás",
+        "details": "Részletek",
+        "throw_avgs": "Dobásonkénti átlagok",
+        "tip_title": "Értelmezés",
+        "tip_desc": "A dobásonkénti átlagvonalakból jól látható a formaingadozás.",
+        "checkout_desc": "{name} {count} nyíllal kiszállt",
+        "remaining_desc": "Ellenfélnél maradt: {count}",
+        "no_data": "Ehhez a mérkőzéshez nincs elérhető dobásadat."
+      }
+    },
     "live": {
       "a_bal_oldali": "A bal oldali listából választhatsz.",
       "a_keresett_élő": "A keresett élő közvetítési oldal nem létezik vagy nem elérhető.",
@@ -1551,6 +1590,14 @@
       "megtekintés_87": "Megtekintés",
       "párosaim_csapataim": "Párosaim, csapataim",
       "megtekintés_98": "Megtekintés"
+    },
+    "statistics": {
+      "total_tournaments": "Összes torna",
+      "season_tournaments": "Szezon tornák",
+      "first_nine_avg": "First 9 Avg",
+      "pair": "Páros",
+      "team": "Csapat",
+      "one_eighties": "180-ak"
     }
   },
   "Club": {
@@ -2225,6 +2272,7 @@
         "todos": "Teendők",
         "emails": "Email Sablonok",
         "settings": "Beállítások",
+        "telemetry": "Telemetria",
         "collapse": "Összecsukás",
         "title": "tDarts Admin"
       },
@@ -2279,7 +2327,13 @@
         "clubs": "Klubok",
         "todos": "Teendők",
         "news": "Hírek",
-        "settings": "Beállítások"
+        "settings": "Beállítások",
+        "telemetry": "API telemetria"
+      },
+      "telemetry": {
+        "title": "API telemetry részletek",
+        "description": "Nyisd meg a dedikált telemetry oldalt útvonal szintű forgalom, késleltetés és payload elemzéshez.",
+        "open_page": "Telemetry oldal megnyitása"
       },
       "announcements": {
         "title": "Hírek Kezelése",
@@ -2909,6 +2963,7 @@
       "tags": "Tags:",
       "todos_1c7q": "Todos",
       "tournaments_e65c": "Tournaments",
+      "telemetry_fm2a": "Telemetria",
       "trend": "Trend",
       "type_to_search": "Type to search...",
       "törli": "törli",
@@ -2930,6 +2985,64 @@
       "írd_be_természetes": "Írd be természetes nyelven: &quot;Szerver karbantartás !!! holnap #dev&quot;",
       "összes": "Összes",
       "összesen_nap": "Összesen (30 nap)"
+    },
+    "telemetry": {
+      "title": "API telemetry",
+      "description": "Útvonalforgalom, késleltetés és payload trendek elemzése történeti szűrőkkel.",
+      "loading": "Telemetry adatok betöltése...",
+      "error_loading": "Nem sikerült betölteni a telemetry adatokat",
+      "refresh": "Telemetry frissítése",
+      "filters": {
+        "title": "Szűrők",
+        "description": "Válassz időtartományt, időzónát vagy egyedi intervallumot.",
+        "range": "Időtartomány",
+        "timezone": "Időzóna",
+        "method": "Metódus",
+        "all_methods": "Összes metódus",
+        "granularity": "Felbontás",
+        "granularity_minute": "Percenként",
+        "granularity_hour": "Óránként",
+        "granularity_day": "Naponként",
+        "route": "Útvonal",
+        "all_routes": "Összes útvonal",
+        "clear_route": "Útvonal törlése",
+        "custom_start": "Egyedi kezdés",
+        "custom_end": "Egyedi zárás",
+        "apply": "Alkalmaz"
+      },
+      "ranges": {
+        "24h": "Utolsó 24 óra",
+        "7d": "Utolsó 7 nap",
+        "30d": "Utolsó 30 nap",
+        "90d": "Utolsó 90 nap",
+        "custom": "Egyedi intervallum"
+      },
+      "charts": {
+        "requests": "API hívások",
+        "latency": "Átlag késleltetés (ms)",
+        "payload": "Payload (KB)",
+        "throughput": "Forgalmi átfolyás (byte)"
+      },
+      "metrics": {
+        "incoming_total_kb": "Bejövő összesen (KB)",
+        "outgoing_total_kb": "Kimenő összesen (KB)",
+        "total_moved": "Összes mozgatott adat",
+        "avg_package_size": "Átlagos csomagméret",
+        "avg_incoming_package": "Átlagos bejövő csomag",
+        "avg_outgoing_package": "Átlagos kimenő csomag"
+      },
+      "top_routes": {
+        "title": "Top API route-ok",
+        "description": "A kiválasztott időablak legaktívabb és legterheltebb útvonalai.",
+        "empty": "Még nincs API telemetry adat.",
+        "calls": "hívás",
+        "avg": "átlag",
+        "max": "max",
+        "error_rate": "hiba",
+        "incoming": "bejövő",
+        "outgoing": "kimenő",
+        "total": "összes"
+      }
     }
   },
   "Profile": {

@@ -3,49 +3,16 @@ import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
+import {
+  formatBucketLabel,
+  resolveGranularity,
+  resolveRouteFilters,
+  resolveTimeRange,
+  toDateTruncId,
+} from '@/lib/admin-telemetry';
 
-function formatLabel(bucket: string, timeZone: string) {
-  return new Date(bucket).toLocaleString('hu-HU', {
-    timeZone,
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function resolveTimeRange(searchParams: URLSearchParams): { startDate: Date; endDate: Date } {
-  const start = searchParams.get('start');
-  const end = searchParams.get('end');
-  if (start && end) {
-    return {
-      startDate: new Date(start),
-      endDate: new Date(end),
-    };
-  }
-
-  const range = searchParams.get('range') || '24h';
-  const endDate = new Date();
-  const startDate = new Date(endDate);
-
-  switch (range) {
-    case '7d':
-      startDate.setDate(startDate.getDate() - 7);
-      break;
-    case '30d':
-      startDate.setDate(startDate.getDate() - 30);
-      break;
-    case '90d':
-      startDate.setDate(startDate.getDate() - 90);
-      break;
-    default:
-      startDate.setDate(startDate.getDate() - 1);
-      break;
-  }
-  return { startDate, endDate };
-}
-
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
 
@@ -58,19 +25,31 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const timeZone = searchParams.get('tz') || 'UTC';
+    const granularity = resolveGranularity(searchParams);
     const { startDate, endDate } = resolveTimeRange(searchParams);
+    const { routeKey, method } = resolveRouteFilters(searchParams);
+    const matchBase: Record<string, any> = {};
+    if (routeKey) matchBase.routeKey = routeKey;
+    if (method) matchBase.method = method;
 
     const series = await ApiRequestMetricModel.aggregate([
-      { $match: { bucket: { $gte: startDate, $lte: endDate } } },
-      { $group: { _id: '$bucket', count: { $sum: '$count' } } },
+      {
+        $match: {
+          ...matchBase,
+          bucket: { $gte: startDate, $lte: endDate },
+        },
+      },
+      { $group: { _id: toDateTruncId(granularity, timeZone), count: { $sum: '$count' } } },
       { $sort: { _id: 1 } },
     ]);
 
     const allTimeAvgAggregation = await ApiRequestMetricModel.aggregate([
+      { $match: matchBase },
+      { $group: { _id: toDateTruncId(granularity, timeZone), count: { $sum: '$count' } } },
       {
         $group: {
           _id: null,
-          totalCount: { $sum: '$count' },
+          totalCount: { $sum: '$count' }, 
           bucketCount: { $sum: 1 },
         },
       },
@@ -81,7 +60,7 @@ export async function GET(request: NextRequest) {
         ? allTimeAvgAggregation[0].totalCount / allTimeAvgAggregation[0].bucketCount
         : 0;
 
-    const labels = series.map((s) => formatLabel(s._id, timeZone));
+    const labels = series.map((s) => formatBucketLabel(s._id, timeZone, granularity));
     const data = series.map((s) => s.count);
     const avgLine = series.map(() => Math.round(allTimeAvgPerBucket * 100) / 100);
 
@@ -107,3 +86,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch api request chart data' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/charts/api-traffic/requests', __GET as any);

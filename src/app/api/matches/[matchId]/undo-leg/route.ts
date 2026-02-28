@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
@@ -27,4 +28,6 @@ export async function POST(
         error: error.message || 'Failed to undo leg' 
     }, { status: 500 });
   }
-} 
+}
+
+export const POST = withApiTelemetry('/api/matches/[matchId]/undo-leg', __POST as any);

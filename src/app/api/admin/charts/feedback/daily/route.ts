@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
 import { connectMongo } from '@/lib/mongoose';
 import { FeedbackModel } from '@/database/models/feedback.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
     if (!token) {
@@ -60,3 +61,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/charts/feedback/daily', __GET as any);

@@ -3,8 +3,9 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { SzamlazzService } from '@/lib/szamlazz';
 import { connectMongo } from '@/lib/mongoose';
 import { AuthorizationService } from '@/database/services/authorization.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -73,3 +74,5 @@ export async function GET(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/invoice', __GET as any);

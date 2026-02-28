@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -32,4 +33,6 @@ export async function GET(
     console.error('Error fetching boards:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
+}
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]/boards', __GET as any);

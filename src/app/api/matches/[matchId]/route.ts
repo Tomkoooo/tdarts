@@ -6,8 +6,9 @@ import { AuthService } from '@/database/services/auth.service';
 import { PlayerModel } from '@/database/models/player.model';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { AuthorizationService } from '@/database/services/authorization.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
@@ -78,7 +79,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
+async function __PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
@@ -126,3 +127,6 @@ export async function PATCH(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/matches/[matchId]', __GET as any);
+export const PATCH = withApiTelemetry('/api/matches/[matchId]', __PATCH as any);

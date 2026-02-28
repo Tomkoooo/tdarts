@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';
 import { BadRequestError, handleError } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
   await connectToDatabase();
   try {
     const { email, password, confirmPassword, name, username } = await request.json();
@@ -24,3 +25,5 @@ export async function POST(request: Request) {
     return NextResponse.json(body, { status });
   }
 }
+
+export const POST = withApiTelemetry('/api/auth/register', __POST as any);

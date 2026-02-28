@@ -5,6 +5,14 @@ import IconDart from './icons/IconDart';
 
 const ParallaxBackground = () => {
   const [scrollY, setScrollY] = useState(0);
+  const backgroundBlobs = Array.from({ length: 12 }, (_, i) => ({
+    left: `${(i * 17) % 100}%`,
+    top: `${(i * 29) % 100}%`,
+    width: `${50 + ((i * 23) % 100)}px`,
+    height: `${50 + ((i * 31) % 100)}px`,
+    animationDelay: `${(i % 6) * 0.8}s`,
+    animationDuration: `${5 + (i % 5)}s`,
+  }));
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -27,17 +35,17 @@ const ParallaxBackground = () => {
     <div className="fixed inset-0 overflow-hidden pointer-events-none bg-background">
       {/* Enhanced Animated Background Shapes */}
       <div className="absolute inset-0 opacity-20">
-        {[...Array(12)].map((_, i) => (
+        {backgroundBlobs.map((blob, i) => (
           <div
             key={i}
             className="absolute rounded-full bg-primary/10 blur-xl animate-pulse"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 100 + 50}px`,
-              height: `${Math.random() * 100 + 50}px`,
-              animationDelay: `${Math.random() * 6}s`,
-              animationDuration: `${Math.random() * 5 + 5}s`
+              left: blob.left,
+              top: blob.top,
+              width: blob.width,
+              height: blob.height,
+              animationDelay: blob.animationDelay,
+              animationDuration: blob.animationDuration,
             }}
           />
         ))}

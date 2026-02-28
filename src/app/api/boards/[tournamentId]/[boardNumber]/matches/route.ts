@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }
 ) {
@@ -27,4 +28,6 @@ export async function GET(
         console.error('getBoardMatches error:', error);
         return NextResponse.json({ error: 'Failed to get matches' }, { status: 500 });
     }
-} 
+}
+
+export const GET = withApiTelemetry('/api/boards/[tournamentId]/[boardNumber]/matches', __GET as any);

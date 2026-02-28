@@ -71,19 +71,6 @@ interface ActivityItem {
   highlight?: boolean
 }
 
-interface TopApiRoute {
-  routeKey: string
-  method: string
-  count: number
-  errorCount: number
-  errorRate: number
-  avgDurationMs: number
-  maxDurationMs: number
-  totalTrafficKb: number
-}
-
-type TelemetryRange = "24h" | "7d" | "30d" | "90d" | "custom"
-
 // --- Mock Data Helpers (Replace with real API later) ---
 
 export default function AdminDashboardPage() {
@@ -95,14 +82,6 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [userChartData, setUserChartData] = useState<ChartData | null>(null)
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null)
-  const [apiRequestsChartData, setApiRequestsChartData] = useState<ChartData | null>(null)
-  const [apiLatencyChartData, setApiLatencyChartData] = useState<ChartData | null>(null)
-  const [apiPayloadChartData, setApiPayloadChartData] = useState<ChartData | null>(null)
-  const [topApiRoutes, setTopApiRoutes] = useState<TopApiRoute[]>([])
-  const [telemetryRange, setTelemetryRange] = useState<TelemetryRange>("24h")
-  const [customStart, setCustomStart] = useState("")
-  const [customEnd, setCustomEnd] = useState("")
-  const [telemetryTimezone, setTelemetryTimezone] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC")
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [alerts, setAlerts] = useState<{ errors24h: number; pendingFeedback: number } | null>(null)
@@ -110,33 +89,16 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsRefreshing(true)
-      const telemetryParams = new URLSearchParams({
-        range: telemetryRange,
-        tz: telemetryTimezone,
-      })
-      if (telemetryRange === "custom" && customStart && customEnd) {
-        telemetryParams.set("start", new Date(customStart).toISOString())
-        telemetryParams.set("end", new Date(customEnd).toISOString())
-      }
-
       const [
         statsResponse, 
         userChartResponse, 
         tournamentChartResponse,
-        apiRequestsResponse,
-        apiLatencyResponse,
-        apiPayloadResponse,
-        topApiRoutesResponse,
         activitiesResponse,
         alertsResponse
       ] = await Promise.all([
         axios.get("/api/admin/stats"),
         axios.get("/api/admin/charts/users"),
         axios.get("/api/admin/charts/tournaments"),
-        axios.get(`/api/admin/charts/api-traffic/requests?${telemetryParams.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/latency?${telemetryParams.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/payload?${telemetryParams.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/top-routes?${telemetryParams.toString()}&limit=8`),
         axios.get("/api/admin/activities"),
         axios.get("/api/admin/alerts")
       ])
@@ -153,10 +115,6 @@ export default function AdminDashboardPage() {
 
       setUserChartData(extractChartData(userChartResponse))
       setTournamentChartData(extractChartData(tournamentChartResponse))
-      setApiRequestsChartData(extractChartData(apiRequestsResponse))
-      setApiLatencyChartData(extractChartData(apiLatencyResponse))
-      setApiPayloadChartData(extractChartData(apiPayloadResponse))
-      setTopApiRoutes(topApiRoutesResponse.data?.data || [])
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error)
@@ -168,9 +126,8 @@ export default function AdminDashboardPage() {
   }
 
   useEffect(() => {
-    if (telemetryRange === "custom") return
     fetchDashboardData()
-  }, [telemetryRange, telemetryTimezone])
+  }, [])
 
   if (loading) {
     return (
@@ -347,46 +304,7 @@ export default function AdminDashboardPage() {
     )
   }
 
-  const ApiTopRoutesCard = () => (
-    <Card className="backdrop-blur-sm bg-card/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Top API route-ok ({telemetryRange === "custom" ? "egyedi intervallum" : telemetryRange})</CardTitle>
-        <CardDescription>Leggyakoribb és legnehezebb útvonalak</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {topApiRoutes.length > 0 ? (
-            topApiRoutes.map((row, idx) => (
-              <div key={`${row.method}-${row.routeKey}-${idx}`} className="rounded-lg border border-border/50 p-3 bg-muted/20">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <code className="text-xs">{row.method} {row.routeKey}</code>
-                  <Badge variant={row.errorRate > 0 ? "destructive" : "secondary"}>{row.errorRate}% err</Badge>
-                </div>
-                <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
-                  <span>{row.count} hívás</span>
-                  <span>avg {row.avgDurationMs}ms</span>
-                  <span>max {row.maxDurationMs}ms</span>
-                  <span>{row.totalTrafficKb} KB</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">Nincs még API telemetry adat.</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
-
   // --- Sub-components (Chart wrappers) ---
-
-  const telemetryRangeOptions: Array<{ value: TelemetryRange; label: string }> = [
-    { value: "24h", label: "Utolsó 24 óra" },
-    { value: "7d", label: "Utolsó 7 nap" },
-    { value: "30d", label: "Utolsó 30 nap" },
-    { value: "90d", label: "Utolsó 90 nap" },
-    { value: "custom", label: "Egyedi intervallum" },
-  ]
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
@@ -494,64 +412,17 @@ export default function AdminDashboardPage() {
             <SimpleChart title={t("charts.tournaments")} data={tournamentChartData} color="#f59e0b" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <SimpleChart title="API hívások" data={apiRequestsChartData} color="#6366f1" />
-            <SimpleChart title="API átlag késleltetés (ms)" data={apiLatencyChartData} color="#f97316" />
-            <SimpleChart title="API payload (KB)" data={apiPayloadChartData} color="#10b981" />
-          </div>
-
           <Card className="backdrop-blur-sm bg-card/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">API telemetry szűrők</CardTitle>
-              <CardDescription>Időtartomány + időzóna beállítások, valamint egyedi intervallum elemzés</CardDescription>
+              <CardTitle className="text-lg">{t("telemetry.title")}</CardTitle>
+              <CardDescription>{t("telemetry.description")}</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <select
-                value={telemetryRange}
-                onChange={(e) => setTelemetryRange(e.target.value as TelemetryRange)}
-                className="border border-border bg-background rounded px-3 py-2 text-sm"
-              >
-                {telemetryRangeOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              <select
-                value={telemetryTimezone}
-                onChange={(e) => setTelemetryTimezone(e.target.value)}
-                className="border border-border bg-background rounded px-3 py-2 text-sm"
-              >
-                <option value="UTC">UTC</option>
-                <option value="Europe/Budapest">Europe/Budapest</option>
-                <option value="Europe/Berlin">Europe/Berlin</option>
-                <option value="America/New_York">America/New_York</option>
-              </select>
-              <input
-                type="datetime-local"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                disabled={telemetryRange !== "custom"}
-                className="border border-border bg-background rounded px-3 py-2 text-sm disabled:opacity-50"
-              />
-              <div className="flex gap-2">
-                <input
-                  type="datetime-local"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  disabled={telemetryRange !== "custom"}
-                  className="border border-border bg-background rounded px-3 py-2 text-sm disabled:opacity-50 flex-1"
-                />
-                <Button
-                  type="button"
-                  disabled={telemetryRange !== "custom" || !customStart || !customEnd || isRefreshing}
-                  onClick={() => fetchDashboardData()}
-                >
-                  Alkalmaz
-                </Button>
-              </div>
+            <CardContent>
+              <Button asChild>
+                <Link href="/admin/telemetry">{t("telemetry.open_page")}</Link>
+              </Button>
             </CardContent>
           </Card>
-
-          <ApiTopRoutesCard />
           
           <Card className="backdrop-blur-sm bg-card/50">
             <CardHeader className="pb-3">

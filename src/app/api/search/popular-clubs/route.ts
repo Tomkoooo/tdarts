@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SearchService } from '@/database/services/search.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 5;
@@ -19,4 +20,6 @@ export async function GET(request: NextRequest) {
             { status: 500 }
         );
     }
-} 
+}
+
+export const GET = withApiTelemetry('/api/search/popular-clubs', __GET as any);

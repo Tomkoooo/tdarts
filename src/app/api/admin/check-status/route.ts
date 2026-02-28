@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -31,3 +32,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ isAdmin: false });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/check-status', __GET as any);

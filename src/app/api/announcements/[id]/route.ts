@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnnouncementService } from '@/database/services/announcement.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET - Egyedi announcement lekérése (admin only)
-export async function GET(
+async function __GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -55,7 +56,7 @@ export async function GET(
 }
 
 // PUT - Announcement módosítása (admin only)
-export async function PUT(
+async function __PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -121,7 +122,7 @@ export async function PUT(
 }
 
 // DELETE - Announcement törlése (admin only)
-export async function DELETE(
+async function __DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -171,3 +172,7 @@ export async function DELETE(
         );
     }
 }
+
+export const GET = withApiTelemetry('/api/announcements/[id]', __GET as any);
+export const PUT = withApiTelemetry('/api/announcements/[id]', __PUT as any);
+export const DELETE = withApiTelemetry('/api/announcements/[id]', __DELETE as any);

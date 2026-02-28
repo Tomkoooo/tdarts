@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET() {
+async function __GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -33,3 +34,5 @@ export async function GET() {
     return NextResponse.json({ error: error.message || 'Failed to load auth providers' }, { status: error.status || 400 });
   }
 }
+
+export const GET = withApiTelemetry('/api/profile/auth-providers', __GET as any);

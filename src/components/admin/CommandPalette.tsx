@@ -26,6 +26,7 @@ import {
   IconSettings,
   IconLayoutDashboard,
   IconCornerDownLeft,
+  IconActivity,
 } from "@tabler/icons-react"
 
 interface CommandItem {
@@ -123,6 +124,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         description: "System settings",
         icon: IconSettings,
         href: "/admin/settings",
+        category: "navigation",
+      },
+      {
+        id: "nav-telemetry",
+        title: t("telemetry_fm2a"),
+        description: "API telemetry analytics",
+        icon: IconActivity,
+        href: "/admin/telemetry",
         category: "navigation",
       },
     ]), [t]) as CommandItem[];

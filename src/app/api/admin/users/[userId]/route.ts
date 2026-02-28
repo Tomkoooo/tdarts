@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const updateAdminUserSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
@@ -26,7 +27,7 @@ async function requireAdmin(request: NextRequest) {
   return { ok: true as const };
 }
 
-export async function PATCH(
+async function __PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
@@ -96,3 +97,5 @@ export async function PATCH(
     );
   }
 }
+
+export const PATCH = withApiTelemetry('/api/admin/users/[userId]', __PATCH as any);

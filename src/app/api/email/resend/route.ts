@@ -4,13 +4,14 @@ import { verifyEmailResendToken } from '@/lib/email-resend';
 import { normalizeEmailLocale } from '@/lib/email-layout';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
 import { sendEmail } from '@/lib/mailer';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const resendSchema = z.object({
   token: z.string().min(1),
   locale: z.enum(['hu', 'en', 'de']).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     const body = resendSchema.parse(await request.json());
     const payload = verifyEmailResendToken(body.token);
@@ -58,3 +59,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/email/resend', __POST as any);

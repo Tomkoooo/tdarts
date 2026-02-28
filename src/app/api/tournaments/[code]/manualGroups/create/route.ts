@@ -3,8 +3,9 @@ import { connectMongo } from '@/lib/mongoose';
 import { TournamentService } from '@/database/services/tournament.service';
 import { CreateManualGroupsRequest, CreateManualGroupsResponse } from '@/interface/tournament.interface';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -34,4 +35,4 @@ export async function POST(
   }
 }
 
-
+export const POST = withApiTelemetry('/api/tournaments/[code]/manualGroups/create', __POST as any);

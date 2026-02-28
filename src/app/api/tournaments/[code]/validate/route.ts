@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+async function __POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
     const { password } = await request.json();
@@ -27,3 +28,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/tournaments/[code]/validate', __POST as any);

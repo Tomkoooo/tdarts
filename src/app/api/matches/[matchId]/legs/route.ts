@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MatchModel } from "@/database/models/match.model";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ matchId: string }> }
 ) {
@@ -38,4 +39,6 @@ export async function GET(
     console.error('get-match-legs error:', error);
     return NextResponse.json({ error: 'Failed to get match legs' }, { status: 500 });
   }
-} 
+}
+
+export const GET = withApiTelemetry('/api/matches/[matchId]/legs', __GET as any);

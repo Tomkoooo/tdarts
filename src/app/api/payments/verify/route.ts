@@ -6,12 +6,13 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { SzamlazzService } from '@/lib/szamlazz';
 import { LeagueService } from '@/database/services/league.service';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia' as any,
 });
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get('session_id');
 
@@ -97,3 +98,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/payments/verify', __GET as any);

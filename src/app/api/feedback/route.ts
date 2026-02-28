@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackService } from '@/database/services/feedback.service';
 import { sendEmail } from '@/lib/mailer';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { category, title, description, email, page, device, browser, userAgent, userId } = body;
@@ -84,3 +85,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/feedback', __POST as any);

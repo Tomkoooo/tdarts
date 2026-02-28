@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import {connectMongo } from '@/lib/mongoose';
 import { ClubModel } from '@/database/models/club.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET() {
+async function __GET() {
   try {
     await connectMongo();
     
@@ -76,3 +77,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/charts/clubs', __GET as any);

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }) {
+async function __GET(request: NextRequest, { params }: { params: Promise<{ tournamentId: string; boardNumber: string }> }) {
     try {
         const { tournamentId, boardNumber } = await params;
         const { searchParams } = new URL(request.url);
@@ -31,3 +32,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         return NextResponse.json({ error: 'Failed to get match' }, { status: 500 });
     }
 }
+
+export const GET = withApiTelemetry('/api/boards/[tournamentId]/[boardNumber]/match', __GET as any);

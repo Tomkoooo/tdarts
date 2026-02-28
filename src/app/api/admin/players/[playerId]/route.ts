@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerModel } from '@/database/models/player.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const honorSchema = z.object({
   title: z.string().trim().min(1).max(100),
@@ -32,7 +33,7 @@ async function requireAdmin(request: NextRequest) {
   return { ok: true as const };
 }
 
-export async function PATCH(
+async function __PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ playerId: string }> }
 ) {
@@ -84,3 +85,5 @@ export async function PATCH(
     );
   }
 }
+
+export const PATCH = withApiTelemetry('/api/admin/players/[playerId]', __PATCH as any);

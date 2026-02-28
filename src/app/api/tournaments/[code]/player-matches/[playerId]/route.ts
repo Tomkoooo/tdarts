@@ -3,8 +3,9 @@ import { TournamentService } from '@/database/services/tournament.service';
 import { AuthService } from '@/database/services/auth.service';
 import { PlayerModel } from '@/database/models/player.model';
 import { AuthorizationService } from '@/database/services/authorization.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string; playerId: string }> }
 ) {
@@ -66,3 +67,5 @@ export async function GET(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/player-matches/[playerId]', __GET as any);

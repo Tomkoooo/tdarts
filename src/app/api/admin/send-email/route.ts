@@ -5,8 +5,9 @@ import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { EmailTemplateService } from '@/database/services/emailtemplate.service';
 import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from '@/lib/email-layout';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -104,3 +105,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/admin/send-email', __POST as any);

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnnouncementService } from '@/database/services/announcement.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function PATCH(
+async function __PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -42,7 +43,7 @@ export async function PATCH(
     }
 }
 
-export async function DELETE(
+async function __DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -72,3 +73,6 @@ export async function DELETE(
         );
     }
 }
+
+export const PATCH = withApiTelemetry('/api/admin/announcements/[id]', __PATCH as any);
+export const DELETE = withApiTelemetry('/api/admin/announcements/[id]', __DELETE as any);

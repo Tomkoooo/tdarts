@@ -9,8 +9,9 @@ import { TeamInvitationModel } from "@/database/models/teaminvitation.model";
 import { EmailTemplateService } from "@/database/services/emailtemplate.service";
 import { sendEmail } from "@/lib/mailer";
 import { normalizeEmailLocale, renderMinimalEmailLayout, textToEmailHtml } from "@/lib/email-layout";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+async function __GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+async function __POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const { action } = await request.json(); // 'accept' or 'decline'
 
@@ -244,3 +245,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/invitations/[token]', __GET as any);
+export const POST = withApiTelemetry('/api/invitations/[token]', __POST as any);

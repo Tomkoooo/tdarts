@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -27,3 +28,5 @@ export async function GET(
     }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/board-context', __GET as any);

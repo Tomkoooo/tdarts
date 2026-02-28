@@ -4,8 +4,9 @@ import { connectMongo } from "@/lib/mongoose";
 import { GalleryModel } from "@/database/models/gallery.model";
 import { AuthorizationService } from "@/database/services/authorization.service";
 import { Types } from "mongoose";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -20,7 +21,7 @@ export async function GET(
   }
 }
 
-export async function POST(
+async function __POST(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -66,7 +67,7 @@ export async function POST(
   }
 }
 
-export async function PUT(
+async function __PUT(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -101,7 +102,7 @@ export async function PUT(
     }
 }
 
-export async function DELETE(
+async function __DELETE(
     req: NextRequest, 
     { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -122,3 +123,8 @@ export async function DELETE(
         return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }
+
+export const GET = withApiTelemetry('/api/clubs/[clubId]/galleries', __GET as any);
+export const POST = withApiTelemetry('/api/clubs/[clubId]/galleries', __POST as any);
+export const PUT = withApiTelemetry('/api/clubs/[clubId]/galleries', __PUT as any);
+export const DELETE = withApiTelemetry('/api/clubs/[clubId]/galleries', __DELETE as any);

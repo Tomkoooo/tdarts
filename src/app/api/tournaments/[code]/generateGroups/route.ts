@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { connectMongo } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -49,4 +50,6 @@ export async function POST(
     } catch (error) {
         return NextResponse.json({ error: 'Failed to generate groups' + error }, { status: 500 });
     }
-} 
+}
+
+export const POST = withApiTelemetry('/api/tournaments/[code]/generateGroups', __POST as any);

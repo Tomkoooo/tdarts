@@ -4,8 +4,9 @@ import { authOptions } from '@/lib/auth';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -90,3 +91,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/auth/link-google', __POST as any);

@@ -6,8 +6,9 @@ import '@/database/models/tournament.model';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '@/database/models/user.model';
 import { PlayerService } from '@/database/services/player.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -185,3 +186,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/profile/player-stats', __GET as any);

@@ -208,6 +208,48 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
     return throws.length * 3
   }
 
+  const calculateWinnerArrowsForLeg = (leg: Leg, isPlayer1Winner: boolean, isPlayer2Winner: boolean) => {
+    const winnerThrows = isPlayer1Winner ? leg.player1Throws : isPlayer2Winner ? leg.player2Throws : []
+    const winnerStoredTotalDarts = isPlayer1Winner
+      ? (leg as any).player1TotalDarts
+      : isPlayer2Winner
+        ? (leg as any).player2TotalDarts
+        : undefined
+
+    if (typeof winnerStoredTotalDarts === "number" && winnerStoredTotalDarts > 0) {
+      return winnerStoredTotalDarts
+    }
+
+    if (!winnerThrows.length) return 0
+
+    const lastThrow = winnerThrows[winnerThrows.length - 1]
+    // Legacy payloads can include winnerArrowCount as "checkout visit darts".
+    // If missing, fallback to the last throw's darts value.
+    const checkoutVisitDarts =
+      typeof leg.winnerArrowCount === "number" && leg.winnerArrowCount > 0 && leg.winnerArrowCount <= 3
+        ? leg.winnerArrowCount
+        : Number(lastThrow?.darts || 3)
+
+    return (winnerThrows.length - 1) * 3 + checkoutVisitDarts
+  }
+
+  const calculateLoserRemainingForLeg = (leg: Leg, isPlayer1Winner: boolean, isPlayer2Winner: boolean) => {
+    if (typeof leg.loserRemainingScore === "number" && leg.loserRemainingScore >= 0) {
+      return leg.loserRemainingScore
+    }
+
+    const player1Score = Number(leg.player1Score || 0)
+    const player2Score = Number(leg.player2Score || 0)
+
+    if (isPlayer1Winner) {
+      return Math.max(0, player1Score - player2Score)
+    }
+    if (isPlayer2Winner) {
+      return Math.max(0, player2Score - player1Score)
+    }
+    return 0
+  }
+
   const calculateRunningAverages = (throws: Throw[]) => {
     let total = 0
     return throws.map((entry, idx) => {
@@ -347,7 +389,8 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                   {legs.map((leg, legIndex) => {
                     const isPlayer1Winner = leg.winnerId?._id === match.player1?.playerId?._id
                     const isPlayer2Winner = leg.winnerId?._id === match.player2?.playerId?._id
-                    const loserRemaining = leg.loserRemainingScore ?? 0
+                    const winnerArrows = calculateWinnerArrowsForLeg(leg, isPlayer1Winner, isPlayer2Winner)
+                    const loserRemaining = calculateLoserRemainingForLeg(leg, isPlayer1Winner, isPlayer2Winner)
 
                     const player1LegStats = showDetailedStats ? calculateLegStats(leg.player1Throws) : null
                     const player2LegStats = showDetailedStats ? calculateLegStats(leg.player2Throws) : null
@@ -369,18 +412,18 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
                                     <IconTrophy className="h-3 w-3 text-warning" />
                                     <span>{leg.winnerId?.name}</span>
                                   </div>
-                                  {leg.winnerArrowCount && (
+                                  {
                                     <div className="flex items-center gap-1">
                                       <IconTarget className="h-3 w-3 text-primary" />
-                                      <span>{t('arrows', { count: leg.winnerArrowCount })}</span>
+                                      <span>{t('arrows')} { winnerArrows }</span>
                                     </div>
-                                  )}
-                                  {loserRemaining > 0 && (
+                                  }
+                                  {
                                     <div className="flex items-center gap-1">
                                       <IconTrendingDown className="h-3 w-3 text-destructive" />
-                                      <span>{t('remains', { count: loserRemaining })}</span>
+                                      <span>{t('remains')} { loserRemaining }</span>
                                     </div>
-                                  )}
+                                  }
                                 </div>
                               </div>
                             </div>

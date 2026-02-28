@@ -23,6 +23,7 @@ import {
   IconChevronRight,
   IconMenu2,
   IconMail,
+  IconActivity,
 } from "@tabler/icons-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -99,6 +100,11 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
       title: "sidebar.settings",
       href: "/admin/settings",
       icon: IconSettings,
+    },
+    {
+      title: "sidebar.telemetry",
+      href: "/admin/telemetry",
+      icon: IconActivity,
     },
   ]), []);
 

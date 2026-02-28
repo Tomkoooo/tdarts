@@ -3,49 +3,22 @@ import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
 import jwt from 'jsonwebtoken';
+import { withApiTelemetry } from '@/lib/api-telemetry';
+import {
+  formatBucketLabel,
+  resolveGranularity,
+  resolveRouteFilters,
+  resolveTimeRange,
+  toDateTruncId,
+} from '@/lib/admin-telemetry';
 
-function formatLabel(bucket: string, timeZone: string) {
-  return new Date(bucket).toLocaleString('hu-HU', {
-    timeZone,
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+function granularitySeconds(granularity: 'minute' | 'hour' | 'day'): number {
+  if (granularity === 'hour') return 3600;
+  if (granularity === 'day') return 86400;
+  return 60;
 }
 
-function resolveTimeRange(searchParams: URLSearchParams): { startDate: Date; endDate: Date } {
-  const start = searchParams.get('start');
-  const end = searchParams.get('end');
-  if (start && end) {
-    return {
-      startDate: new Date(start),
-      endDate: new Date(end),
-    };
-  }
-
-  const range = searchParams.get('range') || '24h';
-  const endDate = new Date();
-  const startDate = new Date(endDate);
-
-  switch (range) {
-    case '7d':
-      startDate.setDate(startDate.getDate() - 7);
-      break;
-    case '30d':
-      startDate.setDate(startDate.getDate() - 30);
-      break;
-    case '90d':
-      startDate.setDate(startDate.getDate() - 90);
-      break;
-    default:
-      startDate.setDate(startDate.getDate() - 1);
-      break;
-  }
-  return { startDate, endDate };
-}
-
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
 
@@ -58,63 +31,155 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const timeZone = searchParams.get('tz') || 'UTC';
+    const granularity = resolveGranularity(searchParams);
     const { startDate, endDate } = resolveTimeRange(searchParams);
+    const { routeKey, method } = resolveRouteFilters(searchParams);
+    const matchBase: Record<string, any> = {};
+    if (routeKey) matchBase.routeKey = routeKey;
+    if (method) matchBase.method = method;
 
     const series = await ApiRequestMetricModel.aggregate([
-      { $match: { bucket: { $gte: startDate, $lte: endDate } } },
+      {
+        $match: {
+          ...matchBase,
+          bucket: { $gte: startDate, $lte: endDate },
+        },
+      },
       {
         $group: {
-          _id: '$bucket',
+          _id: toDateTruncId(granularity, timeZone),
           totalRequestBytes: { $sum: '$totalRequestBytes' },
           totalResponseBytes: { $sum: '$totalResponseBytes' },
+          totalCount: { $sum: '$count' },
         },
       },
       { $sort: { _id: 1 } },
     ]);
 
-    const allTimeAggregation = await ApiRequestMetricModel.aggregate([
+    const allTimePerBucket = await ApiRequestMetricModel.aggregate([
+      { $match: matchBase },
       {
         $group: {
-          _id: null,
+          _id: toDateTruncId(granularity, timeZone),
           totalRequestBytes: { $sum: '$totalRequestBytes' },
           totalResponseBytes: { $sum: '$totalResponseBytes' },
-          bucketCount: { $sum: 1 },
+          totalCount: { $sum: '$count' },
         },
       },
     ]);
 
-    const allTimeAvgKb =
-      allTimeAggregation.length > 0 && allTimeAggregation[0].bucketCount > 0
-        ? ((allTimeAggregation[0].totalRequestBytes + allTimeAggregation[0].totalResponseBytes) / 1024) /
-          allTimeAggregation[0].bucketCount
+    const allTimeAggregation = allTimePerBucket.reduce(
+      (acc, row) => {
+        acc.totalRequestBytes += row.totalRequestBytes || 0;
+        acc.totalResponseBytes += row.totalResponseBytes || 0;
+        acc.totalCount += row.totalCount || 0;
+        acc.bucketCount += 1;
+        return acc;
+      },
+      {
+        totalRequestBytes: 0,
+        totalResponseBytes: 0,
+        totalCount: 0,
+        bucketCount: 0,
+      }
+    );
+
+    const allTimeAvgRequestKb =
+      allTimeAggregation.bucketCount > 0
+        ? allTimeAggregation.totalRequestBytes / 1024 / allTimeAggregation.bucketCount
         : 0;
 
-    const labels = series.map((s) => formatLabel(s._id, timeZone));
-    const data = series.map((s) => {
-      const totalBytes = (s.totalRequestBytes || 0) + (s.totalResponseBytes || 0);
-      return Math.round((totalBytes / 1024) * 100) / 100;
-    });
-    const avgLine = series.map(() => Math.round(allTimeAvgKb * 100) / 100);
+    const allTimeAvgResponseKb =
+      allTimeAggregation.bucketCount > 0
+        ? allTimeAggregation.totalResponseBytes / 1024 / allTimeAggregation.bucketCount
+        : 0;
+
+    const allTimeAvgTotalKb =
+      allTimeAggregation.bucketCount > 0
+        ? (allTimeAggregation.totalRequestBytes + allTimeAggregation.totalResponseBytes) / 1024 / allTimeAggregation.bucketCount
+        : 0;
+
+    const labels = series.map((s) => formatBucketLabel(s._id, timeZone, granularity));
+    const requestData = series.map((s) => Math.round(((s.totalRequestBytes || 0) / 1024) * 100) / 100);
+    const responseData = series.map((s) => Math.round(((s.totalResponseBytes || 0) / 1024) * 100) / 100);
+    const throughputBytesData = series.map((s) => (s.totalRequestBytes || 0) + (s.totalResponseBytes || 0));
+    const throughputBytesPerSecondData = throughputBytesData.map((value) =>
+      Math.round((value / granularitySeconds(granularity)) * 100) / 100
+    );
+    const avgRequestLine = series.map(() => Math.round(allTimeAvgRequestKb * 100) / 100);
+    const avgResponseLine = series.map(() => Math.round(allTimeAvgResponseKb * 100) / 100);
+    const avgTotalLine = series.map(() => Math.round(allTimeAvgTotalKb * 100) / 100);
+
+    const selectedTotalRequestBytes = series.reduce((acc, item) => acc + (item.totalRequestBytes || 0), 0);
+    const selectedTotalResponseBytes = series.reduce((acc, item) => acc + (item.totalResponseBytes || 0), 0);
+    const selectedTotalCount = series.reduce((acc, item) => acc + (item.totalCount || 0), 0);
+    const selectedTotalMovedBytes = selectedTotalRequestBytes + selectedTotalResponseBytes;
 
     return NextResponse.json({
       labels,
       datasets: [
         {
-          label: 'API forgalom (KB)',
-          data,
+          label: 'Incoming payload (KB)',
+          data: requestData,
           backgroundColor: 'rgba(16, 185, 129, 0.2)',
           borderColor: 'rgb(16, 185, 129)',
         },
         {
-          label: 'All-time átlag forgalom (KB)',
-          data: avgLine,
+          label: 'Outgoing payload (KB)',
+          data: responseData,
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(59, 130, 246)',
+        },
+        {
+          label: 'All-time avg incoming (KB)',
+          data: avgRequestLine,
           backgroundColor: 'rgba(107, 114, 128, 0.05)',
           borderColor: 'rgb(107, 114, 128)',
         },
+        {
+          label: 'All-time avg outgoing (KB)',
+          data: avgResponseLine,
+          backgroundColor: 'rgba(107, 114, 128, 0.05)',
+          borderColor: 'rgb(99, 102, 241)',
+        },
+        {
+          label: 'All-time avg total (KB)',
+          data: avgTotalLine,
+          backgroundColor: 'rgba(107, 114, 128, 0.05)',
+          borderColor: 'rgb(156, 163, 175)',
+        },
       ],
+      throughput: {
+        labels,
+        datasets: [
+          {
+            label: `Összes forgalom (bytes / ${granularity})`,
+            data: throughputBytesData,
+            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+            borderColor: 'rgb(99, 102, 241)',
+          },
+          {
+            label: `Átlagos forgalom (bytes/sec)`,
+            data: throughputBytesPerSecondData,
+            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+            borderColor: 'rgb(14, 165, 233)',
+          },
+        ],
+      },
+      summary: {
+        totalRequestBytes: selectedTotalRequestBytes,
+        totalResponseBytes: selectedTotalResponseBytes,
+        totalMovedBytes: selectedTotalMovedBytes,
+        totalRequests: selectedTotalCount,
+        avgRequestPackageBytes: selectedTotalCount > 0 ? Math.round(selectedTotalRequestBytes / selectedTotalCount) : 0,
+        avgResponsePackageBytes: selectedTotalCount > 0 ? Math.round(selectedTotalResponseBytes / selectedTotalCount) : 0,
+        avgTotalPackageBytes: selectedTotalCount > 0 ? Math.round(selectedTotalMovedBytes / selectedTotalCount) : 0,
+      },
     });
   } catch (error) {
     console.error('Error fetching api traffic payload chart:', error);
     return NextResponse.json({ error: 'Failed to fetch api payload chart data' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/charts/api-traffic/payload', __GET as any);

@@ -1,6 +1,9 @@
+"use client"
+
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/Badge"
 import { getMapSettingsTranslations } from "@/data/translations/map-settings"
+import { useLocale } from "next-intl"
 
 interface SearchTabsProps {
     activeTab: string;
@@ -16,7 +19,8 @@ interface SearchTabsProps {
 }
 
 export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) {
-    const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
+    const locale = useLocale()
+    const t = getMapSettingsTranslations(locale)
     return (
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
             <TabsList className="flex w-full min-w-max gap-1 h-auto p-1 bg-base-200/50 backdrop-blur-sm rounded-xl overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">

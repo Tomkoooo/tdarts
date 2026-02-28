@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PlayerModel } from '@/database/models/player.model';
 import { UserModel } from '@/database/models/user.model';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   req: NextRequest,
   { params }: { params: Promise<{ playerId: string }> }
 ) {
@@ -47,3 +48,5 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/players/[playerId]/avatar', __GET as any);

@@ -3,8 +3,9 @@ import { MatchModel } from '@/database/models/match.model';
 import { TournamentService } from '@/database/services/tournament.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
@@ -62,4 +63,6 @@ export async function GET(
     console.error('getTournamentMatches error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
+}
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/matches', __GET as any);

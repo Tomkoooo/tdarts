@@ -4,6 +4,7 @@ import { AuthService } from '@/database/services/auth.service';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { isValidCountryCode } from '@/lib/countries';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const updateProfileSchema = z.object({
   email: z.string().email('Invalid email address').optional(),
@@ -34,7 +35,7 @@ const updateProfileSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
   try {
     const cookieStore = cookies();
     const token = (await cookieStore).get('token')?.value;
@@ -68,3 +69,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Failed to update profile' }, { status: error.status || 400 });
   }
 }
+
+export const POST = withApiTelemetry('/api/profile/update', __POST as any);

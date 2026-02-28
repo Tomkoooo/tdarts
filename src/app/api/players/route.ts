@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PlayerService } from '@/database/services/player.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
   try {
     const data = await req.json();
     const player = await PlayerService.createPlayer(data);
@@ -9,4 +10,6 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-} 
+}
+
+export const POST = withApiTelemetry('/api/players', __POST as any);

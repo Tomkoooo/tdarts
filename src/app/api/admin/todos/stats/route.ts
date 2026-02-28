@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TodoService } from '@/database/services/todo.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     // Admin jogosultság ellenőrzése
     const token = request.cookies.get('token')?.value;
@@ -32,3 +33,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/admin/todos/stats', __GET as any);

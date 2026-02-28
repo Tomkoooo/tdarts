@@ -3,8 +3,9 @@ import { connectMongo } from '@/lib/mongoose';
 import { LeagueModel } from '@/database/models/league.model';
 import '@/database/models/club.model'; // Ensure Club model is registered
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     await connectMongo();
     
@@ -80,3 +81,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/profile/league-history', __GET as any);

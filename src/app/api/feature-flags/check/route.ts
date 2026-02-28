@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FeatureFlagService } from '@/lib/featureFlags';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const feature = searchParams.get('feature');
@@ -26,4 +27,6 @@ export async function GET(request: NextRequest) {
     console.error('Error checking feature flag:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}
+
+export const GET = withApiTelemetry('/api/feature-flags/check', __GET as any);

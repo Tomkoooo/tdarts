@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { LeagueService } from '@/database/services/league.service';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
   try {
     await connectMongo();
     
@@ -35,3 +36,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/clubs/leagues', __POST as any);

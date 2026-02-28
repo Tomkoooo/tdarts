@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 import { AuthService } from "@/database/services/auth.service";
 import { PlayerService } from "@/database/services/player.service";
 import { PlayerModel } from "@/database/models/player.model";
 import { TournamentService } from "@/database/services/tournament.service";
 
-export async function GET(
+async function __GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string; playerId: string }> }
 ) {
@@ -67,3 +68,5 @@ export async function GET(
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/tournaments/[code]/head-to-head/[playerId]', __GET as any);

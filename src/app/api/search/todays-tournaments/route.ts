@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { SearchService } from '@/database/services/search.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET() {
+async function __GET() {
     try {
         const tournaments = await SearchService.getTodaysTournaments();
 
@@ -18,3 +19,4 @@ export async function GET() {
     }
 }
 
+export const GET = withApiTelemetry('/api/search/todays-tournaments', __GET as any);

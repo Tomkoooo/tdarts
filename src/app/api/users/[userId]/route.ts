@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserModel } from '@/database/models/user.model';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function GET(
+async function __GET(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
@@ -50,3 +51,5 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withApiTelemetry('/api/users/[userId]', __GET as any);

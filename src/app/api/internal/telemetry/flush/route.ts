@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateInternalSecret, unauthorizedResponse } from '@/lib/api-auth.middleware';
 import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest) {
+async function __POST(req: NextRequest) {
   if (!validateInternalSecret(req)) {
     return unauthorizedResponse();
   }
@@ -20,3 +21,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/internal/telemetry/flush', __POST as any);

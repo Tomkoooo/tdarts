@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClubService } from '@/database/services/club.service';
 import { errorHandle } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ clubId: string }> }) {
+async function __POST(req: NextRequest, { params }: { params: Promise<{ clubId: string }> }) {
   try {
     const { AuthorizationService } = await import('@/database/services/authorization.service');
     const requesterId = await AuthorizationService.getUserIdFromRequest(req);
@@ -24,3 +25,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ clu
     return NextResponse.json(body, { status });
   }
 }
+
+export const POST = withApiTelemetry('/api/clubs/[clubId]/addModerator', __POST as any);

@@ -4,9 +4,10 @@ import { AuthorizationService } from '@/database/services/authorization.service'
 import { AddPlayerToLeagueRequest } from '@/interface/league.interface';
 import { FeatureFlagService } from '@/lib/featureFlags';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // POST /api/clubs/[clubId]/leagues/[leagueId]/players - Add player to league
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string }> }
 ) {
@@ -56,3 +57,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]/players', __POST as any);

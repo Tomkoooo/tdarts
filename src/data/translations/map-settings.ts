@@ -16,6 +16,10 @@ type MapSettingsTranslations = {
   mapFilterAll: string;
   mapFilterClubs: string;
   mapFilterTournaments: string;
+  mapOpenClub: string;
+  mapOpenTournament: string;
+  mapShowOnMap: string;
+  mapClubInfo: string;
   mapNotGeocodedHint: string;
   geocodeStatusLabel: string;
   geocodeStatusOk: string;
@@ -57,6 +61,10 @@ const translations: Record<MapSettingsLocale, MapSettingsTranslations> = {
     mapFilterAll: 'Mindkettő',
     mapFilterClubs: 'Csak klubok',
     mapFilterTournaments: 'Csak közelgő tornák',
+    mapOpenClub: 'Klub megnyitása',
+    mapOpenTournament: 'Torna megnyitása',
+    mapShowOnMap: 'Mutasd a térképen',
+    mapClubInfo: 'Klub adatai',
     mapNotGeocodedHint: 'A listában látszik, de még nincs geokódolva térképre.',
     geocodeStatusLabel: 'Geokód állapot',
     geocodeStatusOk: 'Rendben',
@@ -96,6 +104,10 @@ const translations: Record<MapSettingsLocale, MapSettingsTranslations> = {
     mapFilterAll: 'Both',
     mapFilterClubs: 'Clubs only',
     mapFilterTournaments: 'Upcoming tournaments only',
+    mapOpenClub: 'Open club',
+    mapOpenTournament: 'Open tournament',
+    mapShowOnMap: 'Show on map',
+    mapClubInfo: 'Club info',
     mapNotGeocodedHint: 'Visible in list, but not geocoded for map yet.',
     geocodeStatusLabel: 'Geocode status',
     geocodeStatusOk: 'OK',

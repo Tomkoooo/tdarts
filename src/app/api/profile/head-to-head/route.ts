@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 import { PlayerService } from "@/database/services/player.service";
 import { TournamentService } from "@/database/services/tournament.service";
 import { AuthService } from "@/database/services/auth.service";
 
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
   try {
     const token = request.cookies.get("token")?.value;
     if (!token) {
@@ -50,3 +51,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withApiTelemetry('/api/profile/head-to-head', __GET as any);

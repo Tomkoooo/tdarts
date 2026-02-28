@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
 import { z } from 'zod';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const resetPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -18,7 +19,7 @@ const resetPasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export async function POST(request: Request) {
+async function __POST(request: Request) {
   try {
     const body = await request.json();
     console.log('Resetting password for:', body);
@@ -30,3 +31,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Failed to reset password' }, { status: error.status || 400 });
   }
 }
+
+export const POST = withApiTelemetry('/api/auth/reset-password', __POST as any);

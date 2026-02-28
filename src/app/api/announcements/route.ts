@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnnouncementService } from '@/database/services/announcement.service';
 import { AuthService } from '@/database/services/auth.service';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // GET - Aktív announcement-ok lekérése (nyilvános)
-export async function GET(request: NextRequest) {
+async function __GET(request: NextRequest) {
     try {
         const { TournamentService } = await import('@/database/services/tournament.service');
         TournamentService.checkAndSendTournamentReminders().catch(err => console.error('Reminder check failed:', err));
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Új announcement létrehozása (admin only)
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
     try {
         const token = await request.cookies.get('token')?.value;
         if (!token) {
@@ -88,3 +89,6 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+export const GET = withApiTelemetry('/api/announcements', __GET as any);
+export const POST = withApiTelemetry('/api/announcements', __POST as any);

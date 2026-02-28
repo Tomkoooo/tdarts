@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { ClubService } from '@/database/services/club.service';
 import { errorHandle } from '@/middleware/errorHandle';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(
+async function __POST(
   req: NextRequest,
   { params }: { params: Promise<{ clubId: string }> }
 ) {
@@ -24,3 +25,5 @@ export async function POST(
     return NextResponse.json(body, { status });
   }
 }
+
+export const POST = withApiTelemetry('/api/clubs/[clubId]/geocode', __POST as any);

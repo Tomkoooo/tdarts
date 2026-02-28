@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/database/services/auth.service';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 // Environment variables will be checked inside the function
 
-export async function POST(request: NextRequest) {
+async function __POST(request: NextRequest) {
   try {
     // Check environment variables
     const JWT_SECRET = process.env.SOCKET_JWT_SECRET;
@@ -60,3 +61,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export const POST = withApiTelemetry('/api/socket/auth', __POST as any);

@@ -3,8 +3,9 @@ import { LeagueService } from '@/database/services/league.service';
 import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { FeatureFlagService } from '@/lib/featureFlags';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function DELETE(
+async function __DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ clubId: string; leagueId: string; playerId: string }> }
 ) {
@@ -60,3 +61,5 @@ export async function DELETE(
     );
   }
 }
+
+export const DELETE = withApiTelemetry('/api/clubs/[clubId]/leagues/[leagueId]/players/[playerId]', __DELETE as any);

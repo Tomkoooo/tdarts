@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { connectMongo } from '@/lib/mongoose';
 import { UserModel } from '@/database/models/user.model';
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
 const setPasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
@@ -23,7 +24,7 @@ async function requireAdmin(request: NextRequest) {
   return { ok: true as const };
 }
 
-export async function POST(
+async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
@@ -57,3 +58,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiTelemetry('/api/admin/users/[userId]/set-password', __POST as any);

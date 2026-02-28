@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { TournamentService } from "@/database/services/tournament.service";
 import { BadRequestError } from "@/middleware/errorHandle";
+import { withApiTelemetry } from '@/lib/api-telemetry';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ matchId: string }> }) {
+async function __POST(request: NextRequest, { params }: { params: Promise<{ matchId: string }> }) {
     try {
         const { matchId } = await params;
         const body = await request.json();
@@ -72,4 +73,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             { status: 400 }
         );
     }
-} 
+}
+
+export const POST = withApiTelemetry('/api/matches/[matchId]/finish', __POST as any);
