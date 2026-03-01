@@ -4,6 +4,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { LogModel } from '@/database/models/log.model';
 import { FeedbackModel } from '@/database/models/feedback.model';
 import { UserModel } from '@/database/models/user.model';
+import { ApiRouteAnomalyModel } from '@/database/models/api-route-anomaly.model';
 import jwt from 'jsonwebtoken';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
@@ -45,6 +46,8 @@ async function __GET(request: NextRequest) {
     const structuredMatcher = buildStructuredMatcher();
     const errorCount = await LogModel.countDocuments({
       level: 'error',
+      category: { $ne: 'auth' },
+      expected: { $ne: true },
       timestamp: { $gte: oneDayAgo },
       $or: structuredMatcher,
     });
@@ -57,11 +60,26 @@ async function __GET(request: NextRequest) {
     // 3. Critical Log Count (Total Unresolved? Or just high severity?)
     // For now, let's stick to the requested 2 main alerts
     
+    const anomalies = await ApiRouteAnomalyModel.find({ isActive: true })
+      .sort({ ratio: -1, lastDetectedAt: -1 })
+      .limit(5)
+      .lean();
+
     return NextResponse.json({
       success: true,
       data: {
         errors24h: errorCount,
-        pendingFeedback: pendingFeedbackCount
+        pendingFeedback: pendingFeedbackCount,
+        anomalyCount: anomalies.length,
+        anomalies: anomalies.map((item) => ({
+          routeKey: item.routeKey,
+          method: item.method,
+          signal: item.signal,
+          ratio: Math.round(item.ratio * 100) / 100,
+          currentValue: Math.round(item.currentValue * 100) / 100,
+          baselineValue: Math.round(item.baselineValue * 100) / 100,
+          lastDetectedAt: item.lastDetectedAt,
+        })),
       }
     });
 

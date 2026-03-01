@@ -75,7 +75,7 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       UserModel.countDocuments(),
       ClubModel.countDocuments({ isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ isDeleted: { $ne: true } }),
-      LogModel.countDocuments({ level: 'error', category: { $ne: 'auth' }, $or: structuredMatcher }),
+      LogModel.countDocuments({ level: 'error', category: { $ne: 'auth' }, expected: { $ne: true }, $or: structuredMatcher }),
       FeedbackModel.countDocuments(),
       UserModel.countDocuments({ createdAt: { $gte: currentMonth } }),
       ClubModel.countDocuments({ 
@@ -89,6 +89,7 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       LogModel.countDocuments({ 
         level: 'error',
         category: { $ne: 'auth' },
+        expected: { $ne: true },
         timestamp: { $gte: currentMonth },
         $or: structuredMatcher,
       }),
@@ -105,6 +106,7 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       LogModel.countDocuments({ 
         level: 'error',
         category: { $ne: 'auth' },
+        expected: { $ne: true },
         timestamp: { $gte: previousMonth, $lt: currentMonth },
         $or: structuredMatcher,
       }),
@@ -121,6 +123,7 @@ export const GET = withApiTelemetry('/api/admin/stats', async (request: NextRequ
       LogModel.countDocuments({ 
         level: 'error',
         category: { $ne: 'auth' },
+        expected: { $ne: true },
         timestamp: { $gte: twentyFourHoursAgo },
         $or: structuredMatcher,
       }),

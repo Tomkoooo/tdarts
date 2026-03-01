@@ -8,6 +8,7 @@ import FeaturesSectionNew from '@/components/homapage/FeaturesSectionNew';
 import PricingSection from '@/components/homapage/PricingSection';
 import AnnouncementToast from '@/components/common/AnnouncementToast';
 import { useUnreadTickets, UnreadTicketToast } from '@/hooks/useUnreadTickets';
+import { useUserContext } from '@/hooks/useUser';
 
 interface Announcement {
   _id: string;
@@ -23,9 +24,10 @@ interface Announcement {
 }
 
 const HomePage = () => {
+  const { user } = useUserContext();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set());
-  const { unreadCount } = useUnreadTickets();
+  const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) });
   const [ticketToastDismissed, setTicketToastDismissed] = useState(false);
 
   useEffect(() => {

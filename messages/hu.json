@@ -2340,7 +2340,9 @@
         "errors": "Rendszerhibák",
         "errors_desc": "Az elmúlt 24 órában",
         "feedback": "Visszajelzések",
-        "feedback_desc": "Olvasatlan üzenetek"
+        "feedback_desc": "Olvasatlan üzenetek",
+        "api_anomalies": "API anomáliák",
+        "api_anomalies_desc": "Jelentős hívás/forgalom/késleltetés növekedés"
       },
       "charts": {
         "users": "Felhasználói aktivitás (Havi)",
@@ -3041,6 +3043,18 @@
         "route": "Útvonal",
         "all_routes": "Összes útvonal",
         "clear_route": "Útvonal törlése",
+        "only_error_apis": "Csak hibás API-k",
+        "min_calls": "Minimum hívás",
+        "min_traffic_kb": "Minimum forgalom (KB)",
+        "min_latency_ms": "Minimum átlag késleltetés (ms)",
+        "route_sort": "Összes útvonal rendezése",
+        "top_sort": "Top útvonal rendezése",
+        "sort_route_asc": "Útvonal (A-Z)",
+        "sort_calls_desc": "Hívások (csökkenő)",
+        "sort_errors_desc": "Hibák (csökkenő)",
+        "sort_traffic_desc": "Forgalom (csökkenő)",
+        "sort_latency_desc": "Késleltetés (csökkenő)",
+        "sort_last_seen_desc": "Utoljára látott (legújabb)",
         "custom_start": "Egyedi kezdés",
         "custom_end": "Egyedi zárás",
         "apply": "Alkalmaz"
@@ -3085,6 +3099,8 @@
         "empty": "Nincs találat az aktuális szűrőkhöz.",
         "calls": "Hívások",
         "errors": "Hibák",
+        "traffic": "Forgalom",
+        "latency": "Átlag késleltetés",
         "select": "Kiválaszt"
       },
       "error_calls": {

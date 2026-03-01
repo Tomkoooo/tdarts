@@ -2335,7 +2335,9 @@
         "errors": "Systemfehler",
         "errors_desc": "In den letzten 24 Stunden",
         "feedback": "Rückmeldung",
-        "feedback_desc": "Ungelesene Nachrichten"
+        "feedback_desc": "Ungelesene Nachrichten",
+        "api_anomalies": "API-Anomalien",
+        "api_anomalies_desc": "Signifikanter Anstieg bei Aufrufen/Traffic/Latenz"
       },
       "charts": {
         "users": "Benutzeraktivität (monatlich)",
@@ -3036,6 +3038,18 @@
         "route": "Route",
         "all_routes": "Alle Routen",
         "clear_route": "Route löschen",
+        "only_error_apis": "Nur APIs mit Fehlern",
+        "min_calls": "Min. Aufrufe",
+        "min_traffic_kb": "Min. Traffic (KB)",
+        "min_latency_ms": "Min. durchschnittliche Latenz (ms)",
+        "route_sort": "Alle-Routen Sortierung",
+        "top_sort": "Top-Routen Sortierung",
+        "sort_route_asc": "Route (A-Z)",
+        "sort_calls_desc": "Aufrufe (absteigend)",
+        "sort_errors_desc": "Fehler (absteigend)",
+        "sort_traffic_desc": "Traffic (absteigend)",
+        "sort_latency_desc": "Latenz (absteigend)",
+        "sort_last_seen_desc": "Zuletzt gesehen (neueste)",
         "custom_start": "Benutzerdefinierter Start",
         "custom_end": "Benutzerdefiniertes Ende",
         "apply": "Anwenden"
@@ -3080,6 +3094,8 @@
         "empty": "Keine Routen für den aktuellen Filter gefunden.",
         "calls": "Aufrufe",
         "errors": "Fehler",
+        "traffic": "Traffic",
+        "latency": "Ø Latenz",
         "select": "Auswählen"
       },
       "error_calls": {

@@ -44,7 +44,7 @@ export default function ProfilePage() {
   const [selectedTicket, setSelectedTicket] = React.useState<any>(null)
   const [tickets, setTickets] = React.useState<any[]>([])
   const [ticketToastDismissed, setTicketToastDismissed] = React.useState(false)
-  const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets()
+  const { unreadCount, refresh: refreshUnreadCount } = useUnreadTickets({ enabled: Boolean(userId) })
 
   // Initialize tab from URL params
   React.useEffect(() => {

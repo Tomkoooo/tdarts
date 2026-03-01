@@ -58,7 +58,13 @@ async function __GET(request: NextRequest) {
       ClubModel.countDocuments({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }),
       TournamentModel.countDocuments({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }),
       FeedbackModel.find({ createdAt: { $gte: oneDayAgo } }).select('message userId').populate('userId', 'name'),
-      LogModel.countDocuments({ level: 'error', timestamp: { $gte: oneDayAgo }, $or: structuredMatcher }),
+      LogModel.countDocuments({
+        level: 'error',
+        category: { $ne: 'auth' },
+        expected: { $ne: true },
+        timestamp: { $gte: oneDayAgo },
+        $or: structuredMatcher,
+      }),
       // For specific club names if needed, or just count. User asked for "REMZ events and 10 other clubs". 
       // Let's get a few club names.
       ClubModel.find({ createdAt: { $gte: oneDayAgo }, isDeleted: { $ne: true } }).select('name').limit(3)

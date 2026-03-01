@@ -4,11 +4,17 @@ import React from 'react';
 import axios from 'axios';
 import { Ticket } from 'lucide-react';
 
-export function useUnreadTickets() {
+export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {}) {
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
 
   const checkUnreadTickets = React.useCallback(async () => {
+    if (!enabled) {
+      setUnreadCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await axios.get('/api/profile/tickets');
       if (response.data.success) {
@@ -21,14 +27,20 @@ export function useUnreadTickets() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   React.useEffect(() => {
+    if (!enabled) {
+      setUnreadCount(0);
+      setLoading(false);
+      return;
+    }
+
     checkUnreadTickets();
     // Re-check every 5 minutes
     const interval = setInterval(checkUnreadTickets, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [checkUnreadTickets]);
+  }, [checkUnreadTickets, enabled]);
 
   return { unreadCount, loading, refresh: checkUnreadTickets };
 }

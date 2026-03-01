@@ -41,6 +41,8 @@ interface RegisteredApiRoute {
   method: string
   totalCalls: number
   totalErrors: number
+  totalTrafficKb: number
+  avgLatencyMs: number
   lastSeen: string
 }
 
@@ -113,6 +115,14 @@ export default function AdminTelemetryPage() {
   const [isDeletingErrors, setIsDeletingErrors] = useState(false)
   const [registeredRoutes, setRegisteredRoutes] = useState<RegisteredApiRoute[]>([])
   const [routeCatalogSearch, setRouteCatalogSearch] = useState("")
+  const [onlyErrorApis, setOnlyErrorApis] = useState(false)
+  const [minCallsFilter, setMinCallsFilter] = useState("")
+  const [minTrafficKbFilter, setMinTrafficKbFilter] = useState("")
+  const [minLatencyMsFilter, setMinLatencyMsFilter] = useState("")
+  const [routeSortBy, setRouteSortBy] = useState<"route" | "calls" | "errors" | "traffic" | "latency" | "lastSeen">("route")
+  const [routeSortDir, setRouteSortDir] = useState<"asc" | "desc">("asc")
+  const [topSortBy, setTopSortBy] = useState<"calls" | "errors" | "traffic" | "latency">("calls")
+  const [topSortDir, setTopSortDir] = useState<"asc" | "desc">("desc")
 
   const formatBytes = (bytes: number) => {
     if (!Number.isFinite(bytes) || bytes <= 0) return "0 B"
@@ -181,6 +191,8 @@ export default function AdminTelemetryPage() {
       const topRoutesParams = new URLSearchParams({
         range: telemetryRange,
         granularity: telemetryGranularity,
+        sortBy: topSortBy,
+        sortDir: topSortDir,
       })
       if (telemetryRange === "custom" && customStart && customEnd) {
         topRoutesParams.set("start", new Date(customStart).toISOString())
@@ -188,6 +200,9 @@ export default function AdminTelemetryPage() {
       }
       if (selectedMethod !== "ALL") {
         topRoutesParams.set("method", selectedMethod)
+      }
+      if (onlyErrorApis) {
+        topRoutesParams.set("hasErrors", "true")
       }
 
       const errorEventsParams = new URLSearchParams({
@@ -213,9 +228,28 @@ export default function AdminTelemetryPage() {
       const routesParams = new URLSearchParams({
         method: selectedMethod,
         limit: "1000",
+        range: telemetryRange,
+        sortBy: routeSortBy,
+        sortDir: routeSortDir,
       })
+      if (telemetryRange === "custom" && customStart && customEnd) {
+        routesParams.set("start", new Date(customStart).toISOString())
+        routesParams.set("end", new Date(customEnd).toISOString())
+      }
       if (routeCatalogSearch.trim()) {
         routesParams.set("search", routeCatalogSearch.trim())
+      }
+      if (onlyErrorApis) {
+        routesParams.set("hasErrors", "true")
+      }
+      if (minCallsFilter.trim()) {
+        routesParams.set("minCalls", minCallsFilter.trim())
+      }
+      if (minTrafficKbFilter.trim()) {
+        routesParams.set("minTrafficKb", minTrafficKbFilter.trim())
+      }
+      if (minLatencyMsFilter.trim()) {
+        routesParams.set("minAvgLatencyMs", minLatencyMsFilter.trim())
       }
 
       const [
@@ -352,6 +386,14 @@ export default function AdminTelemetryPage() {
     errorStatusFilter,
     errorEventsPage,
     routeCatalogSearch,
+    onlyErrorApis,
+    minCallsFilter,
+    minTrafficKbFilter,
+    minLatencyMsFilter,
+    routeSortBy,
+    routeSortDir,
+    topSortBy,
+    topSortDir,
   ])
 
   const availableRouteOptions = Array.from(new Set(registeredRoutes.map((row) => row.routeKey))).sort((a, b) =>
@@ -548,6 +590,69 @@ export default function AdminTelemetryPage() {
               {t("filters.apply")}
             </Button>
           </div>
+        </CardContent>
+        <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3 pt-0">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={onlyErrorApis}
+              onChange={(e) => setOnlyErrorApis(e.target.checked)}
+            />
+            {t("filters.only_error_apis")}
+          </label>
+          <input
+            aria-label={t("filters.min_calls")}
+            value={minCallsFilter}
+            onChange={(e) => setMinCallsFilter(e.target.value)}
+            placeholder={t("filters.min_calls")}
+            className="border border-border bg-background rounded px-3 py-2 text-sm"
+          />
+          <input
+            aria-label={t("filters.min_traffic_kb")}
+            value={minTrafficKbFilter}
+            onChange={(e) => setMinTrafficKbFilter(e.target.value)}
+            placeholder={t("filters.min_traffic_kb")}
+            className="border border-border bg-background rounded px-3 py-2 text-sm"
+          />
+          <input
+            aria-label={t("filters.min_latency_ms")}
+            value={minLatencyMsFilter}
+            onChange={(e) => setMinLatencyMsFilter(e.target.value)}
+            placeholder={t("filters.min_latency_ms")}
+            className="border border-border bg-background rounded px-3 py-2 text-sm"
+          />
+          <select
+            aria-label={t("filters.route_sort")}
+            value={`${routeSortBy}:${routeSortDir}`}
+            onChange={(e) => {
+              const [field, dir] = e.target.value.split(":")
+              setRouteSortBy(field as "route" | "calls" | "errors" | "traffic" | "latency" | "lastSeen")
+              setRouteSortDir(dir as "asc" | "desc")
+            }}
+            className="border border-border bg-background rounded px-3 py-2 text-sm"
+          >
+            <option value="route:asc">{t("filters.sort_route_asc")}</option>
+            <option value="calls:desc">{t("filters.sort_calls_desc")}</option>
+            <option value="errors:desc">{t("filters.sort_errors_desc")}</option>
+            <option value="traffic:desc">{t("filters.sort_traffic_desc")}</option>
+            <option value="latency:desc">{t("filters.sort_latency_desc")}</option>
+            <option value="lastSeen:desc">{t("filters.sort_last_seen_desc")}</option>
+          </select>
+          <select
+            aria-label={t("filters.top_sort")}
+            value={`${topSortBy}:${topSortDir}`}
+            onChange={(e) => {
+              const [field, dir] = e.target.value.split(":")
+              setTopSortBy(field as "calls" | "errors" | "traffic" | "latency")
+              setTopSortDir(dir as "asc" | "desc")
+            }}
+            className="border border-border bg-background rounded px-3 py-2 text-sm"
+          >
+            <option value="calls:desc">{t("filters.sort_calls_desc")}</option>
+            <option value="errors:desc">{t("filters.sort_errors_desc")}</option>
+            <option value="traffic:desc">{t("filters.sort_traffic_desc")}</option>
+            <option value="latency:desc">{t("filters.sort_latency_desc")}</option>
+          </select>
         </CardContent>
       </Card>
 
@@ -903,7 +1008,9 @@ export default function AdminTelemetryPage() {
                       {row.method} {row.routeKey}
                     </code>
                     <div className="text-[11px] text-muted-foreground">
-                      {t("all_routes.calls")}: {row.totalCalls} | {t("all_routes.errors")}: {row.totalErrors}
+                      {t("all_routes.calls")}: {row.totalCalls} | {t("all_routes.errors")}: {row.totalErrors} |{" "}
+                      {t("all_routes.traffic")}: {Math.round(row.totalTrafficKb * 100) / 100} KB |{" "}
+                      {t("all_routes.latency")}: {Math.round(row.avgLatencyMs * 100) / 100}ms
                     </div>
                   </div>
                   <Button

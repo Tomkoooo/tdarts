@@ -2351,7 +2351,9 @@
         "errors": "System errors",
         "errors_desc": "In the last 24 hours",
         "feedback": "Feedback",
-        "feedback_desc": "Unread messages"
+        "feedback_desc": "Unread messages",
+        "api_anomalies": "API anomalies",
+        "api_anomalies_desc": "Significant call/traffic/latency increase"
       },
       "charts": {
         "users": "User activity (Monthly)",
@@ -3052,6 +3054,18 @@
         "route": "Route",
         "all_routes": "All routes",
         "clear_route": "Clear route",
+        "only_error_apis": "Only APIs with errors",
+        "min_calls": "Min calls",
+        "min_traffic_kb": "Min traffic (KB)",
+        "min_latency_ms": "Min avg latency (ms)",
+        "route_sort": "All-routes sort",
+        "top_sort": "Top-routes sort",
+        "sort_route_asc": "Route (A-Z)",
+        "sort_calls_desc": "Calls (high-low)",
+        "sort_errors_desc": "Errors (high-low)",
+        "sort_traffic_desc": "Traffic (high-low)",
+        "sort_latency_desc": "Latency (high-low)",
+        "sort_last_seen_desc": "Last seen (newest)",
         "custom_start": "Custom start",
         "custom_end": "Custom end",
         "apply": "Apply"
@@ -3096,6 +3110,8 @@
         "empty": "No routes found for current filter.",
         "calls": "Calls",
         "errors": "Errors",
+        "traffic": "Traffic",
+        "latency": "Avg latency",
         "select": "Select"
       },
       "error_calls": {

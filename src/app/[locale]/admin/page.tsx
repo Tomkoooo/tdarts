@@ -71,6 +71,16 @@ interface ActivityItem {
   highlight?: boolean
 }
 
+interface ApiRouteAnomaly {
+  routeKey: string
+  method: string
+  signal: "calls" | "traffic" | "latency"
+  ratio: number
+  currentValue: number
+  baselineValue: number
+  lastDetectedAt: string
+}
+
 // --- Mock Data Helpers (Replace with real API later) ---
 
 export default function AdminDashboardPage() {
@@ -84,7 +94,12 @@ export default function AdminDashboardPage() {
   const [tournamentChartData, setTournamentChartData] = useState<ChartData | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [activities, setActivities] = useState<ActivityItem[]>([])
-  const [alerts, setAlerts] = useState<{ errors24h: number; pendingFeedback: number } | null>(null)
+  const [alerts, setAlerts] = useState<{
+    errors24h: number
+    pendingFeedback: number
+    anomalyCount?: number
+    anomalies?: ApiRouteAnomaly[]
+  } | null>(null)
 
   const fetchDashboardData = async () => {
     try {
@@ -243,6 +258,30 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-mono ml-4">{alerts?.pendingFeedback || 0}</Badge>
+        </div>
+
+        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-md">
+                <IconActivity className="size-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-blue-600 dark:text-blue-400 text-sm">{t("alerts.api_anomalies")}</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">{t("alerts.api_anomalies_desc")}</p>
+              </div>
+            </div>
+            <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-lg font-mono ml-4">{alerts?.anomalyCount || 0}</Badge>
+          </div>
+          {(alerts?.anomalies || []).length > 0 && (
+            <div className="mt-3 space-y-1">
+              {(alerts?.anomalies || []).map((item, idx) => (
+                <p key={`${item.method}-${item.routeKey}-${item.signal}-${idx}`} className="text-xs text-blue-700 dark:text-blue-300 truncate">
+                  {item.method} {item.routeKey} - {item.signal} ({item.ratio}x)
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -19,6 +19,9 @@ async function __GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(50, Math.max(5, parseInt(searchParams.get('limit') || '10', 10)));
+    const hasErrors = searchParams.get('hasErrors') === 'true';
+    const sortByRaw = (searchParams.get('sortBy') || 'calls').toLowerCase();
+    const sortDir = (searchParams.get('sortDir') || 'desc').toLowerCase() === 'asc' ? 1 : -1;
     const granularity = resolveGranularity(searchParams);
     void granularity;
     const { startDate, endDate } = resolveTimeRange(searchParams);
@@ -82,7 +85,29 @@ async function __GET(request: NextRequest) {
           totalResponseBytes: { $sum: '$totalResponseBytes' },
         },
       },
-      { $sort: { count: -1 } },
+      {
+        $addFields: {
+          totalTrafficKb: {
+            $divide: [{ $add: ['$totalRequestBytes', '$totalResponseBytes'] }, 1024],
+          },
+          avgDurationMs: {
+            $cond: [{ $gt: ['$count', 0] }, { $divide: ['$totalDurationMs', '$count'] }, 0],
+          },
+        },
+      },
+      ...(hasErrors ? [{ $match: { errorCount: { $gt: 0 } } }] : []),
+      {
+        $sort: (() => {
+          const keyMap: Record<string, string> = {
+            calls: 'count',
+            errors: 'errorCount',
+            traffic: 'totalTrafficKb',
+            latency: 'avgDurationMs',
+          };
+          const sortKey = keyMap[sortByRaw] || 'count';
+          return { [sortKey]: sortDir, count: -1 };
+        })(),
+      },
       { $limit: limit },
     ]);
 
