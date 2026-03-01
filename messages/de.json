@@ -3073,6 +3073,15 @@
         "outgoing": "aus",
         "total": "gesamt"
       },
+      "all_routes": {
+        "title": "Alle registrierten Routen",
+        "description": "Vollständige Routenliste aus den Telemetriedaten in der Datenbank.",
+        "search_placeholder": "Route suchen...",
+        "empty": "Keine Routen für den aktuellen Filter gefunden.",
+        "calls": "Aufrufe",
+        "errors": "Fehler",
+        "select": "Auswählen"
+      },
       "error_calls": {
         "title": "Fehlerhafte Aufrufe",
         "description": "Exakte 4xx/5xx Anfrage-Antwort-Fälle für die aktuellen Filter prüfen.",
@@ -3084,6 +3093,17 @@
         "mark_fixed_need_route": "Bitte zuerst eine Route auswählen.",
         "mark_fixed_success": "Alte Fehler wurden als behoben markiert und die Basis zurückgesetzt.",
         "mark_fixed_error": "Fehler konnten nicht als behoben markiert werden.",
+        "mark_fixed_hint": "Bitte Route über Filter oder die Gesamtliste auswählen.",
+        "select_error": "Fehlerzeile auswählen",
+        "select_page": "Seite auswählen",
+        "delete_selected": "Ausgewählte Logs löschen",
+        "delete_route": "Logs der ausgewählten Route löschen",
+        "delete_selected_need_selection": "Bitte mindestens einen Fehlerlog auswählen.",
+        "delete_route_need_selection": "Bitte zuerst eine Route auswählen.",
+        "delete_selected_confirm": "{count} ausgewählte Fehlerlogs löschen?",
+        "delete_route_confirm": "Alle Fehlerlogs für {method} {route} löschen?",
+        "delete_success": "{count} Fehlerlogs gelöscht.",
+        "delete_error": "Fehlerlogs konnten nicht gelöscht werden.",
         "empty": "Keine fehlerhaften Aufrufe für diese Filter.",
         "duration": "Dauer",
         "request_bytes": "Anfrage",

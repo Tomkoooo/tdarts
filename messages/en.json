@@ -3089,6 +3089,15 @@
         "outgoing": "out",
         "total": "total"
       },
+      "all_routes": {
+        "title": "All Registered Routes",
+        "description": "Complete route list discovered from telemetry records in the database.",
+        "search_placeholder": "Search route key...",
+        "empty": "No routes found for current filter.",
+        "calls": "Calls",
+        "errors": "Errors",
+        "select": "Select"
+      },
       "error_calls": {
         "title": "Error calls",
         "description": "Inspect exact failed requests/responses (4xx/5xx) for the selected filters.",
@@ -3100,6 +3109,17 @@
         "mark_fixed_need_route": "Select a route first.",
         "mark_fixed_success": "Old errors were checked as fixed and baseline reset.",
         "mark_fixed_error": "Failed to mark route errors as fixed.",
+        "mark_fixed_hint": "Select a route from filters or the all-routes list.",
+        "select_error": "Select error row",
+        "select_page": "Select page",
+        "delete_selected": "Delete selected logs",
+        "delete_route": "Delete selected route logs",
+        "delete_selected_need_selection": "Select at least one error log.",
+        "delete_route_need_selection": "Select a route first.",
+        "delete_selected_confirm": "Delete {count} selected error logs?",
+        "delete_route_confirm": "Delete all error logs for {method} {route}?",
+        "delete_success": "Deleted {count} error logs.",
+        "delete_error": "Failed to delete error logs.",
         "empty": "No error calls found for this filter set.",
         "duration": "Duration",
         "request_bytes": "Request",

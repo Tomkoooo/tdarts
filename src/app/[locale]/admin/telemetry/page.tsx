@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useTranslations, useFormatter } from "next-intl"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { IconCheck, IconRefresh } from "@tabler/icons-react"
+import { IconCheck, IconRefresh, IconTrash } from "@tabler/icons-react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
@@ -34,6 +34,14 @@ interface TopApiRoute {
   requestTrafficKb: number
   responseTrafficKb: number
   totalTrafficKb: number
+}
+
+interface RegisteredApiRoute {
+  routeKey: string
+  method: string
+  totalCalls: number
+  totalErrors: number
+  lastSeen: string
 }
 
 interface ApiErrorEvent {
@@ -101,6 +109,10 @@ export default function AdminTelemetryPage() {
   const [errorEventsTotalPages, setErrorEventsTotalPages] = useState(1)
   const [errorEventsLimit] = useState(20)
   const [isMarkingFixed, setIsMarkingFixed] = useState(false)
+  const [selectedErrorIds, setSelectedErrorIds] = useState<string[]>([])
+  const [isDeletingErrors, setIsDeletingErrors] = useState(false)
+  const [registeredRoutes, setRegisteredRoutes] = useState<RegisteredApiRoute[]>([])
+  const [routeCatalogSearch, setRouteCatalogSearch] = useState("")
 
   const formatBytes = (bytes: number) => {
     if (!Number.isFinite(bytes) || bytes <= 0) return "0 B"
@@ -198,18 +210,28 @@ export default function AdminTelemetryPage() {
         errorEventsParams.set("statusClass", errorStatusFilter)
       }
 
+      const routesParams = new URLSearchParams({
+        method: selectedMethod,
+        limit: "1000",
+      })
+      if (routeCatalogSearch.trim()) {
+        routesParams.set("search", routeCatalogSearch.trim())
+      }
+
       const [
         apiRequestsResponse,
         apiLatencyResponse,
         apiPayloadResponse,
         topApiRoutesResponse,
         errorEventsResponse,
+        routesResponse,
       ] = await Promise.all([
         axios.get(`/api/admin/charts/api-traffic/requests?${telemetryParams.toString()}`),
         axios.get(`/api/admin/charts/api-traffic/latency?${telemetryParams.toString()}`),
         axios.get(`/api/admin/charts/api-traffic/payload?${telemetryParams.toString()}`),
         axios.get(`/api/admin/charts/api-traffic/top-routes?${topRoutesParams.toString()}&limit=20`),
         axios.get(`/api/admin/charts/api-traffic/error-events?${errorEventsParams.toString()}`),
+        axios.get(`/api/admin/charts/api-traffic/routes?${routesParams.toString()}`),
       ])
 
       setApiRequestsChartData(extractChartData(apiRequestsResponse))
@@ -222,6 +244,7 @@ export default function AdminTelemetryPage() {
       setErrorEvents(errorEventsResponse.data?.data || [])
       setErrorEventsSummary(errorEventsResponse.data?.summary || null)
       setErrorEventsTotalPages(errorEventsResponse.data?.pagination?.totalPages || 1)
+      setRegisteredRoutes(routesResponse.data?.data || [])
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching telemetry data:", error)
@@ -253,6 +276,68 @@ export default function AdminTelemetryPage() {
     }
   }
 
+  const deleteSelectedErrors = async () => {
+    if (selectedErrorIds.length === 0) {
+      toast.error(t("error_calls.delete_selected_need_selection"))
+      return
+    }
+    if (!window.confirm(t("error_calls.delete_selected_confirm", { count: selectedErrorIds.length }))) {
+      return
+    }
+    try {
+      setIsDeletingErrors(true)
+      const response = await axios.delete("/api/admin/charts/api-traffic/error-events", {
+        data: { ids: selectedErrorIds },
+      })
+      toast.success(t("error_calls.delete_success", { count: response.data?.deletedCount || 0 }))
+      setSelectedErrorIds([])
+      await fetchTelemetry()
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("error_calls.delete_error"))
+    } finally {
+      setIsDeletingErrors(false)
+    }
+  }
+
+  const deleteAllErrorsOnSelectedRoute = async () => {
+    if (!selectedRouteKey) {
+      toast.error(t("error_calls.delete_route_need_selection"))
+      return
+    }
+    if (
+      !window.confirm(
+        t("error_calls.delete_route_confirm", {
+          route: selectedRouteKey,
+          method: selectedMethod,
+        })
+      )
+    ) {
+      return
+    }
+    try {
+      setIsDeletingErrors(true)
+      const response = await axios.delete("/api/admin/charts/api-traffic/error-events", {
+        data: {
+          routeKey: selectedRouteKey,
+          method: selectedMethod,
+        },
+      })
+      toast.success(t("error_calls.delete_success", { count: response.data?.deletedCount || 0 }))
+      setSelectedErrorIds([])
+      await fetchTelemetry()
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("error_calls.delete_error"))
+    } finally {
+      setIsDeletingErrors(false)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedErrorIds.length === 0) return
+    const visibleIds = new Set(errorEvents.map((e) => e._id))
+    setSelectedErrorIds((prev) => prev.filter((id) => visibleIds.has(id)))
+  }, [errorEvents, selectedErrorIds.length])
+
   useEffect(() => {
     if (!isHydrated) return
     if (telemetryRange === "custom") return
@@ -266,9 +351,10 @@ export default function AdminTelemetryPage() {
     telemetryGranularity,
     errorStatusFilter,
     errorEventsPage,
+    routeCatalogSearch,
   ])
 
-  const availableRouteOptions = Array.from(new Set(topApiRoutes.map((row) => row.routeKey))).sort((a, b) =>
+  const availableRouteOptions = Array.from(new Set(registeredRoutes.map((row) => row.routeKey))).sort((a, b) =>
     a.localeCompare(b)
   )
 
@@ -623,6 +709,43 @@ export default function AdminTelemetryPage() {
               <IconCheck className="size-4 mr-1" />
               {t("error_calls.mark_fixed")}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={selectedErrorIds.length === 0 || isDeletingErrors}
+              onClick={deleteSelectedErrors}
+            >
+              <IconTrash className="size-4 mr-1" />
+              {t("error_calls.delete_selected")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={!selectedRouteKey || isDeletingErrors}
+              onClick={deleteAllErrorsOnSelectedRoute}
+            >
+              <IconTrash className="size-4 mr-1" />
+              {t("error_calls.delete_route")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={errorEvents.length === 0}
+              onClick={() => {
+                const allPageIds = errorEvents.map((e) => e._id)
+                const allSelected = allPageIds.every((id) => selectedErrorIds.includes(id))
+                if (allSelected) {
+                  setSelectedErrorIds((prev) => prev.filter((id) => !allPageIds.includes(id)))
+                } else {
+                  setSelectedErrorIds((prev) => Array.from(new Set([...prev, ...allPageIds])))
+                }
+              }}
+            >
+              {t("error_calls.select_page")}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {t("error_calls.mark_fixed_hint")}
+            </span>
           </div>
 
           {errorEvents.length === 0 ? (
@@ -633,6 +756,18 @@ export default function AdminTelemetryPage() {
                 <details key={event._id} className="rounded-lg border border-border/50 p-3 bg-muted/20">
                   <summary className="cursor-pointer list-none flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        aria-label={t("error_calls.select_error")}
+                        type="checkbox"
+                        checked={selectedErrorIds.includes(event._id)}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setSelectedErrorIds((prev) =>
+                            checked ? Array.from(new Set([...prev, event._id])) : prev.filter((id) => id !== event._id)
+                          )
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                       <Badge variant={event.status >= 500 ? "destructive" : "secondary"}>
                         {event.status}
                       </Badge>
@@ -740,6 +875,50 @@ export default function AdminTelemetryPage() {
                   {t("error_calls.next")}
                 </Button>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="backdrop-blur-sm bg-card/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">{t("all_routes.title")}</CardTitle>
+          <CardDescription>{t("all_routes.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <input
+            value={routeCatalogSearch}
+            onChange={(e) => setRouteCatalogSearch(e.target.value)}
+            placeholder={t("all_routes.search_placeholder")}
+            className="w-full border border-border bg-background rounded px-3 py-2 text-sm"
+          />
+          {registeredRoutes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("all_routes.empty")}</p>
+          ) : (
+            <div className="max-h-80 overflow-auto rounded border border-border/40 divide-y divide-border/40">
+              {registeredRoutes.map((row) => (
+                <div key={`${row.method}-${row.routeKey}`} className="p-2 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <code className="text-xs break-all">
+                      {row.method} {row.routeKey}
+                    </code>
+                    <div className="text-[11px] text-muted-foreground">
+                      {t("all_routes.calls")}: {row.totalCalls} | {t("all_routes.errors")}: {row.totalErrors}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedRouteKey(row.routeKey)
+                      setSelectedMethod(row.method)
+                      setErrorEventsPage(1)
+                    }}
+                  >
+                    {t("all_routes.select")}
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

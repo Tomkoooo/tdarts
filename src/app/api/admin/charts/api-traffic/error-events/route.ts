@@ -92,4 +92,53 @@ async function __GET(request: NextRequest) {
   }
 }
 
+async function __DELETE(request: NextRequest) {
+  try {
+    await connectMongo();
+
+    const token = request.cookies.get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+    const adminUser = await UserModel.findById(decoded.id).select('isAdmin');
+    if (!adminUser?.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const body = await request.json().catch(() => ({}));
+    const ids = Array.isArray(body.ids) ? body.ids.filter((v: unknown) => typeof v === 'string') : [];
+    const routeKey = typeof body.routeKey === 'string' ? body.routeKey.trim() : '';
+    const method = typeof body.method === 'string' ? body.method.trim().toUpperCase() : '';
+
+    if (ids.length > 0) {
+      const deleted = await ApiRequestErrorEventModel.deleteMany({ _id: { $in: ids } });
+      return NextResponse.json({
+        success: true,
+        mode: 'ids',
+        deletedCount: deleted.deletedCount || 0,
+      });
+    }
+
+    if (!routeKey) {
+      return NextResponse.json({ error: 'Provide ids or routeKey.' }, { status: 400 });
+    }
+
+    const filter: Record<string, any> = { routeKey };
+    if (method && method !== 'ALL') {
+      filter.method = method;
+    }
+
+    const deleted = await ApiRequestErrorEventModel.deleteMany(filter);
+    return NextResponse.json({
+      success: true,
+      mode: 'route',
+      deletedCount: deleted.deletedCount || 0,
+      routeKey,
+      method: method || 'ALL',
+    });
+  } catch (error) {
+    console.error('Error deleting api error events:', error);
+    return NextResponse.json({ error: 'Failed to delete api error events' }, { status: 500 });
+  }
+}
+
 export const GET = withApiTelemetry('/api/admin/charts/api-traffic/error-events', __GET as any);
+export const DELETE = withApiTelemetry('/api/admin/charts/api-traffic/error-events', __DELETE as any);

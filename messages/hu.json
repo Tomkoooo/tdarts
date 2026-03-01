@@ -3078,6 +3078,15 @@
         "outgoing": "kimenő",
         "total": "összes"
       },
+      "all_routes": {
+        "title": "Összes regisztrált útvonal",
+        "description": "A telemetria adatbázisban szereplő összes útvonal.",
+        "search_placeholder": "Útvonal keresése...",
+        "empty": "Nincs találat az aktuális szűrőkhöz.",
+        "calls": "Hívások",
+        "errors": "Hibák",
+        "select": "Kiválaszt"
+      },
       "error_calls": {
         "title": "Hibás hívások",
         "description": "A szűrők alapján pontos 4xx/5xx kérés-válasz párok vizsgálata.",
@@ -3089,6 +3098,17 @@
         "mark_fixed_need_route": "Először válassz útvonalat.",
         "mark_fixed_success": "A régi hibák lezárva, a hibaarány alaphelyzetbe állítva.",
         "mark_fixed_error": "Nem sikerült a hibákat lezárni.",
+        "mark_fixed_hint": "Válassz útvonalat a szűrőkből vagy az összes útvonal listából.",
+        "select_error": "Hibasor kiválasztása",
+        "select_page": "Oldal kijelölése",
+        "delete_selected": "Kijelölt logok törlése",
+        "delete_route": "Kiválasztott útvonal logjainak törlése",
+        "delete_selected_need_selection": "Válassz ki legalább egy hibalogot.",
+        "delete_route_need_selection": "Először válassz útvonalat.",
+        "delete_selected_confirm": "Biztosan törlöd a kijelölt {count} hibalogot?",
+        "delete_route_confirm": "Biztosan törlöd az összes hibalogot ehhez: {method} {route}?",
+        "delete_success": "{count} hibalog törölve.",
+        "delete_error": "Nem sikerült törölni a hibalogokat.",
         "empty": "Nincs hibás hívás a jelenlegi szűrőkre.",
         "duration": "Időtartam",
         "request_bytes": "Kérés",
