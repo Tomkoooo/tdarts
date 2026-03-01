@@ -3088,6 +3088,24 @@
         "incoming": "in",
         "outgoing": "out",
         "total": "total"
+      },
+      "error_calls": {
+        "title": "Error calls",
+        "description": "Inspect exact failed requests/responses (4xx/5xx) for the selected filters.",
+        "total": "Total: {count}",
+        "status_filter": "Status filter",
+        "status_all": "All statuses",
+        "clear_filters": "Clear error filters",
+        "empty": "No error calls found for this filter set.",
+        "duration": "Duration",
+        "request_bytes": "Request",
+        "response_bytes": "Response",
+        "request": "Request details",
+        "response": "Response details",
+        "copy": "Copy JSON",
+        "prev": "Previous",
+        "next": "Next",
+        "page": "Page {page} / {totalPages}"
       }
     }
   },

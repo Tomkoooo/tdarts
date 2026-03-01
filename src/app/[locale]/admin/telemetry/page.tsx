@@ -36,6 +36,28 @@ interface TopApiRoute {
   totalTrafficKb: number
 }
 
+interface ApiErrorEvent {
+  _id: string
+  occurredAt: string
+  routeKey: string
+  method: string
+  status: number
+  requestId?: string
+  durationMs: number
+  requestBytes: number
+  responseBytes: number
+  requestHeaders?: Record<string, string>
+  responseHeaders?: Record<string, string>
+  requestQuery?: Record<string, string | string[]>
+  requestBody?: string
+  responseBody?: string
+  contentType?: string
+  errorMessage?: string
+  source: "http_status" | "exception"
+  requestBodyTruncated?: boolean
+  responseBodyTruncated?: boolean
+}
+
 type TelemetryRange = "24h" | "7d" | "30d" | "90d" | "custom"
 type TelemetryGranularity = "minute" | "hour" | "day"
 
@@ -72,6 +94,12 @@ export default function AdminTelemetryPage() {
   const [selectedMethod, setSelectedMethod] = useState("ALL")
   const [telemetryTimezone, setTelemetryTimezone] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC")
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [errorEvents, setErrorEvents] = useState<ApiErrorEvent[]>([])
+  const [errorEventsSummary, setErrorEventsSummary] = useState<{ total: number; count4xx: number; count5xx: number } | null>(null)
+  const [errorStatusFilter, setErrorStatusFilter] = useState<"all" | "4xx" | "5xx">("all")
+  const [errorEventsPage, setErrorEventsPage] = useState(1)
+  const [errorEventsTotalPages, setErrorEventsTotalPages] = useState(1)
+  const [errorEventsLimit] = useState(20)
 
   const formatBytes = (bytes: number) => {
     if (!Number.isFinite(bytes) || bytes <= 0) return "0 B"
@@ -79,6 +107,14 @@ export default function AdminTelemetryPage() {
     if (bytes < 1024 * 1024) return `${Math.round((bytes / 1024) * 100) / 100} KB`
     if (bytes < 1024 * 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 100) / 100} MB`
     return `${Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100} GB`
+  }
+
+  const formatJson = (value: unknown) => {
+    try {
+      return JSON.stringify(value ?? {}, null, 2)
+    } catch {
+      return String(value)
+    }
   }
 
   const isGranularity = (value: string | null): value is TelemetryGranularity =>
@@ -141,11 +177,38 @@ export default function AdminTelemetryPage() {
         topRoutesParams.set("method", selectedMethod)
       }
 
-      const [apiRequestsResponse, apiLatencyResponse, apiPayloadResponse, topApiRoutesResponse] = await Promise.all([
+      const errorEventsParams = new URLSearchParams({
+        range: telemetryRange,
+        tz: telemetryTimezone,
+        page: String(errorEventsPage),
+        limit: String(errorEventsLimit),
+      })
+      if (telemetryRange === "custom" && customStart && customEnd) {
+        errorEventsParams.set("start", new Date(customStart).toISOString())
+        errorEventsParams.set("end", new Date(customEnd).toISOString())
+      }
+      if (selectedMethod !== "ALL") {
+        errorEventsParams.set("method", selectedMethod)
+      }
+      if (selectedRouteKey) {
+        errorEventsParams.set("routeKey", selectedRouteKey)
+      }
+      if (errorStatusFilter !== "all") {
+        errorEventsParams.set("statusClass", errorStatusFilter)
+      }
+
+      const [
+        apiRequestsResponse,
+        apiLatencyResponse,
+        apiPayloadResponse,
+        topApiRoutesResponse,
+        errorEventsResponse,
+      ] = await Promise.all([
         axios.get(`/api/admin/charts/api-traffic/requests?${telemetryParams.toString()}`),
         axios.get(`/api/admin/charts/api-traffic/latency?${telemetryParams.toString()}`),
         axios.get(`/api/admin/charts/api-traffic/payload?${telemetryParams.toString()}`),
         axios.get(`/api/admin/charts/api-traffic/top-routes?${topRoutesParams.toString()}&limit=20`),
+        axios.get(`/api/admin/charts/api-traffic/error-events?${errorEventsParams.toString()}`),
       ])
 
       setApiRequestsChartData(extractChartData(apiRequestsResponse))
@@ -155,6 +218,9 @@ export default function AdminTelemetryPage() {
       setApiThroughputChartData(apiPayloadResponse.data?.throughput || null)
       setPayloadSummary(apiPayloadResponse.data?.summary || null)
       setTopApiRoutes(topApiRoutesResponse.data?.data || [])
+      setErrorEvents(errorEventsResponse.data?.data || [])
+      setErrorEventsSummary(errorEventsResponse.data?.summary || null)
+      setErrorEventsTotalPages(errorEventsResponse.data?.pagination?.totalPages || 1)
       setLastUpdate(new Date())
     } catch (error: any) {
       console.error("Error fetching telemetry data:", error)
@@ -169,7 +235,16 @@ export default function AdminTelemetryPage() {
     if (!isHydrated) return
     if (telemetryRange === "custom") return
     fetchTelemetry()
-  }, [isHydrated, telemetryRange, telemetryTimezone, selectedRouteKey, selectedMethod, telemetryGranularity])
+  }, [
+    isHydrated,
+    telemetryRange,
+    telemetryTimezone,
+    selectedRouteKey,
+    selectedMethod,
+    telemetryGranularity,
+    errorStatusFilter,
+    errorEventsPage,
+  ])
 
   const availableRouteOptions = Array.from(new Set(topApiRoutes.map((row) => row.routeKey))).sort((a, b) =>
     a.localeCompare(b)
@@ -439,7 +514,11 @@ export default function AdminTelemetryPage() {
                   type="button"
                   key={`${row.method}-${row.routeKey}-${idx}`}
                   className="w-full text-left rounded-lg border border-border/50 p-3 bg-muted/20 hover:bg-muted/40 transition-colors"
-                  onClick={() => setSelectedRouteKey(row.routeKey)}
+                  onClick={() => {
+                    setSelectedRouteKey(row.routeKey)
+                    setSelectedMethod(row.method)
+                    setErrorEventsPage(1)
+                  }}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <code className="text-xs">
@@ -469,6 +548,169 @@ export default function AdminTelemetryPage() {
               <p className="text-sm text-muted-foreground">{t("top_routes.empty")}</p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="backdrop-blur-sm bg-card/50">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">{t("error_calls.title")}</CardTitle>
+              <CardDescription>{t("error_calls.description")}</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{t("error_calls.total", { count: errorEventsSummary?.total || 0 })}</Badge>
+              <Badge variant="outline">4xx: {errorEventsSummary?.count4xx || 0}</Badge>
+              <Badge variant="destructive">5xx: {errorEventsSummary?.count5xx || 0}</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label={t("error_calls.status_filter")}
+              value={errorStatusFilter}
+              onChange={(e) => {
+                setErrorStatusFilter(e.target.value as "all" | "4xx" | "5xx")
+                setErrorEventsPage(1)
+              }}
+              className="border border-border bg-background rounded px-3 py-2 text-sm"
+            >
+              <option value="all">{t("error_calls.status_all")}</option>
+              <option value="4xx">4xx</option>
+              <option value="5xx">5xx</option>
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedRouteKey("")
+                setSelectedMethod("ALL")
+                setErrorStatusFilter("all")
+                setErrorEventsPage(1)
+              }}
+            >
+              {t("error_calls.clear_filters")}
+            </Button>
+          </div>
+
+          {errorEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("error_calls.empty")}</p>
+          ) : (
+            <div className="space-y-2">
+              {errorEvents.map((event) => (
+                <details key={event._id} className="rounded-lg border border-border/50 p-3 bg-muted/20">
+                  <summary className="cursor-pointer list-none flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={event.status >= 500 ? "destructive" : "secondary"}>
+                        {event.status}
+                      </Badge>
+                      <code className="text-xs">
+                        {event.method} {event.routeKey}
+                      </code>
+                      <span className="text-xs text-muted-foreground">
+                        {format.dateTime(new Date(event.occurredAt), {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-3">
+                      <span>{t("error_calls.duration")}: {Math.round(event.durationMs)}ms</span>
+                      <span>{t("error_calls.request_bytes")}: {formatBytes(event.requestBytes)}</span>
+                      <span>{t("error_calls.response_bytes")}: {formatBytes(event.responseBytes)}</span>
+                    </div>
+                  </summary>
+                  <div className="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground">{t("error_calls.request")}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              formatJson({
+                                query: event.requestQuery,
+                                headers: event.requestHeaders,
+                                body: event.requestBody,
+                                requestId: event.requestId,
+                              })
+                            )
+                          }
+                        >
+                          {t("error_calls.copy")}
+                        </Button>
+                      </div>
+                      <pre className="text-[11px] overflow-auto rounded bg-background border border-border p-2">
+{formatJson({
+  query: event.requestQuery,
+  headers: event.requestHeaders,
+  body: event.requestBody,
+  requestId: event.requestId,
+  truncated: event.requestBodyTruncated || false,
+})}
+                      </pre>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground">{t("error_calls.response")}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              formatJson({
+                                headers: event.responseHeaders,
+                                body: event.responseBody,
+                                errorMessage: event.errorMessage,
+                                source: event.source,
+                              })
+                            )
+                          }
+                        >
+                          {t("error_calls.copy")}
+                        </Button>
+                      </div>
+                      <pre className="text-[11px] overflow-auto rounded bg-background border border-border p-2">
+{formatJson({
+  headers: event.responseHeaders,
+  body: event.responseBody,
+  errorMessage: event.errorMessage,
+  source: event.source,
+  truncated: event.responseBodyTruncated || false,
+})}
+                      </pre>
+                    </div>
+                  </div>
+                </details>
+              ))}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={errorEventsPage <= 1}
+                  onClick={() => setErrorEventsPage((p) => Math.max(1, p - 1))}
+                >
+                  {t("error_calls.prev")}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {t("error_calls.page", { page: errorEventsPage, totalPages: errorEventsTotalPages })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={errorEventsPage >= errorEventsTotalPages}
+                  onClick={() => setErrorEventsPage((p) => Math.min(errorEventsTotalPages, p + 1))}
+                >
+                  {t("error_calls.next")}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

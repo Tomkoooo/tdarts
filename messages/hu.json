@@ -3077,6 +3077,24 @@
         "incoming": "bejövő",
         "outgoing": "kimenő",
         "total": "összes"
+      },
+      "error_calls": {
+        "title": "Hibás hívások",
+        "description": "A szűrők alapján pontos 4xx/5xx kérés-válasz párok vizsgálata.",
+        "total": "Összes: {count}",
+        "status_filter": "Státusz szűrő",
+        "status_all": "Összes státusz",
+        "clear_filters": "Hiba szűrők törlése",
+        "empty": "Nincs hibás hívás a jelenlegi szűrőkre.",
+        "duration": "Időtartam",
+        "request_bytes": "Kérés",
+        "response_bytes": "Válasz",
+        "request": "Kérés részletek",
+        "response": "Válasz részletek",
+        "copy": "JSON másolása",
+        "prev": "Előző",
+        "next": "Következő",
+        "page": "{page}. oldal / {totalPages}"
       }
     }
   },

@@ -60,7 +60,7 @@ export default function LeagueDetailModal({
   onLeagueUpdated,
   readOnly = false,
 }: LeagueDetailModalProps) {
-  const tTour = useTranslations("Tournament");
+  const tTour = useTranslations("Club");
   const t = (key: string, values?: any) => tTour(`components.${key}`, values);
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
   const [leagueStats, setLeagueStats] = useState<LeagueStatsResponse | null>(null);
@@ -336,7 +336,7 @@ const StatsOverview = ({
   stats: { totalPlayers: number; totalTournaments: number; averagePoints: string };
   isLoading: boolean;
 }) => {
-    const tTour = useTranslations("Tournament");
+    const tTour = useTranslations("Club");
   const t = (key: string, values?: any) => tTour(`components.${key}`, values);
   const items = [
     {

@@ -1,5 +1,10 @@
 import { connectMongo } from '@/lib/mongoose';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
+import {
+  ApiErrorEventSource,
+  ApiRequestErrorEventModel,
+} from '@/database/models/api-request-error-event.model';
+import { ErrorService } from '@/database/services/error.service';
 
 type TelemetrySample = {
   routeKey: string;
@@ -8,6 +13,27 @@ type TelemetrySample = {
   requestBytes: number;
   responseBytes: number;
   status: number;
+};
+
+type TelemetryErrorEventSample = {
+  occurredAt: Date;
+  routeKey: string;
+  method: string;
+  status: number;
+  requestId?: string;
+  durationMs: number;
+  requestBytes: number;
+  responseBytes: number;
+  requestHeaders?: Record<string, string>;
+  responseHeaders?: Record<string, string>;
+  requestQuery?: Record<string, string | string[]>;
+  requestBody?: string;
+  responseBody?: string;
+  contentType?: string;
+  errorMessage?: string;
+  source: ApiErrorEventSource;
+  requestBodyTruncated?: boolean;
+  responseBodyTruncated?: boolean;
 };
 
 type BucketAggregate = {
@@ -22,6 +48,8 @@ type BucketAggregate = {
 };
 
 const FLUSH_INTERVAL_MS = 60_000;
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const ERROR_EVENT_RETENTION_DAYS = 30;
 
 function toMinuteBucket(date = new Date()): Date {
   const d = new Date(date);
@@ -31,7 +59,9 @@ function toMinuteBucket(date = new Date()): Date {
 
 export class ApiTelemetryService {
   private static aggregates = new Map<string, BucketAggregate>();
+  private static errorEvents: TelemetryErrorEventSample[] = [];
   private static lastFlushAt = 0;
+  private static lastCleanupAt = 0;
   private static isFlushInProgress = false;
 
   static normalizeRouteKey(pathname: string): string {
@@ -71,6 +101,10 @@ export class ApiTelemetryService {
     }
   }
 
+  static recordErrorEvent(sample: TelemetryErrorEventSample): void {
+    this.errorEvents.push(sample);
+  }
+
   static scheduleFlushIfNeeded(): void {
     const now = Date.now();
     if (this.isFlushInProgress) return;
@@ -86,12 +120,14 @@ export class ApiTelemetryService {
 
   static async flush(): Promise<number> {
     if (this.isFlushInProgress) return 0;
-    if (this.aggregates.size === 0) return 0;
+    if (this.aggregates.size === 0 && this.errorEvents.length === 0) return 0;
 
     this.isFlushInProgress = true;
 
     const snapshot = this.aggregates;
     this.aggregates = new Map<string, BucketAggregate>();
+    const errorEventsSnapshot = this.errorEvents;
+    this.errorEvents = [];
 
     try {
       await connectMongo();
@@ -126,7 +162,27 @@ export class ApiTelemetryService {
         await ApiRequestMetricModel.bulkWrite(operations, { ordered: false });
       }
 
-      return operations.length;
+      if (errorEventsSnapshot.length > 0) {
+        await ApiRequestErrorEventModel.insertMany(errorEventsSnapshot, { ordered: false });
+      }
+
+      const now = Date.now();
+      if (now - this.lastCleanupAt > CLEANUP_INTERVAL_MS) {
+        this.lastCleanupAt = now;
+        const cutoff = new Date(now - ERROR_EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+        const cleanupResult = await ApiRequestErrorEventModel.deleteMany({ occurredAt: { $lt: cutoff } });
+        await ErrorService.logInfo('API telemetry error-event retention cleanup completed', 'api', {
+          operation: 'api_telemetry_error_event_retention_cleanup',
+          endpoint: '/api/internal/telemetry/flush',
+          metadata: {
+            deletedCount: cleanupResult.deletedCount || 0,
+            retentionDays: ERROR_EVENT_RETENTION_DAYS,
+            cutoffIso: cutoff.toISOString(),
+          },
+        });
+      }
+
+      return operations.length + errorEventsSnapshot.length;
     } catch (error) {
       // Put snapshot back so we don't lose metrics.
       for (const [key, value] of snapshot.entries()) {
@@ -144,6 +200,7 @@ export class ApiTelemetryService {
         existing.totalResponseBytes += value.totalResponseBytes;
         existing.maxResponseBytes = Math.max(existing.maxResponseBytes, value.maxResponseBytes);
       }
+      this.errorEvents.unshift(...errorEventsSnapshot);
       throw error;
     } finally {
       this.isFlushInProgress = false;

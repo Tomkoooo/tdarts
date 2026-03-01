@@ -3072,6 +3072,24 @@
         "incoming": "ein",
         "outgoing": "aus",
         "total": "gesamt"
+      },
+      "error_calls": {
+        "title": "Fehlerhafte Aufrufe",
+        "description": "Exakte 4xx/5xx Anfrage-Antwort-Fälle für die aktuellen Filter prüfen.",
+        "total": "Gesamt: {count}",
+        "status_filter": "Statusfilter",
+        "status_all": "Alle Status",
+        "clear_filters": "Fehlerfilter zurücksetzen",
+        "empty": "Keine fehlerhaften Aufrufe für diese Filter.",
+        "duration": "Dauer",
+        "request_bytes": "Anfrage",
+        "response_bytes": "Antwort",
+        "request": "Anfragedetails",
+        "response": "Antwortdetails",
+        "copy": "JSON kopieren",
+        "prev": "Zurück",
+        "next": "Weiter",
+        "page": "Seite {page} / {totalPages}"
       }
     }
   },
