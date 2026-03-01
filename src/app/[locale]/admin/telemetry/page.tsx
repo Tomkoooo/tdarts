@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useTranslations, useFormatter } from "next-intl"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { IconRefresh } from "@tabler/icons-react"
+import { IconCheck, IconRefresh } from "@tabler/icons-react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
@@ -100,6 +100,7 @@ export default function AdminTelemetryPage() {
   const [errorEventsPage, setErrorEventsPage] = useState(1)
   const [errorEventsTotalPages, setErrorEventsTotalPages] = useState(1)
   const [errorEventsLimit] = useState(20)
+  const [isMarkingFixed, setIsMarkingFixed] = useState(false)
 
   const formatBytes = (bytes: number) => {
     if (!Number.isFinite(bytes) || bytes <= 0) return "0 B"
@@ -228,6 +229,27 @@ export default function AdminTelemetryPage() {
     } finally {
       setLoading(false)
       setIsRefreshing(false)
+    }
+  }
+
+  const markSelectedErrorsFixed = async () => {
+    if (!selectedRouteKey) {
+      toast.error(t("error_calls.mark_fixed_need_route"))
+      return
+    }
+    try {
+      setIsMarkingFixed(true)
+      await axios.post("/api/admin/charts/api-traffic/error-resets", {
+        routeKey: selectedRouteKey,
+        method: selectedMethod,
+      })
+      toast.success(t("error_calls.mark_fixed_success"))
+      setErrorEventsPage(1)
+      await fetchTelemetry()
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("error_calls.mark_fixed_error"))
+    } finally {
+      setIsMarkingFixed(false)
     }
   }
 
@@ -591,6 +613,15 @@ export default function AdminTelemetryPage() {
               }}
             >
               {t("error_calls.clear_filters")}
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              disabled={!selectedRouteKey || isMarkingFixed}
+              onClick={markSelectedErrorsFixed}
+            >
+              <IconCheck className="size-4 mr-1" />
+              {t("error_calls.mark_fixed")}
             </Button>
           </div>
 

@@ -31,6 +31,47 @@ async function __GET(request: NextRequest) {
     const topRoutes = await ApiRequestMetricModel.aggregate([
       { $match: matchCriteria },
       {
+        $lookup: {
+          from: 'api_request_error_resets',
+          let: { routeKey: '$routeKey', method: '$method' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$routeKey', '$$routeKey'] },
+                    {
+                      $or: [
+                        { $eq: ['$method', '$$method'] },
+                        { $eq: ['$method', 'ALL'] },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            { $sort: { resetAt: -1 } },
+            { $limit: 1 },
+          ],
+          as: 'resetRows',
+        },
+      },
+      {
+        $addFields: {
+          effectiveResetAt: { $arrayElemAt: ['$resetRows.resetAt', 0] },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $or: [
+              { $eq: ['$effectiveResetAt', null] },
+              { $gte: ['$bucket', '$effectiveResetAt'] },
+            ],
+          },
+        },
+      },
+      {
         $group: {
           _id: { routeKey: '$routeKey', method: '$method' },
           count: { $sum: '$count' },

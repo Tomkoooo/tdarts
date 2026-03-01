@@ -21,6 +21,7 @@ async function __GET(request: NextRequest) {
     const { startDate, endDate } = resolveTimeRange(searchParams);
     const { routeKey, method } = resolveRouteFilters(searchParams);
     const statusClass = searchParams.get('statusClass');
+    const includeResolved = searchParams.get('includeResolved') === 'true';
     const status = Number(searchParams.get('status'));
     const page = Math.max(1, Number(searchParams.get('page') || 1));
     const limit = Math.min(100, Math.max(10, Number(searchParams.get('limit') || 20)));
@@ -31,6 +32,9 @@ async function __GET(request: NextRequest) {
     };
     if (routeKey) match.routeKey = routeKey;
     if (method) match.method = method;
+    if (!includeResolved) {
+      match.isResolved = { $ne: true };
+    }
     if (Number.isFinite(status) && status > 0) {
       match.status = status;
     } else if (statusClass === '4xx') {

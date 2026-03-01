@@ -21,6 +21,8 @@ export interface IApiRequestErrorEvent extends Document {
   source: ApiErrorEventSource;
   requestBodyTruncated?: boolean;
   responseBodyTruncated?: boolean;
+  isResolved: boolean;
+  resolvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +52,8 @@ const ApiRequestErrorEventSchema = new Schema<IApiRequestErrorEvent>(
     },
     requestBodyTruncated: { type: Boolean, default: false },
     responseBodyTruncated: { type: Boolean, default: false },
+    isResolved: { type: Boolean, required: true, default: false, index: true },
+    resolvedAt: { type: Date },
   },
   {
     collection: 'api_request_error_events',
@@ -59,6 +63,7 @@ const ApiRequestErrorEventSchema = new Schema<IApiRequestErrorEvent>(
 
 ApiRequestErrorEventSchema.index({ routeKey: 1, method: 1, occurredAt: -1 });
 ApiRequestErrorEventSchema.index({ status: 1, occurredAt: -1 });
+ApiRequestErrorEventSchema.index({ isResolved: 1, occurredAt: -1 });
 
 export const ApiRequestErrorEventModel =
   mongoose.models.ApiRequestErrorEvent ||
