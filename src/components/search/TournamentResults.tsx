@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SearchFiltersPanel } from "@/components/search/SearchFilters"
 import TournamentCard from "@/components/tournament/TournamentCard"
 import { useTranslations, useFormatter } from "next-intl"
+import { getLocalDateKey, getLocalMidnightFromKey } from "@/lib/date-time"
 
 interface Tournament {
   _id: string
@@ -52,16 +53,17 @@ export function TournamentResults({
 
   // Group tournaments by date
   const groupedTournaments = React.useMemo(() => {
-    const groups: { [key: string]: Tournament[] } = {}
+    const groups: { [key: string]: Tournament[] } = {};
     
-    tournaments
+    [...tournaments]
       .sort((a, b) => 
         new Date(a.tournamentSettings.startDate).getTime() - 
         new Date(b.tournamentSettings.startDate).getTime()
       )
       .forEach(tournament => {
         const date = new Date(tournament.tournamentSettings.startDate)
-        const dateKey = date.toDateString()
+        const dateKey = getLocalDateKey(date)
+        if (!dateKey) return
         
         if (!groups[dateKey]) {
           groups[dateKey] = []
@@ -81,24 +83,23 @@ export function TournamentResults({
   }
 
   const sortedDates = Object.keys(groupedTournaments).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+    (a, b) => getLocalMidnightFromKey(a).getTime() - getLocalMidnightFromKey(b).getTime()
   )
 
   // Format date header
-  const formatDateHeader = (date: Date) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const targetDate = new Date(date)
-    targetDate.setHours(0, 0, 0, 0)
+  const formatDateHeader = (dateKey: string) => {
+    const todayKey = getLocalDateKey(new Date())
+    if (!todayKey) return dateKey
+    const tomorrowDate = getLocalMidnightFromKey(todayKey)
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+    const tomorrowKey = getLocalDateKey(tomorrowDate)
 
-    if (targetDate.getTime() === today.getTime()) {
+    if (dateKey === todayKey) {
       return t('today')
-    } else if (targetDate.getTime() === tomorrow.getTime()) {
+    } else if (tomorrowKey && dateKey === tomorrowKey) {
       return t('tomorrow')
     } else {
-      return format.dateTime(targetDate, {
+      return format.dateTime(getLocalMidnightFromKey(dateKey), {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -180,11 +181,9 @@ export function TournamentResults({
       {view === 'calendar' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedDates.map(dateKey => {
-            const date = new Date(dateKey)
             const dayTournaments = groupedTournaments[dateKey]
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const isToday = date.getTime() === today.getTime()
+            const todayKey = getLocalDateKey(new Date())
+            const isToday = todayKey === dateKey
             
             return (
               <Card 
@@ -200,7 +199,7 @@ export function TournamentResults({
                     <span className={`font-semibold text-sm ${
                       isToday ? 'text-primary' : 'text-muted-foreground'
                     }`}>
-                      {formatDateHeader(date)}
+                      {formatDateHeader(dateKey)}
                     </span>
                     {isToday && (
                       <Badge variant="default" className="text-xs">{t('today_badge')}</Badge>
@@ -259,14 +258,13 @@ export function TournamentResults({
         /* List View */
         <div className="space-y-8">
           {sortedDates.map(dateKey => {
-            const date = new Date(dateKey)
             const dayTournaments = groupedTournaments[dateKey]
             
             return (
               <div key={dateKey} className="space-y-4">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xl font-bold text-primary">
-                    {formatDateHeader(date)}
+                    {formatDateHeader(dateKey)}
                   </h3>
                   <div className="flex-1 h-px bg-border"></div>
                   <span className="text-sm text-muted-foreground">

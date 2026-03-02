@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { cn } from "@/lib/utils"
 import { createTournamentSchema, CreateTournamentFormData } from "@/lib/validations"
+import { formatDateTimeLocalInput } from "@/lib/date-time"
 
 interface CreateTournamentFormEnhancedProps {
   onSubmit: (data: CreateTournamentFormData) => Promise<void>
@@ -162,7 +163,7 @@ export function CreateTournamentFormEnhanced({
                       <Input
                         type="datetime-local"
                         {...field}
-                        value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ""}
+                        value={formatDateTimeLocalInput(field.value)}
                         onChange={(e) => field.onChange(new Date(e.target.value))}
                       />
                       <IconCalendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

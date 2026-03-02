@@ -4,7 +4,7 @@ import * as React from "react"
 import { IconTrophy, IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
 import TournamentList from "./TournamentList"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 interface ClubTournamentsSectionProps {
   tournaments: any[]
@@ -24,18 +24,49 @@ export function ClubTournamentsSection({
   onDeleteTournament,
 }: ClubTournamentsSectionProps) {
   const t = useTranslations('Club.tournaments')
+  const locale = useLocale()
   const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [verificationFilter, setVerificationFilter] = React.useState<string>('all')
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc')
+  const [timePreset, setTimePreset] = React.useState<'upcoming' | 'next7' | 'next30' | 'onDate' | 'all'>('upcoming')
+  const [selectedDate, setSelectedDate] = React.useState<string>('')
+  const [nameQuery, setNameQuery] = React.useState<string>('')
+
+  const toDateKey = React.useCallback((value: Date) => {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }, [])
+
+  const startOfDay = React.useCallback((value: Date) => {
+    const cloned = new Date(value)
+    cloned.setHours(0, 0, 0, 0)
+    return cloned
+  }, [])
+
+  const addDays = React.useCallback((value: Date, days: number) => {
+    const cloned = new Date(value)
+    cloned.setDate(cloned.getDate() + days)
+    return cloned
+  }, [])
 
   // Filter tournaments
   const filteredTournaments = React.useMemo(() => {
-    return tournaments.filter(t => {
+    const query = nameQuery.trim().toLowerCase()
+    const todayStart = startOfDay(new Date())
+    const next7Limit = addDays(todayStart, 7)
+    const next30Limit = addDays(todayStart, 30)
+
+    return tournaments.filter((t) => {
       const isDeleted = t.isDeleted === true;
       const isSandbox = t.isSandbox === true;
       const verified = t.verified === true || t.isVerified === true;
       const status = t.tournamentSettings?.status || 'pending';
+      const tournamentName = String(t.tournamentSettings?.name || '').toLowerCase()
+      const startDateValue = t.tournamentSettings?.startDate ? new Date(t.tournamentSettings.startDate) : null
+      const hasValidStartDate = !!startDateValue && !Number.isNaN(startDateValue.getTime())
 
       // View Mode Filter
       if (viewMode === 'deleted') {
@@ -54,10 +85,40 @@ export function ClubTournamentsSection({
       // Verification Filter
       if (verificationFilter === 'verified' && !verified) return false;
       if (verificationFilter === 'unverified' && verified) return false;
-      
+
+      // Name search
+      if (query && !tournamentName.includes(query)) return false;
+
+      // Time filter
+      if (timePreset !== 'all') {
+        if (!hasValidStartDate || !startDateValue) return false;
+
+        const tournamentDay = startOfDay(startDateValue)
+        const tournamentDateKey = toDateKey(tournamentDay)
+
+        if (timePreset === 'upcoming' && tournamentDay < todayStart) return false;
+        if (timePreset === 'next7' && (tournamentDay < todayStart || tournamentDay > next7Limit)) return false;
+        if (timePreset === 'next30' && (tournamentDay < todayStart || tournamentDay > next30Limit)) return false;
+        if (timePreset === 'onDate') {
+          if (!selectedDate) return false;
+          if (tournamentDateKey !== selectedDate) return false;
+        }
+      }
+
       return true;
     })
-  }, [tournaments, viewMode, statusFilter, verificationFilter])
+  }, [
+    tournaments,
+    viewMode,
+    statusFilter,
+    verificationFilter,
+    nameQuery,
+    timePreset,
+    selectedDate,
+    startOfDay,
+    addDays,
+    toDateKey
+  ])
 
   // Group tournaments by date (Newest first)
   const groupedTournaments = React.useMemo(() => {
@@ -65,14 +126,21 @@ export function ClubTournamentsSection({
     
     // Sort all tournaments by date (respecting sortOrder)
     const sorted = [...filteredTournaments].sort((a, b) => {
-      const timeA = new Date(a.tournamentSettings.startDate).getTime();
-      const timeB = new Date(b.tournamentSettings.startDate).getTime();
+      const rawA = a.tournamentSettings?.startDate ? new Date(a.tournamentSettings.startDate) : null
+      const rawB = b.tournamentSettings?.startDate ? new Date(b.tournamentSettings.startDate) : null
+      const timeA = rawA && !Number.isNaN(rawA.getTime()) ? rawA.getTime() : null
+      const timeB = rawB && !Number.isNaN(rawB.getTime()) ? rawB.getTime() : null
+
+      if (timeA === null && timeB === null) return 0;
+      if (timeA === null) return 1;
+      if (timeB === null) return -1;
+
       return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     })
 
     sorted.forEach(tournament => {
-      const date = new Date(tournament.tournamentSettings.startDate)
-      const dateKey = date.toDateString()
+      const date = tournament.tournamentSettings?.startDate ? new Date(tournament.tournamentSettings.startDate) : null
+      const dateKey = date && !Number.isNaN(date.getTime()) ? date.toDateString() : '__unknown__'
       
       if (!groups[dateKey]) {
         groups[dateKey] = []
@@ -85,6 +153,9 @@ export function ClubTournamentsSection({
 
   const sortedDateKeys = React.useMemo(() => {
     return Object.keys(groupedTournaments).sort((a, b) => {
+      if (a === '__unknown__' && b === '__unknown__') return 0;
+      if (a === '__unknown__') return 1;
+      if (b === '__unknown__') return -1;
       const timeA = new Date(a).getTime();
       const timeB = new Date(b).getTime();
       return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
@@ -92,6 +163,8 @@ export function ClubTournamentsSection({
   }, [groupedTournaments, sortOrder])
 
   const formatDateHeader = (dateStr: string) => {
+    if (dateStr === '__unknown__') return t('date_header.unknown')
+
     const date = new Date(dateStr)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -99,7 +172,7 @@ export function ClubTournamentsSection({
 
     if (isToday) return t('date_header.today')
     
-    return date.toLocaleDateString('hu-HU', { 
+    return date.toLocaleDateString(locale, {
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
@@ -109,7 +182,7 @@ export function ClubTournamentsSection({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between md:flex-row flex-col gap-3 items-start">
+      <div className="flex md:items-center justify-between md:flex-row flex-col gap-3 items-start">
         <div className="flex flex-col items-center gap-3 md:flex-row ">
           <div className="flex items-center gap-3 ">
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
@@ -220,14 +293,60 @@ export function ClubTournamentsSection({
           </select>
         </div>
 
-        {(statusFilter !== 'all' || verificationFilter !== 'all' || sortOrder !== 'desc') && (
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.time')}</label>
+          <select
+            value={timePreset}
+            onChange={(e) => setTimePreset(e.target.value as 'upcoming' | 'next7' | 'next30' | 'onDate' | 'all')}
+            className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+          >
+            <option value="upcoming">{t('time_options.upcoming')}</option>
+            <option value="next7">{t('time_options.next_7_days')}</option>
+            <option value="next30">{t('time_options.next_30_days')}</option>
+            <option value="onDate">{t('time_options.on_date')}</option>
+            <option value="all">{t('time_options.all')}</option>
+          </select>
+        </div>
+
+        {timePreset === 'onDate' && (
+          <div className="flex flex-col gap-1.5 flex-1 min-w-[170px]">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.on_date')}</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+            />
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[180px]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.search')}</label>
+          <input
+            type="text"
+            value={nameQuery}
+            onChange={(e) => setNameQuery(e.target.value)}
+            placeholder={t('search_placeholder')}
+            className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+          />
+        </div>
+
+        {(statusFilter !== 'all' ||
+          verificationFilter !== 'all' ||
+          sortOrder !== 'asc' ||
+          timePreset !== 'upcoming' ||
+          selectedDate !== '' ||
+          nameQuery.trim() !== '') && (
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => {
               setStatusFilter('all');
               setVerificationFilter('all');
-              setSortOrder('desc');
+              setSortOrder('asc');
+              setTimePreset('upcoming');
+              setSelectedDate('');
+              setNameQuery('');
             }}
             className="text-xs h-9"
           >

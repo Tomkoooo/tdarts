@@ -1665,6 +1665,9 @@
         "status": "Zustand",
         "verification": "Authentifizierung",
         "sort": "Anordnung",
+        "time": "Zeitraum",
+        "on_date": "Am Datum",
+        "search": "Suche",
         "clear": "Filter löschen"
       },
       "status_options": {
@@ -1683,8 +1686,17 @@
         "desc": "Das Neueste vorne",
         "asc": "Der Älteste vorne"
       },
+      "time_options": {
+        "upcoming": "Kommende",
+        "next_7_days": "Nächste 7 Tage",
+        "next_30_days": "Nächste 30 Tage",
+        "on_date": "Genaues Datum",
+        "all": "Alle Daten"
+      },
+      "search_placeholder": "Turniername suchen...",
       "date_header": {
-        "today": "Heute"
+        "today": "Heute",
+        "unknown": "Kein Startdatum"
       },
       "tournament_count": "{count} Wettbewerb"
     },
