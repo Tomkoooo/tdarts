@@ -1,6 +1,7 @@
 import TournamentCard from "@/components/tournament/TournamentCard"
 import { IconCalendar } from "@tabler/icons-react"
 import { useTranslations, useFormatter } from "next-intl"
+import { getLocalDateKey, getLocalMidnightFromKey } from "@/lib/date-time"
 
 interface TournamentListProps {
     tournaments: any[];
@@ -35,7 +36,8 @@ export function TournamentList({ tournaments }: TournamentListProps) {
         }
 
         const date = new Date(tournament.tournamentSettings.startDate);
-        const dateKey = date.toDateString();
+        const dateKey = getLocalDateKey(date);
+        if (!dateKey) return groups;
         
         if (!groups[dateKey]) {
             groups[dateKey] = [];
@@ -45,23 +47,22 @@ export function TournamentList({ tournaments }: TournamentListProps) {
     }, {});
 
     const sortedDates = Object.keys(groupedTournaments).sort(
-        (a, b) => new Date(a).getTime() - new Date(b).getTime()
+        (a, b) => getLocalMidnightFromKey(a).getTime() - getLocalMidnightFromKey(b).getTime()
     );
 
-    const formatDateHeader = (date: Date) => {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const tomorrow = new Date(today)
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        const targetDate = new Date(date)
-        targetDate.setHours(0, 0, 0, 0)
-    
-        if (targetDate.getTime() === today.getTime()) {
+    const formatDateHeader = (dateKey: string) => {
+        const todayKey = getLocalDateKey(new Date())
+        if (!todayKey) return dateKey
+        const tomorrowDate = getLocalMidnightFromKey(todayKey)
+        tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+        const tomorrowKey = getLocalDateKey(tomorrowDate)
+
+        if (dateKey === todayKey) {
           return tResults('today')
-        } else if (targetDate.getTime() === tomorrow.getTime()) {
+        } else if (tomorrowKey && dateKey === tomorrowKey) {
           return tResults('tomorrow')
         } else {
-          return format.dateTime(targetDate, {
+          return format.dateTime(getLocalMidnightFromKey(dateKey), {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -73,7 +74,6 @@ export function TournamentList({ tournaments }: TournamentListProps) {
     return (
         <div className="space-y-10 animate-in fade-in duration-500">
             {sortedDates.map(dateKey => {
-                const date = new Date(dateKey)
                 const dayTournaments = groupedTournaments[dateKey]
                 
                 return (
@@ -81,7 +81,7 @@ export function TournamentList({ tournaments }: TournamentListProps) {
                         <div className="flex items-center gap-4 sticky top-[60px] md:top-[70px] z-10 py-2 bg-base-100/95 backdrop-blur-sm border-b border-base-200">
                             <h3 className="text-lg md:text-xl font-bold text-primary-foreground capitalize flex items-center gap-2">
                                 <IconCalendar className="w-5 h-5 opacity-70" />
-                                {formatDateHeader(date)}
+                                {formatDateHeader(dateKey)}
                             </h3>
                             <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-base-200 text-base-content/70">
                                 {dayTournaments.length}
