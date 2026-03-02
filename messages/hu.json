@@ -1681,6 +1681,9 @@
         "status": "Állapot",
         "verification": "Hitelesítés",
         "sort": "Rendezés",
+        "time": "Időszak",
+        "on_date": "Adott dátum",
+        "search": "Keresés",
         "clear": "Szűrők törlése"
       },
       "status_options": {
@@ -1699,8 +1702,17 @@
         "desc": "Legújabb elöl",
         "asc": "Legrégebbi elöl"
       },
+      "time_options": {
+        "upcoming": "Közelgő",
+        "next_7_days": "Következő 7 nap",
+        "next_30_days": "Következő 30 nap",
+        "on_date": "Pontos dátum",
+        "all": "Összes dátum"
+      },
+      "search_placeholder": "Versenynév keresése...",
       "date_header": {
-        "today": "Ma"
+        "today": "Ma",
+        "unknown": "Nincs kezdődátum"
       },
       "tournament_count": "{count} verseny"
     },

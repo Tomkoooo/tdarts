@@ -1681,6 +1681,9 @@
         "status": "Condition",
         "verification": "Authentication",
         "sort": "Arrangement",
+        "time": "Time range",
+        "on_date": "On date",
+        "search": "Search",
         "clear": "Delete filters"
       },
       "status_options": {
@@ -1699,8 +1702,17 @@
         "desc": "Latest in front",
         "asc": "Oldest in front"
       },
+      "time_options": {
+        "upcoming": "Upcoming",
+        "next_7_days": "Next 7 days",
+        "next_30_days": "Next 30 days",
+        "on_date": "On exact date",
+        "all": "All dates"
+      },
+      "search_placeholder": "Search tournament name...",
       "date_header": {
-        "today": "Today"
+        "today": "Today",
+        "unknown": "No start date"
       },
       "tournament_count": "{count} competition"
     },
