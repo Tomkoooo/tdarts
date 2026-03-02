@@ -72,7 +72,7 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="w-[calc(100vw-1rem)] max-h-[90vh] max-w-3xl overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
           <DialogTitle>{t.headToHeadTitle}</DialogTitle>
         </DialogHeader>
@@ -90,7 +90,7 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
           </div>
         ) : data ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-5">
               <StatBox icon={<IconSword size={14} />} label={t.headToHeadMatches} value={data.summary.matchesPlayed} />
               <StatBox icon={<IconTrophy size={14} />} label={`${data.playerA.name} ${t.headToHeadWins}`} value={data.summary.playerAWins} />
               <StatBox icon={<IconTrophy size={14} />} label={`${data.playerB.name} ${t.headToHeadWins}`} value={data.summary.playerBWins} />
@@ -109,12 +109,12 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
                 data.matches.map((match) => (
                   <Card key={match._id} className="border-muted/20">
                     <CardContent className="space-y-2 py-3">
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
                           <p className="text-sm font-semibold">{match.tournament.name}</p>
                           <p className="text-xs text-muted-foreground">{new Date(match.date).toLocaleDateString("hu-HU")}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <p className="text-sm font-black">
                             {match.playerA.legsWon} - {match.playerB.legsWon}
                           </p>
@@ -126,7 +126,7 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
                           </p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground sm:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
                         <span>{t.headToHeadHighestCheckout}: {match.playerA.highestCheckout || "—"}</span>
                         <span>{t.headToHeadHighestCheckout}: {match.playerB.highestCheckout || "—"}</span>
                         <span>{t.headToHeadOneEighties}: {match.playerA.oneEightiesCount || 0}</span>
@@ -169,12 +169,12 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
 
 function StatBox({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border border-muted/20 bg-muted/10 p-3">
+    <div className="rounded-lg border border-muted/20 bg-muted/10 p-2 sm:p-3">
       <div className="mb-2 flex items-center justify-between text-muted-foreground">
-        <span className="text-[10px] font-bold uppercase">{label}</span>
+        <span className="text-[10px] font-bold uppercase wrap-break-word">{label}</span>
         {icon}
       </div>
-      <p className="text-lg font-black">{value}</p>
+      <p className="text-base font-black sm:text-lg">{value}</p>
     </div>
   );
 }

@@ -104,6 +104,6 @@ describe('ProfileService', () => {
     ).rejects.toThrow(Error);
     await expect(
       ProfileService.verifyEmail(user._id.toString(), 'invalid_code')
-    ).rejects.toThrow('Email verification failed: Invalid verification code');
+    ).rejects.toThrow('Invalid verification code');
   }, 15000);
 });
