@@ -21,15 +21,11 @@ async function __GET(request: NextRequest, { params }: { params: Promise<{ code:
       return NextResponse.json('guest');
     }
 
-    // Optimalizált lekérdezés - csak a szükséges adatokat kérjük le
-    const tournament = await TournamentService.getTournament(code);
-    if (!tournament) {
-      return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
-    }
+    const { clubId } = await TournamentService.getTournamentRoleContext(code);
     
     // Párhuzamos lekérdezések a teljesítmény javításához
     const [userClubRole, userPlayerStatus] = await Promise.all([
-      ClubService.getUserRoleInClub(user._id.toString(), tournament.clubId._id.toString()),
+      ClubService.getUserRoleInClub(user._id.toString(), clubId),
       TournamentService.getPlayerStatusInTournament(code, user._id.toString())
     ]);
 

@@ -1,7 +1,7 @@
 "use client"
 import { useTranslations } from "next-intl";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useRef } from "react";
 import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
@@ -118,6 +118,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [localMatchStartingScore, setLocalMatchStartingScore] = useState<number>(501);
   const [localMatchActive, setLocalMatchActive] = useState<boolean>(false);
   const [localMatchId, setLocalMatchId] = useState<string>("");
+  const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
   const getBoardLabel = (boardNumber: number, name?: string) =>
@@ -185,21 +186,41 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   useEffect(() => {
     if (lastEvent && isAuthenticated) {
       console.log('Board - Received SSE event:', lastEvent.type, lastEvent.data);
+
+      const scheduleRefresh = (action: () => void) => {
+        if (sseRefreshTimerRef.current) {
+          clearTimeout(sseRefreshTimerRef.current);
+        }
+        // Merge bursts of events to avoid back-to-back expensive API calls.
+        sseRefreshTimerRef.current = setTimeout(action, 300);
+      };
       
       // Auto-refresh on relevant events
       if (lastEvent.type === 'tournament-update' || lastEvent.type === 'match-update') {
         // If viewing matches, reload them
         if (selectedBoard) {
           console.log('Board - Auto-refreshing matches due to SSE event');
-          loadMatches();
+          scheduleRefresh(() => {
+            void loadMatches();
+          });
         } else {
           // If on board selection, reload boards
           console.log('Board - Auto-refreshing boards due to SSE event');
-          loadBoards();
+          scheduleRefresh(() => {
+            void loadBoards();
+          });
         }
       }
     }
   }, [lastEvent, isAuthenticated, selectedBoard]);
+
+  useEffect(() => {
+    return () => {
+      if (sseRefreshTimerRef.current) {
+        clearTimeout(sseRefreshTimerRef.current);
+      }
+    };
+  }, []);
 
   const handlePasswordSubmit = async (pwd?: string) => {
     setLoading(true);

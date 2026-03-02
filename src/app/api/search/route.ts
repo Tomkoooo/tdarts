@@ -5,10 +5,12 @@ import { withApiTelemetry } from '@/lib/api-telemetry';
 async function __POST(request: Request) {
     try {
         const body = await request.json();
-        const { query, filters, tab } = body;
+        const { query, filters, tab, includeCounts = true, includeMetadata = true } = body;
 
-        // 1. Get Counts for ALL tabs (to show badges)
-        const counts = await SearchService.getTabCounts(query || '', filters);
+        // 1. Optionally get counts for ALL tabs (to show badges)
+        const counts = includeCounts
+            ? await SearchService.getTabCounts(query || '', filters)
+            : null;
 
         // 2. Get specific tab results based on 'tab' param
         let resultsData: { results: any[]; total: number } = { results: [], total: 0 };
@@ -52,8 +54,10 @@ async function __POST(request: Request) {
                 resultsData = await SearchService.searchTournaments(query || '', filters);
         }
 
-        // 3. Get Metadata
-        const metadata = await SearchService.getMetadata(query || '', filters);
+        // 3. Optionally get metadata
+        const metadata = includeMetadata
+            ? await SearchService.getMetadata(query || '', filters)
+            : null;
 
         return NextResponse.json({
             results: resultsData.results,
@@ -62,9 +66,9 @@ async function __POST(request: Request) {
                 page: filters?.page || 1,
                 limit: filters?.limit || 10
             },
-            counts: counts,
-            metadata: metadata,
-            groupedResults: tab === 'global'
+            counts: counts || undefined,
+            metadata: metadata || undefined,
+            groupedResults: tab === 'global' && Array.isArray(resultsData.results)
                 ? {
                     tournaments: resultsData.results.filter((item) => item.__entityType === 'tournament'),
                     players: resultsData.results.filter((item) => item.__entityType === 'player'),

@@ -92,6 +92,14 @@ export class TournamentService {
             
             // Ensure tournamentId index exists
             await TournamentModel.collection.createIndex({ tournamentId: 1 }, { unique: true });
+            await TournamentModel.collection.createIndex({ tournamentId: 1, isDeleted: 1, isArchived: 1 });
+            await TournamentModel.collection.createIndex({
+                isDeleted: 1,
+                isArchived: 1,
+                isSandbox: 1,
+                'tournamentSettings.status': 1,
+                'tournamentSettings.startDate': 1,
+            });
             
             // Drop any problematic indexes
             try {
@@ -371,6 +379,132 @@ export class TournamentService {
             }
         }
         return tournament;
+    }
+
+    static async getTournamentSummaryForPublicPage(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            $or: [{ tournamentId }],
+        };
+        if (mongoose.isValidObjectId(tournamentId)) {
+            filter.$or.push({ _id: tournamentId });
+        }
+
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId league tournamentPlayers waitingList notificationSubscribers groups knockout boards tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus stripeSessionId invoiceId billingInfoSnapshot'
+            )
+            .populate('clubId')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                select: 'name userRef members type stats profilePicture country',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate('waitingList.addedBy', 'name username')
+            .populate('notificationSubscribers.userRef', 'name username email')
+            .populate({
+                path: 'groups.matches',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate('knockout.matches.player1', 'name profilePicture')
+            .populate('knockout.matches.player2', 'name profilePicture')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'boards.currentMatch',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'boards.nextMatch',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentSummaryForPublicPage',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentKnockoutView(tournamentId: string): Promise<{
+        knockout: any[] | null;
+        tournamentStatus: string | null;
+    }> {
+        await connectMongo();
+        const filter: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            $or: [{ tournamentId }],
+        };
+        if (mongoose.isValidObjectId(tournamentId)) {
+            filter.$or.push({ _id: tournamentId });
+        }
+
+        const tournament = await TournamentModel.findOne(filter)
+            .select('knockout tournamentSettings.status')
+            .populate('knockout.matches.player1', 'name profilePicture')
+            .populate('knockout.matches.player2', 'name profilePicture')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found');
+        }
+
+        return {
+            knockout: tournament.knockout || null,
+            tournamentStatus: tournament.tournamentSettings?.status || null,
+        };
     }
 
 
@@ -3458,12 +3592,23 @@ export class TournamentService {
 
     static async getPlayerMatches(tournamentCode: string, playerId: string): Promise<any[]> {
         try {
-            const tournament = await TournamentService.getTournament(tournamentCode);
+            await connectMongo();
+            const filter: any = {
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                $or: [{ tournamentId: tournamentCode }],
+            };
+            if (mongoose.isValidObjectId(tournamentCode)) {
+                filter.$or.push({ _id: tournamentCode });
+            }
+
+            const tournament = await TournamentModel.findOne(filter)
+                .select('_id tournamentId groups knockout boards')
+                .lean();
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
 
-            const { MatchModel } = await import('../models/match.model');
             const matches = await MatchModel.find({
                 tournamentRef: tournament._id,
                 $or: [
@@ -3471,7 +3616,7 @@ export class TournamentService {
                     { 'player2.playerId': playerId }
                 ]
             })
-            .populate('player1.playerId player2.playerId legs')
+            .populate('player1.playerId player2.playerId')
             .sort({ createdAt: -1 });
 
             // Calculate stats for each match
@@ -5167,11 +5312,17 @@ export class TournamentService {
     }> {
         try {
             await connectMongo();
-            const tournament = await TournamentModel.findOne({ 
-                tournamentId: tournamentId,
+            const filter: any = {
                 isDeleted: { $ne: true },
-                isArchived: { $ne: true }
-            });
+                isArchived: { $ne: true },
+                $or: [{ tournamentId }],
+            };
+            if (mongoose.isValidObjectId(tournamentId)) {
+                filter.$or.push({ _id: tournamentId });
+            }
+            const tournament = await TournamentModel.findOne(filter)
+                .select('boards')
+                .lean();
             if (!tournament) {
                 throw new BadRequestError('Tournament not found');
             }
@@ -5196,6 +5347,55 @@ export class TournamentService {
             console.error('getTournamentBoardContext error:', error);
             throw error;
         }
+    }
+
+    static async getTournamentMatchContext(tournamentId: string): Promise<{
+        tournamentObjectId: string;
+        clubId: string;
+        startingScore: number;
+    }> {
+        await connectMongo();
+        const filter: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            $or: [{ tournamentId }],
+        };
+        if (mongoose.isValidObjectId(tournamentId)) {
+            filter.$or.push({ _id: tournamentId });
+        }
+
+        const tournament = await TournamentModel.findOne(filter)
+            .select('_id clubId tournamentSettings.startingScore')
+            .lean();
+        if (!tournament || !tournament.clubId) {
+            throw new BadRequestError('Tournament or club not found');
+        }
+
+        return {
+            tournamentObjectId: tournament._id.toString(),
+            clubId: tournament.clubId.toString(),
+            startingScore: Number(tournament.tournamentSettings?.startingScore || 501),
+        };
+    }
+
+    static async getTournamentRoleContext(tournamentId: string): Promise<{ clubId: string }> {
+        await connectMongo();
+        const filter: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            $or: [{ tournamentId }],
+        };
+        if (mongoose.isValidObjectId(tournamentId)) {
+            filter.$or.push({ _id: tournamentId });
+        }
+
+        const tournament = await TournamentModel.findOne(filter)
+            .select('clubId')
+            .lean();
+        if (!tournament || !tournament.clubId) {
+            throw new BadRequestError('Tournament not found');
+        }
+        return { clubId: tournament.clubId.toString() };
     }
 
     // --- SITEMAP SUPPORT ---

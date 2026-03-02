@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 import axios from "axios"
 import Link from "next/link"
@@ -80,6 +80,7 @@ const TournamentPage = () => {
   const [isReopening, setIsReopening] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("overview")
+  const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Handle tab from URL - reacts to URL changes
   React.useEffect(() => {
@@ -278,6 +279,16 @@ const TournamentPage = () => {
 
   // Real-time updates - use silent refresh to avoid disrupting user
   const { lastEvent } = useRealTimeUpdates()
+  const scheduleSilentRefresh = useCallback(() => {
+    if (sseRefreshTimerRef.current) {
+      clearTimeout(sseRefreshTimerRef.current)
+    }
+    // Coalesce noisy bursts of SSE updates into a single refresh.
+    sseRefreshTimerRef.current = setTimeout(() => {
+      void silentRefresh()
+    }, 400)
+  }, [silentRefresh])
+
   useEffect(() => {
     if (lastEvent) {
         // Handle different event types
@@ -288,11 +299,19 @@ const TournamentPage = () => {
             const eventTournamentId = lastEvent.data?.tournamentId;
             if (!eventTournamentId || eventTournamentId === code) {
                 console.log('Received real-time update:', lastEvent.type, 'refreshing silently...')
-                silentRefresh()
+                scheduleSilentRefresh()
             }
         }
     }
-  }, [lastEvent, silentRefresh, code])
+  }, [lastEvent, scheduleSilentRefresh, code])
+
+  useEffect(() => {
+    return () => {
+      if (sseRefreshTimerRef.current) {
+        clearTimeout(sseRefreshTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleRefetch = useCallback(() => {
     fetchAll()

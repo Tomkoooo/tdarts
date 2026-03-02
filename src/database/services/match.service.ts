@@ -21,19 +21,26 @@ export class MatchService {
     }
 
     // Get all matches for a board that haven't finished yet
-    static async getBoardMatches(tournamentId: string, clubId: string, boardNumber: number): Promise<Match[]> {
-        const tournament = await TournamentService.getTournament(tournamentId);
-        const startingScore = tournament?.tournamentSettings.startingScore;
+    static async getBoardMatches(
+        tournamentId: string,
+        clubId: string,
+        boardNumber: number,
+        preloadedContext?: { tournamentObjectId: string; startingScore: number }
+    ): Promise<Match[]> {
+        const tournamentObjectId = preloadedContext?.tournamentObjectId;
+        const startingScore = preloadedContext?.startingScore;
 
-        if (!tournament) throw new BadRequestError('Tournament not found', 'tournament', {
-          tournamentId,
-          clubId,
-          boardNumber
-        });
+        if (!tournamentObjectId) {
+            throw new BadRequestError('Tournament context missing', 'tournament', {
+                tournamentId,
+                clubId,
+                boardNumber,
+            });
+        }
         
         const matches = await MatchModel.find({
             boardReference: boardNumber,
-            tournamentRef: tournament._id,
+            tournamentRef: tournamentObjectId,
             status: { $ne: 'finished' },
             // Only include matches where both players exist (no bye matches)
             $and: [
@@ -44,10 +51,11 @@ export class MatchService {
         .populate('player1.playerId')
         .populate('player2.playerId')
         .populate('scorer')
-        .sort({ createdAt: 1 });
+        .sort({ createdAt: 1 })
+        .lean();
 
         return matches.map(match => ({
-            ...match.toObject(),
+            ...match,
             startingScore: startingScore,
             startingPlayer: match.startingPlayer || 1, // Ensure startingPlayer is included
         }));

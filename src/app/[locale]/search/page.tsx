@@ -122,7 +122,9 @@ export default function SearchPage() {
                 const payload = {
                     query: debouncedQuery,
                     tab: activeTab,
-                    filters: { ...filters, page: filters.page }
+                    filters: { ...filters, page: filters.page },
+                    includeCounts: (filters.page || 1) === 1,
+                    includeMetadata: (filters.page || 1) === 1,
                 }
 
                 const res = await fetch('/api/search', {
@@ -141,10 +143,12 @@ export default function SearchPage() {
                     setResults(data.results)
                 }
 
-                setCounts((prev) => ({
-                    ...prev,
-                    ...(data.counts || { global: 0, tournaments: 0, players: 0, clubs: 0, leagues: 0 }),
-                }))
+                if (data.counts) {
+                    setCounts((prev) => ({
+                        ...prev,
+                        ...data.counts,
+                    }))
+                }
                 setGroupedResults(data.groupedResults || { tournaments: [], players: [], clubs: [], leagues: [] })
                 if (data.metadata) setMetadata(data.metadata)
                 if (data.pagination) setPagination(data.pagination)
