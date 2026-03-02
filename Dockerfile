@@ -3,6 +3,19 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache curl
 
+# Build-time fallbacks so Next.js route/module evaluation
+# (e.g. NextAuth + Mongo client init) does not crash in CI.
+ARG MONGODB_URI=mongodb://127.0.0.1:27017/tdarts
+ARG NEXTAUTH_SECRET=build-only-secret
+ARG NEXTAUTH_URL=http://localhost:3000
+ARG GOOGLE_CLIENT_ID=build-google-client-id
+ARG GOOGLE_CLIENT_SECRET=build-google-client-secret
+ENV MONGODB_URI=$MONGODB_URI
+ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+ENV NEXTAUTH_URL=$NEXTAUTH_URL
+ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+ENV GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+
 FROM base AS deps
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --legacy-peer-deps

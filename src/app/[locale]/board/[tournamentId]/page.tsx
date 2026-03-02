@@ -80,11 +80,12 @@ interface BoardPageProps {
   params: Promise<{ tournamentId: string }>;
 }
 
+const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
+
 const BoardPage: React.FC<BoardPageProps> = (props) => {
   const t = useTranslations("Board");
   const { tournamentId } = use(props.params);
   const { user } = useUserContext();
-  const { lastEvent } = useRealTimeUpdates();
   
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -97,6 +98,13 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [error, setError] = useState<string>("");
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [tournamentData, setTournamentData] = useState<any>(null); // Add tournament data state
+  const isRealtimeEnabled =
+    isAuthenticated &&
+    LIVE_TOURNAMENT_STATUSES.has(tournamentData?.tournamentSettings?.status);
+  const { lastEvent } = useRealTimeUpdates({
+    tournamentId,
+    enabled: isRealtimeEnabled,
+  });
   
   // Match setup state
   const [showMatchSetup, setShowMatchSetup] = useState<boolean>(false);

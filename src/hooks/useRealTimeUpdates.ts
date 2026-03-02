@@ -1,22 +1,63 @@
 import { useEffect, useState, useRef } from 'react';
 
-export const useRealTimeUpdates = () => {
+type UseRealTimeUpdatesOptions = {
+  tournamentId?: string;
+  enabled?: boolean;
+  maxSessionAgeMs?: number;
+};
+
+const DEFAULT_MAX_SESSION_AGE_MS = 96 * 60 * 60 * 1000; // 4 days
+
+export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
+  const tournamentId = options?.tournamentId;
+  const enabled = options?.enabled ?? true;
+  const maxSessionAgeMs = options?.maxSessionAgeMs ?? DEFAULT_MAX_SESSION_AGE_MS;
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<{ type: string; data: any } | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const sessionStartedAtRef = useRef<number>(Date.now());
   const maxReconnectDelay = 30000; // Max 30 seconds
   const baseDelay = 1000; // Start with 1 second
 
-  const connect = () => {
-    // Clean up existing connection
+  const clearReconnectTimer = () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+  };
+
+  const closeCurrentConnection = () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsConnected(false);
+  };
+
+  const hasExceededSessionAge = () => Date.now() - sessionStartedAtRef.current >= maxSessionAgeMs;
+
+  const connect = () => {
+    if (!enabled) return;
+    if (sessionExpired || hasExceededSessionAge()) {
+      setSessionExpired(true);
+      return;
     }
 
+    clearReconnectTimer();
+
+    // Clean up existing connection
+    closeCurrentConnection();
+
+    const query = new URLSearchParams();
+    if (tournamentId) query.set('tournamentId', tournamentId);
+    query.set('maxConnectionMs', String(maxSessionAgeMs));
+    const url = query.size > 0 ? `/api/updates?${query.toString()}` : '/api/updates';
+
     console.log('SSE: Attempting to connect...');
-    const eventSource = new EventSource('/api/updates');
+    const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
@@ -29,7 +70,7 @@ export const useRealTimeUpdates = () => {
       try {
         const data = JSON.parse(event.data);
         // Handle ping or other system messages
-        if (data.message === 'SSE Connected' || data.time) {
+        if (data.message === 'SSE Connected' || data.time || data.reason === 'max-connection-age-reached') {
           return;
         }
         setLastEvent({ type: 'message', data });
@@ -74,10 +115,22 @@ export const useRealTimeUpdates = () => {
         
     });
 
+    eventSource.addEventListener('session-expired', () => {
+      setSessionExpired(true);
+      clearReconnectTimer();
+      closeCurrentConnection();
+    });
+
     eventSource.onerror = (error) => {
       console.error('SSE Error:', error);
       setIsConnected(false);
-      eventSource.close();
+      closeCurrentConnection();
+
+      if (!enabled || sessionExpired || hasExceededSessionAge()) {
+        setSessionExpired(true);
+        clearReconnectTimer();
+        return;
+      }
       
       // Implement exponential backoff for reconnection
       reconnectAttemptsRef.current += 1;
@@ -89,24 +142,36 @@ export const useRealTimeUpdates = () => {
       console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})...`);
       
       reconnectTimeoutRef.current = setTimeout(() => {
+        if (!enabled || sessionExpired || hasExceededSessionAge()) {
+          setSessionExpired(true);
+          clearReconnectTimer();
+          return;
+        }
         connect();
       }, delay);
     };
   };
 
   useEffect(() => {
+    setSessionExpired(false);
+    sessionStartedAtRef.current = Date.now();
+    reconnectAttemptsRef.current = 0;
+
+    if (!enabled) {
+      clearReconnectTimer();
+      closeCurrentConnection();
+      setLastEvent(null);
+      return;
+    }
+
     connect();
 
     return () => {
       // Cleanup on unmount
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
+      clearReconnectTimer();
+      closeCurrentConnection();
     };
-  }, []);
+  }, [enabled, tournamentId, maxSessionAgeMs]);
 
-  return { isConnected, lastEvent };
+  return { isConnected, lastEvent, sessionExpired };
 };

@@ -32,6 +32,11 @@ function estimateTextBytes(value: string): number {
   return Math.min(textEncoder.encode(value).length, MAX_ESTIMATED_BODY_BYTES);
 }
 
+function isSseContentType(contentType: string | null): boolean {
+  if (!contentType) return false;
+  return contentType.toLowerCase().includes('text/event-stream');
+}
+
 function toHeaderRecord(headers: Headers | undefined): Record<string, string> | undefined {
   if (!headers) return undefined;
   const entries: [string, string][] = [];
@@ -79,6 +84,7 @@ async function estimateResponseBytes(response?: Response): Promise<number> {
   if (!response) return 0;
 
   if (response.status === 204 || response.status === 304) return 0;
+  if (isSseContentType(response.headers.get('content-type'))) return 0;
   const value = response.headers.get('content-length');
   const parsed = parseContentLength(value);
   if (parsed > 0) return parsed;
@@ -136,6 +142,7 @@ async function captureResponsePayload(response?: Response): Promise<{
   if (!response) return {};
   const responseHeaders = toHeaderRecord(response.headers);
   const contentType = response.headers.get('content-type');
+  if (isSseContentType(contentType)) return { responseHeaders };
   if (!isTextLikeContentType(contentType)) return { responseHeaders };
   try {
     const body = await response.clone().text();

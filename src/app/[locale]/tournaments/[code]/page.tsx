@@ -60,6 +60,8 @@ const getTabs = (t: any) => [
   { value: "admin", label: t('tabs.admin') },
 ]
 
+const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
+
 const TournamentPage = () => {
   const { code } = useParams()
   const searchParams = useSearchParams()
@@ -278,7 +280,12 @@ const TournamentPage = () => {
 
 
   // Real-time updates - use silent refresh to avoid disrupting user
-  const { lastEvent } = useRealTimeUpdates()
+  const isRealtimeEnabled = LIVE_TOURNAMENT_STATUSES.has(tournament?.tournamentSettings?.status);
+  const scopedTournamentId = typeof code === 'string' ? code : undefined;
+  const { lastEvent } = useRealTimeUpdates({
+    tournamentId: scopedTournamentId,
+    enabled: isRealtimeEnabled,
+  })
   const scheduleSilentRefresh = useCallback(() => {
     if (sseRefreshTimerRef.current) {
       clearTimeout(sseRefreshTimerRef.current)

@@ -36,6 +36,8 @@ import {
   SlideRankingsCombined,
 } from "@/components/tournament/tv/slides";
 
+const LIVE_TOURNAMENT_STATUSES = new Set(['group-stage', 'knockout', 'ongoing', 'in_progress']);
+
 export default function TVModePage() {
   const t = useTranslations("Tournament.tv");
   const tTour = useTranslations("Tournament");
@@ -120,7 +122,11 @@ export default function TVModePage() {
   }, [fetchTournament])
 
   // Real-time updates
-  const { lastEvent } = useRealTimeUpdates()
+  const isRealtimeEnabled = LIVE_TOURNAMENT_STATUSES.has(tournament?.tournamentSettings?.status);
+  const { lastEvent } = useRealTimeUpdates({
+    tournamentId: tournamentCode || undefined,
+    enabled: isRealtimeEnabled,
+  })
   useEffect(() => {
     if (lastEvent) {
       console.log('TV Mode - Received event:', lastEvent.type, lastEvent.data)

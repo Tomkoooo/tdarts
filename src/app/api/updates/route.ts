@@ -7,60 +7,153 @@ const formatMessage = (event: string, data: any) => {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 };
 
+const DEFAULT_MAX_CONNECTION_MS = 96 * 60 * 60 * 1000; // 4 days
+const MIN_MAX_CONNECTION_MS = 60 * 1000; // 1 minute
+const MAX_MAX_CONNECTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const HEARTBEAT_MS = 20_000;
+const SSE_DEBUG = process.env.SSE_DEBUG === 'true';
+const SSE_MEMORY_DEBUG = process.env.SSE_MEMORY_DEBUG === 'true';
+
+function clampMaxConnectionMs(value: string | null): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_MAX_CONNECTION_MS;
+  return Math.min(Math.max(parsed, MIN_MAX_CONNECTION_MS), MAX_MAX_CONNECTION_MS);
+}
+
+function listenerCounts() {
+  return {
+    tournament: eventEmitter.listenerCount(EVENTS.TOURNAMENT_UPDATE),
+    match: eventEmitter.listenerCount(EVENTS.MATCH_UPDATE),
+    group: eventEmitter.listenerCount(EVENTS.GROUP_UPDATE),
+  };
+}
+
+function debugLog(connectionId: string, message: string) {
+  if (!SSE_DEBUG) return;
+  const counts = listenerCounts();
+  console.log(`[SSE:${connectionId}] ${message}`, counts);
+}
+
+function debugMemory(connectionId: string, message: string) {
+  if (!SSE_MEMORY_DEBUG) return;
+  const memory = process.memoryUsage();
+  console.log(`[SSE:${connectionId}] ${message}`, {
+    rss: memory.rss,
+    heapUsed: memory.heapUsed,
+    heapTotal: memory.heapTotal,
+    external: memory.external,
+  });
+}
+
 async function __GET(req: NextRequest) {
   const encoder = new TextEncoder();
+  const scopedTournamentId = req.nextUrl.searchParams.get('tournamentId')?.trim() || undefined;
+  const maxConnectionMs = clampMaxConnectionMs(req.nextUrl.searchParams.get('maxConnectionMs'));
+  const connectionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  let closeStream: ((reason: string) => void) | null = null;
+
   const customReadable = new ReadableStream({
     async start(controller) {
-      // Send initial connection message
-      controller.enqueue(encoder.encode(formatMessage('connected', { message: 'SSE Connected' })));
+      let closed = false;
 
-      // Keep connection alive with heartbeat
-      const keepAlive = setInterval(() => {
-        try {
-            controller.enqueue(encoder.encode(formatMessage('heartbeat', { time: new Date().toISOString() })));
-        } catch {
-            clearInterval(keepAlive);
-        }
-      }, 20000); // 20s heartbeat to prevent timeout
+      const shouldDispatch = (data: any) => {
+        if (!scopedTournamentId) return true;
+        const eventTournamentId = data?.tournamentId;
+        return typeof eventTournamentId === 'string' && eventTournamentId === scopedTournamentId;
+      };
 
-      // Event Listeners
       const onTournamentUpdate = (data: any) => {
-        try {
-            controller.enqueue(encoder.encode(formatMessage(EVENTS.TOURNAMENT_UPDATE, data)));
-        } catch (e) {
-            console.error('Error sending tournament update', e);
-        }
+        if (!shouldDispatch(data)) return;
+        safeEnqueue(EVENTS.TOURNAMENT_UPDATE, data, 'tournament-update-enqueue-failed');
       };
 
       const onMatchUpdate = (data: any) => {
-        try {
-            controller.enqueue(encoder.encode(formatMessage(EVENTS.MATCH_UPDATE, data)));
-        } catch (e) {
-            console.error('Error sending match update', e);
-        }
+        if (!shouldDispatch(data)) return;
+        safeEnqueue(EVENTS.MATCH_UPDATE, data, 'match-update-enqueue-failed');
       };
 
       const onGroupUpdate = (data: any) => {
+        if (!shouldDispatch(data)) return;
+        safeEnqueue(EVENTS.GROUP_UPDATE, data, 'group-update-enqueue-failed');
+      };
+
+      const onAbort = () => cleanup('request-aborted');
+
+      const cleanup = (reason: string) => {
+        if (closed) return;
+        closed = true;
+        clearInterval(keepAlive);
+        clearTimeout(maxAgeTimer);
+        if (memoryInterval) clearInterval(memoryInterval);
+        eventEmitter.off(EVENTS.TOURNAMENT_UPDATE, onTournamentUpdate);
+        eventEmitter.off(EVENTS.MATCH_UPDATE, onMatchUpdate);
+        eventEmitter.off(EVENTS.GROUP_UPDATE, onGroupUpdate);
+        req.signal.removeEventListener('abort', onAbort);
         try {
-            controller.enqueue(encoder.encode(formatMessage(EVENTS.GROUP_UPDATE, data)));
-        } catch (e) {
-            console.error('Error sending group update', e);
+          controller.close();
+        } catch {
+          // no-op: stream may already be closed
+        }
+        debugLog(connectionId, `connection closed (${reason})`);
+        debugMemory(connectionId, `memory snapshot (${reason})`);
+      };
+      closeStream = cleanup;
+
+      const safeEnqueue = (event: string, payload: any, onErrorReason: string) => {
+        if (closed) return false;
+        try {
+          controller.enqueue(encoder.encode(formatMessage(event, payload)));
+          return true;
+        } catch (error) {
+          console.error(`Error sending SSE "${event}"`, error);
+          cleanup(onErrorReason);
+          return false;
         }
       };
+
+      // Keep connection alive with heartbeat
+      const keepAlive = setInterval(() => {
+        safeEnqueue('heartbeat', { time: new Date().toISOString() }, 'heartbeat-enqueue-failed');
+      }, HEARTBEAT_MS);
+
+      const memoryInterval = SSE_MEMORY_DEBUG
+        ? setInterval(() => {
+          debugMemory(connectionId, 'periodic memory snapshot');
+        }, 60_000)
+        : undefined;
+
+      const maxAgeTimer = setTimeout(() => {
+        safeEnqueue('session-expired', {
+          reason: 'max-connection-age-reached',
+          maxConnectionMs,
+        }, 'session-expired-enqueue-failed');
+        cleanup('max-connection-age-reached');
+      }, maxConnectionMs);
 
       // Subscribe
       eventEmitter.on(EVENTS.TOURNAMENT_UPDATE, onTournamentUpdate);
       eventEmitter.on(EVENTS.MATCH_UPDATE, onMatchUpdate);
       eventEmitter.on(EVENTS.GROUP_UPDATE, onGroupUpdate);
+      debugLog(connectionId, `connection opened (scope=${scopedTournamentId ?? 'all'})`);
+      debugMemory(connectionId, 'memory snapshot (opened)');
 
-      req.signal.addEventListener('abort', () => {
-        clearInterval(keepAlive);
-        eventEmitter.off(EVENTS.TOURNAMENT_UPDATE, onTournamentUpdate);
-        eventEmitter.off(EVENTS.MATCH_UPDATE, onMatchUpdate);
-        eventEmitter.off(EVENTS.GROUP_UPDATE, onGroupUpdate);
-        controller.close();
-      });
+      // Send initial connection message
+      safeEnqueue('connected', {
+        message: 'SSE Connected',
+        connectionId,
+        tournamentId: scopedTournamentId ?? null,
+        maxConnectionMs,
+      }, 'connected-enqueue-failed');
+
+      req.signal.addEventListener('abort', onAbort, { once: true });
     },
+    cancel() {
+      if (closeStream) {
+        closeStream('stream-cancelled');
+      } else {
+        debugLog(connectionId, 'stream cancelled by consumer');
+      }
+    }
   });
 
   return new NextResponse(customReadable, {
