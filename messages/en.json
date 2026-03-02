@@ -3039,6 +3039,11 @@
       "description": "Analyze route traffic, latency, and payload trends with historical filters.",
       "loading": "Loading telemetry...",
       "error_loading": "Failed to load telemetry data",
+      "export": {
+        "button": "Export JSON",
+        "success": "Telemetry export downloaded.",
+        "error": "Failed to export telemetry bundle"
+      },
       "refresh": "Refresh telemetry",
       "filters": {
         "title": "Filters",

@@ -43,6 +43,7 @@ export default function TVModePage() {
   const router = useRouter()
   const [tournament, setTournament] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [qrExpanded, setQrExpanded] = useState(true)
   const [qrPosition, setQrPosition] = useState<{ x: number; y: number } | null>(null)
   const [qrSize, setQrSize] = useState(160)
@@ -128,10 +129,23 @@ export default function TVModePage() {
         lastEvent.type === 'group-update') {
         // Always refresh on these events to catch knockout rounds and other updates
         console.log('TV Mode - Triggering silent refresh')
-        silentRefresh()
+        if (sseRefreshTimerRef.current) {
+          clearTimeout(sseRefreshTimerRef.current)
+        }
+        sseRefreshTimerRef.current = setTimeout(() => {
+          void silentRefresh()
+        }, 400)
       }
     }
   }, [lastEvent, silentRefresh])
+
+  useEffect(() => {
+    return () => {
+      if (sseRefreshTimerRef.current) {
+        clearTimeout(sseRefreshTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleExit = () => {
     router.push(`/tournaments/${code}`)

@@ -3028,6 +3028,11 @@
       "description": "Útvonalforgalom, késleltetés és payload trendek elemzése történeti szűrőkkel.",
       "loading": "Telemetry adatok betöltése...",
       "error_loading": "Nem sikerült betölteni a telemetry adatokat",
+      "export": {
+        "button": "JSON export",
+        "success": "Telemetry export letöltve.",
+        "error": "Nem sikerült exportálni a telemetry csomagot"
+      },
       "refresh": "Telemetry frissítése",
       "filters": {
         "title": "Szűrők",

@@ -3023,6 +3023,11 @@
       "description": "Analysieren Sie Routenverkehr, Latenz und Payload-Trends mit historischen Filtern.",
       "loading": "Telemetrie wird geladen...",
       "error_loading": "Telemetriedaten konnten nicht geladen werden",
+      "export": {
+        "button": "JSON exportieren",
+        "success": "Telemetrie-Export heruntergeladen.",
+        "error": "Telemetrie-Bundle konnte nicht exportiert werden"
+      },
       "refresh": "Telemetrie aktualisieren",
       "filters": {
         "title": "Filter",

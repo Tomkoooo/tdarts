@@ -112,20 +112,24 @@ export class SearchService {
         const limit = filters.limit || 10;
         const skip = (page - 1) * limit;
 
-    const pipeline = this.buildTournamentPipeline(query, filters, false);
+        const pipeline = this.buildTournamentPipeline(query, filters, false);
+        pipeline.push({
+            $facet: {
+                results: [{ $skip: skip }, { $limit: limit }],
+                total: [{ $count: 'total' }],
+            },
+        });
 
-        // Add Pagination
-        pipeline.push({ $skip: skip });
-        pipeline.push({ $limit: limit });
-
-        const tournaments = await TournamentModel.aggregate(pipeline);
+        const aggregateRes = await TournamentModel.aggregate(pipeline);
+        const tournaments = aggregateRes[0]?.results || [];
+        const total = aggregateRes[0]?.total?.[0]?.total || 0;
         
         // Hydrate results (similar to existing logic)
         const hydratedTournaments = await TournamentModel.populate(tournaments, [
             { path: 'tournamentPlayers.playerReference', select: 'name' }
         ]);
 
-        const results = hydratedTournaments.map(t => {
+        const results = hydratedTournaments.map((t: any) => {
             const startDate = t.tournamentSettings?.startDate;
             const now = new Date();
             let registrationOpen = true; // Simplified logic, can be expanded
@@ -144,13 +148,6 @@ export class SearchService {
                 }
             };
         });
-
-        // Get total count for pagination (can use getTabCounts or separate count query)
-        // For efficiency, we can run a parallel count or just rely on getTabCounts called separately
-        // Let's run a quick count query here to be self-contained for pagination
-        const countPipeline = this.buildTournamentPipeline(query, filters, true);
-        const countRes = await TournamentModel.aggregate(countPipeline);
-        const total = countRes[0]?.total || 0;
 
         return { results, total };
     }
@@ -188,50 +185,19 @@ export class SearchService {
 
         const total = await PlayerModel.countDocuments(queryObj);
 
-        // Fetch all matching players to sort by MMR (handling nulls)
-        // Note: For large datasets, this in-memory sort is bad. 
-        // Ideally, schema should index 'stats.mmr'. detailed sort logic kept from original.
-        const allPlayers = await PlayerModel.find(queryObj)
+        const sortField = filters.isOac ? 'stats.oacMmr' : 'stats.mmr';
+        const sortedPlayers = await PlayerModel.find(queryObj)
+            .sort({ [sortField]: -1, name: 1 })
+            .skip(skip)
+            .limit(limit)
             .populate('userRef', 'name email')
             .populate('members', 'name');
-        
-        const sortedPlayers = allPlayers.sort((a, b) => {
-            let aMMR = a.stats?.mmr ?? 800;
-            let bMMR = b.stats?.mmr ?? 800;
 
-            // OAC Mode: Sort by OAC MMR default
-            if (filters.isOac) {
-                 aMMR = a.stats?.oacMmr ?? 800;
-                 bMMR = b.stats?.oacMmr ?? 800;
-            }
-
-            if (bMMR !== aMMR) return bMMR - aMMR;
-            
-            // Tie-breaker: letter-starting names before digit-starting names
-            const nameA = a.name || "";
-            const nameB = b.name || "";
-            const aStartsDigit = /^\d/.test(nameA);
-            const bStartsDigit = /^\d/.test(nameB);
-            
-            if (aStartsDigit !== bStartsDigit) {
-                return aStartsDigit ? 1 : -1;
-            }
-            
-            return nameA.localeCompare(nameB);
-        });
-
-        const slicedPlayers = sortedPlayers.slice(skip, skip + limit);
-        
-        // Get global ranking context (expensive, but requested)
-        const globalRanking = await this.getGlobalPlayerRanking();
-
-        const results = slicedPlayers.map(player => {
+        const results = sortedPlayers.map(player => {
             const mmr = player.stats?.mmr ?? 800;
             const stats = player.stats || {};
             stats.mmr = mmr;
-            
-            const globalRank = globalRanking.findIndex(p => p._id.toString() === player._id.toString()) + 1;
-            
+
             return {
                 _id: player._id,
                 name: player.name,
@@ -244,7 +210,7 @@ export class SearchService {
                 stats: stats,
                 mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
                 mmrTier: this.getMMRTier(filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr),
-                globalRank: globalRank || null,
+                globalRank: null,
                 oacMmr: player.stats?.oacMmr ?? 800, // Explicitly return OAC MMR for display
                 honors: player.honors || [], // Include honors for badge display
                 profilePicture: player.profilePicture

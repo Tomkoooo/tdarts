@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MatchService } from "@/database/services/match.service";
 import { TournamentService } from "@/database/services/tournament.service";
-import { BadRequestError } from "@/middleware/errorHandle";
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
 async function __GET(
@@ -10,20 +9,21 @@ async function __GET(
 ) {
   try {
     const { tournamentId, boardNumber } = await params;
-        
-        // Get tournament to find clubId
-        const tournament = await TournamentService.getTournament(tournamentId);
-        if (!tournament || !tournament.clubId) {
-            throw new BadRequestError('Tournament or club not found');
-        }
-        
-        const clubId = tournament.clubId._id.toString();
-        const boardNum = parseInt(boardNumber);
-        
-        // Use MatchService to get all matches for the board
-        const matches = await MatchService.getBoardMatches(tournamentId, clubId, boardNum);
-        
-        return NextResponse.json({ matches });
+    const context = await TournamentService.getTournamentMatchContext(tournamentId);
+    const boardNum = parseInt(boardNumber);
+
+    // Use MatchService to get all matches for the board
+    const matches = await MatchService.getBoardMatches(
+      tournamentId,
+      context.clubId,
+      boardNum,
+      {
+        tournamentObjectId: context.tournamentObjectId,
+        startingScore: context.startingScore,
+      }
+    );
+
+    return NextResponse.json({ matches });
     } catch (error) {
         console.error('getBoardMatches error:', error);
         return NextResponse.json({ error: 'Failed to get matches' }, { status: 500 });

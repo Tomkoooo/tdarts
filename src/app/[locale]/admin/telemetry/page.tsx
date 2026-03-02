@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useTranslations, useFormatter } from "next-intl"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { IconCheck, IconRefresh, IconTrash } from "@tabler/icons-react"
+import { IconCheck, IconDownload, IconRefresh, IconTrash } from "@tabler/icons-react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
@@ -113,6 +113,7 @@ export default function AdminTelemetryPage() {
   const [isMarkingFixed, setIsMarkingFixed] = useState(false)
   const [selectedErrorIds, setSelectedErrorIds] = useState<string[]>([])
   const [isDeletingErrors, setIsDeletingErrors] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [registeredRoutes, setRegisteredRoutes] = useState<RegisteredApiRoute[]>([])
   const [routeCatalogSearch, setRouteCatalogSearch] = useState("")
   const [onlyErrorApis, setOnlyErrorApis] = useState(false)
@@ -366,6 +367,35 @@ export default function AdminTelemetryPage() {
     }
   }
 
+  const exportTelemetryJson = async () => {
+    try {
+      setIsExporting(true)
+      const response = await axios.get("/api/admin/charts/api-traffic/export", {
+        responseType: "blob",
+      })
+
+      const contentDisposition = response.headers?.["content-disposition"] as string | undefined
+      const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/)
+      const filename = filenameMatch?.[1] || `api-telemetry-export-${new Date().toISOString().replace(/[:.]/g, "-")}.json`
+
+      const blob = new Blob([response.data], { type: "application/json;charset=utf-8" })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      toast.success(t("export.success"))
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || t("export.error"))
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   useEffect(() => {
     if (selectedErrorIds.length === 0) return
     const visibleIds = new Set(errorEvents.map((e) => e._id))
@@ -486,6 +516,10 @@ export default function AdminTelemetryPage() {
           <span className="text-xs text-muted-foreground px-2 py-1 font-mono hidden sm:inline-block">
             {format.dateTime(lastUpdate, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </span>
+          <Button size="sm" variant="outline" onClick={exportTelemetryJson} disabled={isExporting} className="h-8 px-2">
+            <IconDownload className={cn("size-4 mr-1", isExporting && "animate-pulse")} />
+            {t("export.button")}
+          </Button>
           <Button size="sm" variant="ghost" onClick={fetchTelemetry} disabled={isRefreshing} className="h-8 w-8 p-0">
             <IconRefresh className={cn("size-4", isRefreshing && "animate-spin")} />
             <span className="sr-only">{t("refresh")}</span>

@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
-import { BadRequestError } from "@/middleware/errorHandle";
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
 async function __GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
     try {
         const { code } = await params;
 
-        // Get tournament with knockout data
-        const tournament = await TournamentService.getTournament(code);
-
-        if (!tournament) {
-            throw new BadRequestError('Tournament not found');
-        }
+        const { knockout, tournamentStatus } = await TournamentService.getTournamentKnockoutView(code);
 
         // Check if tournament has knockout data
-        if (!tournament.knockout || tournament.knockout.length === 0) {
+        if (!knockout || knockout.length === 0) {
             return NextResponse.json({
                 success: true,
                 knockout: null,
@@ -25,8 +19,8 @@ async function __GET(request: NextRequest, { params }: { params: Promise<{ code:
 
         return NextResponse.json({
             success: true,
-            knockout: tournament.knockout,
-            tournamentStatus: tournament.tournamentSettings.status
+            knockout,
+            tournamentStatus
         });
     } catch (error: any) {
         console.error('getKnockout error:', error);

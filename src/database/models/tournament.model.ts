@@ -134,5 +134,13 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
 
 // Improves subscription checks and idempotent update query performance.
 tournamentSchema.index({ tournamentId: 1, 'notificationSubscribers.userRef': 1 });
+tournamentSchema.index({ tournamentId: 1, isDeleted: 1, isArchived: 1 });
+tournamentSchema.index({
+    isDeleted: 1,
+    isArchived: 1,
+    isSandbox: 1,
+    'tournamentSettings.status': 1,
+    'tournamentSettings.startDate': 1
+});
 
 export const TournamentModel = mongoose.models.Tournament || mongoose.model<TournamentDocument>('Tournament', tournamentSchema);

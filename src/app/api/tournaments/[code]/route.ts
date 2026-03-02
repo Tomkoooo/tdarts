@@ -10,7 +10,7 @@ export const GET = withApiTelemetry('/api/tournaments/[code]', async (
 ) => {
   const { code } = await params;
   try {
-    const tournament: any = await TournamentService.getTournament(code) // Populate players for frontend display
+    const tournament: any = await TournamentService.getTournamentSummaryForPublicPage(code);
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
