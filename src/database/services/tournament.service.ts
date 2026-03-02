@@ -392,7 +392,7 @@ export class TournamentService {
             filter.$or.push({ _id: tournamentId });
         }
 
-        const tournament = await TournamentModel.findOne(filter)
+        const tournament: any = await TournamentModel.findOne(filter)
             .select(
                 'tournamentId clubId league tournamentPlayers waitingList notificationSubscribers groups knockout boards tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus stripeSessionId invoiceId billingInfoSnapshot'
             )
@@ -481,7 +481,7 @@ export class TournamentService {
             filter.$or.push({ _id: tournamentId });
         }
 
-        const tournament = await TournamentModel.findOne(filter)
+        const tournament: any = await TournamentModel.findOne(filter)
             .select('knockout tournamentSettings.status')
             .populate('knockout.matches.player1', 'name profilePicture')
             .populate('knockout.matches.player2', 'name profilePicture')
@@ -3602,7 +3602,7 @@ export class TournamentService {
                 filter.$or.push({ _id: tournamentCode });
             }
 
-            const tournament = await TournamentModel.findOne(filter)
+            const tournament: any = await TournamentModel.findOne(filter)
                 .select('_id tournamentId groups knockout boards')
                 .lean();
             if (!tournament) {
@@ -5320,7 +5320,7 @@ export class TournamentService {
             if (mongoose.isValidObjectId(tournamentId)) {
                 filter.$or.push({ _id: tournamentId });
             }
-            const tournament = await TournamentModel.findOne(filter)
+            const tournament: any = await TournamentModel.findOne(filter)
                 .select('boards')
                 .lean();
             if (!tournament) {
@@ -5364,7 +5364,7 @@ export class TournamentService {
             filter.$or.push({ _id: tournamentId });
         }
 
-        const tournament = await TournamentModel.findOne(filter)
+        const tournament: any = await TournamentModel.findOne(filter)
             .select('_id clubId tournamentSettings.startingScore')
             .lean();
         if (!tournament || !tournament.clubId) {
@@ -5389,7 +5389,7 @@ export class TournamentService {
             filter.$or.push({ _id: tournamentId });
         }
 
-        const tournament = await TournamentModel.findOne(filter)
+        const tournament: any = await TournamentModel.findOne(filter)
             .select('clubId')
             .lean();
         if (!tournament || !tournament.clubId) {

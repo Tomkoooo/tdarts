@@ -129,7 +129,7 @@ export class SearchService {
             { path: 'tournamentPlayers.playerReference', select: 'name' }
         ]);
 
-        const results = hydratedTournaments.map(t => {
+        const results = hydratedTournaments.map((t: any) => {
             const startDate = t.tournamentSettings?.startDate;
             const now = new Date();
             let registrationOpen = true; // Simplified logic, can be expanded
