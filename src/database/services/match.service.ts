@@ -52,13 +52,13 @@ export class MatchService {
         .populate('player2.playerId')
         .populate('scorer')
         .sort({ createdAt: 1 })
-        .lean();
+        .lean<Match[]>();
 
-        return matches.map(match => ({
+        return matches.map((match) => ({
             ...match,
             startingScore: startingScore,
             startingPlayer: match.startingPlayer || 1, // Ensure startingPlayer is included
-        }));
+        })) as Match[];
     }
 
     // Get all matches for a board (including finished ones)
