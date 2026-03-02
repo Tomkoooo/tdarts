@@ -476,7 +476,7 @@ export default function AdminTelemetryPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
+    <div className="space-y-6 max-w-[1600px] mx-auto p-3 sm:p-6 lg:p-8 animate-in fade-in duration-500">
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("title")}</h1>
@@ -560,7 +560,7 @@ export default function AdminTelemetryPage() {
               )
             })}
           </select>
-          <Button type="button" variant="outline" onClick={() => setSelectedRouteKey("")} disabled={!selectedRouteKey}>
+          <Button type="button" variant="outline" onClick={() => setSelectedRouteKey("")} disabled={!selectedRouteKey} className="w-full md:w-auto">
             {t("filters.clear_route")}
           </Button>
         </CardContent>
@@ -573,7 +573,7 @@ export default function AdminTelemetryPage() {
             disabled={telemetryRange !== "custom"}
             className="border border-border bg-background rounded px-3 py-2 text-sm disabled:opacity-50"
           />
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               aria-label={t("filters.custom_end")}
               type="datetime-local"
@@ -586,6 +586,7 @@ export default function AdminTelemetryPage() {
               type="button"
               disabled={telemetryRange !== "custom" || !customStart || !customEnd || isRefreshing}
               onClick={fetchTelemetry}
+              className="w-full sm:w-auto"
             >
               {t("filters.apply")}
             </Button>
@@ -656,7 +657,7 @@ export default function AdminTelemetryPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <Card className="backdrop-blur-sm bg-card/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{t("metrics.incoming_total_kb")}</CardTitle>
@@ -707,7 +708,7 @@ export default function AdminTelemetryPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
         <SimpleChart title={t("charts.requests")} data={apiRequestsChartData} color="#6366f1" />
         <SimpleChart title={t("charts.latency")} data={apiLatencyChartData} color="#f97316" />
         <SimpleChart title={t("charts.payload")} data={apiPayloadChartData} color="#10b981" />
@@ -733,8 +734,8 @@ export default function AdminTelemetryPage() {
                     setErrorEventsPage(1)
                   }}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <code className="text-xs">
+                  <div className="flex flex-col items-start justify-between gap-2 mb-1 sm:flex-row sm:items-center">
+                    <code className="text-xs break-all">
                       {row.method} {row.routeKey}
                     </code>
                     <Badge variant={row.errorRate > 0 ? "destructive" : "secondary"}>
@@ -779,7 +780,8 @@ export default function AdminTelemetryPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="space-y-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <select
               aria-label={t("error_calls.status_filter")}
               value={errorStatusFilter}
@@ -848,7 +850,8 @@ export default function AdminTelemetryPage() {
             >
               {t("error_calls.select_page")}
             </Button>
-            <span className="text-xs text-muted-foreground">
+            </div>
+            <span className="block text-xs text-muted-foreground">
               {t("error_calls.mark_fixed_hint")}
             </span>
           </div>
@@ -876,7 +879,7 @@ export default function AdminTelemetryPage() {
                       <Badge variant={event.status >= 500 ? "destructive" : "secondary"}>
                         {event.status}
                       </Badge>
-                      <code className="text-xs">
+                      <code className="text-xs break-all">
                         {event.method} {event.routeKey}
                       </code>
                       <span className="text-xs text-muted-foreground">
@@ -916,7 +919,7 @@ export default function AdminTelemetryPage() {
                           {t("error_calls.copy")}
                         </Button>
                       </div>
-                      <pre className="text-[11px] overflow-auto rounded bg-background border border-border p-2">
+                      <pre className="text-[11px] max-h-64 overflow-auto rounded bg-background border border-border p-2">
 {formatJson({
   query: event.requestQuery,
   headers: event.requestHeaders,
@@ -946,7 +949,7 @@ export default function AdminTelemetryPage() {
                           {t("error_calls.copy")}
                         </Button>
                       </div>
-                      <pre className="text-[11px] overflow-auto rounded bg-background border border-border p-2">
+                      <pre className="text-[11px] max-h-64 overflow-auto rounded bg-background border border-border p-2">
 {formatJson({
   headers: event.responseHeaders,
   body: event.responseBody,
@@ -959,7 +962,7 @@ export default function AdminTelemetryPage() {
                   </div>
                 </details>
               ))}
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -1002,7 +1005,7 @@ export default function AdminTelemetryPage() {
           ) : (
             <div className="max-h-80 overflow-auto rounded border border-border/40 divide-y divide-border/40">
               {registeredRoutes.map((row) => (
-                <div key={`${row.method}-${row.routeKey}`} className="p-2 flex items-center justify-between gap-2">
+                <div key={`${row.method}-${row.routeKey}`} className="p-2 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
                   <div className="min-w-0">
                     <code className="text-xs break-all">
                       {row.method} {row.routeKey}

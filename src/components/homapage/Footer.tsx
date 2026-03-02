@@ -25,7 +25,7 @@ export default function Footer() {
     {
       src: '/partners/efott_logo.png',
       alt: "EFOTT",
-      href:"https://hookalapitvany.hu"
+      href:"https://hookalapitvany.hu/efott-darts-club/"
     },
   ];
 
