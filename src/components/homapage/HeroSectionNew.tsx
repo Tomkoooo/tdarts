@@ -13,8 +13,8 @@ const HeroSectionNew = () => {
   const t = useTranslations('Hero');
 
   const stats = [
-    { number: '150+', label: t('stats_labels.clubs'), sublabel: t('stats_labels.clubs_sub') },
-    { number: '40+', label: t('stats_labels.tournaments'), sublabel: t('stats_labels.tournaments_sub') },
+    { number: '170+', label: t('stats_labels.clubs'), sublabel: t('stats_labels.clubs_sub') },
+    { number: '100+', label: t('stats_labels.tournaments'), sublabel: t('stats_labels.tournaments_sub') },
     { number: '24/7', label: t('stats_labels.realtime'), sublabel: t('stats_labels.realtime_sub') }
   ];
 

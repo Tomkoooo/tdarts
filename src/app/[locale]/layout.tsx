@@ -6,6 +6,7 @@ import { NavbarProvider } from "@/components/providers/NavbarProvider";
 import SessionProvider from "@/components/providers/SessionProvider";
 import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
+import TimezoneSync from "@/components/providers/TimezoneSync";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Toaster } from "react-hot-toast";
@@ -15,6 +16,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
+import { getUserTimeZone } from "@/lib/date-time";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -131,6 +133,7 @@ export default async function RootLayout({
   // Providing all messages to the client
   // side is the easiest way to get started
   const messages = await getMessages();
+  const fallbackTimeZone = getUserTimeZone();
 
   // Get pathname from headers for initial body padding (server-side)
   const headersList = await headers();
@@ -141,8 +144,9 @@ export default async function RootLayout({
   const shouldHideNavbar = hideNavbarPaths.some(path => pathname.includes(path));
 
   
-  const cookieStore = cookies();
-  const token = (await cookieStore).get("token")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const userTimeZone = cookieStore.get("user-timezone")?.value || fallbackTimeZone;
   let initialUser = undefined;
 
   // Először próbáljuk meg a JWT token-t
@@ -227,10 +231,11 @@ export default async function RootLayout({
 
       </head>
       <body className="flex flex-col">
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={messages} timeZone={userTimeZone}>
           <SessionProvider>
             <UserProvider initialUser={initialUser}>
               <AuthSync />
+              <TimezoneSync />
               <PWAProvider />
               <NavbarProvider initialShouldHide={shouldHideNavbar}>
               

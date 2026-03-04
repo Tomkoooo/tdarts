@@ -10,24 +10,27 @@ import {
   IconCoin,
   IconTarget,
   IconUserPlus,
-  IconScreenShare,
   IconRefresh,
   IconId,
   IconEdit,
   IconMail,
   IconPhone,
   IconExternalLink,
+  IconShare2,
 } from "@tabler/icons-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Separator } from "@/components/ui/separator"
+import { getUserTimeZone } from "@/lib/date-time"
 
 interface TournamentOverviewProps {
   tournament: any
   userRole?: string
   onEdit?: () => void
   onRefetch?: () => void
+  onShare?: () => void
+  shareLabel?: string
 }
 
 
@@ -71,9 +74,10 @@ const formatDescription = (text: string) => {
   return parts
 }
 
-export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: TournamentOverviewProps) {
+export function TournamentOverview({ tournament, userRole, onEdit, onRefetch, onShare, shareLabel }: TournamentOverviewProps) {
   const tTour = useTranslations("Tournament");
   const format = useFormatter()
+  const timeZone = getUserTimeZone()
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   const canEdit = userRole === "admin" || userRole === "moderator"
@@ -110,7 +114,8 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
             month: 'long',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone
           })
         : "–",
     },
@@ -178,11 +183,10 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch }: 
                 {tTour('overview.btn_scoring')}
               </Link>
             </Button>
-            {(status === 'group-stage' || status === 'knockout') && (
-              <Button asChild variant="outline" size="sm" className="bg-card/80 hover:bg-card">
-                <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" className="flex items-center gap-2">
-                  <IconScreenShare className="h-4 w-4" /> {tTour('overview.btn_live')}
-                </Link>
+            {onShare && (
+              <Button variant="default" size="sm" onClick={onShare} className="gap-2">
+                <IconShare2 className="h-4 w-4" />
+                {shareLabel || "Share"}
               </Button>
             )}
             {canEdit && status !== 'finished' && (

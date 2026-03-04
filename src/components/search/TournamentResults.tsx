@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/Badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchFiltersPanel } from "@/components/search/SearchFilters"
 import TournamentCard from "@/components/tournament/TournamentCard"
-import { useTranslations, useFormatter } from "next-intl"
-import { getLocalDateKey, getLocalMidnightFromKey } from "@/lib/date-time"
+import { useLocale, useTranslations, useFormatter } from "next-intl"
+import { addDaysToDateKey, formatDateKeyLabel, getLocalDateKey, getUserTimeZone } from "@/lib/date-time"
 
 interface Tournament {
   _id: string
@@ -48,7 +48,9 @@ export function TournamentResults({
   onFilterChange
 }: TournamentResultsProps) {
   const t = useTranslations('Search.tournament_results')
+  const locale = useLocale()
   const format = useFormatter()
+  const timeZone = getUserTimeZone()
   const [view, setView] = React.useState<'list' | 'calendar'>('list')
 
   // Group tournaments by date
@@ -62,7 +64,7 @@ export function TournamentResults({
       )
       .forEach(tournament => {
         const date = new Date(tournament.tournamentSettings.startDate)
-        const dateKey = getLocalDateKey(date)
+        const dateKey = getLocalDateKey(date, timeZone)
         if (!dateKey) return
         
         if (!groups[dateKey]) {
@@ -82,29 +84,20 @@ export function TournamentResults({
     return `/tournaments/${tournament.tournamentId}`
   }
 
-  const sortedDates = Object.keys(groupedTournaments).sort(
-    (a, b) => getLocalMidnightFromKey(a).getTime() - getLocalMidnightFromKey(b).getTime()
-  )
+  const sortedDates = Object.keys(groupedTournaments).sort((a, b) => a.localeCompare(b))
 
   // Format date header
   const formatDateHeader = (dateKey: string) => {
-    const todayKey = getLocalDateKey(new Date())
+    const todayKey = getLocalDateKey(new Date(), timeZone)
     if (!todayKey) return dateKey
-    const tomorrowDate = getLocalMidnightFromKey(todayKey)
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1)
-    const tomorrowKey = getLocalDateKey(tomorrowDate)
+    const tomorrowKey = addDaysToDateKey(todayKey, 1)
 
     if (dateKey === todayKey) {
       return t('today')
     } else if (tomorrowKey && dateKey === tomorrowKey) {
       return t('tomorrow')
     } else {
-      return format.dateTime(getLocalMidnightFromKey(dateKey), {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
+      return formatDateKeyLabel(dateKey, locale)
     }
   }
 
@@ -182,7 +175,7 @@ export function TournamentResults({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedDates.map(dateKey => {
             const dayTournaments = groupedTournaments[dateKey]
-            const todayKey = getLocalDateKey(new Date())
+            const todayKey = getLocalDateKey(new Date(), timeZone)
             const isToday = todayKey === dateKey
             
             return (
@@ -239,7 +232,8 @@ export function TournamentResults({
                           <div className="text-xs text-muted-foreground">
                             🕐 {format.dateTime(new Date(tournament.tournamentSettings.startDate), {
                               hour: '2-digit',
-                              minute: '2-digit'
+                              minute: '2-digit',
+                              timeZone
                             })}
                           </div>
                           <div className="text-xs text-muted-foreground">

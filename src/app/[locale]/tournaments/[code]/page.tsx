@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl"
 import axios from "axios"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
-import { IconDeviceTv, IconRefresh, IconShare2 } from "@tabler/icons-react"
+import { IconDeviceTv, IconRefresh, IconScreenShare } from "@tabler/icons-react"
 import { useUserContext } from "@/hooks/useUser"
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
 import TournamentOverview from "@/components/tournament/TournamentOverview"
@@ -67,6 +67,7 @@ const TournamentPage = () => {
   const searchParams = useSearchParams()
   const { user } = useUserContext()
   const t = useTranslations('Tournament.page')
+  const tTour = useTranslations('Tournament')
 
   const statusMeta = useMemo(() => getStatusMeta(t) as Record<string, any>, [t])
   const tabs = useMemo(() => getTabs(t), [t])
@@ -432,6 +433,14 @@ const TournamentPage = () => {
                     {t('header.boards_writer')}
                   </Link>
                 </Button>
+                {(tournament?.tournamentSettings?.status === 'group-stage' || tournament?.tournamentSettings?.status === 'knockout') && (
+                  <Button asChild variant="outline" size="sm" className="gap-2 bg-card/80 hover:bg-card">
+                    <Link href={`/tournaments/${tournament.tournamentId}/live`} target="_blank" rel="noopener noreferrer">
+                      <IconScreenShare className="h-4 w-4" />
+                      {tTour('overview.btn_live')}
+                    </Link>
+                  </Button>
+                )}
                 <Button asChild variant="info" size="sm" className="gap-2">
                   <Link href={`/tournaments/${code}/tv`} target="_blank" rel="noopener noreferrer">
                   <IconDeviceTv/>
@@ -440,9 +449,6 @@ const TournamentPage = () => {
                 </Button>
               </>
             )}
-            <Button variant="default" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
-              <IconShare2 className="h-4 w-4" /> {t('header.share')}
-            </Button>
           </div>
         </header>
 
@@ -531,6 +537,8 @@ const TournamentPage = () => {
               userRole={userClubRole}
               onEdit={() => setEditModalOpen(true)}
               onRefetch={handleRefetch}
+              onShare={() => setTournamentShareModal(true)}
+              shareLabel={t('header.share')}
             />
 
             <div className="space-y-4">

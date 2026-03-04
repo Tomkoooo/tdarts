@@ -5,6 +5,7 @@ import { IconTrophy, IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
 import TournamentList from "./TournamentList"
 import { useLocale, useTranslations } from "next-intl"
+import { addDaysToDateKey, formatDateKeyLabel, getLocalDateKey, getUserTimeZone } from "@/lib/date-time"
 
 interface ClubTournamentsSectionProps {
   tournaments: any[]
@@ -25,6 +26,7 @@ export function ClubTournamentsSection({
 }: ClubTournamentsSectionProps) {
   const t = useTranslations('Club.tournaments')
   const locale = useLocale()
+  const timeZone = getUserTimeZone()
   const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [verificationFilter, setVerificationFilter] = React.useState<string>('all')
@@ -33,31 +35,12 @@ export function ClubTournamentsSection({
   const [selectedDate, setSelectedDate] = React.useState<string>('')
   const [nameQuery, setNameQuery] = React.useState<string>('')
 
-  const toDateKey = React.useCallback((value: Date) => {
-    const year = value.getFullYear()
-    const month = String(value.getMonth() + 1).padStart(2, '0')
-    const day = String(value.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }, [])
-
-  const startOfDay = React.useCallback((value: Date) => {
-    const cloned = new Date(value)
-    cloned.setHours(0, 0, 0, 0)
-    return cloned
-  }, [])
-
-  const addDays = React.useCallback((value: Date, days: number) => {
-    const cloned = new Date(value)
-    cloned.setDate(cloned.getDate() + days)
-    return cloned
-  }, [])
-
   // Filter tournaments
   const filteredTournaments = React.useMemo(() => {
     const query = nameQuery.trim().toLowerCase()
-    const todayStart = startOfDay(new Date())
-    const next7Limit = addDays(todayStart, 7)
-    const next30Limit = addDays(todayStart, 30)
+    const todayKey = getLocalDateKey(new Date(), timeZone)
+    const next7Key = todayKey ? addDaysToDateKey(todayKey, 7) : null
+    const next30Key = todayKey ? addDaysToDateKey(todayKey, 30) : null
 
     return tournaments.filter((t) => {
       const isDeleted = t.isDeleted === true;
@@ -93,12 +76,12 @@ export function ClubTournamentsSection({
       if (timePreset !== 'all') {
         if (!hasValidStartDate || !startDateValue) return false;
 
-        const tournamentDay = startOfDay(startDateValue)
-        const tournamentDateKey = toDateKey(tournamentDay)
+        const tournamentDateKey = getLocalDateKey(startDateValue, timeZone)
+        if (!tournamentDateKey || !todayKey) return false
 
-        if (timePreset === 'upcoming' && tournamentDay < todayStart) return false;
-        if (timePreset === 'next7' && (tournamentDay < todayStart || tournamentDay > next7Limit)) return false;
-        if (timePreset === 'next30' && (tournamentDay < todayStart || tournamentDay > next30Limit)) return false;
+        if (timePreset === 'upcoming' && tournamentDateKey < todayKey) return false;
+        if (timePreset === 'next7' && (!next7Key || tournamentDateKey < todayKey || tournamentDateKey > next7Key)) return false;
+        if (timePreset === 'next30' && (!next30Key || tournamentDateKey < todayKey || tournamentDateKey > next30Key)) return false;
         if (timePreset === 'onDate') {
           if (!selectedDate) return false;
           if (tournamentDateKey !== selectedDate) return false;
@@ -115,9 +98,7 @@ export function ClubTournamentsSection({
     nameQuery,
     timePreset,
     selectedDate,
-    startOfDay,
-    addDays,
-    toDateKey
+    timeZone
   ])
 
   // Group tournaments by date (Newest first)
@@ -140,7 +121,7 @@ export function ClubTournamentsSection({
 
     sorted.forEach(tournament => {
       const date = tournament.tournamentSettings?.startDate ? new Date(tournament.tournamentSettings.startDate) : null
-      const dateKey = date && !Number.isNaN(date.getTime()) ? date.toDateString() : '__unknown__'
+      const dateKey = date && !Number.isNaN(date.getTime()) ? getLocalDateKey(date, timeZone) || '__unknown__' : '__unknown__'
       
       if (!groups[dateKey]) {
         groups[dateKey] = []
@@ -156,28 +137,19 @@ export function ClubTournamentsSection({
       if (a === '__unknown__' && b === '__unknown__') return 0;
       if (a === '__unknown__') return 1;
       if (b === '__unknown__') return -1;
-      const timeA = new Date(a).getTime();
-      const timeB = new Date(b).getTime();
-      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+      return sortOrder === 'desc' ? b.localeCompare(a) : a.localeCompare(b);
     })
   }, [groupedTournaments, sortOrder])
 
   const formatDateHeader = (dateStr: string) => {
     if (dateStr === '__unknown__') return t('date_header.unknown')
 
-    const date = new Date(dateStr)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const isToday = date.getTime() === today.getTime()
+    const todayKey = getLocalDateKey(new Date(), timeZone)
+    const isToday = dateStr === todayKey
 
     if (isToday) return t('date_header.today')
     
-    return date.toLocaleDateString(locale, {
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      weekday: 'long'
-    })
+    return formatDateKeyLabel(dateStr, locale)
   }
 
   return (

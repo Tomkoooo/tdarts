@@ -54,6 +54,7 @@ export default function TVModePage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [resizeStart, setResizeStart] = useState({ size: 160, x: 0, y: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [knockoutRequiredDisplayMs, setKnockoutRequiredDisplayMs] = useState(0);
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdAppliedSlideIdRef = useRef<string>("");
@@ -207,6 +208,13 @@ export default function TVModePage() {
       }
     }
   }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
+
+  useEffect(() => {
+    const updateViewport = () => setIsMobileViewport(window.innerWidth < 768);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
 
   useEffect(() => {
     if (holdTimeoutRef.current) {
@@ -404,42 +412,44 @@ export default function TVModePage() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background text-foreground relative">
-      <header className="h-[8vh] px-6 flex items-center justify-between bg-muted/5 border-b border-muted/20">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">{tournamentName}</h1>
-          <span className="text-sm text-muted-foreground uppercase tracking-wider">
+      <header className="min-h-[64px] px-3 sm:px-4 md:px-6 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2 bg-muted/5 border-b border-muted/20">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3 md:gap-4">
+          <h1 className="text-base sm:text-lg md:text-2xl font-bold truncate">{tournamentName}</h1>
+          <span className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wider whitespace-nowrap">
             {activeSlide.kind === "urgent"
               ? tTour("tv_slideshow.live_priority")
               : tTour("tv_slideshow.rotation")}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={() => setSettings({ freezeBaseRotation: !settings.freezeBaseRotation })}
+            size="sm"
+            className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
           >
             {settings.freezeBaseRotation ? (
-              <IconPlayerPlay className="mr-2 h-4 w-4" />
+              <IconPlayerPlay className="mr-1 sm:mr-2 h-4 w-4" />
             ) : (
-              <IconPlayerPause className="mr-2 h-4 w-4" />
+              <IconPlayerPause className="mr-1 sm:mr-2 h-4 w-4" />
             )}
             {settings.freezeBaseRotation
               ? tTour("tv_slideshow.unfreeze_rotation")
               : tTour("tv_slideshow.freeze_current_slide")}
           </Button>
-          <Button variant="outline" onClick={() => scheduler.nextSlide()}>
-            <IconPlayerSkipForward className="mr-2 h-4 w-4" />
+          <Button variant="outline" onClick={() => scheduler.nextSlide()} size="sm" className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
+            <IconPlayerSkipForward className="mr-1 sm:mr-2 h-4 w-4" />
             {tTour("tv_slideshow.next_slide")}
           </Button>
           <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline">
-                <IconAdjustments className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
+                <IconAdjustments className="mr-1 sm:mr-2 h-4 w-4" />
                 {tTour("tv_slideshow.settings")}
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-md overflow-y-auto">
+            <SheetContent side="right" className="w-[92vw] max-w-md overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>{tTour("tv_slideshow.settings")}</SheetTitle>
               </SheetHeader>
@@ -541,18 +551,18 @@ export default function TVModePage() {
             </SheetContent>
           </Sheet>
 
-          <Button variant="outline" onClick={handleExit}>
-            <IconX className="mr-2 h-4 w-4" />
+          <Button variant="outline" onClick={handleExit} size="sm" className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
+            <IconX className="mr-1 sm:mr-2 h-4 w-4" />
             {t("exit")}
           </Button>
         </div>
       </header>
 
-      <main className="h-[92vh] p-4">
+      <main className="h-[calc(100vh-96px)] md:h-[92vh] p-2 sm:p-3 md:p-4">
         {slideContent}
       </main>
 
-      {settings.showQr ? (
+      {settings.showQr && !isMobileViewport ? (
         <div
           className="fixed z-50 select-none"
           style={{
@@ -564,7 +574,7 @@ export default function TVModePage() {
           }}
         >
           {qrExpanded ? (
-            <div className="bg-white p-4 rounded-xl shadow-2xl border-4 border-primary relative">
+            <div className="bg-white p-2 sm:p-3 md:p-4 rounded-xl shadow-2xl border-2 sm:border-4 border-primary relative">
               <div
                 className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
@@ -592,7 +602,7 @@ export default function TVModePage() {
           ) : (
             <button
               onClick={() => setQrExpanded(true)}
-              className="bg-primary text-primary-content px-4 py-2 rounded-lg shadow-xl hover:bg-primary/90 transition-colors flex items-center gap-2"
+              className="bg-primary text-primary-content px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg shadow-xl hover:bg-primary/90 transition-colors flex items-center gap-2"
             >
               <IconQrcode className="h-5 w-5" />
               <span className="font-semibold">{t("open_qr")}</span>

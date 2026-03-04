@@ -3,6 +3,7 @@ import { TournamentService } from "@/database/services/tournament.service";
 import { SubscriptionService } from "@/database/services/subscription.service";
 import { getRequestLogContext, handleError } from "@/middleware/errorHandle";
 import { withApiTelemetry } from "@/lib/api-telemetry";
+import { parseIsoDateInput } from "@/lib/date-time";
 
 export const GET = withApiTelemetry('/api/tournaments/[code]', async (
   request: NextRequest,
@@ -54,11 +55,16 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
+    const parsedNewStartDate = settings.startDate ? parseIsoDateInput(settings.startDate) : null;
+    if (settings.startDate && !parsedNewStartDate) {
+      return NextResponse.json({ error: "Invalid startDate. Expected ISO date with timezone." }, { status: 400 });
+    }
+
     // Check subscription limits if start date is being changed
-    if (settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
+    if (parsedNewStartDate && parsedNewStartDate.getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
       const subscriptionCheck = await SubscriptionService.canUpdateTournament(
         tournament.clubId._id.toString(), 
-        new Date(settings.startDate),
+        parsedNewStartDate,
         tournament.tournamentId
       );
       
@@ -88,7 +94,7 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
         if (league && league.verified) {
           // Check if restricted fields are being modified
           const isLeagueChanged = settings.leagueId && settings.leagueId !== tournament.league.toString();
-          const isDateChanged = settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime();
+          const isDateChanged = parsedNewStartDate && parsedNewStartDate.getTime() !== new Date(tournament.tournamentSettings.startDate).getTime();
 
           if (isLeagueChanged || isDateChanged) {
             // Check if user is Global Admin
@@ -103,9 +109,9 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
       }
       
       // Check verified tournament weekly limit if date is being changed
-      if (isVerified && settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
+      if (isVerified && parsedNewStartDate && parsedNewStartDate.getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
         const { TournamentModel } = await import('@/database/models/tournament.model');
-        const newStartDate = new Date(settings.startDate);
+        const newStartDate = parsedNewStartDate;
         const dayOfWeek = newStartDate.getDay();
         
         // Calculate Monday of this week
@@ -147,6 +153,7 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
 
     const updatedTournament = await TournamentService.updateTournamentSettings(code, requesterId, {
       ...settings,
+      ...(parsedNewStartDate ? { startDate: parsedNewStartDate } : {}),
       boards
     });
     return NextResponse.json(updatedTournament);

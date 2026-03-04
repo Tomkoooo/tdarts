@@ -32,6 +32,7 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { useTranslations } from "next-intl"
+import { formatDateTimeLocalInput, parseDateTimeLocalInput } from "@/lib/date-time"
 
 interface CreateTournamentModalProps {
   isOpen: boolean
@@ -428,14 +429,11 @@ export default function CreateTournamentModal({
                   <FormField
                     type="datetime-local"
                     label={t('details.start_label')}
-                    value={new Date(settings.startDate).toLocaleString("sv-SE", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }).replace(" ", "T")}
-                    onChange={(event) => handleSettingsChange("startDate", new Date(event.target.value))}
+                    value={formatDateTimeLocalInput(settings.startDate)}
+                    onChange={(event) => {
+                      const parsed = parseDateTimeLocalInput(event.target.value)
+                      if (parsed) handleSettingsChange("startDate", parsed)
+                    }}
                     min={isOac ? "2026-01-15T00:00" : undefined}
                     icon={<IconCalendar className="h-5 w-5" />}
                     required
@@ -443,14 +441,11 @@ export default function CreateTournamentModal({
                   <FormField
                     type="datetime-local"
                     label={t('details.deadline_label')}
-                    value={new Date(settings.registrationDeadline || settings.startDate).toLocaleString("sv-SE", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }).replace(" ", "T")}
-                    onChange={(event) => handleSettingsChange("registrationDeadline", new Date(event.target.value))}
+                    value={formatDateTimeLocalInput(settings.registrationDeadline || settings.startDate)}
+                    onChange={(event) => {
+                      const parsed = parseDateTimeLocalInput(event.target.value)
+                      if (parsed) handleSettingsChange("registrationDeadline", parsed)
+                    }}
                     min={isOac ? "2026-02-01T00:00" : undefined}
                     icon={<IconCalendar className="h-5 w-5" />}
                   />

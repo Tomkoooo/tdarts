@@ -15,7 +15,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card"
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
+import { getUserTimeZone } from '@/lib/date-time'
 
 interface ClubTournamentCardProps {
   tournament: {
@@ -62,6 +63,8 @@ export default function ClubTournamentCard({
   onEdit,
 }: ClubTournamentCardProps) {
   const t = useTranslations('Tournament.card')
+  const format = useFormatter()
+  const timeZone = getUserTimeZone()
 
   const statusLabels: Record<string, string> = {
     pending: t('status.pending'),
@@ -142,10 +145,11 @@ export default function ClubTournamentCard({
             <div className="flex items-center gap-2">
               <IconCalendar className="w-4 h-4 text-info" />
               <span>
-                {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU', {
+                {format.dateTime(new Date(tournament.tournamentSettings.startDate), {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
+                  timeZone
                 })}
               </span>
             </div>

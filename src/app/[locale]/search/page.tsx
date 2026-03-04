@@ -18,6 +18,7 @@ import { Link } from "@/i18n/routing"
 import { IconArrowLeft } from "@tabler/icons-react"
 import MapExplorer from "@/components/map/MapExplorer"
 import { useTranslations } from "next-intl"
+import { getUserTimeZone } from "@/lib/date-time"
 
 interface TabCounts {
     global: number;
@@ -40,6 +41,7 @@ export default function SearchPage() {
     const router = useRouter()
     const pathname = usePathname()
     const t = useTranslations('Search')
+    const userTimeZone = getUserTimeZone()
 
     const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "tournaments")
     const [query, setQuery] = useState(searchParams.get("q") || "")
@@ -122,14 +124,17 @@ export default function SearchPage() {
                 const payload = {
                     query: debouncedQuery,
                     tab: activeTab,
-                    filters: { ...filters, page: filters.page },
+                    filters: { ...filters, page: filters.page, timeZone: userTimeZone },
                     includeCounts: (filters.page || 1) === 1,
                     includeMetadata: (filters.page || 1) === 1,
                 }
 
                 const res = await fetch('/api/search', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-timezone': userTimeZone
+                    },
                     body: JSON.stringify(payload)
                 })
 
@@ -176,7 +181,7 @@ export default function SearchPage() {
         }
 
         fetchData()
-    }, [debouncedQuery, activeTab, filters])
+    }, [debouncedQuery, activeTab, filters, userTimeZone])
 
     const handleTabChange = (tab: string) => {
         setActiveTab(tab)

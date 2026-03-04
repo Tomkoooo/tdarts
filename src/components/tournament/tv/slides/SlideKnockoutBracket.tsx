@@ -28,6 +28,7 @@ export default function SlideKnockoutBracket({
   onRequiredDisplayMsChange,
 }: SlideKnockoutBracketProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const userInterruptedAutoScrollRef = useRef(false);
   const cardHeightPx = 132;
   const baseGapPx = 12;
 
@@ -37,6 +38,7 @@ export default function SlideKnockoutBracket({
 
     container.scrollTop = 0;
     container.scrollLeft = 0;
+    userInterruptedAutoScrollRef.current = false;
     const maxScrollX = container.scrollWidth - container.clientWidth;
     const maxScrollY = container.scrollHeight - container.clientHeight;
     if (maxScrollX <= 0 && maxScrollY <= 0) return;
@@ -45,6 +47,7 @@ export default function SlideKnockoutBracket({
     const speedPxY = 1;
     const stepMs = 50;
     const interval = window.setInterval(() => {
+      if (userInterruptedAutoScrollRef.current) return;
       if (maxScrollX > 0) {
         const nextX = container.scrollLeft + speedPxX;
         container.scrollLeft = nextX >= maxScrollX ? 0 : nextX;
@@ -57,6 +60,10 @@ export default function SlideKnockoutBracket({
     }, stepMs);
     return () => window.clearInterval(interval);
   }, [rounds]);
+
+  const stopAutoScrollForUser = () => {
+    userInterruptedAutoScrollRef.current = true;
+  };
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -82,16 +89,23 @@ export default function SlideKnockoutBracket({
   return (
     <SlideFrame title={title} subtitle={sideLabel} accentClassName="from-primary/20 to-background">
       {rounds.length === 0 ? (
-        <div className="flex h-full items-center justify-center text-3xl text-muted-foreground">{emptyLabel}</div>
+        <div className="flex h-full items-center justify-center text-lg sm:text-2xl md:text-3xl text-muted-foreground text-center px-3">{emptyLabel}</div>
       ) : (
-        <div ref={scrollRef} className="flex h-full items-stretch gap-4 overflow-x-auto pb-2">
+        <div
+          ref={scrollRef}
+          className="flex h-full items-stretch gap-2 sm:gap-3 md:gap-4 overflow-x-auto pb-2"
+          onWheel={stopAutoScrollForUser}
+          onTouchStart={stopAutoScrollForUser}
+          onPointerDown={stopAutoScrollForUser}
+          onMouseDown={stopAutoScrollForUser}
+        >
           {rounds.map((round, roundIndex) => {
             const factor = Math.pow(2, roundIndex);
             const dynamicGap = baseGapPx + (factor - 1) * (cardHeightPx + baseGapPx);
             const dynamicPaddingTop = roundIndex === 0 ? 0 : ((cardHeightPx + baseGapPx) * (factor - 1)) / 2;
             return (
-            <div key={round.id} className="flex min-h-0 min-w-88 flex-1 flex-col">
-              <div className="mb-3 text-2xl font-bold text-primary">{round.label}</div>
+            <div key={round.id} className="flex min-h-0 min-w-64 sm:min-w-72 md:min-w-88 flex-1 flex-col">
+              <div className="mb-2 sm:mb-3 text-lg sm:text-xl md:text-2xl font-bold text-primary">{round.label}</div>
               <div
                 className="min-h-0 flex-1 pr-1"
                 style={{ paddingTop: `${dynamicPaddingTop}px` }}
@@ -100,20 +114,20 @@ export default function SlideKnockoutBracket({
                 {round.matches.map((match) => (
                   <article
                     key={match.id}
-                    className={`h-33 rounded-xl border p-3 ${statusClass(match.status)}`}
+                    className={`h-33 rounded-xl border p-2.5 sm:p-3 ${statusClass(match.status)}`}
                   >
-                    <div className="mb-2 text-sm font-semibold text-muted-foreground">
+                    <div className="mb-1.5 sm:mb-2 text-xs sm:text-sm font-semibold text-muted-foreground">
                       {match.boardLabel}
                     </div>
-                    <div className="flex items-center justify-between text-lg">
+                    <div className="flex items-center justify-between text-sm sm:text-base md:text-lg">
                       <span className="truncate">{match.player1Name}</span>
                       <strong>{match.player1Legs}</strong>
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-lg">
+                    <div className="mt-1 flex items-center justify-between text-sm sm:text-base md:text-lg">
                       <span className="truncate">{match.player2Name}</span>
                       <strong>{match.player2Legs}</strong>
                     </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
+                    <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
                       {scorerLabel}: {match.scorerName || scorerFallback}
                     </div>
                   </article>

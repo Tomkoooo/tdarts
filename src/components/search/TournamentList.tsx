@@ -1,7 +1,7 @@
 import TournamentCard from "@/components/tournament/TournamentCard"
 import { IconCalendar } from "@tabler/icons-react"
-import { useTranslations, useFormatter } from "next-intl"
-import { getLocalDateKey, getLocalMidnightFromKey } from "@/lib/date-time"
+import { useLocale, useTranslations } from "next-intl"
+import { addDaysToDateKey, formatDateKeyLabel, getLocalDateKey, getUserTimeZone } from "@/lib/date-time"
 
 interface TournamentListProps {
     tournaments: any[];
@@ -9,7 +9,8 @@ interface TournamentListProps {
 
 export function TournamentList({ tournaments }: TournamentListProps) {
     const tResults = useTranslations('Search.tournament_results')
-    const format = useFormatter()
+    const locale = useLocale()
+    const timeZone = getUserTimeZone()
     
     if (!tournaments || tournaments.length === 0) {
         return (
@@ -36,7 +37,7 @@ export function TournamentList({ tournaments }: TournamentListProps) {
         }
 
         const date = new Date(tournament.tournamentSettings.startDate);
-        const dateKey = getLocalDateKey(date);
+        const dateKey = getLocalDateKey(date, timeZone);
         if (!dateKey) return groups;
         
         if (!groups[dateKey]) {
@@ -46,28 +47,19 @@ export function TournamentList({ tournaments }: TournamentListProps) {
         return groups;
     }, {});
 
-    const sortedDates = Object.keys(groupedTournaments).sort(
-        (a, b) => getLocalMidnightFromKey(a).getTime() - getLocalMidnightFromKey(b).getTime()
-    );
+    const sortedDates = Object.keys(groupedTournaments).sort((a, b) => a.localeCompare(b));
 
     const formatDateHeader = (dateKey: string) => {
-        const todayKey = getLocalDateKey(new Date())
+        const todayKey = getLocalDateKey(new Date(), timeZone)
         if (!todayKey) return dateKey
-        const tomorrowDate = getLocalMidnightFromKey(todayKey)
-        tomorrowDate.setDate(tomorrowDate.getDate() + 1)
-        const tomorrowKey = getLocalDateKey(tomorrowDate)
+        const tomorrowKey = addDaysToDateKey(todayKey, 1)
 
         if (dateKey === todayKey) {
           return tResults('today')
         } else if (tomorrowKey && dateKey === tomorrowKey) {
           return tResults('tomorrow')
         } else {
-          return format.dateTime(getLocalMidnightFromKey(dateKey), {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })
+          return formatDateKeyLabel(dateKey, locale)
         }
     }
 
