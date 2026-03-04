@@ -6,10 +6,15 @@ async function __POST(request: Request) {
     try {
         const body = await request.json();
         const { query, filters, tab, includeCounts = true, includeMetadata = true } = body;
+        const headerTimeZone = request.headers.get('x-timezone') || undefined;
+        const normalizedFilters = {
+            ...(filters || {}),
+            timeZone: (filters?.timeZone || headerTimeZone || undefined)
+        };
 
         // 1. Optionally get counts for ALL tabs (to show badges)
         const counts = includeCounts
-            ? await SearchService.getTabCounts(query || '', filters)
+            ? await SearchService.getTabCounts(query || '', normalizedFilters)
             : null;
 
         // 2. Get specific tab results based on 'tab' param
@@ -18,7 +23,7 @@ async function __POST(request: Request) {
 
         switch (activeTab) {
             case 'global': {
-                const globalResults = await SearchService.searchGlobal(query || '', filters);
+                const globalResults = await SearchService.searchGlobal(query || '', normalizedFilters);
                 const flattened = [
                     ...globalResults.results.tournaments.map((item) => ({ ...item, __entityType: 'tournament' })),
                     ...globalResults.results.players.map((item) => ({ ...item, __entityType: 'player' })),
@@ -30,41 +35,41 @@ async function __POST(request: Request) {
                 break;
             }
             case 'tournaments':
-                resultsData = await SearchService.searchTournaments(query || '', filters);
+                resultsData = await SearchService.searchTournaments(query || '', normalizedFilters);
                 break;
             case 'players':
-                if (filters?.year && filters.year < new Date().getFullYear()) {
+                if (normalizedFilters?.year && normalizedFilters.year < new Date().getFullYear()) {
                     resultsData = await SearchService.getSeasonTopPlayers(
-                        Number(filters.year), 
-                        filters.limit || 10, 
-                        ((filters.page || 1) - 1) * (filters.limit || 10),
-                        filters
+                        Number(normalizedFilters.year), 
+                        normalizedFilters.limit || 10, 
+                        ((normalizedFilters.page || 1) - 1) * (normalizedFilters.limit || 10),
+                        normalizedFilters
                     );
                 } else {
-                    resultsData = await SearchService.searchPlayers(query || '', filters);
+                    resultsData = await SearchService.searchPlayers(query || '', normalizedFilters);
                 }
                 break;
             case 'clubs':
-                resultsData = await SearchService.searchClubs(query || '', filters);
+                resultsData = await SearchService.searchClubs(query || '', normalizedFilters);
                 break;
             case 'leagues':
-                resultsData = await SearchService.searchLeagues(query || '', filters);
+                resultsData = await SearchService.searchLeagues(query || '', normalizedFilters);
                 break;
             default:
-                resultsData = await SearchService.searchTournaments(query || '', filters);
+                resultsData = await SearchService.searchTournaments(query || '', normalizedFilters);
         }
 
         // 3. Optionally get metadata
         const metadata = includeMetadata
-            ? await SearchService.getMetadata(query || '', filters)
+            ? await SearchService.getMetadata(query || '', normalizedFilters)
             : null;
 
         return NextResponse.json({
             results: resultsData.results,
             pagination: {
                 total: resultsData.total,
-                page: filters?.page || 1,
-                limit: filters?.limit || 10
+                page: normalizedFilters?.page || 1,
+                limit: normalizedFilters?.limit || 10
             },
             counts: counts || undefined,
             metadata: metadata || undefined,

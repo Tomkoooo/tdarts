@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { showLocationReviewToast } from '@/lib/toastUtils';
 import { getMapSettingsTranslations } from '@/data/translations/map-settings';
 import { shouldPromptLocationReview } from '@/interface/location.interface';
+import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/lib/date-time';
 
 interface EditTournamentModalProps {
   isOpen: boolean;
@@ -246,8 +247,8 @@ export default function EditTournamentModal({
                 <label className="text-sm font-medium">Kezdés dátuma *</label>
                 <input
                   type="datetime-local"
-                  value={new Date(settings.startDate).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T')}
-                  onChange={(e) => handleSettingsChange('startDate', new Date(e.target.value))}
+                  value={formatDateTimeLocalInput(settings.startDate)}
+                  onChange={(e) => handleSettingsChange('startDate', parseDateTimeLocalInput(e.target.value) || new Date())}
                   className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                   required
                 />
@@ -257,8 +258,8 @@ export default function EditTournamentModal({
                 <label className="text-sm font-medium">Nevezési határidő</label>
                 <input
                   type="datetime-local"
-                  value={settings.registrationDeadline ? new Date(settings.registrationDeadline).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T') : ''}
-                  onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value ? new Date(e.target.value) : undefined)}
+                  value={formatDateTimeLocalInput(settings.registrationDeadline)}
+                  onChange={(e) => handleSettingsChange('registrationDeadline', e.target.value ? parseDateTimeLocalInput(e.target.value) || undefined : undefined)}
                   className="w-full px-3 py-2 bg-muted/40 rounded-lg border border-border/40 outline-none focus:ring-2 ring-primary/20"
                 />
               </div>

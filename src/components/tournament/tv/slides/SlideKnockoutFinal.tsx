@@ -19,23 +19,23 @@ export default function SlideKnockoutFinal({
   return (
     <SlideFrame title={title} accentClassName="from-warning/25 to-background">
       {!finalMatch ? (
-        <div className="flex h-full items-center justify-center text-3xl text-muted-foreground">{emptyLabel}</div>
+        <div className="flex h-full items-center justify-center text-lg sm:text-2xl md:text-3xl text-muted-foreground text-center px-3">{emptyLabel}</div>
       ) : (
         <div className="flex h-full items-center justify-center">
-          <div className="w-full max-w-4xl rounded-2xl border border-warning/40 bg-background/40 p-10">
-            <div className="mb-4 text-center text-4xl font-black text-warning">Final Match</div>
-            <div className="space-y-4 text-4xl">
-              <div className="flex items-center justify-between rounded-xl bg-muted/20 px-6 py-4">
+          <div className="w-full max-w-4xl rounded-2xl border border-warning/40 bg-background/40 p-3 sm:p-6 md:p-10">
+            <div className="mb-3 sm:mb-4 text-center text-xl sm:text-3xl md:text-4xl font-black text-warning">Final Match</div>
+            <div className="space-y-2 sm:space-y-4 text-xl sm:text-3xl md:text-4xl">
+              <div className="flex items-center justify-between rounded-xl bg-muted/20 px-3 sm:px-5 md:px-6 py-2.5 sm:py-4">
                 <span className="truncate">{finalMatch.player1Name}</span>
                 <span className="font-black">{finalMatch.player1Legs}</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl bg-muted/20 px-6 py-4">
+              <div className="flex items-center justify-between rounded-xl bg-muted/20 px-3 sm:px-5 md:px-6 py-2.5 sm:py-4">
                 <span className="truncate">{finalMatch.player2Name}</span>
                 <span className="font-black">{finalMatch.player2Legs}</span>
               </div>
             </div>
-            <div className="mt-5 text-center text-lg text-muted-foreground">{finalMatch.boardLabel}</div>
-            <div className="mt-2 text-center text-lg text-muted-foreground">
+            <div className="mt-4 sm:mt-5 text-center text-sm sm:text-base md:text-lg text-muted-foreground">{finalMatch.boardLabel}</div>
+            <div className="mt-1.5 sm:mt-2 text-center text-sm sm:text-base md:text-lg text-muted-foreground">
               {scorerLabel}: {finalMatch.scorerName || scorerFallback}
             </div>
           </div>

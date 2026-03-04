@@ -4,6 +4,7 @@ import { ClubService } from '@/database/services/club.service';
 import { SubscriptionService } from '@/database/services/subscription.service';
 import Stripe from 'stripe';
 import { withApiTelemetry } from '@/lib/api-telemetry';
+import { parseIsoDateInput } from '@/lib/date-time';
 
 const stripe = new Stripe(process.env.OAC_STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia' as any,
@@ -50,8 +51,19 @@ async function __POST(
       } as any);
     }
 
+    const parsedStartDate = payload.startDate ? parseIsoDateInput(payload.startDate) : null;
+    if (payload.startDate && !parsedStartDate) {
+      return NextResponse.json({ error: 'Invalid startDate. Expected ISO date with timezone.' }, { status: 400 });
+    }
+    const parsedRegistrationDeadline = payload.registrationDeadline
+      ? parseIsoDateInput(payload.registrationDeadline)
+      : null;
+    if (payload.registrationDeadline && !parsedRegistrationDeadline) {
+      return NextResponse.json({ error: 'Invalid registrationDeadline. Expected ISO date with timezone.' }, { status: 400 });
+    }
+
     // Check subscription limits (Skip for sandbox tournaments)
-    const tournamentStartDate = payload.startDate ? new Date(payload.startDate) : new Date();
+    const tournamentStartDate = parsedStartDate || new Date();
     const isSandbox = payload.isSandbox || false;
     const isVerified = payload.verified || false;
     
@@ -144,7 +156,7 @@ async function __POST(
             status: 'pending',
             name: payload.name,
             description: payload.description || '',
-            startDate: payload.startDate ? new Date(payload.startDate) : now,
+            startDate: parsedStartDate || now,
             maxPlayers: payload.maxPlayers,
             format: payload.format,
             startingScore: payload.startingScore,
@@ -153,7 +165,7 @@ async function __POST(
             tournamentPassword: payload.tournamentPassword,
             location: payload.location || null,
             type: payload.type || 'amateur',
-            registrationDeadline: payload.registrationDeadline ? new Date(payload.registrationDeadline) : null,
+            registrationDeadline: parsedRegistrationDeadline || null,
             participationMode: payload.participationMode || 'individual',
         },
         createdAt: now,

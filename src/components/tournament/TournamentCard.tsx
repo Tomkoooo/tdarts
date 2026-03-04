@@ -21,7 +21,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
+import { getUserTimeZone } from '@/lib/date-time'
 
 interface TournamentCardProps {
   tournament: {
@@ -71,6 +72,8 @@ export default function TournamentCard({
   onEdit,
 }: TournamentCardProps) {
   const tTour = useTranslations('Tournament')
+  const format = useFormatter()
+  const timeZone = getUserTimeZone()
   const t = (key: string, values?: any) => tTour(`card.${key}`, values)
 
   const statusLabels: Record<string, string> = {
@@ -193,12 +196,13 @@ export default function TournamentCard({
           <div className="flex items-center gap-2">
             <IconCalendar className="w-4 h-4 text-info" />
             <span>
-              {new Date(tournament.tournamentSettings.startDate).toLocaleDateString('hu-HU', {
+              {format.dateTime(new Date(tournament.tournamentSettings.startDate), {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZone
               })}
             </span>
           </div>

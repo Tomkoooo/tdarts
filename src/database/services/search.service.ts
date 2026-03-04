@@ -2,6 +2,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '../models/player.model';
 import { TournamentModel } from '../models/tournament.model';
 import { ClubModel } from '../models/club.model';
+import { getDayBoundsInTimeZone, getUserTimeZone } from '@/lib/date-time';
 
 export interface SearchFilters {
     type?: 'players' | 'tournaments' | 'clubs' | 'leagues' | 'global' | 'all';
@@ -23,6 +24,7 @@ export interface SearchFilters {
     rankingType?: 'oacMmr' | 'leaguePoints'; // New filter for player ranking in OAC mode
     playerMode?: 'all' | 'individual' | 'pair';
     country?: string;
+    timeZone?: string;
 }
 
 
@@ -574,11 +576,8 @@ export class SearchService {
 
         // Status Logic: Default "Upcoming" unless 'all' is requested
         if (filters.status === 'upcoming' || !filters.status) { // Default
-             // Use current date for comparison
-             const now = new Date();
-             now.setHours(0, 0, 0, 0);
-             const tomorrow = new Date(now);
-             tomorrow.setDate(now.getDate() + 1);
+             const timeZone = filters.timeZone || getUserTimeZone();
+             const { dayStartUtc, nextDayStartUtc } = getDayBoundsInTimeZone(timeZone);
              
              // 'Upcoming' includes:
              // 1. Pending tournaments starting today or in the future
@@ -587,11 +586,11 @@ export class SearchService {
                  $or: [
                     { 
                         'tournamentSettings.status': 'pending', 
-                        'tournamentSettings.startDate': { $gte: now } 
+                        'tournamentSettings.startDate': { $gte: dayStartUtc } 
                     },
                     {
                         'tournamentSettings.status': { $in: ['group-stage', 'knockout'] },
-                        'tournamentSettings.startDate': { $gte: now, $lt: tomorrow }
+                        'tournamentSettings.startDate': { $gte: dayStartUtc, $lt: nextDayStartUtc }
                     }
                  ]
              });
@@ -851,11 +850,11 @@ export class SearchService {
             // Status Logic
             if (filters.status) {
                 if (filters.status === 'upcoming') {
-                    const now = new Date();
-                    now.setHours(0, 0, 0, 0);
+                    const timeZone = filters.timeZone || getUserTimeZone();
+                    const { dayStartUtc } = getDayBoundsInTimeZone(timeZone);
                     andConditions.push({
                         $or: [
-                            { 'tournamentSettings.status': 'pending', 'tournamentSettings.startDate': { $gte: now } }
+                            { 'tournamentSettings.status': 'pending', 'tournamentSettings.startDate': { $gte: dayStartUtc } }
                         ]
                     });
                 } else if (filters.status === 'active') {
@@ -863,10 +862,10 @@ export class SearchService {
                 }
             } else if (!showFinished) {
                 // Legacy fallback
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
+                const timeZone = filters.timeZone || getUserTimeZone();
+                const { dayStartUtc } = getDayBoundsInTimeZone(timeZone);
                 matchStage['tournamentSettings.status'] = { $in: ['pending', 'group-stage', 'knockout'] };
-                matchStage['tournamentSettings.startDate'] = { $gte: now };
+                matchStage['tournamentSettings.startDate'] = { $gte: dayStartUtc };
             }
 
             if (filters.tournamentType) {
