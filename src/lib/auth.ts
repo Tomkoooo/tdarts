@@ -122,6 +122,10 @@ export const authOptions: NextAuthOptions = {
       if (url.includes('/api/auth/callback/google')) {
         return `${baseUrl}/api/auth/google-callback?callbackUrl=${encodeURIComponent(url)}`;
       }
+      // Relative callback URL-eket engedjük, hogy a ?redirect=... flow működjön
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
       // Ha a főoldalra akarunk menni, akkor oda
       if (url === baseUrl || url === '/') {
         return baseUrl;

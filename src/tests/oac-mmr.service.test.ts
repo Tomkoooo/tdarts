@@ -20,7 +20,6 @@ describe('OacMmrService', () => {
                 { verified: false, stats: { average: 100 } },
                 { verified: true, stats: { average: 60 } }
             ];
-            // (40 + 60) / 2 = 50
             expect(OacMmrService.calculateVerifiedAverage(history)).toBe(50);
         });
     });
@@ -35,103 +34,108 @@ describe('OacMmrService', () => {
             matchesWon: 2
         };
 
-        it('should give 0 performance delta for new players but still award placement/bonuses', () => {
+        it('should award placement for new player (no verified avg)', () => {
+            // Winner, no verified avg => placement only
+            // actualScore = 1.0, placementDelta = 20*(1.0-0.5) = +10
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
-                placement: 1, // Winner
+                placement: 1,
                 verifiedAverage: 0
             });
-            // Performance: 0 (new player)
-            // Placement: (8 - 1)*2 = 14
-            // Total: 800 + 14 = 814
-            expect(change).toBe(814);
+            expect(change).toBe(810);
         });
 
-        it('should return current MMR (0 change) if 0 matches won', () => {
+        it('should penalize last place even with 0 matches won', () => {
+            // placement 16/16 => actualScore=0, placementDelta = 20*(0-0.5) = -10
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
                 placement: 16,
                 matchesWon: 0,
                 verifiedAverage: 50
             });
-            expect(change).toBe(800);
+            expect(change).toBe(790);
         });
 
-        it('should increase MMR if playing above verified average', () => {
+        it('should increase MMR when playing above verified average', () => {
+            // placement 8/16 => actualScore = 1 - 7/15 ≈ 0.533, placementDelta ≈ +0.67
+            // selfPerf = clamp((50-40)*0.5, -5, 5) = +5
+            // performanceBonus = 5
+            // total ≈ 5.67 => round(800 + 5.67) = 806
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
                 placement: 8,
-                verifiedAverage: 40 // Playing 10 points above avg
+                verifiedAverage: 40
             });
-            // Performance: (50-40)*2.5 = 25
-            // Placement: 0
-            // Total: 800 + 25 = 825
-            expect(change).toBe(825);
+            expect(change).toBe(806);
         });
 
-        it('should decrease MMR if playing below verified average', () => {
+        it('should decrease MMR when playing below verified average', () => {
+            // placement 8/16 => placementDelta ≈ +0.67
+            // selfPerf = clamp((50-60)*0.5, -5, 5) = -5
+            // performanceBonus = -5
+            // total ≈ -4.33 => round(800 - 4.33) = 796
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
                 placement: 8,
-                verifiedAverage: 60 // Playing 10 points below avg
+                verifiedAverage: 60
             });
-            // Performance: (50-60)*2.5 = -25
-            // Placement: 0
-            // Total: 800 - 25 = 775
-            expect(change).toBe(775);
+            expect(change).toBe(796);
         });
 
-        it('should reward high placement', () => {
+        it('should reward first place', () => {
+            // actualScore = 1.0, placementDelta = +10, no performance delta
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
-                placement: 1, // Winner
+                placement: 1,
                 verifiedAverage: 50
             });
-            // Performance: 0
-            // Placement: (8 - 1)*2 = 14
-            // Total: 800 + 14 = 814
-            expect(change).toBe(814);
+            expect(change).toBe(810);
         });
 
-        it('should penalize low placement', () => {
+        it('should penalize last place', () => {
+            // actualScore = 0, placementDelta = -10, no performance delta
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
-                placement: 16, // Last
+                placement: 16,
                 verifiedAverage: 50
             });
-            // Performance: 0
-            // Placement: (8 - 16)*2 = -16
-            // Total: 800 - 16 = 784
-            expect(change).toBe(784);
+            expect(change).toBe(790);
         });
 
-        it('should add bonuses for 180s and high checkouts', () => {
+        it('should add clamped bonuses for 180s and high checkouts', () => {
+            // placement 8/16 => placementDelta ≈ +0.67
+            // specialRaw = 2*1.5 + 2 = 5, clamped to 5
+            // total ≈ 5.67 => 806
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
                 placement: 8,
                 verifiedAverage: 50,
-                oneEightiesCount: 2, // 2 * 5 = 10
-                highestCheckout: 120 // +5
+                oneEightiesCount: 2,
+                highestCheckout: 120
             });
-            // Performance: 0
-            // Placement: 0
-            // Bonuses: 10 + 5 = 15
-            // Total: 800 + 15 = 815
-            expect(change).toBe(815);
+            expect(change).toBe(806);
         });
 
-        it('should add max bonus for ultra high checkout', () => {
+        it('should give smaller bonus for ultra high checkout', () => {
+            // placement 8/16 => placementDelta ≈ +0.67
+            // specialRaw = 3, clamped to 3
+            // total ≈ 3.67 => 804
             const change = OacMmrService.calculateMMRChange({
                 ...baseParams,
                 placement: 8,
                 verifiedAverage: 50,
                 oneEightiesCount: 0,
-                highestCheckout: 160 // +15
+                highestCheckout: 160
             });
-            expect(change).toBe(815);
+            expect(change).toBe(804);
         });
 
         it('should combine all factors', () => {
+            // placement 2/32 => actualScore = 1-1/31 ≈ 0.968, placementDelta = 20*0.468 ≈ +9.35
+            // selfPerf = clamp((65-60)*0.5, -5, 5) = +2.5
+            // performanceBonus = 2.5
+            // specialRaw = 1*1.5 + 3 = 4.5, clamped to 4.5
+            // total ≈ 16.35 => round(1000 + 16.35) = 1016
             const change = OacMmrService.calculateMMRChange({
                 currentOacMmr: 1000,
                 placement: 2,
@@ -142,12 +146,119 @@ describe('OacMmrService', () => {
                 highestCheckout: 155,
                 matchesWon: 5
             });
-            // Performance: (65-60)*2.5 = 12.5
-            // Placement: (32/2 - 2)*2 = (16-2)*2 = 28
-            // Bonuses: 1*5 + 15 = 20
-            // Total Change: 12.5 + 28 + 20 = 60.5
-            // New MMR: 1000 + 60.5 = 1060.5 -> round to 1061
-            expect(change).toBe(1061);
+            expect(change).toBe(1016);
+        });
+
+        it('winner with bad average still gains MMR (placement dominates)', () => {
+            // placement 1/16 => placementDelta = +10
+            // selfPerf = clamp((35-50)*0.5, -5, 5) = -5
+            // fieldPerf = clamp((35-48)*0.3, -3, 3) = -3
+            // performanceBonus = clamp(-8, -8, 8) = -8
+            // total = 10 - 8 = +2 => 802
+            const change = OacMmrService.calculateMMRChange({
+                ...baseParams,
+                currentAverage: 35,
+                placement: 1,
+                verifiedAverage: 50,
+                tournamentAverage: 48
+            });
+            expect(change).toBe(802);
+        });
+
+        it('last place with good average still loses MMR (placement dominates)', () => {
+            // placement 16/16 => placementDelta = -10
+            // selfPerf = clamp((60-50)*0.5, -5, 5) = +5
+            // fieldPerf = clamp((60-48)*0.3, -3, 3) = +3
+            // performanceBonus = clamp(8, -8, 8) = +8
+            // total = -10 + 8 = -2 => 798
+            const change = OacMmrService.calculateMMRChange({
+                ...baseParams,
+                currentAverage: 60,
+                placement: 16,
+                verifiedAverage: 50,
+                tournamentAverage: 48
+            });
+            expect(change).toBe(798);
+        });
+
+        it('first-nine average provides performance bonus', () => {
+            // placement 8/16 => placementDelta ≈ +0.67
+            // selfPerf = 0, fieldPerf = 0
+            // firstNinePerf = clamp((70-55)*0.15, -2, 2) = clamp(2.25, -2, 2) = +2
+            // performanceBonus = 2
+            // total ≈ 2.67 => 803
+            const change = OacMmrService.calculateMMRChange({
+                ...baseParams,
+                placement: 8,
+                verifiedAverage: 50,
+                firstNineAvg: 70
+            });
+            expect(change).toBe(803);
+        });
+
+        it('poor first-nine average provides penalty', () => {
+            // placement 8/16 => placementDelta ≈ +0.67
+            // firstNinePerf = clamp((35-55)*0.15, -2, 2) = clamp(-3, -2, 2) = -2
+            // performanceBonus = -2
+            // total ≈ -1.33 => 799
+            const change = OacMmrService.calculateMMRChange({
+                ...baseParams,
+                placement: 8,
+                verifiedAverage: 50,
+                firstNineAvg: 35
+            });
+            expect(change).toBe(799);
+        });
+
+        it('total change is clamped to +-25', () => {
+            // Extreme scenario: winner with everything maxed
+            // placement 1/32 => actualScore=1.0, placementDelta = +10
+            // selfPerf = clamp((80-40)*0.5, -5, 5) = +5
+            // fieldPerf = clamp((80-45)*0.3, -3, 3) = +3
+            // firstNinePerf = clamp((80-55)*0.15, -2, 2) = +2
+            // performanceBonus = clamp(10, -8, 8) = +8
+            // specialRaw = 5*1.5 + 3 = 10.5, clamped to 5
+            // raw = 10 + 8 + 5 = 23, within +-25 clamp
+            const change = OacMmrService.calculateMMRChange({
+                currentOacMmr: 800,
+                placement: 1,
+                totalParticipants: 32,
+                currentAverage: 80,
+                verifiedAverage: 40,
+                tournamentAverage: 45,
+                firstNineAvg: 80,
+                oneEightiesCount: 5,
+                highestCheckout: 160,
+                matchesWon: 6
+            });
+            expect(change).toBe(823);
+        });
+
+        it('should not go below 0 MMR', () => {
+            const change = OacMmrService.calculateMMRChange({
+                currentOacMmr: 5,
+                placement: 16,
+                totalParticipants: 16,
+                currentAverage: 20,
+                verifiedAverage: 50,
+                tournamentAverage: 48,
+                firstNineAvg: 20,
+                oneEightiesCount: 0,
+                highestCheckout: 0,
+                matchesWon: 0
+            });
+            expect(change).toBe(0);
+        });
+
+        it('single participant tournament gives neutral placement', () => {
+            // 1 participant: actualScore = 0.5, placementDelta = 0
+            const change = OacMmrService.calculateMMRChange({
+                ...baseParams,
+                placement: 1,
+                totalParticipants: 1,
+                verifiedAverage: 50
+            });
+            expect(change).toBe(800);
         });
     });
 });

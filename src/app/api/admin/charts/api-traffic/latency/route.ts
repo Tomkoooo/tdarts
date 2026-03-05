@@ -26,6 +26,7 @@ async function __GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const timeZone = searchParams.get('tz') || 'UTC';
     const granularity = resolveGranularity(searchParams);
+    const includeAllTime = searchParams.get('includeAllTime') === 'true';
     const { startDate, endDate } = resolveTimeRange(searchParams);
     const { routeKey, method } = resolveRouteFilters(searchParams);
     const matchBase: Record<string, any> = {};
@@ -50,45 +51,48 @@ async function __GET(request: NextRequest) {
       { $sort: { _id: 1 } },
     ]);
 
-    const allTimeAggregation = await ApiRequestMetricModel.aggregate([
-      { $match: matchBase },
-      {
-        $group: {
-          _id: null,
-          totalDurationMs: { $sum: '$totalDurationMs' },
-          totalCount: { $sum: '$count' },
-        },
-      },
-    ]);
-
-    const allTimeAvgMs =
-      allTimeAggregation.length > 0 && allTimeAggregation[0].totalCount > 0
-        ? allTimeAggregation[0].totalDurationMs / allTimeAggregation[0].totalCount
-        : 0;
-
     const labels = series.map((s) => formatBucketLabel(s._id, timeZone, granularity));
     const data = series.map((s) => {
       const avg = s.count > 0 ? s.totalDurationMs / s.count : 0;
       return Math.round(avg * 100) / 100;
     });
-    const avgLine = series.map(() => Math.round(allTimeAvgMs * 100) / 100);
+    const datasets = [
+      {
+        label: 'Átlagos API késleltetés (ms)',
+        data,
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        borderColor: 'rgb(245, 158, 11)',
+      },
+    ];
+
+    if (includeAllTime) {
+      const allTimeAggregation = await ApiRequestMetricModel.aggregate([
+        { $match: matchBase },
+        {
+          $group: {
+            _id: null,
+            totalDurationMs: { $sum: '$totalDurationMs' },
+            totalCount: { $sum: '$count' },
+          },
+        },
+      ]);
+
+      const allTimeAvgMs =
+        allTimeAggregation.length > 0 && allTimeAggregation[0].totalCount > 0
+          ? allTimeAggregation[0].totalDurationMs / allTimeAggregation[0].totalCount
+          : 0;
+      const avgLine = series.map(() => Math.round(allTimeAvgMs * 100) / 100);
+      datasets.push({
+        label: 'All-time átlag latency (ms)',
+        data: avgLine,
+        backgroundColor: 'rgba(107, 114, 128, 0.05)',
+        borderColor: 'rgb(107, 114, 128)',
+      });
+    }
 
     return NextResponse.json({
       labels,
-      datasets: [
-        {
-          label: 'Átlagos API késleltetés (ms)',
-          data,
-          backgroundColor: 'rgba(245, 158, 11, 0.2)',
-          borderColor: 'rgb(245, 158, 11)',
-        },
-        {
-          label: 'All-time átlag latency (ms)',
-          data: avgLine,
-          backgroundColor: 'rgba(107, 114, 128, 0.05)',
-          borderColor: 'rgb(107, 114, 128)',
-        },
-      ],
+      datasets,
     });
   } catch (error) {
     console.error('Error fetching api traffic latency chart:', error);

@@ -9,7 +9,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     const pagePath = '/how-it-works';
     const localeAlternates = buildLocaleAlternates(pagePath);
     const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
-    const description = "tDarts rendszer használatával kapcsolatos információk és kisokos";
+    const descriptionByLocale: Record<string, string> = {
+        hu: "Naprakész útmutató a tDarts használatához: bejelentkezés, klubkezelés, versenyszervezés, író program és liga pontozás.",
+        en: "Up-to-date guide for using tDarts: login, club management, tournament operations, scorer access, and league points.",
+        de: "Aktueller Leitfaden zur Nutzung von tDarts: Login, Club-Management, Turnierablauf, Scorer-Zugang und Liga-Punkte."
+    };
+    const description = descriptionByLocale[locale] || descriptionByLocale.en;
 
     return {
         title: t("hogyan_mukodik_247b"),

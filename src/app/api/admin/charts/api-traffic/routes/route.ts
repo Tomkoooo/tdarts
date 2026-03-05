@@ -23,7 +23,10 @@ async function __GET(request: NextRequest) {
     const limit = Math.min(1000, Math.max(10, Number(searchParams.get('limit') || 200)));
     const hasErrors = searchParams.get('hasErrors') === 'true';
     const minCalls = Math.max(0, Number(searchParams.get('minCalls') || 0));
-    const minTrafficKb = Math.max(0, Number(searchParams.get('minTrafficKb') || 0));
+    const minTrafficBytes = Math.max(
+      0,
+      Number(searchParams.get('minTrafficBytes') || 0) || Math.round(Number(searchParams.get('minTrafficKb') || 0) * 1024)
+    );
     const minAvgLatencyMs = Math.max(0, Number(searchParams.get('minAvgLatencyMs') || 0));
     const sortByRaw = (searchParams.get('sortBy') || 'route').toLowerCase();
     const sortDir = (searchParams.get('sortDir') || 'desc').toLowerCase() === 'asc' ? 1 : -1;
@@ -54,8 +57,8 @@ async function __GET(request: NextRequest) {
       },
       {
         $addFields: {
-          totalTrafficKb: {
-            $divide: [{ $add: ['$totalRequestBytes', '$totalResponseBytes'] }, 1024],
+          totalTrafficBytes: {
+            $add: ['$totalRequestBytes', '$totalResponseBytes'],
           },
           avgLatencyMs: {
             $cond: [{ $gt: ['$totalCalls', 0] }, { $divide: ['$totalDurationMs', '$totalCalls'] }, 0],
@@ -66,7 +69,7 @@ async function __GET(request: NextRequest) {
         $match: {
           ...(hasErrors ? { totalErrors: { $gt: 0 } } : {}),
           ...(minCalls > 0 ? { totalCalls: { $gte: minCalls } } : {}),
-          ...(minTrafficKb > 0 ? { totalTrafficKb: { $gte: minTrafficKb } } : {}),
+          ...(minTrafficBytes > 0 ? { totalTrafficBytes: { $gte: minTrafficBytes } } : {}),
           ...(minAvgLatencyMs > 0 ? { avgLatencyMs: { $gte: minAvgLatencyMs } } : {}),
         },
       },
@@ -76,7 +79,7 @@ async function __GET(request: NextRequest) {
             route: '_id.routeKey',
             calls: 'totalCalls',
             errors: 'totalErrors',
-            traffic: 'totalTrafficKb',
+            traffic: 'totalTrafficBytes',
             latency: 'avgLatencyMs',
             lastseen: 'lastSeen',
           };
@@ -92,7 +95,18 @@ async function __GET(request: NextRequest) {
           method: '$_id.method',
           totalCalls: 1,
           totalErrors: 1,
-          totalTrafficKb: { $round: ['$totalTrafficKb', 2] },
+          totalRequestBytes: 1,
+          totalResponseBytes: 1,
+          totalTrafficBytes: 1,
+          avgRequestPackageBytes: {
+            $cond: [{ $gt: ['$totalCalls', 0] }, { $round: [{ $divide: ['$totalRequestBytes', '$totalCalls'] }, 0] }, 0],
+          },
+          avgResponsePackageBytes: {
+            $cond: [{ $gt: ['$totalCalls', 0] }, { $round: [{ $divide: ['$totalResponseBytes', '$totalCalls'] }, 0] }, 0],
+          },
+          avgTotalPackageBytes: {
+            $cond: [{ $gt: ['$totalCalls', 0] }, { $round: [{ $divide: ['$totalTrafficBytes', '$totalCalls'] }, 0] }, 0],
+          },
           avgLatencyMs: { $round: ['$avgLatencyMs', 2] },
           lastSeen: 1,
         },

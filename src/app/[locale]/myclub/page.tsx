@@ -55,7 +55,7 @@ export default function MyClubPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <LoadingScreen text="Klubok betöltése..." />
+        <LoadingScreen text={t("loading_club")} />
       </div>
     )
   }
@@ -63,7 +63,7 @@ export default function MyClubPage() {
   // Show registration form if user has no clubs
   if (user && clubs.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="min-h-screen bg-linear-to-br from-background to-muted/20">
         <section className="py-16 md:py-24 px-4 md:px-6">
           <div className="max-w-4xl mx-auto">
             {/* Header */}
@@ -71,7 +71,7 @@ export default function MyClubPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full border-2 border-primary/20 mb-6">
                 <IconUsersGroup className="w-10 h-10 text-primary" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
                 {t("uj_klub_regisztralasa_8231")}</h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
                 {t("hozz_letre_egy_uj_d07t")}</p>
@@ -82,17 +82,17 @@ export default function MyClubPage() {
                   {
                     icon: IconSparkles,
                     title: t("szervezz_tornakat_pgxr"),
-                    description: "Hozz létre és kezelj versenyeket",
+                    description: t("feature_tournaments_description"),
                   },
                   {
                     icon: IconUsersGroup,
                     title: t("epits_kozosseget_qsy3"),
-                    description: "Kezeld tagjaidat és játékosokat",
+                    description: t("feature_members_description"),
                   },
                   {
                     icon: IconSparkles,
                     title: t("kovetd_az_eredmenyeket_xpkq"),
-                    description: "Részletes statisztikák és ranglista",
+                    description: t("feature_stats_description"),
                   },
                 ].map((feature, index) => (
                   <div

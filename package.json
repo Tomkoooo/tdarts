@@ -12,6 +12,7 @@
     "backfill:locations": "npx tsx scripts/backfill-structured-locations.ts",
     "backfill:first-nine-avg": "npx tsx scripts/backfill-first-nine-avg.ts",
     "backfill:match-averages": "npx tsx scripts/backfill-match-averages.ts",
+    "recalc:oac-mmr": "npx tsx scripts/recalculate-oac-mmr.ts",
     "overwrite:emails": "npx tsx scripts/overwrite-email-templates.ts",
     "prepare": "husky",
     "husky": ".husky/pre-push"

@@ -26,6 +26,7 @@ async function __GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const timeZone = searchParams.get('tz') || 'UTC';
     const granularity = resolveGranularity(searchParams);
+    const includeAllTime = searchParams.get('includeAllTime') === 'true';
     const { startDate, endDate } = resolveTimeRange(searchParams);
     const { routeKey, method } = resolveRouteFilters(searchParams);
     const matchBase: Record<string, any> = {};
@@ -43,43 +44,46 @@ async function __GET(request: NextRequest) {
       { $sort: { _id: 1 } },
     ]);
 
-    const allTimeAvgAggregation = await ApiRequestMetricModel.aggregate([
-      { $match: matchBase },
-      { $group: { _id: toDateTruncId(granularity, timeZone), count: { $sum: '$count' } } },
-      {
-        $group: {
-          _id: null,
-          totalCount: { $sum: '$count' }, 
-          bucketCount: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const allTimeAvgPerBucket =
-      allTimeAvgAggregation.length > 0 && allTimeAvgAggregation[0].bucketCount > 0
-        ? allTimeAvgAggregation[0].totalCount / allTimeAvgAggregation[0].bucketCount
-        : 0;
-
     const labels = series.map((s) => formatBucketLabel(s._id, timeZone, granularity));
     const data = series.map((s) => s.count);
-    const avgLine = series.map(() => Math.round(allTimeAvgPerBucket * 100) / 100);
+    const datasets = [
+      {
+        label: 'API hívások',
+        data,
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: 'rgb(59, 130, 246)',
+      },
+    ];
+
+    if (includeAllTime) {
+      const allTimeAvgAggregation = await ApiRequestMetricModel.aggregate([
+        { $match: matchBase },
+        { $group: { _id: toDateTruncId(granularity, timeZone), count: { $sum: '$count' } } },
+        {
+          $group: {
+            _id: null,
+            totalCount: { $sum: '$count' },
+            bucketCount: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const allTimeAvgPerBucket =
+        allTimeAvgAggregation.length > 0 && allTimeAvgAggregation[0].bucketCount > 0
+          ? allTimeAvgAggregation[0].totalCount / allTimeAvgAggregation[0].bucketCount
+          : 0;
+      const avgLine = series.map(() => Math.round(allTimeAvgPerBucket * 100) / 100);
+      datasets.push({
+        label: 'All-time átlag / bucket',
+        data: avgLine,
+        backgroundColor: 'rgba(107, 114, 128, 0.05)',
+        borderColor: 'rgb(107, 114, 128)',
+      });
+    }
 
     return NextResponse.json({
       labels,
-      datasets: [
-        {
-          label: 'API hívások',
-          data,
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-          borderColor: 'rgb(59, 130, 246)',
-        },
-        {
-          label: 'All-time átlag / bucket',
-          data: avgLine,
-          backgroundColor: 'rgba(107, 114, 128, 0.05)',
-          borderColor: 'rgb(107, 114, 128)',
-        },
-      ],
+      datasets,
     });
   } catch (error) {
     console.error('Error fetching api traffic requests chart:', error);

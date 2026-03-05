@@ -94,6 +94,53 @@ const stepColors = [
   },
 ];
 
+const stripHtml = (value: string) => value.replace(/<[^>]*>/g, ' ');
+
+const collectContentText = (node: any): string[] => {
+  if (!node) return [];
+  const collected: string[] = [];
+
+  if (typeof node === 'string') {
+    collected.push(stripHtml(node));
+    return collected;
+  }
+
+  if (Array.isArray(node)) {
+    node.forEach((item) => {
+      collected.push(...collectContentText(item));
+    });
+    return collected;
+  }
+
+  if (typeof node === 'object') {
+    if (typeof node.title === 'string') {
+      collected.push(stripHtml(node.title));
+    }
+
+    if (node.content !== undefined) {
+      collected.push(...collectContentText(node.content));
+    }
+
+    if (Array.isArray(node.list)) {
+      collected.push(...collectContentText(node.list));
+    }
+
+    if (node.note?.content) {
+      collected.push(...collectContentText(node.note.content));
+    }
+
+    if (Array.isArray(node.sections)) {
+      collected.push(...collectContentText(node.sections));
+    }
+
+    if (Array.isArray(node.subsections)) {
+      collected.push(...collectContentText(node.subsections));
+    }
+  }
+
+  return collected;
+};
+
 const HowItWorksContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -130,10 +177,26 @@ const HowItWorksContent = () => {
     }
   }, [searchParams]);
 
-  const filteredSteps = howItWorksData.steps.filter((step: any) =>
-    step.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    step.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const searchableSteps = useMemo(() => {
+    return howItWorksData.steps.map((step: any) => {
+      const fullText = [
+        step.title || '',
+        step.description || '',
+        ...collectContentText(step.content),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return { step, fullText };
+    });
+  }, [howItWorksData.steps]);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredSteps = normalizedQuery
+    ? searchableSteps
+        .filter(({ fullText }) => fullText.includes(normalizedQuery))
+        .map(({ step }) => step)
+    : howItWorksData.steps;
 
   const currentColor = activeStep !== null ? stepColors[activeStep % stepColors.length] : stepColors[0];
 

@@ -1,36 +1,625 @@
 {
-    "title": "How Does tDarts Work? - FAQ",
-    "subtitle": "Complete guide to using the tDarts platform. Registration, club management, starting tournaments, score logging and league management step by step.",
-    "steps": [
-        {
-            "id": 0,
-            "title": "Account Creation and Authentication",
-            "icon": "IconUserPlus",
-            "description": "Registration and Login",
-            "content": {
-                "sections": [
-                    {
-                        "type": "text",
-                        "content": "Using the tDarts platform is simple and intuitive. Below we present step by step how to register, log in, manage your club, and how to start or participate in tournaments."
-                    }
-                ]
+  "title": "How tDarts Works - Updated Guide",
+  "subtitle": "A practical and up-to-date walkthrough for daily use: login, club management, tournament operations, scorer access, and league points.",
+  "steps": [
+    {
+      "id": 0,
+      "title": "Start here: login and account setup",
+      "icon": "IconUserPlus",
+      "description": "Google-first login with optional email/password",
+      "content": {
+        "sections": [
+          {
+            "type": "text",
+            "content": "To use tDarts, first sign in. The platform now follows a <strong>Google-first login flow</strong>, while email + password is still available as an alternative."
+          },
+          {
+            "type": "subsection",
+            "title": "Recommended login path",
+            "content": [
+              "Open the &ldquo;Login&rdquo; or &ldquo;Register&rdquo; page.",
+              "Use the Google button first for the fastest onboarding.",
+              "Switch to email + password only if that better fits your workflow."
+            ],
+            "note": {
+              "type": "info",
+              "content": "For organizers, each person should use their own personal account instead of a shared club login."
             }
-        }
-    ],
-    "cta": {
-        "title": "Ready to Start?",
-        "description": "Join the tDarts community and start your first tournament today!",
-        "buttons": [
-            {
-                "text": "Join as Player",
-                "href": "/auth/register",
-                "variant": "primary"
-            },
-            {
-                "text": "Register a Club",
-                "href": "/auth/register?role=club",
-                "variant": "outline"
-            }
+          },
+          {
+            "type": "subsection",
+            "title": "When to use email + password",
+            "content": [
+              "If you do not want to use Google login.",
+              "If you already have an email/password account flow.",
+              "If your organization requires explicit account credentials."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Profile and recovery",
+            "content": [
+              "Manage profile data from your account page after login.",
+              "Follow verification steps when changing sensitive fields.",
+              "Use password reset from the login page if needed."
+            ]
+          }
         ]
+      }
+    },
+    {
+      "id": 1,
+      "title": "Club management: roles and responsibilities",
+      "icon": "IconBuilding",
+      "description": "Admin, moderator, member and safe operations",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Create and operate a club",
+            "content": [
+              "Create your club from the &ldquo;My Club&rdquo; area if you are not assigned elsewhere.",
+              "Add members so operations are not blocked by a single person.",
+              "For healthy daily operation, keep multiple active organizers.",
+              "Important: members can only manage club operations after being promoted to moderator; otherwise they remain regular club members.",
+              "This role distinction is visible in player/member management views, making it easier to identify moderators versus normal members."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Why club members matter",
+            "content": [
+              "Tasks can be split across check-in, board support, communication, and supervision.",
+              "Personal accounts create clear accountability and cleaner logs.",
+              "Shared credentials create risk, confusion, and avoidable mistakes."
+            ],
+            "note": {
+              "type": "warning",
+              "content": "Do not run a club with one shared account for multiple people. Give each organizer their own account and role."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Admin vs moderator",
+            "content": [
+              "Admin: full control including role administration and critical club settings.",
+              "Moderator: day-to-day operations, tournament handling, and member workflows within scope.",
+              "Member: participation and basic use without organizer-level controls."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Landing page, gallery, and blog",
+            "content": [
+              "Customize your club landing page branding and public presentation.",
+              "If you provide a detailed club address, it appears on the Search Map tab as well.",
+              "Use gallery sections to publish event photos.",
+              "Use blog/news posts to keep players informed."
+            ],
+            "note": {
+              "type": "tip",
+              "content": "Active landing content improves visibility and helps players find accurate event information faster."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Board management change",
+            "content": [
+              "Boards are managed at tournament level.",
+              "Boards are managed per tournament, with tournament-specific settings."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Tournament creation and editing",
+      "icon": "IconTrophy",
+      "description": "Current creation flow and editable fields",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Where to create tournaments now",
+            "content": [
+              "Create new tournaments from the club Tournaments view.",
+              "Create tournaments from the club Tournaments view."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Creation steps",
+            "content": [
+              "1) Details: name, schedule, entry settings, location, format, participation mode.",
+              "A detailed tournament address is also shown on the Search Map tab.",
+              "2) Boards: add boards with the &ldquo;Add board&rdquo; action and clear names.",
+              "3) Settings: scoring, player limits, password, league linkage, and related options.",
+              "4) Save and continue tournament setup from the overview page."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Board count defines practical parallel match capacity and impacts group-stage planning."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Current group constraints",
+            "content": [
+              "Supported group size: 3-7 players per group.",
+              "At least 2 groups are required for group-stage setup.",
+              "Board count influences feasible group distribution and scheduling."
+            ],
+            "note": {
+              "type": "important",
+              "content": "Before generating groups, verify checked-in player count, board count, and selected format."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "What you can edit later",
+            "content": [
+              "From Tournament Overview, use the &ldquo;Edit / Szerkesztés&rdquo; flow.",
+              "You can adjust board-related and key tournament fields based on current status rules."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "title": "Player operations on event day",
+      "icon": "IconSword",
+      "description": "Registration, check-in, groups, knockout control",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Registration and check-in",
+            "content": [
+              "Players can register from the tournament page when registration is open.",
+              "Organizers can add players manually (registered or guest).",
+              "Group/knockout generation relies on checked-in players, so check-in must be accurate."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Group stage and knockout",
+            "content": [
+              "Group generation is available in automatic and manual modes.",
+              "Knockout stage can be handled in automatic or manual mode depending on tournament setup.",
+              "If tie scenarios require intervention, organizers can apply controlled manual adjustments."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Operational discipline",
+            "content": [
+              "Run critical actions only after quick data checks.",
+              "Use notifications and updates to keep players aligned.",
+              "Always confirm status context before changing phase/state."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Scoring and board access",
+      "icon": "IconTarget",
+      "description": "Current scorer entry points and confirmation behavior",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "How players/staff open scorer",
+            "content": [
+              "Use the tournament header entry: &ldquo;Táblák / író program&rdquo;.",
+              "Or open a specific board directly from the boards list.",
+              "This is the current recommended path to the active scoring surface."
+            ],
+            "note": {
+              "type": "warning",
+              "content": "Use the tournament header &ldquo;Táblák / író program&rdquo; entry point or the board-list open button to access scorer."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Confirmation modals are real save checkpoints",
+            "content": [
+              "Leg-end and match-end confirmations are operational commit points.",
+              "After confirmation, data is saved and should be treated as finalized for that step.",
+              "Do not skip confirmations blindly."
+            ],
+            "note": {
+              "type": "important",
+              "content": "Always verify players, score context, and outcome before pressing confirm."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "If a mistake happens",
+            "content": [
+              "Immediate rollback options are limited.",
+              "Corrections typically require tournament manager action with proper permissions, usually after match completion."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "title": "Leagues and points",
+      "icon": "IconChartLine",
+      "description": "Current point systems and finished tournament attachment",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "League setup",
+            "content": [
+              "Create leagues from the club Leagues area.",
+              "Choose a point system during setup and review it in league settings."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Predefined point systems",
+            "content": [
+              "Platform - placement-based points with configurable rank values and group-dropout points.",
+              "Remiz Christmas Series - participation + group performance + final placement model.",
+              "DartsBarlang OnTour - fixed placement table.",
+              "Goldfisch - fixed placement system with special handling for smaller tournaments."
+            ],
+            "note": {
+              "type": "info",
+              "content": "Follow the selected point system configuration for league scoring."
+            }
+          },
+          {
+            "type": "subsection",
+            "title": "Attach finished tournaments",
+            "content": [
+              "Only finished tournaments can be attached to a league.",
+              "When attaching, you can choose to calculate points or attach without point calculation."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Manual point adjustments",
+            "content": [
+              "Admins/moderators can apply manual point corrections with justification.",
+              "Keep point changes documented for transparency."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "title": "Recommended daily workflow",
+      "icon": "IconPlayerPlay",
+      "description": "Simple process for smooth event operation",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Before tournament start",
+            "content": [
+              "Validate schedule and tournament core settings.",
+              "Prepare board names and roles for organizers.",
+              "Test scorer entry via header and board list."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "During tournament",
+            "content": [
+              "Generate phases only with correct check-in data.",
+              "Handle confirmation dialogs carefully on every leg/match checkpoint.",
+              "Escalate inconsistencies immediately to organizer staff."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "After tournament",
+            "content": [
+              "Confirm final status and published results.",
+              "For leagues, attach finished tournaments with or without point calculation as needed.",
+              "Post updates through club news/blog channels."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Common mistakes to avoid",
+      "icon": "IconFlagCheck",
+      "description": "Quick prevention checklist",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Frequent mistakes",
+            "content": [
+              "One shared club account used by multiple organizers.",
+              "Blindly confirming scoring modals.",
+              "Generating groups with incomplete check-in.",
+              "Using unclear board naming conventions."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Best practice",
+            "content": [
+              "Assign role-based personal accounts to all organizers.",
+              "Run a short pre-action check for players, boards, and status.",
+              "Record who executed critical control actions."
+            ],
+            "note": {
+              "type": "tip",
+              "content": "A short 2-minute organizer sync before each major phase can prevent most operational errors."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "title": "Sharing: clubs, tournaments, galleries",
+      "icon": "IconShare",
+      "description": "Share clubs and tournaments with links and QR",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "Share types",
+            "content": [
+              "Registration share: routes users through sign-in and then redirects to the shared destination.",
+              "Public share: opens the shared destination directly without sign-in."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Sharing a club",
+            "content": [
+              "Use the share action from the club page.",
+              "The system provides printable QR and shareable links.",
+              "The link points to the club's public information and tournament context.",
+              "Registration link: after login, users land on the club page.",
+              "Public link: opens the club page directly."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Sharing a tournament",
+            "content": [
+              "Use the share action from the tournament page.",
+              "Printable QR and direct links are available.",
+              "Shared links open the tournament landing context.",
+              "Registration link: after login, users are redirected to the tournament.",
+              "Public link: opens tournament details directly."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Using QR codes",
+            "content": [
+              "QR codes can be printed and placed on-site.",
+              "Players can scan quickly with their phones.",
+              "They provide fast access to tournament-related pages.",
+              "Especially useful in larger venues."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "title": "MMR Ranking System",
+      "icon": "IconChartLine",
+      "description": "Performance-based player ranking",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "What is MMR?",
+            "content": [
+              "MMR (Matchmaking Rating) is a performance-based ranking metric.",
+              "It changes according to tournament outcomes and match performance.",
+              "More tournament data usually leads to a more stable rating."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "How MMR is calculated",
+            "content": [
+              "MMR change is influenced by multiple factors, with placement carrying major weight.",
+              "Placement/performance weighting can vary by tournament size."
+            ],
+            "list": [
+              "Small tournament (8 or fewer players): Placement 60%, Performance 40%",
+              "Medium tournament (16 players): Placement 65%, Performance 35%",
+              "Large tournament (32 players): Placement 70%, Performance 30%",
+              "Very large tournament (64+ players): Placement 75%, Performance 25%"
+            ],
+            "subsections": [
+              {
+                "title": "Performance components",
+                "content": [
+                  "Match win ratio.",
+                  "Leg win ratio.",
+                  "Average scoring relative to tournament average."
+                ]
+              },
+              {
+                "title": "Tournament size impact",
+                "content": [
+                  "Larger tournaments can result in larger MMR movement.",
+                  "The model accounts for field size when evaluating outcomes."
+                ]
+              }
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "MMR tiers",
+            "content": [
+              "Players are grouped into tiers by current MMR value."
+            ],
+            "list": [
+              "Beginner: 0-799 MMR",
+              "Beginner+: 800-999 MMR",
+              "Intermediate: 1000-1199 MMR",
+              "Advanced: 1200-1399 MMR",
+              "Master: 1400-1599 MMR",
+              "Elite: 1600+ MMR"
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Viewing rankings",
+            "content": [
+              "Use the search/ranking area to view players sorted by MMR.",
+              "Player cards display current MMR and rank tier.",
+              "Rankings refresh after tournament completion."
+            ],
+            "note": {
+              "type": "info",
+              "content": "MMR works best as a trend indicator and should be read together with match and leg stats."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "title": "Local match mode",
+      "icon": "IconPlayerPlay",
+      "description": "Quick practice and ad-hoc play without tournament setup",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "When to use local match",
+            "content": [
+              "Practice sessions and friendly games outside tournament operations.",
+              "Fast start without creating full tournament structures.",
+              "Training users on scorer interactions before event day."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "How to start local match",
+            "content": [
+              "Open the board interface and choose the &ldquo;Local match&rdquo; start action.",
+              "You can do this from the main /board page, and also from the /board/[tournamentId] header area.",
+              "Set legs-to-win and starting score in the setup modal.",
+              "Press &ldquo;Start match&rdquo; to enter the local scorer screen immediately."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "During local match",
+            "content": [
+              "Scoring works similarly to tournament match scoring.",
+              "In settings (gear icon), you can update key match parameters or restart the match when needed.",
+              "Use leg/match confirmations carefully here as well."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Operational tip",
+            "content": [
+              "Before tournaments, run a short local test match on your event devices.",
+              "It reduces errors during real scoring sessions."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "title": "PWA installation",
+      "icon": "IconDeviceMobile",
+      "description": "Use tDarts like a mobile app",
+      "content": {
+        "sections": [
+          {
+            "type": "subsection",
+            "title": "What is PWA?",
+            "content": [
+              "tDarts can be installed as a Progressive Web App on phones and tablets.",
+              "It gives app-like behavior without app-store installation."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Install on Android",
+            "content": [
+              "Open tDarts in Chrome.",
+              "Use &ldquo;Install app&rdquo; or &ldquo;Add to home screen&rdquo; from the browser menu.",
+              "Launch it later from the home screen icon."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Install on iOS",
+            "content": [
+              "Open tDarts in Safari.",
+              "Use Share -&gt; &ldquo;Add to Home Screen&rdquo;.",
+              "Launch it from the created icon."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "PWA advantages",
+            "content": [
+              "Fast launch and app-like usage during events.",
+              "Full-screen interface, useful on scorer tablets.",
+              "Stable daily routine for organizers with one-tap access."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Practical use cases",
+            "content": [
+              "Fixed scorer tablets at venue boards.",
+              "Quick organizer access from mobile.",
+              "Convenient board/local-match usage in app-like mode."
+            ]
+          },
+          {
+            "type": "subsection",
+            "title": "Full-screen mode",
+            "content": [
+              "PWA launch opens a cleaner full-screen interface.",
+              "This is especially useful on tournament tablets."
+            ],
+            "note": {
+              "type": "tip",
+              "content": "Before event day, verify installation and launch behavior on all designated scorer/organizer devices."
+            }
+          }
+        ]
+      }
     }
+  ],
+  "cta": {
+    "title": "Ready to run your next event?",
+    "description": "Open your club, create the tournament with board setup, and operate scoring through the current validated flow.",
+    "buttons": [
+      {
+        "text": "Login / Register",
+        "href": "/auth/login",
+        "variant": "primary"
+      },
+      {
+        "text": "Browse Tournaments",
+        "href": "/search",
+        "variant": "secondary"
+      }
+    ]
+  }
 }

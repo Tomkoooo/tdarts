@@ -44,7 +44,9 @@ async function __POST(request: NextRequest, { params }: { params: Promise<{ matc
             player2LegsWon: body.player2LegsWon,
             allowManualFinish: body.allowManualFinish || false,
             isManual: body.isManual || false,
-            adminId: adminId
+            adminId: adminId,
+            player1Stats: body.player1Stats,
+            player2Stats: body.player2Stats,
         });
 
         if (!result) {

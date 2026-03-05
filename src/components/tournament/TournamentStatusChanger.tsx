@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 import axios from "axios"
 import {
@@ -53,6 +53,14 @@ export default function TournamentStatusChanger({
   const [isCancelKnockoutDialogOpen, setIsCancelKnockoutDialogOpen] = useState(false)
   const [isThirdPlaceDialogOpen, setIsThirdPlaceDialogOpen] = useState(false)
   const [selectedThirdPlaceId, setSelectedThirdPlaceId] = useState<string | null>(null)
+  const [cancelKnockoutConfirmStep, setCancelKnockoutConfirmStep] = useState<1 | 2>(1)
+  const [isPendingKnockoutCancel, setIsPendingKnockoutCancel] = useState(false)
+  const [knockoutCancelCountdown, setKnockoutCancelCountdown] = useState(20)
+  const [isExecutingPendingCancel, setIsExecutingPendingCancel] = useState(false)
+  const [finalConfirmCountdown, setFinalConfirmCountdown] = useState(0)
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const countdownFinishedRef = useRef(false)
+  const finalConfirmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [knockoutMode, setKnockoutMode] = useState<KnockoutMode>("automatic")
   const [groupsMode, setGroupsMode] = useState<GroupsMode>("automatic")
@@ -264,8 +272,111 @@ export default function TournamentStatusChanger({
         throw new Error(response?.data?.error || tTour('status_changer.cancel_knockout_dialog.error'))
       }
       setIsCancelKnockoutDialogOpen(false)
+      setCancelKnockoutConfirmStep(1)
+      setIsPendingKnockoutCancel(false)
+      setKnockoutCancelCountdown(20)
+      setIsExecutingPendingCancel(false)
+      countdownFinishedRef.current = false
     })
   }
+
+  const clearKnockoutCancelTimer = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
+  }, [])
+
+  const clearFinalConfirmTimer = useCallback(() => {
+    if (finalConfirmIntervalRef.current) {
+      clearInterval(finalConfirmIntervalRef.current)
+      finalConfirmIntervalRef.current = null
+    }
+  }, [])
+
+  const startPendingKnockoutCancel = useCallback(() => {
+    clearKnockoutCancelTimer()
+    countdownFinishedRef.current = false
+    setKnockoutCancelCountdown(20)
+    setIsPendingKnockoutCancel(true)
+    setIsExecutingPendingCancel(false)
+    setIsCancelKnockoutDialogOpen(false)
+    setCancelKnockoutConfirmStep(1)
+
+    countdownIntervalRef.current = setInterval(() => {
+      setKnockoutCancelCountdown((prev) => {
+        if (prev <= 1) {
+          clearKnockoutCancelTimer()
+          countdownFinishedRef.current = true
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [clearKnockoutCancelTimer])
+
+  const executePendingKnockoutCancel = useCallback(() => {
+    if (isExecutingPendingCancel || action === "cancel-knockout") return
+    setIsExecutingPendingCancel(true)
+    clearKnockoutCancelTimer()
+    handleCancelKnockout()
+  }, [isExecutingPendingCancel, action, clearKnockoutCancelTimer])
+
+  const undoPendingKnockoutCancel = useCallback(() => {
+    clearKnockoutCancelTimer()
+    countdownFinishedRef.current = false
+    setIsPendingKnockoutCancel(false)
+    setKnockoutCancelCountdown(20)
+    setIsExecutingPendingCancel(false)
+  }, [clearKnockoutCancelTimer])
+
+  const handleCancelKnockoutDialogChange = (open: boolean) => {
+    setIsCancelKnockoutDialogOpen(open)
+    if (!open) {
+      setCancelKnockoutConfirmStep(1)
+      setFinalConfirmCountdown(0)
+      clearFinalConfirmTimer()
+    }
+  }
+
+  useEffect(() => {
+    if (
+      isPendingKnockoutCancel &&
+      knockoutCancelCountdown === 0 &&
+      !isExecutingPendingCancel &&
+      action !== "cancel-knockout" &&
+      countdownFinishedRef.current
+    ) {
+      executePendingKnockoutCancel()
+    }
+  }, [isPendingKnockoutCancel, knockoutCancelCountdown, isExecutingPendingCancel, action, executePendingKnockoutCancel])
+
+  useEffect(() => {
+    return () => {
+      clearKnockoutCancelTimer()
+      clearFinalConfirmTimer()
+    }
+  }, [clearKnockoutCancelTimer, clearFinalConfirmTimer])
+
+  useEffect(() => {
+    if (isCancelKnockoutDialogOpen && cancelKnockoutConfirmStep === 2) {
+      clearFinalConfirmTimer()
+      setFinalConfirmCountdown(3)
+      finalConfirmIntervalRef.current = setInterval(() => {
+        setFinalConfirmCountdown((prev) => {
+          if (prev <= 1) {
+            clearFinalConfirmTimer()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return
+    }
+
+    setFinalConfirmCountdown(0)
+    clearFinalConfirmTimer()
+  }, [isCancelKnockoutDialogOpen, cancelKnockoutConfirmStep, clearFinalConfirmTimer])
 
   const handleTogglePlayer = (playerId: string, checked: boolean) => {
     if (!selectedBoard) return
@@ -380,7 +491,7 @@ export default function TournamentStatusChanger({
 
             {tournamentStatus === "knockout" && (
               <Button
-                variant="destructive"
+                variant="outline"
                 className="flex-1 min-w-[200px]"
                 onClick={() => {
                   resetError()
@@ -394,7 +505,7 @@ export default function TournamentStatusChanger({
             {(tournamentStatus === "knockout" ||
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
-                <Button variant="outline" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
+                <Button variant="destructive" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
                   {tTour('status_changer.btn_finish')}
                 </Button>
               )}
@@ -421,6 +532,35 @@ export default function TournamentStatusChanger({
             <Alert variant="destructive">
               <AlertTitle>{tTour('status_changer.alert_error_title')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {isPendingKnockoutCancel && (
+            <Alert variant="warning">
+              <AlertTitle>{tTour('status_changer.cancel_knockout_dialog.pending_title')}</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p>
+                  {tTour('status_changer.cancel_knockout_dialog.pending_desc', { seconds: knockoutCancelCountdown })}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={undoPendingKnockoutCancel}
+                    disabled={isExecutingPendingCancel || action === "cancel-knockout"}
+                  >
+                    {tTour('status_changer.cancel_knockout_dialog.btn_undo')}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={executePendingKnockoutCancel}
+                    disabled={isExecutingPendingCancel || action === "cancel-knockout"}
+                  >
+                    {isExecutingPendingCancel || action === "cancel-knockout"
+                      ? tTour('status_changer.cancel_knockout_dialog.executing')
+                      : tTour('status_changer.cancel_knockout_dialog.btn_skip_now')}
+                  </Button>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -492,7 +632,7 @@ export default function TournamentStatusChanger({
 
       <Dialog open={isManualGroupsDialogOpen} onOpenChange={setIsManualGroupsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{tTour('status_changer.manual_groups_dialog.title')}</DialogTitle>
             <DialogDescription>
               {tTour('status_changer.manual_groups_dialog.description')}
@@ -635,7 +775,7 @@ export default function TournamentStatusChanger({
             </div>
           )}
 
-          <DialogFooter className="flex-shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          <DialogFooter className="shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button
               onClick={handleCreateManualGroups}
               disabled={
@@ -749,26 +889,62 @@ export default function TournamentStatusChanger({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isCancelKnockoutDialogOpen} onOpenChange={setIsCancelKnockoutDialogOpen}>
+      <Dialog open={isCancelKnockoutDialogOpen} onOpenChange={handleCancelKnockoutDialogChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{tTour('status_changer.cancel_knockout_dialog.title')}</DialogTitle>
             <DialogDescription>
-              {tTour('status_changer.cancel_knockout_dialog.description')}
+              {cancelKnockoutConfirmStep === 1
+                ? tTour('status_changer.cancel_knockout_dialog.description_step1')
+                : tTour('status_changer.cancel_knockout_dialog.description_step2')}
             </DialogDescription>
           </DialogHeader>
 
+          {cancelKnockoutConfirmStep === 2 && (
+            <Alert variant="destructive">
+              <AlertTitle>{tTour('status_changer.cancel_knockout_dialog.step2_title')}</AlertTitle>
+              <AlertDescription>
+                {tTour('status_changer.cancel_knockout_dialog.step2_desc')}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button variant="destructive" onClick={handleCancelKnockout} disabled={action === "cancel-knockout"}>
-              {action === "cancel-knockout" ? (
-                <span className="flex items-center gap-2">
-                  <LoadingSpinner size="sm" />
-                  {tTour('status_changer.cancel_knockout_dialog.cancelling')}
-                </span>
-              ) : (
-                tTour('status_changer.cancel_knockout_dialog.btn_cancel')
-              )}
-            </Button>
+            {cancelKnockoutConfirmStep === 1 ? (
+              <Button
+                variant="destructive"
+                onClick={() => setCancelKnockoutConfirmStep(2)}
+                disabled={action === "cancel-knockout"}
+              >
+                {tTour('status_changer.cancel_knockout_dialog.btn_continue')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setCancelKnockoutConfirmStep(1)}
+                  disabled={action === "cancel-knockout"}
+                >
+                  {tTour('status_changer.cancel_knockout_dialog.btn_back')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={startPendingKnockoutCancel}
+                  disabled={action === "cancel-knockout" || finalConfirmCountdown > 0}
+                >
+                  {action === "cancel-knockout" ? (
+                    <span className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      {tTour('status_changer.cancel_knockout_dialog.cancelling')}
+                    </span>
+                  ) : finalConfirmCountdown > 0 ? (
+                    `${tTour('status_changer.cancel_knockout_dialog.btn_confirm_schedule')} (${finalConfirmCountdown}s)`
+                  ) : (
+                    tTour('status_changer.cancel_knockout_dialog.btn_confirm_schedule')
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

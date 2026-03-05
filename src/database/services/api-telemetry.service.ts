@@ -56,9 +56,32 @@ const FLUSH_INTERVAL_MS = 60_000;
 const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const ERROR_EVENT_RETENTION_DAYS = 30;
 const ANOMALY_CHECK_INTERVAL_MS = 10 * 60 * 1000;
-const ANOMALY_RATIO_THRESHOLD = 2;
 const ANOMALY_EMAIL_RECIPIENTS = ['toth.tamas@sironic.hu', 'skoda.david@sironic.hu'];
 const ANOMALY_DIGEST_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const ANOMALY_REALTIME_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+
+const SIGNAL_THRESHOLD = {
+  calls: { activationRatio: 4, recoveryRatio: 1.2 },
+  traffic: { activationRatio: 4, recoveryRatio: 1.2 },
+  latency: { activationRatio: 2.2, recoveryRatio: 1.15 },
+  error_rate: { activationRatio: 1.8, recoveryRatio: 1.1 },
+  packet_size: { activationRatio: 2, recoveryRatio: 1.2 },
+} as const;
+
+const MIN_VOLUME_GATES = {
+  minCurrentCalls: 50,
+  minBaselineCallsPerDay: 20,
+  minCallsDelta: 100,
+  minCurrentTrafficBytes: 5 * 1024 * 1024,
+  minBaselineTrafficBytesPerDay: 2 * 1024 * 1024,
+  minTrafficDeltaBytes: 20 * 1024 * 1024,
+  minCurrentLatencyMs: 300,
+  minLatencyDeltaMs: 200,
+  minCurrentErrors: 10,
+  minCurrentErrorRate: 0.05,
+  minCurrentAvgPacketBytes: 100 * 1024,
+  minPacketDeltaBytes: 64 * 1024,
+};
 
 function toMinuteBucket(date = new Date()): Date {
   const d = new Date(date);
@@ -266,6 +289,12 @@ export class ApiTelemetryService {
               ],
             },
           },
+          errors24h: { $sum: { $cond: [{ $gte: ['$bucket', dayAgo] }, '$errorCount', 0] } },
+          errorsPrev7d: {
+            $sum: {
+              $cond: [{ $and: [{ $lt: ['$bucket', dayAgo] }, { $gte: ['$bucket', eightDaysAgo] }] }, '$errorCount', 0],
+            },
+          },
           count24h: { $sum: { $cond: [{ $gte: ['$bucket', dayAgo] }, '$count', 0] } },
           countPrev7d: {
             $sum: {
@@ -285,48 +314,93 @@ export class ApiTelemetryService {
       ratio: number;
     };
 
-    const candidates: Candidate[] = [];
+    const keyFor = (x: { routeKey: string; method: string; signal: ApiRouteAnomalySignal }) =>
+      `${x.routeKey}|${x.method}|${x.signal}`;
+
+    const existingRows = await ApiRouteAnomalyModel.find({}).lean();
+    const existingByKey = new Map(existingRows.map((x) => [keyFor(x as any), x]));
+    const desiredActive: Candidate[] = [];
+    const newlyActivated: Candidate[] = [];
+
     for (const row of rows) {
+      const routeKey = row._id.routeKey;
+      const method = row._id.method;
+      const currentCalls = row.calls24h || 0;
       const baselineCalls = (row.callsPrev7d || 0) / 7;
+      const currentTraffic = row.bytes24h || 0;
       const baselineTraffic = (row.bytesPrev7d || 0) / 7;
       const currentLatency = row.count24h > 0 ? row.duration24h / row.count24h : 0;
       const baselineLatency = row.countPrev7d > 0 ? row.durationPrev7d / row.countPrev7d : 0;
+      const currentErrors = row.errors24h || 0;
+      const baselineErrorsPerDay = (row.errorsPrev7d || 0) / 7;
+      const currentErrorRate = currentCalls > 0 ? currentErrors / currentCalls : 0;
+      const baselineErrorRate = row.callsPrev7d > 0 ? (row.errorsPrev7d || 0) / row.callsPrev7d : 0;
+      const currentPacketBytes = currentCalls > 0 ? currentTraffic / currentCalls : 0;
+      const baselinePacketBytes = baselineCalls > 0 ? baselineTraffic / baselineCalls : 0;
 
-      const routeKey = row._id.routeKey;
-      const method = row._id.method;
-
-      const maybePush = (signal: ApiRouteAnomalySignal, currentValue: number, baselineValue: number) => {
+      const evaluateSignal = (
+        signal: ApiRouteAnomalySignal,
+        currentValue: number,
+        baselineValue: number,
+        activationEligible: boolean,
+        recoveryEligible: boolean
+      ) => {
         if (baselineValue <= 0) return;
         const ratio = currentValue / baselineValue;
-        if (ratio > ANOMALY_RATIO_THRESHOLD) {
-          candidates.push({ routeKey, method, signal, currentValue, baselineValue, ratio });
+        const key = keyFor({ routeKey, method, signal });
+        const existingRow = existingByKey.get(key);
+        const thresholds = SIGNAL_THRESHOLD[signal];
+        const shouldActivate = activationEligible && ratio >= thresholds.activationRatio;
+        const shouldStayActive = Boolean(existingRow?.isActive && recoveryEligible && ratio >= thresholds.recoveryRatio);
+
+        if (!shouldActivate && !shouldStayActive) return;
+
+        const candidate: Candidate = { routeKey, method, signal, currentValue, baselineValue, ratio };
+        desiredActive.push(candidate);
+        if (!existingRow?.isActive) {
+          newlyActivated.push(candidate);
         }
       };
 
-      maybePush('calls', row.calls24h || 0, baselineCalls);
-      maybePush('traffic', row.bytes24h || 0, baselineTraffic);
-      maybePush('latency', currentLatency, baselineLatency);
+      evaluateSignal(
+        'latency',
+        currentLatency,
+        baselineLatency,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls &&
+          baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay &&
+          currentLatency >= MIN_VOLUME_GATES.minCurrentLatencyMs &&
+          currentLatency - baselineLatency >= MIN_VOLUME_GATES.minLatencyDeltaMs,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay
+      );
+
+      evaluateSignal(
+        'error_rate',
+        currentErrorRate,
+        baselineErrorRate,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls &&
+          currentErrors >= MIN_VOLUME_GATES.minCurrentErrors &&
+          currentErrorRate >= MIN_VOLUME_GATES.minCurrentErrorRate &&
+          baselineErrorsPerDay >= 1,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls &&
+          currentErrors >= MIN_VOLUME_GATES.minCurrentErrors &&
+          currentErrorRate >= MIN_VOLUME_GATES.minCurrentErrorRate
+      );
+
+      evaluateSignal(
+        'packet_size',
+        currentPacketBytes,
+        baselinePacketBytes,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls &&
+          baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay &&
+          currentPacketBytes >= MIN_VOLUME_GATES.minCurrentAvgPacketBytes &&
+          currentPacketBytes - baselinePacketBytes >= MIN_VOLUME_GATES.minPacketDeltaBytes,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay
+      );
     }
 
-    const keyFor = (x: { routeKey: string; method: string; signal: ApiRouteAnomalySignal }) =>
-      `${x.routeKey}|${x.method}|${x.signal}`;
-    const candidateKeys = new Set(candidates.map((x) => keyFor(x)));
+    const desiredKeys = new Set(desiredActive.map((x) => keyFor(x)));
 
-    const existing = candidateKeys.size
-      ? await ApiRouteAnomalyModel.find({
-          $or: candidates.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
-        }).lean()
-      : [];
-    const existingByKey = new Map(existing.map((x) => [keyFor(x as any), x]));
-    const newlyActivated: Candidate[] = [];
-
-    for (const anomaly of candidates) {
-      const key = keyFor(anomaly);
-      const existingRow = existingByKey.get(key);
-      if (!existingRow || !existingRow.isActive) {
-        newlyActivated.push(anomaly);
-      }
-
+    for (const anomaly of desiredActive) {
       await ApiRouteAnomalyModel.updateOne(
         { routeKey: anomaly.routeKey, method: anomaly.method, signal: anomaly.signal },
         {
@@ -344,11 +418,11 @@ export class ApiTelemetryService {
       );
     }
 
-    if (candidateKeys.size > 0) {
+    if (desiredKeys.size > 0) {
       await ApiRouteAnomalyModel.updateMany(
         {
           isActive: true,
-          $nor: candidates.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
+          $nor: desiredActive.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
         },
         { $set: { isActive: false, lastObservedAt: now } }
       );
@@ -356,15 +430,24 @@ export class ApiTelemetryService {
       await ApiRouteAnomalyModel.updateMany({ isActive: true }, { $set: { isActive: false, lastObservedAt: now } });
     }
 
-    if (newlyActivated.length > 0) {
+    const realtimeDue = newlyActivated.filter((x) => {
+      const existingRow = existingByKey.get(keyFor(x));
+      if (!existingRow?.lastRealtimeEmailAt) return true;
+      return now.getTime() - new Date(existingRow.lastRealtimeEmailAt).getTime() >= ANOMALY_REALTIME_COOLDOWN_MS;
+    });
+
+    if (realtimeDue.length > 0) {
       await sendEmail({
         to: ANOMALY_EMAIL_RECIPIENTS,
         subject: '[tDarts] API anomaly detected (24h vs 7d)',
         text: [
           'New API anomalies were detected:',
-          ...newlyActivated.map((a) => {
-            const unit = a.signal === 'traffic' ? 'bytes' : a.signal === 'latency' ? 'ms' : 'calls';
-            return `- ${a.method} ${a.routeKey} | ${a.signal}: ${a.currentValue.toFixed(2)} ${unit} vs baseline ${a.baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
+          ...realtimeDue.map((a) => {
+            const unit =
+              a.signal === 'latency' ? 'ms' : a.signal === 'error_rate' ? '%' : 'bytes';
+            const currentValue = a.signal === 'error_rate' ? a.currentValue * 100 : a.currentValue;
+            const baselineValue = a.signal === 'error_rate' ? a.baselineValue * 100 : a.baselineValue;
+            return `- ${a.method} ${a.routeKey} | ${a.signal}: ${currentValue.toFixed(2)} ${unit} vs baseline ${baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
           }),
           `Detected at: ${now.toISOString()}`,
         ].join('\n'),
@@ -372,7 +455,7 @@ export class ApiTelemetryService {
 
       await ApiRouteAnomalyModel.updateMany(
         {
-          $or: newlyActivated.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
+          $or: realtimeDue.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
         },
         { $set: { lastRealtimeEmailAt: now } }
       );
@@ -393,8 +476,11 @@ export class ApiTelemetryService {
         text: [
           'Active API anomalies (daily digest):',
           ...digestDue.map((a) => {
-            const unit = a.signal === 'traffic' ? 'bytes' : a.signal === 'latency' ? 'ms' : 'calls';
-            return `- ${a.method} ${a.routeKey} | ${a.signal}: ${a.currentValue.toFixed(2)} ${unit} vs baseline ${a.baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
+            const unit =
+              a.signal === 'latency' ? 'ms' : a.signal === 'error_rate' ? '%' : 'bytes';
+            const currentValue = a.signal === 'error_rate' ? a.currentValue * 100 : a.currentValue;
+            const baselineValue = a.signal === 'error_rate' ? a.baselineValue * 100 : a.baselineValue;
+            return `- ${a.method} ${a.routeKey} | ${a.signal}: ${currentValue.toFixed(2)} ${unit} vs baseline ${baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
           }),
           `Generated at: ${now.toISOString()}`,
         ].join('\n'),

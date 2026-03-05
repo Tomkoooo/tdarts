@@ -36,6 +36,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/Label";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { coerceNumericValue } from "@/lib/number-input";
 import { showErrorToast } from "@/lib/toastUtils";
 import { useUserContext } from "@/hooks/useUser";
 
@@ -97,11 +98,13 @@ interface KnockoutMatch {
   matchReference: {
     player1: {
       legsWon: number
+      average?: number
       highestCheckout?: number
       oneEightiesCount?: number
     }
     player2: {
       legsWon: number
+      average?: number
       highestCheckout?: number
       oneEightiesCount?: number
     }
@@ -150,8 +153,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [editForm, setEditForm] = useState({
     player1LegsWon: 0,
     player2LegsWon: 0,
-    player1Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
-    player2Stats: { highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
+    player1Stats: { average: 0, highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
+    player2Stats: { average: 0, highestCheckout: 0, oneEightiesCount: 0, totalThrows: 0, totalScore: 0 },
   })
   const [availablePlayers, setAvailablePlayers] = useState<any[]>([])
   const [availableBoards, setAvailableBoards] = useState<any[]>([])
@@ -413,12 +416,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
       player1LegsWon: match.matchReference?.player1?.legsWon || 0,
       player2LegsWon: match.matchReference?.player2?.legsWon || 0,
       player1Stats: {
+        average: match.matchReference?.player1?.average || 0,
         highestCheckout: match.matchReference?.player1?.highestCheckout || 0,
         oneEightiesCount: match.matchReference?.player1?.oneEightiesCount || 0,
         totalThrows: 0,
         totalScore: 0,
       },
       player2Stats: {
+        average: match.matchReference?.player2?.average || 0,
         highestCheckout: match.matchReference?.player2?.highestCheckout || 0,
         oneEightiesCount: match.matchReference?.player2?.oneEightiesCount || 0,
         totalThrows: 0,
@@ -439,19 +444,20 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
     setLoading(true)
     try {
-      // Convert empty strings to 0
       const cleanedForm = {
-        player1LegsWon: editForm.player1LegsWon === '' as unknown as number ? 0 : editForm.player1LegsWon,
-        player2LegsWon: editForm.player2LegsWon === '' as unknown as number ? 0 : editForm.player2LegsWon,
+        player1LegsWon: coerceNumericValue(editForm.player1LegsWon),
+        player2LegsWon: coerceNumericValue(editForm.player2LegsWon),
         player1Stats: {
           ...editForm.player1Stats,
-          oneEightiesCount: editForm.player1Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player1Stats.oneEightiesCount,
-          highestCheckout: editForm.player1Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player1Stats.highestCheckout,
+          average: coerceNumericValue(editForm.player1Stats.average),
+          oneEightiesCount: coerceNumericValue(editForm.player1Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(editForm.player1Stats.highestCheckout),
         },
         player2Stats: {
           ...editForm.player2Stats,
-          oneEightiesCount: editForm.player2Stats.oneEightiesCount === '' as unknown as number ? 0 : editForm.player2Stats.oneEightiesCount,
-          highestCheckout: editForm.player2Stats.highestCheckout === '' as unknown as number ? 0 : editForm.player2Stats.highestCheckout,
+          average: coerceNumericValue(editForm.player2Stats.average),
+          oneEightiesCount: coerceNumericValue(editForm.player2Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(editForm.player2Stats.highestCheckout),
         },
         allowManualFinish: true, // Allow finishing without legs (admin manual entry)
         isManual: true,
@@ -1377,7 +1383,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                 min={0}
                 max={10}
                 value={roundsToGenerate ?? ''}
-                onChange={(event) => setRoundsToGenerate(event.target.value === '' ? '' as unknown as number : Number(event.target.value))}
+                onNumberChange={(value) => setRoundsToGenerate(coerceNumericValue(value))}
               />
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -1604,25 +1610,24 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         </Dialog>
 
         <Dialog open={showMatchEditModal} onOpenChange={setShowMatchEditModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b">
               <DialogTitle>{t("meccs_eredmeny_rogzitese_h1ee")}</DialogTitle>
               <DialogDescription>
                 {t("allitsd_be_a_legek_ifc6")}</DialogDescription>
             </DialogHeader>
 
             {selectedMatch && (
-              <Card className="bg-muted/10">
-                <CardContent className="space-y-6 pt-6">
+              <div className="p-6">
                   <div className="text-center text-sm text-muted-foreground">
                     <span className="font-semibold text-foreground">{selectedMatch.player1?.name || "TBD"}</span>
                     <span className="mx-2 text-muted-foreground">vs</span>
                     <span className="font-semibold text-foreground">{selectedMatch.player2?.name || "TBD"}</span>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-4 rounded-xl bg-card/95 p-4 shadow-sm shadow-black/20">
-                      <h4 className="text-sm font-semibold text-primary">{selectedMatch.player1?.name || "Player 1"}</h4>
+                  <div className="mt-5 grid gap-6 md:grid-cols-2">
+                    <div className="space-y-4 p-1">
+                      <h4 className="text-sm font-semibold text-foreground">{selectedMatch.player1?.name || "Player 1"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
                           <Label>{t("nyert_legek_es4r")}</Label>
@@ -1631,9 +1636,27 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={15}
                             value={editForm.player1LegsWon ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
-                              player1LegsWon: event.target.value === '' ? 0 : Number(event.target.value),
+                              player1LegsWon: coerceNumericValue(value),
+                            }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>{tTour('groups.dialog.average')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={200}
+                            step={0.01}
+                            parseMode="float"
+                            value={editForm.player1Stats.average ?? ''}
+                            onNumberChange={(value) => setEditForm((prev) => ({
+                              ...prev,
+                              player1Stats: {
+                                ...prev.player1Stats,
+                                average: coerceNumericValue(value),
+                              },
                             }))}
                           />
                         </div>
@@ -1644,11 +1667,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={60}
                             value={editForm.player1Stats.oneEightiesCount ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                oneEightiesCount: event.target.value === '' ? 0 : Number(event.target.value),
+                                oneEightiesCount: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1660,11 +1683,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={170}
                             value={editForm.player1Stats.highestCheckout ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player1Stats: {
                                 ...prev.player1Stats,
-                                highestCheckout: event.target.value === '' ? 0 : Number(event.target.value),
+                                highestCheckout: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1672,8 +1695,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       </div>
                     </div>
 
-                    <div className="space-y-4 rounded-xl bg-card/95 p-4 shadow-sm shadow-black/20">
-                      <h4 className="text-sm font-semibold text-accent">{selectedMatch.player2?.name || "Player 2"}</h4>
+                    <div className="space-y-4 p-1">
+                      <h4 className="text-sm font-semibold text-foreground">{selectedMatch.player2?.name || "Player 2"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
                           <Label>{t("nyert_legek_es4r")}</Label>
@@ -1682,9 +1705,27 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={15}
                             value={editForm.player2LegsWon ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
-                              player2LegsWon: event.target.value === '' ? 0 : Number(event.target.value),
+                              player2LegsWon: coerceNumericValue(value),
+                            }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>{tTour('groups.dialog.average')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={200}
+                            step={0.01}
+                            parseMode="float"
+                            value={editForm.player2Stats.average ?? ''}
+                            onNumberChange={(value) => setEditForm((prev) => ({
+                              ...prev,
+                              player2Stats: {
+                                ...prev.player2Stats,
+                                average: coerceNumericValue(value),
+                              },
                             }))}
                           />
                         </div>
@@ -1695,11 +1736,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={60}
                             value={editForm.player2Stats.oneEightiesCount ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                oneEightiesCount: event.target.value === '' ? 0 : Number(event.target.value),
+                                oneEightiesCount: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1711,11 +1752,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                             min={0}
                             max={170}
                             value={editForm.player2Stats.highestCheckout ?? ''}
-                            onChange={(event) => setEditForm((prev) => ({
+                            onNumberChange={(value) => setEditForm((prev) => ({
                               ...prev,
                               player2Stats: {
                                 ...prev.player2Stats,
-                                highestCheckout: event.target.value === '' ? 0 : Number(event.target.value),
+                                highestCheckout: coerceNumericValue(value),
                               },
                             }))}
                           />
@@ -1723,11 +1764,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </div>
             )}
 
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <DialogFooter className="px-6 py-4 border-t flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button onClick={handleSaveMatch} disabled={editForm.player1LegsWon === editForm.player2LegsWon}>
                 {t("mentes_wz35")}</Button>
             </DialogFooter>

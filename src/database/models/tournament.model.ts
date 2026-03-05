@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+    import mongoose from 'mongoose';
 import { TournamentDocument } from '@/interface/tournament.interface';
 import "@/database/models/club.model";
 import "@/database/models/player.model";
@@ -38,6 +38,29 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
             firstNineAvg: { type: Number, required: false, default: 0 },
             oneEightiesCount: { type: Number, required: true, default: 0 },
             highestCheckout: { type: Number, required: true, default: 0 },
+        },
+        // Group-stage only stats snapshot used by group tables after finish.
+        groupStats: {
+            matchesWon: { type: Number, required: false, default: 0 },
+            matchesLost: { type: Number, required: false, default: 0 },
+            legsWon: { type: Number, required: false, default: 0 },
+            legsLost: { type: Number, required: false, default: 0 },
+            avg: { type: Number, required: false, default: 0 },
+            firstNineAvg: { type: Number, required: false, default: 0 },
+            oneEightiesCount: { type: Number, required: false, default: 0 },
+            highestCheckout: { type: Number, required: false, default: 0 },
+        },
+        // Overall tournament stats (group + knockout), used for final summary.
+        finalStats: {
+            average: { type: Number, required: false, default: 0 },
+            firstNineAvg: { type: Number, required: false, default: 0 },
+            checkoutRate: { type: Number, required: false, default: 0 },
+            legsWon: { type: Number, required: false, default: 0 },
+            legsPlayed: { type: Number, required: false, default: 0 },
+            matchesWon: { type: Number, required: false, default: 0 },
+            matchesPlayed: { type: Number, required: false, default: 0 },
+            highestCheckout: { type: Number, required: false, default: 0 },
+            oneEighties: { type: Number, required: false, default: 0 },
         }
     }],
     waitingList: [{

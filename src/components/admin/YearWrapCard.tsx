@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
+import { coerceNumericValue } from "@/lib/number-input"
 
 export function YearWrapCard() {
     const t = useTranslations("Admin.components");
@@ -125,7 +126,7 @@ export function YearWrapCard() {
               <Input 
                 type="number" 
                 value={year} 
-                onChange={(e) => setYear(parseInt(e.target.value))}
+                onNumberChange={(value) => setYear(coerceNumericValue(value, new Date().getFullYear()))}
               />
             </div>
             <div className="space-y-2">
@@ -171,7 +172,7 @@ export function YearWrapCard() {
               <Input 
                 type="number" 
                 value={year} 
-                onChange={(e) => setYear(parseInt(e.target.value))}
+                onNumberChange={(value) => setYear(coerceNumericValue(value, new Date().getFullYear()))}
               />
             </div>
             <div className="space-y-2">

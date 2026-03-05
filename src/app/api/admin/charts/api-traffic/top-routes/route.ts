@@ -87,8 +87,8 @@ async function __GET(request: NextRequest) {
       },
       {
         $addFields: {
-          totalTrafficKb: {
-            $divide: [{ $add: ['$totalRequestBytes', '$totalResponseBytes'] }, 1024],
+          totalTrafficBytes: {
+            $add: ['$totalRequestBytes', '$totalResponseBytes'],
           },
           avgDurationMs: {
             $cond: [{ $gt: ['$count', 0] }, { $divide: ['$totalDurationMs', '$count'] }, 0],
@@ -101,7 +101,7 @@ async function __GET(request: NextRequest) {
           const keyMap: Record<string, string> = {
             calls: 'count',
             errors: 'errorCount',
-            traffic: 'totalTrafficKb',
+            traffic: 'totalTrafficBytes',
             latency: 'avgDurationMs',
           };
           const sortKey = keyMap[sortByRaw] || 'count';
@@ -114,9 +114,9 @@ async function __GET(request: NextRequest) {
     const data = topRoutes.map((row) => {
       const avgDurationMs = row.count > 0 ? row.totalDurationMs / row.count : 0;
       const errorRate = row.count > 0 ? (row.errorCount / row.count) * 100 : 0;
-      const requestTrafficKb = (row.totalRequestBytes || 0) / 1024;
-      const responseTrafficKb = (row.totalResponseBytes || 0) / 1024;
-      const totalTrafficKb = requestTrafficKb + responseTrafficKb;
+      const requestTrafficBytes = row.totalRequestBytes || 0;
+      const responseTrafficBytes = row.totalResponseBytes || 0;
+      const totalTrafficBytes = requestTrafficBytes + responseTrafficBytes;
       return {
         routeKey: row._id.routeKey,
         method: row._id.method,
@@ -125,9 +125,12 @@ async function __GET(request: NextRequest) {
         errorRate: Math.round(errorRate * 100) / 100,
         avgDurationMs: Math.round(avgDurationMs * 100) / 100,
         maxDurationMs: row.maxDurationMs || 0,
-        requestTrafficKb: Math.round(requestTrafficKb * 100) / 100,
-        responseTrafficKb: Math.round(responseTrafficKb * 100) / 100,
-        totalTrafficKb: Math.round(totalTrafficKb * 100) / 100,
+        requestTrafficBytes,
+        responseTrafficBytes,
+        totalTrafficBytes,
+        avgRequestPackageBytes: row.count > 0 ? Math.round(requestTrafficBytes / row.count) : 0,
+        avgResponsePackageBytes: row.count > 0 ? Math.round(responseTrafficBytes / row.count) : 0,
+        avgTotalPackageBytes: row.count > 0 ? Math.round(totalTrafficBytes / row.count) : 0,
       };
     });
 

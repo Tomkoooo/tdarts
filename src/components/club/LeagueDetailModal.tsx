@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from "@/components/ui/Input";
 import { Label } from '@/components/ui/Label';
+import { coerceNumericValue } from '@/lib/number-input';
 ;
 
 interface LeagueDetailModalProps {
@@ -1479,13 +1480,12 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                         type="number"
                         min={0}
                         value={(formData.pointsConfig as any).groupDropoutPoints ?? 0}
-                        onChange={(event) => {
-                          const val = event.target.value;
+                        onNumberChange={(value) => {
                           setFormData({
                             ...formData,
                             pointsConfig: {
                               ...formData.pointsConfig,
-                              groupDropoutPoints: val === '' ? 0 : parseInt(val, 10),
+                              groupDropoutPoints: coerceNumericValue(value),
                             },
                           });
                         }}
@@ -1499,8 +1499,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                           type="number"
                           min={0}
                           value={((formData.pointsConfig?.fixedRankPoints as any)?.[placement] ?? 0) as number}
-                          onChange={(event) => {
-                            const val = event.target.value;
+                          onNumberChange={(value) => {
                             setFormData({
                               ...formData,
                               pointsConfig: {
@@ -1508,7 +1507,7 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                                 useFixedRanks: true,
                                 fixedRankPoints: {
                                   ...(formData.pointsConfig?.fixedRankPoints || {}),
-                                  [placement]: val === '' ? 0 : parseInt(val, 10),
+                                  [placement]: coerceNumericValue(value),
                                 }
                               },
                             });
@@ -1533,13 +1532,13 @@ function SettingsTab({ league, clubId, onLeagueUpdated, leagueStats, disabled }:
                           min={0}
                           step={config.step ?? 1}
                           value={(formData.pointsConfig as any)[config.key] ?? 0}
-                          onChange={(event) => {
-                            const val = event.target.value;
+                          parseMode={config.step ? 'float' : 'int'}
+                          onNumberChange={(value) => {
                             setFormData({
                               ...formData,
                               pointsConfig: {
                                 ...formData.pointsConfig,
-                                [config.key]: val === '' ? 0 : (config.step ? parseFloat(val) : parseInt(val, 10)),
+                                [config.key]: coerceNumericValue(value),
                               },
                             });
                           }}

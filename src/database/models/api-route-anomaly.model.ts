@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ApiRouteAnomalySignal = 'calls' | 'traffic' | 'latency';
+export type ApiRouteAnomalySignal = 'calls' | 'traffic' | 'latency' | 'error_rate' | 'packet_size';
 
 export interface IApiRouteAnomaly extends Document {
   routeKey: string;
@@ -23,7 +23,7 @@ const ApiRouteAnomalySchema = new Schema<IApiRouteAnomaly>(
   {
     routeKey: { type: String, required: true, index: true },
     method: { type: String, required: true, index: true },
-    signal: { type: String, enum: ['calls', 'traffic', 'latency'], required: true, index: true },
+    signal: { type: String, enum: ['calls', 'traffic', 'latency', 'error_rate', 'packet_size'], required: true, index: true },
     currentValue: { type: Number, required: true, default: 0 },
     baselineValue: { type: Number, required: true, default: 0 },
     ratio: { type: Number, required: true, default: 0 },

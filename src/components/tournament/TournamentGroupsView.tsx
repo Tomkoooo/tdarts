@@ -17,6 +17,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Input } from '@/components/ui/Input';
 import{ Label } from '@/components/ui/Label';
 import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
+import { coerceNumericValue } from '@/lib/number-input';
 
 interface Player {
   playerId: {
@@ -70,12 +71,14 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const [player1Stats, setPlayer1Stats] = useState({
     highestCheckout: 0,
     oneEightiesCount: 0,
+    average: 0,
     totalThrows: 0,
     totalScore: 0
   });
   const [player2Stats, setPlayer2Stats] = useState({
     highestCheckout: 0,
     oneEightiesCount: 0,
+    average: 0,
     totalThrows: 0,
     totalScore: 0
   });
@@ -115,12 +118,14 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setPlayer1Stats({
       highestCheckout: match.player1.highestCheckout || 0,
       oneEightiesCount: match.player1.oneEightiesCount || 0,
+      average: match.player1.average || 0,
       totalThrows: 0,
       totalScore: 0
     });
     setPlayer2Stats({
       highestCheckout: match.player2.highestCheckout || 0,
       oneEightiesCount: match.player2.oneEightiesCount || 0,
+      average: match.player2.average || 0,
       totalThrows: 0,
       totalScore: 0
     });
@@ -179,10 +184,20 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          player1LegsWon: player1Legs,
-          player2LegsWon: player2Legs,
-          player1Stats,
-          player2Stats,
+          player1LegsWon: coerceNumericValue(player1Legs),
+          player2LegsWon: coerceNumericValue(player2Legs),
+          player1Stats: {
+            ...player1Stats,
+            oneEightiesCount: coerceNumericValue(player1Stats.oneEightiesCount),
+            highestCheckout: coerceNumericValue(player1Stats.highestCheckout),
+            average: coerceNumericValue(player1Stats.average),
+          },
+          player2Stats: {
+            ...player2Stats,
+            oneEightiesCount: coerceNumericValue(player2Stats.oneEightiesCount),
+            highestCheckout: coerceNumericValue(player2Stats.highestCheckout),
+            average: coerceNumericValue(player2Stats.average),
+          },
           allowManualFinish: true,
           isManual: true,
           adminId: user?._id
@@ -516,8 +531,8 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
 
       {/* Admin Modal */}
       <Dialog open={showAdminModal} onOpenChange={setShowAdminModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <DialogTitle>{tTour('groups.dialog.edit_match')}</DialogTitle>
             <DialogDescription>
               {selectedMatch && (
@@ -529,10 +544,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
           </DialogHeader>
 
           {selectedMatch && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Player 1 Stats */}
-              <div className="space-y-4">
-                <h5 className="font-bold text-lg text-primary">{selectedMatch.player1?.playerId?.name}</h5>
+              <div className="space-y-4 rounded-md border bg-muted/20 p-4">
+                <h5 className="font-semibold text-base text-foreground">{selectedMatch.player1?.playerId?.name}</h5>
                 
                 <div className="space-y-2">
                   <Label htmlFor="p1-legs">{tTour('groups.dialog.won_legs')}</Label>
@@ -541,7 +556,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     type="number"
                     max="10"
                     value={player1Legs}
-                    onChange={(e) => setPlayer1Legs(parseInt(e.target.value) || 0)}
+                    onNumberChange={(value) => setPlayer1Legs(coerceNumericValue(value))}
                   />
                 </div>
                 
@@ -551,10 +566,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     id="p1-180s"
                     type="number"
                     max="50"
-                    value={player1Stats.oneEightiesCount || 0}
-                    onChange={(e) => setPlayer1Stats(prev => ({
+                    value={player1Stats.oneEightiesCount}
+                    onNumberChange={(value) => setPlayer1Stats(prev => ({
                       ...prev,
-                      oneEightiesCount: parseInt(e.target.value) || 0
+                      oneEightiesCount: coerceNumericValue(value)
                     }))}
                   />
                 </div>
@@ -565,18 +580,35 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     id="p1-checkout"
                     type="number"
                     max="170"
-                    value={player1Stats.highestCheckout || 0}
-                    onChange={(e) => setPlayer1Stats(prev => ({
+                    value={player1Stats.highestCheckout}
+                    onNumberChange={(value) => setPlayer1Stats(prev => ({
                       ...prev,
-                      highestCheckout: parseInt(e.target.value) || 0
+                      highestCheckout: coerceNumericValue(value)
+                    }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="p1-average">{tTour('groups.dialog.average')}</Label>
+                  <Input
+                    id="p1-average"
+                    type="number"
+                    min="0"
+                    max="200"
+                    step="0.01"
+                    parseMode="float"
+                    value={player1Stats.average}
+                    onNumberChange={(value) => setPlayer1Stats(prev => ({
+                      ...prev,
+                      average: coerceNumericValue(value)
                     }))}
                   />
                 </div>
               </div>
 
               {/* Player 2 Stats */}
-              <div className="space-y-4">
-                <h5 className="font-bold text-lg text-primary">{selectedMatch.player2?.playerId?.name}</h5>
+              <div className="space-y-4 rounded-md border bg-muted/20 p-4">
+                <h5 className="font-semibold text-base text-foreground">{selectedMatch.player2?.playerId?.name}</h5>
                 
                 <div className="space-y-2">
                   <Label htmlFor="p2-legs">{tTour('groups.dialog.won_legs')}</Label>
@@ -585,7 +617,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     type="number"
                     max="10"
                     value={player2Legs}
-                    onChange={(e) => setPlayer2Legs(parseInt(e.target.value) || 0)}
+                    onNumberChange={(value) => setPlayer2Legs(coerceNumericValue(value))}
                   />
                 </div>
                 
@@ -595,10 +627,10 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     id="p2-180s"
                     type="number"
                     max="50"
-                    value={player2Stats.oneEightiesCount || 0}
-                    onChange={(e) => setPlayer2Stats(prev => ({
+                    value={player2Stats.oneEightiesCount}
+                    onNumberChange={(value) => setPlayer2Stats(prev => ({
                       ...prev,
-                      oneEightiesCount: parseInt(e.target.value) || 0
+                      oneEightiesCount: coerceNumericValue(value)
                     }))}
                   />
                 </div>
@@ -609,10 +641,27 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
                     id="p2-checkout"
                     type="number"
                     max="170"
-                    value={player2Stats.highestCheckout || 0}
-                    onChange={(e) => setPlayer2Stats(prev => ({
+                    value={player2Stats.highestCheckout}
+                    onNumberChange={(value) => setPlayer2Stats(prev => ({
                       ...prev,
-                      highestCheckout: parseInt(e.target.value) || 0
+                      highestCheckout: coerceNumericValue(value)
+                    }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="p2-average">{tTour('groups.dialog.average')}</Label>
+                  <Input
+                    id="p2-average"
+                    type="number"
+                    min="0"
+                    max="200"
+                    step="0.01"
+                    parseMode="float"
+                    value={player2Stats.average}
+                    onNumberChange={(value) => setPlayer2Stats(prev => ({
+                      ...prev,
+                      average: coerceNumericValue(value)
                     }))}
                   />
                 </div>
@@ -620,7 +669,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
             </div>
           )}
             
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t">
             <Button
               variant="success"
               onClick={handleSaveMatch}

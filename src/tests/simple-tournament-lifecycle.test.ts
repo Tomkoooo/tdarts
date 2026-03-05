@@ -415,6 +415,112 @@ describe('Simple Tournament Lifecycle Test', () => {
       }
     }
   }, 300000);
+
+  test('Preserves manual no-throw 180 and checkout through finish and reopen', async () => {
+    jest.setTimeout(120000);
+
+    await UserModel.deleteMany({});
+    await ClubModel.deleteMany({});
+    await PlayerModel.deleteMany({});
+    await MatchModel.deleteMany({});
+    await TournamentModel.deleteMany({});
+    await LeagueModel.deleteMany({});
+
+    await setupTestData();
+
+    const tournament = await TournamentService.createTournament({
+      clubId: testClub._id,
+      tournamentPlayers: [],
+      groups: [],
+      knockout: [],
+      boards: [{ boardNumber: 1, name: 'Board 1', isActive: true, status: 'idle' }],
+      tournamentSettings: {
+        status: 'pending',
+        name: `Manual No Throw Stats ${Date.now()}`,
+        description: 'Manual no-throw stats persistence regression',
+        startDate: new Date(),
+        maxPlayers: 2,
+        format: 'group',
+        startingScore: 501,
+        boardCount: 1,
+        entryFee: 0,
+        tournamentPassword: 'test123',
+        location: 'Test Location',
+        type: 'amateur',
+        registrationDeadline: new Date(Date.now() + 60 * 60 * 1000),
+      },
+      isSandbox: false,
+      verified: false,
+      isActive: true,
+    });
+
+    const p1 = await PlayerModel.create({ name: 'Manual Stat Player', isRegistered: false });
+    const p2 = await PlayerModel.create({ name: 'Opponent Player', isRegistered: false });
+
+    await TournamentService.addTournamentPlayer(tournament.tournamentId, p1._id.toString());
+    await TournamentService.addTournamentPlayer(tournament.tournamentId, p2._id.toString());
+    await TournamentService.updateTournamentPlayerStatus(tournament.tournamentId, p1._id.toString(), 'checked-in');
+    await TournamentService.updateTournamentPlayerStatus(tournament.tournamentId, p2._id.toString(), 'checked-in');
+
+    const manualMatch = await MatchModel.create({
+      boardReference: 1,
+      tournamentRef: tournament._id,
+      type: 'group',
+      round: 1,
+      status: 'finished',
+      winnerId: p1._id,
+      player1: {
+        playerId: p1._id,
+        legsWon: 2,
+        legsLost: 0,
+        average: 58.2,
+        firstNineAvg: 61.4,
+        highestCheckout: 136,
+        oneEightiesCount: 1,
+      },
+      player2: {
+        playerId: p2._id,
+        legsWon: 0,
+        legsLost: 2,
+        average: 41.1,
+        firstNineAvg: 42.3,
+        highestCheckout: 0,
+        oneEightiesCount: 0,
+      },
+      legs: [],
+      manualOverride: true,
+      manualChangeType: 'admin_finish',
+    });
+
+    const tournamentDoc = await TournamentModel.findById(tournament._id);
+    if (tournamentDoc) {
+      tournamentDoc.groups = [{ board: 1, matches: [manualMatch._id] }] as any;
+      await tournamentDoc.save();
+    }
+
+    await TournamentService.finishTournament(tournament.tournamentId, testUser._id.toString());
+    let finished = await TournamentModel.findById(tournament._id);
+    const p1AfterFirstFinish = finished?.tournamentPlayers.find(
+      (tp: any) => tp.playerReference.toString() === p1._id.toString()
+    );
+    expect(p1AfterFirstFinish?.stats?.oneEightiesCount).toBe(1);
+    expect(p1AfterFirstFinish?.stats?.highestCheckout).toBe(136);
+
+    const matchesAfterFirstFinish = await TournamentService.getPlayerMatches(tournament.tournamentId, p1._id.toString());
+    const persistedManualMatch = matchesAfterFirstFinish.find((m: any) => m._id.toString() === manualMatch._id.toString());
+    expect(persistedManualMatch?.checkout).toBe('136');
+    expect(persistedManualMatch?.oneEightiesCount).toBe(1);
+
+    await TournamentService.reopenTournament(tournament.tournamentId, testUser._id.toString());
+    await TournamentService.finishTournament(tournament.tournamentId, testUser._id.toString());
+
+    finished = await TournamentModel.findById(tournament._id);
+    const p1AfterRefinish = finished?.tournamentPlayers.find(
+      (tp: any) => tp.playerReference.toString() === p1._id.toString()
+    );
+    expect(p1AfterRefinish?.stats?.oneEightiesCount).toBe(1);
+    expect(p1AfterRefinish?.stats?.highestCheckout).toBe(136);
+  });
 });
 
 describe('Test Configuration', () => {
