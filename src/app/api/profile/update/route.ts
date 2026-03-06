@@ -35,6 +35,17 @@ const updateProfileSchema = z.object({
   path: ["confirmPassword"],
 });
 
+function resolveStatusCode(error: any): number {
+  if (error instanceof z.ZodError) return 400;
+  const status = error?.statusCode ?? error?.status;
+  if (typeof status === 'number') return status;
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('invalid token') || message.includes('unauthorized')) {
+    return 401;
+  }
+  return 500;
+}
+
 async function __POST(request: Request) {
   try {
     const cookieStore = cookies();
@@ -66,7 +77,11 @@ async function __POST(request: Request) {
       { status: 200 }
     );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update profile' }, { status: error.status || 400 });
+    const status = resolveStatusCode(error);
+    return NextResponse.json(
+      { error: status >= 500 ? 'Failed to update profile' : (error?.message || 'Failed to update profile') },
+      { status }
+    );
   }
 }
 

@@ -101,28 +101,28 @@ const TournamentPage = () => {
     setError("")
 
     try {
-      const requests: Promise<any>[] = [axios.get(`/api/tournaments/${code}`)]
-      if (user?._id) {
-        requests.push(
-          axios.get(`/api/tournaments/${code}/getUserRole`, {
-            headers: { "x-user-id": user._id },
-          }),
-        )
-        requests.push(
-          axios.get(`/api/tournaments/${code}/players`, {
-            headers: { "x-user-id": user._id },
-          }),
-        )
-      }
-
-      const [tournamentRes, userRoleRes] = await Promise.all(requests)
+      const tournamentUrl = user?._id
+        ? `/api/tournaments/${code}?include=viewer`
+        : `/api/tournaments/${code}`
+      const tournamentRes = await axios.get(tournamentUrl)
       const tournamentData = tournamentRes.data
 
       setTournament(tournamentData)
       setPlayers(Array.isArray(tournamentData.tournamentPlayers) ? tournamentData.tournamentPlayers : [])
 
-      if (user?._id && userRoleRes) {
-        const roleData = userRoleRes.data
+      if (user?._id) {
+        let roleData = tournamentData?.viewer || null
+        if (!roleData) {
+          try {
+            const userRoleRes = await axios.get(`/api/tournaments/${code}/getUserRole`, {
+              headers: { "x-user-id": user._id },
+            })
+            roleData = userRoleRes.data
+          } catch (roleError) {
+            console.warn('Fallback role fetch failed', roleError)
+            roleData = { userClubRole: 'none', userPlayerStatus: 'none' }
+          }
+        }
         setUserClubRole(roleData.userClubRole || 'none')
         setUserPlayerStatus(roleData.userPlayerStatus || 'none')
 
@@ -196,28 +196,28 @@ const TournamentPage = () => {
     if (!code) return
 
     try {
-      const requests: Promise<any>[] = [axios.get(`/api/tournaments/${code}`)]
-      if (user?._id) {
-        requests.push(
-          axios.get(`/api/tournaments/${code}/getUserRole`, {
-            headers: { "x-user-id": user._id },
-          }),
-        )
-        requests.push(
-          axios.get(`/api/tournaments/${code}/players`, {
-            headers: { "x-user-id": user._id },
-          }),
-        )
-      }
-
-      const [tournamentRes, userRoleRes] = await Promise.all(requests)
+      const tournamentUrl = user?._id
+        ? `/api/tournaments/${code}?include=viewer`
+        : `/api/tournaments/${code}`
+      const tournamentRes = await axios.get(tournamentUrl)
       const tournamentData = tournamentRes.data
 
       setTournament(tournamentData)
       setPlayers(Array.isArray(tournamentData.tournamentPlayers) ? tournamentData.tournamentPlayers : [])
 
-      if (user?._id && userRoleRes) {
-        const roleData = userRoleRes.data
+      if (user?._id) {
+        let roleData = tournamentData?.viewer || null
+        if (!roleData) {
+          try {
+            const userRoleRes = await axios.get(`/api/tournaments/${code}/getUserRole`, {
+              headers: { "x-user-id": user._id },
+            })
+            roleData = userRoleRes.data
+          } catch (roleError) {
+            console.warn('Fallback role fetch failed during silent refresh', roleError)
+            roleData = { userClubRole: 'none', userPlayerStatus: 'none' }
+          }
+        }
         setUserClubRole(roleData.userClubRole || 'none')
         setUserPlayerStatus(roleData.userPlayerStatus || 'none')
         

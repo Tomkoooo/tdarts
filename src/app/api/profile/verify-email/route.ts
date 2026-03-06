@@ -9,6 +9,17 @@ const verifyEmailSchema = z.object({
   code: z.string().min(1, 'Verification code is required'),
 });
 
+function resolveStatusCode(error: any): number {
+  if (error instanceof z.ZodError) return 400;
+  const status = error?.statusCode ?? error?.status;
+  if (typeof status === 'number') return status;
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('invalid token') || message.includes('unauthorized')) {
+    return 401;
+  }
+  return 500;
+}
+
 async function __POST(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -24,7 +35,11 @@ async function __POST(request: Request) {
     await ProfileService.verifyEmail(user._id.toString(), code);
     return NextResponse.json({ message: 'Email verified successfully' }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to verify email' }, { status: error.status || 400 });
+    const status = resolveStatusCode(error);
+    return NextResponse.json(
+      { error: status >= 500 ? 'Failed to verify email' : (error?.message || 'Failed to verify email') },
+      { status }
+    );
   }
 }
 

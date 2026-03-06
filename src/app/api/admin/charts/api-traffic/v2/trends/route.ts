@@ -3,7 +3,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
 import { formatBucketLabel, toDateTruncId } from '@/lib/admin-telemetry';
-import { ensureAdmin, parseTelemetryFilters } from '../shared';
+import { buildRouteSearchRegex, ensureAdmin, parseTelemetryFilters } from '../shared';
 
 async function __GET(request: NextRequest) {
   try {
@@ -12,15 +12,24 @@ async function __GET(request: NextRequest) {
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
-    const { startDate, endDate, routeKey, method, granularity, timeZone } = parseTelemetryFilters(searchParams);
+    const { startDate, endDate, routeKey, routeSearch, method, granularity, timeZone } = parseTelemetryFilters(searchParams);
+    const routeSearchRegex = buildRouteSearchRegex(routeSearch);
     const match: Record<string, unknown> = { bucket: { $gte: startDate, $lte: endDate } };
-    if (routeKey) match.routeKey = routeKey;
+    if (routeKey) {
+      match.routeKey = routeKey;
+    } else if (routeSearchRegex) {
+      match.routeKey = { $regex: routeSearchRegex, $options: 'i' };
+    }
     if (method) match.method = method;
     const windowMs = endDate.getTime() - startDate.getTime();
     const baselineStart = new Date(startDate.getTime() - windowMs);
     const baselineEnd = startDate;
     const baselineMatch: Record<string, unknown> = { bucket: { $gte: baselineStart, $lt: baselineEnd } };
-    if (routeKey) baselineMatch.routeKey = routeKey;
+    if (routeKey) {
+      baselineMatch.routeKey = routeKey;
+    } else if (routeSearchRegex) {
+      baselineMatch.routeKey = { $regex: routeSearchRegex, $options: 'i' };
+    }
     if (method) baselineMatch.method = method;
 
     const [rows, baselineByBucketRows, baselineSummaryRows, currentSummaryRows] = await Promise.all([

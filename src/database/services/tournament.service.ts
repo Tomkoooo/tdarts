@@ -5379,8 +5379,15 @@ export class TournamentService {
                 throw new BadRequestError('Tournament not found');
             }
 
+            const resolvedClubId =
+                (tournament as any)?.clubId?._id?.toString?.() ||
+                (tournament as any)?.clubId?.toString?.();
+            if (!resolvedClubId) {
+                throw new BadRequestError('Tournament is missing a valid club reference');
+            }
+
             // Check authorization using the authorization service
-            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, tournament.clubId._id.toString());
+            const isAuthorized = await AuthorizationService.checkAdminOrModerator(requesterId, resolvedClubId);
             if (!isAuthorized) {
                 throw new BadRequestError('Only club admins or moderators can edit tournament settings');
             }
@@ -5402,8 +5409,12 @@ export class TournamentService {
                 }
             }
 
+            if (settings.boards !== undefined && !Array.isArray(settings.boards)) {
+                throw new BadRequestError('boards must be an array');
+            }
+
             // Handle board updates if provided
-            if (settings.boards && currentStatus === 'pending') {
+            if (Array.isArray(settings.boards) && currentStatus === 'pending') {
                 // Update boards array
                 tournament.boards = settings.boards.map((board: any, index: number) => ({
                     boardNumber: index + 1,
@@ -5431,7 +5442,7 @@ export class TournamentService {
             // Check subscription limits if start date is being changed
             if (settings.startDate && new Date(settings.startDate).getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
                 const subscriptionCheck = await SubscriptionService.canUpdateTournament(
-                    tournament.clubId._id.toString(),
+                    resolvedClubId,
                     new Date(settings.startDate),
                     tournament.tournamentId
                 );

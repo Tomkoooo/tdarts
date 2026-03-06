@@ -54,6 +54,7 @@ export function TelemetryRoutesPanel({
   description = "Click any column header to sort. Click a row to inspect.",
   compact = false,
 }: Props) {
+  const formatLatency = (value: number) => Number(value || 0).toFixed(2);
   const handleHeaderClick = (key: SortKey) => {
     if (sortBy === key) {
       onSortChange(key, sortDir === "asc" ? "desc" : "asc");
@@ -109,9 +110,9 @@ export function TelemetryRoutesPanel({
                     {row.errorRate}%
                   </TableCell>
                   <TableCell className="py-2 text-right text-xs tabular-nums">
-                    <span>{row.avgLatencyMs}ms</span>
+                    <span>{formatLatency(row.avgLatencyMs)}ms</span>
                     {row.baselineAvgLatencyMs > 0 && (
-                      <span className="ml-1 text-muted-foreground">/ {row.baselineAvgLatencyMs}ms</span>
+                      <span className="ml-1 text-muted-foreground">/ {formatLatency(row.baselineAvgLatencyMs)}ms</span>
                     )}
                   </TableCell>
                   <TableCell className="py-2 text-right text-xs tabular-nums">{formatBytes(row.avgPacketBytes)}</TableCell>

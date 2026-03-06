@@ -4,7 +4,7 @@ import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
 import { ApiRouteAnomalyModel } from '@/database/models/api-route-anomaly.model';
 import { ApiRequestErrorEventModel } from '@/database/models/api-request-error-event.model';
-import { ensureAdmin, parseTelemetryFilters } from '../shared';
+import { buildRouteSearchRegex, ensureAdmin, parseTelemetryFilters } from '../shared';
 
 async function __GET(request: NextRequest) {
   try {
@@ -13,7 +13,8 @@ async function __GET(request: NextRequest) {
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
-    const { startDate, endDate, routeKey, method } = parseTelemetryFilters(searchParams);
+    const { startDate, endDate, routeKey, routeSearch, method } = parseTelemetryFilters(searchParams);
+    const routeSearchRegex = buildRouteSearchRegex(routeSearch);
 
     const metricMatch: Record<string, unknown> = { bucket: { $gte: startDate, $lte: endDate } };
     const anomalyMatch: Record<string, unknown> = { isActive: true };
@@ -22,6 +23,11 @@ async function __GET(request: NextRequest) {
       metricMatch.routeKey = routeKey;
       anomalyMatch.routeKey = routeKey;
       errorMatch.routeKey = routeKey;
+    } else if (routeSearchRegex) {
+      const regexMatch = { $regex: routeSearchRegex, $options: 'i' };
+      metricMatch.routeKey = regexMatch;
+      anomalyMatch.routeKey = regexMatch;
+      errorMatch.routeKey = regexMatch;
     }
     if (method) {
       metricMatch.method = method;
@@ -32,7 +38,11 @@ async function __GET(request: NextRequest) {
     const windowMs = endDate.getTime() - startDate.getTime();
     const baselineStart = new Date(startDate.getTime() - windowMs);
     const baselineMatch: Record<string, unknown> = { bucket: { $gte: baselineStart, $lt: startDate } };
-    if (routeKey) baselineMatch.routeKey = routeKey;
+    if (routeKey) {
+      baselineMatch.routeKey = routeKey;
+    } else if (routeSearchRegex) {
+      baselineMatch.routeKey = { $regex: routeSearchRegex, $options: 'i' };
+    }
     if (method) baselineMatch.method = method;
 
     const [aggRows, baselineRows, activeAnomalies, errorSummary] = await Promise.all([
@@ -111,7 +121,7 @@ async function __GET(request: NextRequest) {
           totalErrors,
           errorRate: Number((errorRate * 100).toFixed(2)),
           avgLatencyMs: Number(avgLatencyMs.toFixed(2)),
-          peakLatencyMs: Number(agg.maxDurationMs || 0),
+          peakLatencyMs: Number(Number(agg.maxDurationMs || 0).toFixed(2)),
           totalRequestBytes,
           totalResponseBytes,
           totalMovedBytes,

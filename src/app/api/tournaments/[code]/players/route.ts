@@ -97,8 +97,7 @@ async function __POST(request: NextRequest, { params }: { params: Promise<{ code
            return NextResponse.json({ error: `${mode} requires at least 1 partner` }, { status: 400 });
       }
       
-      // Decode JWT to get current user (always needed for logic)
-      const user = await AuthService.verifyToken(token);
+      // Use already-validated auth user from getAuthContext()
       const currentUserId = user._id;
 
       // Create members list and determine registration type
@@ -186,7 +185,6 @@ async function __POST(request: NextRequest, { params }: { params: Promise<{ code
       }
       
       if (isSelfRegistration && (partnerUserId || resolvedPartnerEmail)) {
-          const user = await AuthService.verifyToken(token);
           const currentUserId = user._id;
           const currentUser = await UserModel.findById(currentUserId);
           const partnerUser = partnerUserId

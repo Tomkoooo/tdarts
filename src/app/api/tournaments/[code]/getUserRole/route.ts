@@ -4,21 +4,31 @@ import { ClubService } from "@/database/services/club.service";
 import { AuthService } from "@/database/services/auth.service";
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
+function resolveStatusCode(error: any): number {
+  const status = error?.statusCode ?? error?.status;
+  if (typeof status === "number") return status;
+  const message = String(error?.message || "").toLowerCase();
+  if (message.includes("invalid token") || message.includes("unauthorized")) {
+    return 401;
+  }
+  return 500;
+}
+
 async function __GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
     const token = await request.cookies.get('token')?.value;
-    console.log('getUserRole - Token found:', token ? 'Yes' : 'No');
-    console.log('getUserRole - Token value:', token ? token.substring(0, 20) + '...' : 'undefined');
-    
+
     if (!token) {
-      console.log('getUserRole - No token found, returning unauthorized');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     const user = await AuthService.verifyToken(token);
     if (!user) {
-      return NextResponse.json('guest');
+      return NextResponse.json({
+        userClubRole: 'none',
+        userPlayerStatus: 'none'
+      }, { status: 401 });
     }
 
     const { clubId } = await TournamentService.getTournamentRoleContext(code);
@@ -35,20 +45,21 @@ async function __GET(request: NextRequest, { params }: { params: Promise<{ code:
     });
   } catch (error: any) {
     console.error('getUserRole API error:', error);
-    
-    // Ha a klub nem található vagy más adatbázis hiba, akkor is adjunk választ
+
     if (error.message?.includes('Club not found') || error.message?.includes('Tournament not found')) {
       return NextResponse.json({
         userClubRole: 'none',
         userPlayerStatus: 'none'
       });
     }
-    
-    return NextResponse.json({ 
-      error: "Internal server error",
+
+    const status = resolveStatusCode(error);
+    const errorMessage = status >= 500 ? "Internal server error" : (error?.message || "Request failed");
+    return NextResponse.json({
+      error: errorMessage,
       userClubRole: 'none',
       userPlayerStatus: 'none'
-    }, { status: 500 });
+    }, { status });
   }
 }
 

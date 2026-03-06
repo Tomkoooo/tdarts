@@ -86,6 +86,7 @@ async function __GET(request: NextRequest) {
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
+    const mode = (searchParams.get('mode') || '').toLowerCase();
     const { startDate, endDate, routeKey, method } = parseTelemetryFilters(searchParams);
 
     const windowMs = endDate.getTime() - startDate.getTime();
@@ -306,6 +307,157 @@ async function __GET(request: NextRequest) {
       })),
       errorEvents: normalizedErrors,
     };
+
+    if (mode === 'ai_prompt') {
+      const globalMetricMatch: Record<string, unknown> = { bucket: { $gte: startDate, $lte: endDate } };
+      const [globalMetricRows, globalRouteRows] = await Promise.all([
+        ApiRequestMetricModel.aggregate([
+          { $match: globalMetricMatch },
+          {
+            $group: {
+              _id: null,
+              totalCalls: { $sum: '$count' },
+              totalErrors: { $sum: '$errorCount' },
+              totalDurationMs: { $sum: '$totalDurationMs' },
+              totalRequestBytes: { $sum: '$totalRequestBytes' },
+              totalResponseBytes: { $sum: '$totalResponseBytes' },
+            },
+          },
+        ]),
+        ApiRequestMetricModel.aggregate([
+          { $match: globalMetricMatch },
+          {
+            $group: {
+              _id: { routeKey: '$routeKey', method: '$method' },
+              totalCalls: { $sum: '$count' },
+              totalErrors: { $sum: '$errorCount' },
+              totalDurationMs: { $sum: '$totalDurationMs' },
+              totalRequestBytes: { $sum: '$totalRequestBytes' },
+              totalResponseBytes: { $sum: '$totalResponseBytes' },
+            },
+          },
+          {
+            $addFields: {
+              errorRate: {
+                $cond: [{ $gt: ['$totalCalls', 0] }, { $multiply: [{ $divide: ['$totalErrors', '$totalCalls'] }, 100] }, 0],
+              },
+              avgLatencyMs: {
+                $cond: [{ $gt: ['$totalCalls', 0] }, { $divide: ['$totalDurationMs', '$totalCalls'] }, 0],
+              },
+              avgPacketBytes: {
+                $cond: [
+                  { $gt: ['$totalCalls', 0] },
+                  { $divide: [{ $add: ['$totalRequestBytes', '$totalResponseBytes'] }, '$totalCalls'] },
+                  0,
+                ],
+              },
+            },
+          },
+          { $sort: { errorRate: -1, avgLatencyMs: -1 } },
+          { $limit: 20 },
+        ]),
+      ]);
+
+      const globalAgg = globalMetricRows[0] || {};
+      const globalCalls = Number(globalAgg.totalCalls || 0);
+      const globalErrors = Number(globalAgg.totalErrors || 0);
+      const globalErrorRate = safeDivide(globalErrors, globalCalls) * 100;
+      const globalAvgLatencyMs =
+        globalCalls > 0 ? Number(globalAgg.totalDurationMs || 0) / globalCalls : 0;
+
+      const aiPromptPayload = {
+        meta: {
+          generatedAt: now.toISOString(),
+          type: 'telemetry_ai_prompt',
+          scopesIncluded: ['filtered', 'global'],
+          filtersApplied: { method: method || 'ALL', routeKey: routeKey || '*', startDate, endDate },
+        },
+        filteredScope: {
+          summary: responsePayload.summary,
+          routeInsights: responsePayload.insights,
+          topProblematicApis: responsePayload.routes
+            .filter((r: any) => r.anomalyFlags?.latency || r.anomalyFlags?.error_rate || r.anomalyFlags?.packet_size)
+            .slice(0, 20),
+          recentErrors: responsePayload.errorEvents.slice(0, 50),
+        },
+        globalScope: {
+          summary: {
+            totalCalls: globalCalls,
+            totalErrors: globalErrors,
+            errorRate: Number(globalErrorRate.toFixed(2)),
+            avgLatencyMs: Number(globalAvgLatencyMs.toFixed(2)),
+          },
+          topProblematicApis: globalRouteRows.map((row) => ({
+            routeKey: row._id.routeKey,
+            method: row._id.method,
+            totalCalls: row.totalCalls,
+            totalErrors: row.totalErrors,
+            errorRate: Number((row.errorRate || 0).toFixed(2)),
+            avgLatencyMs: Number((row.avgLatencyMs || 0).toFixed(2)),
+            avgPacketBytes: Math.round(Number(row.avgPacketBytes || 0)),
+          })),
+        },
+        investigationPrompt: {
+          objective:
+            'Investigate problematic APIs for expected vs unexpected errors, latency regressions, packet size anomalies, and endpoint consolidation opportunities.',
+          requiredChecks: [
+            'Is each high-error response expected business behavior or a candidate for refactor?',
+            'Which endpoints have unusual error-rate increases vs baseline?',
+            'Which endpoints have high baseline latency or recent latency regression?',
+            'Which endpoints have unusually high packet sizes (incoming/outgoing)?',
+            'Are there high-call endpoints with overlapping scope that can be consolidated?',
+            'What edge-case/load tests should be added to preserve existing behavior?',
+          ],
+          exampleConsolidationPattern:
+            'If endpoint A loads tournament and endpoint B immediately fetches role for the same tournament, evaluate combining role payload into endpoint A where safe.',
+          outputRequirements: [
+            'Prioritized remediation plan',
+            'Concrete code change plan',
+            'Test plan with current tests + new tests',
+            'Rollback/safety notes',
+          ],
+        },
+        requiredFixListResponseSchema: {
+          format: 'json',
+          instructions: [
+            'Return ONLY valid JSON',
+            'Use the exact top-level key: fixes',
+            'Each fix must include routeKey and method',
+            'method must be one of GET, POST, PUT, PATCH, DELETE, ALL',
+          ],
+          schema: {
+            fixes: [
+              {
+                routeKey: 'string',
+                method: 'GET|POST|PUT|PATCH|DELETE|ALL',
+                reason: 'string',
+                severity: 'critical|high|medium|low',
+                expectedBehavior: 'string',
+                action: 'investigate|refactor|keep_as_is',
+              },
+            ],
+          },
+          example: {
+            fixes: [
+              {
+                routeKey: '/api/tournaments/[code]/getUserRole',
+                method: 'GET',
+                reason: 'High call duplication with tournament fetch and rising latency',
+                severity: 'high',
+                expectedBehavior: 'Role is required after tournament fetch',
+                action: 'refactor',
+              },
+            ],
+          },
+        },
+      };
+
+      return NextResponse.json(aiPromptPayload, {
+        headers: {
+          'content-disposition': `attachment; filename=\"api-telemetry-ai-prompt-${now.toISOString().replace(/[:.]/g, '-')}.json\"`,
+        },
+      });
+    }
 
     return NextResponse.json(responsePayload, {
       headers: {

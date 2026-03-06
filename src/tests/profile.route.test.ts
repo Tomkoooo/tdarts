@@ -1,13 +1,17 @@
 import { POST as updateProfile } from '@/app/api/profile/update/route';
 import { POST as verifyEmail } from '@/app/api/profile/verify-email/route';
+import { GET as getTickets } from '@/app/api/profile/tickets/route';
+import { NextRequest } from 'next/server';
 import { ProfileService } from '@/database/services/profile.service';
 import { AuthService } from '@/database/services/auth.service';
+import { FeedbackService } from '@/database/services/feedback.service';
 import { UserModel } from '@/database/models/user.model';
 import { connectMongo as connectToDatabase } from '@/lib/mongoose';
 import { cookies } from 'next/headers';
 
 jest.mock('@/database/services/profile.service');
 jest.mock('@/database/services/auth.service');
+jest.mock('@/database/services/feedback.service');
 jest.mock('next/headers', () => ({
   cookies: jest.fn(),
 }));
@@ -102,6 +106,24 @@ describe('Profile Routes', () => {
         ])
       );
     }, 15000);
+
+    it('should return 401 when token is invalid', async () => {
+      (cookies as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue({ value: 'invalid_token' }),
+      });
+      (AuthService.verifyToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+
+      const request = new Request('http://localhost:3000/api/profile/update', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'New Name' }),
+      });
+
+      const response = await updateProfile(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(json).toMatchObject({ error: 'Invalid token' });
+    }, 15000);
   });
 
   describe('POST /api/profile/verify-email', () => {
@@ -168,6 +190,57 @@ describe('Profile Routes', () => {
           }),
         ])
       );
+    }, 15000);
+
+    it('should return 401 when token is invalid', async () => {
+      (cookies as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue({ value: 'invalid_token' }),
+      });
+      (AuthService.verifyToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+
+      const request = new Request('http://localhost:3000/api/profile/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ code: 'valid_code' }),
+      });
+
+      const response = await verifyEmail(request);
+      const json = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(json).toMatchObject({ error: 'Invalid token' });
+    }, 15000);
+  });
+
+  describe('GET /api/profile/tickets', () => {
+    it('should return 401 when token is invalid', async () => {
+      (AuthService.verifyToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+
+      const request = new NextRequest('http://localhost:3000/api/profile/tickets', {
+        method: 'GET',
+        headers: { cookie: 'token=invalid_token' },
+      });
+
+      const response = await getTickets(request as any);
+      const json = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(json).toMatchObject({ error: 'Invalid token' });
+    }, 15000);
+
+    it('should return tickets for valid token', async () => {
+      (AuthService.verifyToken as jest.Mock).mockResolvedValue({ _id: 'user_id' });
+      (FeedbackService.getFeedbackByUserId as jest.Mock).mockResolvedValue([{ _id: 'ticket_1' }]);
+
+      const request = new NextRequest('http://localhost:3000/api/profile/tickets', {
+        method: 'GET',
+        headers: { cookie: 'token=valid_token' },
+      });
+
+      const response = await getTickets(request as any);
+      const json = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(json).toMatchObject({ success: true, data: [{ _id: 'ticket_1' }] });
     }, 15000);
   });
 });

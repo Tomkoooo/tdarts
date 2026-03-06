@@ -3,7 +3,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ApiRouteAnomalyModel } from '@/database/models/api-route-anomaly.model';
 import { ApiRequestErrorEventModel } from '@/database/models/api-request-error-event.model';
-import { ensureAdmin, parseTelemetryFilters } from '../shared';
+import { buildRouteSearchRegex, ensureAdmin, parseTelemetryFilters } from '../shared';
 
 async function __GET(request: NextRequest) {
   try {
@@ -12,7 +12,8 @@ async function __GET(request: NextRequest) {
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
-    const { startDate, endDate, routeKey, method } = parseTelemetryFilters(searchParams);
+    const { startDate, endDate, routeKey, routeSearch, method } = parseTelemetryFilters(searchParams);
+    const routeSearchRegex = buildRouteSearchRegex(routeSearch);
     const limit = Math.min(30, Math.max(5, Number(searchParams.get('limit') || 12)));
 
     const anomalyMatch: Record<string, unknown> = { isActive: true };
@@ -20,6 +21,10 @@ async function __GET(request: NextRequest) {
     if (routeKey) {
       anomalyMatch.routeKey = routeKey;
       errorMatch.routeKey = routeKey;
+    } else if (routeSearchRegex) {
+      const regexMatch = { $regex: routeSearchRegex, $options: 'i' };
+      anomalyMatch.routeKey = regexMatch;
+      errorMatch.routeKey = regexMatch;
     }
     if (method) {
       anomalyMatch.method = method;

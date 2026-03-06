@@ -32,9 +32,27 @@ function Stat({ label, value, baseline }: { label: string; value: string; baseli
 }
 
 function JsonBlock({ data, maxHeight = "max-h-64" }: { data: unknown; maxHeight?: string }) {
+  const safeStringify = (value: unknown) => {
+    try {
+      const seen = new WeakSet<object>();
+      return JSON.stringify(
+        value,
+        (_key, nested) => {
+          if (typeof nested === "object" && nested !== null) {
+            if (seen.has(nested)) return "[Circular]";
+            seen.add(nested);
+          }
+          return nested;
+        },
+        2
+      );
+    } catch {
+      return String(value ?? "—");
+    }
+  };
   return (
     <pre className={`${maxHeight} overflow-auto rounded-sm border border-border bg-muted/30 p-3 text-xs leading-relaxed`}>
-      {typeof data === "string" ? data : JSON.stringify(data, null, 2) || "—"}
+      {typeof data === "string" ? data : safeStringify(data) || "—"}
     </pre>
   );
 }
@@ -111,18 +129,18 @@ export function TelemetryRouteDetailsDrawer({
                   </span>
                 </div>
 
-                <div className="mb-3 grid grid-cols-3 gap-3 text-xs">
+                <div className="mb-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:gap-3">
                   <div><span className="text-muted-foreground">Duration:</span> {details.selectedError.durationMs}ms</div>
                   <div><span className="text-muted-foreground">Req size:</span> {formatBytes(details.selectedError.requestBytes)}</div>
                   <div><span className="text-muted-foreground">Res size:</span> {formatBytes(details.selectedError.responseBytes)}</div>
                 </div>
 
                 <Tabs defaultValue="req-headers">
-                  <TabsList className="w-full">
-                    <TabsTrigger value="req-headers" className="flex-1 text-xs">Req Headers</TabsTrigger>
-                    <TabsTrigger value="req-body" className="flex-1 text-xs">Req Body</TabsTrigger>
-                    <TabsTrigger value="res-headers" className="flex-1 text-xs">Res Headers</TabsTrigger>
-                    <TabsTrigger value="res-body" className="flex-1 text-xs">Res Body</TabsTrigger>
+                  <TabsList className="w-full overflow-x-auto">
+                    <TabsTrigger value="req-headers" className="flex-1 text-xs whitespace-nowrap">Req Headers</TabsTrigger>
+                    <TabsTrigger value="req-body" className="flex-1 text-xs whitespace-nowrap">Req Body</TabsTrigger>
+                    <TabsTrigger value="res-headers" className="flex-1 text-xs whitespace-nowrap">Res Headers</TabsTrigger>
+                    <TabsTrigger value="res-body" className="flex-1 text-xs whitespace-nowrap">Res Body</TabsTrigger>
                   </TabsList>
                   <TabsContent value="req-headers">
                     <JsonBlock data={details.selectedError.request.headers} />

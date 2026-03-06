@@ -34,6 +34,31 @@ describe('Traffic Optimization Route Coverage', () => {
     expect(TournamentService.getTournamentSummaryForPublicPage).toHaveBeenCalledWith('ABCD');
   });
 
+  it('GET /api/tournaments/[code]?include=viewer adds viewer context for authenticated user', async () => {
+    const payload = { tournamentId: 'ABCD', tournamentPlayers: [] };
+    (TournamentService.getTournamentSummaryForPublicPage as jest.Mock).mockResolvedValue(payload);
+    (AuthService.verifyToken as jest.Mock).mockResolvedValue({ _id: 'user_1' });
+    (TournamentService.getTournamentRoleContext as jest.Mock).mockResolvedValue({ clubId: 'club_1' });
+    (ClubService.getUserRoleInClub as jest.Mock).mockResolvedValue('moderator');
+    (TournamentService.getPlayerStatusInTournament as jest.Mock).mockResolvedValue('applied');
+
+    const request = new NextRequest('http://localhost:3000/api/tournaments/ABCD?include=viewer', {
+      method: 'GET',
+      headers: { cookie: 'token=valid_token' },
+    });
+    const response = await getTournament(request, { params: Promise.resolve({ code: 'ABCD' }) });
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toMatchObject({
+      tournamentId: 'ABCD',
+      viewer: {
+        userClubRole: 'moderator',
+        userPlayerStatus: 'applied',
+      },
+    });
+  });
+
   it('GET /api/tournaments/[code]/knockout returns lightweight knockout payload', async () => {
     (TournamentService.getTournamentKnockoutView as jest.Mock).mockResolvedValue({
       knockout: [{ round: 1, matches: [] }],
@@ -124,6 +149,42 @@ describe('Traffic Optimization Route Coverage', () => {
     });
     expect(TournamentService.getTournamentRoleContext).toHaveBeenCalledWith('ABCD');
     expect(ClubService.getUserRoleInClub).toHaveBeenCalledWith('user_1', 'club_1');
+  });
+
+  it('GET /api/tournaments/[code]/getUserRole maps invalid token to 401', async () => {
+    (AuthService.verifyToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+
+    const request = new NextRequest('http://localhost:3000/api/tournaments/ABCD/getUserRole', {
+      method: 'GET',
+      headers: { cookie: 'token=invalid_token' },
+    });
+    const response = await getUserRole(request, { params: Promise.resolve({ code: 'ABCD' }) });
+    const json = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(json).toMatchObject({
+      userClubRole: 'none',
+      userPlayerStatus: 'none',
+    });
+  });
+
+  it('GET /api/tournaments/[code]/getUserRole handles invalid-token bursts without 500', async () => {
+    (AuthService.verifyToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+
+    const responses = await Promise.all(
+      Array.from({ length: 10 }).map(() =>
+        getUserRole(
+          new NextRequest('http://localhost:3000/api/tournaments/ABCD/getUserRole', {
+            method: 'GET',
+            headers: { cookie: 'token=invalid_token' },
+          }),
+          { params: Promise.resolve({ code: 'ABCD' }) }
+        )
+      )
+    );
+    const statuses = responses.map((response) => response.status);
+
+    expect(statuses.every((status) => status === 401)).toBe(true);
   });
 });
 

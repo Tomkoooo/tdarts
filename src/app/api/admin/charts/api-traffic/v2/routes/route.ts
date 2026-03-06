@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongoose';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { ApiRequestMetricModel } from '@/database/models/api-request-metric.model';
-import { ensureAdmin, parseTelemetryFilters } from '../shared';
+import { buildRouteSearchRegex, ensureAdmin, parseTelemetryFilters } from '../shared';
 
 async function __GET(request: NextRequest) {
   try {
@@ -11,8 +11,8 @@ async function __GET(request: NextRequest) {
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
-    const { startDate, endDate, method } = parseTelemetryFilters(searchParams);
-    const search = (searchParams.get('search') || '').trim();
+    const { startDate, endDate, method, routeSearch } = parseTelemetryFilters(searchParams);
+    const search = (searchParams.get('search') || routeSearch || '').trim();
     const onlyProblematic = searchParams.get('onlyProblematic') === 'true';
     const page = Math.max(1, Number(searchParams.get('page') || 1));
     const limit = Math.min(100, Math.max(10, Number(searchParams.get('limit') || 20)));
@@ -25,7 +25,7 @@ async function __GET(request: NextRequest) {
     const match: Record<string, unknown> = { bucket: { $gte: baselineStart, $lte: endDate } };
     if (method) match.method = method;
     if (search) {
-      match.routeKey = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+      match.routeKey = { $regex: buildRouteSearchRegex(search) || '', $options: 'i' };
     }
 
     const sortKeyMap: Record<string, string> = {

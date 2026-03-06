@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { useFormatter, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TelemetryFilterBar } from "./TelemetryFilterBar";
 import { TelemetryHealthStrip } from "./TelemetryHealthStrip";
 import { TelemetryIncidentsPanel } from "./TelemetryIncidentsPanel";
@@ -77,6 +78,7 @@ export default function TelemetryDashboardV2() {
   const [granularity, setGranularity] = useState<TelemetryGranularity>("hour");
   const [method, setMethod] = useState("ALL");
   const [routeSearch, setRouteSearch] = useState("");
+  const [debouncedRouteSearch, setDebouncedRouteSearch] = useState("");
   const [metric, setMetric] = useState<TelemetryMetric>("calls");
   const [onlyProblematic, setOnlyProblematic] = useState(false);
   const [customStart, setCustomStart] = useState("");
@@ -108,12 +110,20 @@ export default function TelemetryDashboardV2() {
   const [isTrendLoading, setIsTrendLoading] = useState(true);
   const [isIncidentsLoading, setIsIncidentsLoading] = useState(true);
   const [isRoutesLoading, setIsRoutesLoading] = useState(true);
+  const [isAiExporting, setIsAiExporting] = useState(false);
+  const [isAiCopying, setIsAiCopying] = useState(false);
+  const [isApplyFixesOpen, setIsApplyFixesOpen] = useState(false);
+  const [fixesJsonInput, setFixesJsonInput] = useState("");
+  const [isApplyingFixes, setIsApplyingFixes] = useState(false);
+  const hasInitializedFilters = useRef(false);
 
   useEffect(() => {
+    if (hasInitializedFilters.current) return;
     const rangeFromUrl = (searchParams.get("range") || "") as TelemetryRange;
     const metricFromUrl = (searchParams.get("metric") || "") as TelemetryMetric;
     const granularityFromUrl = (searchParams.get("granularity") || "") as TelemetryGranularity;
     const methodFromUrl = searchParams.get("method") || "ALL";
+    const routeSearchFromUrl = searchParams.get("search") || "";
     const localRange = (localStorage.getItem("telemetry.v2.range") || "") as TelemetryRange;
     const localMetric = (localStorage.getItem("telemetry.v2.metric") || "") as TelemetryMetric;
     const localGranularity = (localStorage.getItem("telemetry.v2.granularity") || "") as TelemetryGranularity;
@@ -124,8 +134,17 @@ export default function TelemetryDashboardV2() {
     if (metricFromUrl || localMetric) setMetric(metricFromUrl || localMetric);
     if (granularityFromUrl || localGranularity) setGranularity(granularityFromUrl || localGranularity);
     if (methodFromUrl || localMethod) setMethod(methodFromUrl || localMethod);
+    if (routeSearchFromUrl) setRouteSearch(routeSearchFromUrl);
     setOnlyProblematic(localProblematic);
+    hasInitializedFilters.current = true;
   }, [searchParams]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRouteSearch(routeSearch.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [routeSearch]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -133,30 +152,34 @@ export default function TelemetryDashboardV2() {
     params.set("metric", metric);
     params.set("granularity", granularity);
     params.set("method", method);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    if (debouncedRouteSearch) params.set("search", debouncedRouteSearch);
+    const nextQuery = params.toString();
+    if (nextQuery !== searchParams.toString()) {
+      router.replace(`${pathname}?${nextQuery}`, { scroll: false });
+    }
 
     localStorage.setItem("telemetry.v2.range", range);
     localStorage.setItem("telemetry.v2.metric", metric);
     localStorage.setItem("telemetry.v2.granularity", granularity);
     localStorage.setItem("telemetry.v2.method", method);
     localStorage.setItem("telemetry.v2.onlyProblematic", String(onlyProblematic));
-  }, [range, metric, granularity, method, onlyProblematic, pathname, router]);
+  }, [range, metric, granularity, method, onlyProblematic, debouncedRouteSearch, pathname, router, searchParams]);
 
   const refreshDashboard = async () => {
     try {
-      const common = buildCommonParams(range, granularity, method, routeSearch, customStart, customEnd);
+      const common = buildCommonParams(range, granularity, method, "", customStart, customEnd);
+      if (debouncedRouteSearch) common.set("search", debouncedRouteSearch);
       const routesParams = new URLSearchParams(common.toString());
-      routesParams.set("search", routeSearch.trim());
       routesParams.set("onlyProblematic", onlyProblematic ? "true" : "false");
       routesParams.set("page", String(page));
       routesParams.set("limit", "20");
       routesParams.set("sortBy", sortBy);
       routesParams.set("sortDir", sortDir);
 
-      setIsOverviewLoading(true);
-      setIsTrendLoading(true);
-      setIsIncidentsLoading(true);
-      setIsRoutesLoading(true);
+      if (!overview) setIsOverviewLoading(true);
+      if (trendPoints.length === 0) setIsTrendLoading(true);
+      if (!incidents) setIsIncidentsLoading(true);
+      if (routes.length === 0) setIsRoutesLoading(true);
 
       const [overviewRes, trendsRes, incidentsRes, routesRes] = await Promise.all([
         axios.get(`/api/admin/charts/api-traffic/v2/overview?${common.toString()}`),
@@ -214,6 +237,80 @@ export default function TelemetryDashboardV2() {
     }
   };
 
+  const fetchAiPromptPayload = async () => {
+    const params = buildCommonParams(range, granularity, method, "", customStart, customEnd);
+    if (debouncedRouteSearch) params.set("search", debouncedRouteSearch);
+    params.set("mode", "ai_prompt");
+    const response = await axios.get(`/api/admin/charts/api-traffic/export?${params.toString()}`);
+    return response.data;
+  };
+
+  const exportAiPromptJson = async () => {
+    try {
+      setIsAiExporting(true);
+      const payload = await fetchAiPromptPayload();
+      const filename = `api-telemetry-ai-prompt-${Date.now()}.json`;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("AI prompt JSON exported.");
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to export AI prompt JSON");
+    } finally {
+      setIsAiExporting(false);
+    }
+  };
+
+  const copyAiPromptJson = async () => {
+    try {
+      setIsAiCopying(true);
+      const payload = await fetchAiPromptPayload();
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      toast.success("AI prompt JSON copied.");
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to copy AI prompt JSON");
+    } finally {
+      setIsAiCopying(false);
+    }
+  };
+
+  const applyFixesFromJson = async () => {
+    try {
+      setIsApplyingFixes(true);
+      const parsed = JSON.parse(fixesJsonInput || "{}");
+      const fixes = Array.isArray(parsed?.fixes) ? parsed.fixes : [];
+      const routes = fixes
+        .map((item: any) => ({
+          routeKey: typeof item?.routeKey === "string" ? item.routeKey.trim() : "",
+          method: typeof item?.method === "string" ? item.method.trim().toUpperCase() : "ALL",
+        }))
+        .filter((item: { routeKey: string; method: string }) => item.routeKey);
+
+      if (routes.length === 0) {
+        toast.error("No valid fixes found. Expected { fixes: [{ routeKey, method }] }");
+        return;
+      }
+
+      const response = await axios.post("/api/admin/charts/api-traffic/error-resets", { routes });
+      const processed = response.data?.data?.totalRoutesProcessed || routes.length;
+      const resolved = response.data?.data?.totalResolvedCount || 0;
+      toast.success(`Applied fixes to ${processed} routes (${resolved} errors resolved).`);
+      setIsApplyFixesOpen(false);
+      setFixesJsonInput("");
+      await refreshDashboard();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Invalid JSON or failed applying fixes");
+    } finally {
+      setIsApplyingFixes(false);
+    }
+  };
+
   const inspectError = async (errorId: string) => {
     if (!selectedRoute) return;
     if (!errorId) {
@@ -252,11 +349,12 @@ export default function TelemetryDashboardV2() {
   useEffect(() => {
     if (range === "custom" && (!customStart || !customEnd)) return;
     refreshDashboard();
-  }, [range, granularity, method, routeSearch, onlyProblematic, page, customStart, customEnd, sortBy, sortDir]);
+  }, [range, granularity, method, debouncedRouteSearch, onlyProblematic, page, customStart, customEnd, sortBy, sortDir]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const common = buildCommonParams(range, granularity, method, routeSearch, customStart, customEnd);
+      const common = buildCommonParams(range, granularity, method, "", customStart, customEnd);
+      if (debouncedRouteSearch) common.set("search", debouncedRouteSearch);
       axios
         .all([
           axios.get(`/api/admin/charts/api-traffic/v2/overview?${common.toString()}`),
@@ -269,7 +367,7 @@ export default function TelemetryDashboardV2() {
         .catch(() => {});
     }, 60_000);
     return () => clearInterval(timer);
-  }, [range, granularity, method, routeSearch, customStart, customEnd]);
+  }, [range, granularity, method, debouncedRouteSearch, customStart, customEnd]);
 
   const isRefreshing = useMemo(
     () => isOverviewLoading || isTrendLoading || isIncidentsLoading || isRoutesLoading,
@@ -298,11 +396,38 @@ export default function TelemetryDashboardV2() {
 
   return (
     <div className="mx-auto max-w-[1650px] space-y-4 p-3 sm:p-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("description")} &middot; {format.dateTime(new Date(), { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-        </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground">
+            {t("description")} &middot; {format.dateTime(new Date(), { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={copyAiPromptJson}
+            disabled={isAiCopying}
+            className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-secondary-foreground disabled:opacity-60"
+          >
+            {isAiCopying ? "Copying..." : "Copy AI Prompt JSON"}
+          </button>
+          <button
+            type="button"
+            onClick={exportAiPromptJson}
+            disabled={isAiExporting}
+            className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-secondary-foreground disabled:opacity-60"
+          >
+            {isAiExporting ? "Exporting..." : "Download AI Prompt JSON"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsApplyFixesOpen(true)}
+            className="rounded-md border border-border bg-primary px-3 py-2 text-xs text-primary-foreground"
+          >
+            Apply Fixes JSON
+          </button>
+        </div>
       </div>
 
       <TelemetryFilterBar
@@ -414,6 +539,53 @@ export default function TelemetryDashboardV2() {
         onMarkFixed={markRouteFixed}
         onInspectError={inspectError}
       />
+
+      <Dialog open={isApplyFixesOpen} onOpenChange={setIsApplyFixesOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Apply Fixes JSON</DialogTitle>
+            <DialogDescription>
+              Paste AI output JSON with a top-level <code>fixes</code> array. Each item must include <code>routeKey</code> and <code>method</code>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <textarea
+              value={fixesJsonInput}
+              onChange={(e) => setFixesJsonInput(e.target.value)}
+              placeholder={`{\n  \"fixes\": [\n    { \"routeKey\": \"/api/foo\", \"method\": \"GET\" }\n  ]\n}`}
+              className="h-64 w-full rounded-md border border-border bg-background p-3 text-xs font-mono"
+            />
+            <input
+              type="file"
+              accept="application/json,.json,text/plain"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const content = await file.text();
+                setFixesJsonInput(content);
+              }}
+              className="text-xs"
+            />
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setIsApplyFixesOpen(false)}
+              className="rounded-md border border-border px-3 py-2 text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={applyFixesFromJson}
+              disabled={isApplyingFixes}
+              className="rounded-md bg-primary px-3 py-2 text-xs text-primary-foreground disabled:opacity-60"
+            >
+              {isApplyingFixes ? "Applying..." : "Apply fixes"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

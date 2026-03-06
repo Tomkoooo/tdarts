@@ -23,41 +23,64 @@ async function __POST(request: NextRequest) {
     if (authError) return authError;
 
     const body = await request.json().catch(() => ({}));
-    const routeKey = typeof body.routeKey === 'string' ? body.routeKey.trim() : '';
-    const methodRaw = typeof body.method === 'string' ? body.method.trim().toUpperCase() : 'ALL';
-    const method = methodRaw || 'ALL';
+    const routes = Array.isArray(body.routes) ? body.routes : null;
+    const toNormalize = routes && routes.length > 0 ? routes : [body];
+    const normalized = toNormalize
+      .map((row: any) => ({
+        routeKey: typeof row?.routeKey === 'string' ? row.routeKey.trim() : '',
+        method: typeof row?.method === 'string' ? row.method.trim().toUpperCase() : 'ALL',
+      }))
+      .filter((row: { routeKey: string; method: string }) => row.routeKey);
 
-    if (!routeKey) {
-      return NextResponse.json({ error: 'routeKey is required' }, { status: 400 });
+    if (normalized.length === 0) {
+      return NextResponse.json({ error: 'routeKey is required (or routes[] with valid routeKey)' }, { status: 400 });
     }
 
     const resetAt = new Date();
-    await ApiRequestErrorResetModel.updateOne(
-      { routeKey, method },
-      { $set: { routeKey, method, resetAt } },
-      { upsert: true }
-    );
+    const results: Array<{
+      routeKey: string;
+      method: string;
+      resetAt: string;
+      resolvedCount: number;
+    }> = [];
 
-    const resolvedFilter: Record<string, any> = {
-      routeKey,
-      occurredAt: { $lte: resetAt },
-      isResolved: { $ne: true },
-    };
-    if (method !== 'ALL') {
-      resolvedFilter.method = method;
-    }
+    for (const entry of normalized) {
+      const routeKey = entry.routeKey;
+      const method = entry.method || 'ALL';
 
-    const resolvedResult = await ApiRequestErrorEventModel.updateMany(resolvedFilter, {
-      $set: { isResolved: true, resolvedAt: resetAt },
-    });
+      await ApiRequestErrorResetModel.updateOne(
+        { routeKey, method },
+        { $set: { routeKey, method, resetAt } },
+        { upsert: true }
+      );
 
-    return NextResponse.json({
-      success: true,
-      data: {
+      const resolvedFilter: Record<string, any> = {
+        routeKey,
+        occurredAt: { $lte: resetAt },
+        isResolved: { $ne: true },
+      };
+      if (method !== 'ALL') {
+        resolvedFilter.method = method;
+      }
+
+      const resolvedResult = await ApiRequestErrorEventModel.updateMany(resolvedFilter, {
+        $set: { isResolved: true, resolvedAt: resetAt },
+      });
+
+      results.push({
         routeKey,
         method,
         resetAt: resetAt.toISOString(),
         resolvedCount: resolvedResult.modifiedCount || 0,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        items: results,
+        totalRoutesProcessed: results.length,
+        totalResolvedCount: results.reduce((acc, row) => acc + row.resolvedCount, 0),
       },
     });
   } catch (error) {

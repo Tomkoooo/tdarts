@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { SubscriptionService } from "@/database/services/subscription.service";
+import { ClubService } from "@/database/services/club.service";
+import { AuthService } from "@/database/services/auth.service";
 import { getRequestLogContext, handleError } from "@/middleware/errorHandle";
 import { withApiTelemetry } from "@/lib/api-telemetry";
 import { parseIsoDateInput } from "@/lib/date-time";
@@ -14,6 +16,36 @@ export const GET = withApiTelemetry('/api/tournaments/[code]', async (
     const tournament: any = await TournamentService.getTournamentSummaryForPublicPage(code);
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+    }
+    const includeViewer = request.nextUrl.searchParams
+      .get('include')
+      ?.split(',')
+      .map((segment) => segment.trim())
+      .includes('viewer');
+    if (includeViewer) {
+      const viewer = {
+        userClubRole: 'none',
+        userPlayerStatus: 'none',
+      };
+      const token = request.cookies.get('token')?.value;
+      if (token) {
+        try {
+          const user = await AuthService.verifyToken(token);
+          const { clubId } = await TournamentService.getTournamentRoleContext(code);
+          const [userClubRole, userPlayerStatus] = await Promise.all([
+            ClubService.getUserRoleInClub(user._id.toString(), clubId),
+            TournamentService.getPlayerStatusInTournament(code, user._id.toString()),
+          ]);
+          viewer.userClubRole = userClubRole || 'none';
+          viewer.userPlayerStatus = userPlayerStatus || 'none';
+        } catch (viewerError) {
+          console.warn('Failed to resolve tournament viewer context', viewerError);
+        }
+      }
+      return NextResponse.json({
+        ...tournament,
+        viewer,
+      });
     }
     return NextResponse.json(tournament);
   } catch (error) {
@@ -54,16 +86,23 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
+    const tournamentClubId = tournament?.clubId?._id?.toString?.() || tournament?.clubId?.toString?.();
+    if (!tournamentClubId) {
+      return NextResponse.json({ error: "Tournament is missing a valid club reference" }, { status: 400 });
+    }
 
     const parsedNewStartDate = settings.startDate ? parseIsoDateInput(settings.startDate) : null;
     if (settings.startDate && !parsedNewStartDate) {
       return NextResponse.json({ error: "Invalid startDate. Expected ISO date with timezone." }, { status: 400 });
     }
+    if (boards !== undefined && !Array.isArray(boards)) {
+      return NextResponse.json({ error: "boards must be an array" }, { status: 400 });
+    }
 
     // Check subscription limits if start date is being changed
     if (parsedNewStartDate && parsedNewStartDate.getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
       const subscriptionCheck = await SubscriptionService.canUpdateTournament(
-        tournament.clubId._id.toString(), 
+        tournamentClubId,
         parsedNewStartDate,
         tournament.tournamentId
       );
@@ -112,6 +151,10 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
       if (isVerified && parsedNewStartDate && parsedNewStartDate.getTime() !== new Date(tournament.tournamentSettings.startDate).getTime()) {
         const { TournamentModel } = await import('@/database/models/tournament.model');
         const newStartDate = parsedNewStartDate;
+        const tournamentClubObjectId = tournament?.clubId?._id || tournament?.clubId;
+        if (!tournamentClubObjectId) {
+          return NextResponse.json({ error: "Tournament is missing a valid club reference" }, { status: 400 });
+        }
         const dayOfWeek = newStartDate.getDay();
         
         // Calculate Monday of this week
@@ -132,7 +175,7 @@ export const PUT = withApiTelemetry('/api/tournaments/[code]', async (
 
         // Check for existing verified tournaments in target week (excluding current tournament)
         const existingVerifiedTournament = await TournamentModel.findOne({
-          clubId: tournament.clubId._id,
+          clubId: tournamentClubObjectId,
           verified: true,
           tournamentId: { $ne: tournament.tournamentId }, // Exclude current tournament
           'tournamentSettings.startDate': {

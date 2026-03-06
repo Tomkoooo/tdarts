@@ -23,6 +23,8 @@ function BaselineIndicator({ current, baseline, unit = "", invert = false }: { c
 }
 
 export function TelemetryHealthStrip({ overview, formatBytes }: Props) {
+  const avgLatency = Number(overview?.kpis.avgLatencyMs || 0).toFixed(2);
+  const peakLatency = Number(overview?.kpis.peakLatencyMs || 0).toFixed(2);
   const statusVariant =
     overview?.status === "critical"
       ? "destructive"
@@ -72,8 +74,8 @@ export function TelemetryHealthStrip({ overview, formatBytes }: Props) {
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-semibold tabular-nums">{overview?.kpis.avgLatencyMs ?? 0}ms</span>
-            <span className="text-sm text-muted-foreground">/ {overview?.kpis.peakLatencyMs ?? 0}ms</span>
+            <span className="text-xl font-semibold tabular-nums">{avgLatency}ms</span>
+            <span className="text-sm text-muted-foreground">/ {peakLatency}ms</span>
           </div>
           <BaselineIndicator current={overview?.kpis.avgLatencyMs ?? 0} baseline={overview?.kpis.baselineAvgLatencyMs ?? 0} />
         </CardContent>

@@ -16,6 +16,7 @@ export async function ensureAdmin(request: NextRequest): Promise<NextResponse | 
 export function parseTelemetryFilters(searchParams: URLSearchParams) {
   const { startDate, endDate } = resolveTimeRange(searchParams);
   const { routeKey, method } = resolveRouteFilters(searchParams);
+  const routeSearch = (searchParams.get('search') || searchParams.get('routeSearch') || '').trim();
   const granularity = resolveGranularity(searchParams);
   const timeZone = searchParams.get('tz') || 'UTC';
 
@@ -23,8 +24,14 @@ export function parseTelemetryFilters(searchParams: URLSearchParams) {
     startDate,
     endDate,
     routeKey,
+    routeSearch,
     method,
     granularity,
     timeZone,
   };
+}
+
+export function buildRouteSearchRegex(routeSearch: string): string | null {
+  if (!routeSearch.trim()) return null;
+  return routeSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
