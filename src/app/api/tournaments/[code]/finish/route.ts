@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TournamentService } from '@/database/services/tournament.service';
 import { AuthService } from '@/database/services/auth.service';
+import { getRequestLogContext, handleError } from '@/middleware/errorHandle';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 
 async function __POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const { code } = await params;
   try {
-    const { code } = await params;
-
     if (!code) {
       return NextResponse.json(
         { success: false, error: 'Tournament code is required' },
@@ -22,7 +22,12 @@ async function __POST(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const user = await AuthService.verifyToken(token);
+    let user;
+    try {
+      user = await AuthService.verifyToken(token);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const requesterId = user._id.toString();
 
     const body = await request.json().catch(() => ({}));
@@ -38,12 +43,21 @@ async function __POST(
         { status: 400 }
       );
     }
-  } catch (error: any) {
-    console.error('Finish tournament error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Nem sikerült befejezni a tornát' },
-      { status: 500 }
-    );
+  } catch (error) {
+    const context = getRequestLogContext(request, {
+      tournamentId: code,
+      operation: 'api.tournament.finish',
+      entityType: 'tournament',
+      entityId: code,
+    });
+    const { status, body } = handleError(error, context);
+    console.warn('[api-error-map]', {
+      route: '/api/tournaments/[code]/finish',
+      mappedStatus: status,
+      errorType: (error as any)?.name || 'unknown_error',
+      message: (error as any)?.message || String(error),
+    });
+    return NextResponse.json({ success: false, error: body.error }, { status });
   }
 }
 

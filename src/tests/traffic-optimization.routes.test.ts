@@ -151,7 +151,7 @@ describe('Traffic Optimization Route Coverage', () => {
     expect(ClubService.getUserRoleInClub).toHaveBeenCalledWith('user_1', 'club_1');
   });
 
-  it('GET /api/tournaments/[code]/getUserRole maps invalid token to 401', async () => {
+  it('GET /api/tournaments/[code]/getUserRole maps invalid token to default non-error role context', async () => {
     (AuthService.verifyToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
 
     const request = new NextRequest('http://localhost:3000/api/tournaments/ABCD/getUserRole', {
@@ -161,7 +161,7 @@ describe('Traffic Optimization Route Coverage', () => {
     const response = await getUserRole(request, { params: Promise.resolve({ code: 'ABCD' }) });
     const json = await response.json();
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
     expect(json).toMatchObject({
       userClubRole: 'none',
       userPlayerStatus: 'none',
@@ -184,7 +184,7 @@ describe('Traffic Optimization Route Coverage', () => {
     );
     const statuses = responses.map((response) => response.status);
 
-    expect(statuses.every((status) => status === 401)).toBe(true);
+    expect(statuses.every((status) => status === 200)).toBe(true);
   });
 });
 

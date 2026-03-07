@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TournamentService } from "@/database/services/tournament.service";
 import { SubscriptionService } from "@/database/services/subscription.service";
-import { ClubService } from "@/database/services/club.service";
-import { AuthService } from "@/database/services/auth.service";
 import { getRequestLogContext, handleError } from "@/middleware/errorHandle";
 import { withApiTelemetry } from "@/lib/api-telemetry";
 import { parseIsoDateInput } from "@/lib/date-time";
+import {
+  EMPTY_TOURNAMENT_VIEWER_CONTEXT,
+  getTournamentViewerContextFromToken,
+} from "@/lib/tournament-viewer-context";
 
 export const GET = withApiTelemetry('/api/tournaments/[code]', async (
   request: NextRequest,
@@ -23,21 +25,13 @@ export const GET = withApiTelemetry('/api/tournaments/[code]', async (
       .map((segment) => segment.trim())
       .includes('viewer');
     if (includeViewer) {
-      const viewer = {
-        userClubRole: 'none',
-        userPlayerStatus: 'none',
-      };
+      const viewer = { ...EMPTY_TOURNAMENT_VIEWER_CONTEXT };
       const token = request.cookies.get('token')?.value;
       if (token) {
         try {
-          const user = await AuthService.verifyToken(token);
-          const { clubId } = await TournamentService.getTournamentRoleContext(code);
-          const [userClubRole, userPlayerStatus] = await Promise.all([
-            ClubService.getUserRoleInClub(user._id.toString(), clubId),
-            TournamentService.getPlayerStatusInTournament(code, user._id.toString()),
-          ]);
-          viewer.userClubRole = userClubRole || 'none';
-          viewer.userPlayerStatus = userPlayerStatus || 'none';
+          const resolvedViewer = await getTournamentViewerContextFromToken(code, token);
+          viewer.userClubRole = resolvedViewer.userClubRole;
+          viewer.userPlayerStatus = resolvedViewer.userPlayerStatus;
         } catch (viewerError) {
           console.warn('Failed to resolve tournament viewer context', viewerError);
         }
