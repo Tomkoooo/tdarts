@@ -1,0 +1,46 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 500
+      name: ramp_up_100_to_500
+    - duration: 120
+      arrivalRate: 500
+      name: sustained_500
+    - duration: 30
+      arrivalRate: 1000
+      name: spike_1000
+  processor: "./load.processor.js"
+  http:
+    timeout: 30
+    pool: 1000
+  ensure:
+    thresholds:
+      - "http.response_time.p95": 300
+      - "errors.rate": 0.01
+      - "vusers.failed": 0
+
+scenarios:
+  - name: createTournamentAction
+    weight: 4
+    flow:
+      - get:
+          url: "/en/clubs/DEMO"
+
+  - name: updateBoardStatusAction
+    weight: 3
+    flow:
+      - get:
+          url: "/en/board/DEMO"
+
+  - name: checkFeatureFlagAction
+    weight: 2
+    flow:
+      - get:
+          url: "/en/tournaments/DEMO/live"
+
+  - name: sse_updates_stream
+    weight: 1
+    flow:
+      - function: "sseUpdatesProbe"
