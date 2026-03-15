@@ -115,27 +115,23 @@ export function SearchPageLayout({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <AnimatedStat
               label="Tournaments"
-              value={counts.tournaments || 0}
+              number={counts.tournaments || 0}
               icon="🎯"
-              trend="up"
             />
             <AnimatedStat
               label="Players"
-              value={counts.players || 0}
+              number={counts.players || 0}
               icon="👥"
-              trend="up"
             />
             <AnimatedStat
               label="Clubs"
-              value={counts.clubs || 0}
+              number={counts.clubs || 0}
               icon="🏢"
-              trend="up"
             />
             <AnimatedStat
               label="Leagues"
-              value={counts.leagues || 0}
+              number={counts.leagues || 0}
               icon="🏆"
-              trend="up"
             />
           </div>
         )}

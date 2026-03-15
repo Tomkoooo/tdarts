@@ -2,9 +2,8 @@ import React, { useState } from 'react'
 import axios from 'axios'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { AppModal } from '@/components/modal/AppModal'
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -57,8 +56,8 @@ export default function AddPlayerModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-lg">
+    <AppModal open={isOpen} onOpenChange={(open) => !open && onClose()} size="lg">
+        <div className="px-6 py-6 space-y-4">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
@@ -103,7 +102,7 @@ export default function AddPlayerModal({
             {loading ? t('adding') : t('add')}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </AppModal>
   )
 }

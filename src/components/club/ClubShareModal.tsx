@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { IconPrinter, IconCopy } from '@tabler/icons-react'
 import toast from 'react-hot-toast'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AppModal } from '@/components/modal/AppModal'
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useTranslations } from 'next-intl'
@@ -76,8 +77,7 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 shadow-2xl shadow-black/45">
+    <AppModal open={isOpen} onOpenChange={(open) => !open && onClose()} size="md">
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         <DialogHeader className="space-y-2">
           <DialogTitle>{t('title')}</DialogTitle>
@@ -142,7 +142,6 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
           </Button>
         </DialogFooter>
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModal>
   )
 }

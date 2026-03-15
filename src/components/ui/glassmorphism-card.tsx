@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { liquidIn } from "@/lib/motion";
 
 interface GlassmorphismCardProps {
   children: React.ReactNode;
@@ -21,7 +23,10 @@ export const GlassmorphismCard: React.FC<GlassmorphismCardProps> = ({
   };
 
   return (
-    <div
+    <motion.div
+      initial="initial"
+      animate="animate"
+      variants={liquidIn}
       className={cn(
         "rounded-xl border transition-all duration-300",
         "hover:shadow-lg hover:shadow-primary/10",
@@ -30,6 +35,6 @@ export const GlassmorphismCard: React.FC<GlassmorphismCardProps> = ({
       )}
     >
       {children}
-    </div>
+    </motion.div>
   );
 };

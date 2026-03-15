@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { useTranslations, useFormatter } from "next-intl";
+import React from "react";
+import { useTranslations } from "next-intl";
 import {
   IconUsers,
-  IconGamepad2,
+  IconDeviceGamepad2,
   IconTrophy,
   IconProgress,
 } from "@tabler/icons-react";
-import { GlassmorphismCard } from "@/components/ui/glassmorphism-card";
 import { AnimatedStat } from "@/components/ui/animated-stat";
-import { cn } from "@/lib/utils";
 
 interface TournamentStatisticsCardProps {
   tournament: any;
@@ -23,7 +21,6 @@ export const TournamentStatisticsCard: React.FC<
   TournamentStatisticsCardProps
 > = ({ tournament, playerCount = 0, activeMatches = 0, topPlayers = [] }) => {
   const t = useTranslations("Tournament");
-  const format = useFormatter();
 
   const totalPlayers = playerCount || tournament?.players?.length || 0;
   const totalGroups = tournament?.groups?.length || 0;
@@ -42,7 +39,7 @@ export const TournamentStatisticsCard: React.FC<
       number: activeMatches,
       label: t("statistics.active_matches"),
       sublabel: t("statistics.ongoing"),
-      icon: <IconGamepad2 size={24} />,
+      icon: <IconDeviceGamepad2 size={24} />,
       color: "text-success",
     },
     {

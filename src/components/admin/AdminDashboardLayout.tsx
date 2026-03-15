@@ -2,7 +2,7 @@
 
 import React from "react"
 import { useTranslations } from "next-intl"
-import { IconLayoutDashboard, IconUsers, IconTrophy, IconBuilding, IconBell, IconSettings } from "@tabler/icons-react"
+import { IconLayoutDashboard, IconUsers, IconTrophy, IconBuilding, IconBell } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import { AnimatedStat } from "@/components/ui/animated-stat"
@@ -37,39 +37,33 @@ export function AdminDashboardLayout({
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <AnimatedStat
               label={t("kpi.totalUsers")}
-              value={kpi.totalUsers || 0}
+              number={kpi.totalUsers || 0}
               icon="👥"
-              trend="up"
             />
             <AnimatedStat
               label={t("kpi.activeUsers")}
-              value={kpi.activeUsers || 0}
+              number={kpi.activeUsers || 0}
               icon="🟢"
-              trend="up"
             />
             <AnimatedStat
               label={t("kpi.totalTournaments")}
-              value={kpi.totalTournaments || 0}
+              number={kpi.totalTournaments || 0}
               icon="🎯"
-              trend="up"
             />
             <AnimatedStat
               label={t("kpi.activeTournaments")}
-              value={kpi.activeTournaments || 0}
+              number={kpi.activeTournaments || 0}
               icon="🏆"
-              trend="up"
             />
             <AnimatedStat
               label={t("kpi.totalClubs")}
-              value={kpi.totalClubs || 0}
+              number={kpi.totalClubs || 0}
               icon="🏢"
-              trend="up"
             />
             <AnimatedStat
               label={t("kpi.totalMatches")}
-              value={kpi.totalMatches || 0}
+              number={kpi.totalMatches || 0}
               icon="🎮"
-              trend="up"
             />
           </div>
         </div>

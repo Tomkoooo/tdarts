@@ -59,9 +59,9 @@ export default function GroupsDisplay({ tournament }: GroupsDisplayProps) {
       let statusText = ""
       
       if (match.status === 'ongoing') {
-        statusClass = "border-l-4 border-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.2)]"
-        bgClass = "bg-green-500/10"
-        headerClass = "bg-green-500/20 text-green-400"
+        statusClass = "border-l-4 border-success animate-pulse shadow-glow-success"
+        bgClass = "bg-success/10"
+        headerClass = "bg-success/20 text-success"
         statusText = t("live")
       } else if (match.status === 'finished') {
         // Check if it's a bye/walkover (one player missing and 0 score)

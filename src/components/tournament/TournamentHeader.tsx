@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTranslations, useFormatter } from "next-intl";
+import { useTranslations } from "next-intl";
 import { IconEdit, IconShare2, IconRefresh } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -27,7 +27,6 @@ export const TournamentHeader: React.FC<TournamentHeaderProps> = ({
   onRefresh,
 }) => {
   const t = useTranslations("Tournament");
-  const format = useFormatter();
 
   const status = tournament?.tournamentSettings?.status || "pending";
   const statusClasses: Record<string, string> = {

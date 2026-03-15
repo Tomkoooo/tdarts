@@ -2,7 +2,7 @@
 
 import React from "react"
 import { useTranslations } from "next-intl"
-import { IconX, IconSliders } from "@tabler/icons-react"
+import { IconX, IconAdjustments } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
@@ -33,10 +33,10 @@ export function SearchFiltersPanel({
     <GlassmorphismCard className="p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <IconSliders className="w-5 h-5" />
+          <IconAdjustments className="w-5 h-5" />
           <h3 className="text-lg font-semibold">{t("filters.filterLabel")}</h3>
           {activeFilterCount > 0 && (
-            <Badge className="ml-2">{activeFilterCount} active</Badge>
+            <Badge className="ml-2">{t("filters.activeFilters", { count: activeFilterCount })}</Badge>
           )}
         </div>
         {activeFilterCount > 0 && (
@@ -47,7 +47,7 @@ export function SearchFiltersPanel({
             className="text-muted-foreground hover:text-foreground"
           >
             <IconX className="w-4 h-4 mr-1" />
-            Clear
+            {t("filters.clear")}
           </Button>
         )}
       </div>
@@ -61,7 +61,7 @@ export function SearchFiltersPanel({
           <SelectContent>
             <SelectItem value="upcoming">{t("filters.upcoming")}</SelectItem>
             <SelectItem value="all">{t("filters.all")}</SelectItem>
-            <SelectItem value="past">Past</SelectItem>
+            <SelectItem value="past">{t("filters.past")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -83,11 +83,11 @@ export function SearchFiltersPanel({
             <SelectValue placeholder={t("filters.countryLabel")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="hu">Hungary</SelectItem>
-            <SelectItem value="de">Germany</SelectItem>
-            <SelectItem value="at">Austria</SelectItem>
-            <SelectItem value="sk">Slovakia</SelectItem>
-            <SelectItem value="ro">Romania</SelectItem>
+            <SelectItem value="hu">{t("filters.countries.hu")}</SelectItem>
+            <SelectItem value="de">{t("filters.countries.de")}</SelectItem>
+            <SelectItem value="at">{t("filters.countries.at")}</SelectItem>
+            <SelectItem value="sk">{t("filters.countries.sk")}</SelectItem>
+            <SelectItem value="ro">{t("filters.countries.ro")}</SelectItem>
           </SelectContent>
         </Select>
 

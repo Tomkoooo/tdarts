@@ -235,7 +235,7 @@ const BoardPage: React.FC = () => {
                 id="legsToWin"
                 onChange={(e) => setLocalMatchLegsToWin(parseInt(e.target.value))} 
                 value={localMatchLegsToWin} 
-                className="select select-bordered w-full"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
               >
                 {Array.from({ length: 20 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>{i + 1}</option>
@@ -250,7 +250,7 @@ const BoardPage: React.FC = () => {
                 id="startingScore"
                 onChange={(e) => setLocalMatchStartingScore(parseInt(e.target.value))} 
                 value={localMatchStartingScore} 
-                className="select select-bordered w-full"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
               >
                 {startingScoreOptions.map((score) => (
                   <option key={score} value={score}>{score}</option>

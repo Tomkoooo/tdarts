@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { useTranslations } from "next-intl"
 import { IconUser, IconTrophy, IconChartBar, IconSettings } from "@tabler/icons-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -55,27 +55,23 @@ export function ProfilePageLayout({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <AnimatedStat
               label={t("statistics.totalMatches")}
-              value={statistics?.totalMatches || 0}
+              number={statistics?.totalMatches || 0}
               icon="🎯"
-              trend="up"
             />
             <AnimatedStat
               label={t("statistics.winRate")}
-              value={`${statistics?.winRate || 0}%`}
+              number={`${statistics?.winRate || 0}%`}
               icon="🏆"
-              trend="up"
             />
             <AnimatedStat
               label={t("statistics.avgScore")}
-              value={statistics?.avgScore || 0}
+              number={statistics?.avgScore || 0}
               icon="📊"
-              trend="up"
             />
             <AnimatedStat
               label={t("statistics.total180")}
-              value={statistics?.total180 || 0}
+              number={statistics?.total180 || 0}
               icon="💯"
-              trend="up"
             />
           </div>
         </div>

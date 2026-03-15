@@ -1,7 +1,11 @@
+"use client"
+
 import TournamentCard from "@/components/tournament/TournamentCard"
 import { IconCalendar } from "@tabler/icons-react"
 import { useLocale, useTranslations } from "next-intl"
+import { motion } from "framer-motion"
 import { addDaysToDateKey, formatDateKeyLabel, getLocalDateKey, getUserTimeZone } from "@/lib/date-time"
+import { staggerContainer, staggerChild } from "@/lib/motion"
 
 interface TournamentListProps {
     tournaments: any[];
@@ -64,12 +68,21 @@ export function TournamentList({ tournaments }: TournamentListProps) {
     }
 
     return (
-        <div className="space-y-10 animate-in fade-in duration-500">
-            {sortedDates.map(dateKey => {
+        <motion.div
+            className="space-y-10"
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+        >
+            {sortedDates.map((dateKey) => {
                 const dayTournaments = groupedTournaments[dateKey]
                 
                 return (
-                    <section key={dateKey} className="space-y-5">
+                    <motion.section
+                        key={dateKey}
+                        className="space-y-5"
+                        variants={staggerChild}
+                    >
                         <div className="flex items-center gap-4 sticky top-[60px] md:top-[70px] z-10 py-2 bg-base-100/95 backdrop-blur-sm border-b border-base-200">
                             <h3 className="text-lg md:text-xl font-bold text-primary-foreground capitalize flex items-center gap-2">
                                 <IconCalendar className="w-5 h-5 opacity-70" />
@@ -82,15 +95,14 @@ export function TournamentList({ tournaments }: TournamentListProps) {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {dayTournaments.map((tournament: any) => (
-                                <TournamentCard 
-                                    key={tournament._id} 
-                                    tournament={tournament} 
-                                />
+                                <motion.div key={tournament._id} variants={staggerChild}>
+                                    <TournamentCard tournament={tournament} />
+                                </motion.div>
                             ))}
                         </div>
-                    </section>
+                    </motion.section>
                 )
             })}
-        </div>
+        </motion.div>
     )
 }

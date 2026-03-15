@@ -3,9 +3,8 @@
 import { useUserContext } from "@/hooks/useUser"
 import { ProfilePictureUpload } from "./ProfilePictureUpload"
 import { useTranslations } from "next-intl"
-import { IconMapPin, IconShield, IconShieldCheck, IconCalendar, IconMail } from "@tabler/icons-react"
+import { IconMapPin, IconShield, IconShieldCheck, IconMail } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/Badge"
-import { cn } from "@/lib/utils"
 
 export function ProfileHeader() {
   const { user, setUser } = useUserContext()
@@ -16,15 +15,6 @@ export function ProfileHeader() {
       setUser({ ...user, profilePicture: url })
     }
   }
-
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?"
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card">

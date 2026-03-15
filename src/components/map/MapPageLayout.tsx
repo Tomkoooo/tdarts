@@ -103,16 +103,20 @@ export function MapPageLayout({
               </div>
             ) : tournaments.length > 0 ? (
               tournaments.map((tournament, idx) => (
-                <GlassmorphismCard
+                <button
                   key={idx}
-                  className={`p-4 cursor-pointer transition-all hover:shadow-glow-primary ${
-                    selectedTournament?.id === tournament.id
-                      ? "ring-2 ring-primary shadow-glow-primary"
-                      : ""
-                  }`}
+                  type="button"
                   onClick={() => handleTournamentClick(tournament)}
+                  className="w-full text-left"
                 >
-                  <h3 className="font-semibold text-sm truncate">{tournament.name}</h3>
+                  <GlassmorphismCard
+                    className={`p-4 cursor-pointer transition-all hover:shadow-glow-primary ${
+                      selectedTournament?.id === tournament.id
+                        ? "ring-2 ring-primary shadow-glow-primary"
+                        : ""
+                    }`}
+                  >
+                    <h3 className="font-semibold text-sm truncate">{tournament.name}</h3>
                   <p className="text-xs text-muted-foreground">{tournament.location}</p>
                   {tournament.date && (
                     <p className="text-xs text-muted-foreground mt-2">{tournament.date}</p>
@@ -122,7 +126,8 @@ export function MapPageLayout({
                       👥 {tournament.players} players
                     </p>
                   )}
-                </GlassmorphismCard>
+                  </GlassmorphismCard>
+                </button>
               ))
             ) : (
               <GlassmorphismCard className="p-8 text-center">

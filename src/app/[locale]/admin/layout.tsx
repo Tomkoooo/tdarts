@@ -230,7 +230,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex flex-col border-r border-border bg-card transition-all duration-300",
+          "hidden lg:flex flex-col border-r border-border/70 bg-card/80 backdrop-blur-xl transition-all duration-300",
           isCollapsed ? "w-16" : "w-64"
         )}
       >

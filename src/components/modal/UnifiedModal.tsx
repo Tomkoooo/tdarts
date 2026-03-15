@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react"
 import { useTranslations } from "next-intl"
-import { IconAlertCircle, IconCheckCircle, IconXCircle, IconInfo, IconX } from "@tabler/icons-react"
+import { IconAlertCircle, IconCircleCheck, IconCircleX, IconInfoCircle, IconX } from "@tabler/icons-react"
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from "framer-motion"
 
 export type ModalType = "confirm" | "alert" | "success" | "error" | "info"
+export type ModalSize = "sm" | "md" | "lg" | "xl" | "full"
 
 export interface ModalConfig {
   type: ModalType
@@ -24,6 +27,8 @@ export interface ModalConfig {
   onConfirm?: () => void | Promise<void>
   onCancel?: () => void
   isLoading?: boolean
+  size?: ModalSize
+  showSkeleton?: boolean
 }
 
 interface ModalContextType {
@@ -100,17 +105,27 @@ interface UnifiedModalProps {
 
 function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalProps) {
   const t = useTranslations("Modal")
+  const sizeClass =
+    config.size === "sm"
+      ? "sm:max-w-sm"
+      : config.size === "lg"
+        ? "sm:max-w-2xl"
+        : config.size === "xl"
+          ? "sm:max-w-4xl"
+          : config.size === "full"
+            ? "sm:max-w-[96vw] h-[90vh]"
+            : "sm:max-w-lg"
 
   const getIcon = () => {
     switch (config.type) {
       case "confirm":
         return <IconAlertCircle className="w-6 h-6 text-primary" />
       case "success":
-        return <IconCheckCircle className="w-6 h-6 text-green-500" />
+        return <IconCircleCheck className="w-6 h-6 text-green-500" />
       case "error":
-        return <IconXCircle className="w-6 h-6 text-red-500" />
+        return <IconCircleX className="w-6 h-6 text-red-500" />
       case "info":
-        return <IconInfo className="w-6 h-6 text-blue-500" />
+        return <IconInfoCircle className="w-6 h-6 text-blue-500" />
       default:
         return null
     }
@@ -120,7 +135,8 @@ function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalPr
 
   return (
     <Dialog open={true}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={`${sizeClass} border-border/70 bg-card/90 backdrop-blur-xl`}>
+        <motion.div initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.18 }}>
         <DialogHeader>
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0 mt-0.5">
@@ -138,9 +154,17 @@ function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalPr
           </div>
         </DialogHeader>
 
-        <DialogDescription className="mt-4 text-base text-foreground">
-          {config.message}
-        </DialogDescription>
+        {config.showSkeleton ? (
+          <div className="mt-4 space-y-3">
+            <Skeleton className="h-4 w-[80%]" />
+            <Skeleton className="h-4 w-[92%]" />
+            <Skeleton className="h-4 w-[68%]" />
+          </div>
+        ) : (
+          <DialogDescription className="mt-4 text-base text-foreground">
+            {config.message}
+          </DialogDescription>
+        )}
 
         {showActions && (
           <DialogFooter className="mt-8 flex gap-3 justify-end">
@@ -163,6 +187,7 @@ function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalPr
             </Button>
           </DialogFooter>
         )}
+        </motion.div>
       </DialogContent>
     </Dialog>
   )

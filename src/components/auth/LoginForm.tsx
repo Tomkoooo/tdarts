@@ -105,7 +105,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <div className="p-3 rounded-full bg-gradient-to-r from-[hsl(var(--primary) / 0.2)] to-[hsl(var(--primary-dark) / 0.2)] border border-[hsl(var(--primary) / 0.3)]">
-            <IconLogin className="w-8 h-8 text-[hsl(var(--primary))] text-glow" />
+            <IconLogin className="w-8 h-8 text-primary drop-shadow-glow-primary" />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-gradient-red mb-2">

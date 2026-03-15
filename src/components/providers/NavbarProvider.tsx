@@ -2,78 +2,107 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import NavbarNew from '@/components/homapage/NavbarNew'
 import Footer from '@/components/homapage/Footer'
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { PageTransitionWrapper } from '@/components/layout/PageTransitionWrapper'
 import { stripLocalePrefix } from "@/lib/seo"
+import {
+  shouldHideNavbar,
+  shouldShowFooter,
+  shouldUseAppShell,
+  shouldUseAuthShell,
+  shouldUseMarketingShell,
+} from "@/lib/navigation/shell-routing"
+import { ModalProvider } from '@/components/modal/UnifiedModal'
 
 export function NavbarProvider({ 
   children, 
-  initialShouldHide = false 
+  initialShouldHide = false,
+  initialPath = "",
 }: { 
   children: React.ReactNode
-  initialShouldHide?: boolean 
+  initialShouldHide?: boolean
+  initialPath?: string
 }) {
   const pathname = usePathname()
-  const [shouldHideNavbar, setShouldHideNavbar] = useState(initialShouldHide)
-  const [showFooter, setShowFooter] = useState(false)
-  const [useNewLayout, setUseNewLayout] = useState(false)
+  const [shellState, setShellState] = useState(() => {
+    const path = initialPath || stripLocalePrefix(pathname || "/")
+    return {
+      shouldHide: initialShouldHide,
+      showFooter: shouldShowFooter(path),
+      useAppShell: shouldUseAppShell(path),
+      useAuthShell: shouldUseAuthShell(path),
+      useMarketingShell: shouldUseMarketingShell(path),
+    }
+  })
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   useEffect(() => {
-    if (!pathname) return;
+    const normalizedPath = stripLocalePrefix(pathname || "/")
+    const hide = shouldHideNavbar(normalizedPath)
+    const showFooter = shouldShowFooter(normalizedPath)
+    const useAppShell = shouldUseAppShell(normalizedPath)
+    const useAuthShell = shouldUseAuthShell(normalizedPath)
+    const useMarketingShell = shouldUseMarketingShell(normalizedPath)
 
-    const normalizedPath = stripLocalePrefix(pathname);
-
-    const hideNavbarPaths = ['/board', '/test', '/tv', '/api/admin']
-    const shouldHide = hideNavbarPaths.some(path => normalizedPath.startsWith(path)) || normalizedPath.includes('/tv')
-    
-    // Use new layout (sidebar + bottom nav) for these paths
-    const newLayoutPaths = ['/tournaments', '/clubs', '/statistics', '/profile', '/settings']
-    const useNew = newLayoutPaths.some(path => normalizedPath.startsWith(path))
-    
-    // Footer visibility logic
-    const shownFooterPaths = ['/search', '/profile', '/club'];
-    const shouldShowFooter =
-      shownFooterPaths.some(path => normalizedPath.startsWith(path)) || normalizedPath === '/';
-
-    setShouldHideNavbar(shouldHide)
-    setShowFooter(shouldShowFooter)
-    setUseNewLayout(useNew)
+    setShellState({
+      shouldHide: hide,
+      showFooter,
+      useAppShell,
+      useAuthShell,
+      useMarketingShell,
+    })
   }, [pathname])
 
-  if (shouldHideNavbar) {
-    return (
-      <main className="flex-1">
-        {children}
-      </main>
-    )
+  useEffect(() => {
+    const saved = localStorage.getItem("tdarts.sidebar.collapsed")
+    if (saved !== null) {
+      setIsCollapsed(saved === "true")
+    }
+  }, [])
+
+  const handleToggleCollapsed = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem("tdarts.sidebar.collapsed", String(next))
+      return next
+    })
   }
 
-  if (useNewLayout) {
-    return (
-      <div className="flex flex-col min-h-screen md:pl-64">
-        <DesktopSidebar />
+  const content = shellState.shouldHide ? (
+    <main className="flex-1">{children}</main>
+  ) : shellState.useMarketingShell ? (
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1 flex-col min-h-0">
         <main className="flex-1 pb-20 md:pb-0">
-          {children}
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
         </main>
-        <MobileBottomNav />
+        {shellState.showFooter && <Footer />}
       </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col min-h-screen">
-      <>
-        <NavbarNew />
-        {/* Spacer to prevent content from being hidden behind fixed navbar */}
-        <div className="h-16 md:h-20" />
-      </>
-      <main className="flex-1">
-        {children}
-      </main>
-      {showFooter && <Footer />}
+      <MobileBottomNav />
     </div>
+  ) : shellState.useAppShell ? (
+    <div className={isCollapsed ? "flex min-h-screen flex-col md:pl-[var(--sidebar-collapsed-width)]" : "flex min-h-screen flex-col md:pl-[var(--sidebar-width)]"}>
+      <DesktopSidebar collapsed={isCollapsed} onToggleCollapsed={handleToggleCollapsed} />
+      <div className="flex flex-1 flex-col min-h-0">
+        <main className="flex-1 pb-20 md:pb-0">
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+        </main>
+        {shellState.showFooter && <Footer />}
+      </div>
+      <MobileBottomNav />
+    </div>
+  ) : shellState.useAuthShell ? (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-6">
+      <PageTransitionWrapper>{children}</PageTransitionWrapper>
+    </main>
+  ) : (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-6">
+      {children}
+    </main>
   )
+
+  return <ModalProvider>{content}</ModalProvider>
 }
 

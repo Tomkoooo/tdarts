@@ -15,7 +15,8 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
-import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
+import { buildLocaleAlternates, getBaseUrl, stripLocalePrefix } from "@/lib/seo";
+import { shouldHideNavbar } from "@/lib/navigation/shell-routing";
 import { getUserTimeZone } from "@/lib/date-time";
 import { findSessionUserByEmail } from "@/features/auth/lib/sessionUser.db";
 
@@ -136,13 +137,11 @@ export default async function RootLayout({
   const messages = await getMessages();
   const fallbackTimeZone = getUserTimeZone();
 
-  // Get pathname from headers for initial body padding (server-side)
+  // Get pathname from headers for initial shell classification (server-side)
   const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || '';
-  
-  // Define paths where you don't want to render certain elements
-  const hideNavbarPaths = ['/board', '/test', '/tv'];
-  const shouldHideNavbar = hideNavbarPaths.some(path => pathname.includes(path));
+  const rawPathname = headersList.get("x-pathname") || "";
+  const normalizedPath = stripLocalePrefix(rawPathname || "/");
+  const initialShouldHide = shouldHideNavbar(normalizedPath);
 
   
   const cookieStore = await cookies();
@@ -232,7 +231,7 @@ export default async function RootLayout({
               <AuthSync />
               <TimezoneSync />
               <PWAProvider />
-              <NavbarProvider initialShouldHide={shouldHideNavbar}>
+              <NavbarProvider initialShouldHide={initialShouldHide} initialPath={normalizedPath}>
               
                 <Toaster position="top-left" />
                 {children}

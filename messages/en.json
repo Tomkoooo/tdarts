@@ -27,27 +27,141 @@
     "confirmDelete": "Are you sure you want to delete this?",
     "yes": "Yes",
     "no": "No",
-    "or": "or"
+    "or": "or",
+    "a_játékosoknak_ezt": "Spieler müssen dieses Passwort eingeben, um beizutreten",
+    "a_verseny_látható": "Der Wettbewerb wird auf der Suchseite für alle sichtbar sein",
+    "add_meg_a_88": "Geben Sie die im Wettbewerb verwendeten Boards ein",
+    "add_meg_a_91": "Geben Sie die Grunddaten des Wettbewerbs ein",
+    "alapvető_információk": "Grundlegende Informationen",
+    "alternatív_megoldások": "Alternative Lösungen:",
+    "atlag_308n": "Durchschnitt",
+    "azonnali_megoldások": "Sofortige Lösungen:",
+    "bejelentkezesi_hiba_hqbc": "Anmeldefehler",
+    "betoltes_69f8": "Laden...",
+    "betöltés": "Laden...",
+    "bezaras_o3av": "Schließung",
+    "csapat_meghivas_elfogadva_r38s": "Teameinladung angenommen!",
+    "csapat_meghivo_orrr": "Team Invitational",
+    "csapat_neve_b7w7": "Teamname",
+    "csoportos_cksc": "Gruppe",
+    "dupla_kieses_g6zf": "Doppelte Eliminierung",
+    "egyenes_kieses_lfsy": "Direkt raus",
+    "elit_1acs": "Elite",
+    "ellenőrizd_az_internetkapcsolatot": "• Überprüfen Sie Ihre Internetverbindung",
+    "elutasitas_ymrf": "Ablehnung",
+    "error_id": "Fehler-ID:",
+    "fooldal_iry6": "Hauptseite",
+    "frissítsd_az_oldalt": "• Seite aktualisieren (F5)",
+    "főoldal": "Hauptseite",
+    "google_bejelentkezes_feldolgozasa_nq04": "Google-Login wird verarbeitet...",
+    "google_bejelentkezes_sikertelen_gllv": "Die Google-Anmeldung ist fehlgeschlagen",
+    "ha_a_probléma": "Sollte das Problem weiterhin bestehen, wenden Sie sich bitte an die Entwickler.",
+    "halado_zek6": "Fortschrittlich",
+    "helyezes_bugj": "Platzierung",
+    "hiba_részletei_fejlesztői": "Fehlerdetails (Entwicklermodus):",
+    "hiba_tortent_a_bejelentkezes_mbps": "Beim Anmelden ist ein Fehler aufgetreten",
+    "hiba_tortent_w14r": "Es ist ein Fehler aufgetreten",
+    "hiba_történt": "Es ist ein Fehler aufgetreten",
+    "hibajelentés_azonosító": "Fehlerbericht-ID:",
+    "hány_játékos_vehet": "Wie viele Spieler können maximal teilnehmen? (4-128)",
+    "hány_leg_et": "Wie viele Legs braucht man, um ein Match zu gewinnen?",
+    "jelszó": "Passwort",
+    "játék_típus": "Spieltyp",
+    "kattints_az_ldquo": "• Klicken Sie auf &ldquo;Retry&rdquo;.",
+    "keresés": "Suchen",
+    "kezdo_173n": "Anfänger",
+    "kezdo_xwyz": "Anfänger+",
+    "kezdési_dátum": "Startdatum",
+    "kiszallo_arany_49l1": "Ausstiegsrate",
+    "kormerkozes_vrpm": "Round-Robin",
+    "kozephalado_uheg": "Dazwischenliegend",
+    "kérjük_várj_az": "Bitte warten Sie, die Seite wird geladen.",
+    "later": "Später",
+    "legjobb_helyezes_i1t1": "Bestes Ranking",
+    "legjobb_helyezés": "Bestes Ranking",
+    "legmagasabb_kiszallo_v119": "Höchster Ausgang",
+    "leírás": "Beschreibung",
+    "láthatóság": "Sichtweite",
+    "lépj_vissza_a": "• Gehen Sie zurück zur Hauptseite",
+    "létrehozás": "Erstellen...",
+    "max_kiszálló": "Maximaler Ausgang",
+    "maximum_játékosszám": "Maximale Spieleranzahl",
+    "meccs": "übereinstimmen",
+    "meghivas_elfogadasa_x0n5": "Eine Einladung annehmen",
+    "meghivas_elutasitva_vzwy": "Einladung abgelehnt",
+    "meghivast_kaptal_egy_paros_z44a": "Sie wurden zu einem Doppel-/Mannschaftsturnier eingeladen",
+    "meghivo_betoltese_pctm": "Einladung wird geladen...",
+    "meghivott_hogy_csatlakozz_a_5u8m": "hat Sie eingeladen, seinem Team beizutreten.",
+    "mester_wz01": "Master",
+    "mikor_kezdődik_a": "Wann beginnt der Wettbewerb?",
+    "mit_tehetsz": "Was können Sie tun?",
+    "mégse": "Nicht stornieren",
+    "nem_sikerult_betolteni_a_8vw4": "Spielerdaten konnten nicht geladen werden",
+    "nincs_elerheto_torna_tortenet_8gia": "Keine Turnierhistorie verfügbar.",
+    "nyert_lejatszott_leg_47wb": "Die meisten haben gewonnen/gespielt",
+    "nyert_lejatszott_meccs_61q5": "Spiel gewonnen/verloren",
+    "nyert_lejatszott_torna_5xow": "Turnier gewonnen/gespielt",
+    "nyeréshez_szükséges_leg": "Man braucht Beine, um zu gewinnen",
+    "nyilvános_verseny": "Öffentlicher Wettbewerb",
+    "opcionális_rövid_leírás": "Optionale Kurzbeschreibung, die den Teilnehmern angezeigt wird",
+    "osszes_180_reco": "Insgesamt 180",
+    "osszesitett_statisztikak_y0ve": "Aggregierte Statistiken",
+    "pl_tavaszi_darts": "z.B. Frühjahrs-Dartmeisterschaft",
+    "próbáld_meg_újratölteni": "Versuchen Sie, die Seite neu zu laden, oder kehren Sie zur Hauptseite zurück.",
+    "próbáld_másik_böngészőben": "• Versuchen Sie es in einem anderen Browser",
+    "rövid_leírás_a": "Kurze Beschreibung des Wettbewerbs...",
+    "sajnos_valami_hiba": "Leider ist beim Laden der Seite ein Fehler aufgetreten.",
+    "sikeres_muvelet_fiwv": "Erfolgreiche Operation",
+    "torna": "Gymnastik •",
+    "torna_1c80": "Gymnastik",
+    "torna_tortenet_jznf": "Turngeschichte",
+    "tornara_lepes_joqq": "Betreten der Turnhalle",
+    "tábla_hozzáadása": "Fügen Sie eine Tabelle hinzu",
+    "tábla_szám": "Kennzeichen",
+    "táblák": "Bretter",
+    "töröld_a_böngésző": "• Leeren Sie den Browser-Cache",
+    "verseny_beállítások": "Wettbewerbseinstellungen",
+    "verseny_formátum": "Wettbewerbsformat",
+    "verseny_jelszava": "Passwort für den Wettbewerb",
+    "verseny_létrehozása": "Erstellen Sie einen Wettbewerb",
+    "verseny_neve": "Wettbewerbsname",
+    "verseny_sikeresen_létrehozva": "Wettbewerb erfolgreich erstellt!",
+    "view": "Anzeigen",
+    "vissza": "Zurück",
+    "vissza_a_bejelentkezeshez_kk0h": "Zurück zum Login",
+    "vissza_a_fooldalra_hdrp": "Zurück zur Hauptseite",
+    "válassz_egy_egyedi": "Wählen Sie einen einzigartigen, ausdrucksstarken Namen für Ihre Konkurrenz",
+    "válaszd_ki_a_78": "Wählen Sie das Turnierformat und die Regeln",
+    "átlag_19": "Durchschnitt",
+    "újrapróbálkozás": "Erneuter Versuch",
+    "pleaseWait": "Please wait while the page is loading."
   },
   "Navbar": {
-    "tournaments": "Tournaments",
+    "tournaments": "Competitions",
     "clubs": "Clubs",
-    "board": "Board",
+    "board": "Blackboard",
+    "board_offline": "Local Board (Offline)",
     "search": "Search",
-    "howItWorks": "How it works",
-    "myClub": "My Club",
+    "how_it_works": "How it works",
+    "my_club": "Own club",
     "feedback": "Feedback",
     "profile": "Profile",
-    "statistics": "Statistics",
-    "tickets": "Support Tickets",
+    "stats": "Statistics",
+    "tickets": "Error marks",
     "admin": "Admin",
-    "logout": "Logout",
+    "logout": "Checkout",
     "login": "Login",
-    "register": "Register",
+    "register": "Registration",
     "language": "Language",
-    "online": "Online",
+    "select_language": "Select language",
+    "coming_soon": "Coming soon",
     "offline": "Offline",
-    "comingSoon": "Coming soon"
+    "tdarts_f0pi": "tDarts",
+    "tdarts_logo_wslq": "tDarts Logo",
+    "home": "Home",
+    "landing": "Landing",
+    "settings": "Settings",
+    "statistics": "Statistics"
   },
   "Search": {
     "placeholder": "Search tournaments, clubs, or players...",
@@ -70,15 +184,128 @@
       "popularCities": "Popular cities",
       "timeLabel": "Date",
       "upcoming": "Upcoming",
+      "past": "Past",
       "all": "All",
       "seasonLabel": "Season",
       "currentSeason": "Current Season",
       "typeLabel": "Type",
       "typeAmateur": "Amateur",
       "typeOpen": "Open",
-      "countryLabel": "Country"
-    }
+      "countryLabel": "Country",
+      "filterLabel": "Filters",
+      "typeAll": "All types",
+      "clear": "Clear",
+      "activeFilters": "{count} active",
+      "countries": {
+        "hu": "Hungary",
+        "de": "Germany",
+        "at": "Austria",
+        "sk": "Slovakia",
+        "ro": "Romania"
+      }
+    },
+    "all_tournaments": "Összes Torna",
+    "back_to_portal": "Vissza a portál oldalra",
+    "club_list": {
+      "member_count": "{count} tag",
+      "no_clubs": "Nincsenek klubok",
+      "tournament_count": "Verseny",
+      "view_profile": "Adatlap"
+    },
+    "filter_bar": {
+      "all": "Összes"
+    },
+    "filters_panel": {
+      "clear": "Törlés",
+      "date_range_label": "Dátum intervallum",
+      "format_all": "Összes",
+      "format_group_knockout": "Csoportkör + Kiesés",
+      "format_knockout": "Egyenes kiesés",
+      "format_label": "Formátum",
+      "location_label": "Helyszín",
+      "location_placeholder": "Pl. Budapest, Debrecen...",
+      "max_1nic": "Max",
+      "min_1noy": "Min",
+      "no_player_filters": "Jelenleg nincsenek részletes szűrők a játékosokhoz.",
+      "oac_label": "OAC / Hitelesített Verseny",
+      "oac_leagues_only": "Csak OAC Ligák",
+      "player_count_label": "Játékosok száma",
+      "status_all": "Összes",
+      "status_finished": "Befejezett",
+      "status_group": "Csoportkör",
+      "status_knockout": "Egyenes kiesés",
+      "status_label": "Státusz",
+      "status_pending": "Várakozás alatt",
+      "title": "Részletes Szűrők",
+      "type_amateur": "Amatőr",
+      "type_label": "Verseny típusa",
+      "type_open": "Nyílt",
+      "verified_club": "Hitelesített Klub"
+    },
+    "floating_menu": {
+      "close": "Bezárás",
+      "search_placeholder": "Keresés...",
+      "title": "Keresés & Szűrők"
+    },
+    "header": {
+      "clear_filters": "Szűrők törlése"
+    },
+    "initial_view": {
+      "active_leagues": "Aktív Ligák",
+      "active_tournaments": "Aktív Tornák",
+      "all_clubs": "Összes Klub",
+      "all_tournaments": "Összes Torna",
+      "all_tournaments_title": "Összes Torna",
+      "filters": "Szűrők",
+      "finished_tournaments": "Lezárt Tornák",
+      "member_count": "{count} tag",
+      "no_active_leagues": "Nincsenek aktív ligák jelenleg.",
+      "oac_1o6p": "OAC",
+      "ongoing": "Folyamatos",
+      "popular_clubs": "Népszerű klubok",
+      "quick_actions": "Gyors Műveletek",
+      "search_results": "Keresési Találatok",
+      "todays_tournaments": "Mai Tornák",
+      "top_players": "Top Játékosok",
+      "upcoming_tournaments_title": "Közelgő Tornák",
+      "view_league": "Megtekintés"
+    },
+    "league_list": {
+      "details": "Részletek",
+      "no_leagues": "Nincsenek ligák",
+      "organizer": "Szervező:",
+      "status_active": "Aktív szezon",
+      "status_closed": "Lezárt"
+    },
+    "load_more": "További találatok betöltése",
+    "loading": "Betöltés...",
+    "no_results": "Nincs találat a keresési feltételeknek megfelelően.",
+    "quick_filters": {
+      "all": "Összes",
+      "amateur": "Amatőr",
+      "oac_verified": "OAC / Hitelesített Verseny",
+      "open": "Open",
+      "popular_cities": "Népszerű városok:",
+      "upcoming": "Közelgő"
+    },
+    "results_title": "Keresési Találatok",
+    "tournament_results": {
+      "calendar_view": "Naptár",
+      "filters": "Szűrők",
+      "list_view": "Lista",
+      "no_tournaments": "Nincsenek közelgő versenyek",
+      "no_tournaments_desc": "Próbáld meg később, vagy keress más kategóriában.",
+      "no_tournaments_filters_desc": "Próbáld meg módosítani a szűrőket vagy keress más időpontban.",
+      "oac_1o6p": "OAC",
+      "today": "Ma",
+      "today_badge": "Ma",
+      "tomorrow": "Holnap",
+      "tournament_count": "{count} verseny"
+    },
+    "upcoming_tournaments": "Közelgő Tornák"
   },
+  "Hero": {
+    "badge": "Professional Darts Tournament Platform",
     "subtitle_badge": "Competition Platform",
     "subtitle": "The next generation darts competition platform. Match search, club creation, real-time results and full customization.",
     "features": {
@@ -105,46 +332,222 @@
     "tdarts_u6qj": "tDarts"
   },
   "Profile": {
+    "loading_data": "Loading user data...",
     "header": {
-      "title": "My Profile",
-      "subtitle": "Manage your personal information and statistics"
+      "title": "User Profile",
+      "subtitle": "Manage your personal data and view your statistics"
     },
     "tabs": {
-      "overview": "Overview",
-      "statistics": "Statistics",
-      "achievements": "Achievements",
-      "matches": "Matches"
+      "details": "Data",
+      "stats": "Statistics",
+      "tickets": "Feedback",
+      "achievements": "achievements",
+      "overview": "overview",
+      "settings": "settings",
+      "statistics": "statistics"
+    },
+    "countries": {
+      "hu": "Hungary",
+      "at": "Austria",
+      "de": "Germany",
+      "sk": "Slovakia",
+      "ro": "Romania",
+      "hr": "Croatia",
+      "si": "Slovenia"
+    },
+    "info": {
+      "title": "Personal Information",
+      "email": "Email address",
+      "verified": "Checked",
+      "not_verified": "Not verified",
+      "name": "Name",
+      "username": "Username",
+      "country": "Country"
+    },
+    "edit": {
+      "title": "Edit Profile",
+      "email": "Email address",
+      "name": "Name",
+      "username": "Username",
+      "country": "Country",
+      "password": "New password",
+      "confirm_password": "Confirm new password",
+      "placeholders": {
+        "email": "Example: john@example.com",
+        "name": "Full name",
+        "username": "Username",
+        "password": "Leave it blank if you don't change it"
+      },
+      "updating": "Update...",
+      "update_button": "Saving data",
+      "validation": {
+        "email": "Invalid e-mail address",
+        "name_required": "Entering a name is mandatory",
+        "username_required": "Entering a username is mandatory",
+        "password_mismatch": "The two passwords do not match"
+      }
+    },
+    "verification": {
+      "title": "Email Confirmation",
+      "alert": "Please confirm your email address for safe use.",
+      "code_label": "Verification code",
+      "code_placeholder": "6 digit code",
+      "verifying": "Control...",
+      "verify_button": "Confirmation",
+      "resending": "Sending...",
+      "resend_button": "Resend code",
+      "validation": {
+        "code_required": "Entering the verification code is mandatory"
+      }
+    },
+    "actions": {
+      "title": "Operations",
+      "logging_out": "Signing out...",
+      "logout": "Checkout",
+      "my_club": "My club",
+      "admin": "Administration"
+    },
+    "stats": {
+      "title": "Player Statistics",
+      "period": "Period:",
+      "seasons": {
+        "current": "Current season",
+        "all_time": "Aggregated",
+        "previous": "Previous seasons"
+      },
+      "mmr": {
+        "current": "Current MMR",
+        "season_end": "End of season MMR",
+        "archived": "Archived MMR"
+      },
+      "mmr_1n02": "MMR",
+      "oac_mmr_g66r": "OAC MMR",
+      "rank": "Placement",
+      "rank_end": "Leadership position",
+      "global_list": "Global leaderboard",
+      "tournaments": "Competitions",
+      "career": "Career",
+      "term": "Period",
+      "win_rate": "Winning ratio",
+      "wins": "Victory",
+      "charts": {
+        "form": "Form (Average)",
+        "no_data": "Not enough data to graph",
+        "mmr_history": "MMR History",
+        "no_history": "No MMR history"
+      },
+      "metrics": {
+        "title": "Detailed Data",
+        "avg": "Average",
+        "one_eighties": "Total 180",
+        "best_pos": "Best ranking",
+        "avg_pos": "Average ranking",
+        "max_checkout": "Highest exit"
+      },
+      "matches": {
+        "title": "Recent matches"
+      },
+      "teams": {
+        "title": "My teams",
+        "pair": "Couple",
+        "team": "Team"
+      },
+      "history": {
+        "title": "Competition History",
+        "tournaments_count": "{count} competition",
+        "open_button": "Opening",
+        "matches": "Matches",
+        "legs": "I will",
+        "avg": "Average",
+        "one_eighties": "180s",
+        "checkout": "Exit",
+        "date": "Date",
+        "empty": "There are no registered races in this period"
+      }
+    },
+    "history": {
+      "title": "League History",
+      "points": "Points",
+      "tournaments": "Competitions",
+      "position": "Placement",
+      "last_activity": "Last Activity: {date}"
+    },
+    "tickets": {
+      "title": "My feedback (Tickets)",
+      "new_ticket": "New error ticket",
+      "new_ticket_desc": "Do you have a question or comment? Write to us!",
+      "status": {
+        "open": "Open",
+        "replied": "A reply has been received",
+        "closed": "Closed"
+      },
+      "priority": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "id_prefix": "Ticket#",
+      "updated_at": "Updated: {date}",
+      "empty": "You have no feedback yet.",
+      "reply_placeholder": "Write a reply...",
+      "send_button": "Sending",
+      "closed_message": "This ticket has been closed.",
+      "toasts": {
+        "closed_error": "You cannot comment on a closed bug ticket",
+        "reply_error": "Error sending message"
+      }
+    },
+    "toasts": {
+      "updating": "Update profile...",
+      "update_success": "Profile successfully updated!",
+      "update_error": "An error occurred during the update",
+      "verification_success": "Email address successfully confirmed!",
+      "verification_error": "Invalid verification code",
+      "resending": "Resend code...",
+      "resend_success": "New code sent!",
+      "resend_error": "Error resending code",
+      "logout_success": "Checkout successful!",
+      "logout_error": "Error during checkout"
+    },
+    "picture": {
+      "profilkep_giiz": "Profile picture",
+      "consent_error": "You must agree to make the image public",
+      "success_update": "Profile picture successfully updated",
+      "error_update": "Error updating profile picture",
+      "remove_confirm": "Are you sure you want to delete your profile picture?",
+      "success_remove": "Profile picture successfully removed",
+      "error_remove": "Error removing profile picture",
+      "removing": "Removal...",
+      "remove_button": "Delete profile picture",
+      "dialog_title": "Edit Profile Picture",
+      "zoom": "Magnification",
+      "consent_label": "I agree to have my profile picture displayed in player lists and tournaments.",
+      "cancel": "Don't cancel",
+      "saving": "Rescue...",
+      "save": "Save profile picture"
     },
     "editForm": {
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "phone": "Phone",
-      "birthDate": "Birth Date",
-      "city": "City",
-      "country": "Country",
-      "profilePicture": "Profile Picture",
-      "save": "Save Changes",
-      "cancel": "Cancel",
-      "saved": "Profile saved successfully"
-    },
-    "statistics": {
-      "totalMatches": "Total Matches",
-      "winRate": "Win Rate",
-      "avgScore": "Average Score",
-      "bestMatch": "Best Match",
-      "totalLegs": "Total Legs",
-      "total180": "Total 180s",
-      "highestCheckout": "Highest Checkout"
+      "city": "city",
+      "country": "country",
+      "email": "email",
+      "firstName": "firstName",
+      "save": "save"
     },
     "settings": {
-      "emailNotifications": "Email Notifications",
-      "pushNotifications": "Push Notifications",
-      "privacySettings": "Privacy Settings",
-      "dataExport": "Export My Data",
-      "deleteAccount": "Delete Account"
+      "dataExport": "dataExport",
+      "emailNotifications": "emailNotifications",
+      "privacySettings": "privacySettings",
+      "pushNotifications": "pushNotifications"
+    },
+    "statistics": {
+      "avgScore": "avgScore",
+      "title": "title",
+      "total180": "total180",
+      "totalMatches": "totalMatches",
+      "winRate": "winRate"
     }
   },
+  "HowItWorks": {
     "hero": {
       "badge": "Guide and Documentation",
       "title_part1": "How it works",
@@ -177,138 +580,140 @@
     }
   },
   "Features": {
-    "badge": "Functions",
+    "badge": "Features",
     "title": "Why tDarts?",
-    "description": "The most modern darts competition platform with all the features you can imagine. Simple, fast, professional.",
+    "description": "The most modern darts tournament platform with powerful features.",
+    "search": "Tournament Search",
+    "create": "Easy Creation",
+    "club": "Club Management",
+    "stats": "Detailed Statistics",
+    "realtime": "Real-time Updates",
+    "custom": "Full Customization",
+    "qr": "QR Code Access",
+    "tablet": "Tablet Support",
+    "secure": "Password Protected",
+    "cta": {
+      "description": "Tudd meg hogyan működik a rendszer, és hozd létre az első tornádat percek alatt.",
+      "how_it_works": "Hogyan Működik?",
+      "register": "Ingyenes Regisztráció",
+      "title": "Készen állsz az indulásra?"
+    },
     "items": {
-      "search": {
-        "title": "Competition Search",
-        "description": "Easily find a competition based on location, level and time. Filter the results and apply with one click.",
-        "badge": "Popular"
-      },
-      "draw": {
-        "title": "Competition Notice",
-        "description": "Create your own tournaments with unique rules and formats. Automatic group assignment and pairing.",
-        "badge": "New"
-      },
       "club": {
-        "title": "Club Management",
-        "description": "Start or join darts clubs, organize community events. Full membership management."
-      },
-      "stats": {
-        "title": "Statistical Tracking",
-        "description": "Detailed statistics for each player: averages, 180s, highest exits, form graph.",
-        "badge": "Pro"
-      },
-      "realtime": {
-        "title": "Real Time Tracking",
-        "description": "Follow live matches and results. Automatic update and notifications."
+        "description": "Alapíts vagy csatlakozz darts klubokhoz, szervezz közösségi eseményeket. Teljes tagság kezelés.",
+        "title": "Klub Kezelés"
       },
       "custom": {
-        "title": "Full Customization",
-        "description": "All tournament formats supported: 501, 301, Cricket and custom rules. Customizable boards."
+        "description": "Minden versenyforma támogatva: 501, 301, Cricket és egyedi szabályok. Testre szabható táblák.",
+        "title": "Teljes Testreszabás"
+      },
+      "draw": {
+        "badge": "Új",
+        "description": "Hozz létre saját versenyeket egyedi szabályokkal és formátumokkal. Automatikus csoportbeosztás és párosítás.",
+        "title": "Verseny Kiírás"
       },
       "qr": {
-        "title": "QR Code Connection",
-        "description": "Players can join with a QR code and password, without registration. It's quick and easy."
+        "description": "Játékosok QR kóddal és jelszóval csatlakozhatnak, regisztráció nélkül. Gyors és egyszerű.",
+        "title": "QR Kódos Csatlakozás"
       },
-      "tablet": {
-        "title": "Tablet Support",
-        "description": "It supports tablets displayed for boards. Optimized writing surface and touch control."
+      "realtime": {
+        "description": "Kövesd élőben a meccseket és eredményeket. Automatikus frissítés és értesítések.",
+        "title": "Valós Idejű Követés"
+      },
+      "search": {
+        "badge": "Népszerű",
+        "description": "Könnyedén találj versenyt lokáció, szint és időpont alapján. Szűrd az eredményeket és jelentkezz egy kattintással.",
+        "title": "Verseny Keresés"
       },
       "secure": {
-        "title": "Password Protected",
-        "description": "Each tournament is protected with its own password. Secure access and data protection."
+        "description": "Minden torna saját jelszóval védett. Biztonságos hozzáférés és adatvédelem.",
+        "title": "Jelszó Védett"
+      },
+      "stats": {
+        "badge": "Pro",
+        "description": "Részletes statisztikák minden játékoshoz: átlagok, 180-ak, legmagasabb kiszállók, form grafikon.",
+        "title": "Statisztikai Követés"
+      },
+      "tablet": {
+        "description": "Támogatja a táblákhoz kihelyezett tableteket. Optimalizált író felület és érintésvezérlés.",
+        "title": "Tablet Támogatás"
       }
-    },
-    "cta": {
-      "title": "Are you ready to go?",
-      "description": "Learn how the system works and create your first tournament in minutes.",
-      "how_it_works": "How Does It Work?",
-      "register": "Free Registration"
     }
   },
   "Pricing": {
     "badge": "Pricing",
-    "title": "Choose the Perfect Package",
-    "description": "Pricing suitable for clubs and tournament organizers of all sizes",
-    "popular": "Most popular",
-    "period": "HUF/month",
-    "period_alt": "/snow",
-    "cta_free": "Start Now",
-    "cta_test": "Test Operation",
-    "test_note": "* The site is currently in test mode. The subscription model will be available soon.",
+    "title": "Choose Your Plan",
+    "description": "Pricing for clubs and organizers of all sizes",
+    "free": "Free",
+    "basic": "Basic",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "perMonth": "/month",
+    "features": {
+      "oneTourn": "1 tournament/month",
+      "twoTourn": "2 tournaments/month",
+      "fourTourn": "4 tournaments/month",
+      "unlimitedTourn": "Unlimited tournaments",
+      "unlimitedUsers": "Unlimited users",
+      "liveTracking": "Live match tracking",
+      "leagueSupport": "League support",
+      "detailedStats": "Detailed statistics",
+      "detailed_stats": "Részletes leg statisztikák",
+      "four_tournaments": "Havi 4 verseny/klub",
+      "league_start": "Liga indítási lehetőség",
+      "live_tracking": "Élő meccs követés",
+      "one_tournament": "Havi 1 verseny/klub",
+      "two_tournaments": "Havi 2 verseny/klub",
+      "unlimited_tournaments": "Korlátlan havi verseny",
+      "unlimited_users": "Korlátlan felhasználó"
+    },
+    "cta_free": "Kezdés Most",
+    "cta_test": "Teszt Üzem",
     "packages": {
-      "free": {
-        "name": "Free",
-        "description": "Basic functions for small teams"
-      },
       "basic": {
-        "name": "Basis",
-        "description": "A perfect choice for testing the system"
-      },
-      "pro": {
-        "name": "Pro",
-        "description": "Excellent for active clubs"
+        "description": "Tökéletes választás a rendszer kipróbálására",
+        "name": "Alap"
       },
       "enterprise": {
-        "name": "Enterprise",
-        "description": "Unlimited access for larger organizations"
+        "description": "Korlátlan hozzáférés nagyobb szervezeteknek",
+        "name": "Enterprise"
+      },
+      "free": {
+        "description": "Alapvető funkciók kis csapatoknak",
+        "name": "Ingyenes"
+      },
+      "pro": {
+        "description": "Kiválló aktív kluboknak",
+        "name": "Pro"
       }
     },
-    "features": {
-      "one_tournament": "1 competition/club per month",
-      "two_tournaments": "2 competitions/clubs per month",
-      "four_tournaments": "4 competitions/clubs per month",
-      "unlimited_tournaments": "Unlimited monthly competition",
-      "unlimited_users": "Unlimited users",
-      "live_tracking": "Live match tracking",
-      "league_start": "Option to start a league",
-      "detailed_stats": "Detailed statistics"
-    }
-  },
-  "Navbar": {
-    "tournaments": "Competitions",
-    "clubs": "Clubs",
-    "board": "Blackboard",
-    "board_offline": "Local Board (Offline)",
-    "search": "Search",
-    "how_it_works": "How it works",
-    "my_club": "Own club",
-    "feedback": "Feedback",
-    "profile": "Profile",
-    "stats": "Statistics",
-    "tickets": "Error marks",
-    "admin": "Admin",
-    "logout": "Checkout",
-    "login": "Login",
-    "register": "Registration",
-    "language": "Language",
-    "select_language": "Select language",
-    "coming_soon": "Coming soon",
-    "offline": "Offline",
-    "tdarts_f0pi": "tDarts",
-    "tdarts_logo_wslq": "tDarts Logo"
+    "period": "Ft/hó",
+    "period_alt": "/hó",
+    "popular": "Legnépszerűbb",
+    "test_note": "* Egyelőre teszt üzemben működik az oldal. Az előfizetői model hamarosan elérhető lesz."
   },
   "Footer": {
-    "legal_title": "Information",
-    "privacy": "Information on data management",
-    "terms": "General Terms and Conditions",
-    "contact": "Contact / Feedback",
-    "all_rights_reserved": "All rights reserved.",
-    "network_title": "Network",
+    "legalTitle": "Information",
+    "privacy": "Privacy Policy",
+    "terms": "Terms and Conditions",
+    "contact": "Contact",
+    "allRightsReserved": "All rights reserved.",
+    "networkTitle": "Network",
     "maintainer": "Maintainer:",
-    "sironic": "Sironic System House",
-    "oac_info": "Find out more about the National Amateur League!",
-    "oac_button": "OAC - Amateur Darts",
-    "partners_title": "Our partners",
-    "partners_note": "Our prominent partners who support the development of Hungarian darts.",
+    "partners": "Our Partners",
+    "all_rights_reserved": "Minden jog fenntartva.",
     "copy_jk6j": "&copy;",
-    "tdarts_vlt8": "tDarts.",
-    "magyar_darts_szovetseg_1x63": "Hungarian Darts Association",
-    "dartsbarlang_slgh": "DartsCave",
-    "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sports and Events Center",
-    "efott_partner": "EFOTT"
+    "dartsbarlang_slgh": "DartsBarlang",
+    "legal_title": "Információk",
+    "magyar_darts_szovetseg_1x63": "Magyar Darts Szövetség",
+    "network_title": "Hálózat",
+    "oac_button": "OAC - Amatőr Darts",
+    "oac_info": "Tudj meg többet az Országos Amatőr Ligáról!",
+    "partners_note": "Kiemelt partnereink, akik támogatják a magyar darts fejlődését.",
+    "partners_title": "Partnereink",
+    "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- és Eseményközpont",
+    "sironic": "Sironic Rendszerház",
+    "tdarts_vlt8": "tDarts."
   },
   "Auth": {
     "login": {
@@ -327,7 +732,19 @@
       "registerLink": "Register here",
       "success": "Welcome back!",
       "errorGeneric": "An error occurred during login",
-      "errorCredentials": "Invalid email or password"
+      "errorCredentials": "Invalid email or password",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "error_generic": "Hiba történt a bejelentkezés során",
+      "forgot_password": "Elfelejtett jelszó?",
+      "hide_password": "Jelszó elrejtése",
+      "language": "Nyelv",
+      "no_account": "Még nincs fiókod?",
+      "password_label": "Jelszó",
+      "password_placeholder": "••••••••",
+      "register_link": "Regisztrálj itt",
+      "separator": "vagy",
+      "show_password": "Jelszó megjelenítése"
     },
     "register": {
       "title": "Create Account",
@@ -348,7 +765,24 @@
       "errorGeneric": "An error occurred during registration",
       "errorEmailExists": "Email already registered",
       "errorPasswordMismatch": "Passwords do not match",
-      "success": "Account created successfully! Check your email for verification code."
+      "success": "Account created successfully! Check your email for verification code.",
+      "confirm_password_label": "Jelszó megerősítése",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "error_generic": "Hiba történt a regisztráció során",
+      "has_account": "Már van fiókod?",
+      "hide_password": "Jelszó elrejtése",
+      "language": "Nyelv",
+      "loading": "Regisztráció folyamatban...",
+      "login_link": "Jelentkezz be itt",
+      "name_label": "Teljes név",
+      "name_placeholder": "Kovács János",
+      "password_label": "Jelszó",
+      "password_placeholder": "••••••••",
+      "separator": "vagy",
+      "show_password": "Jelszó megjelenítése",
+      "username_label": "Felhasználónév",
+      "username_placeholder": "felhasznalo123"
     },
     "forgotPassword": {
       "title": "Reset Password",
@@ -383,7 +817,11 @@
       "submit": "Verify",
       "submitting": "Verifying...",
       "success": "Email verified successfully! Logging in...",
-      "errorGeneric": "Verification failed"
+      "errorGeneric": "Verification failed",
+      "code_label": "Verifikációs kód",
+      "code_placeholder": "Kód",
+      "error_generic": "Hiba történt a verifikáció során",
+      "loading": "Verifikáció folyamatban..."
     },
     "validation": {
       "emailRequired": "Email is required",
@@ -393,7 +831,16 @@
       "passwordStrength": "Password must contain letters, numbers and special characters",
       "confirmPasswordRequired": "Password confirmation is required",
       "passwordsMismatch": "Passwords do not match",
-      "codeRequired": "Verification code is required"
+      "codeRequired": "Verification code is required",
+      "code_required": "Verifikációs kód kötelező",
+      "confirm_password_required": "Jelszó megerősítés kötelező",
+      "email_invalid": "Érvényes email címet adj meg",
+      "email_required": "Email cím kötelező",
+      "name_required": "Név kötelező",
+      "password_min": "A jelszónak legalább 6 karakter hosszúnak kell lennie",
+      "password_required": "Jelszó kötelező",
+      "passwords_mismatch": "A jelszavak nem egyeznek",
+      "username_no_spaces": "A felhasználónév nem tartalmazhat szóközöket"
     },
     "linkGoogle": {
       "title": "Link Google Account",
@@ -404,298 +851,965 @@
       "submit": "Link Account",
       "success": "Google account linked successfully!",
       "errorGeneric": "An error occurred linking the account"
+    },
+    "english_1097": "English",
+    "forgot_password": {
+      "back_to_login": "Vissza a bejelentkezéshez",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "error_generic": "Hiba történt az email küldése során",
+      "loading": "Email küldése folyamatban...",
+      "submit": "Kód küldése",
+      "submitting": "Küldés...",
+      "subtitle": "Add meg az email címedet a visszaállítási kódért",
+      "success": "Jelszó visszaállítási email elküldve!",
+      "title": "Jelszó visszaállítás"
+    },
+    "link": {
+      "cancel": "Mégse",
+      "email_label": "Email cím",
+      "error_generic": "Hiba történt a fiók összekapcsolása során",
+      "footer": "A Google fiókod össze lesz kapcsolva a meglévő felhasználói fiókoddal. Ezután mindkét módon be tudsz jelentkezni.",
+      "google_data": "A Google fiókod adatai:",
+      "name": "Név: {name}",
+      "password_label": "Jelszó",
+      "submit": "Összekapcsolás",
+      "submitting": "Összekapcsolás...",
+      "subtitle": "Kapcsold össze a Google fiókodat",
+      "title": "Google fiók összekapcsolása"
+    },
+    "magyar_x1es": "Magyar",
+    "reset_password": {
+      "back_to_login": "Vissza a bejelentkezéshez",
+      "code_label": "Visszaállítási kód",
+      "code_placeholder": "6 karakteres kód",
+      "confirm_password_label": "Jelszó megerősítés",
+      "confirm_password_placeholder": "Írd be újra a jelszót",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "error_generic": "Hiba történt a jelszó visszaállítása során",
+      "loading": "Jelszó visszaállítása folyamatban...",
+      "new_password_label": "Új jelszó",
+      "new_password_placeholder": "Minimum 8 karakter",
+      "submit": "Jelszó visszaállítása",
+      "submitting": "Visszaállítás...",
+      "subtitle": "Add meg a kódot és az új jelszavadat",
+      "success": "Jelszó sikeresen visszaállítva!",
+      "title": "Új jelszó megadása"
+    },
+    "googleCallback": {
+      "processing": "Processing Google sign-in...",
+      "loginFailed": "Google sign-in failed.",
+      "loginError": "An error occurred during sign-in.",
+      "errorTitle": "Sign-in error",
+      "backToLogin": "Back to login"
     }
   },
   "Admin": {
+    "layout": {
+      "sidebar": {
+        "dashboard": "Control panel",
+        "users": "Users",
+        "clubs": "Clubs",
+        "tournaments": "Competitions",
+        "leagues": "Leagues",
+        "feedback": "Feedback",
+        "errors": "Errors",
+        "announcements": "News",
+        "todos": "Things to do",
+        "emails": "Email Templates",
+        "settings": "Settings",
+        "telemetry": "Telemetry",
+        "collapse": "Folding",
+        "title": "tDarts Admin"
+      },
+      "status": {
+        "checking": "Admin permission check...",
+        "welcome": "Hi {name}! 👋",
+        "stable": "The system is currently operating stably.",
+        "search": "search",
+        "menu": "menu",
+        "hello": "Hi,"
+      },
+      "sidebar_dashboard_a3kc": "sidebar.dashboard",
+      "sidebar_users_arcp": "sidebar.users",
+      "sidebar_clubs_b1d5": "sidebar.clubs",
+      "sidebar_tournaments_6vcv": "sidebar.tournaments",
+      "sidebar_leagues_xluc": "sidebar.leagues",
+      "sidebar_feedback_ic83": "sidebar.feedback",
+      "sidebar_errors_e0kt": "sidebar.errors",
+      "sidebar_announcements_pvfc": "sidebar.announcements",
+      "sidebar_todos_arz2": "sidebar.todos",
+      "sidebar_emails_dxiv": "sidebar.emails",
+      "sidebar_settings_psqa": "sidebar.settings",
+      "tdarts_f0pi": "tDarts"
+    },
     "dashboard": {
-      "title": "Admin Dashboard",
-      "overview": "Overview",
-      "users": "Users",
-      "tournaments": "Tournaments",
-      "clubs": "Clubs",
-      "leagues": "Leagues",
-      "feedback": "Feedback",
-      "errors": "Error Reports",
-      "settings": "Settings"
+      "title": "Hi {name}! 👋",
+      "refresh": "Update",
+      "last_update": "Last update",
+      "system_stable": "The system is currently operating stably.",
+      "search_hint": "search",
+      "menu_hint": "menu",
+      "loading": "Loading...",
+      "error_loading": "An error occurred while loading data",
+      "stats": {
+        "users": "Users",
+        "clubs": "Clubs",
+        "tournaments": "Competitions",
+        "errors": "Open Defects",
+        "last_24h": "+{count} in the last 24 hours"
+      },
+      "activities": {
+        "title": "Recent Activities",
+        "no_data": "No recent activity"
+      },
+      "alerts": {
+        "title": "Warnings",
+        "errors": "System errors",
+        "errors_desc": "In the last 24 hours",
+        "feedback": "Feedback",
+        "feedback_desc": "Unread messages",
+        "api_anomalies": "API anomalies",
+        "api_anomalies_desc": "Significant call/traffic/latency increase"
+      },
+      "charts": {
+        "users": "User activity (Monthly)",
+        "tournaments": "Number of competitions (Monthly)"
+      },
+      "quick_access": {
+        "title": "Quick access",
+        "desc": "The most frequently used administration interfaces",
+        "new_post": "New News",
+        "create_tournament": "Competition Creation",
+        "users": "Users",
+        "tournaments": "Competitions",
+        "clubs": "Clubs",
+        "todos": "Things to do",
+        "news": "News",
+        "settings": "Settings",
+        "telemetry": "API Telemetry"
+      },
+      "telemetry": {
+        "title": "API telemetry deep dive",
+        "description": "Open the dedicated telemetry page for route-level traffic, latency, and payload analytics.",
+        "open_page": "Open telemetry page"
+      },
+      "announcements": {
+        "title": "News Management",
+        "search_placeholder": "Search...",
+        "new_btn": "New News",
+        "table": {
+          "title": "Title",
+          "type": "Type",
+          "status": "Status",
+          "expires": "Expiration date",
+          "actions": "Operations",
+          "loading": "Loading...",
+          "no_results": "There are no results.",
+          "active": "Active",
+          "inactive": "Inactive",
+          "menu_sr": "Menu"
+        },
+        "actions": {
+          "activate": "Activation",
+          "deactivate": "Deactivation",
+          "edit": "Editing",
+          "delete": "Deletion",
+          "confirm_delete": "Are you sure you want to delete it?",
+          "save": "Rescue",
+          "saving": "Rescue...",
+          "create": "Creation",
+          "cancel": "Don't cancel"
+        },
+        "toasts": {
+          "fetch_error": "Failed to load news",
+          "delete_success": "News deleted",
+          "delete_error": "Error during deletion",
+          "status_success": "Status updated",
+          "status_error": "Error updating status",
+          "update_success": "News updated",
+          "create_success": "News created",
+          "save_error": "Error saving"
+        },
+        "pagination": {
+          "info": "{total} news in total • Page {current} / {total_pages}",
+          "prev": "Previous",
+          "next": "Following"
+        },
+        "dialog": {
+          "edit_title": "News Editing",
+          "create_title": "Create New News",
+          "edit_desc": "Change the news details.",
+          "create_desc": "Enter the details of the new news.",
+          "form": {
+            "title": "Title",
+            "title_placeholder": "News title",
+            "type": "Type",
+            "types": {
+              "info": "Info (Blue)",
+              "success": "Success (Green)",
+              "warning": "Attention (Yellow)",
+              "error": "Error (Red)"
+            },
+            "duration": "Duration (ms)",
+            "expires": "Expiration date",
+            "description": "Description",
+            "description_placeholder": "News text...",
+            "show_button": "Show button",
+            "button_text": "Button label",
+            "button_text_placeholder": "Ex: Details",
+            "button_action": "Button link (URL)",
+            "button_action_placeholder": "Eg: /results or https://..."
+          }
+        }
+      },
+      "feedback": {
+        "title": "Feedback",
+        "search_placeholder": "Search in title, description...",
+        "filters": {
+          "category": "Category",
+          "all_categories": "All Cat.",
+          "status": "Status",
+          "all_statuses": "All States.",
+          "priority": "Priority",
+          "all_priorities": "All Prios."
+        },
+        "categories": {
+          "bug": "Fault",
+          "feature": "Function",
+          "improvement": "Repair",
+          "other": "Other"
+        },
+        "statuses": {
+          "pending": "Pending",
+          "in-progress": "In progress",
+          "resolved": "Solved",
+          "rejected": "Rejected",
+          "closed": "Closed"
+        },
+        "priorities": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "critical": "Critic"
+        },
+        "table": {
+          "category": "Cat.",
+          "title_sender": "Address & Sender",
+          "priority": "Priority",
+          "status": "Status",
+          "date": "Date",
+          "actions": "Operations",
+          "loading": "Loading...",
+          "no_results": "There are no results.",
+          "new_badge": "New",
+          "menu_sr": "Menu"
+        },
+        "actions": {
+          "copy_id": "Copy ID",
+          "create_todo": "Create Task",
+          "edit": "Editing",
+          "delete": "Deletion",
+          "confirm_delete": "Are you sure you want to delete it?"
+        },
+        "toasts": {
+          "fetch_error": "Failed to load feedback",
+          "delete_success": "Feedback deleted",
+          "delete_error": "Error during deletion",
+          "todo_success": "Action created from feedback!",
+          "todo_error": "Error creating task"
+        },
+        "pagination": {
+          "info": "{total} feedback total • {current} / {total_pages} page",
+          "prev": "Previous",
+          "next": "Following"
+        }
+      },
+      "leagues": {
+        "title": "League Management",
+        "new_btn": "New League",
+        "errors": {
+          "check_feature": "An error occurred while checking the function",
+          "save_error": "An error occurred while saving the league",
+          "delete_error": "An error occurred while deleting the league"
+        },
+        "actions": {
+          "confirm_delete": "Are you sure you want to delete this league?",
+          "edit": "Editing",
+          "delete": "Deletion",
+          "add_player": "Add player",
+          "view_standings": "Job",
+          "view_standings_title": "View League Standings"
+        },
+        "promo": {
+          "title": "League System",
+          "desc": "Start leagues in your club! Competitors scoring, rankings and automatic scoring.",
+          "requires_subscription": "Subscription required",
+          "subscription_desc": "A Pro subscription is required to use the leagues system.",
+          "subscription_btn": "Subscription",
+          "details_btn": "Details",
+          "disclaimer": "* The Pro package includes the league system and additional premium functions"
+        },
+        "empty": {
+          "title": "There are no leagues",
+          "desc": "Create a new league to score competitors",
+          "first_btn": "Creation of First League"
+        },
+        "card": {
+          "group_dropout": "Group round losers:",
+          "points": "{count} point",
+          "winner": "Winner:",
+          "multiplier": "Multiplier:",
+          "tournaments": "Competitions:",
+          "players": "Players:"
+        },
+        "player_modal": {
+          "title": "Edit league players",
+          "add_player": "Add player",
+          "search_placeholder": "Search for a player by name or username...",
+          "list_title": "Players in the league",
+          "table": {
+            "name": "Name",
+            "points": "Points",
+            "action": "Operation"
+          },
+          "remove_title": "Remove a player",
+          "empty_list": "There are no players in the league.",
+          "close_btn": "Closure"
+        },
+        "dialog": {
+          "edit_title": "Edit League",
+          "create_title": "Create a New League",
+          "form": {
+            "name": "Name *",
+            "name_placeholder": "League name",
+            "description": "Description",
+            "description_placeholder": "Optional description",
+            "point_system": "Scoring System",
+            "group_dropout": "Points for those eliminated in the group stage",
+            "group_dropout_help": "Base point for all players eliminated in the group stage",
+            "winner_points": "His winning point",
+            "winner_points_help": "Winning player's score (highest score)",
+            "multiplier": "Multiplier (geometric series)",
+            "multiplier_help": "Between 0.1 and 2.0. Smaller value = bigger difference between circles",
+            "preview": "Points preview",
+            "preview_desc": "Points calculated based on a geometric series (dynamically updated):",
+            "rounds": {
+              "round_1": "Round 1",
+              "round_2": "Round 2",
+              "round_3": "Round 3",
+              "semi_final": "Semi-final",
+              "final": "Finals",
+              "winner": "Winner"
+            },
+            "geometric_rule": "Geometric series: points increase from round 1 to the winner (by a factor of {val})"
+          },
+          "actions": {
+            "cancel": "Don't cancel",
+            "save": "Rescue",
+            "create": "Creation",
+            "saving": "Rescue..."
+          },
+          "validation": {
+            "name_required": "Entering a name is mandatory",
+            "name_max": "Name can be a maximum of 100 characters",
+            "desc_max": "Description can be a maximum of 500 characters",
+            "points_negative": "Points cannot be negative",
+            "multiplier_min": "Multiplier minimum 0.1",
+            "multiplier_max": "Multiplier maximum 2"
+          }
+        }
+      },
+      "tickets": {
+        "detail": {
+          "title": "Feedback details",
+          "no_messages": "There are no messages in this ticket yet",
+          "system_sender": "System",
+          "status": "Status",
+          "priority": "Priority",
+          "save_status": "Save status",
+          "reply_placeholder": "Write a message...",
+          "send_btn": "Sending"
+        },
+        "toasts": {
+          "empty_message": "The message cannot be empty",
+          "reply_success": "Reply sent",
+          "reply_error": "An error occurred while sending the message",
+          "no_change": "No change",
+          "status_updated": "Status updated",
+          "status_error": "Error updating status"
+        }
+      },
+      "todos": {
+        "title": "Tasks",
+        "smart_title": "Smart Todo",
+        "smart_help": "Type in natural language: \"Server maintenance !!! tomorrow #dev\"",
+        "loading": "Loading todos...",
+        "stats": {
+          "total": "All Todos",
+          "pending": "Pending",
+          "in_progress": "In progress",
+          "completed": "Finished"
+        },
+        "toolbar": {
+          "view_kanban": "In Kanban",
+          "view_list": "List",
+          "all_priorities": "Everything is a priority",
+          "all_categories": "All categories",
+          "search_placeholder": "Search...",
+          "new_btn": "New Todo"
+        },
+        "kanban": {
+          "pending": "Pending",
+          "in_progress": "In progress",
+          "completed": "Finished",
+          "cancelled": "Deleted",
+          "empty": "None {status}"
+        },
+        "list": {
+          "count": "Todos ({count})",
+          "empty": "There are no todos with the selected filters"
+        },
+        "smart": {
+          "all": "All",
+          "active": "Active",
+          "completed": "Ready",
+          "sort_label": "Arrangement",
+          "sort_smart": "✨ Smart arrangement (Urgency)",
+          "sort_date": "📅 By deadline",
+          "sort_priority": "🔥 By priority",
+          "sort_smart_short": "Smart arrangement",
+          "sort_date_short": "By deadline",
+          "sort_priority_short": "By priority",
+          "empty_title": "There are no tasks to display",
+          "empty_desc": "Add a new one using the field above!",
+          "placeholder": "Write a task... (e.g. 'Fix server error !!! #bug today')"
+        },
+        "smart_input": {
+          "placeholder": "Write a task... (e.g. 'Fix server error !!! #bug today')",
+          "press_enter": "Press {key} to add",
+          "tags": "Tags:"
+        },
+        "dialog": {
+          "create_title": "Create a new Todo",
+          "edit_title": "Edit Todo",
+          "title_label": "Address *",
+          "title_placeholder": "Todo's title is...",
+          "category_label": "Category",
+          "priority_label": "Priority",
+          "status_label": "Status",
+          "due_date_label": "Deadline",
+          "desc_label": "Description",
+          "desc_placeholder": "Detailed description...",
+          "tags_label": "Labels",
+          "tags_placeholder": "Add label (Enter)",
+          "actions": {
+            "create": "Creation",
+            "save": "Rescue",
+            "cancel": "Don't cancel"
+          }
+        },
+        "statuses": {
+          "pending": "Pending",
+          "in-progress": "In progress",
+          "completed": "Finished",
+          "cancelled": "Deleted"
+        },
+        "priorities": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "critical": "Critic"
+        },
+        "categories": {
+          "bug": "Fault",
+          "feature": "New feature",
+          "improvement": "Development",
+          "maintenance": "Maintenance",
+          "other": "Other"
+        },
+        "toasts": {
+          "delete_confirm": "Are you sure you want to delete this todo?",
+          "delete_confirm_short": "Are you sure you want to delete it?",
+          "fetch_error": "Tasks could not be loaded",
+          "create_success": "Task added!",
+          "create_error": "An error occurred while creating the task",
+          "update_status_error": "Failed to update status",
+          "delete_success": "Task deleted",
+          "delete_error": "Failed to delete task"
+        }
+      },
+      "settings": "settings",
+      "users": "users"
     },
-    "kpi": {
-      "totalUsers": "Total Users",
-      "activeUsers": "Active Users",
-      "totalTournaments": "Total Tournaments",
-      "activeTournaments": "Active Tournaments",
-      "totalClubs": "Total Clubs",
-      "totalMatches": "Total Matches"
+    "tickets": {},
+    "announcements": {
+      "announcement_kezelő": "Announcement Manager",
+      "rendszerüzenetek_létrehozása_és": "Create and manage system messages"
     },
-    "users": {
-      "title": "User Management",
-      "search": "Search users...",
-      "email": "Email",
-      "name": "Name",
-      "status": "Status",
-      "created": "Created",
-      "actions": "Actions",
-      "edit": "Edit",
-      "delete": "Delete",
-      "suspend": "Suspend",
-      "activate": "Activate"
+    "feedback": {
+      "felhasználói_visszajelzések_és": "Management of user feedback and suggestions",
+      "hibabejelentések_kezelése": "Handling of error reports",
+      "visszajelzések_napi_beérkezése": "Receive feedback daily"
+    },
+    "leagues": {
+      "hiba_történt_a_14": "An error occurred while completing the match!",
+      "hitelesített_oac": "Certified (OAC)",
+      "inaktív": "Inactive",
+      "keresés_név_vagy": "Search by name or club...",
+      "liga_neve": "League Name",
+      "ligák": "Leagues",
+      "ligák_kezelése_statisztikák": "Manage leagues, statistics and overview",
+      "minden_típus": "All types",
+      "oac_liga": "OAC League",
+      "platform": "Platform",
+      "platform_liga": "Platform League",
+      "platform_ligák": "Platform Leagues",
+      "pontozási_rendszer": "Scoring System",
+      "szűrés_típusra": "Filter by type",
+      "verified_oac": "Verified (OAC)",
+      "összes_liga": "All Leagues",
+      "frissítés": "frissítés",
+      "nincs_találat_a": "nincs találat a",
+      "státusz": "státusz"
+    },
+    "todos": {
+      "feladatok_és_észrevételek": "Follow up on tasks and comments",
+      "todo_kezelés": "Todo Management"
+    },
+    "common": {
+      "hiba_történt_az": "An error occurred while loading data",
+      "létrehozva": "Created",
+      "találat_oldal": "result (Page:",
+      "törölve": "DELETED",
+      "versenyek": "Competitions",
+      "összesen": "All",
+      "aktív": "Active",
+      "játékosok": "Players",
+      "klub": "Club"
+    },
+    "clubs": {
+      "aktív_klubok": "Active Clubs",
+      "basic_122s": "Basic",
+      "csak_hitelesített": "Authenticated only",
+      "csak_nem_hitelesített": "Just Not Authenticated",
+      "csomag": "Package",
+      "enterprise_joxf": "Enterprise",
+      "free_1b43": "Free",
+      "helyszín": "Location",
+      "hitelesített": "Authenticated",
+      "keresés_név_helyszín": "Search by name, location or description...",
+      "klub_név": "Club Name",
+      "klubok": "Clubs",
+      "klubok_kezelése_statisztikák": "Club management, statistics and overview",
+      "klubok_napi_létrehozása": "Daily creation of clubs",
+      "minden_klub": "All clubs",
+      "normál": "Normal",
+      "pro_1q4t": "Pro",
+      "szűrés_státuszra": "Filter by status",
+      "tagok": "Members",
+      "törölt": "Deleted",
+      "összes_klub": "All Clubs",
+      "találat_oldal": "találat oldal",
+      "összesen": "összesen"
     },
     "tournaments": {
-      "title": "Tournament Management",
-      "search": "Search tournaments...",
-      "name": "Tournament Name",
-      "club": "Club",
-      "players": "Players",
-      "status": "Status",
-      "created": "Created",
-      "actions": "Actions"
+      "aktiv_11ph": "Active",
+      "befejezett": "Finished",
+      "befejezett_x25b": "Finished",
+      "csoportkor_yqu8": "Group round",
+      "csoportkör": "Group round",
+      "csoportos_cksc": "Group",
+      "dátum": "Date",
+      "fuggoben_ddvf": "Pending",
+      "függőben": "Pending",
+      "keresés_név_klub": "Search by name, club or description...",
+      "kieseses_c2i5": "Knockout",
+      "kieséses": "Knockout",
+      "minden_mód": "All ways",
+      "minden_típus": "All types",
+      "mód": "Mode",
+      "oac": "OAC",
+      "platform": "Platform",
+      "sandbox": "Sandbox",
+      "típus": "Type",
+      "vegyes_spt0": "Mixed",
+      "verified_oac": "Verified (OAC)",
+      "verseny_név": "Competition Name",
+      "versenyek_kezelése_statisztikák": "Competition management, statistics and overview",
+      "versenyek_napi_indítása": "Daily start of competitions",
+      "éles": "Sharp",
+      "összes": "All",
+      "összes_státusz": "All statuses",
+      "frissítés": "frissítés",
+      "műveletek": "műveletek",
+      "nincs_találat_a": "nincs találat a",
+      "státusz": "státusz",
+      "title": "title"
     },
-    "commands": {
-      "search": "Press Cmd+K to open command palette",
-      "searchPlaceholder": "Type a command...",
-      "users": "Manage users",
-      "tournaments": "Manage tournaments",
-      "settings": "System settings",
-      "reports": "View reports"
+    "users": {
+      "admin": "Admin",
+      "adminisztrátorok": "Administrators",
+      "angol": "English",
+      "csak_adminok": "Admins only",
+      "csak_felhasználók": "Users only",
+      "csatlakozott": "He joined",
+      "előző": "Previous",
+      "email": "E-mail",
+      "email_küldése": "Send email",
+      "email_küldése_59": "Send email:",
+      "email_sikeresen_elküldve": "Email successfully sent!",
+      "felhasználó": "User",
+      "felhasználó_deaktiválva": "User deactivated",
+      "felhasználói_fiókok_kezelése": "Management and administration of user accounts",
+      "felhasználók": "Users",
+      "fiók_felfüggesztése": "Account suspension",
+      "hiba_történt_a_29": "An error occurred during deactivation",
+      "hiba_történt_a_39": "An error occurred during the operation",
+      "hiba_történt_az_9": "An error occurred while sending the email",
+      "keresés_név_email": "Search by name, email or username...",
+      "következő": "Following",
+      "magyar": "Hungarian",
+      "minden_felhasználó": "All users",
+      "nem_megerősített": "Not confirmed",
+      "nem_regisztrált": "Not Registered",
+      "nyelv": "Language",
+      "regisztrált": "Registered",
+      "szerepkör": "Role",
+      "szűrés_szerepkörre": "Filter by role",
+      "tárgy": "Object",
+      "írja_be_az": "Enter your message...",
+      "összes_felhasználó": "All Users",
+      "üzenet": "Message",
+      "üzenet_tárgya": "Message subject...",
+      "frissítés": "frissítés",
+      "mégse": "mégse",
+      "műveletek": "műveletek",
+      "nincs_találat_a": "nincs találat a",
+      "search": "search",
+      "státusz": "státusz",
+      "title": "title"
+    },
+    "errors": {
+      "api_1e62": "API",
+      "auth_17zr": "Auth",
+      "auth_hibák": "Auth errors",
+      "club": "club:",
+      "club_1932": "Club",
+      "database_unvz": "Database",
+      "error_details": "Error Details:",
+      "hiba_adatok_betöltése": "Error loading data…",
+      "hiba_kezelés": "Error Handling",
+      "hibák_kategóriánként": "Errors by Category",
+      "hibák_napi_előfordulása": "Daily occurrence of errors",
+      "hibák_szintenként": "Bugs by Level",
+      "időszak": "Period",
+      "kategória": "Category",
+      "legutóbbi_hibák": "Recent Errors (",
+      "metadata": "Metadata:",
+      "nem_sikerült_betölteni": "Failed to load error data.",
+      "nincsenek_hibák": "There are no errors",
+      "player_vgc0": "Player",
+      "rendszer_hibák_monitorozása": "Monitoring and management of system errors",
+      "stack_trace": "Stack Trace:",
+      "schema": {
+        "title": "Log schema",
+        "all": "All logs",
+        "new": "New structured",
+        "legacy": "Legacy"
+      },
+      "system_ttqf": "System",
+      "szint": "Level",
+      "szűrők": "Filters",
+      "tournament": "Tournament:",
+      "tournament_ghva": "Tournament",
+      "user": "User:",
+      "user_1kpn": "User",
+      "utolsó_hónap": "Last 3 months",
+      "utolsó_nap": "Last 7 days",
+      "utolsó_nap_94": "Last 30 days",
+      "utolsó_óra": "Last 24 hours",
+      "összes_hiba": "All Errors",
+      "összes_kategória": "All categories",
+      "összes_szint": "All levels",
+      "frissítés": "frissítés",
+      "hiba_történt": "hiba történt",
+      "újrapróbálás": "újrapróbálás"
+    },
+    "settings": {
+      "adatbázis": "Database",
+      "adatbázis_információk": "Database Information",
+      "aktuális_verzió_információk": "Current version information",
+      "dokumentumok": "Documents",
+      "előfizetés_rendszer": "Subscription system",
+      "email_username": "EMAIL_USERNAME",
+      "funkciók": "Functions",
+      "kapcsolat": "Contact",
+      "kollekciók": "Collections",
+      "környezeti_változók": "Environmental Variables",
+      "ligák": "Leagues",
+      "memória": "Memory",
+      "működik": "It works",
+      "nem_sikerült_betölteni_15": "Failed to load system information.",
+      "node_env": "NODE_ENV",
+      "online": "ONLINE",
+      "rendszer_beállítások": "System Settings",
+      "rendszer_információk_betöltése": "Loading system information…",
+      "rendszer_információk_és": "System information and configuration",
+      "rendszer_verzió": "System Version",
+      "rendszer_állapot": "System Status",
+      "részletes_statisztikák": "Detailed statistics",
+      "socket_kapcsolat": "Socket connection",
+      "socket_server_url": "SOCKET_SERVER_URL",
+      "subscription_enabled": "SUBSCRIPTION_ENABLED",
+      "változó": "Variable",
+      "érték": "Value",
+      "üzemidő": "Operating time",
+      "frissítés": "frissítés",
+      "hiba_történt": "hiba történt",
+      "újrapróbálás": "újrapróbálás"
+    },
+    "emails": {
+      "a_teszt_emailt": "The test email is rendered as shown above, filled with sample data.",
+      "alapértelmezett": "Default:",
+      "címzett_email": "Recipient email",
+      "elérhető_változók": "Available variables:",
+      "email_preview": "Email Preview",
+      "email_sablonok": "Email Templates",
+      "használd_ezeket_a": "Use these variables in the template, e.g.:",
+      "hiba_történt_a": "An error occurred while loading the templates",
+      "hiba_történt_a_87": "An error occurred while saving",
+      "html_tartalom": "HTML Content",
+      "hálózati_hiba_történt": "A network error has occurred",
+      "inaktív": "Inactive",
+      "kezeld_az_email": "Manage the email templates that the platform sends to users",
+      "kulcs": "Key:",
+      "kérjük_adj_meg": "Please enter an email address",
+      "küldés": "Sending",
+      "nincs_kiválasztott_sablon": "No template selected",
+      "sablon_sikeresen_mentve": "Template saved successfully",
+      "sablonok": "Templates (",
+      "sablonok_betöltése": "Loading templates...",
+      "szerkesztés": "Editing",
+      "szöveges_tartalom_fallback": "Text Content (fallback)",
+      "teszt_email_elküldve": "Test email sent",
+      "teszt_email_küldése": "Sending a test email",
+      "tárgy": "Object",
+      "utolsó_módosítás": "Last modification:",
+      "vmi_pelda_hu": "vmi@pelda.hu",
+      "válassz_egy_sablont": "Select a template from the list on the left to view and edit",
+      "mégse": "mégse"
+    },
+    "components": {
+      "a_hozzáadáshoz": "to add",
+      "a_jelenlegi_statisztikákat": "current statistics and archive them.",
+      "a_statisztikákat_a": "the statistics a",
+      "adj_hozzá_egy": "Add a new one using the field above!",
+      "announcements_mk89": "Announcements",
+      "az_előző_nap": "Statistics for the previous 30 days broken down by day",
+      "biztosan_le_akarod": "You definitely want to close the",
+      "close": "Close",
+      "clubs_12tn": "Clubs",
+      "command_palette": "Command Palette",
+      "confirm_restore": "CONFIRM_RESTORE_",
+      "confirm_wrap": "CONFIRM_WRAP_",
+      "dashboard_ft8p": "Dashboard",
+      "enter": "Enter",
+      "errors_ygvm": "Errors",
+      "es_archívumból_és": "from archive and deletes the archive.\n              Useful if you accidentally ran Year End.",
+      "es_évet_ez": "and year? This is the operation",
+      "esc": "ESC",
+      "ez_a_művelet": "This action resets all player stats, archives current data and distributes titles.",
+      "ez_a_művelet_57": "This is the operation",
+      "feedback_23iz": "Feedback",
+      "feladat_gyorsan_hozzáadva": "Task added quickly!",
+      "feladat_hozzáadva": "Task added!",
+      "feladat_törölve": "Task deleted",
+      "gyors_feladat_létrehozása": "Create a Quick Task",
+      "ha_véletlenül_futtattad": "If you ran it by accident, you can undo the last shutdown with the Reset button.",
+      "használd_a_természetes": "Use natural language (e.g. Fix &quot;Bug !!! today #bug&quot;)",
+      "határidő_szerint": "📅 By deadline",
+      "hiba_tortent_az_adatok_qmk8": "An error occurred while loading data",
+      "hiba_történt_a_78": "An error occurred while saving the settings!",
+      "hiba_történt_a_88": "An error occurred while creating the task",
+      "hibás_megerősítő_kód": "Invalid confirmation code",
+      "ismeretlen_adatformatum_v65o": "Unknown data format",
+      "kritikus_rendszer_műveletek": "Critical system operations",
+      "kész": "Ready",
+      "leagues_sd4t": "Leagues",
+      "megerősítés": "Confirmation",
+      "navigate": "Navigate",
+      "nem_sikerült_betölteni_12": "Tasks could not be loaded",
+      "nem_sikerült_frissíteni": "Failed to update status",
+      "nem_sikerült_törölni": "Failed to delete task",
+      "nincs_megjeleníthető_feladat": "There are no tasks to display",
+      "no_results_found": "No results found.",
+      "nyomj": "Press",
+      "okos_rendezés_urgency": "✨ Smart arrangement (Urgency)",
+      "prioritás_szerint": "🔥 By priority",
+      "search_for_pages": "Search for pages and actions",
+      "select": "Select",
+      "settings_osmo": "Settings",
+      "smart_todo": "Smart Todo",
+      "tags": "Tags:",
+      "todos_1c7q": "Todos",
+      "tournaments_e65c": "Tournaments",
+      "telemetry_fm2a": "Telemetry",
+      "trend": "Trend",
+      "type_to_search": "Type to search...",
+      "törli": "deletes it",
+      "users_1cu3": "Users",
+      "veszélyzóna": "Danger zone",
+      "visszaállítandó_év": "Year to be restored",
+      "visszaállítja": "RESTORE IT",
+      "visszaállítás": "Reset:",
+      "visszaállítás_45": "Reset",
+      "visszaállítás_55": "Reset",
+      "visszaállítás_undo": "Undo -",
+      "véglegesítés_és_reset": "Finalization and Reset",
+      "átlagos_nap": "Average/day",
+      "év_kiválasztása": "Select year",
+      "év_lezárása": "End of Year",
+      "év_lezárása_85": "Year End -",
+      "éves_zárás_és": "Annual Closing and Reset",
+      "írd_be_a": "Enter the following to confirm:",
+      "írd_be_természetes": "Type in natural language: &quot;Server maintenance !!! tomorrow #dev&quot;",
+      "összes": "All",
+      "összesen_nap": "Total (30 days)",
+      "aktív": "aktív",
+      "betöltés": "betöltés",
+      "hiba_történt": "hiba történt",
+      "mégse": "mégse",
+      "újrapróbálás": "újrapróbálás"
+    },
+    "telemetry": {
+      "title": "API telemetry",
+      "description": "Analyze route traffic, latency, and payload trends with historical filters.",
+      "loading": "Loading telemetry...",
+      "error_loading": "Failed to load telemetry data",
+      "export": {
+        "button": "Export JSON",
+        "success": "Telemetry export downloaded.",
+        "error": "Failed to export telemetry bundle"
+      },
+      "refresh": "Refresh telemetry",
+      "filters": {
+        "title": "Filters",
+        "description": "Select time range, timezone, or custom interval.",
+        "range": "Range",
+        "timezone": "Timezone",
+        "method": "Method",
+        "all_methods": "All methods",
+        "granularity": "Granularity",
+        "granularity_minute": "Per minute",
+        "granularity_hour": "Per hour",
+        "granularity_day": "Per day",
+        "route": "Route",
+        "all_routes": "All routes",
+        "clear_route": "Clear route",
+        "only_error_apis": "Only APIs with errors",
+        "min_calls": "Min calls",
+        "min_traffic_kb": "Min traffic (KB)",
+        "min_latency_ms": "Min avg latency (ms)",
+        "route_sort": "All-routes sort",
+        "top_sort": "Top-routes sort",
+        "sort_route_asc": "Route (A-Z)",
+        "sort_calls_desc": "Calls (high-low)",
+        "sort_errors_desc": "Errors (high-low)",
+        "sort_traffic_desc": "Traffic (high-low)",
+        "sort_latency_desc": "Latency (high-low)",
+        "sort_last_seen_desc": "Last seen (newest)",
+        "custom_start": "Custom start",
+        "custom_end": "Custom end",
+        "apply": "Apply"
+      },
+      "ranges": {
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "custom": "Custom interval"
+      },
+      "charts": {
+        "requests": "API requests",
+        "latency": "Average latency (ms)",
+        "payload": "Payload (KB)",
+        "throughput": "Traffic throughput (bytes)"
+      },
+      "metrics": {
+        "incoming_total_kb": "Incoming total (KB)",
+        "outgoing_total_kb": "Outgoing total (KB)",
+        "total_moved": "Total moved data",
+        "avg_package_size": "Average package size",
+        "avg_incoming_package": "Average incoming package",
+        "avg_outgoing_package": "Average outgoing package"
+      },
+      "top_routes": {
+        "title": "Top API routes",
+        "description": "Most active and resource-intensive routes in the selected window.",
+        "empty": "No API telemetry data yet.",
+        "calls": "calls",
+        "avg": "avg",
+        "max": "max",
+        "error_rate": "err",
+        "incoming": "in",
+        "outgoing": "out",
+        "total": "total"
+      },
+      "all_routes": {
+        "title": "All Registered Routes",
+        "description": "Complete route list discovered from telemetry records in the database.",
+        "search_placeholder": "Search route key...",
+        "empty": "No routes found for current filter.",
+        "calls": "Calls",
+        "errors": "Errors",
+        "traffic": "Traffic",
+        "latency": "Avg latency",
+        "select": "Select"
+      },
+      "error_calls": {
+        "title": "Error calls",
+        "description": "Inspect exact failed requests/responses (4xx/5xx) for the selected filters.",
+        "total": "Total: {count}",
+        "status_filter": "Status filter",
+        "status_all": "All statuses",
+        "clear_filters": "Clear error filters",
+        "mark_fixed": "Mark selected route fixed",
+        "mark_fixed_need_route": "Select a route first.",
+        "mark_fixed_success": "Old errors were checked as fixed and baseline reset.",
+        "mark_fixed_error": "Failed to mark route errors as fixed.",
+        "mark_fixed_hint": "Select a route from filters or the all-routes list.",
+        "select_error": "Select error row",
+        "select_page": "Select page",
+        "delete_selected": "Delete selected logs",
+        "delete_route": "Delete selected route logs",
+        "delete_selected_need_selection": "Select at least one error log.",
+        "delete_route_need_selection": "Select a route first.",
+        "delete_selected_confirm": "Delete {count} selected error logs?",
+        "delete_route_confirm": "Delete all error logs for {method} {route}?",
+        "delete_success": "Deleted {count} error logs.",
+        "delete_error": "Failed to delete error logs.",
+        "empty": "No error calls found for this filter set.",
+        "duration": "Duration",
+        "request_bytes": "Request",
+        "response_bytes": "Response",
+        "request": "Request details",
+        "response": "Response details",
+        "copy": "Copy JSON",
+        "prev": "Previous",
+        "next": "Next",
+        "page": "Page {page} / {totalPages}"
+      }
+    },
+    "kpi": {
+      "activeTournaments": "activeTournaments",
+      "activeUsers": "activeUsers",
+      "totalClubs": "totalClubs",
+      "totalMatches": "totalMatches",
+      "totalTournaments": "totalTournaments",
+      "totalUsers": "totalUsers"
     }
-  },
-  "Tournament": {
-    "header": {
-      "title": "Tournament",
-      "status": "Status",
-      "players": "Players",
-      "format": "Format",
-      "startDate": "Start Date",
-      "endDate": "End Date",
-      "location": "Location",
-      "live": "Live"
-    },
-    "statistics": {
-      "title": "Tournament Statistics",
-      "players": "Players",
-      "matches": "Matches",
-      "averageScore": "Average Score",
-      "highestScore": "Highest Score",
-      "total180": "Total 180s"
-    },
-    "live": {
-      "title": "Live",
-      "watching": "Currently watching",
-      "currentMatch": "Current Match",
-      "nextMatch": "Next Match",
-      "liveUpdates": "Live updates enabled"
-    },
-    "tv": {
-      "title": "TV Mode",
-      "fullscreen": "Fullscreen",
-      "exit": "Exit TV Mode",
-      "presentations": "Presentations"
-    },
-    "formats": {
-      "singleElimination": "Single Elimination",
-      "doubleElimination": "Double Elimination",
-      "roundRobin": "Round Robin",
-      "groups": "Groups"
-    }
-  },
-  "Map": {
-    "title": "Tournament Map",
-    "toggleMap": "Toggle Map View",
-    "search": "Search location...",
-    "filters": "Filters",
-    "noTournaments": "No tournaments in this area",
-    "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out",
-    "currentLocation": "Current Location"
-  },
-  "Modal": {
-    "delete": {
-      "title": "Confirm Delete",
-      "message": "This action cannot be undone.",
-      "cancel": "Cancel",
-      "delete": "Delete"
-    },
-    "confirm": {
-      "title": "Confirm",
-      "cancel": "Cancel",
-      "confirm": "Confirm"
-    },
-    "close": "Close"
-  },
-  "Features": {
-    "badge": "Features",
-    "title": "Why tDarts?",
-    "description": "The most modern darts tournament platform with powerful features.",
-    "search": "Tournament Search",
-    "create": "Easy Creation",
-    "club": "Club Management",
-    "stats": "Detailed Statistics",
-    "realtime": "Real-time Updates",
-    "custom": "Full Customization",
-    "qr": "QR Code Access",
-    "tablet": "Tablet Support",
-    "secure": "Password Protected"
-  },
-  "Pricing": {
-    "badge": "Pricing",
-    "title": "Choose Your Plan",
-    "description": "Pricing for clubs and organizers of all sizes",
-    "free": "Free",
-    "basic": "Basic",
-    "pro": "Pro",
-    "enterprise": "Enterprise",
-    "perMonth": "/month",
-    "features": {
-      "oneTourn": "1 tournament/month",
-      "twoTourn": "2 tournaments/month",
-      "fourTourn": "4 tournaments/month",
-      "unlimitedTourn": "Unlimited tournaments",
-      "unlimitedUsers": "Unlimited users",
-      "liveTracking": "Live match tracking",
-      "leagueSupport": "League support",
-      "detailedStats": "Detailed statistics"
-    }
-  },
-  "Footer": {
-    "legalTitle": "Information",
-    "privacy": "Privacy Policy",
-    "terms": "Terms and Conditions",
-    "contact": "Contact",
-    "allRightsReserved": "All rights reserved.",
-    "networkTitle": "Network",
-    "maintainer": "Maintainer:",
-    "partners": "Our Partners"
-  }
-}rlands",
-      "country_el": "Greece",
-      "country_all": "All countries",
-      "verification_label": "Authentication",
-      "verified_showing": "Display authenticated",
-      "verified_only": "Just authenticated",
-      "clear_filters_title": "Delete filters"
-    },
-    "quick_filters": {
-      "upcoming": "Forthcoming",
-      "all": "All",
-      "oac_verified": "OAC / Certified Competition",
-      "amateur": "Amateur",
-      "open": "Open",
-      "popular_cities": "Popular cities:"
-    },
-    "floating_menu": {
-      "title": "Search & Filters",
-      "search_placeholder": "Search...",
-      "close": "Closure"
-    },
-    "initial_view": {
-      "quick_actions": "Quick Actions",
-      "all_tournaments": "All Tournaments",
-      "todays_tournaments": "Today's Tournaments",
-      "active_tournaments": "Active Tournaments",
-      "finished_tournaments": "Closed Tournaments",
-      "all_clubs": "All Clubs",
-      "search_results": "Search Results",
-      "all_tournaments_title": "All Tournaments",
-      "upcoming_tournaments_title": "Upcoming Tournaments",
-      "top_players": "Top Players",
-      "popular_clubs": "Popular clubs",
-      "active_leagues": "Active Leagues",
-      "filters": "Filters",
-      "no_active_leagues": "There are no active leagues at this time.",
-      "view_league": "Viewing",
-      "ongoing": "Continuous",
-      "member_count": "Member {count}",
-      "oac_1o6p": "OAC"
-    },
-    "tournament_results": {
-      "filters": "Filters",
-      "list_view": "List",
-      "calendar_view": "Calendar",
-      "no_tournaments": "There are no upcoming competitions",
-      "no_tournaments_desc": "Try again later or search in a different category.",
-      "no_tournaments_filters_desc": "Try changing the filters or search at a different time.",
-      "today": "Today",
-      "tomorrow": "Tomorrow",
-      "today_badge": "Today",
-      "tournament_count": "{count} competition",
-      "oac_1o6p": "OAC"
-    },
-    "player_leaderboard": {
-      "oac_mmr_ranking": "OAC MMR Ranking",
-      "league_points_ranking": "League Points Competition",
-      "no_results": "There are no results",
-      "no_results_oac": "Try different filter criteria among verified players.",
-      "registered_player": "Registered player",
-      "guest_player": "Guest player",
-      "pair": "Couple",
-      "team": "Team",
-      "active_in_leagues": "Active in league {count}",
-      "league_points_label": "League Point",
-      "mmr_oac_label": "OAC MMR",
-      "mmr_label": "MMR Points"
-    },
-    "filters_panel": {
-      "title": "Detailed Filters",
-      "clear": "Deletion",
-      "status_label": "Status",
-      "status_all": "All",
-      "status_pending": "Pending",
-      "status_group": "Group round",
-      "status_knockout": "Straight out",
-      "status_finished": "Finished",
-      "format_label": "Format",
-      "format_all": "All",
-      "format_knockout": "Straight out",
-      "format_group_knockout": "Group stage + Elimination",
-      "type_label": "Competition type",
-      "type_amateur": "Amateur",
-      "type_open": "Open",
-      "oac_label": "OAC / Certified Competition",
-      "date_range_label": "Date interval",
-      "player_count_label": "Number of players",
-      "no_player_filters": "There are currently no detailed filters for players.",
-      "location_label": "Location",
-      "location_placeholder": "E.g. Budapest, Debrecen...",
-      "verified_club": "Certified Club",
-      "oac_leagues_only": "OAC Leagues only",
-      "min_1noy": "Min",
-      "max_1nic": "Max"
-    },
-    "club_list": {
-      "no_clubs": "There are no clubs",
-      "member_count": "Member {count}",
-      "tournament_count": "Competition",
-      "view_profile": "Data sheet"
-    },
-    "league_list": {
-      "no_leagues": "There are no leagues",
-      "organizer": "Organizer:",
-      "status_active": "Active season",
-      "status_closed": "Closed",
-      "details": "Details"
-    }
-  },
-  "Metadata": {
-    "title": "tDarts - Darts Tournament Deduction System",
-    "description": "The best darts tournament guide system. Create clubs, organize competitions, live tracking and statistics.",
-    "keywords": "darts, tournament, competition, club, statistics, live tracking",
-    "og_title": "tDarts - Darts Tournament System",
-    "twitter_description": "The best darts tournament guide system",
-    "tdarts_f0pi": "tDarts",
-    "tdarts_team_wsgu": "tDarts Team"
-  },
-  "NotFound": {
-    "title": "Page not found",
-    "description": "The page you are looking for does not exist or has been moved.",
-    "help_text": "Check the URL or use the navigation menus to access the appropriate page.",
-    "back_home": "Main page",
-    "search_tournaments": "Find Competitions",
-    "need_help": "Do you need help?",
-    "common_pages": "Frequent pages:",
-    "useful_links": "Useful links:",
-    "how_it_works": "How it works",
-    "login": "Login",
-    "register": "Registration",
-    "club_search": "Search for a club"
   },
   "Tournament": {
     "players": {
@@ -805,17 +1919,26 @@
       "részletek": "Details"
     },
     "status": {
-      "pending": "Pending",
+      "pending": {
+        "label": "label"
+      },
       "active": "Active",
-      "finished": "Finished",
+      "finished": {
+        "label": "label"
+      },
       "group_stage": "Group round",
-      "knockout": "Elimination phase",
+      "knockout": {
+        "label": "label"
+      },
       "applied": "He applied",
       "checked_in": "Check-in",
       "has_free_spots": "There is space available",
       "full": "It's full",
       "ongoing": "In progress",
-      "all": "All"
+      "all": "All",
+      "group-stage": {
+        "label": "label"
+      }
     },
     "teams": {
       "pair": "Couple",
@@ -901,7 +2024,7 @@
         "lost": "V",
         "legs_won": "L GY",
         "legs_lost": "L V",
-        "leg_diff": null,
+        "leg_diff": "+/-",
         "average": "Average",
         "180s": "180",
         "max_checkout": "HC",
@@ -1701,8 +2824,174 @@
       "first_nine_avg": "First 9 Avg",
       "pair": "Pair",
       "team": "Team",
-      "one_eighties": "180s"
+      "one_eighties": "180s",
+      "active_matches": "active matches",
+      "completion": "completion",
+      "leaderboard": "leaderboard",
+      "ongoing": "ongoing",
+      "progress": "progress",
+      "top_players": "top players",
+      "total_players": "total players"
+    },
+    "organized_by": "organized by"
+  },
+  "Map": {
+    "title": "Tournament Map",
+    "toggleMap": "Toggle Map View",
+    "search": "Search location...",
+    "filters": "Filters",
+    "noTournaments": "No tournaments in this area",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "currentLocation": "Current Location"
+  },
+  "Modal": {
+    "delete": {
+      "title": "Confirm Delete",
+      "message": "This action cannot be undone.",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "title": "Confirm",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "close": "Close"
+  },
+  "SearchPage": {
+    "filters": {
+      "country_netherlands": "Netherlands",
+      "country_el": "Greece",
+      "country_all": "All countries",
+      "verification_label": "Authentication",
+      "verified_showing": "Display authenticated",
+      "verified_only": "Just authenticated",
+      "clear_filters_title": "Delete filters"
+    },
+    "quick_filters": {
+      "upcoming": "Forthcoming",
+      "all": "All",
+      "oac_verified": "OAC / Certified Competition",
+      "amateur": "Amateur",
+      "open": "Open",
+      "popular_cities": "Popular cities:"
+    },
+    "floating_menu": {
+      "title": "Search & Filters",
+      "search_placeholder": "Search...",
+      "close": "Closure"
+    },
+    "initial_view": {
+      "quick_actions": "Quick Actions",
+      "all_tournaments": "All Tournaments",
+      "todays_tournaments": "Today's Tournaments",
+      "active_tournaments": "Active Tournaments",
+      "finished_tournaments": "Closed Tournaments",
+      "all_clubs": "All Clubs",
+      "search_results": "Search Results",
+      "all_tournaments_title": "All Tournaments",
+      "upcoming_tournaments_title": "Upcoming Tournaments",
+      "top_players": "Top Players",
+      "popular_clubs": "Popular clubs",
+      "active_leagues": "Active Leagues",
+      "filters": "Filters",
+      "no_active_leagues": "There are no active leagues at this time.",
+      "view_league": "Viewing",
+      "ongoing": "Continuous",
+      "member_count": "Member {count}",
+      "oac_1o6p": "OAC"
+    },
+    "tournament_results": {
+      "filters": "Filters",
+      "list_view": "List",
+      "calendar_view": "Calendar",
+      "no_tournaments": "There are no upcoming competitions",
+      "no_tournaments_desc": "Try again later or search in a different category.",
+      "no_tournaments_filters_desc": "Try changing the filters or search at a different time.",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "today_badge": "Today",
+      "tournament_count": "{count} competition",
+      "oac_1o6p": "OAC"
+    },
+    "player_leaderboard": {
+      "oac_mmr_ranking": "OAC MMR Ranking",
+      "league_points_ranking": "League Points Competition",
+      "no_results": "There are no results",
+      "no_results_oac": "Try different filter criteria among verified players.",
+      "registered_player": "Registered player",
+      "guest_player": "Guest player",
+      "pair": "Couple",
+      "team": "Team",
+      "active_in_leagues": "Active in league {count}",
+      "league_points_label": "League Point",
+      "mmr_oac_label": "OAC MMR",
+      "mmr_label": "MMR Points"
+    },
+    "filters_panel": {
+      "title": "Detailed Filters",
+      "clear": "Deletion",
+      "status_label": "Status",
+      "status_all": "All",
+      "status_pending": "Pending",
+      "status_group": "Group round",
+      "status_knockout": "Straight out",
+      "status_finished": "Finished",
+      "format_label": "Format",
+      "format_all": "All",
+      "format_knockout": "Straight out",
+      "format_group_knockout": "Group stage + Elimination",
+      "type_label": "Competition type",
+      "type_amateur": "Amateur",
+      "type_open": "Open",
+      "oac_label": "OAC / Certified Competition",
+      "date_range_label": "Date interval",
+      "player_count_label": "Number of players",
+      "no_player_filters": "There are currently no detailed filters for players.",
+      "location_label": "Location",
+      "location_placeholder": "E.g. Budapest, Debrecen...",
+      "verified_club": "Certified Club",
+      "oac_leagues_only": "OAC Leagues only",
+      "min_1noy": "Min",
+      "max_1nic": "Max"
+    },
+    "club_list": {
+      "no_clubs": "There are no clubs",
+      "member_count": "Member {count}",
+      "tournament_count": "Competition",
+      "view_profile": "Data sheet"
+    },
+    "league_list": {
+      "no_leagues": "There are no leagues",
+      "organizer": "Organizer:",
+      "status_active": "Active season",
+      "status_closed": "Closed",
+      "details": "Details"
     }
+  },
+  "Metadata": {
+    "title": "tDarts - Darts Tournament Deduction System",
+    "description": "The best darts tournament guide system. Create clubs, organize competitions, live tracking and statistics.",
+    "keywords": "darts, tournament, competition, club, statistics, live tracking",
+    "og_title": "tDarts - Darts Tournament System",
+    "twitter_description": "The best darts tournament guide system",
+    "tdarts_f0pi": "tDarts",
+    "tdarts_team_wsgu": "tDarts Team"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "help_text": "Check the URL or use the navigation menus to access the appropriate page.",
+    "back_home": "Main page",
+    "search_tournaments": "Find Competitions",
+    "need_help": "Do you need help?",
+    "common_pages": "Frequent pages:",
+    "useful_links": "Useful links:",
+    "how_it_works": "How it works",
+    "login": "Login",
+    "register": "Registration",
+    "club_search": "Search for a club"
   },
   "Club": {
     "layout": {
@@ -2217,7 +3506,12 @@
       "átlag_hely": "Average place",
       "érvénytelen_pontszám_formátum": "Invalid score format",
       "új_liga_létrehozása": "Create a new league",
-      "új_verseny_létrehozásakor": "• Select this league when creating a new competition (automatic scoring)."
+      "új_verseny_létrehozásakor": "• Select this league when creating a new competition (automatic scoring).",
+      "betöltés": "betöltés",
+      "létrehozás": "létrehozás",
+      "mégse": "mégse",
+      "műveletek": "műveletek",
+      "státusz": "státusz"
     },
     "create_tournament_modal": {
       "title": "Create a new tournament",
@@ -2376,1065 +3670,6 @@
   "Tickets": {
     "toast_title": "A new reply has been received",
     "unread_messages": "Your message {count} is unread"
-  },
-  "Admin": {
-    "layout": {
-      "sidebar": {
-        "dashboard": "Control panel",
-        "users": "Users",
-        "clubs": "Clubs",
-        "tournaments": "Competitions",
-        "leagues": "Leagues",
-        "feedback": "Feedback",
-        "errors": "Errors",
-        "announcements": "News",
-        "todos": "Things to do",
-        "emails": "Email Templates",
-        "settings": "Settings",
-        "telemetry": "Telemetry",
-        "collapse": "Folding",
-        "title": "tDarts Admin"
-      },
-      "status": {
-        "checking": "Admin permission check...",
-        "welcome": "Hi {name}! 👋",
-        "stable": "The system is currently operating stably.",
-        "search": "search",
-        "menu": "menu",
-        "hello": "Hi,"
-      },
-      "sidebar_dashboard_a3kc": "sidebar.dashboard",
-      "sidebar_users_arcp": "sidebar.users",
-      "sidebar_clubs_b1d5": "sidebar.clubs",
-      "sidebar_tournaments_6vcv": "sidebar.tournaments",
-      "sidebar_leagues_xluc": "sidebar.leagues",
-      "sidebar_feedback_ic83": "sidebar.feedback",
-      "sidebar_errors_e0kt": "sidebar.errors",
-      "sidebar_announcements_pvfc": "sidebar.announcements",
-      "sidebar_todos_arz2": "sidebar.todos",
-      "sidebar_emails_dxiv": "sidebar.emails",
-      "sidebar_settings_psqa": "sidebar.settings",
-      "tdarts_f0pi": "tDarts"
-    },
-    "dashboard": {
-      "title": "Hi {name}! 👋",
-      "refresh": "Update",
-      "last_update": "Last update",
-      "system_stable": "The system is currently operating stably.",
-      "search_hint": "search",
-      "menu_hint": "menu",
-      "loading": "Loading...",
-      "error_loading": "An error occurred while loading data",
-      "stats": {
-        "users": "Users",
-        "clubs": "Clubs",
-        "tournaments": "Competitions",
-        "errors": "Open Defects",
-        "last_24h": "+{count} in the last 24 hours"
-      },
-      "activities": {
-        "title": "Recent Activities",
-        "no_data": "No recent activity"
-      },
-      "alerts": {
-        "title": "Warnings",
-        "errors": "System errors",
-        "errors_desc": "In the last 24 hours",
-        "feedback": "Feedback",
-        "feedback_desc": "Unread messages",
-        "api_anomalies": "API anomalies",
-        "api_anomalies_desc": "Significant call/traffic/latency increase"
-      },
-      "charts": {
-        "users": "User activity (Monthly)",
-        "tournaments": "Number of competitions (Monthly)"
-      },
-      "quick_access": {
-        "title": "Quick access",
-        "desc": "The most frequently used administration interfaces",
-        "new_post": "New News",
-        "create_tournament": "Competition Creation",
-        "users": "Users",
-        "tournaments": "Competitions",
-        "clubs": "Clubs",
-        "todos": "Things to do",
-        "news": "News",
-        "settings": "Settings",
-        "telemetry": "API Telemetry"
-      },
-      "telemetry": {
-        "title": "API telemetry deep dive",
-        "description": "Open the dedicated telemetry page for route-level traffic, latency, and payload analytics.",
-        "open_page": "Open telemetry page"
-      },
-      "announcements": {
-        "title": "News Management",
-        "search_placeholder": "Search...",
-        "new_btn": "New News",
-        "table": {
-          "title": "Title",
-          "type": "Type",
-          "status": "Status",
-          "expires": "Expiration date",
-          "actions": "Operations",
-          "loading": "Loading...",
-          "no_results": "There are no results.",
-          "active": "Active",
-          "inactive": "Inactive",
-          "menu_sr": "Menu"
-        },
-        "actions": {
-          "activate": "Activation",
-          "deactivate": "Deactivation",
-          "edit": "Editing",
-          "delete": "Deletion",
-          "confirm_delete": "Are you sure you want to delete it?",
-          "save": "Rescue",
-          "saving": "Rescue...",
-          "create": "Creation",
-          "cancel": "Don't cancel"
-        },
-        "toasts": {
-          "fetch_error": "Failed to load news",
-          "delete_success": "News deleted",
-          "delete_error": "Error during deletion",
-          "status_success": "Status updated",
-          "status_error": "Error updating status",
-          "update_success": "News updated",
-          "create_success": "News created",
-          "save_error": "Error saving"
-        },
-        "pagination": {
-          "info": "{total} news in total • Page {current} / {total_pages}",
-          "prev": "Previous",
-          "next": "Following"
-        },
-        "dialog": {
-          "edit_title": "News Editing",
-          "create_title": "Create New News",
-          "edit_desc": "Change the news details.",
-          "create_desc": "Enter the details of the new news.",
-          "form": {
-            "title": "Title",
-            "title_placeholder": "News title",
-            "type": "Type",
-            "types": {
-              "info": "Info (Blue)",
-              "success": "Success (Green)",
-              "warning": "Attention (Yellow)",
-              "error": "Error (Red)"
-            },
-            "duration": "Duration (ms)",
-            "expires": "Expiration date",
-            "description": "Description",
-            "description_placeholder": "News text...",
-            "show_button": "Show button",
-            "button_text": "Button label",
-            "button_text_placeholder": "Ex: Details",
-            "button_action": "Button link (URL)",
-            "button_action_placeholder": "Eg: /results or https://..."
-          }
-        }
-      },
-      "feedback": {
-        "title": "Feedback",
-        "search_placeholder": "Search in title, description...",
-        "filters": {
-          "category": "Category",
-          "all_categories": "All Cat.",
-          "status": "Status",
-          "all_statuses": "All States.",
-          "priority": "Priority",
-          "all_priorities": "All Prios."
-        },
-        "categories": {
-          "bug": "Fault",
-          "feature": "Function",
-          "improvement": "Repair",
-          "other": "Other"
-        },
-        "statuses": {
-          "pending": "Pending",
-          "in-progress": "In progress",
-          "resolved": "Solved",
-          "rejected": "Rejected",
-          "closed": "Closed"
-        },
-        "priorities": {
-          "low": "Low",
-          "medium": "Medium",
-          "high": "High",
-          "critical": "Critic"
-        },
-        "table": {
-          "category": "Cat.",
-          "title_sender": "Address & Sender",
-          "priority": "Priority",
-          "status": "Status",
-          "date": "Date",
-          "actions": "Operations",
-          "loading": "Loading...",
-          "no_results": "There are no results.",
-          "new_badge": "New",
-          "menu_sr": "Menu"
-        },
-        "actions": {
-          "copy_id": "Copy ID",
-          "create_todo": "Create Task",
-          "edit": "Editing",
-          "delete": "Deletion",
-          "confirm_delete": "Are you sure you want to delete it?"
-        },
-        "toasts": {
-          "fetch_error": "Failed to load feedback",
-          "delete_success": "Feedback deleted",
-          "delete_error": "Error during deletion",
-          "todo_success": "Action created from feedback!",
-          "todo_error": "Error creating task"
-        },
-        "pagination": {
-          "info": "{total} feedback total • {current} / {total_pages} page",
-          "prev": "Previous",
-          "next": "Following"
-        }
-      },
-      "leagues": {
-        "title": "League Management",
-        "new_btn": "New League",
-        "errors": {
-          "check_feature": "An error occurred while checking the function",
-          "save_error": "An error occurred while saving the league",
-          "delete_error": "An error occurred while deleting the league"
-        },
-        "actions": {
-          "confirm_delete": "Are you sure you want to delete this league?",
-          "edit": "Editing",
-          "delete": "Deletion",
-          "add_player": "Add player",
-          "view_standings": "Job",
-          "view_standings_title": "View League Standings"
-        },
-        "promo": {
-          "title": "League System",
-          "desc": "Start leagues in your club! Competitors scoring, rankings and automatic scoring.",
-          "requires_subscription": "Subscription required",
-          "subscription_desc": "A Pro subscription is required to use the leagues system.",
-          "subscription_btn": "Subscription",
-          "details_btn": "Details",
-          "disclaimer": "* The Pro package includes the league system and additional premium functions"
-        },
-        "empty": {
-          "title": "There are no leagues",
-          "desc": "Create a new league to score competitors",
-          "first_btn": "Creation of First League"
-        },
-        "card": {
-          "group_dropout": "Group round losers:",
-          "points": "{count} point",
-          "winner": "Winner:",
-          "multiplier": "Multiplier:",
-          "tournaments": "Competitions:",
-          "players": "Players:"
-        },
-        "player_modal": {
-          "title": "Edit league players",
-          "add_player": "Add player",
-          "search_placeholder": "Search for a player by name or username...",
-          "list_title": "Players in the league",
-          "table": {
-            "name": "Name",
-            "points": "Points",
-            "action": "Operation"
-          },
-          "remove_title": "Remove a player",
-          "empty_list": "There are no players in the league.",
-          "close_btn": "Closure"
-        },
-        "dialog": {
-          "edit_title": "Edit League",
-          "create_title": "Create a New League",
-          "form": {
-            "name": "Name *",
-            "name_placeholder": "League name",
-            "description": "Description",
-            "description_placeholder": "Optional description",
-            "point_system": "Scoring System",
-            "group_dropout": "Points for those eliminated in the group stage",
-            "group_dropout_help": "Base point for all players eliminated in the group stage",
-            "winner_points": "His winning point",
-            "winner_points_help": "Winning player's score (highest score)",
-            "multiplier": "Multiplier (geometric series)",
-            "multiplier_help": "Between 0.1 and 2.0. Smaller value = bigger difference between circles",
-            "preview": "Points preview",
-            "preview_desc": "Points calculated based on a geometric series (dynamically updated):",
-            "rounds": {
-              "round_1": "Round 1",
-              "round_2": "Round 2",
-              "round_3": "Round 3",
-              "semi_final": "Semi-final",
-              "final": "Finals",
-              "winner": "Winner"
-            },
-            "geometric_rule": "Geometric series: points increase from round 1 to the winner (by a factor of {val})"
-          },
-          "actions": {
-            "cancel": "Don't cancel",
-            "save": "Rescue",
-            "create": "Creation",
-            "saving": "Rescue..."
-          },
-          "validation": {
-            "name_required": "Entering a name is mandatory",
-            "name_max": "Name can be a maximum of 100 characters",
-            "desc_max": "Description can be a maximum of 500 characters",
-            "points_negative": "Points cannot be negative",
-            "multiplier_min": "Multiplier minimum 0.1",
-            "multiplier_max": "Multiplier maximum 2"
-          }
-        }
-      },
-      "tickets": {
-        "detail": {
-          "title": "Feedback details",
-          "no_messages": "There are no messages in this ticket yet",
-          "system_sender": "System",
-          "status": "Status",
-          "priority": "Priority",
-          "save_status": "Save status",
-          "reply_placeholder": "Write a message...",
-          "send_btn": "Sending"
-        },
-        "toasts": {
-          "empty_message": "The message cannot be empty",
-          "reply_success": "Reply sent",
-          "reply_error": "An error occurred while sending the message",
-          "no_change": "No change",
-          "status_updated": "Status updated",
-          "status_error": "Error updating status"
-        }
-      },
-      "todos": {
-        "title": "Tasks",
-        "smart_title": "Smart Todo",
-        "smart_help": "Type in natural language: \"Server maintenance !!! tomorrow #dev\"",
-        "loading": "Loading todos...",
-        "stats": {
-          "total": "All Todos",
-          "pending": "Pending",
-          "in_progress": "In progress",
-          "completed": "Finished"
-        },
-        "toolbar": {
-          "view_kanban": "In Kanban",
-          "view_list": "List",
-          "all_priorities": "Everything is a priority",
-          "all_categories": "All categories",
-          "search_placeholder": "Search...",
-          "new_btn": "New Todo"
-        },
-        "kanban": {
-          "pending": "Pending",
-          "in_progress": "In progress",
-          "completed": "Finished",
-          "cancelled": "Deleted",
-          "empty": "None {status}"
-        },
-        "list": {
-          "count": "Todos ({count})",
-          "empty": "There are no todos with the selected filters"
-        },
-        "smart": {
-          "all": "All",
-          "active": "Active",
-          "completed": "Ready",
-          "sort_label": "Arrangement",
-          "sort_smart": "✨ Smart arrangement (Urgency)",
-          "sort_date": "📅 By deadline",
-          "sort_priority": "🔥 By priority",
-          "sort_smart_short": "Smart arrangement",
-          "sort_date_short": "By deadline",
-          "sort_priority_short": "By priority",
-          "empty_title": "There are no tasks to display",
-          "empty_desc": "Add a new one using the field above!",
-          "placeholder": "Write a task... (e.g. 'Fix server error !!! #bug today')"
-        },
-        "smart_input": {
-          "placeholder": "Write a task... (e.g. 'Fix server error !!! #bug today')",
-          "press_enter": "Press {key} to add",
-          "tags": "Tags:"
-        },
-        "dialog": {
-          "create_title": "Create a new Todo",
-          "edit_title": "Edit Todo",
-          "title_label": "Address *",
-          "title_placeholder": "Todo's title is...",
-          "category_label": "Category",
-          "priority_label": "Priority",
-          "status_label": "Status",
-          "due_date_label": "Deadline",
-          "desc_label": "Description",
-          "desc_placeholder": "Detailed description...",
-          "tags_label": "Labels",
-          "tags_placeholder": "Add label (Enter)",
-          "actions": {
-            "create": "Creation",
-            "save": "Rescue",
-            "cancel": "Don't cancel"
-          }
-        },
-        "statuses": {
-          "pending": "Pending",
-          "in-progress": "In progress",
-          "completed": "Finished",
-          "cancelled": "Deleted"
-        },
-        "priorities": {
-          "low": "Low",
-          "medium": "Medium",
-          "high": "High",
-          "critical": "Critic"
-        },
-        "categories": {
-          "bug": "Fault",
-          "feature": "New feature",
-          "improvement": "Development",
-          "maintenance": "Maintenance",
-          "other": "Other"
-        },
-        "toasts": {
-          "delete_confirm": "Are you sure you want to delete this todo?",
-          "delete_confirm_short": "Are you sure you want to delete it?",
-          "fetch_error": "Tasks could not be loaded",
-          "create_success": "Task added!",
-          "create_error": "An error occurred while creating the task",
-          "update_status_error": "Failed to update status",
-          "delete_success": "Task deleted",
-          "delete_error": "Failed to delete task"
-        }
-      }
-    },
-    "tickets": {},
-    "announcements": {
-      "announcement_kezelő": "Announcement Manager",
-      "rendszerüzenetek_létrehozása_és": "Create and manage system messages"
-    },
-    "feedback": {
-      "felhasználói_visszajelzések_és": "Management of user feedback and suggestions",
-      "hibabejelentések_kezelése": "Handling of error reports",
-      "visszajelzések_napi_beérkezése": "Receive feedback daily"
-    },
-    "leagues": {
-      "hiba_történt_a_14": "An error occurred while completing the match!",
-      "hitelesített_oac": "Certified (OAC)",
-      "inaktív": "Inactive",
-      "keresés_név_vagy": "Search by name or club...",
-      "liga_neve": "League Name",
-      "ligák": "Leagues",
-      "ligák_kezelése_statisztikák": "Manage leagues, statistics and overview",
-      "minden_típus": "All types",
-      "oac_liga": "OAC League",
-      "platform": "Platform",
-      "platform_liga": "Platform League",
-      "platform_ligák": "Platform Leagues",
-      "pontozási_rendszer": "Scoring System",
-      "szűrés_típusra": "Filter by type",
-      "verified_oac": "Verified (OAC)",
-      "összes_liga": "All Leagues"
-    },
-    "todos": {
-      "feladatok_és_észrevételek": "Follow up on tasks and comments",
-      "todo_kezelés": "Todo Management"
-    },
-    "common": {
-      "hiba_történt_az": "An error occurred while loading data",
-      "létrehozva": "Created",
-      "találat_oldal": "result (Page:",
-      "törölve": "DELETED",
-      "versenyek": "Competitions",
-      "összesen": "All",
-      "aktív": "Active",
-      "játékosok": "Players",
-      "klub": "Club"
-    },
-    "clubs": {
-      "aktív_klubok": "Active Clubs",
-      "basic_122s": "Basic",
-      "csak_hitelesített": "Authenticated only",
-      "csak_nem_hitelesített": "Just Not Authenticated",
-      "csomag": "Package",
-      "enterprise_joxf": "Enterprise",
-      "free_1b43": "Free",
-      "helyszín": "Location",
-      "hitelesített": "Authenticated",
-      "keresés_név_helyszín": "Search by name, location or description...",
-      "klub_név": "Club Name",
-      "klubok": "Clubs",
-      "klubok_kezelése_statisztikák": "Club management, statistics and overview",
-      "klubok_napi_létrehozása": "Daily creation of clubs",
-      "minden_klub": "All clubs",
-      "normál": "Normal",
-      "pro_1q4t": "Pro",
-      "szűrés_státuszra": "Filter by status",
-      "tagok": "Members",
-      "törölt": "Deleted",
-      "összes_klub": "All Clubs"
-    },
-    "tournaments": {
-      "aktiv_11ph": "Active",
-      "befejezett": "Finished",
-      "befejezett_x25b": "Finished",
-      "csoportkor_yqu8": "Group round",
-      "csoportkör": "Group round",
-      "csoportos_cksc": "Group",
-      "dátum": "Date",
-      "fuggoben_ddvf": "Pending",
-      "függőben": "Pending",
-      "keresés_név_klub": "Search by name, club or description...",
-      "kieseses_c2i5": "Knockout",
-      "kieséses": "Knockout",
-      "minden_mód": "All ways",
-      "minden_típus": "All types",
-      "mód": "Mode",
-      "oac": "OAC",
-      "platform": "Platform",
-      "sandbox": "Sandbox",
-      "típus": "Type",
-      "vegyes_spt0": "Mixed",
-      "verified_oac": "Verified (OAC)",
-      "verseny_név": "Competition Name",
-      "versenyek_kezelése_statisztikák": "Competition management, statistics and overview",
-      "versenyek_napi_indítása": "Daily start of competitions",
-      "éles": "Sharp",
-      "összes": "All",
-      "összes_státusz": "All statuses"
-    },
-    "users": {
-      "admin": "Admin",
-      "adminisztrátorok": "Administrators",
-      "angol": "English",
-      "csak_adminok": "Admins only",
-      "csak_felhasználók": "Users only",
-      "csatlakozott": "He joined",
-      "előző": "Previous",
-      "email": "E-mail",
-      "email_küldése": "Send email",
-      "email_küldése_59": "Send email:",
-      "email_sikeresen_elküldve": "Email successfully sent!",
-      "felhasználó": "User",
-      "felhasználó_deaktiválva": "User deactivated",
-      "felhasználói_fiókok_kezelése": "Management and administration of user accounts",
-      "felhasználók": "Users",
-      "fiók_felfüggesztése": "Account suspension",
-      "hiba_történt_a_29": "An error occurred during deactivation",
-      "hiba_történt_a_39": "An error occurred during the operation",
-      "hiba_történt_az_9": "An error occurred while sending the email",
-      "keresés_név_email": "Search by name, email or username...",
-      "következő": "Following",
-      "magyar": "Hungarian",
-      "minden_felhasználó": "All users",
-      "nem_megerősített": "Not confirmed",
-      "nem_regisztrált": "Not Registered",
-      "nyelv": "Language",
-      "regisztrált": "Registered",
-      "szerepkör": "Role",
-      "szűrés_szerepkörre": "Filter by role",
-      "tárgy": "Object",
-      "írja_be_az": "Enter your message...",
-      "összes_felhasználó": "All Users",
-      "üzenet": "Message",
-      "üzenet_tárgya": "Message subject..."
-    },
-    "errors": {
-      "api_1e62": "API",
-      "auth_17zr": "Auth",
-      "auth_hibák": "Auth errors",
-      "club": "club:",
-      "club_1932": "Club",
-      "database_unvz": "Database",
-      "error_details": "Error Details:",
-      "hiba_adatok_betöltése": "Error loading data…",
-      "hiba_kezelés": "Error Handling",
-      "hibák_kategóriánként": "Errors by Category",
-      "hibák_napi_előfordulása": "Daily occurrence of errors",
-      "hibák_szintenként": "Bugs by Level",
-      "időszak": "Period",
-      "kategória": "Category",
-      "legutóbbi_hibák": "Recent Errors (",
-      "metadata": "Metadata:",
-      "nem_sikerült_betölteni": "Failed to load error data.",
-      "nincsenek_hibák": "There are no errors",
-      "player_vgc0": "Player",
-      "rendszer_hibák_monitorozása": "Monitoring and management of system errors",
-      "stack_trace": "Stack Trace:",
-      "schema": {
-        "title": "Log schema",
-        "all": "All logs",
-        "new": "New structured",
-        "legacy": "Legacy"
-      },
-      "system_ttqf": "System",
-      "szint": "Level",
-      "szűrők": "Filters",
-      "tournament": "Tournament:",
-      "tournament_ghva": "Tournament",
-      "user": "User:",
-      "user_1kpn": "User",
-      "utolsó_hónap": "Last 3 months",
-      "utolsó_nap": "Last 7 days",
-      "utolsó_nap_94": "Last 30 days",
-      "utolsó_óra": "Last 24 hours",
-      "összes_hiba": "All Errors",
-      "összes_kategória": "All categories",
-      "összes_szint": "All levels"
-    },
-    "settings": {
-      "adatbázis": "Database",
-      "adatbázis_információk": "Database Information",
-      "aktuális_verzió_információk": "Current version information",
-      "dokumentumok": "Documents",
-      "előfizetés_rendszer": "Subscription system",
-      "email_username": "EMAIL_USERNAME",
-      "funkciók": "Functions",
-      "kapcsolat": "Contact",
-      "kollekciók": "Collections",
-      "környezeti_változók": "Environmental Variables",
-      "ligák": "Leagues",
-      "memória": "Memory",
-      "működik": "It works",
-      "nem_sikerült_betölteni_15": "Failed to load system information.",
-      "node_env": "NODE_ENV",
-      "online": "ONLINE",
-      "rendszer_beállítások": "System Settings",
-      "rendszer_információk_betöltése": "Loading system information…",
-      "rendszer_információk_és": "System information and configuration",
-      "rendszer_verzió": "System Version",
-      "rendszer_állapot": "System Status",
-      "részletes_statisztikák": "Detailed statistics",
-      "socket_kapcsolat": "Socket connection",
-      "socket_server_url": "SOCKET_SERVER_URL",
-      "subscription_enabled": "SUBSCRIPTION_ENABLED",
-      "változó": "Variable",
-      "érték": "Value",
-      "üzemidő": "Operating time"
-    },
-    "emails": {
-      "a_teszt_emailt": "The test email is rendered as shown above, filled with sample data.",
-      "alapértelmezett": "Default:",
-      "címzett_email": "Recipient email",
-      "elérhető_változók": "Available variables:",
-      "email_preview": "Email Preview",
-      "email_sablonok": "Email Templates",
-      "használd_ezeket_a": "Use these variables in the template, e.g.:",
-      "hiba_történt_a": "An error occurred while loading the templates",
-      "hiba_történt_a_87": "An error occurred while saving",
-      "html_tartalom": "HTML Content",
-      "hálózati_hiba_történt": "A network error has occurred",
-      "inaktív": "Inactive",
-      "kezeld_az_email": "Manage the email templates that the platform sends to users",
-      "kulcs": "Key:",
-      "kérjük_adj_meg": "Please enter an email address",
-      "küldés": "Sending",
-      "nincs_kiválasztott_sablon": "No template selected",
-      "sablon_sikeresen_mentve": "Template saved successfully",
-      "sablonok": "Templates (",
-      "sablonok_betöltése": "Loading templates...",
-      "szerkesztés": "Editing",
-      "szöveges_tartalom_fallback": "Text Content (fallback)",
-      "teszt_email_elküldve": "Test email sent",
-      "teszt_email_küldése": "Sending a test email",
-      "tárgy": "Object",
-      "utolsó_módosítás": "Last modification:",
-      "vmi_pelda_hu": "vmi@pelda.hu",
-      "válassz_egy_sablont": "Select a template from the list on the left to view and edit"
-    },
-    "components": {
-      "a_hozzáadáshoz": "to add",
-      "a_jelenlegi_statisztikákat": "current statistics and archive them.",
-      "a_statisztikákat_a": "the statistics a",
-      "adj_hozzá_egy": "Add a new one using the field above!",
-      "announcements_mk89": "Announcements",
-      "az_előző_nap": "Statistics for the previous 30 days broken down by day",
-      "biztosan_le_akarod": "You definitely want to close the",
-      "close": "Close",
-      "clubs_12tn": "Clubs",
-      "command_palette": "Command Palette",
-      "confirm_restore": "CONFIRM_RESTORE_",
-      "confirm_wrap": "CONFIRM_WRAP_",
-      "dashboard_ft8p": "Dashboard",
-      "enter": "Enter",
-      "errors_ygvm": "Errors",
-      "es_archívumból_és": "from archive and deletes the archive.\n              Useful if you accidentally ran Year End.",
-      "es_évet_ez": "and year? This is the operation",
-      "esc": "ESC",
-      "ez_a_művelet": "This action resets all player stats, archives current data and distributes titles.",
-      "ez_a_művelet_57": "This is the operation",
-      "feedback_23iz": "Feedback",
-      "feladat_gyorsan_hozzáadva": "Task added quickly!",
-      "feladat_hozzáadva": "Task added!",
-      "feladat_törölve": "Task deleted",
-      "gyors_feladat_létrehozása": "Create a Quick Task",
-      "ha_véletlenül_futtattad": "If you ran it by accident, you can undo the last shutdown with the Reset button.",
-      "használd_a_természetes": "Use natural language (e.g. Fix &quot;Bug !!! today #bug&quot;)",
-      "határidő_szerint": "📅 By deadline",
-      "hiba_tortent_az_adatok_qmk8": "An error occurred while loading data",
-      "hiba_történt_a_78": "An error occurred while saving the settings!",
-      "hiba_történt_a_88": "An error occurred while creating the task",
-      "hibás_megerősítő_kód": "Invalid confirmation code",
-      "ismeretlen_adatformatum_v65o": "Unknown data format",
-      "kritikus_rendszer_műveletek": "Critical system operations",
-      "kész": "Ready",
-      "leagues_sd4t": "Leagues",
-      "megerősítés": "Confirmation",
-      "navigate": "Navigate",
-      "nem_sikerült_betölteni_12": "Tasks could not be loaded",
-      "nem_sikerült_frissíteni": "Failed to update status",
-      "nem_sikerült_törölni": "Failed to delete task",
-      "nincs_megjeleníthető_feladat": "There are no tasks to display",
-      "no_results_found": "No results found.",
-      "nyomj": "Press",
-      "okos_rendezés_urgency": "✨ Smart arrangement (Urgency)",
-      "prioritás_szerint": "🔥 By priority",
-      "search_for_pages": "Search for pages and actions",
-      "select": "Select",
-      "settings_osmo": "Settings",
-      "smart_todo": "Smart Todo",
-      "tags": "Tags:",
-      "todos_1c7q": "Todos",
-      "tournaments_e65c": "Tournaments",
-      "telemetry_fm2a": "Telemetry",
-      "trend": "Trend",
-      "type_to_search": "Type to search...",
-      "törli": "deletes it",
-      "users_1cu3": "Users",
-      "veszélyzóna": "Danger zone",
-      "visszaállítandó_év": "Year to be restored",
-      "visszaállítja": "RESTORE IT",
-      "visszaállítás": "Reset:",
-      "visszaállítás_45": "Reset",
-      "visszaállítás_55": "Reset",
-      "visszaállítás_undo": "Undo -",
-      "véglegesítés_és_reset": "Finalization and Reset",
-      "átlagos_nap": "Average/day",
-      "év_kiválasztása": "Select year",
-      "év_lezárása": "End of Year",
-      "év_lezárása_85": "Year End -",
-      "éves_zárás_és": "Annual Closing and Reset",
-      "írd_be_a": "Enter the following to confirm:",
-      "írd_be_természetes": "Type in natural language: &quot;Server maintenance !!! tomorrow #dev&quot;",
-      "összes": "All",
-      "összesen_nap": "Total (30 days)"
-    },
-    "telemetry": {
-      "title": "API telemetry",
-      "description": "Analyze route traffic, latency, and payload trends with historical filters.",
-      "loading": "Loading telemetry...",
-      "error_loading": "Failed to load telemetry data",
-      "export": {
-        "button": "Export JSON",
-        "success": "Telemetry export downloaded.",
-        "error": "Failed to export telemetry bundle"
-      },
-      "refresh": "Refresh telemetry",
-      "filters": {
-        "title": "Filters",
-        "description": "Select time range, timezone, or custom interval.",
-        "range": "Range",
-        "timezone": "Timezone",
-        "method": "Method",
-        "all_methods": "All methods",
-        "granularity": "Granularity",
-        "granularity_minute": "Per minute",
-        "granularity_hour": "Per hour",
-        "granularity_day": "Per day",
-        "route": "Route",
-        "all_routes": "All routes",
-        "clear_route": "Clear route",
-        "only_error_apis": "Only APIs with errors",
-        "min_calls": "Min calls",
-        "min_traffic_kb": "Min traffic (KB)",
-        "min_latency_ms": "Min avg latency (ms)",
-        "route_sort": "All-routes sort",
-        "top_sort": "Top-routes sort",
-        "sort_route_asc": "Route (A-Z)",
-        "sort_calls_desc": "Calls (high-low)",
-        "sort_errors_desc": "Errors (high-low)",
-        "sort_traffic_desc": "Traffic (high-low)",
-        "sort_latency_desc": "Latency (high-low)",
-        "sort_last_seen_desc": "Last seen (newest)",
-        "custom_start": "Custom start",
-        "custom_end": "Custom end",
-        "apply": "Apply"
-      },
-      "ranges": {
-        "24h": "Last 24 hours",
-        "7d": "Last 7 days",
-        "30d": "Last 30 days",
-        "90d": "Last 90 days",
-        "custom": "Custom interval"
-      },
-      "charts": {
-        "requests": "API requests",
-        "latency": "Average latency (ms)",
-        "payload": "Payload (KB)",
-        "throughput": "Traffic throughput (bytes)"
-      },
-      "metrics": {
-        "incoming_total_kb": "Incoming total (KB)",
-        "outgoing_total_kb": "Outgoing total (KB)",
-        "total_moved": "Total moved data",
-        "avg_package_size": "Average package size",
-        "avg_incoming_package": "Average incoming package",
-        "avg_outgoing_package": "Average outgoing package"
-      },
-      "top_routes": {
-        "title": "Top API routes",
-        "description": "Most active and resource-intensive routes in the selected window.",
-        "empty": "No API telemetry data yet.",
-        "calls": "calls",
-        "avg": "avg",
-        "max": "max",
-        "error_rate": "err",
-        "incoming": "in",
-        "outgoing": "out",
-        "total": "total"
-      },
-      "all_routes": {
-        "title": "All Registered Routes",
-        "description": "Complete route list discovered from telemetry records in the database.",
-        "search_placeholder": "Search route key...",
-        "empty": "No routes found for current filter.",
-        "calls": "Calls",
-        "errors": "Errors",
-        "traffic": "Traffic",
-        "latency": "Avg latency",
-        "select": "Select"
-      },
-      "error_calls": {
-        "title": "Error calls",
-        "description": "Inspect exact failed requests/responses (4xx/5xx) for the selected filters.",
-        "total": "Total: {count}",
-        "status_filter": "Status filter",
-        "status_all": "All statuses",
-        "clear_filters": "Clear error filters",
-        "mark_fixed": "Mark selected route fixed",
-        "mark_fixed_need_route": "Select a route first.",
-        "mark_fixed_success": "Old errors were checked as fixed and baseline reset.",
-        "mark_fixed_error": "Failed to mark route errors as fixed.",
-        "mark_fixed_hint": "Select a route from filters or the all-routes list.",
-        "select_error": "Select error row",
-        "select_page": "Select page",
-        "delete_selected": "Delete selected logs",
-        "delete_route": "Delete selected route logs",
-        "delete_selected_need_selection": "Select at least one error log.",
-        "delete_route_need_selection": "Select a route first.",
-        "delete_selected_confirm": "Delete {count} selected error logs?",
-        "delete_route_confirm": "Delete all error logs for {method} {route}?",
-        "delete_success": "Deleted {count} error logs.",
-        "delete_error": "Failed to delete error logs.",
-        "empty": "No error calls found for this filter set.",
-        "duration": "Duration",
-        "request_bytes": "Request",
-        "response_bytes": "Response",
-        "request": "Request details",
-        "response": "Response details",
-        "copy": "Copy JSON",
-        "prev": "Previous",
-        "next": "Next",
-        "page": "Page {page} / {totalPages}"
-      }
-    }
-  },
-  "Profile": {
-    "loading_data": "Loading user data...",
-    "header": {
-      "title": "User Profile",
-      "subtitle": "Manage your personal data and view your statistics"
-    },
-    "tabs": {
-      "details": "Data",
-      "stats": "Statistics",
-      "tickets": "Feedback"
-    },
-    "countries": {
-      "hu": "Hungary",
-      "at": "Austria",
-      "de": "Germany",
-      "sk": "Slovakia",
-      "ro": "Romania",
-      "hr": "Croatia",
-      "si": "Slovenia"
-    },
-    "info": {
-      "title": "Personal Information",
-      "email": "Email address",
-      "verified": "Checked",
-      "not_verified": "Not verified",
-      "name": "Name",
-      "username": "Username",
-      "country": "Country"
-    },
-    "edit": {
-      "title": "Edit Profile",
-      "email": "Email address",
-      "name": "Name",
-      "username": "Username",
-      "country": "Country",
-      "password": "New password",
-      "confirm_password": "Confirm new password",
-      "placeholders": {
-        "email": "Example: john@example.com",
-        "name": "Full name",
-        "username": "Username",
-        "password": "Leave it blank if you don't change it"
-      },
-      "updating": "Update...",
-      "update_button": "Saving data",
-      "validation": {
-        "email": "Invalid e-mail address",
-        "name_required": "Entering a name is mandatory",
-        "username_required": "Entering a username is mandatory",
-        "password_mismatch": "The two passwords do not match"
-      }
-    },
-    "verification": {
-      "title": "Email Confirmation",
-      "alert": "Please confirm your email address for safe use.",
-      "code_label": "Verification code",
-      "code_placeholder": "6 digit code",
-      "verifying": "Control...",
-      "verify_button": "Confirmation",
-      "resending": "Sending...",
-      "resend_button": "Resend code",
-      "validation": {
-        "code_required": "Entering the verification code is mandatory"
-      }
-    },
-    "actions": {
-      "title": "Operations",
-      "logging_out": "Signing out...",
-      "logout": "Checkout",
-      "my_club": "My club",
-      "admin": "Administration"
-    },
-    "stats": {
-      "title": "Player Statistics",
-      "period": "Period:",
-      "seasons": {
-        "current": "Current season",
-        "all_time": "Aggregated",
-        "previous": "Previous seasons"
-      },
-      "mmr": {
-        "current": "Current MMR",
-        "season_end": "End of season MMR",
-        "archived": "Archived MMR"
-      },
-      "mmr_1n02": "MMR",
-      "oac_mmr_g66r": "OAC MMR",
-      "rank": "Placement",
-      "rank_end": "Leadership position",
-      "global_list": "Global leaderboard",
-      "tournaments": "Competitions",
-      "career": "Career",
-      "term": "Period",
-      "win_rate": "Winning ratio",
-      "wins": "Victory",
-      "charts": {
-        "form": "Form (Average)",
-        "no_data": "Not enough data to graph",
-        "mmr_history": "MMR History",
-        "no_history": "No MMR history"
-      },
-      "metrics": {
-        "title": "Detailed Data",
-        "avg": "Average",
-        "one_eighties": "Total 180",
-        "best_pos": "Best ranking",
-        "avg_pos": "Average ranking",
-        "max_checkout": "Highest exit"
-      },
-      "matches": {
-        "title": "Recent matches"
-      },
-      "teams": {
-        "title": "My teams",
-        "pair": "Couple",
-        "team": "Team"
-      },
-      "history": {
-        "title": "Competition History",
-        "tournaments_count": "{count} competition",
-        "open_button": "Opening",
-        "matches": "Matches",
-        "legs": "I will",
-        "avg": "Average",
-        "one_eighties": "180s",
-        "checkout": "Exit",
-        "date": "Date",
-        "empty": "There are no registered races in this period"
-      }
-    },
-    "history": {
-      "title": "League History",
-      "points": "Points",
-      "tournaments": "Competitions",
-      "position": "Placement",
-      "last_activity": "Last Activity: {date}"
-    },
-    "tickets": {
-      "title": "My feedback (Tickets)",
-      "new_ticket": "New error ticket",
-      "new_ticket_desc": "Do you have a question or comment? Write to us!",
-      "status": {
-        "open": "Open",
-        "replied": "A reply has been received",
-        "closed": "Closed"
-      },
-      "priority": {
-        "high": "High",
-        "medium": "Medium",
-        "low": "Low"
-      },
-      "id_prefix": "Ticket#",
-      "updated_at": "Updated: {date}",
-      "empty": "You have no feedback yet.",
-      "reply_placeholder": "Write a reply...",
-      "send_button": "Sending",
-      "closed_message": "This ticket has been closed.",
-      "toasts": {
-        "closed_error": "You cannot comment on a closed bug ticket",
-        "reply_error": "Error sending message"
-      }
-    },
-    "toasts": {
-      "updating": "Update profile...",
-      "update_success": "Profile successfully updated!",
-      "update_error": "An error occurred during the update",
-      "verification_success": "Email address successfully confirmed!",
-      "verification_error": "Invalid verification code",
-      "resending": "Resend code...",
-      "resend_success": "New code sent!",
-      "resend_error": "Error resending code",
-      "logout_success": "Checkout successful!",
-      "logout_error": "Error during checkout"
-    },
-    "picture": {
-      "profilkep_giiz": "Profile picture",
-      "consent_error": "You must agree to make the image public",
-      "success_update": "Profile picture successfully updated",
-      "error_update": "Error updating profile picture",
-      "remove_confirm": "Are you sure you want to delete your profile picture?",
-      "success_remove": "Profile picture successfully removed",
-      "error_remove": "Error removing profile picture",
-      "removing": "Removal...",
-      "remove_button": "Delete profile picture",
-      "dialog_title": "Edit Profile Picture",
-      "zoom": "Magnification",
-      "consent_label": "I agree to have my profile picture displayed in player lists and tournaments.",
-      "cancel": "Don't cancel",
-      "saving": "Rescue...",
-      "save": "Save profile picture"
-    }
   },
   "Board": {
     "a_bull_t": "The bull starts with the player on the left",
@@ -3621,5 +3856,35 @@
     "válassz_eszközt": "Choose a device",
     "érintett_oldal_opcionális": "Affected page (optional)",
     "írd_le_részletesen": "Describe in detail what happened..."
+  },
+  "HomeDashboard": {
+    "welcome": "Game day",
+    "headline": "Welcome back, {name}",
+    "subheadline": "Your club, tournaments, and board actions are one tap away.",
+    "joinTournament": "Join Tournament",
+    "viewStats": "View Statistics",
+    "stats": {
+      "matches": "Matches Played",
+      "winRate": "Win Rate",
+      "tournaments": "Tournaments Joined",
+      "checkout": "Avg Checkout"
+    },
+    "upcomingTitle": "Upcoming Tournaments",
+    "seeAll": "See all",
+    "loading": "Loading your data...",
+    "emptyTournaments": "No upcoming tournaments yet.",
+    "quickActions": "Quick Actions",
+    "actions": {
+      "openBoard": "Open Live Board",
+      "myClub": "Go to My Club"
+    }
+  },
+  "Carousel": {
+    "experience": "Kiváló Felhasználói Élmény",
+    "management": "Világszínvonalú Versenykezelés",
+    "platform": "Bajnoki Szintű Platform",
+    "results": "Professzionális Eredmények",
+    "speed": "Villámgyors Feldolgozás",
+    "targeting": "Precíz Célkövetés"
   }
 }

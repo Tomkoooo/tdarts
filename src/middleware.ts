@@ -1,12 +1,16 @@
-import createMiddleware from 'next-intl/middleware';
-import { routing } from './i18n/routing';
+import createMiddleware from "next-intl/middleware";
+import { NextRequest } from "next/server";
+import { routing } from "./i18n/routing";
 
-export default createMiddleware(routing);
+const intlMiddleware = createMiddleware(routing);
+
+export default function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const response = intlMiddleware(request);
+  response.headers.set("x-pathname", pathname);
+  return response;
+}
 
 export const config = {
-  // Match all pathnames except for
-  // - API routes
-  // - Static files (_next/static, images, etc.)
-  // - Metadata files (favicon.ico, sitemap.xml, etc.)
-  matcher: ['/((?!api|_next|.*\\..*).*)']
+  matcher: ["/((?!api|_next|.*\\..*).*)"],
 };

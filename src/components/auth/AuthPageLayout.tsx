@@ -3,7 +3,6 @@
 import React from "react"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import { Button } from "@/components/ui/Button"
-import { Input } from "@/components/ui/Input"
 import { cn } from "@/lib/utils"
 
 interface AuthPageLayoutProps {

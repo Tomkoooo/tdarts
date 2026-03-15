@@ -44,53 +44,53 @@ const iconMap: { [key: string]: any } = {
 
 const stepColors = [
   {
-    gradient: 'from-blue-500 to-cyan-500',
-    bg: 'bg-gradient-to-br from-blue-500/10 to-cyan-500/10',
-    icon: 'text-blue-400',
-    border: 'border-blue-500/30',
-    glow: 'shadow-blue-500/20'
+    gradient: 'from-primary to-accent',
+    bg: 'bg-gradient-to-br from-primary/10 to-accent/10',
+    icon: 'text-primary',
+    border: 'border-primary/30',
+    glow: 'shadow-glow-primary'
   },
   {
-    gradient: 'from-emerald-500 to-teal-500',
-    bg: 'bg-gradient-to-br from-emerald-500/10 to-teal-500/10',
-    icon: 'text-emerald-400',
-    border: 'border-emerald-500/30',
-    glow: 'shadow-emerald-500/20'
+    gradient: 'from-accent to-primary',
+    bg: 'bg-gradient-to-br from-accent/10 to-primary/10',
+    icon: 'text-accent',
+    border: 'border-accent/30',
+    glow: 'shadow-glow-accent'
   },
   {
-    gradient: 'from-purple-500 to-pink-500',
-    bg: 'bg-gradient-to-br from-purple-500/10 to-pink-500/10',
-    icon: 'text-purple-400',
-    border: 'border-purple-500/30',
-    glow: 'shadow-purple-500/20'
+    gradient: 'from-primary to-primary/60',
+    bg: 'bg-gradient-to-br from-primary/10 to-primary/5',
+    icon: 'text-primary-light',
+    border: 'border-primary/30',
+    glow: 'shadow-glow-primary'
   },
   {
-    gradient: 'from-amber-500 to-orange-500',
-    bg: 'bg-gradient-to-br from-amber-500/10 to-orange-500/10',
-    icon: 'text-amber-400',
-    border: 'border-amber-500/30',
-    glow: 'shadow-amber-500/20'
+    gradient: 'from-accent to-primary',
+    bg: 'bg-gradient-to-br from-accent/10 to-primary/10',
+    icon: 'text-accent',
+    border: 'border-accent/30',
+    glow: 'shadow-glow-accent'
   },
   {
-    gradient: 'from-cyan-500 to-blue-500',
-    bg: 'bg-gradient-to-br from-cyan-500/10 to-blue-500/10',
-    icon: 'text-cyan-400',
-    border: 'border-cyan-500/30',
-    glow: 'shadow-cyan-500/20'
+    gradient: 'from-primary to-accent',
+    bg: 'bg-gradient-to-br from-primary/10 to-accent/10',
+    icon: 'text-primary',
+    border: 'border-primary/30',
+    glow: 'shadow-glow-primary'
   },
   {
-    gradient: 'from-pink-500 to-rose-500',
-    bg: 'bg-gradient-to-br from-pink-500/10 to-rose-500/10',
-    icon: 'text-pink-400',
-    border: 'border-pink-500/30',
-    glow: 'shadow-pink-500/20'
+    gradient: 'from-accent to-primary',
+    bg: 'bg-gradient-to-br from-accent/10 to-primary/10',
+    icon: 'text-accent',
+    border: 'border-accent/30',
+    glow: 'shadow-glow-accent'
   },
   {
-    gradient: 'from-indigo-500 to-purple-500',
-    bg: 'bg-gradient-to-br from-indigo-500/10 to-purple-500/10',
-    icon: 'text-indigo-400',
-    border: 'border-indigo-500/30',
-    glow: 'shadow-indigo-500/20'
+    gradient: 'from-primary to-accent',
+    bg: 'bg-gradient-to-br from-primary/10 to-accent/10',
+    icon: 'text-primary',
+    border: 'border-primary/30',
+    glow: 'shadow-glow-primary'
   },
 ];
 

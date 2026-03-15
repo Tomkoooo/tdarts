@@ -50,7 +50,7 @@ const Login: React.FC = () => {
           if (redirectPath) {
             router.push(redirectPath);
           } else {
-            router.push('/search'); // Navigate to the home page
+            router.push('/home');
           }
           
           return t('success');

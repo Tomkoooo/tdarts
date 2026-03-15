@@ -252,16 +252,16 @@ export default function SearchPage() {
                 isLoading={isLoading}
             />
 
-            <div className="z-40 backdrop-blur-md border-b border-border">
+            <div className="z-40 sticky top-0 border-b border-border/70 bg-card/75 backdrop-blur-xl">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="flex gap-3 w-full justify-center">
-                        <div className="relative w-[80%] items-center flex">
+                        <div className="relative w-full max-w-3xl items-center flex">
                             <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
                             <Input
                                 value={query}
                                 onChange={handleSearch}
                                 placeholder={t('placeholder')}
-                                className="px-12 h-12 text-lg rounded-2xl border-border bg-background shadow-sm focus:ring-2 ring-primary/20 transition-all"
+                                className="px-12 h-12 text-lg rounded-2xl border-border bg-background/95 shadow-sm focus:ring-2 ring-primary/20 transition-all"
                             />
                             {isLoading && (
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -270,7 +270,7 @@ export default function SearchPage() {
                             )}
                         </div>
                         <div className="flex justify-center items-center gap-2">
-                            <label className="flex items-center gap-2 cursor-pointer bg-card px-4 py-2 rounded-full border border-border shadow-sm hover:bg-muted/50 transition-colors">
+                            <label className="flex items-center gap-2 cursor-pointer bg-card/80 px-4 py-2 rounded-full border border-border shadow-sm hover:bg-muted/50 transition-colors">
                                 <input
                                     type="checkbox"
                                     checked={!!filters.isOac}
@@ -282,7 +282,7 @@ export default function SearchPage() {
                         </div>
                     </div>
 
-                    <div className="max-w-4xl mx-auto overflow-x-scroll">
+                    <div className="max-w-4xl mx-auto overflow-x-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         <SearchTabs 
                             activeTab={activeTab} 
                             onTabChange={handleTabChange} 
