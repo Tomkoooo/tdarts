@@ -1,0 +1,11 @@
+- Architecture: Feature-Sliced Design (src/features/{feature}/ {ui, server-actions, lib, types, hooks, tests})
+- Strict layers: 
+  - Models (src/database/models) → csak adat
+  - Services (src/features/*/lib) → pure business logic, NO direct model import outside services
+  - Server Actions (src/features/*/actions) → thin controllers, authorization + feature flag check
+- NO dependency between features (csak shared lib-en keresztül)
+- Authorization: minden server action-ben kötelező `authorizeUser()` hívás (centralizált RBAC)
+- Feature Flags: mindig ellenőrizd eligibility-t (subscription, role), ha disabled → throw vagy redirect, paid feature override támogatott
+- Tests: minden feature-hez unit (Jest) + E2E (Playwright) kötelező, coverage > 85%
+- Clean Code: SOLID, no god classes, server components only, Tailwind + shadcn, accessibility AA, mobile-first
+- Next 16: csak server actions, NO /api/routes
