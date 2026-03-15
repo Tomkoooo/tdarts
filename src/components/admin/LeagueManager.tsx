@@ -9,6 +9,8 @@ import { IconPlus, IconEdit, IconTrash, IconTrophy, IconChartBar, IconUserPlus }
 import PlayerSearch from '../club/PlayerSearch';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
+import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
+import { isGuardFailureResult } from '@/shared/lib/guards/result';
 
 interface League {
   _id: string;
@@ -87,15 +89,24 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       setLoading(true);
       
       // Feature flag ellenőrzés
-      const featureFlagResponse = await axios.get(`/api/feature-flags/check?feature=leagueSystem&clubId=${clubId}`);
+      const featureFlagResponse = await checkFeatureFlagAction({ feature: 'leagueSystem', clubId });
+      if (isGuardFailureResult(featureFlagResponse)) {
+        setLeagueSystemAccess({
+          accessible: false,
+          requiresSubscription: false,
+          subscriptionModel: 'unknown',
+        });
+        return;
+      }
+      const requiresSubscription = featureFlagResponse.subscriptionModelEnabled && !featureFlagResponse.enabled;
       setLeagueSystemAccess({
-        accessible: featureFlagResponse.data.enabled,
-        requiresSubscription: featureFlagResponse.data.requiresSubscription,
-        subscriptionModel: featureFlagResponse.data.subscriptionModel
+        accessible: featureFlagResponse.enabled,
+        requiresSubscription,
+        subscriptionModel: featureFlagResponse.subscriptionModelEnabled ? 'unknown' : 'disabled',
       });
       
       // Ligák betöltése csak akkor, ha nincs előfizetés szükség
-      if (!featureFlagResponse.data.requiresSubscription) {
+      if (!requiresSubscription) {
         try {
           const response = await axios.get(`/api/leagues?clubId=${clubId}`);
           if (response.data.success) {
@@ -244,7 +255,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
           <p className="text-base-content/70 text-lg mb-6 max-w-2xl mx-auto">
             {t('promo.desc')}
           </p>
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-6 mb-6">
+          <div className="bg-linear-to-r from-primary/10 to-accent/10 rounded-xl p-6 mb-6">
             <h4 className="text-lg font-semibold text-primary mb-3">{t('promo.requires_subscription')}</h4>
             <p className="text-base-content/70 mb-4">
               {t('promo.subscription_desc')}

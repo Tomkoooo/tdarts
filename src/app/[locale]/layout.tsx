@@ -17,6 +17,7 @@ import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 import { getUserTimeZone } from "@/lib/date-time";
+import { findSessionUserByEmail } from "@/features/auth/lib/sessionUser.db";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -185,13 +186,7 @@ export default async function RootLayout({
         console.log("Layout - NextAuth session found:", session.user);
         // Ha van NextAuth session, de nincs JWT token, akkor generáljunk egyet
         try {
-          const { connectMongo } = await import('@/lib/mongoose');
-          const { UserModel } = await import('@/database/models/user.model');
-          await connectMongo();
-          
-          const user = await UserModel.findOne({ 
-            email: session.user.email
-          });
+          const user = await findSessionUserByEmail(session.user.email);
           
           if (user) {
             // Csak akkor generáljunk JWT token-t, ha nincs már érvényes

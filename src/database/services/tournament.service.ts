@@ -165,15 +165,7 @@ export class TournamentService {
         delete (tournamentData as any).code;
 
         const locationInput = tournamentData.tournamentSettings?.location;
-        if (typeof locationInput === 'string' && locationInput.trim()) {
-            const geocodeResult = await GeocodingService.geocodeAddress(locationInput, 'user');
-            if (tournamentData.tournamentSettings) {
-                tournamentData.tournamentSettings = {
-                    ...tournamentData.tournamentSettings,
-                    locationData: geocodeResult.location,
-                } as TournamentSettings;
-            }
-        }
+        const needsAsyncGeocoding = typeof locationInput === 'string' && locationInput.trim().length > 0;
 
         // Sandbox check: Limit to 5 per month per club
         if (tournamentData.clubId && tournamentData.isSandbox) {
@@ -199,6 +191,19 @@ export class TournamentService {
         
         const newTournament = new TournamentModel(tournamentData);
         const savedTournament = await newTournament.save();
+
+        if (needsAsyncGeocoding && typeof locationInput === 'string') {
+            void GeocodingService.geocodeAddress(locationInput, 'user')
+                .then(async (geocodeResult) => {
+                    await TournamentModel.updateOne(
+                        { _id: savedTournament._id },
+                        { $set: { 'tournamentSettings.locationData': geocodeResult.location } }
+                    );
+                })
+                .catch((error) => {
+                    console.error('Async geocoding failed for tournament', savedTournament._id.toString(), error);
+                });
+        }
         
         console.log('Saved tournament boards:', JSON.stringify(savedTournament.boards, null, 2));
         console.log('Saved tournament boardCount:', savedTournament.tournamentSettings?.boardCount);

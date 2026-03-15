@@ -46,6 +46,7 @@ type BucketAggregate = {
   errorCount: number;
   totalDurationMs: number;
   maxDurationMs: number;
+  durationHistogram: number[];
   totalRequestBytes: number;
   maxRequestBytes: number;
   totalResponseBytes: number;
@@ -83,6 +84,19 @@ const MIN_VOLUME_GATES = {
   minPacketDeltaBytes: 64 * 1024,
 };
 
+const LATENCY_BUCKET_BOUNDARIES_MS = [50, 100, 200, 300, 500, 800, 1200, 2000, 5000];
+
+function emptyDurationHistogram(): number[] {
+  return Array.from({ length: LATENCY_BUCKET_BOUNDARIES_MS.length + 1 }, () => 0);
+}
+
+function getDurationBucketIndex(durationMs: number): number {
+  for (let i = 0; i < LATENCY_BUCKET_BOUNDARIES_MS.length; i += 1) {
+    if (durationMs <= LATENCY_BUCKET_BOUNDARIES_MS[i]) return i;
+  }
+  return LATENCY_BUCKET_BOUNDARIES_MS.length;
+}
+
 function toMinuteBucket(date = new Date()): Date {
   const d = new Date(date);
   d.setSeconds(0, 0);
@@ -116,16 +130,20 @@ export class ApiTelemetryService {
       existing.errorCount += sample.status >= 400 ? 1 : 0;
       existing.totalDurationMs += sample.durationMs;
       existing.maxDurationMs = Math.max(existing.maxDurationMs, sample.durationMs);
+      existing.durationHistogram[getDurationBucketIndex(sample.durationMs)] += 1;
       existing.totalRequestBytes += sample.requestBytes;
       existing.maxRequestBytes = Math.max(existing.maxRequestBytes, sample.requestBytes);
       existing.totalResponseBytes += sample.responseBytes;
       existing.maxResponseBytes = Math.max(existing.maxResponseBytes, sample.responseBytes);
     } else {
+      const durationHistogram = emptyDurationHistogram();
+      durationHistogram[getDurationBucketIndex(sample.durationMs)] = 1;
       this.aggregates.set(key, {
         count: 1,
         errorCount: sample.status >= 400 ? 1 : 0,
         totalDurationMs: sample.durationMs,
         maxDurationMs: sample.durationMs,
+        durationHistogram,
         totalRequestBytes: sample.requestBytes,
         maxRequestBytes: sample.requestBytes,
         totalResponseBytes: sample.responseBytes,
@@ -168,6 +186,10 @@ export class ApiTelemetryService {
       const operations = Array.from(snapshot.entries()).map(([key, agg]) => {
         const [bucketIso, method, routeKey] = key.split('|');
         const bucket = new Date(bucketIso);
+        const durationHistogramInc = agg.durationHistogram.reduce<Record<string, number>>((acc, value, index) => {
+          acc[`durationHistogram.${index}`] = value;
+          return acc;
+        }, {});
         return {
           updateOne: {
             filter: { bucket, method, routeKey },
@@ -178,13 +200,19 @@ export class ApiTelemetryService {
                 totalDurationMs: agg.totalDurationMs,
                 totalRequestBytes: agg.totalRequestBytes,
                 totalResponseBytes: agg.totalResponseBytes,
+                ...durationHistogramInc,
               },
               $max: {
                 maxDurationMs: agg.maxDurationMs,
                 maxRequestBytes: agg.maxRequestBytes,
                 maxResponseBytes: agg.maxResponseBytes,
               },
-              $setOnInsert: { bucket, method, routeKey },
+              $setOnInsert: {
+                bucket,
+                method,
+                routeKey,
+                durationHistogram: emptyDurationHistogram(),
+              },
             },
             upsert: true,
           },
@@ -233,6 +261,9 @@ export class ApiTelemetryService {
         existing.errorCount += value.errorCount;
         existing.totalDurationMs += value.totalDurationMs;
         existing.maxDurationMs = Math.max(existing.maxDurationMs, value.maxDurationMs);
+        for (let i = 0; i < value.durationHistogram.length; i += 1) {
+          existing.durationHistogram[i] = (existing.durationHistogram[i] || 0) + (value.durationHistogram[i] || 0);
+        }
         existing.totalRequestBytes += value.totalRequestBytes;
         existing.maxRequestBytes = Math.max(existing.maxRequestBytes, value.maxRequestBytes);
         existing.totalResponseBytes += value.totalResponseBytes;
@@ -361,6 +392,28 @@ export class ApiTelemetryService {
           newlyActivated.push(candidate);
         }
       };
+
+      evaluateSignal(
+        'calls',
+        currentCalls,
+        baselineCalls,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls &&
+          baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay &&
+          currentCalls - baselineCalls >= MIN_VOLUME_GATES.minCallsDelta,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay
+      );
+
+      evaluateSignal(
+        'traffic',
+        currentTraffic,
+        baselineTraffic,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls &&
+          baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay &&
+          currentTraffic >= MIN_VOLUME_GATES.minCurrentTrafficBytes &&
+          baselineTraffic >= MIN_VOLUME_GATES.minBaselineTrafficBytesPerDay &&
+          currentTraffic - baselineTraffic >= MIN_VOLUME_GATES.minTrafficDeltaBytes,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay
+      );
 
       evaluateSignal(
         'latency',

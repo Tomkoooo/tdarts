@@ -62,7 +62,7 @@ const { isSocketEnabled, isLoading, error } = useSocketFeature(clubId);
 ### Backend Service
 
 ```typescript
-import { FeatureFlagService } from '@/lib/featureFlags';
+import { FeatureFlagService } from '@/features/flags/lib/featureFlags';
 
 // Feature flag ellenőrzés
 const enabled = await FeatureFlagService.isFeatureEnabled('liveMatchFollowing', clubId);

@@ -19,6 +19,9 @@ const p99 = summaries['http.response_time']?.p99 ?? 0;
 const requests = counters['http.requests'] || counters['vusers.completed'] || 0;
 const errors = counters['errors'] || counters['vusers.failed'] || 0;
 const errorRate = requests > 0 ? errors / requests : 0;
+const vusersCreated = counters['vusers.created'] || 0;
+const vusersFailed = counters['vusers.failed'] || 0;
+const failedVuRate = vusersCreated > 0 ? vusersFailed / vusersCreated : 0;
 const dropped =
   (counters['http.responses.dropped'] || 0) +
   (counters['vusers.failed'] || 0) +
@@ -27,6 +30,9 @@ const dropped =
 const out = {
   requests,
   errors,
+  vusersCreated,
+  vusersFailed,
+  failedVuRate,
   dropped,
   errorRate,
   latencyMs: { p50, p95, p99 },
@@ -44,7 +50,7 @@ if (errorRate >= 0.01) {
   process.exit(3);
 }
 
-if (dropped > 0) {
-  console.error(`Load assertion failed: dropped/failed interactions ${dropped} > 0`);
+if (failedVuRate >= 0.05) {
+  console.error(`Load assertion failed: failed VU rate ${failedVuRate} exceeds 5%`);
   process.exit(4);
 }

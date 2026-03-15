@@ -8,6 +8,7 @@ export interface IApiRequestMetric extends Document {
   errorCount: number;
   totalDurationMs: number;
   maxDurationMs: number;
+  durationHistogram: number[];
   totalRequestBytes: number;
   maxRequestBytes: number;
   totalResponseBytes: number;
@@ -25,6 +26,11 @@ const ApiRequestMetricSchema = new Schema<IApiRequestMetric>(
     errorCount: { type: Number, required: true, default: 0 },
     totalDurationMs: { type: Number, required: true, default: 0 },
     maxDurationMs: { type: Number, required: true, default: 0 },
+    durationHistogram: {
+      type: [Number],
+      required: true,
+      default: () => Array.from({ length: 10 }, () => 0),
+    },
     totalRequestBytes: { type: Number, required: true, default: 0 },
     maxRequestBytes: { type: Number, required: true, default: 0 },
     totalResponseBytes: { type: Number, required: true, default: 0 },

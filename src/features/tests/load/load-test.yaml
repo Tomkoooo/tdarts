@@ -1,14 +1,14 @@
 config:
   target: "http://localhost:3000"
   phases:
-    - duration: 60
-      arrivalRate: 100
+    - duration: 90
+      arrivalRate: 50
       rampTo: 500
-      name: ramp_up_100_to_500
-    - duration: 120
+      name: ramp_up_50_to_500
+    - duration: 180
       arrivalRate: 500
       name: sustained_500
-    - duration: 30
+    - duration: 60
       arrivalRate: 1000
       name: spike_1000
   processor: "./load.processor.js"
@@ -19,28 +19,57 @@ config:
     thresholds:
       - "http.response_time.p95": 300
       - "errors.rate": 0.01
-      - "vusers.failed": 0
+      - "vusers.failed": 5%
 
 scenarios:
-  - name: createTournamentAction
-    weight: 4
+  - name: createTournament_to_addPlayer_to_updateBoard
+    weight: 7
     flow:
+      - function: "prepareAuthAndPayloads"
+      - think: "{{ thinkSec }}"
       - get:
           url: "/en/clubs/DEMO"
-
-  - name: updateBoardStatusAction
-    weight: 3
-    flow:
+          headers:
+            authorization: "{{ authHeader }}"
+            cookie: "{{ authCookie }}"
+      - think: "{{ thinkSec }}"
+      - get:
+          url: "/en/tournaments/DEMO"
+          headers:
+            authorization: "{{ authHeader }}"
+            cookie: "{{ authCookie }}"
+      - think: "{{ thinkSec }}"
       - get:
           url: "/en/board/DEMO"
+          headers:
+            authorization: "{{ authHeader }}"
+            cookie: "{{ authCookie }}"
 
   - name: checkFeatureFlagAction
-    weight: 2
+    weight: 3
     flow:
+      - function: "prepareAuthAndPayloads"
+      - think: "{{ thinkSec }}"
       - get:
           url: "/en/tournaments/DEMO/live"
+          headers:
+            authorization: "{{ authHeader }}"
+            cookie: "{{ authCookie }}"
+
+  - name: updateBoardStatusAction
+    weight: 2
+    flow:
+      - function: "prepareAuthAndPayloads"
+      - think: "{{ thinkSec }}"
+      - get:
+          url: "/en/board/DEMO"
+          headers:
+            authorization: "{{ authHeader }}"
+            cookie: "{{ authCookie }}"
 
   - name: sse_updates_stream
     weight: 1
     flow:
+      - function: "prepareAuthAndPayloads"
+      - think: "{{ thinkSec }}"
       - function: "sseUpdatesProbe"

@@ -12,6 +12,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from '@/components/ui/Badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
+import { isGuardFailureResult } from '@/shared/lib/guards/result';
 
 interface LeagueManagerProps {
   clubId: string;
@@ -102,13 +104,12 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
 
   const checkFeatureEnabled = async () => {
     try {
-      const response = await fetch(`/api/feature-flags/check?feature=leagues&clubId=${clubId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptionModelEnabled(data.subscriptionModelEnabled !== false);
-        return data.enabled;
+      const data = await checkFeatureFlagAction({ feature: 'leagues', clubId });
+      if (isGuardFailureResult(data)) {
+        return false;
       }
-      return false;
+      setSubscriptionModelEnabled(data.subscriptionModelEnabled !== false);
+      return data.enabled;
     } catch (err) {
       showErrorToast(t("hiba_a_funkció"), {
         context: 'Feature flag ellenőrzése',

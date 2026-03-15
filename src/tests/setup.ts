@@ -24,6 +24,7 @@ beforeAll(async () => {
       },
     });
     process.env.MONGO_URI = mongoServer.getUri();
+    process.env.MONGODB_URI = process.env.MONGO_URI;
     await mongoose.connect(process.env.MONGO_URI, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,

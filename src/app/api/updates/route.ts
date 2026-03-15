@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eventEmitter, EVENTS } from '@/lib/events';
 import { withApiTelemetry } from '@/lib/api-telemetry';
+import { assertEligibilityResult } from '@/shared/lib/guards';
+import { findTournamentByCode } from '@/features/tournaments/lib/liveLayout.db';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // Helper to format SSE message
 const formatMessage = (event: string, data: any) => {
@@ -49,6 +55,21 @@ async function __GET(req: NextRequest) {
   const encoder = new TextEncoder();
   const scopedTournamentId = req.nextUrl.searchParams.get('tournamentId')?.trim() || undefined;
   const maxConnectionMs = clampMaxConnectionMs(req.nextUrl.searchParams.get('maxConnectionMs'));
+  if (scopedTournamentId) {
+    const tournament = await findTournamentByCode(scopedTournamentId);
+    const clubId = tournament?.clubId?.toString();
+    if (clubId) {
+      const eligibility = await assertEligibilityResult({
+        featureName: 'socket',
+        clubId,
+        allowPaidOverride: true,
+      });
+      if (!eligibility.ok) {
+        return NextResponse.json({ error: eligibility.message, code: eligibility.code }, { status: eligibility.status });
+      }
+    }
+  }
+
   const connectionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   let closeStream: ((reason: string) => void) | null = null;
 
@@ -159,7 +180,8 @@ async function __GET(req: NextRequest) {
   return new NextResponse(customReadable, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, no-transform',
+      'Pragma': 'no-cache',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no', // Disable nginx/Cloudflare buffering
     },
