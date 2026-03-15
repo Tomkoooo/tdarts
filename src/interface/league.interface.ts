@@ -87,7 +87,7 @@ export interface League {
 }
 
 // Mongoose Document Interface
-export interface LeagueDocument extends Document, Omit<League, '_id' | 'club' | 'attachedTournaments' | 'players' | 'removedPlayers'> {
+export interface LeagueDocument extends Omit<Document, 'toJSON'>, Omit<League, '_id' | 'club' | 'attachedTournaments' | 'players' | 'removedPlayers'> {
   _id: Types.ObjectId;
   club: Types.ObjectId;
   attachedTournaments: Types.ObjectId[];

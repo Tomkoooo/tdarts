@@ -1,23 +1,18 @@
-"use client"
+import { redirect } from "next/navigation";
+import MarketingHomeContent from "@/components/home/MarketingHomeContent";
+import { getServerUser } from "@/lib/getServerUser";
 
-import React, { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import MarketingHomeContent from "@/components/home/MarketingHomeContent"
-import { useUserContext } from "@/hooks/useUser"
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
-export default function HomePage() {
-  const router = useRouter()
-  const { user } = useUserContext()
-
-  useEffect(() => {
-    if (user?._id) {
-      router.replace("/home")
-    }
-  }, [router, user?._id])
+export default async function HomePage({ params }: Props) {
+  const { locale } = await params;
+  const user = await getServerUser();
 
   if (user?._id) {
-    return null
+    redirect(`/${locale}/home`);
   }
 
-  return <MarketingHomeContent />
+  return <MarketingHomeContent />;
 }

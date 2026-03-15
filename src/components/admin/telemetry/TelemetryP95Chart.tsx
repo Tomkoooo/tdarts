@@ -15,7 +15,7 @@ export function TelemetryP95Chart({ points }: Props) {
           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={28} />
           <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v)}ms`} />
           <Tooltip
-            formatter={(value: number, name: string) => [`${Math.round(value)}ms`, name]}
+            formatter={(value, name) => [typeof value === 'number' ? `${Math.round(value)}ms` : '—', String(name)]}
             labelFormatter={(value) => `Bucket: ${value}`}
           />
           <Line type="monotone" dataKey="p50Ms" name="p50" stroke="#22c55e" strokeWidth={2} dot={false} />

@@ -1,21 +1,18 @@
-"use client"
+import { redirect } from "next/navigation";
+import AuthenticatedHomeContent from "@/components/home/AuthenticatedHomeContent";
+import { getServerUser } from "@/lib/getServerUser";
 
-import React, { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useUserContext } from "@/hooks/useUser"
-import AuthenticatedHomeContent from "@/components/home/AuthenticatedHomeContent"
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
-export default function AuthenticatedHomePage() {
-  const router = useRouter()
-  const { user } = useUserContext()
+export default async function AuthenticatedHomePage({ params }: Props) {
+  const { locale } = await params;
+  const user = await getServerUser();
 
-  useEffect(() => {
-    if (!user?._id) {
-      router.push("/auth/login?redirect=/home")
-    }
-  }, [router, user?._id])
+  if (!user?._id) {
+    redirect(`/${locale}/auth/login?redirect=${encodeURIComponent(`/${locale}/home`)}`);
+  }
 
-  if (!user?._id) return null
-
-  return <AuthenticatedHomeContent />
+  return <AuthenticatedHomeContent />;
 }

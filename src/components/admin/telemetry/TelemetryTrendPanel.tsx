@@ -53,13 +53,14 @@ export function TelemetryTrendPanel({ metric, points, formatBytes, compact = fal
     return String(Math.round(value));
   };
 
-  const tooltipFormatter = (value: number, name: string) => {
+  const tooltipFormatter = (value: unknown, name?: unknown) => {
+    if (value == null || typeof value !== "number") return ["—", String(name ?? "")];
     const formatted =
       metric === "traffic" ? formatBytes(value)
         : metric === "errors" ? `${value.toFixed(2)}%`
           : metric === "latency" ? `${value.toFixed(1)}ms`
             : String(Math.round(value));
-    return [formatted, name];
+    return [formatted, String(name ?? "")];
   };
 
   const avgLabel =

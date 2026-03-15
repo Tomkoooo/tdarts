@@ -64,24 +64,21 @@ const BoardPage: React.FC = () => {
     setError("");
 
     try {
-      // Validate tournament password
-      const response = await fetch(`/api/tournaments/${tournamentCode}/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+      const { validateTournamentAction } = await import(
+        "@/features/tournaments/actions/validateTournament.action"
+      );
+      const result = await validateTournamentAction({
+        tournamentCode: tournamentCode.trim(),
+        password,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || 'Hibás jelszó vagy torna kód!');
+      if (!result.success) {
+        setError(result.error || t("hibás_jelszó"));
         setLoading(false);
         return;
       }
 
-      // Save password to localStorage for this tournament
       localStorage.setItem(`tournament_password_${tournamentCode}`, password);
-      
-      // Redirect to board page with tournament code
       router.push(`/board/${tournamentCode}`);
     } catch (err: any) {
       setError(err.message || 'Hiba történt a csatlakozás során');

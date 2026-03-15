@@ -42,3 +42,8 @@ next-env.d.ts
 
 docs/openapi.yaml
 docs/api-docs.md
+.pnpm
+.pnpm-store 
+.pnpm-store/
+.pnpm-store*
+/.pnpm-store

@@ -9,7 +9,8 @@ const client = new MongoClient(process.env.MONGODB_URI!);
 const clientPromise = client.connect();
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mongodb version mismatch between @auth/mongodb-adapter and mongoose
+  adapter: MongoDBAdapter(clientPromise as any),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
