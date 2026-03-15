@@ -19,6 +19,8 @@ import { IconArrowLeft } from "@tabler/icons-react"
 import MapExplorer from "@/components/map/MapExplorer"
 import { useTranslations } from "next-intl"
 import { getUserTimeZone } from "@/lib/date-time"
+import { searchAction } from "@/features/search/actions/search.action"
+import { mapSearchAction } from "@/features/search/actions/mapSearch.action"
 
 interface TabCounts {
     global: number;
@@ -105,13 +107,11 @@ export default function SearchPage() {
             setIsLoading(true)
             try {
                 if (activeTab === 'map') {
-                    const mapRes = await fetch('/api/map', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: debouncedQuery }),
+                    const mapData = await mapSearchAction({
+                        query: debouncedQuery,
+                        showClubs: true,
+                        showTournaments: true,
                     })
-                    if (!mapRes.ok) throw new Error('Map search failed')
-                    const mapData = await mapRes.json()
                     setResults(mapData.items || [])
                     setCounts((prev) => ({
                         ...prev,
@@ -121,26 +121,13 @@ export default function SearchPage() {
                     return
                 }
 
-                const payload = {
+                const data = await searchAction({
                     query: debouncedQuery,
                     tab: activeTab,
                     filters: { ...filters, page: filters.page, timeZone: userTimeZone },
                     includeCounts: (filters.page || 1) === 1,
                     includeMetadata: (filters.page || 1) === 1,
-                }
-
-                const res = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-timezone': userTimeZone
-                    },
-                    body: JSON.stringify(payload)
                 })
-
-                if (!res.ok) throw new Error('Search failed')
-
-                const data = await res.json()
                 
                 if (filters.page && filters.page > 1) {
                     setResults(prev => [...prev, ...data.results])
@@ -158,8 +145,8 @@ export default function SearchPage() {
                 if (data.metadata) setMetadata(data.metadata)
                 if (data.pagination) setPagination(data.pagination)
 
-                if (debouncedQuery && data.counts) {
-                    const currentCount = data.counts[activeTab as keyof TabCounts] || 0;
+                if (debouncedQuery && data.counts && activeTab !== 'map') {
+                    const currentCount = (data.counts as Record<string, number>)[activeTab] || 0;
                     const resultEntries = Object.entries(data.counts) as [string, number][];
                     const tabsWithResults = resultEntries.filter(([, v]) => v > 0);
                     if (currentCount === 0 && tabsWithResults.length === 1) {

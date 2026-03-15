@@ -30,6 +30,20 @@ export class PostService {
     return post;
   }
 
+  static async getPostById(postId: string, clubId?: string): Promise<PostDocument | null> {
+    await connectMongo();
+    if (!Types.ObjectId.isValid(postId)) {
+      return null;
+    }
+    const query: Record<string, unknown> = { _id: new Types.ObjectId(postId) };
+    if (clubId && Types.ObjectId.isValid(clubId)) {
+      query.clubId = new Types.ObjectId(clubId);
+    }
+    const post = await PostModel.findOne(query)
+      .populate('authorId', 'name username');
+    return post;
+  }
+
   static async getClubPosts(clubId: string, page = 1, limit = 10): Promise<{ posts: PostDocument[]; total: number }> {
     await connectMongo();
     

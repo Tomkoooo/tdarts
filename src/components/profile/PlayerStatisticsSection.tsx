@@ -25,6 +25,7 @@ import { Player } from "@/interface/player.interface"
 import CountryFlag from "@/components/ui/country-flag"
 import PlayerSearch from "@/components/club/PlayerSearch"
 import { getPlayerTranslations } from "@/data/translations/player"
+import { getHeadToHeadAction, getPendingInvitationsAction } from "@/features/profile/actions"
 import {
   LineChart,
   Line,
@@ -389,12 +390,15 @@ export function PlayerStatisticsSection({
       setHeadToHeadLoading(true)
       setHeadToHeadError("")
       try {
-        const response = await fetch(`/api/profile/head-to-head?opponentId=${encodeURIComponent(opponentId)}`)
-        const data = await response.json()
-        if (!response.ok || !data.success) {
-          throw new Error(data?.error || t.headToHeadFetchError)
+        const result = await getHeadToHeadAction({ opponentId })
+        if (typeof result === "object" && "success" in result && result.success && result.data) {
+          const data = result.data as any
+          if (data.playerA && data.playerB && data.summary) {
+            setHeadToHead(data as HeadToHeadData)
+          }
+        } else if (typeof result === "object" && "ok" in result && !result.ok) {
+          throw new Error((result as any).message || t.headToHeadFetchError)
         }
-        setHeadToHead(data.data)
       } catch (error: any) {
         setHeadToHead(null)
         setHeadToHeadError(error?.message || t.headToHeadFetchError)
@@ -408,19 +412,17 @@ export function PlayerStatisticsSection({
   const fetchTopOpponents = React.useCallback(async () => {
     setTopOpponentsLoading(true)
     try {
-      const response = await fetch("/api/profile/head-to-head?mode=top-opponents")
-      const data = await response.json()
-      if (!response.ok || !data.success) {
-        throw new Error(data?.error || t.headToHeadFetchError)
+      const result = await getHeadToHeadAction({ mode: "top-opponents" })
+      if (typeof result === "object" && "success" in result && result.success && result.data) {
+        setTopOpponents((result.data as any)?.topOpponents || [])
       }
-      setTopOpponents(data?.data?.topOpponents || [])
     } catch (error) {
       console.error("Top opponents fetch error:", error)
       setTopOpponents([])
     } finally {
       setTopOpponentsLoading(false)
     }
-  }, [t.headToHeadFetchError])
+  }, [])
 
   React.useEffect(() => {
     if (!playerStats?.hasPlayer) return
@@ -430,12 +432,10 @@ export function PlayerStatisticsSection({
   const fetchPendingInvites = React.useCallback(async () => {
     setPendingInvitesLoading(true)
     try {
-      const response = await fetch("/api/profile/pending-invitations")
-      const data = await response.json()
-      if (!response.ok || !data.success) {
-        throw new Error(data?.error || "Failed to fetch pending invitations")
+      const result = await getPendingInvitationsAction()
+      if (typeof result === "object" && "success" in result && result.success && result.data) {
+        setPendingInvites(result.data?.invitations || [])
       }
-      setPendingInvites(data?.data?.invitations || [])
     } catch (error) {
       console.error("Pending invites fetch error:", error)
       setPendingInvites([])

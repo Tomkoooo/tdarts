@@ -7,6 +7,14 @@ import { useParams, useSearchParams } from "next/navigation"
 import axios from "axios"
 import toast from "react-hot-toast"
 import { showErrorToast, showLocationReviewToast } from "@/lib/toastUtils"
+import { getClubAction } from "@/features/clubs/actions/getClub.action"
+import { getUserRoleAction } from "@/features/clubs/actions/getUserRole.action"
+import { getClubPostsAction } from "@/features/clubs/actions/getClubPosts.action"
+import { addMemberAction } from "@/features/clubs/actions/addMember.action"
+import { removeMemberAction } from "@/features/clubs/actions/removeMember.action"
+import { deactivateClubAction } from "@/features/clubs/actions/deactivateClub.action"
+import { checkOacLeagueAction } from "@/features/clubs/actions/checkOacLeague.action"
+import { createPlayerAction } from "@/features/players/actions/createPlayer.action"
 import { shouldPromptLocationReview } from "@/interface/location.interface"
 import { getMapSettingsTranslations } from "@/data/translations/map-settings"
 import { useUserContext } from "@/hooks/useUser"
@@ -65,10 +73,12 @@ export default function ClubDetailPage() {
       setIsClubLoading(false)
       return
     }
-    const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`)
-        setIsClubLoading(false)
-    setClub(clubResponse.data)
-
+    try {
+      const clubData = await getClubAction({ clubId: code })
+      setClub(clubData)
+    } finally {
+      setIsClubLoading(false)
+    }
   }
 
   // Fetch club and role
@@ -80,34 +90,32 @@ export default function ClubDetailPage() {
       }
 
       try {
-        const clubResponse = await axios.get<Club>(`/api/clubs?clubId=${code}`)
-        setClub(clubResponse.data)
-        
+        const clubData = await getClubAction({ clubId: code })
+        setClub(clubData)
+
         // Fetch posts
         try {
-            const postsResponse = await axios.get(`/api/clubs/${clubResponse.data._id}/posts?page=1&limit=3`)
-            setPosts(postsResponse.data.posts)
-            setPostsTotal(postsResponse.data.total)
+          const postsData = await getClubPostsAction({ clubId: clubData._id, page: 1, limit: 3 })
+          setPosts(postsData.posts)
+          setPostsTotal(postsData.total)
         } catch (e) {
-            console.error("Failed to fetch posts", e)
+          console.error("Failed to fetch posts", e)
         }
 
         setIsClubLoading(false)
 
         // Only fetch user role if user is logged in
         if (user?._id) {
-          const roleResponse = await axios.get<{ role: 'admin' | 'moderator' | 'member' | 'none' }>(
-            `/api/clubs/user/role?clubId=${code}&userId=${user._id}`
-          )
-          setUserRole(roleResponse.data.role)
+          const { role } = await getUserRoleAction({ clubId: code, userId: user._id })
+          setUserRole(role)
         } else {
           setUserRole('none')
         }
 
       } catch (err: any) {
 
-        showErrorToast(err.response?.data?.error || 'Klub betöltése sikertelen', {
-          error: err?.response?.data?.error,
+        showErrorToast(err.response?.data?.error || err?.message || 'Klub betöltése sikertelen', {
+          error: err?.response?.data?.error || err?.message,
           context: "Klub részletek",
           errorName: "Klub betöltése sikertelen",
         })
@@ -141,17 +149,14 @@ export default function ClubDetailPage() {
     if (!club || !user?._id) return
     const toastId = toast.loading(t("kilépés_a_klubból"))
     try {
-      await axios.post(`/api/clubs/${club._id}/removeMember`, {
-        userId: user._id,
-        requesterId: user._id,
-      })
+      await removeMemberAction({ clubId: club._id, userId: user._id })
       await fetchClub()
       toast.success(t("sikeresen_kiléptél_a"), { id: toastId })
       router.push('/clubs')
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Kilépés sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.response?.data?.error || err?.message || 'Kilépés sikertelen', {
+        error: err?.response?.data?.error || err?.message,
         context: "Klubból kilépés",
         errorName: "Kilépés sikertelen",
       })
@@ -162,16 +167,14 @@ export default function ClubDetailPage() {
     if (!club || !user?._id) return
     const toastId = toast.loading(t("klub_deaktiválása"))
     try {
-      await axios.post(`/api/clubs/${club._id}/deactivate`, {
-        requesterId: user._id,
-      })
+      await deactivateClubAction({ clubId: club._id })
       await fetchClub()
       toast.success(t("klub_sikeresen_deaktiválva"), { id: toastId })
       router.push('/clubs')
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Klub deaktiválása sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.response?.data?.error || err?.message || 'Klub deaktiválása sikertelen', {
+        error: err?.response?.data?.error || err?.message,
         context: "Klub deaktiválása",
         errorName: "Deaktiválás sikertelen",
       })
@@ -184,19 +187,23 @@ export default function ClubDetailPage() {
       let playerId = player._id
       // If player is a guest or not in Player collection, create them first
       if (!playerId) {
-        const res = await axios.post('/api/players', { name: player.name })
-        playerId = res.data._id
+        const created = await createPlayerAction({ data: { name: player.name } })
+        if (created && typeof created === 'object' && 'ok' in created && (created as { ok?: boolean }).ok === false) {
+          throw new Error((created as { message?: string }).message || 'Failed to create player')
+        }
+        if (created && typeof created === 'object' && '_id' in created) {
+          playerId = (created as { _id: string })._id
+        } else {
+          throw new Error('Failed to create player')
+        }
       }
       const toastId = toast.loading(t("játékos_hozzáadása"))
-      await axios.post(`/api/clubs/${club._id}/addMember`, {
-        userId: playerId,
-        requesterId: user._id,
-      })
+      await addMemberAction({ clubId: club._id, userId: playerId })
       await fetchClub()
       toast.success(t("játékos_hozzáadva"), { id: toastId })
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || 'Játékos hozzáadása sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.response?.data?.error || err?.message || 'Játékos hozzáadása sikertelen', {
+        error: err?.response?.data?.error || err?.message,
         context: "Klub tag hozzáadása",
         errorName: "Játékos hozzáadása sikertelen",
       })
@@ -260,17 +267,15 @@ export default function ClubDetailPage() {
   const handleCreateOacTournament = async () => {
     if (!club) return
     try {
-      // Fetch the verified OAC league for this club
-      const response = await axios.get(`/api/clubs/${club._id}/leagues/check-oac`)
-      const oacLeague = response.data.oacLeague
+      const { oacLeague } = await checkOacLeagueAction({ clubId: club._id })
       if (oacLeague) {
         setOacTournamentConfig({ isOpen: true, leagueId: oacLeague._id })
       } else {
         toast.error(t("oac_liga_nem"))
       }
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || 'OAC liga betöltése sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.response?.data?.error || err?.message || 'OAC liga betöltése sikertelen', {
+        error: err?.response?.data?.error || err?.message,
         context: "OAC torna létrehozása",
         errorName: "OAC liga betöltése sikertelen",
       })
@@ -281,11 +286,11 @@ export default function ClubDetailPage() {
     if (!club) return
     const nextPage = postsPage + 1
     try {
-        const res = await axios.get(`/api/clubs/${club._id}/posts?page=${nextPage}&limit=3`)
-        setPosts([...posts, ...res.data.posts])
-        setPostsPage(nextPage)
+      const res = await getClubPostsAction({ clubId: club._id, page: nextPage, limit: 3 })
+      setPosts([...posts, ...res.posts])
+      setPostsPage(nextPage)
     } catch (e) {
-        console.error("Failed to load more posts", e)
+      console.error("Failed to load more posts", e)
     }
   }
 

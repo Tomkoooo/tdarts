@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 import * as React from "react"
-import axios from "axios"
+import { getClubGalleriesAction } from "@/features/clubs/actions/getClubGalleries.action"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
@@ -33,8 +33,8 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
   React.useEffect(() => {
     const fetchGalleries = async () => {
       try {
-        const res = await axios.get(`/api/clubs/${clubId}/galleries`)
-        setGalleries(res.data.galleries)
+        const res = await getClubGalleriesAction({ clubId })
+        if (res && 'galleries' in res) setGalleries(res.galleries as unknown as Gallery[])
       } catch (err) {
         console.error("Failed to fetch galleries", err)
       } finally {

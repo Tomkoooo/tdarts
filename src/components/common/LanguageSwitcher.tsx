@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { IconLanguage } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useUserContext } from "@/hooks/useUser";
-import axios from "axios";
+import { updateProfileAction } from "@/features/profile/actions";
 
 const languages = [
   { code: "hu", name: "Magyar", flag: "🇭🇺" },
@@ -35,7 +35,7 @@ export function LanguageSwitcher() {
     router.replace({ pathname, query: params as any }, { locale: lang.code });
     if (user && (lang.code === 'hu' || lang.code === 'en' || lang.code === 'de')) {
       try {
-        await axios.patch('/api/profile/update', { locale: lang.code });
+        await updateProfileAction({ locale: lang.code as 'hu' | 'en' | 'de' });
       } catch {
         // Locale preference save failure is non-critical
       }

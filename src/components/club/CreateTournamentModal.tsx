@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react"
 import { toast } from "react-hot-toast"
+import { getClubAction } from "@/features/clubs/actions/getClub.action"
+import { getClubLeaguesAction } from "@/features/clubs/actions/getClubLeagues.action"
+import { createTournamentAction } from "@/features/tournaments/actions/createTournament.action"
+import { isGuardFailureResult } from "@/shared/lib/guards/result"
 import {
   IconCalendar,
   IconCheck,
@@ -161,19 +165,16 @@ export default function CreateTournamentModal({
 
   const fetchClubBillingInfo = async () => {
     try {
-      const response = await fetch(`/api/clubs/${clubId}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.club?.billingInfo) {
-          setSettings(prev => ({
-            ...prev,
-            saveBillingInfo: true,
-            billingInfo: {
-              ...prev.billingInfo,
-              ...data.club.billingInfo
-            } as BillingInfo
-          }))
-        }
+      const club = await getClubAction({ clubId })
+      if (club?.billingInfo) {
+        setSettings(prev => ({
+          ...prev,
+          saveBillingInfo: true,
+          billingInfo: {
+            ...prev.billingInfo,
+            ...club.billingInfo
+          } as BillingInfo
+        }))
       }
     } catch (err) {
       console.error("Error fetching club billing info:", err)
@@ -182,13 +183,9 @@ export default function CreateTournamentModal({
 
   const fetchAvailableLeagues = async () => {
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues`)
-      if (response.ok) {
-        const data = await response.json()
-        // Filter out inactive/terminated leagues
-        const activeLeagues = (data.leagues || []).filter((league: any) => league.isActive !== false)
-        setAvailableLeagues(activeLeagues)
-      }
+      const { leagues } = await getClubLeaguesAction({ clubId, includeInactive: false })
+      const activeLeagues = (leagues || []).filter((league: any) => league.isActive !== false)
+      setAvailableLeagues(activeLeagues)
     } catch (err) {
       console.error("Error fetching leagues:", err)
     }
@@ -284,10 +281,12 @@ export default function CreateTournamentModal({
     setIsSubmitting(true)
 
     try {
+      const startDate = settings.startDate instanceof Date ? settings.startDate : new Date(settings.startDate)
+      const regDeadline = settings.registrationDeadline instanceof Date ? settings.registrationDeadline : new Date(settings.registrationDeadline)
       const payload = {
         name: settings.name,
         description: settings.description,
-        startDate: settings.startDate,
+        startDate: startDate.toISOString(),
         entryFee: settings.entryFee === '' as unknown as number ? 0 : settings.entryFee,
         maxPlayers: settings.maxPlayers === '' as unknown as number ? 0 : settings.maxPlayers,
         format: settings.format,
@@ -300,33 +299,27 @@ export default function CreateTournamentModal({
           status: "idle",
           isActive: true,
         })),
-        location: settings.location,
+        location: settings.location || null,
         type: settings.type,
-        registrationDeadline: settings.registrationDeadline,
+        registrationDeadline: regDeadline.toISOString(),
         leagueId: selectedLeagueId || undefined,
         isSandbox: settings.isSandbox || false,
         verified: isOac,
-        billingInfo: isOac ? settings.billingInfo : undefined,
+        billingInfo: isOac ? (settings.billingInfo as unknown as Record<string, unknown>) : undefined,
         saveBillingInfo: isOac ? settings.saveBillingInfo : false,
         participationMode: settings.participationMode || 'individual',
       }
 
-      const response = await fetch(`/api/clubs/${clubId}/createTournament`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      const result = await createTournamentAction({ clubId, payload })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        const errorMsg = errorData.error || t('errors.default')
+      if (isGuardFailureResult(result)) {
+        const errorMsg = result.message || t('errors.default')
         setError(errorMsg)
         toast.error(errorMsg)
         return
       }
 
-      const data = await response.json()
-      
+      const data = result as { checkoutUrl?: string | null; tournamentId?: string; code?: string }
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl
         return

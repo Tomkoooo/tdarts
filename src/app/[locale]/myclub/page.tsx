@@ -6,7 +6,7 @@ import { useUserContext } from "@/hooks/useUser"
 import { Club } from "@/interface/club.interface"
 import ClubRegistrationForm from "@/components/club/ClubRegistrationForm"
 import { showErrorToast } from "@/lib/toastUtils"
-import axios from "axios"
+import { getUserClubsAction } from "@/features/clubs/actions/getUserClubs.action"
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
 import { LoadingScreen } from "@/components/ui/loading-spinner"
 import { useTranslations } from "next-intl"
@@ -28,8 +28,8 @@ export default function MyClubPage() {
 
       try {
         // Fetch user's clubs
-        const response = await axios.get<Club[]>(`/api/clubs/user?userId=${user._id}`)
-        const userClubs = response.data
+        const result = await getUserClubsAction()
+        const userClubs = (result && 'clubs' in result ? result.clubs : []) as unknown as Club[]
         setClubs(userClubs)
 
         if (userClubs.length > 0) {

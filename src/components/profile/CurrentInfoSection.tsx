@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import axios from "axios"
+import { getAuthProvidersAction } from "@/features/profile/actions"
 import { IconUser, IconMail, IconCircleCheck, IconCircleX, IconBrandGoogle, IconLock } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
@@ -28,11 +28,11 @@ export function CurrentInfoSection({ user }: CurrentInfoSectionProps) {
   React.useEffect(() => {
     const loadProviderStatus = async () => {
       try {
-        const response = await axios.get("/api/profile/auth-providers")
-        if (response.data?.success) {
+        const result = await getAuthProvidersAction()
+        if (typeof result === "object" && "success" in result && result.success && result.data) {
           setProviderStatus({
-            googleLinked: !!response.data.data.googleLinked,
-            hasPassword: !!response.data.data.hasPassword,
+            googleLinked: !!result.data.googleLinked,
+            hasPassword: !!result.data.hasPassword,
           })
         }
       } catch (error) {

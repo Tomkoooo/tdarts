@@ -47,7 +47,7 @@ const tournamentPayloadSchema = z.object({
 export type CreateTournamentPayload = z.infer<typeof tournamentPayloadSchema>;
 
 export type CreateTournamentInput = {
-  request: import('next/server').NextRequest;
+  request?: import('next/server').NextRequest;
   clubId: string;
   payload: CreateTournamentPayload;
 };

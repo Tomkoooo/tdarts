@@ -1038,6 +1038,115 @@ export class SearchService {
     }
 
     /**
+     * Get map items (clubs and tournaments with coordinates) for map explorer
+     */
+    static async searchMapItems(
+        query: string,
+        options: { showClubs?: boolean; showTournaments?: boolean; limit?: number } = {}
+    ): Promise<{ items: any[]; total: number }> {
+        await connectMongo();
+        const { showClubs = true, showTournaments = true, limit = 200 } = options;
+        const regex = query ? new RegExp(query, 'i') : null;
+        const items: any[] = [];
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tdarts.hu';
+
+        if (showClubs) {
+            const clubQuery: any = {
+                isActive: true,
+                'structuredLocation.lat': { $exists: true, $ne: null, $type: 'number' },
+                'structuredLocation.lng': { $exists: true, $ne: null, $type: 'number' },
+            };
+            if (regex) {
+                clubQuery.$or = [{ name: regex }, { location: regex }];
+            }
+            const clubs = await ClubModel.find(clubQuery)
+                .select('name location address structuredLocation logo landingPage')
+                .limit(limit);
+            for (const club of clubs) {
+                const loc = club.structuredLocation as any;
+                const lat = typeof loc?.lat === 'number' ? loc.lat : null;
+                const lng = typeof loc?.lng === 'number' ? loc.lng : null;
+                if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+                items.push({
+                    id: `club-${club._id}`,
+                    kind: 'club',
+                    name: club.name,
+                    address: club.address || club.location || null,
+                    country: loc?.country || null,
+                    lat,
+                    lng,
+                    mapReady: true,
+                    href: `${baseUrl}/hu/clubs/${club._id}`,
+                    previewImage: club.landingPage?.coverImage || club.landingPage?.logo || club.logo || null,
+                    clubName: null,
+                    clubLogo: null,
+                    clubHref: null,
+                    startDate: null,
+                });
+            }
+        }
+
+        if (showTournaments) {
+            const tournamentMatch: any = {
+                isDeleted: { $ne: true },
+                isArchived: { $ne: true },
+                isSandbox: { $ne: true },
+                $or: [
+                    { 'tournamentSettings.locationData.lat': { $exists: true, $ne: null, $type: 'number' } },
+                    { clubId: { $exists: true, $ne: null } },
+                ],
+            };
+            if (regex) {
+                tournamentMatch['$and'] = [
+                    { $or: tournamentMatch.$or },
+                    { $or: [{ 'tournamentSettings.name': regex }, { 'tournamentSettings.location': regex }] },
+                ];
+                delete tournamentMatch.$or;
+            }
+            const tournaments = await TournamentModel.find(tournamentMatch)
+                .populate('clubId', 'name location structuredLocation logo')
+                .select('tournamentId tournamentSettings clubId')
+                .limit(limit);
+            for (const t of tournaments) {
+                const club = t.clubId as any;
+                const locData = t.tournamentSettings?.locationData;
+                let lat: number | null = null;
+                let lng: number | null = null;
+                if (locData && typeof locData.lat === 'number' && typeof locData.lng === 'number') {
+                    lat = locData.lat;
+                    lng = locData.lng;
+                } else if (club?.structuredLocation) {
+                    const sl = club.structuredLocation as any;
+                    if (typeof sl?.lat === 'number' && typeof sl?.lng === 'number') {
+                        lat = sl.lat;
+                        lng = sl.lng;
+                    }
+                }
+                if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+                const clubId = club?._id?.toString?.() || club;
+                items.push({
+                    id: `tournament-${t._id}`,
+                    kind: 'tournament',
+                    name: t.tournamentSettings?.name || 'Tournament',
+                    address: t.tournamentSettings?.location || club?.location || null,
+                    country: club?.structuredLocation?.country || club?.billingInfo?.country || null,
+                    lat,
+                    lng,
+                    mapReady: true,
+                    href: `${baseUrl}/hu/tournaments/${t.tournamentId}`,
+                    previewImage: t.tournamentSettings?.coverImage || null,
+                    clubName: club?.name || null,
+                    clubLogo: club?.logo || club?.landingPage?.logo || null,
+                    clubHref: clubId ? `${baseUrl}/hu/clubs/${clubId}` : null,
+                    startDate: t.tournamentSettings?.startDate || null,
+                });
+            }
+        }
+
+        return { items, total: items.length };
+    }
+
+    /**
      * Get Season Top Players (Historical Leaderboard)
      */
     static async getSeasonTopPlayers(

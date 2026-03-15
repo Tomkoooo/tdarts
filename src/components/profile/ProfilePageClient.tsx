@@ -5,6 +5,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { useUserContext } from "@/hooks/useUser";
+import {
+  getPlayerStatsAction,
+  getTicketsAction,
+  getLeagueHistoryAction,
+  updateProfileAction,
+  verifyEmailAction,
+  resendVerificationAction,
+} from "@/features/profile/actions";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import CurrentInfoSection from "@/components/profile/CurrentInfoSection";
@@ -68,8 +76,10 @@ export function ProfilePageClient() {
     if (!userId) return;
     setIsLoadingStats(true);
     try {
-      const response = await axios.get("/api/profile/player-stats");
-      if (response.data.success) setPlayerStats(response.data.data);
+      const result = await getPlayerStatsAction();
+      if (typeof result === "object" && "success" in result && result.success) {
+        setPlayerStats(result.data);
+      }
     } catch (error) {
       console.error("Error loading player stats:", error);
     } finally {
@@ -80,8 +90,10 @@ export function ProfilePageClient() {
   const loadTickets = async () => {
     if (!userId) return;
     try {
-      const response = await axios.get("/api/profile/tickets");
-      if (response.data.success) setTickets(response.data.data);
+      const result = await getTicketsAction();
+      if (typeof result === "object" && "success" in result && result.success) {
+        setTickets(result.data);
+      }
     } catch (error) {
       console.error("Error loading tickets:", error);
     }
@@ -91,8 +103,10 @@ export function ProfilePageClient() {
     if (!userId) return;
     setIsLoadingLeagueHistory(true);
     try {
-      const response = await axios.get("/api/profile/league-history");
-      if (response.data.success) setLeagueHistory(response.data.data);
+      const result = await getLeagueHistoryAction();
+      if (typeof result === "object" && "success" in result && result.success) {
+        setLeagueHistory(result.data);
+      }
     } catch (error) {
       console.error("Error loading league history:", error);
     } finally {
@@ -109,28 +123,31 @@ export function ProfilePageClient() {
         username: data.username,
         country: data.country,
       };
-      if (data.password?.trim?.()) updateData.password = data.password;
+      if (data.password?.trim?.()) {
+        updateData.password = data.password;
+        updateData.confirmPassword = data.confirmPassword;
+      }
 
-      await toast.promise(
-        axios.post("/api/profile/update", updateData, { headers: { "Content-Type": "application/json" } }),
-        {
-          loading: t("toasts.updating"),
-          success: () => {
-            setUser({
-              ...user!,
-              email: data.email || user!.email,
-              name: data.name || user!.name,
-              username: data.username || user!.username,
-              country: data.country || user!.country,
-              isVerified: data.email && data.email !== user!.email ? false : user!.isVerified,
-            });
-            setNeedsEmailVerification(data.email !== user!.email && !!data.email);
-            return t("toasts.update_success");
-          },
-          error: (error) => error.response?.data?.error || t("toasts.update_error"),
-        }
-      );
-    } catch (error) {
+      const result = await updateProfileAction(updateData);
+      if (typeof result === "object" && "ok" in result && !result.ok) {
+        toast.error((result as any).message || t("toasts.update_error"));
+        return;
+      }
+      if (typeof result === "object" && "user" in result && result.user) {
+        const res = result as { user: any };
+        setUser({
+          ...user!,
+          email: res.user.email || user!.email,
+          name: res.user.name || user!.name,
+          username: res.user.username || user!.username,
+          country: res.user.country ?? user!.country,
+          isVerified: data.email && data.email !== user!.email ? false : (res.user.isVerified ?? user!.isVerified),
+        });
+        setNeedsEmailVerification(data.email !== user!.email && !!data.email);
+        toast.success(t("toasts.update_success"));
+      }
+    } catch (error: any) {
+      toast.error(error?.message || t("toasts.update_error"));
       console.error("Update profile error:", error);
     } finally {
       setIsLoading(false);
@@ -140,16 +157,16 @@ export function ProfilePageClient() {
   const onVerifySubmit = async (data: { code: string }) => {
     setIsLoading(true);
     try {
-      const response = await axios.post("/api/profile/verify-email", data, {
-        headers: { "Content-Type": "application/json" },
-      });
-      if (response.data.success) {
+      const result = await verifyEmailAction(data);
+      if (typeof result === "object" && "success" in result && result.success) {
         setUser({ ...user!, isVerified: true });
         setNeedsEmailVerification(false);
         toast.success(t("toasts.verification_success"));
+      } else if (typeof result === "object" && "ok" in result && !result.ok) {
+        toast.error((result as any).message || t("toasts.verification_error"));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || t("toasts.verification_error"));
+      toast.error(error?.message || t("toasts.verification_error"));
     } finally {
       setIsLoading(false);
     }
@@ -158,10 +175,14 @@ export function ProfilePageClient() {
   const handleResendCode = async () => {
     setIsResendingCode(true);
     try {
-      await axios.post("/api/profile/resend-verification");
-      toast.success(t("toasts.resend_success"));
+      const result = await resendVerificationAction();
+      if (typeof result === "object" && "success" in result && result.success) {
+        toast.success(t("toasts.resend_success"));
+      } else if (typeof result === "object" && "ok" in result && !result.ok) {
+        toast.error((result as any).message || t("toasts.resend_error"));
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || t("toasts.resend_error"));
+      toast.error(error?.message || t("toasts.resend_error"));
     } finally {
       setIsResendingCode(false);
     }

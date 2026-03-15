@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Cropper from "react-easy-crop"
 import { useForm } from "react-hook-form"
 import axios from "axios"
+import { updateLandingSettingsAction } from "@/features/clubs/actions/updateLandingSettings.action"
 import toast from "react-hot-toast"
 import { IconDeviceFloppy, IconTrash } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
@@ -186,15 +187,25 @@ export default function ClubBrandingSettings({ club, onClubUpdated }: ClubBrandi
           await Promise.all(deletedIds.map(id => axios.delete(`/api/media/${id}`).catch(err => console.error("Failed to delete media", id, err))));
       }
 
-      await axios.put(`/api/clubs/${club._id}/landing`, {
-        landingPage: data
-      })
+      // Transform flat "seo.title" etc. to nested seo object
+      const landingPage = { ...data }
+      if ('seo.title' in data || 'seo.description' in data || 'seo.keywords' in data) {
+        landingPage.seo = {
+          title: (data as Record<string, unknown>)['seo.title'] as string,
+          description: (data as Record<string, unknown>)['seo.description'] as string,
+          keywords: (data as Record<string, unknown>)['seo.keywords'] as string,
+        }
+        delete (landingPage as Record<string, unknown>)['seo.title']
+        delete (landingPage as Record<string, unknown>)['seo.description']
+        delete (landingPage as Record<string, unknown>)['seo.keywords']
+      }
+      await updateLandingSettingsAction({ clubId: club._id, landingPage })
       
       setLastSavedAboutText(newAboutText); // Update reference for next save
       toast.success("Beállítások mentve")
       onClubUpdated()
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || "Mentés sikertelen")
+      showErrorToast(err?.message || "Mentés sikertelen")
     } finally {
       setLoading(false)
     }

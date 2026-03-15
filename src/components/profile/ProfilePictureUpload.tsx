@@ -14,6 +14,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import getCroppedImg from "@/lib/imageUtils"
 import axios from "axios"
+import { updateProfileAction } from "@/features/profile/actions"
 import toast from "react-hot-toast"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -79,10 +80,13 @@ export function ProfilePictureUpload({
       const imageUrl = mediaResponse.data.url
 
       // 2. Update user profile
-      await axios.post("/api/profile/update", {
+      const updateResult = await updateProfileAction({
         profilePicture: imageUrl,
         publicConsent: true,
       })
+      if (typeof updateResult === "object" && "ok" in updateResult && !updateResult.ok) {
+        throw new Error((updateResult as any).message)
+      }
 
       onUploadSuccess(imageUrl)
       setIsDialogOpen(false)
@@ -101,9 +105,10 @@ export function ProfilePictureUpload({
 
     setIsRemoving(true)
     try {
-      await axios.post("/api/profile/update", {
-        profilePicture: null,
-      })
+      const updateResult = await updateProfileAction({ profilePicture: null })
+      if (typeof updateResult === "object" && "ok" in updateResult && !updateResult.ok) {
+        throw new Error((updateResult as any).message)
+      }
       onUploadSuccess("")
       toast.success(t("success_remove"))
     } catch (error) {

@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import axios from 'axios'
 import toast from 'react-hot-toast'
+import { updateClubAction } from '@/features/clubs/actions/updateClub.action'
+import { geocodeClubAction } from '@/features/clubs/actions/geocodeClub.action'
 import { Club } from '@/interface/club.interface'
 import { IconDeviceFloppy } from '@tabler/icons-react'
 import { Button } from '@/components/ui/Button'
@@ -110,12 +111,19 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
   const requestGeocode = async () => {
     setIsRequestingGeocode(true);
     try {
-      const response = await axios.post<{ club: Club }>(`/api/clubs/${club._id}/geocode`);
-      onClubUpdated(response.data.club);
-      toast.success(t.geocodeRequestSuccess);
+      const result = await geocodeClubAction({ clubId: club._id });
+      if (result && 'club' in result) {
+        onClubUpdated(result.club as unknown as Club);
+        toast.success(t.geocodeRequestSuccess);
+      } else if (result && 'ok' in result && !result.ok) {
+        showErrorToast((result as { message?: string }).message || t.geocodeRequestError, {
+          context: 'Geocode request',
+          errorName: t.geocodeRequestError,
+        });
+      }
     } catch (err: any) {
-      showErrorToast(err.response?.data?.error || t.geocodeRequestError, {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.message || t.geocodeRequestError, {
+        error: err?.message,
         context: 'Geocode request',
         errorName: t.geocodeRequestError,
       });
@@ -127,16 +135,24 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
   const onSubmit = async (data: EditClubFormData) => {
     const toastId = toast.loading('Klub adatok frissítése...')
     try {
-      const response = await axios.post<Club>(`/api/clubs`, {
-        userId,
+      const result = await updateClubAction({
+        clubId: club._id,
         updates: { ...data, _id: club._id },
       })
-      onClubUpdated(response.data)
-      toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
+      if (result && typeof result === 'object' && '_id' in result) {
+        onClubUpdated(result as unknown as Club)
+        toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
+      } else if (result && typeof result === 'object' && 'ok' in result && !(result as { ok: boolean }).ok) {
+        toast.dismiss(toastId)
+        showErrorToast((result as { message?: string }).message || 'Klub frissítése sikertelen', {
+          context: 'Klub szerkesztése',
+          errorName: 'Klub frissítése sikertelen',
+        })
+      }
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Klub frissítése sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.message || 'Klub frissítése sikertelen', {
+        error: err?.message,
         context: 'Klub szerkesztése',
         errorName: 'Klub frissítése sikertelen',
       })

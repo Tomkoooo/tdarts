@@ -1,8 +1,8 @@
 "use client"
 
 import React from 'react';
-import axios from 'axios';
 import { Ticket } from 'lucide-react';
+import { getTicketsAction } from '@/features/profile/actions';
 
 export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {}) {
   const [unreadCount, setUnreadCount] = React.useState(0);
@@ -16,9 +16,9 @@ export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {})
     }
 
     try {
-      const response = await axios.get('/api/profile/tickets');
-      if (response.data.success) {
-        const unread = response.data.data.filter((ticket: any) => !ticket.isReadByUser).length;
+      const result = await getTicketsAction();
+      if (typeof result === "object" && "success" in result && result.success && result.data) {
+        const unread = result.data.filter((ticket: any) => !ticket.isReadByUser).length;
         setUnreadCount(unread);
       }
     } catch {
