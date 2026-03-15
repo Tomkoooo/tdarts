@@ -77,7 +77,6 @@
     "react-hook-form": "^7.56.3",
     "react-hot-toast": "^2.5.2",
     "react-qr-code": "^2.0.18",
-    "react-quill": "^2.0.0",
     "react-quill-new": "^3.7.0",
     "recharts": "^3.1.2",
     "socket.io-client": "^4.8.1",
