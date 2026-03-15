@@ -59,10 +59,12 @@
     "backToPortal": "Vissza a portáloldalra",
     "loadMore": "Több betöltése",
     "tabs": {
+      "global": "Összes",
       "tournaments": "Tornák",
       "players": "Játékosok",
       "clubs": "Klubok",
-      "leagues": "Ligák"
+      "leagues": "Ligák",
+      "map": "Térkép"
     },
     "filters": {
       "popularCities": "Népszerű városok",
@@ -1231,7 +1233,7 @@
         "description_step1": "Első megerősítés: a knockout szakasz visszavonásra kerül. Tovább a végső megerősítéshez?",
         "description_step2": "Végső megerősítés: 20 másodperces biztonsági ablak indul. Ezalatt visszavonhatod (Undo), vagy azonnal futtathatod (Skip now).",
         "step2_title": "Nagy hatású művelet",
-        "step2_desc": "A végrehajtás után a knockout meccsek törlődnek. Csak akkor folytasd, ha biztos vagy benne.",
+        "step2_desc": "A végrehajtás után a knockout meccsek törl��dnek. Csak akkor folytasd, ha biztos vagy benne.",
         "pending_title": "Knockout visszavonás ütemezve",
         "pending_desc": "A visszavonás {seconds} mp múlva lefut. Addig még visszavonhatod.",
         "btn_continue": "Tovább",

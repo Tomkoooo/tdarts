@@ -1,87 +1,78 @@
 "use client"
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/Badge"
-import { getMapSettingsTranslations } from "@/data/translations/map-settings"
-import { useLocale } from "next-intl"
+import { useTranslations } from "next-intl"
+import { IconWorld, IconTrophy, IconUsers, IconBuilding, IconStar, IconMap } from "@tabler/icons-react"
+import { cn } from "@/lib/utils"
 
 interface SearchTabsProps {
-    activeTab: string;
-    onTabChange: (tab: string) => void;
+    activeTab: string
+    onTabChange: (tab: string) => void
     counts: {
-        global: number;
-        tournaments: number;
-        players: number;
-        clubs: number;
-        leagues: number;
-        map?: number;
-    };
+        global: number
+        tournaments: number
+        players: number
+        clubs: number
+        leagues: number
+        map?: number
+    }
 }
 
+const TABS = [
+    { value: "global",      icon: IconWorld,    labelKey: "tabs.global" },
+    { value: "tournaments", icon: IconTrophy,   labelKey: "tabs.tournaments" },
+    { value: "players",     icon: IconUsers,    labelKey: "tabs.players" },
+    { value: "clubs",       icon: IconBuilding, labelKey: "tabs.clubs" },
+    { value: "leagues",     icon: IconStar,     labelKey: "tabs.leagues" },
+    { value: "map",         icon: IconMap,      labelKey: "tabs.map" },
+] as const
+
 export function SearchTabs({ activeTab, onTabChange, counts }: SearchTabsProps) {
-    const locale = useLocale()
-    const t = getMapSettingsTranslations(locale)
+    const t = useTranslations("Search")
+
+    const getCount = (value: string) => {
+        if (value === "map") return counts.map ?? 0
+        return counts[value as keyof Omit<typeof counts, "map">] ?? 0
+    }
+
     return (
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="flex w-full min-w-max gap-1 h-auto p-1 bg-base-200/50 backdrop-blur-sm rounded-xl overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <TabsTrigger
-                    value="global"
-                    className="shrink-0 min-w-[120px] flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-primary/80 data-[state=active]:text-primary-foreground transition-all duration-300"
-                >
-                    <span className="font-medium">Globális</span>
-                    <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
-                        {counts.global}
-                    </Badge>
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="tournaments" 
-                    className="shrink-0 min-w-[120px] flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
-                >
-                    <span className="font-medium">Versenyek</span>
-                    <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
-                        {counts.tournaments}
-                    </Badge>
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                    value="players" 
-                    className="shrink-0 min-w-[120px] flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground transition-all duration-300"
-                >
-                     <span className="font-medium">Játékosok</span>
-                     <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
-                        {counts.players}
-                    </Badge>
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                    value="clubs" 
-                    className="shrink-0 min-w-[120px] flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground transition-all duration-300"
-                >
-                     <span className="font-medium">Klubok</span>
-                     <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
-                        {counts.clubs}
-                    </Badge>
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                    value="leagues" 
-                    className="shrink-0 min-w-[120px] flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-info/20 data-[state=active]:text-info-foreground transition-all duration-300"
-                >
-                     <span className="font-medium">Ligák</span>
-                     <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
-                        {counts.leagues}
-                    </Badge>
-                </TabsTrigger>
-                <TabsTrigger
-                    value="map"
-                    className="shrink-0 min-w-[120px] flex flex-col sm:flex-row items-center gap-2 py-3 data-[state=active]:bg-warning/20 data-[state=active]:text-warning-foreground transition-all duration-300"
-                >
-                     <span className="font-medium">{t.mapPageTitle}</span>
-                     <Badge variant="secondary" className="bg-base-100/20 text-current border-0">
-                        {counts.map ?? 0}
-                    </Badge>
-                </TabsTrigger>
-            </TabsList>
-        </Tabs>
+        <div
+            role="tablist"
+            aria-label="Search categories"
+            className="flex w-full gap-1 p-1 bg-card/60 border border-border rounded-xl backdrop-blur-sm overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        >
+            {TABS.map(({ value, icon: Icon, labelKey }) => {
+                const isActive = activeTab === value
+                const count = getCount(value)
+                return (
+                    <button
+                        key={value}
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => onTabChange(value)}
+                        className={cn(
+                            "relative flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring whitespace-nowrap",
+                            isActive
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                    >
+                        <Icon className="w-4 h-4 shrink-0" aria-hidden />
+                        <span>{t(labelKey)}</span>
+                        {count > 0 && (
+                            <span
+                                className={cn(
+                                    "ml-1 min-w-[1.25rem] h-5 flex items-center justify-center rounded-full text-xs font-semibold px-1.5 transition-colors",
+                                    isActive
+                                        ? "bg-primary-foreground/20 text-primary-foreground"
+                                        : "bg-muted text-muted-foreground"
+                                )}
+                            >
+                                {count > 999 ? "999+" : count}
+                            </span>
+                        )}
+                    </button>
+                )
+            })}
+        </div>
     )
 }

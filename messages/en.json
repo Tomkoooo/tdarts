@@ -59,10 +59,12 @@
     "backToPortal": "Back to the portal page",
     "loadMore": "Load more results",
     "tabs": {
+      "global": "All",
       "tournaments": "Tournaments",
       "players": "Players",
       "clubs": "Clubs",
-      "leagues": "Leagues"
+      "leagues": "Leagues",
+      "map": "Map"
     },
     "filters": {
       "popularCities": "Popular cities",

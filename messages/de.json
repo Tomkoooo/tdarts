@@ -459,10 +459,12 @@
       "clear_filters": "Filter löschen"
     },
     "tabs": {
+      "global": "Alle",
       "tournaments": "Wettbewerbe",
       "players": "Spieler",
       "clubs": "Vereine",
-      "leagues": "Ligen"
+      "leagues": "Ligen",
+      "map": "Karte"
     },
     "filter_bar": {
       "popular_cities": "Beliebte Städte",
@@ -1607,7 +1609,7 @@
       "események": "Ereignisse",
       "torna_13": "Turnier",
       "kiszálló_62": "Checkout",
-      "átlag_39": "Durchschnitt",
+      "��tlag_39": "Durchschnitt",
       "esemény_rögzítve": "Ereignis aufgezeichnet",
       "megtekintés": "Ansehen",
       "nincsenek_eredmények": "Keine Ergebnisse",
