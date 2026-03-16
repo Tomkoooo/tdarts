@@ -195,7 +195,7 @@ export class SearchService {
             .populate('userRef', 'name email')
             .populate('members', 'name');
 
-        const results = sortedPlayers.map(player => {
+        const results = sortedPlayers.map((player, index) => {
             const mmr = player.stats?.mmr ?? 800;
             const stats = player.stats || {};
             stats.mmr = mmr;
@@ -212,7 +212,7 @@ export class SearchService {
                 stats: stats,
                 mmr: filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr,
                 mmrTier: this.getMMRTier(filters.isOac ? (player.stats?.oacMmr ?? 800) : mmr),
-                globalRank: null,
+                globalRank: skip + index + 1,
                 oacMmr: player.stats?.oacMmr ?? 800, // Explicitly return OAC MMR for display
                 honors: player.honors || [], // Include honors for badge display
                 profilePicture: player.profilePicture

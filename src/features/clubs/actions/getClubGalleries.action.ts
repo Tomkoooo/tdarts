@@ -4,6 +4,7 @@ import { GalleryService } from '@/database/services/gallery.service';
 import { z } from 'zod';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const schema = z.object({
   clubId: z.string(),
@@ -19,7 +20,7 @@ export async function getClubGalleriesAction(input: z.infer<typeof schema>) {
       }
       const { clubId } = parsed.data;
       const galleries = await GalleryService.getClubGalleries(clubId);
-      return { galleries };
+      return serializeForClient({ galleries });
     },
     { method: 'ACTION', metadata: { feature: 'clubs', actionName: 'getClubGalleries', clubId: input.clubId } }
   );

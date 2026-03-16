@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl"
 import { getUserTimeZone } from "@/lib/date-time"
 import { searchAction } from "@/features/search/actions/search.action"
 import { mapSearchAction } from "@/features/search/actions/mapSearch.action"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface TabCounts {
     global: number;
@@ -45,30 +46,12 @@ export default function SearchPage() {
     const t = useTranslations('Search')
     const userTimeZone = getUserTimeZone()
 
-    const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "tournaments")
+    const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "global")
     const [query, setQuery] = useState(searchParams.get("q") || "")
     const [debouncedQuery] = useDebounce(query, 500)
     const [isScrolled, setIsScrolled] = useState(false)
     
-    useEffect(() => {
-        const params = new URLSearchParams(searchParams.toString())
-        if (debouncedQuery) {
-            params.set('q', debouncedQuery)
-        } else {
-            params.delete('q')
-        }
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    }, [debouncedQuery, pathname, router])
-    
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 200)
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-    
-    const [filters, setFilters] = useState<SearchFilters>({
+    const parseFiltersFromUrl = useCallback((): SearchFilters => ({
         status: searchParams.get("status") || undefined,
         type: (searchParams.get("type") as any) || undefined,
         tournamentType: (searchParams.get("tournamentType") as any) || undefined,
@@ -80,6 +63,48 @@ export default function SearchPage() {
         playerMode: (searchParams.get("playerMode") as "all" | "individual" | "pair") || undefined,
         country: searchParams.get("country") || undefined,
         page: Number(searchParams.get("page")) || 1,
+    }), [searchParams])
+
+    useEffect(() => {
+        const urlTab = searchParams.get("tab") || "global"
+        const urlQuery = searchParams.get("q") || ""
+        if (urlTab !== activeTab) {
+            setActiveTab(urlTab)
+        }
+        if (urlQuery !== query) {
+            setQuery(urlQuery)
+        }
+        const nextFromUrl = parseFiltersFromUrl()
+        setFilters(prev => {
+            const next = { ...prev, ...nextFromUrl }
+            return JSON.stringify(prev) === JSON.stringify(next) ? prev : next
+        })
+    }, [searchParams, activeTab, query, parseFiltersFromUrl])
+
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (debouncedQuery) {
+            params.set('q', debouncedQuery)
+        } else {
+            params.delete('q')
+        }
+        const nextUrl = `${pathname}?${params.toString()}`
+        const currentUrl = `${pathname}?${searchParams.toString()}`
+        if (nextUrl !== currentUrl) {
+            router.replace(nextUrl, { scroll: false })
+        }
+    }, [debouncedQuery, pathname, router, searchParams])
+    
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 200)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+    
+    const [filters, setFilters] = useState<SearchFilters>({
+        ...parseFiltersFromUrl(),
         limit: 10
     })
 
@@ -289,6 +314,13 @@ export default function SearchPage() {
                 />
 
                 <div className="min-h-[400px]">
+                    {isLoading && (
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mb-6">
+                            <Skeleton className="h-40 rounded-xl" />
+                            <Skeleton className="h-40 rounded-xl" />
+                            <Skeleton className="h-40 rounded-xl" />
+                        </div>
+                    )}
                     {activeTab === 'tournaments' && (
                         <div className="mb-6">
                             <h2 className="text-2xl font-bold text-primary-foreground inline-block">

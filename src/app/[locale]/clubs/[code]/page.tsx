@@ -28,6 +28,7 @@ import ClubSettingsSection from "@/components/club/ClubSettingsSection"
 import CreateTournamentModal from "@/components/club/CreateTournamentModal"
 import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ClubDetailPage() {
     const t = useTranslations("Club.pages");
@@ -67,6 +68,12 @@ export default function ClubDetailPage() {
     playersWithEmailCount: 0,
   })
 
+  const toClub = React.useCallback((value: unknown): Club | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+    if (!('_id' in (value as Record<string, unknown>))) return null
+    return value as Club
+  }, [])
+
   // Helper to fetch club data
   const fetchClub = async () => {
     if (!code) {
@@ -75,7 +82,8 @@ export default function ClubDetailPage() {
     }
     try {
       const clubData = await getClubAction({ clubId: code })
-      setClub(clubData)
+      const parsedClub = toClub(clubData)
+      setClub(parsedClub)
     } finally {
       setIsClubLoading(false)
     }
@@ -85,19 +93,25 @@ export default function ClubDetailPage() {
   React.useEffect(() => {
     const fetchClubAndRole = async () => {
       if (!code) {
-        router.push('/clubs')
+        router.push('/myclub')
         return
       }
 
       try {
         const clubData = await getClubAction({ clubId: code })
-        setClub(clubData)
+        const parsedClub = toClub(clubData)
+        if (!parsedClub) {
+          throw new Error('Klub betöltése sikertelen')
+        }
+        setClub(parsedClub)
 
         // Fetch posts
         try {
-          const postsData = await getClubPostsAction({ clubId: clubData._id, page: 1, limit: 3 })
-          setPosts(postsData.posts)
-          setPostsTotal(postsData.total)
+          const postsData = await getClubPostsAction({ clubId: parsedClub._id, page: 1, limit: 3 })
+          if (postsData && typeof postsData === 'object' && 'posts' in postsData && 'total' in postsData) {
+            setPosts((postsData as { posts: any[] }).posts || [])
+            setPostsTotal(Number((postsData as { total: number }).total || 0))
+          }
         } catch (e) {
           console.error("Failed to fetch posts", e)
         }
@@ -121,7 +135,7 @@ export default function ClubDetailPage() {
         })
         setIsClubLoading(false)
         console.error(err)
-        router.push('/clubs')
+        router.push('/myclub')
       }
     }
 
@@ -152,7 +166,7 @@ export default function ClubDetailPage() {
       await removeMemberAction({ clubId: club._id, userId: user._id })
       await fetchClub()
       toast.success(t("sikeresen_kiléptél_a"), { id: toastId })
-      router.push('/clubs')
+      router.push('/myclub')
     } catch (err: any) {
       toast.dismiss(toastId)
       showErrorToast(err?.response?.data?.error || err?.message || 'Kilépés sikertelen', {
@@ -170,7 +184,7 @@ export default function ClubDetailPage() {
       await deactivateClubAction({ clubId: club._id })
       await fetchClub()
       toast.success(t("klub_sikeresen_deaktiválva"), { id: toastId })
-      router.push('/clubs')
+      router.push('/myclub')
     } catch (err: any) {
       toast.dismiss(toastId)
       showErrorToast(err?.response?.data?.error || err?.message || 'Klub deaktiválása sikertelen', {
@@ -287,8 +301,10 @@ export default function ClubDetailPage() {
     const nextPage = postsPage + 1
     try {
       const res = await getClubPostsAction({ clubId: club._id, page: nextPage, limit: 3 })
-      setPosts([...posts, ...res.posts])
-      setPostsPage(nextPage)
+      if (res && typeof res === 'object' && 'posts' in res && Array.isArray((res as { posts?: unknown[] }).posts)) {
+        setPosts([...posts, ...((res as { posts: any[] }).posts || [])])
+        setPostsPage(nextPage)
+      }
     } catch (e) {
       console.error("Failed to load more posts", e)
     }
@@ -316,12 +332,15 @@ export default function ClubDetailPage() {
   }
 
   if (isClubLoading) return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="flex flex-col items-center">
-        <div className="text-4xl font-bold mb-4 flex flex-col">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto space-y-6 px-4 py-6">
+        <Skeleton className="h-14 w-64 rounded-xl" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl" />
         </div>
-        <div className="text-xl mb-4">{t("loading_club")}</div>
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     </div>
   )

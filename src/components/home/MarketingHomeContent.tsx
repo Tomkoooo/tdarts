@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import axios from "axios"
 import ParallaxBackground from "@/components/homapage/ParallaxBackground"
 import HeroSectionNew from "@/components/homapage/HeroSectionNew"
 import InfiniteCarousel from "@/components/homapage/InfiniteCarousel"
@@ -9,7 +8,7 @@ import FeaturesSectionNew from "@/components/homapage/FeaturesSectionNew"
 import PricingSection from "@/components/homapage/PricingSection"
 import AnnouncementToast from "@/components/common/AnnouncementToast"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
-import { useUserContext } from "@/hooks/useUser"
+import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action"
 
 interface Announcement {
   _id: string
@@ -25,10 +24,9 @@ interface Announcement {
 }
 
 export default function MarketingHomeContent() {
-  const { user } = useUserContext()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set())
-  const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) })
+  const { unreadCount } = useUnreadTickets({ enabled: false })
   const [ticketToastDismissed, setTicketToastDismissed] = useState(false)
 
   useEffect(() => {
@@ -39,14 +37,19 @@ export default function MarketingHomeContent() {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await axios.get("/api/announcements", {
-          headers: {
-            "Accept-Language": typeof navigator !== "undefined" ? navigator.language : "hu",
-          },
+        const response = await getActiveAnnouncementsAction({
+          locale: typeof navigator !== "undefined" ? navigator.language : "hu",
         })
-        if (response.data.success) {
+        if (
+          response &&
+          typeof response === "object" &&
+          "success" in response &&
+          response.success &&
+          "announcements" in response &&
+          Array.isArray((response as { announcements?: Announcement[] }).announcements)
+        ) {
           const now = new Date()
-          const activeAnnouncements = response.data.announcements.filter((announcement: Announcement) =>
+          const activeAnnouncements = (response as { announcements: Announcement[] }).announcements.filter((announcement: Announcement) =>
             announcement.isActive && new Date(announcement.expiresAt) > now
           )
           setAnnouncements(activeAnnouncements)

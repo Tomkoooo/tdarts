@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import {
   IconAlertTriangle,
   IconRefresh,
@@ -30,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Label } from "@/components/ui/Label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
 
 interface ErrorLog {
   _id: string
@@ -93,9 +93,22 @@ export default function AdminErrorsPage() {
         schemaVersion,
       })
 
-      const [statsResponse] = await Promise.all([axios.get(`/api/admin/errors/stats?${params}`)])
+      const [statsResponse] = await Promise.all([
+        adminApiRequestAction({
+          path: `/api/admin/errors/stats`,
+          method: "GET",
+          params: {
+            days: dateRange.toString(),
+            category: selectedCategory,
+            level: selectedLevel,
+            showAuthErrors: showAuthErrors.toString(),
+            showExpectedErrors: showExpectedErrors.toString(),
+            schemaVersion,
+          },
+        }),
+      ])
 
-      setErrorStats(statsResponse.data)
+      setErrorStats((statsResponse.data || null) as any)
     } catch (error: any) {
       console.error("Error fetching error data:", error)
       toast.error(error.response?.data?.error || "Hiba történt az adatok betöltése során")

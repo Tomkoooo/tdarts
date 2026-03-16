@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 
 
 import { useState, useEffect, useMemo } from "react"
-import axios from "axios"
 import { toast } from "react-hot-toast"
 import {
   IconPlus,
@@ -23,6 +22,7 @@ import { Button } from "@/components/ui/Button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { SmartInput } from "@/components/admin/SmartInput"
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
 
 // --- Types ---
 interface TodoItem {
@@ -71,11 +71,11 @@ const TodoItemCard = ({ todo, onToggle, onDelete }: { todo: TodoItem; onToggle: 
       <button
         onClick={() => onToggle(todo._id)}
         className={cn(
-          "mt-1 flex-shrink-0 size-6 rounded-lg border-2 flex items-center justify-center transition-colors",
+          "mt-1 shrink-0 size-6 rounded-lg border-2 flex items-center justify-center transition-colors",
           isCompleted ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 hover:border-primary text-transparent"
         )}
       >
-        <IconCheck className="size-3.5 stroke-[3]" />
+        <IconCheck className="size-3.5 stroke-3" />
       </button>
 
       <div className="flex-1 min-w-0 space-y-1.5">
@@ -83,7 +83,7 @@ const TodoItemCard = ({ todo, onToggle, onDelete }: { todo: TodoItem; onToggle: 
           <p className={cn("font-medium text-base leading-tight", isCompleted && "line-through text-muted-foreground")}>
             {todo.title}
           </p>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {todo.dueDate && (
               <span className={cn(
                 "text-xs font-medium px-2 py-0.5 rounded-md flex items-center gap-1",
@@ -138,8 +138,8 @@ export default function SmartTodoManager() {
   const fetchTodos = async () => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/todos")
-      setTodos(response.data.todos)
+      const response = await adminApiRequestAction({ path: "/api/admin/todos", method: "GET" })
+      setTodos((response.data?.todos || []) as TodoItem[])
     } catch (error) {
       console.error("Error fetching todos", error)
       toast.error(t("nem_sikerült_betölteni_12"))
@@ -154,12 +154,16 @@ export default function SmartTodoManager() {
 
   const handleAddTodo = async (todoData: Partial<TodoItem>) => {
     try {
-      const response = await axios.post("/api/admin/todos", {
+      const response = await adminApiRequestAction({
+        path: "/api/admin/todos",
+        method: "POST",
+        body: {
         ...todoData,
         status: "pending",
         isPublic: true // Default to public
+        },
       })
-      setTodos(prev => [response.data.todo || response.data, ...prev]) // Handle different API responses
+      setTodos(prev => [response.data?.todo || response.data, ...prev]) // Handle different API responses
       toast.success(t("feladat_hozzáadva"))
       fetchTodos() // Refresh to be safe
     } catch (error) {
@@ -178,7 +182,7 @@ export default function SmartTodoManager() {
     setTodos(prev => prev.map(t => t._id === id ? { ...t, status: newStatus } : t))
 
     try {
-      await axios.put(`/api/admin/todos/${id}`, { status: newStatus })
+      await adminApiRequestAction({ path: `/api/admin/todos/${id}`, method: "PUT", body: { status: newStatus } })
     } catch (error) {
       console.error("Error updating todo", error)
       toast.error(t("nem_sikerült_frissíteni"))
@@ -194,7 +198,7 @@ export default function SmartTodoManager() {
     setTodos(prev => prev.filter(t => t._id !== id))
 
     try {
-      await axios.delete(`/api/admin/todos/${id}`)
+      await adminApiRequestAction({ path: `/api/admin/todos/${id}`, method: "DELETE" })
       toast.success(t("feladat_törölve"))
     } catch (error) {
       console.error("Error deleting todo", error)

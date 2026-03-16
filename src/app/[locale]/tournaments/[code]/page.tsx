@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import axios from "axios";
 import { useParams, useSearchParams } from "next/navigation";
 import { useUserContext } from "@/hooks/useUser";
+import { reopenTournamentAction } from "@/features/tournaments/actions/reopenTournament.action";
 import { useTournamentPageData } from "@/features/tournament/hooks/useTournamentPageData";
 import { useTournamentRealtimeRefresh } from "@/features/tournament/hooks/useTournamentRealtimeRefresh";
 import { TournamentHeaderActions } from "@/features/tournament/components/TournamentHeaderActions";
@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getStatusMeta = (t: (key: string) => string) => ({
   pending: {
@@ -106,8 +107,8 @@ const TournamentPage = () => {
     if (!confirm(t("admin.reopen.confirm"))) return;
     try {
       setIsReopening(true);
-      const response = await axios.post(`/api/tournaments/${code}/reopen`);
-      if (response.data.success) {
+      const result = await reopenTournamentAction({ code: String(code || "") });
+      if (result && typeof result === "object" && "success" in result && result.success) {
         alert(t("admin.reopen.success"));
         await fetchAll();
       }
@@ -126,10 +127,21 @@ const TournamentPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="space-y-4 text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-          <p className="text-sm text-muted-foreground">{t("loading")}</p>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto space-y-6 px-4 py-6 md:py-8">
+          <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
+            <Skeleton className="h-8 w-72" />
+            <div className="mt-4 flex gap-3">
+              <Skeleton className="h-6 w-28 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+          <Skeleton className="h-96 rounded-2xl" />
         </div>
       </div>
     );
@@ -137,7 +149,7 @@ const TournamentPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
         <Card className="w-full max-w-md border-destructive/40 bg-card">
           <CardContent className="space-y-4 p-6">
             <Alert variant="destructive">
@@ -155,7 +167,7 @@ const TournamentPage = () => {
 
   if (!tournament) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
         <Card className="w-full max-w-md border-dashed">
           <CardContent className="space-y-4 py-8 text-center">
             <div className="text-4xl">🏆</div>

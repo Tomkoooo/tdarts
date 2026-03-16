@@ -1,0 +1,46 @@
+{
+  "context": "page-matrix-home",
+  "timestamp": "2026-03-16T10:16:49.475Z",
+  "url": "http://127.0.0.1:3000/en/home",
+  "console": [
+    {
+      "type": "warning",
+      "text": "Image with src \"/partners/mdsz_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes",
+      "location": "http://127.0.0.1:3000/_next/static/chunks/a191e_next_dist_0da38164._.js:2297"
+    },
+    {
+      "type": "warning",
+      "text": "Image with src \"/partners/dartsbarlang_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes",
+      "location": "http://127.0.0.1:3000/_next/static/chunks/a191e_next_dist_0da38164._.js:2297"
+    },
+    {
+      "type": "warning",
+      "text": "Image with src \"/partners/remiz_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes",
+      "location": "http://127.0.0.1:3000/_next/static/chunks/a191e_next_dist_0da38164._.js:2297"
+    },
+    {
+      "type": "warning",
+      "text": "Image with src \"/partners/efott_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes",
+      "location": "http://127.0.0.1:3000/_next/static/chunks/a191e_next_dist_0da38164._.js:2297"
+    }
+  ],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/en/home",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/en/home",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/en/home",
+      "errorText": "net::ERR_ABORTED"
+    }
+  ],
+  "responseFailures": []
+}

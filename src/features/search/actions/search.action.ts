@@ -4,6 +4,7 @@ import { SearchService } from '@/database/services/search.service';
 import type { SearchFilters } from '@/database/services/search.service';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { getUserTimeZone } from '@/lib/date-time';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export type SearchActionInput = {
   query: string;
@@ -87,13 +88,13 @@ export async function searchAction(input: SearchActionInput): Promise<SearchActi
       const limit = searchFilters.limit || 10;
       const totalPages = Math.ceil(total / limit);
 
-      return {
+      return serializeForClient({
         results,
         counts,
         groupedResults,
         metadata,
         pagination: { total, page, limit, totalPages },
-      };
+      }) as SearchActionResult;
     },
     { method: 'ACTION', metadata: { feature: 'search', actionName: 'search' } }
   );

@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import Link from "next/link"
 import {
   IconTrophy,
@@ -35,6 +34,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import Pagination from "@/components/common/Pagination"
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
 
 interface AdminTournament {
   _id: string
@@ -108,21 +108,17 @@ export default function AdminTournamentsPage() {
   const fetchTournaments = async (p: number, search: string, status: string, verified: string, sandbox: string) => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/tournaments", {
-        params: {
-          page: p,
-          limit: 10,
-          search,
-          status,
-          verified,
-          sandbox
-        }
+      const response = await adminApiRequestAction({
+        path: "/api/admin/tournaments",
+        method: "GET",
+        params: { page: p, limit: 10, search, status, verified, sandbox },
       })
-      setTournaments(response.data.tournaments || [])
-      setStats(response.data.stats || { total: 0, active: 0, finished: 0, pending: 0, totalPlayers: 0, verified: 0, unverified: 0, sandbox: 0 })
-      setTotalPages(response.data.pagination.totalPages || 1)
-      setPaginationTotal(response.data.pagination.total || 0)
-      setPage(response.data.pagination.page || 1)
+      const payload = response.data || {}
+      setTournaments(payload.tournaments || [])
+      setStats(payload.stats || { total: 0, active: 0, finished: 0, pending: 0, totalPlayers: 0, verified: 0, unverified: 0, sandbox: 0 })
+      setTotalPages(payload.pagination?.totalPages || 1)
+      setPaginationTotal(payload.pagination?.total || 0)
+      setPage(payload.pagination?.page || 1)
     } catch (error: any) {
       console.error("Error fetching tournaments:", error)
       toast.error(tCommon("hiba_történt_az"))

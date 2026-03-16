@@ -38,7 +38,16 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
     const fetchGalleries = async () => {
         try {
             const res = await getClubGalleriesAction({ clubId: club._id })
-            if (res && 'galleries' in res) setGalleries(res.galleries as unknown as Gallery[])
+            if (res && typeof res === 'object' && 'galleries' in res && Array.isArray((res as { galleries?: unknown[] }).galleries)) {
+                const galleriesRaw = (res as any).galleries as any[]
+                const next = galleriesRaw
+                    .map((g) => ({
+                        _id: String(g._id),
+                        name: g.name,
+                        images: Array.isArray(g.images) ? g.images : [],
+                    }))
+                setGalleries(next)
+            }
         } catch (err) {
             console.error(err)
         }

@@ -1,6 +1,7 @@
 import { connectMongo } from '@/lib/mongoose';
 import { LeagueModel } from '@/database/models/league.model';
 import { PlayerService } from '@/database/services/player.service';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export type LeagueHistoryEntry = {
   leagueId: string;
@@ -107,7 +108,9 @@ export async function getProfileLeagueHistory(userId: string): Promise<LeagueHis
     });
   }
 
-  return result.sort(
+  return serializeForClient(
+    result.sort(
     (a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
-  );
+    )
+  ) as LeagueHistoryEntry[];
 }

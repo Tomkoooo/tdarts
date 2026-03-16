@@ -5,8 +5,8 @@ import React, { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { SmartInput, TodoItemData } from "@/components/admin/SmartInput"
 import { IconCheck } from "@tabler/icons-react"
-import axios from "axios"
 import toast from "react-hot-toast"
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
 
 export function GlobalTodoShortcut() {
     const t = useTranslations("Admin.components");
@@ -25,10 +25,14 @@ export function GlobalTodoShortcut() {
 
   const handleAddTodo = async (todoData: Partial<TodoItemData>) => {
     try {
-      await axios.post("/api/admin/todos", {
+      await adminApiRequestAction({
+        path: "/api/admin/todos",
+        method: "POST",
+        body: {
         ...todoData,
         status: "pending",
         isPublic: true
+        },
       })
       toast.success(t("feladat_gyorsan_hozzáadva"), {
         icon: <IconCheck className="text-emerald-500" />,

@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useTranslations } from "next-intl";
 import {
@@ -39,6 +38,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { coerceNumericValue } from "@/lib/number-input";
 import { showErrorToast } from "@/lib/toastUtils";
 import { useUserContext } from "@/hooks/useUser";
+import {
+  addManualKnockoutMatchAction,
+  deleteKnockoutMatchAction,
+  deleteLastKnockoutRoundAction,
+  finishKnockoutMatchAction,
+  generateEmptyKnockoutRoundsAction,
+  generateNextKnockoutRoundAction,
+  generateRandomPairingsAction,
+  getKnockoutViewDataAction,
+  updateEmptyKnockoutPairAction,
+  updateKnockoutMatchSettingsAction,
+} from "@/features/tournaments/actions/knockoutManagement.action";
 
 import LegsViewModal from "./LegsViewModal";
 import KnockoutBracketDiagram, { DiagramMatch, DiagramRound, RoundSummary } from "./KnockoutBracketDiagram";
@@ -296,9 +307,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const fetchKnockoutMethod = async () => {
     try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}/knockoutMethod`)
-      if (response.data?.success) {
-        setCurrentKnockoutMethod(response.data.knockoutMethod)
+      const response = await getKnockoutViewDataAction({ tournamentCode })
+      if (response && typeof response === 'object' && 'success' in response && response.success && 'knockoutMethod' in response) {
+        setCurrentKnockoutMethod((response as { knockoutMethod?: "automatic" | "manual" }).knockoutMethod)
       }
     } catch (err) {
       console.error("Failed to fetch knockout method", err)
@@ -308,13 +319,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const fetchTournamentPlayers = async () => {
     try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}`)
-      if (response.data?.tournamentPlayers) {
-        setAvailablePlayers(response.data.tournamentPlayers)
+      const response = await getKnockoutViewDataAction({ tournamentCode })
+      if (response && typeof response === 'object' && 'tournamentPlayers' in response) {
+        setAvailablePlayers((response as { tournamentPlayers?: any[] }).tournamentPlayers || [])
       }
-
-      const statusFromResponse =
-        response.data?.tournament?.tournamentSettings?.status || response.data?.tournament?.status || response.data?.status || null
+      const statusFromResponse = (response as { tournamentStatus?: string | null })?.tournamentStatus || null
 
       if (statusFromResponse) {
         setTournamentStatus(statusFromResponse as string)
@@ -326,9 +335,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
   const fetchAvailableBoards = async () => {
     try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}/board-context`)
-      if (response.data?.availableBoards) {
-        setAvailableBoards(response.data.availableBoards)
+      const response = await getKnockoutViewDataAction({ tournamentCode })
+      if (response && typeof response === 'object' && 'availableBoards' in response) {
+        setAvailableBoards((response as { availableBoards?: any[] }).availableBoards || [])
       }
     } catch (err) {
       console.error("Failed to fetch available boards", err)
@@ -338,22 +347,21 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const fetchKnockoutData = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`/api/tournaments/${tournamentCode}/knockout`)
-      if (response.data?.success) {
-        const knockoutRounds = response.data.knockout || []
+      const response = await getKnockoutViewDataAction({ tournamentCode })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
+        const knockoutRounds = (response as { knockout?: any[] }).knockout || []
         knockoutRounds.forEach((round: any) => {
           if (!round.matches) {
             round.matches = []
           }
         })
         setKnockoutData(knockoutRounds)
-        const statusFromKnockout =
-          response.data?.tournament?.tournamentSettings?.status || response.data?.tournamentStatus || response.data?.status || null
+        const statusFromKnockout = (response as { tournamentStatus?: string | null }).tournamentStatus || null
         if (statusFromKnockout) {
           setTournamentStatus(statusFromKnockout as string)
         }
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült betölteni a knockout adatokat.", {
+        showErrorToast("Nem sikerült betölteni a knockout adatokat.", {
           context: "Knockout adatok betöltése",
           errorName: "Betöltés sikertelen",
         })
@@ -379,14 +387,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setLoading(true)
 
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateNextRound`, { currentRound })
-      if (response.data?.success) {
+      const response = await generateNextKnockoutRoundAction({ tournamentCode, currentRound })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowGenerateNextRound(false)
         toast.success(tTour('knockout.success_next_round'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült generálni a következő kört.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült generálni a következő kört.", {
+          error: 'generateNextKnockoutRoundAction returned unsuccessful result',
           context: "Következő kör generálása",
           errorName: "Generálás sikertelen",
         })
@@ -468,15 +476,21 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         typeof selectedMatch.matchReference === "object"
           ? selectedMatch.matchReference._id
           : selectedMatch.matchReference
-      const response = await axios.post(`/api/matches/${matchId}/finish`, cleanedForm)
-      if (response.data?.success) {
+      const response = await finishKnockoutMatchAction({
+        matchId,
+        player1LegsWon: Number(cleanedForm.player1LegsWon),
+        player2LegsWon: Number(cleanedForm.player2LegsWon),
+        player1Stats: cleanedForm.player1Stats,
+        player2Stats: cleanedForm.player2Stats,
+      })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowMatchEditModal(false)
         setSelectedMatch(null)
         toast.success(tTour('knockout.success_match_updated'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült frissíteni a meccset.", {
+          error: 'finishKnockoutMatchAction returned unsuccessful result',
           context: "Meccs frissítése",
           errorName: "Frissítés sikertelen",
         })
@@ -493,6 +507,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   }
 
   const handleAddMatch = async () => {
+    if (!selectedPlayer1 || !selectedPlayer2) {
+      toast.error(tTour('knockout.error_select_player'))
+      return
+    }
     if (selectedPlayer1 && selectedPlayer2 && selectedPlayer1 === selectedPlayer2) {
       toast.error(tTour('knockout.error_different_players'))
       return
@@ -506,15 +524,16 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setLoading(true)
 
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/addManualMatch`, {
+      const response = await addManualKnockoutMatchAction({
+        tournamentCode,
         round: selectedRound,
-        player1Id: selectedPlayer1 || undefined,
-        player2Id: selectedPlayer2 || undefined,
+        player1Id: selectedPlayer1,
+        player2Id: selectedPlayer2,
         scorerId: selectedScorer || undefined,
         boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined,
       })
 
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowAddMatchModal(false)
         setSelectedPlayer1("")
@@ -529,8 +548,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowScorerDropdown(false)
         toast.success(tTour('knockout.success_match_added'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült hozzáadni a meccset.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült hozzáadni a meccset.", {
+          error: 'addManualKnockoutMatchAction returned unsuccessful result',
           context: "Meccs hozzáadása",
           errorName: "Hozzáadás sikertelen",
         })
@@ -549,16 +568,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const handleGenerateEmptyRounds = async () => {
     setLoading(true)
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateEmptyRounds`, {
+      const response = await generateEmptyKnockoutRoundsAction({
+        tournamentCode,
         roundsCount: roundsToGenerate,
       })
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowGenerateEmptyRoundsModal(false)
         toast.success(tTour('knockout.success_empty_rounds'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült generálni az üres köröket.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült generálni az üres köröket.", {
+          error: 'generateEmptyKnockoutRoundsAction returned unsuccessful result',
           context: "Üres körök generálása",
           errorName: "Generálás sikertelen",
         })
@@ -583,18 +603,19 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setLoading(true)
 
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateRandomPairings`, {
+      const response = await generateRandomPairingsAction({
+        tournamentCode,
         round: selectedRound,
         selectedPlayerIds: selectedPlayersForPairing,
       })
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowRandomPairingModal(false)
         setSelectedPlayersForPairing([])
         toast.success(tTour('knockout.success_pairings'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült generálni a párosításokat.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült generálni a párosításokat.", {
+          error: 'generateRandomPairingsAction returned unsuccessful result',
           context: "Párosítások generálása",
           errorName: "Generálás sikertelen",
         })
@@ -627,14 +648,15 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           ? editingMatchSettings.matchReference._id
           : editingMatchSettings.matchReference
 
-      const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
+      const response = await updateKnockoutMatchSettingsAction({
+        matchId,
         player1Id: selectedPlayer1 || null,
         player2Id: selectedPlayer2 || null,
         scorerId: selectedScorer || undefined,
         boardNumber: selectedBoard ? parseInt(selectedBoard) : undefined,
       })
 
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         setShowMatchSettingsModal(false)
         setEditingMatchSettings(null)
@@ -650,8 +672,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         setShowScorerDropdown(false)
         toast.success(tTour('knockout.success_settings_updated'))
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccs beállításait.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült frissíteni a meccs beállításait.", {
+          error: 'updateKnockoutMatchSettingsAction returned unsuccessful result',
           context: "Meccs beállítások frissítése",
           errorName: "Frissítés sikertelen",
         })
@@ -701,7 +723,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           }
         }
 
-        const response = await axios.post(`/api/tournaments/${tournamentCode}/updateEmptyPair`, {
+        const response = await updateEmptyKnockoutPairAction({
+          tournamentCode,
           round: matchRound,
           pairIndex,
           player1Id: editPairPlayer1 || undefined,
@@ -710,14 +733,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
           boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined,
         })
 
-        if (response.data?.success) {
+        if (response && typeof response === 'object' && 'success' in response && response.success) {
           await fetchKnockoutData()
           toast.success(tTour('knockout.success_match_created'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
-          showErrorToast(response.data?.error || "Nem sikerült létrehozni a meccset.", {
-            error: response.data?.error,
+          showErrorToast("Nem sikerült létrehozni a meccset.", {
+            error: 'updateEmptyKnockoutPairAction returned unsuccessful result',
             context: "Knockout meccs létrehozása",
             errorName: "Meccs létrehozása sikertelen",
           })
@@ -728,21 +751,22 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             ? editingMatch.matchReference._id
             : editingMatch.matchReference
 
-        const response = await axios.post(`/api/matches/${matchId}/update-settings`, {
+        const response = await updateKnockoutMatchSettingsAction({
+          matchId,
           player1Id: editPairPlayer1 || null,
           player2Id: editPairPlayer2 || null,
           scorerId: editPairScorer || undefined,
           boardNumber: editPairBoard ? parseInt(editPairBoard) : undefined,
         })
 
-        if (response.data?.success) {
+        if (response && typeof response === 'object' && 'success' in response && response.success) {
           await fetchKnockoutData()
           toast.success(tTour('knockout.success_match_updated'))
           setShowMatchPlayerEditModal(false)
           resetEditPairState()
         } else {
-          showErrorToast(response.data?.error || "Nem sikerült frissíteni a meccset.", {
-            error: response.data?.error,
+          showErrorToast("Nem sikerült frissíteni a meccset.", {
+            error: 'updateKnockoutMatchSettingsAction returned unsuccessful result',
             context: "Knockout meccs frissítése",
             errorName: "Meccs frissítése sikertelen",
           })
@@ -772,18 +796,19 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     if (!matchToDelete) return
     setLoading(true)
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteMatch`, {
+      const response = await deleteKnockoutMatchAction({
+        tournamentCode,
         round: matchToDelete.round,
         pairIndex: matchToDelete.index,
       })
-      if (response.data?.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         toast.success(tTour('knockout.success_match_deleted'))
         setShowDeleteMatchModal(false)
         setMatchToDelete(null)
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült törölni a meccset.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült törölni a meccset.", {
+          error: 'deleteKnockoutMatchAction returned unsuccessful result',
           context: "Knockout meccs törlése",
           errorName: "Meccs törlése sikertelen",
         })
@@ -802,14 +827,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const handleDeleteLastRound = async () => {
     setLoading(true)
     try {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/deleteLastRound`)
-      if (response.data?.success) {
+      const response = await deleteLastKnockoutRoundAction({ tournamentCode })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         await fetchKnockoutData()
         toast.success(tTour('knockout.success_round_deleted'))
         setShowDeleteLastRoundModal(false)
       } else {
-        showErrorToast(response.data?.error || "Nem sikerült törölni az utolsó kört.", {
-          error: response.data?.error,
+        showErrorToast("Nem sikerült törölni az utolsó kört.", {
+          error: 'deleteLastKnockoutRoundAction returned unsuccessful result',
           context: "Knockout kör törlése",
           errorName: "Utolsó kör törlése sikertelen",
         })

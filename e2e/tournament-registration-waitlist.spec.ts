@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+const tournamentCode = process.env.E2E_TOURNAMENT_CODE || "N7A8";
 
 function expectNoServerError(status: number | null) {
   expect(status, "Page should not return 5xx").not.toBeNull();
@@ -7,15 +8,15 @@ function expectNoServerError(status: number | null) {
 
 test.describe("tournament registration and waitlist", () => {
   test("tournament page loads with players tab", async ({ page }) => {
-    const response = await page.goto("/en/tournaments/DEMO");
+    const response = await page.goto(`/en/tournaments/${tournamentCode}`);
     expectNoServerError(response?.status() ?? null);
-    await expect(page).toHaveURL(/\/tournaments\/DEMO/);
+    await expect(page).toHaveURL(new RegExp(`/tournaments/${tournamentCode}`));
   });
 
   test("tournament share modal can be opened from overview", async ({
     page,
   }) => {
-    await page.goto("/en/tournaments/DEMO");
+    await page.goto(`/en/tournaments/${tournamentCode}`);
     const shareButton = page.getByRole("button", { name: /share|megoszt/i });
     if (await shareButton.isVisible()) {
       await shareButton.click();
@@ -31,7 +32,7 @@ test.describe("tournament registration and waitlist", () => {
   });
 
   test("tournament page shows overview content", async ({ page }) => {
-    await page.goto("/en/tournaments/DEMO");
+    await page.goto(`/en/tournaments/${tournamentCode}`);
     const overviewContent = page.locator('[data-state="active"]');
     await expect(overviewContent.first()).toBeVisible({ timeout: 5000 });
   });

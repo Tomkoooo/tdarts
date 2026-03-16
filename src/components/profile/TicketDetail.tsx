@@ -1,8 +1,8 @@
 import React from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Send, User as UserIcon, Shield } from 'lucide-react';
 import { useUserContext } from '@/hooks/useUser';
+import { markTicketReadAction, replyTicketAction } from '@/features/profile/actions';
 
 interface Message {
   _id?: string;
@@ -59,7 +59,7 @@ export default function TicketDetail({ ticket: initialTicket, onBack, onUpdate }
       if (!ticket.isReadByUser && markedReadTicketRef.current !== ticket._id) {
         try {
           markedReadTicketRef.current = ticket._id;
-          await axios.post(`/api/feedback/${ticket._id}/mark-read`);
+          await markTicketReadAction({ ticketId: ticket._id });
           setTicket((prev) => ({ ...prev, isReadByUser: true }));
           onUpdate?.(); // Refresh parent to update unread count
         } catch (error) {
@@ -86,19 +86,20 @@ export default function TicketDetail({ ticket: initialTicket, onBack, onUpdate }
 
     setIsSending(true);
     try {
-      const response = await axios.post(`/api/feedback/${ticket._id}/reply`, {
-        content: replyContent.trim()
+      const result = await replyTicketAction({
+        ticketId: ticket._id,
+        content: replyContent.trim(),
       });
 
-      if (response.data.success) {
-        setTicket(response.data.data);
+      if (result && typeof result === 'object' && 'success' in result && result.success) {
+        setTicket((result as any).data);
         setReplyContent('');
         toast.success('Válasz elküldve');
         onUpdate?.(); // Refresh to update unread counts
       }
     } catch (error: any) {
       console.error('Error sending reply:', error);
-      toast.error(error.response?.data?.error || 'Hiba történt az üzenet küldése során');
+      toast.error(error?.message || 'Hiba történt az üzenet küldése során');
     } finally {
       setIsSending(false);
     }

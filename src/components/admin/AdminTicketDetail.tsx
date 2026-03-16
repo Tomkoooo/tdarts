@@ -1,13 +1,13 @@
 "use client"
 
 import React from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Send, User as UserIcon, Shield, X } from 'lucide-react';
 import { useUserContext } from '@/hooks/useUser';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
 
 interface Message {
   _id?: string;
@@ -70,7 +70,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
       if (!ticket.isReadByAdmin && markedReadTicketRef.current !== ticket._id) {
         try {
           markedReadTicketRef.current = ticket._id;
-          await axios.post(`/api/feedback/${ticket._id}/mark-read`);
+          await adminApiRequestAction({ path: `/api/feedback/${ticket._id}/mark-read`, method: 'POST' });
           setTicket((prev) => ({ ...prev, isReadByAdmin: true }));
           onUpdate?.();
         } catch (error) {
@@ -100,11 +100,13 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
 
     setIsSending(true);
     try {
-      const response = await axios.post(`/api/feedback/${ticket._id}/reply`, {
-        content: replyContent.trim()
+      const response = await adminApiRequestAction({
+        path: `/api/feedback/${ticket._id}/reply`,
+        method: 'POST',
+        body: { content: replyContent.trim() },
       });
 
-      if (response.data.success) {
+      if (response.data?.success) {
         setTicket(response.data.data);
         setReplyContent('');
         toast.success('Válasz elküldve');
@@ -112,7 +114,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
       }
     } catch (error: any) {
       console.error('Error sending reply:', error);
-      toast.error(error.response?.data?.error || 'Hiba történt az üzenet küldése során');
+      toast.error(error?.message || 'Hiba történt az üzenet küldése során');
     } finally {
       setIsSending(false);
     }
@@ -125,16 +127,16 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
     }
 
     try {
-      await axios.patch(`/api/admin/feedback/${ticket._id}`, {
-        status,
-        priority,
-        emailNotification: 'status'
+      await adminApiRequestAction({
+        path: `/api/admin/feedback/${ticket._id}`,
+        method: 'PATCH',
+        body: { status, priority, emailNotification: 'status' },
       });
 
       toast.success('Státusz frissítve');
       // Refresh ticket to get updated messages
-      const response = await axios.get(`/api/admin/feedback/${ticket._id}`);
-      if (response.data.success) {
+      const response = await adminApiRequestAction({ path: `/api/admin/feedback/${ticket._id}`, method: 'GET' });
+      if (response.data?.success) {
         setTicket(response.data.feedback);
       }
       onUpdate?.();

@@ -20,6 +20,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/Label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from "@/components/ui/Card";
+import { createLeagueAction } from '@/features/leagues/actions/createLeague.action';
+import { isGuardFailureResult } from '@/shared/lib/guards/result';
 
 interface CreateLeagueModalProps {
   clubId: string;
@@ -83,22 +85,19 @@ export default function CreateLeagueModal({
     };
 
     try {
-      const response = await fetch(`/api/clubs/${clubId}/leagues`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSubmit),
+      const response = await createLeagueAction({
+        clubId,
+        name: dataToSubmit.name,
+        description: dataToSubmit.description || undefined,
       });
 
-      if (response.ok) {
+      if (response && typeof response === 'object' && !isGuardFailureResult(response)) {
         onLeagueCreated();
         onClose();
         showSuccessToast(t("liga_sikeresen_létrehozva"));
         resetForm();
       } else {
-        const errorData = await response.json();
-        const message = errorData.error || 'Failed to create league';
+        const message = 'Failed to create league';
         setError(message);
         showErrorToast(message, {
           context: 'Liga létrehozása',
@@ -149,8 +148,8 @@ export default function CreateLeagueModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl shadow-primary/20">
-        <DialogHeader className="space-y-2 flex-shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-linear-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl shadow-primary/20">
+        <DialogHeader className="space-y-2 shrink-0 bg-linear-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
           <DialogTitle className="text-xl md:text-2xl">{t("új_liga_létrehozása")}</DialogTitle>
           <DialogDescription className="text-sm">
             {t("adj_meg_minden")}</DialogDescription>
@@ -301,7 +300,7 @@ export default function CreateLeagueModal({
               )}
             </div>
 
-            <Card className="bg-gradient-to-br from-primary/5 to-transparent shadow-md shadow-primary/10">
+            <Card className="bg-linear-to-br from-primary/5 to-transparent shadow-md shadow-primary/10">
               <CardContent className="pt-6 space-y-2 text-sm text-muted-foreground">
                 <h5 className="font-medium text-foreground">{t("pontszámítás_előnézet")}</h5>
                 <p>
@@ -337,7 +336,7 @@ export default function CreateLeagueModal({
             </Alert>
           )}
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 flex-shrink-0 mt-4 bg-gradient-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0 mt-4 bg-linear-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
             <Button type="button" variant="ghost" size="sm" onClick={onClose} className="w-full sm:w-auto md:size-default" disabled={loading}>
               {t("mégse")}</Button>
             <Button type="submit" size="sm" className="w-full sm:w-auto md:size-default shadow-lg shadow-primary/30" disabled={loading || !formData.name.trim()}>

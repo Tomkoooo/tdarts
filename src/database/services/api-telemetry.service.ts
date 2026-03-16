@@ -186,10 +186,6 @@ export class ApiTelemetryService {
       const operations = Array.from(snapshot.entries()).map(([key, agg]) => {
         const [bucketIso, method, routeKey] = key.split('|');
         const bucket = new Date(bucketIso);
-        const durationHistogramInc = agg.durationHistogram.reduce<Record<string, number>>((acc, value, index) => {
-          acc[`durationHistogram.${index}`] = value;
-          return acc;
-        }, {});
         return {
           updateOne: {
             filter: { bucket, method, routeKey },
@@ -200,7 +196,6 @@ export class ApiTelemetryService {
                 totalDurationMs: agg.totalDurationMs,
                 totalRequestBytes: agg.totalRequestBytes,
                 totalResponseBytes: agg.totalResponseBytes,
-                ...durationHistogramInc,
               },
               $max: {
                 maxDurationMs: agg.maxDurationMs,

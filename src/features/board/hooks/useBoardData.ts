@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import axios from "axios";
 import type { Board, Match } from "../types";
+import { getBoardListAction, getBoardMatchesAction } from "@/features/board/actions/boardPage.action";
 
 const getTournamentPasswordKey = (tournamentId: string) =>
   `tournament_password_${tournamentId}`;
@@ -18,10 +18,11 @@ export function useBoardData(
 ) {
   const loadBoards = useCallback(async () => {
     try {
-      const response = await axios.get(
-        `/api/boards/${tournamentId}/getBoards`
-      );
-      return response.data.boards as Board[];
+      const response = await getBoardListAction({ tournamentId });
+      if (response && typeof response === 'object' && 'boards' in response) {
+        return ((response as { boards?: unknown }).boards || []) as Board[];
+      }
+      return [];
     } catch (err: any) {
       onError(t("nem_sikerult_betolteni_a_px4t"), "boards");
       console.error("Load boards error:", err);
@@ -32,10 +33,14 @@ export function useBoardData(
   const loadMatches = useCallback(async () => {
     if (!selectedBoard) return [];
     try {
-      const response = await axios.get(
-        `/api/boards/${tournamentId}/${selectedBoard.boardNumber}/matches`
-      );
-      return response.data.matches as Match[];
+      const response = await getBoardMatchesAction({
+        tournamentId,
+        boardNumber: Number(selectedBoard.boardNumber),
+      });
+      if (response && typeof response === 'object' && 'matches' in response) {
+        return ((response as { matches?: unknown }).matches || []) as Match[];
+      }
+      return [];
     } catch (err: any) {
       onError(t("nem_sikerult_betolteni_a_qh0h"), "matches");
       console.error("Load matches error:", err);

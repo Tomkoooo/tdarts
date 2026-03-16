@@ -8,8 +8,8 @@ import ClubRegistrationForm from "@/components/club/ClubRegistrationForm"
 import { showErrorToast } from "@/lib/toastUtils"
 import { getUserClubsAction } from "@/features/clubs/actions/getUserClubs.action"
 import { IconUsersGroup, IconSparkles } from "@tabler/icons-react"
-import { LoadingScreen } from "@/components/ui/loading-spinner"
 import { useTranslations } from "next-intl"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function MyClubPage() {
   const t = useTranslations("Club.pages");
@@ -29,7 +29,15 @@ export default function MyClubPage() {
       try {
         // Fetch user's clubs
         const result = await getUserClubsAction()
-        const userClubs = (result && 'clubs' in result ? result.clubs : []) as unknown as Club[]
+        const rawClubs =
+          result &&
+          typeof result === 'object' &&
+          'clubs' in result &&
+          Array.isArray((result as { clubs?: unknown[] }).clubs)
+            ? ((result as { clubs?: unknown[] }).clubs || [])
+            : []
+        const userClubs = rawClubs
+          .filter((club): club is Club => !!club && typeof club === 'object' && '_id' in (club as Record<string, unknown>))
         setClubs(userClubs)
 
         if (userClubs.length > 0) {
@@ -54,8 +62,16 @@ export default function MyClubPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingScreen text={t("loading_club")} />
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-4xl space-y-6 px-4 py-12">
+          <Skeleton className="mx-auto h-12 w-80 rounded-xl" />
+          <div className="grid gap-4 md:grid-cols-3">
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+          </div>
+          <Skeleton className="h-72 rounded-2xl" />
+        </div>
       </div>
     )
   }

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { Mail, Code, Eye, Save, Check, X } from 'lucide-react';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
+import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
 
 interface EmailTemplate {
   _id: string;
@@ -80,8 +81,8 @@ export default function EmailTemplatesPage() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/admin/email-templates');
-      const data = await response.json();
+      const response = await adminApiRequestAction({ path: '/api/admin/email-templates', method: 'GET' });
+      const data = response.data;
       
       if (data.success) {
         setTemplates(data.templates);
@@ -109,17 +110,16 @@ export default function EmailTemplatesPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/admin/email-templates/${selectedTemplate._id}`, {
+      const response = await adminApiRequestAction({
+        path: `/api/admin/email-templates/${selectedTemplate._id}`,
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           subject: editedSubject,
           htmlContent: editedHtmlContent,
           textContent: editedTextContent,
-        }),
+        },
       });
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         showSuccessToast(t("sablon_sikeresen_mentve"));
@@ -145,13 +145,12 @@ export default function EmailTemplatesPage() {
 
     setSendingTest(true);
     try {
-      const response = await fetch(`/api/admin/email-templates/${selectedTemplate._id}/test`, {
+      const response = await adminApiRequestAction({
+        path: `/api/admin/email-templates/${selectedTemplate._id}/test`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientEmail: testRecipient }),
+        body: { recipientEmail: testRecipient },
       });
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         showSuccessToast(t("teszt_email_elküldve"));
       } else {
@@ -166,15 +165,14 @@ export default function EmailTemplatesPage() {
 
   const toggleActive = async (template: EmailTemplate) => {
     try {
-      const response = await fetch(`/api/admin/email-templates/${template._id}`, {
+      const response = await adminApiRequestAction({
+        path: `/api/admin/email-templates/${template._id}`,
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           isActive: !template.isActive,
-        }),
+        },
       });
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         showSuccessToast(`Sablon ${!template.isActive ? 'aktiválva' : 'deaktiválva'}`);
@@ -264,7 +262,7 @@ export default function EmailTemplatesPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

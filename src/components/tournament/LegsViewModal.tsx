@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { useFeatureFlag } from "@/hooks/useFeatureFlag"
+import { getMatchByIdClientAction, getMatchLegsClientAction } from "@/features/tournaments/actions/tournamentRoster.action"
 import MatchStatisticsCharts from "./MatchStatisticsCharts"
 import {
   Dialog,
@@ -103,39 +104,25 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   useEffect(() => {
     if (!match?._id || !isOpen) return
     void fetchMatchData()
-    void fetchClubId()
   }, [match?._id, isOpen])
 
   const fetchMatchData = async () => {
     if (!match?._id) return
     try {
-      const response = await fetch(`/api/matches/${match._id}`)
-      if (!response.ok) return
-      const data = await response.json()
-      if (data.success && data.match) {
-        setMatch(data.match)
-      }
-    } catch (err) {
-      console.error("Error fetching match data:", err)
-    }
-  }
-
-  const fetchClubId = async () => {
-    if (!match?._id) return
-    try {
-      const response = await fetch(`/api/matches/${match._id}`)
-      if (!response.ok) return
-      const data = await response.json()
-      if (data.success && data.match?.tournamentRef) {
-        const tournamentResponse = await fetch(`/api/tournaments/by-id/${data.match.tournamentRef}`)
-        if (!tournamentResponse.ok) return
-        const tournamentData = await tournamentResponse.json()
-        if (tournamentData.success && tournamentData.tournament?.clubId) {
-          setClubId(tournamentData.tournament.clubId)
+      const data = await getMatchByIdClientAction({ matchId: match._id })
+      if (data && typeof data === 'object' && 'success' in data && data.success && 'match' in data) {
+        const nextMatch = (data as any).match
+        setMatch(nextMatch)
+        const nextClubId =
+          nextMatch?.clubId ||
+          nextMatch?.tournamentRef?.clubId?._id ||
+          nextMatch?.tournamentRef?.clubId
+        if (nextClubId) {
+          setClubId(String(nextClubId))
         }
       }
     } catch (err) {
-      console.error("Error fetching clubId:", err)
+      console.error("Error fetching match data:", err)
     }
   }
 
@@ -144,13 +131,19 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
     setLoading(true)
     setError("")
     try {
-      const response = await fetch(`/api/matches/${match._id}/legs`)
-      if (!response.ok) throw new Error(t('error_loading'))
-      const data = await response.json()
-      if (data.success) {
-        setLegs(data.legs ?? data.match?.legs ?? [])
+      const data = await getMatchLegsClientAction({ matchId: match._id })
+      if (data && typeof data === 'object' && 'success' in data && data.success) {
+        const result = data as any
+        setLegs(result.legs ?? result.match?.legs ?? [])
+        const nextClubId =
+          result?.match?.clubId ||
+          result?.match?.tournamentRef?.clubId?._id ||
+          result?.match?.tournamentRef?.clubId
+        if (nextClubId) {
+          setClubId(String(nextClubId))
+        }
       } else {
-        setError(data.error || t('error_loading'))
+        setError(t('error_loading'))
       }
     } catch (err) {
       console.error("Fetch legs error", err)
@@ -288,7 +281,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-2xl font-bold">
             <span className={cn(isPlayer1Winner ? "text-primary" : "text-foreground")}>{playerOneName}</span>
             <span className="mx-2 text-muted-foreground">vs</span>
@@ -297,7 +290,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
           <DialogDescription>{t('title')}</DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 pb-4 flex items-center justify-between gap-3 flex-shrink-0">
+        <div className="px-6 pb-4 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2">
             {onBackToMatches && (
               <Button
@@ -343,11 +336,11 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
         </div>
 
         {loading ? (
-          <div className="flex h-48 items-center justify-center flex-shrink-0">
+          <div className="flex h-48 items-center justify-center shrink-0">
             <IconLoader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <div className="px-6 pb-4 flex-shrink-0">
+          <div className="px-6 pb-4 shrink-0">
             <Alert variant="destructive">
               <IconAlertTriangle className="h-5 w-5" />
               <AlertTitle>{t('error_generic')}</AlertTitle>
@@ -355,7 +348,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
             </Alert>
           </div>
         ) : legs.length === 0 ? (
-          <div className="px-6 pb-4 flex-shrink-0">
+          <div className="px-6 pb-4 shrink-0">
             <Card className="border-0">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 {t('no_stats')}
@@ -365,7 +358,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
         ) : (
           <div className="flex-1 min-h-0 overflow-y-scroll px-6">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "legs" | "stats")} className="flex flex-col h-full">
-              <TabsList className="mb-4 flex-shrink-0">
+              <TabsList className="mb-4 shrink-0">
                 <TabsTrigger value="legs" className="gap-2">
                   <IconTarget className="h-4 w-4" />
                   {t('tabs_legs')}
@@ -572,7 +565,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
           </div>
         )}
 
-        <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0">
+        <DialogFooter className="px-6 pb-6 pt-4 shrink-0">
           <Button onClick={onClose}>{t('close')}</Button>
         </DialogFooter>
       </DialogContent>

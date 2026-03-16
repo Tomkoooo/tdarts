@@ -3,6 +3,7 @@
 import { PostService } from '@/database/services/post.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export type GetClubPostsActionInput = {
   clubId: string;
@@ -18,7 +19,8 @@ export async function getClubPostsAction(input: GetClubPostsActionInput) {
       if (!clubId) {
         throw new BadRequestError('clubId is required');
       }
-      return PostService.getClubPosts(clubId, page, limit);
+      const posts = await PostService.getClubPosts(clubId, page, limit);
+      return serializeForClient(posts);
     },
     { method: 'ACTION', metadata: { feature: 'clubs', actionName: 'getClubPosts' } }
   );

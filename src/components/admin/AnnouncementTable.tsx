@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axios from "axios"
 import toast from "react-hot-toast"
 import {
   Table,
@@ -51,6 +50,13 @@ import {
 } from "@tabler/icons-react"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
+import {
+  createAdminAnnouncementAction,
+  deleteAdminAnnouncementAction,
+  getAdminAnnouncementsAction,
+  toggleAdminAnnouncementAction,
+  updateAdminAnnouncementAction,
+} from "@/features/announcements/actions/adminAnnouncements.action"
 
 interface Announcement {
   _id: string
@@ -107,17 +113,15 @@ export default function AnnouncementTable() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const params: any = {
+      const response = await getAdminAnnouncementsAction({
         page,
         limit,
         search: search || undefined,
-      }
-
-      const response = await axios.get("/api/admin/announcements", { params })
-      if (response.data.success) {
-        setData(response.data.announcements)
-        setTotal(response.data.total)
-        setTotalPages(response.data.totalPages)
+      })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
+        setData((response as any).announcements || [])
+        setTotal((response as any).total || 0)
+        setTotalPages((response as any).totalPages || 1)
       }
     } catch (error) {
       console.error("Error fetching announcements:", error)
@@ -134,21 +138,17 @@ export default function AnnouncementTable() {
   const deleteAnnouncement = async (id: string) => {
     if (!confirm("Biztosan törölni szeretnéd?")) return
     try {
-      await axios.delete(`/api/admin/announcements/${id}`)
+      await deleteAdminAnnouncementAction({ id })
       toast.success("Hír törölve")
       fetchData()
     } catch {
       toast.error("Hiba a törlés során")
-      try {
-          await axios.delete(`/api/announcements/${id}`) 
-          fetchData()
-      } catch {}
     }
   }
 
   const toggleActive = async (id: string) => {
       try {
-          await axios.post(`/api/announcements/${id}/toggle`)
+          await toggleAdminAnnouncementAction({ id })
           toast.success("Státusz frissítve")
           fetchData()
       } catch {
@@ -228,10 +228,10 @@ export default function AnnouncementTable() {
           }
 
           if (editingItem) {
-              await axios.patch(`/api/admin/announcements/${editingItem._id}`, payload)
+              await updateAdminAnnouncementAction({ id: editingItem._id, payload })
               toast.success("Hír frissítve")
           } else {
-              await axios.post(`/api/admin/announcements`, payload)
+              await createAdminAnnouncementAction(payload)
               toast.success("Hír létrehozva")
           }
           
@@ -240,7 +240,7 @@ export default function AnnouncementTable() {
           fetchData()
     } catch (err: any) {
       console.error("Error saving announcement:", err)
-      toast.error(err.response?.data?.error || "Hiba a mentés során")
+      toast.error(err?.message || "Hiba a mentés során")
     } finally {
       setIsSaving(false)
     }

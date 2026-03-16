@@ -2,7 +2,6 @@
 import { useTranslations } from "next-intl";
 
 import React, { useState, useEffect, use, useRef } from "react";
-import axios from "axios";
 import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
 import { useUserContext } from "@/hooks/useUser";
@@ -26,6 +25,15 @@ import {
 } from "@tabler/icons-react";
 import { showErrorToast } from "@/lib/toastUtils";
 import toast from "react-hot-toast";
+import {
+  finishBoardMatchAction,
+  getBoardListAction,
+  getBoardMatchesAction,
+  getBoardTournamentAction,
+  getBoardUserRoleAction,
+  startBoardMatchAction,
+  validateBoardPasswordAction,
+} from "@/features/board/actions/boardPage.action";
 
 interface BoardPageProps {
   params: Promise<{ tournamentId: string }>;
@@ -187,18 +195,19 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     
     try {
       const pwdToUse = pwd || password;
-      const response = await axios.post(`/api/boards/${tournamentId}/validate`, {
-        password: pwdToUse
+      const response = await validateBoardPasswordAction({
+        tournamentId,
+        password: pwdToUse,
       });
       
-      if (response.data.isValid) {
+      if (response && typeof response === 'object' && 'isValid' in response && response.isValid) {
         setIsAuthenticated(true);
         localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
         
         // Load tournament data to get clubId
         try {
-          const tournamentResponse = await axios.get(`/api/tournaments/${tournamentId}`);
-          setTournamentData(tournamentResponse.data);
+          const tournamentResponse = await getBoardTournamentAction({ tournamentId });
+          setTournamentData(tournamentResponse);
         } catch (err: any) {
           console.error('Failed to load tournament data:', err);
           showErrorToast(t("nem_sikerült_betölteni_34"), {
@@ -228,8 +237,12 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const loadBoards = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/boards/${tournamentId}/getBoards`);
-      setBoards(response.data.boards);
+      const response = await getBoardListAction({ tournamentId });
+      if (response && typeof response === 'object' && 'boards' in response) {
+        setBoards((response as { boards: Board[] }).boards || []);
+      } else {
+        setBoards([]);
+      }
     } catch (err: any) {
       setError(t("nem_sikerult_betolteni_a_px4t"));
       showErrorToast(t("nem_sikerült_betölteni_72"), {
@@ -248,8 +261,16 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     
     setLoading(true);
     try {
-      const response = await axios.get(`/api/boards/${tournamentId}/${selectedBoard.boardNumber}/matches`);
-      setMatches(response.data.matches);
+      const response = await getBoardMatchesAction({
+        tournamentId,
+        boardNumber: Number(selectedBoard.boardNumber),
+      });
+      if (response && typeof response === 'object' && 'matches' in response) {
+        const nextMatches = ((response as { matches?: unknown }).matches || []) as unknown as Match[];
+        setMatches(nextMatches);
+      } else {
+        setMatches([]);
+      }
     } catch (err: any) {
       setError(t("nem_sikerult_betolteni_a_qh0h"));
       showErrorToast(t("nem_sikerült_betölteni_13"), {
@@ -265,13 +286,8 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   const loadUserRole = async () => {
     try {
-      
-      const response = await axios.get(`/api/tournaments/${tournamentId}/getUserRole`, {
-        headers: {
-          'x-user-id': user?._id || ''
-        }
-      });
-      setUserRole(response.data);
+      const response = await getBoardUserRoleAction({ tournamentId });
+      setUserRole(response as UserRole);
     } catch (err) {
       console.error('Failed to load user role:', err);
     }
@@ -303,20 +319,19 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     setError("");
     
     try {
-      await axios.post(`/api/matches/${adminMatch._id}/finish`, {
+      await finishBoardMatchAction({
+        matchId: String(adminMatch._id),
         player1LegsWon: cleanedPlayer1Legs,
         player2LegsWon: cleanedPlayer2Legs,
         player1Stats: {
           highestCheckout: adminMatch.player1.highestCheckout || 0,
           oneEightiesCount: adminMatch.player1.oneEightiesCount || 0,
-          totalThrows: 0,
-          totalScore: 0
+          average: 0,
         },
         player2Stats: {
           highestCheckout: adminMatch.player2.highestCheckout || 0,
           oneEightiesCount: adminMatch.player2.oneEightiesCount || 0,
-          totalThrows: 0,
-          totalScore: 0
+          average: 0,
         }
       });
       
@@ -344,17 +359,19 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     setSetupLoading(true);
     try {
       // Start the match
-      const response = await axios.post(`/api/boards/${tournamentId}/${selectedBoard.boardNumber}/start`, {
+      const response = await startBoardMatchAction({
+        tournamentId,
+        boardNumber: Number(selectedBoard.boardNumber),
         matchId: selectedMatch._id,
         legsToWin,
-        startingPlayer
+        startingPlayer,
       });
       
-      if (response.data.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setShowMatchSetup(false);
         // Update selectedMatch with fresh data from the API response
-        if (response.data.match) {
-          setSelectedMatch(response.data.match);
+        if ('match' in response && (response as { match?: Match }).match) {
+          setSelectedMatch((response as { match: Match }).match);
         } else {
           // Fallback: reload matches to get updated status
           await loadMatches();
@@ -547,7 +564,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   // Match selection screen
   if (!selectedMatch) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 p-4">
+      <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-muted/40 p-4">
         <div className="container mx-auto max-w-6xl py-8">
           <div className="flex flex-col gap-4 mb-6">
             {/* Top row: Back button and title */}

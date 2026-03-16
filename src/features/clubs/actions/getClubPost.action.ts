@@ -4,6 +4,7 @@ import { PostService } from '@/database/services/post.service';
 import { z } from 'zod';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const schema = z.object({
   clubId: z.string(),
@@ -20,7 +21,7 @@ export async function getClubPostAction(input: z.infer<typeof schema>) {
       }
       const { clubId, postId } = parsed.data;
       const post = await PostService.getPostById(postId, clubId);
-      return post;
+      return serializeForClient(post);
     },
     { method: 'ACTION', metadata: { feature: 'clubs', actionName: 'getClubPost', clubId: input.clubId } }
   );

@@ -14,7 +14,7 @@ import {
   IconShieldCheck,
   IconUsers,
 } from "@tabler/icons-react"
-import axios from "axios"
+import { getPlayerModalDataAction } from "@/features/players/actions/getPlayerModalData.action"
 
 import { Player } from "@/interface/player.interface"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -75,17 +75,26 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose, is
       
       setIsLoading(true)
       try {
-        const response = await axios.get(`/api/players/${activePlayer._id}/stats`)
-        setPlayerStats(response.data.player)
-        setMatchHistory(response.data.matchHistory || [])
-        setTeams(response.data.teams || [])
-        if (response.data.player.tournamentHistory && response.data.player.tournamentHistory.length > 0) {
+        const response = await getPlayerModalDataAction({ playerId: String(activePlayer._id) })
+        const payload =
+          response &&
+          typeof response === "object" &&
+          "success" in response &&
+          response.success &&
+          "data" in response
+            ? (response as unknown as { data?: { player?: Player | null; matchHistory?: any[]; teams?: Player[] } }).data
+            : null
+        const nextPlayer = payload?.player || null
+        setPlayerStats(nextPlayer)
+        setMatchHistory(payload?.matchHistory || [])
+        setTeams(payload?.teams || [])
+        if (nextPlayer?.tournamentHistory && nextPlayer.tournamentHistory.length > 0) {
           setExpandedTournament(0)
         }
       } catch (error: any) {
         console.error('Failed to fetch player stats:', error)
         showErrorToast(t("nem_sikerült_betölteni_76"), {
-          error: error?.response?.data?.error,
+          error: error?.message,
           context: 'Játékos statisztika betöltése',
           errorName: 'Statisztika betöltése sikertelen',
         })

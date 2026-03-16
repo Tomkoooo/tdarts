@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import axios from "axios";
 import { useUserContext } from "@/hooks/useUser";
 import {
   getPlayerStatsAction,
@@ -28,6 +27,7 @@ import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets";
 import { useTranslations } from "next-intl";
 import GoogleAuthSection from "@/components/profile/GoogleAuthSection";
 import { useLogout } from "@/hooks/useLogout";
+import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 
 export function ProfilePageClient() {
   const t = useTranslations("Profile");
@@ -197,8 +197,12 @@ export function ProfilePageClient() {
         setShowLegsModal(true);
         return;
       }
-      const response = await axios.get(`/api/matches/${matchId}`);
-      setSelectedMatch(response.data?.success && response.data?.match ? response.data.match : match);
+      const response = await getMatchByIdClientAction({ matchId: String(matchId) });
+      setSelectedMatch(
+        response && typeof response === "object" && "success" in response && response.success && "match" in response
+          ? (response as any).match
+          : match
+      );
       setShowLegsModal(true);
     } catch (error) {
       console.error("Error loading match details:", error);
@@ -240,7 +244,7 @@ export function ProfilePageClient() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4 pt-8">
+    <div className="min-h-screen bg-linear-to-br from-background to-muted/20 p-4 pt-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <ProfileHeader />
         <ProfileTabs activeTab={activeTab} onTabChange={handleTabChange} />

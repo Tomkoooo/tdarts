@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
 import {
   selectPlayerStatsSummary,
   selectMonthlySeries,
@@ -10,6 +9,7 @@ import type {
   PlayerStatsSummaryDto,
   MonthlyPerformanceDto,
 } from "../types/statistics.dto";
+import { getPlayerStatisticsAction } from "../actions/getPlayerStatistics.action";
 
 export function usePlayerStatistics(playerId: string | undefined) {
   const [loading, setLoading] = useState(false);
@@ -24,8 +24,7 @@ export function usePlayerStatistics(playerId: string | undefined) {
     if (!playerId) return;
     setLoading(true);
     try {
-      const response = await axios.get(`/api/players/stats/${playerId}`);
-      const data = response?.data ?? {};
+      const data = await getPlayerStatisticsAction({ playerId });
       setSummary(selectPlayerStatsSummary(data));
       setSeries(selectMonthlySeries(data));
     } catch (error) {

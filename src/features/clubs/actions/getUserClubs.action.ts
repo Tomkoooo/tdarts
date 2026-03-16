@@ -4,6 +4,7 @@ import { ClubService } from '@/database/services/club.service';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export async function getUserClubsAction() {
   const run = withTelemetry(
@@ -12,7 +13,7 @@ export async function getUserClubsAction() {
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
       const { clubs, userRoleInClub } = await ClubService.getUserClubs(authResult.data.userId);
-      return { clubs, userRoleInClub };
+      return serializeForClient({ clubs, userRoleInClub });
     },
     {
       method: 'ACTION',

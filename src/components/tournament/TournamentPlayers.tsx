@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useMemo, useState } from "react"
-import axios from "axios"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -42,6 +41,18 @@ import { showErrorToast } from "@/lib/toastUtils"
 import { SmartAvatar } from "@/components/ui/smart-avatar"
 import CountryFlag from "@/components/ui/country-flag"
 import { getPlayerTranslations } from "@/data/translations/player"
+import {
+  addToWaitingListClientAction,
+  addTournamentPlayerClientAction,
+  getMatchByIdClientAction,
+  getTournamentHeadToHeadClientAction,
+  promoteFromWaitingListClientAction,
+  removeFromWaitingListClientAction,
+  removeTournamentPlayerClientAction,
+  subscribeToTournamentNotificationsClientAction,
+  unsubscribeFromTournamentNotificationsClientAction,
+  updateTournamentPlayerStatusClientAction,
+} from "@/features/tournaments/actions/tournamentRoster.action"
 
 interface TournamentPlayersProps {
   tournament: any
@@ -181,10 +192,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         }
       }
 
-      const response = await axios.post(`/api/tournaments/${code}/players`, payload)
-      if (response.data.success) {
+      const response = await addTournamentPlayerClientAction({ code, ...payload })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         const newPlayer = {
-          _id: response.data.playerId,
+          _id: (response as any).playerId,
           playerReference: {
             name: payload.name || player.name,
             _id: player._id,
@@ -211,13 +222,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleRemovePlayer = async (playerId: string) => {
     if (!code) return
     try {
-      const response = await axios.delete(`/api/tournaments/${code}/players`, { data: { playerId } })
-      if (response.data.success) {
+      const response = await removeTournamentPlayerClientAction({ code, playerId })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== playerId))
         toast.success('Játékos sikeresen eltávolítva!')
       } else {
         showErrorToast('Nem sikerült eltávolítani a játékost.', {
-          error: response.data?.error,
+          error: 'removeTournamentPlayerClientAction returned unsuccessful result',
           context: 'Játékos eltávolítása',
           errorName: 'Játékos eltávolítása sikertelen',
         })
@@ -234,18 +245,19 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleCheckInPlayer = async (playerId: string) => {
     if (!code) return
     try {
-      const response = await axios.put(`/api/tournaments/${code}/players`, {
+      const response = await updateTournamentPlayerStatusClientAction({
         playerId,
         status: 'checked-in',
+        code,
       })
-      if (response.data.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setLocalPlayers((prev) =>
           prev.map((p) => (p.playerReference._id === playerId ? { ...p, status: 'checked-in' } : p)),
         )
         toast.success('Játékos sikeresen check-inelve!')
       } else {
         showErrorToast('Nem sikerült check-inelni a játékost.', {
-          error: response.data?.error,
+          error: 'updateTournamentPlayerStatusClientAction returned unsuccessful result',
           context: 'Játékos check-in',
           errorName: 'Check-in sikertelen',
         })
@@ -262,15 +274,16 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleSelfSignUp = async () => {
     if (!user?._id || !code) return
     try {
-      const response = await axios.post(`/api/tournaments/${code}/players`, {
+      const response = await addTournamentPlayerClientAction({
         userRef: user._id,
         name: user.name,
+        code,
       })
-      if (response.data.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         const newPlayer = {
-          _id: response.data.playerId,
+          _id: (response as any).playerId,
           playerReference: {
-            _id: response.data.playerId,
+            _id: (response as any).playerId,
             name: user.name,
             userRef: user._id,
           },
@@ -278,11 +291,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         }
         setLocalPlayers((prev) => [...prev, newPlayer])
         setLocalUserPlayerStatus('applied')
-        setLocalUserPlayerId(response.data.playerId)
+        setLocalUserPlayerId((response as any).playerId)
         toast.success('Sikeresen jelentkeztél a tornára!')
       } else {
         showErrorToast('Nem sikerült jelentkezni a tornára.', {
-          error: response.data?.error,
+          error: 'addTournamentPlayerClientAction returned unsuccessful result',
           context: 'Saját jelentkezés',
           errorName: 'Jelentkezés sikertelen',
         })
@@ -299,17 +312,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleSelfWithdraw = async () => {
     if (!localUserPlayerId || !code) return
     try {
-      const response = await axios.delete(`/api/tournaments/${code}/players`, {
-        data: { playerId: localUserPlayerId },
+      const response = await removeTournamentPlayerClientAction({
+        code,
+        playerId: localUserPlayerId,
       })
-      if (response.data.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== localUserPlayerId))
         setLocalUserPlayerStatus('none')
         setLocalUserPlayerId(null)
         toast.success('Jelentkezés sikeresen visszavonva!')
       } else {
         showErrorToast('Nem sikerült visszavonni a jelentkezést.', {
-          error: response.data?.error,
+          error: 'removeTournamentPlayerClientAction returned unsuccessful result',
           context: 'Jelentkezés visszavonása',
           errorName: 'Visszavonás sikertelen',
         })
@@ -345,10 +359,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleRemoveFromWaitingList = async (playerId: string) => {
     if (!code) return
     try {
-      const response = await axios.delete(`/api/tournaments/${code}/waitlist`, {
-        data: { playerId },
-      })
-      if (response.data.success) {
+      const response = await removeFromWaitingListClientAction({ code, playerId })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setWaitingList((prev: any[]) => prev.filter((p: any) => p.playerReference._id !== playerId))
         // Check if current user was removed
         if (user && (playerId === localUserPlayerId?.toString() || waitingList.some((p: any) => p.playerReference?._id?.toString() === playerId && p.playerReference?.userRef?.toString() === user._id?.toString()))) {
@@ -368,8 +380,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handlePromoteFromWaitingList = async (playerId: string) => {
     if (!code) return
     try {
-      const response = await axios.post(`/api/tournaments/${code}/waitlist/promote`, { playerId })
-      if (response.data.success) {
+      const response = await promoteFromWaitingListClientAction({ code, playerId })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         const waitingPlayer = waitingList.find((p: any) => p.playerReference._id === playerId)
         if (waitingPlayer) {
           const newPlayer = {
@@ -422,14 +434,15 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const handleSubscribeToWaitlist = async () => {
     if (!user || !code) return
     try {
-      const response = await axios.post(`/api/tournaments/${code}/waitlist`, {
+      const response = await addToWaitingListClientAction({
         userRef: user._id,
         name: user.name,
+        code,
       })
-      if (response.data.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         const newWaitingPlayer = {
           playerReference: {
-            _id: response.data.playerId,
+            _id: (response as any).playerId,
             name: user.name,
             userRef: user._id,
           },
@@ -452,8 +465,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     if (!user || !code) return
     setIsSubscribing(true)
     try {
-      const response = await axios.post(`/api/tournaments/${code}/notifications`)
-      if (response.data.success) {
+      const response = await subscribeToTournamentNotificationsClientAction({ code })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setIsSubscribedToNotifications(true)
         toast.success('Sikeresen feliratkoztál az értesítésekre!')
       }
@@ -472,8 +485,8 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     if (!user || !code) return
     setIsSubscribing(true)
     try {
-      const response = await axios.delete(`/api/tournaments/${code}/notifications`)
-      if (response.data.success) {
+      const response = await unsubscribeFromTournamentNotificationsClientAction({ code })
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setIsSubscribedToNotifications(false)
         toast.success('Sikeresen leiratkoztál az értesítésekről!')
       }
@@ -1023,13 +1036,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           tournamentCode={code}
           onShowDetailedStats={async (matchId) => {
             try {
-              // Fetch match with legs from API
-              const response = await fetch(`/api/matches/${matchId}`)
-              if (response.ok) {
-                const data = await response.json()
-                if (data.success && data.match) {
-                  setLegsModal({ isOpen: true, match: data.match })
-                }
+              const data = await getMatchByIdClientAction({ matchId })
+              if (data && typeof data === 'object' && 'success' in data && data.success && 'match' in data) {
+                setLegsModal({ isOpen: true, match: (data as any).match })
               }
             } catch (err: any) {
               console.error('Error fetching match details:', err)
@@ -1047,7 +1056,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         <HeadToHeadModal
           isOpen={Boolean(headToHeadTarget)}
           onClose={() => setHeadToHeadTarget(null)}
-          fetchUrl={`/api/tournaments/${code}/head-to-head/${headToHeadTarget.id}`}
+          fetchData={() =>
+            getTournamentHeadToHeadClientAction({
+              code,
+              opponentId: headToHeadTarget.id,
+            })
+          }
         />
       )}
 

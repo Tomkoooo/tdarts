@@ -2,13 +2,13 @@
 import { useTranslations } from "next-intl";
 
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
 import { IconTrendingUp, IconTrendingDown, IconRefresh } from '@tabler/icons-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action'
 
 interface DailyChartProps {
   title: string
@@ -37,13 +37,14 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get(apiEndpoint)
+      const response = await adminApiRequestAction({ path: apiEndpoint, method: 'GET' })
+      const payload = response.data
       
       // Handle different API response formats
-      if (response.data && response.data.labels && response.data.datasets) {
-        setData(response.data)
-      } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        const apiData = response.data.data
+      if (payload && payload.labels && payload.datasets) {
+        setData(payload)
+      } else if (payload && payload.success && Array.isArray(payload.data)) {
+        const apiData = payload.data
         const labels = apiData.map((item: any) => item.date || item.formattedDate || formatDate(item.date))
         const data = apiData.map((item: any) => item.count || 0)
         
@@ -56,9 +57,9 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
             borderColor: 'rgb(59, 130, 246)'
           }]
         })
-      } else if (Array.isArray(response.data)) {
-        const labels = response.data.map((item: any) => item.date || item.formattedDate || formatDate(item.date))
-        const data = response.data.map((item: any) => item.count || 0)
+      } else if (Array.isArray(payload)) {
+        const labels = payload.map((item: any) => item.date || item.formattedDate || formatDate(item.date))
+        const data = payload.map((item: any) => item.count || 0)
         
         setData({
           labels: labels,

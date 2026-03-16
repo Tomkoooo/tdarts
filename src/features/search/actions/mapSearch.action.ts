@@ -2,6 +2,7 @@
 
 import { SearchService } from '@/database/services/search.service';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export type MapSearchActionInput = {
   query?: string;
@@ -24,10 +25,10 @@ export async function mapSearchAction(input: MapSearchActionInput): Promise<MapS
         showTournaments,
         limit: 200,
       });
-      return {
+      return serializeForClient({
         items,
         counts: { total },
-      };
+      }) as MapSearchActionResult;
     },
     { method: 'ACTION', metadata: { feature: 'search', actionName: 'mapSearch' } }
   );

@@ -8,3 +8,5 @@ export { getAuthProvidersAction } from './getAuthProviders.action';
 export { getPendingInvitationsAction } from './getPendingInvitations.action';
 export { getHeadToHeadAction } from './getHeadToHead.action';
 export { logoutAction } from './logout.action';
+export { markTicketReadAction } from './markTicketRead.action';
+export { replyTicketAction } from './replyTicket.action';

@@ -287,8 +287,8 @@ export class TournamentService {
                     { path: 'scorer', model: 'Player' }
                 ]
             });
-        if (!tournament) {
-            tournament = await TournamentModel.findOne({ 
+        if (!tournament && mongoose.isValidObjectId(tournamentId)) {
+            tournament = await TournamentModel.findOne({
                 _id: tournamentId,
                 isDeleted: { $ne: true },
                 isArchived: { $ne: true }
@@ -345,6 +345,16 @@ export class TournamentService {
                     entityId: tournamentId,
                 });
             }
+        }
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournament',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
         }
         // Deep populate matches' player fields
         for (const group of tournament.groups) {

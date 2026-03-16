@@ -6,6 +6,7 @@ import { authorizeUserResult } from '@/shared/lib/guards';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const schema = z.object({
   creatorId: z.string(),
@@ -39,7 +40,8 @@ export async function createClubAction(input: z.infer<typeof schema>) {
         throw new BadRequestError('Creator must match authenticated user');
       }
       const { name, description, location, contact } = clubData;
-      return ClubService.createClub(creatorId, { name, description, location, contact });
+      const club = await ClubService.createClub(creatorId, { name, description, location, contact });
+      return serializeForClient(club);
     },
     {
       method: 'ACTION',

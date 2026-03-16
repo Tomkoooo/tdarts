@@ -47,6 +47,11 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
   const t = getMapSettingsTranslations(typeof navigator !== 'undefined' ? navigator.language : 'hu')
   const reviewToastShown = useRef(false)
   const [isRequestingGeocode, setIsRequestingGeocode] = useState(false)
+  const toClub = (value: unknown): Club | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+    if (!('_id' in (value as Record<string, unknown>))) return null
+    return value as Club
+  }
   const form = useForm<EditClubFormData>({
     resolver: zodResolver(editClubSchema),
     defaultValues: {
@@ -112,10 +117,13 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
     setIsRequestingGeocode(true);
     try {
       const result = await geocodeClubAction({ clubId: club._id });
-      if (result && 'club' in result) {
-        onClubUpdated(result.club as unknown as Club);
-        toast.success(t.geocodeRequestSuccess);
-      } else if (result && 'ok' in result && !result.ok) {
+      if (result && typeof result === 'object' && 'club' in result) {
+        const nextClub = toClub(result.club)
+        if (nextClub) {
+          onClubUpdated(nextClub);
+          toast.success(t.geocodeRequestSuccess);
+        }
+      } else if (result && typeof result === 'object' && 'ok' in result && !result.ok) {
         showErrorToast((result as { message?: string }).message || t.geocodeRequestError, {
           context: 'Geocode request',
           errorName: t.geocodeRequestError,
@@ -140,8 +148,11 @@ export default function ClubGeneralSettings({ club, onClubUpdated, userId }: Clu
         updates: { ...data, _id: club._id },
       })
       if (result && typeof result === 'object' && '_id' in result) {
-        onClubUpdated(result as unknown as Club)
-        toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
+        const nextClub = toClub(result)
+        if (nextClub) {
+          onClubUpdated(nextClub)
+          toast.success('Klub adatok sikeresen frissítve!', { id: toastId })
+        }
       } else if (result && typeof result === 'object' && 'ok' in result && !(result as { ok: boolean }).ok) {
         toast.dismiss(toastId)
         showErrorToast((result as { message?: string }).message || 'Klub frissítése sikertelen', {

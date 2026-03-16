@@ -18,19 +18,10 @@ import {
 } from "recharts";
 import { IconChartBar, IconTargetArrow, IconTrophy } from "@tabler/icons-react";
 
-const fallbackSeries = [
-  { month: "Jan", average: 46, wins: 4 },
-  { month: "Feb", average: 49, wins: 5 },
-  { month: "Mar", average: 52, wins: 6 },
-  { month: "Apr", average: 55, wins: 7 },
-  { month: "May", average: 54, wins: 6 },
-  { month: "Jun", average: 58, wins: 8 },
-];
-
 export function StatisticsPageClient() {
   const { user } = useUserContext();
   const { summary, series, loading } = usePlayerStatistics(user?._id);
-  const chartSeries = series.length > 0 ? series : fallbackSeries;
+  const chartSeries = series;
 
   return (
     <div className="min-h-screen p-4 md:p-8">

@@ -14,6 +14,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
 import { isGuardFailureResult } from '@/shared/lib/guards/result';
+import { getClubLeaguesAction } from '@/features/clubs/actions/getClubLeagues.action';
+import { getClubAction } from '@/features/clubs/actions/getClub.action';
+import { deleteLeagueAction } from '@/features/leagues/actions/manageLeague.action';
 
 interface LeagueManagerProps {
   clubId: string;
@@ -59,20 +62,16 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
   const fetchLeagues = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/leagues?includeInactive=true`);
-      if (response.ok) {
-        const data = await response.json();
-        setLeagues(data.leagues || []);
+      const data = await getClubLeaguesAction({ clubId, includeInactive: true });
+      const leagueItems = (data as { leagues?: League[] })?.leagues || [];
+      setLeagues(leagueItems);
 
-        if (autoOpenLeagueId && data.leagues) {
-          const leagueToOpen = data.leagues.find((league: League) => league._id === autoOpenLeagueId);
+      if (autoOpenLeagueId && leagueItems.length > 0) {
+          const leagueToOpen = leagueItems.find((league: League) => league._id === autoOpenLeagueId);
           if (leagueToOpen) {
             setSelectedLeague(leagueToOpen);
             setShowDetailModal(true);
           }
-        }
-      } else {
-        setError(t("failed_to_load_leagues_ni5z"));
       }
     } catch (err) {
       setError(t("error_loading_leagues_ri2b"));
@@ -88,11 +87,9 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
 
   const fetchClubSubscription = async () => {
     try {
-      const response = await fetch(`/api/clubs?clubId=${clubId}`);
-      if (response.ok) {
-        const clubData = await response.json();
-        setClubSubscription(clubData.subscriptionModel || 'free');
-      }
+      const clubData = await getClubAction({ clubId });
+      const subscription = (clubData as { subscriptionModel?: string })?.subscriptionModel || 'free';
+      setClubSubscription(subscription);
     } catch (err) {
       showErrorToast(t("hiba_a_klub"), {
         context: 'Klub előfizetés betöltése',
@@ -134,19 +131,15 @@ export default function LeagueManager({ clubId, userRole, autoOpenLeagueId }: Le
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/clubs/${clubId}/leagues/${leagueId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
+      const response = await deleteLeagueAction({ clubId, leagueId });
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         showSuccessToast(t("liga_sikeresen_törölve"));
         fetchLeagues();
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to delete league');
-        showErrorToast(errorData.error || 'Hiba a liga törlése során', {
+        setError('Failed to delete league');
+        showErrorToast('Hiba a liga törlése során', {
           context: 'Liga törlése',
-          error: errorData.error,
+          error: 'deleteLeagueAction returned unsuccessful result',
         });
       }
     } catch (err) {

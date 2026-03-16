@@ -6,7 +6,7 @@ import { useParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
 import { IconAdjustments, IconGripVertical, IconPlayerPause, IconPlayerPlay, IconPlayerSkipForward, IconQrcode, IconX } from "@tabler/icons-react"
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
-import axios from "axios"
+import { getTournamentPageDataAction } from "@/features/tournaments/actions/getTournamentPageData.action"
 import QRCode from 'react-qr-code'
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -90,8 +90,15 @@ export default function TVModePage() {
   const fetchTournament = useCallback(async () => {
     if (!code) return
     try {
-      const res = await axios.get(`/api/tournaments/${code}`)
-      setTournament(res.data)
+      const res = await getTournamentPageDataAction({
+        code: String(code),
+        includeViewer: false,
+      })
+      const nextTournament =
+        res && typeof res === "object" && "tournament" in res
+          ? (res as { tournament?: any }).tournament
+          : null
+      setTournament(nextTournament || null)
     } catch (error) {
       console.error('Error fetching tournament:', error)
     } finally {
@@ -103,11 +110,19 @@ export default function TVModePage() {
   const silentRefresh = useCallback(async () => {
     if (!code) return
     try {
-      const res = await axios.get(`/api/tournaments/${code}`)
-      setTournament(res.data)
+      const res = await getTournamentPageDataAction({
+        code: String(code),
+        includeViewer: false,
+      })
+      const nextTournament =
+        res && typeof res === "object" && "tournament" in res
+          ? (res as { tournament?: any }).tournament
+          : null
+      if (!nextTournament) return
+      setTournament(nextTournament)
 
       if (tournament) {
-        const urgentEvents = buildUrgentEvents(tournament, res.data, settings);
+        const urgentEvents = buildUrgentEvents(tournament, nextTournament, settings);
         const added = urgentQueue.enqueueMany(urgentEvents);
         if (added > 0 && settings.highAlertInterrupts) {
           scheduler.showUrgentNow();

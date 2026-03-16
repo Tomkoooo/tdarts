@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import { useFormatter, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -24,6 +23,7 @@ import {
   TelemetryRange,
   TrendPoint,
 } from "./types";
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action";
 
 type SortKey = "route" | "calls" | "errors" | "errorrate" | "latency" | "traffic" | "lastseen";
 type SortDir = "asc" | "desc";
@@ -182,10 +182,10 @@ export default function TelemetryDashboardV2() {
       if (routes.length === 0) setIsRoutesLoading(true);
 
       const [overviewRes, trendsRes, incidentsRes, routesRes] = await Promise.all([
-        axios.get(`/api/admin/charts/api-traffic/v2/overview?${common.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/v2/trends?${common.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/v2/incidents?${common.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/v2/routes?${routesParams.toString()}`),
+        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/overview`, method: "GET", params: Object.fromEntries(common.entries()) }),
+        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/trends`, method: "GET", params: Object.fromEntries(common.entries()) }),
+        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/incidents`, method: "GET", params: Object.fromEntries(common.entries()) }),
+        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/routes`, method: "GET", params: Object.fromEntries(routesParams.entries()) }),
       ]);
 
       setOverview(overviewRes.data?.data || null);
@@ -213,7 +213,11 @@ export default function TelemetryDashboardV2() {
     try {
       const common = buildCommonParams(range, granularity, row.method, row.routeKey, customStart, customEnd);
       if (errorId) common.set("errorId", errorId);
-      const response = await axios.get(`/api/admin/charts/api-traffic/v2/route-details?${common.toString()}`);
+      const response = await adminApiRequestAction({
+        path: `/api/admin/charts/api-traffic/v2/route-details`,
+        method: "GET",
+        params: Object.fromEntries(common.entries()),
+      });
       setRouteDetails(response.data?.data || null);
       setSelectedErrorId(errorId || "");
     } catch (error: any) {
@@ -226,9 +230,10 @@ export default function TelemetryDashboardV2() {
   const markRouteFixed = async () => {
     if (!selectedRoute) return;
     try {
-      await axios.post("/api/admin/charts/api-traffic/error-resets", {
-        routeKey: selectedRoute.routeKey,
-        method: selectedRoute.method,
+      await adminApiRequestAction({
+        path: "/api/admin/charts/api-traffic/error-resets",
+        method: "POST",
+        body: { routeKey: selectedRoute.routeKey, method: selectedRoute.method },
       });
       toast.success("Route baseline reset and old errors marked fixed.");
       await Promise.all([refreshDashboard(), fetchRouteDetails(selectedRoute)]);
@@ -241,7 +246,11 @@ export default function TelemetryDashboardV2() {
     const params = buildCommonParams(range, granularity, method, "", customStart, customEnd);
     if (debouncedRouteSearch) params.set("search", debouncedRouteSearch);
     params.set("mode", "ai_prompt");
-    const response = await axios.get(`/api/admin/charts/api-traffic/export?${params.toString()}`);
+    const response = await adminApiRequestAction({
+      path: `/api/admin/charts/api-traffic/export`,
+      method: "GET",
+      params: Object.fromEntries(params.entries()),
+    });
     return response.data;
   };
 
@@ -297,7 +306,11 @@ export default function TelemetryDashboardV2() {
         return;
       }
 
-      const response = await axios.post("/api/admin/charts/api-traffic/error-resets", { routes });
+      const response = await adminApiRequestAction({
+        path: "/api/admin/charts/api-traffic/error-resets",
+        method: "POST",
+        body: { routes },
+      });
       const processed = response.data?.data?.totalRoutesProcessed || routes.length;
       const resolved = response.data?.data?.totalResolvedCount || 0;
       toast.success(`Applied fixes to ${processed} routes (${resolved} errors resolved).`);
@@ -355,11 +368,10 @@ export default function TelemetryDashboardV2() {
     const timer = setInterval(() => {
       const common = buildCommonParams(range, granularity, method, "", customStart, customEnd);
       if (debouncedRouteSearch) common.set("search", debouncedRouteSearch);
-      axios
-        .all([
-          axios.get(`/api/admin/charts/api-traffic/v2/overview?${common.toString()}`),
-          axios.get(`/api/admin/charts/api-traffic/v2/incidents?${common.toString()}`),
-        ])
+      Promise.all([
+        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/overview`, method: "GET", params: Object.fromEntries(common.entries()) }),
+        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/incidents`, method: "GET", params: Object.fromEntries(common.entries()) }),
+      ])
         .then(([overviewRes, incidentsRes]) => {
           setOverview(overviewRes.data?.data || null);
           setIncidents(incidentsRes.data?.data || null);

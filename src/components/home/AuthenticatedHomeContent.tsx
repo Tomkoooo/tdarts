@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import axios from "axios"
 import { useUserContext } from "@/hooks/useUser"
 import { useTranslations } from "next-intl"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
@@ -11,6 +10,9 @@ import { Button } from "@/components/ui/Button"
 import Link from "next/link"
 import AnnouncementToast from "@/components/common/AnnouncementToast"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
+import { getPlayerStatsAction } from "@/features/profile/actions"
+import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
+import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action"
 
 interface Announcement {
   _id: string
@@ -64,14 +66,19 @@ export default function AuthenticatedHomeContent() {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await axios.get("/api/announcements", {
-          headers: {
-            "Accept-Language": typeof navigator !== "undefined" ? navigator.language : "hu",
-          },
+        const response = await getActiveAnnouncementsAction({
+          locale: typeof navigator !== "undefined" ? navigator.language : "hu",
         })
-        if (response.data.success) {
+        if (
+          response &&
+          typeof response === "object" &&
+          "success" in response &&
+          response.success &&
+          "announcements" in response &&
+          Array.isArray((response as { announcements?: Announcement[] }).announcements)
+        ) {
           const now = new Date()
-          const activeAnnouncements = response.data.announcements.filter((announcement: Announcement) =>
+          const activeAnnouncements = (response as { announcements: Announcement[] }).announcements.filter((announcement: Announcement) =>
             announcement.isActive && new Date(announcement.expiresAt) > now
           )
           setAnnouncements(activeAnnouncements)
@@ -90,22 +97,37 @@ export default function AuthenticatedHomeContent() {
       setDashboardLoading(true)
       try {
         const [statsRes, tournamentsRes] = await Promise.allSettled([
-          axios.get(`/api/players/stats/${user._id}`),
-          axios.get(`/api/tournaments/user?userId=${user._id}`),
+          getPlayerStatsAction(),
+          getUserTournamentsAction({ limit: 5 }),
         ])
 
-        if (statsRes.status === "fulfilled" && statsRes.value?.data) {
+        if (
+          statsRes.status === "fulfilled" &&
+          statsRes.value &&
+          typeof statsRes.value === "object" &&
+          "success" in statsRes.value &&
+          statsRes.value.success
+        ) {
           const stats = statsRes.value.data
+          const summary = (stats?.summary || {}) as any
+          const playerStats = (stats?.player?.stats || {}) as any
           setMetrics({
-            matchesPlayed: Number(stats.matchesPlayed || stats.totalMatches || 0),
-            winRate: Number(stats.winRate || 0),
-            tournamentsJoined: Number(stats.tournamentsPlayed || 0),
-            avgCheckout: Number(stats.averageCheckout || 0),
+            matchesPlayed: Number(summary.wins || 0) + Number(summary.losses || 0),
+            winRate: Number(summary.winRate || 0),
+            tournamentsJoined: Number(summary.totalTournaments || playerStats.tournamentsPlayed || 0),
+            avgCheckout: Number(playerStats.highestCheckout || 0),
           })
         }
 
-        if (tournamentsRes.status === "fulfilled" && Array.isArray(tournamentsRes.value?.data)) {
-          const list = tournamentsRes.value.data.slice(0, 5).map((item: any) => ({
+        if (
+          tournamentsRes.status === "fulfilled" &&
+          tournamentsRes.value &&
+          typeof tournamentsRes.value === "object" &&
+          "success" in tournamentsRes.value &&
+          tournamentsRes.value.success &&
+          Array.isArray(tournamentsRes.value.data)
+        ) {
+          const list = tournamentsRes.value.data.map((item: any) => ({
             _id: String(item._id),
             name: item.name || "Tournament",
             code: item.code || item.tournamentCode || "",

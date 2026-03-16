@@ -38,7 +38,7 @@ export default function ClubNewsSettings({ club }: ClubNewsSettingsProps) {
   const fetchPosts = async () => {
       try {
           const res = await getClubPostsAction({ clubId: club._id })
-          if (res && 'posts' in res) setPosts(res.posts)
+          if (res && typeof res === 'object' && 'posts' in res) setPosts((res as { posts: any[] }).posts || [])
       } catch (err) {
           console.error(err)
       }

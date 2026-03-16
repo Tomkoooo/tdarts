@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { getPlayerTranslations } from "@/data/translations/player";
 import LegsViewModal from "@/components/tournament/LegsViewModal";
+import { getMatchByIdClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 
 interface HeadToHeadResponse {
   playerA: { _id: string; name: string };
@@ -35,10 +36,10 @@ interface HeadToHeadResponse {
 interface HeadToHeadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  fetchUrl: string;
+  fetchData: () => Promise<any>;
 }
 
-export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHeadModalProps) {
+export default function HeadToHeadModal({ isOpen, onClose, fetchData }: HeadToHeadModalProps) {
   const t = getPlayerTranslations(typeof navigator !== "undefined" ? navigator.language : "hu");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -53,12 +54,11 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(fetchUrl);
-        const payload = await response.json();
-        if (!response.ok || !payload.success) {
-          throw new Error(payload?.error || t.headToHeadFetchError);
+        const payload = await fetchData();
+        if (!payload || typeof payload !== "object" || !("success" in payload) || !payload.success) {
+          throw new Error((payload as any)?.error || t.headToHeadFetchError);
         }
-        setData(payload.data);
+        setData((payload as any).data);
       } catch (err: any) {
         setData(null);
         setError(err?.message || t.headToHeadFetchError);
@@ -68,7 +68,7 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
     };
 
     void run();
-  }, [isOpen, fetchUrl, reloadToken]);
+  }, [isOpen, fetchData, reloadToken]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
@@ -136,9 +136,23 @@ export default function HeadToHeadModal({ isOpen, onClose, fetchUrl }: HeadToHea
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setSelectedMatch({ _id: match._id });
-                            setShowMatchModal(true);
+                          onClick={async () => {
+                            try {
+                              const response = await getMatchByIdClientAction({ matchId: match._id });
+                              const nextMatch =
+                                response &&
+                                typeof response === "object" &&
+                                "success" in response &&
+                                response.success &&
+                                "match" in response
+                                  ? (response as any).match
+                                  : { _id: match._id };
+                              setSelectedMatch(nextMatch);
+                              setShowMatchModal(true);
+                            } catch {
+                              setSelectedMatch({ _id: match._id });
+                              setShowMatchModal(true);
+                            }
                           }}
                         >
                           {t.headToHeadReview}

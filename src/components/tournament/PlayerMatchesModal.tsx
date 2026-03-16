@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { SmartAvatar } from "@/components/ui/smart-avatar";
+import { getTournamentPlayerMatchesClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 
 interface Throw {
   score: number;
@@ -96,16 +97,14 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
     setError('');
 
     try {
-      const response = await fetch(`/api/tournaments/${tournamentCode}/player-matches/${playerId}`);
-      if (!response.ok) {
-        throw new Error(t('error_loading'));
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setMatches(data.matches || []);
+      const data = await getTournamentPlayerMatchesClientAction({
+        code: tournamentCode,
+        playerId,
+      });
+      if (data && typeof data === 'object' && 'success' in data && data.success) {
+        setMatches(((data as any).matches || []) as Match[]);
       } else {
-        setError(data.error || t('error_loading'));
+        setError(t('error_loading'));
       }
     } catch (err) {
       setError(t('error_generic'));

@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+const tournamentCode = process.env.E2E_TOURNAMENT_CODE || 'N7A8';
+
 function expectNoServerError(status: number | null) {
   expect(status, 'Page should not return 5xx').not.toBeNull();
   expect(status!, 'Page should not return 5xx').toBeLessThan(500);
@@ -13,7 +15,7 @@ test.describe('critical flows (security + migrated actions)', () => {
   });
 
   test('tournament page flow responds without server errors', async ({ page }) => {
-    const response = await page.goto('/en/tournaments/DEMO');
+    const response = await page.goto(`/en/tournaments/${tournamentCode}`);
     expectNoServerError(response?.status() ?? null);
   });
 

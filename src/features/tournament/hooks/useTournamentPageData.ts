@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
 import type { SimplifiedUser } from "@/hooks/useUser";
+import { getTournamentPageDataAction } from "@/features/tournaments/actions/getTournamentPageData.action";
 
 type UserClubRole = "admin" | "moderator" | "member" | "none";
 type UserPlayerStatus = "applied" | "checked-in" | "none";
@@ -82,14 +82,6 @@ function applyTournamentData(
   }
 }
 
-
-async function fetchUserRole(code: string, userId: string) {
-  const res = await axios.get(`/api/tournaments/${code}/getUserRole`, {
-    headers: { "x-user-id": userId },
-  });
-  return res.data;
-}
-
 export function useTournamentPageData(
   code: string | string[] | undefined,
   user: SimplifiedUser | undefined,
@@ -116,11 +108,14 @@ export function useTournamentPageData(
     setError("");
 
     try {
-      const tournamentUrl = user?._id
-        ? `/api/tournaments/${code}?include=viewer`
-        : `/api/tournaments/${code}`;
-      const tournamentRes = await axios.get(tournamentUrl);
-      const tournamentData = tournamentRes.data;
+      const data = await getTournamentPageDataAction({
+        code,
+        includeViewer: Boolean(user?._id),
+      });
+      const tournamentData = (data as { tournament?: any })?.tournament;
+      if (!tournamentData) {
+        throw new Error("Tournament not found");
+      }
 
       setTournament(tournamentData);
       setPlayers(
@@ -129,15 +124,7 @@ export function useTournamentPageData(
           : []
       );
 
-      let roleData = tournamentData?.viewer || null;
-      if (user?._id && !roleData) {
-        try {
-          roleData = await fetchUserRole(code, user._id);
-        } catch (roleError) {
-          console.warn("Fallback role fetch failed", roleError);
-          roleData = { userClubRole: "none", userPlayerStatus: "none" };
-        }
-      }
+      const roleData = tournamentData?.viewer || (data as { viewer?: any })?.viewer || { userClubRole: "none", userPlayerStatus: "none" };
 
       applyTournamentData(
         { ...tournamentData, viewer: roleData },
@@ -157,11 +144,14 @@ export function useTournamentPageData(
     if (!code || typeof code !== "string") return;
 
     try {
-      const tournamentUrl = user?._id
-        ? `/api/tournaments/${code}?include=viewer`
-        : `/api/tournaments/${code}`;
-      const tournamentRes = await axios.get(tournamentUrl);
-      const tournamentData = tournamentRes.data;
+      const data = await getTournamentPageDataAction({
+        code,
+        includeViewer: Boolean(user?._id),
+      });
+      const tournamentData = (data as { tournament?: any })?.tournament;
+      if (!tournamentData) {
+        return;
+      }
 
       setTournament(tournamentData);
       setPlayers(
@@ -170,15 +160,7 @@ export function useTournamentPageData(
           : []
       );
 
-      let roleData = tournamentData?.viewer || null;
-      if (user?._id && !roleData) {
-        try {
-          roleData = await fetchUserRole(code, user._id);
-        } catch (roleError) {
-          console.warn("Fallback role fetch failed during silent refresh", roleError);
-          roleData = { userClubRole: "none", userPlayerStatus: "none" };
-        }
-      }
+      const roleData = tournamentData?.viewer || (data as { viewer?: any })?.viewer || { userClubRole: "none", userPlayerStatus: "none" };
 
       applyTournamentData(
         { ...tournamentData, viewer: roleData },

@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 
 
 import { useEffect, useState, useMemo } from "react"
-import axios from "axios"
 import Link from "next/link"
 import {
   IconBuilding,
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
 // Use the same pagination component as Users page if it exists, or a simple placeholder
 import Pagination from "@/components/common/Pagination"
 
@@ -95,20 +95,18 @@ export default function AdminClubsPage() {
   const fetchClubs = async (pageToFetch: number, search: string, verified: string) => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/clubs", {
-        params: {
-          page: pageToFetch,
-          limit: 10,
-          search,
-          verified
-        }
+      const response = await adminApiRequestAction({
+        path: "/api/admin/clubs",
+        method: "GET",
+        params: { page: pageToFetch, limit: 10, search, verified },
       })
       
-      setClubs(response.data.clubs || [])
-      setStats(response.data.stats || { total: 0, active: 0, deleted: 0, verified: 0, unverified: 0 })
-      setTotalPages(response.data.pagination.totalPages || 1)
-      setPaginationTotal(response.data.pagination.total || 0)
-      setPage(response.data.pagination.page || 1)
+      const payload = response.data || {}
+      setClubs(payload.clubs || [])
+      setStats(payload.stats || { total: 0, active: 0, deleted: 0, verified: 0, unverified: 0 })
+      setTotalPages(payload.pagination?.totalPages || 1)
+      setPaginationTotal(payload.pagination?.total || 0)
+      setPage(payload.pagination?.page || 1)
     } catch (error: any) {
       console.error("Error fetching clubs:", error)
       toast.error(tCommon("hiba_történt_az"))

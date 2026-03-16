@@ -6,6 +6,7 @@ import { authorizeUserResult } from '@/shared/lib/guards';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 const schema = z.object({
   clubId: z.string(),
@@ -23,7 +24,7 @@ export async function geocodeClubAction(input: z.infer<typeof schema>) {
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
       const club = await ClubService.requestClubGeocode(clubId, authResult.data.userId);
-      return { club };
+      return serializeForClient({ club });
     },
     {
       method: 'ACTION',

@@ -3,6 +3,7 @@
 import { LeagueService } from '@/database/services/league.service';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export type GetClubLeaguesActionInput = {
   clubId: string;
@@ -18,7 +19,7 @@ export async function getClubLeaguesAction(input: GetClubLeaguesActionInput) {
         throw new BadRequestError('clubId is required');
       }
       const leagues = await LeagueService.getClubLeagues(clubId, !includeInactive);
-      return { leagues };
+      return serializeForClient({ leagues });
     },
     { method: 'ACTION', metadata: { feature: 'clubs', actionName: 'getClubLeagues' } }
   );

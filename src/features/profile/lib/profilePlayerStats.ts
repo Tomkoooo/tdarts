@@ -2,6 +2,7 @@ import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '@/database/models/player.model';
 import { MatchModel } from '@/database/models/match.model';
 import { PlayerService } from '@/database/services/player.service';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 function getMMRTier(mmr: number): { name: string; color: string } {
   if (mmr >= 1600) return { name: 'Elit', color: 'text-error' };
   if (mmr >= 1400) return { name: 'Mester', color: 'text-warning' };
@@ -52,6 +53,7 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
   const stats = player.stats || {};
   const mmr = (stats as { mmr?: number }).mmr ?? 800;
   const mmrTier = getMMRTier(mmr);
+  const globalRank = (await PlayerModel.countDocuments({ 'stats.mmr': { $gt: mmr } })) + 1;
 
   // Get match history - all finished matches for this player
   const matches = await MatchModel.find({
@@ -69,6 +71,11 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
     const p1IdStr = p1Ref ? (typeof p1Ref === 'object' && p1Ref !== null && '_id' in p1Ref ? String((p1Ref as { _id: unknown })._id) : String(p1Ref)) : '';
     const isPlayer1 = p1IdStr === playerId;
     const playerData = isPlayer1 ? match.player1 : match.player2;
+    const opponentData = isPlayer1 ? match.player2 : match.player1;
+    const opponentName =
+      typeof opponentData?.playerId === 'object' && opponentData?.playerId && 'name' in opponentData.playerId
+        ? String((opponentData.playerId as { name?: unknown }).name || '')
+        : '';
     const tournament = match.tournamentRef as { groups?: Array<{ matches?: unknown[]; board?: number }>; knockout?: Array<{ matches?: Array<{ matchReference?: unknown }> }>; boards?: Array<{ boardNumber?: number; name?: string }> } | null;
     let round: string | undefined;
     let groupName: string | undefined;
@@ -93,8 +100,19 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
     }
 
     const matchObj = match.toObject ? match.toObject() : match;
+    const winnerId = match?.winnerId ? String(match.winnerId) : '';
+    const won = Boolean(winnerId && winnerId === playerId);
+    const player1Score = Number(isPlayer1 ? match?.player1?.legsWon : match?.player2?.legsWon) || 0;
+    const player2Score = Number(isPlayer1 ? match?.player2?.legsWon : match?.player1?.legsWon) || 0;
+    const createdAtIso = match?.createdAt ? new Date(match.createdAt).toISOString() : new Date().toISOString();
+
     return {
       ...matchObj,
+      date: createdAtIso,
+      opponent: opponentName || '—',
+      won,
+      player1Score,
+      player2Score,
       average: playerData?.average || 0,
       firstNineAvg: playerData?.firstNineAvg || 0,
       highestCheckout: playerData?.highestCheckout || 0,
@@ -113,9 +131,12 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
   const totalMatches = totalMatchesWon + totalMatchesLost;
   const totalLegs = totalLegsWon + totalLegsLost;
 
+  const safeNumber = (value: unknown, fallback: number = 0) =>
+    Number.isFinite(Number(value)) ? Number(value) : fallback;
+
   const tournamentHistory = (player.tournamentHistory || []) as unknown[];
 
-  return {
+  return serializeForClient({
     hasPlayer: true,
     player: {
       _id: player._id.toString(),
@@ -123,7 +144,7 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
       country: player.country ?? null,
       stats: stats as Record<string, unknown>,
       mmrTier,
-      globalRank: null,
+      globalRank,
       previousSeasons: player.previousSeasons || [],
       tournamentHistory: tournamentHistory,
       honors: player.honors || [],
@@ -133,14 +154,14 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
     teams,
     summary: {
       totalTournaments: tournamentHistory.length,
-      winRate: totalMatches > 0 ? (totalMatchesWon / totalMatches) * 100 : 0,
-      legWinRate: totalLegs > 0 ? (totalLegsWon / totalLegs) * 100 : 0,
+      winRate: totalMatches > 0 ? safeNumber((totalMatchesWon / totalMatches) * 100) : 0,
+      legWinRate: totalLegs > 0 ? safeNumber((totalLegsWon / totalLegs) * 100) : 0,
       wins: totalMatchesWon,
       losses: totalMatchesLost,
       totalLegsWon,
       totalLegsLost,
-      avg: (stats as { avg?: number }).avg,
-      firstNineAvg: (stats as { firstNineAvg?: number }).firstNineAvg,
+      avg: safeNumber((stats as { avg?: number }).avg),
+      firstNineAvg: safeNumber((stats as { firstNineAvg?: number }).firstNineAvg),
     },
-  };
+  }) as ProfilePlayerStatsResult;
 }

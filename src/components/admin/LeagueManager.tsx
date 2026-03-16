@@ -4,13 +4,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import axios from 'axios';
 import { IconPlus, IconEdit, IconTrash, IconTrophy, IconChartBar, IconUserPlus } from '@tabler/icons-react';
 import PlayerSearch from '../club/PlayerSearch';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
 import { isGuardFailureResult } from '@/shared/lib/guards/result';
+import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
 
 interface League {
   _id: string;
@@ -108,8 +108,12 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       // Ligák betöltése csak akkor, ha nincs előfizetés szükség
       if (!requiresSubscription) {
         try {
-          const response = await axios.get(`/api/leagues?clubId=${clubId}`);
-          if (response.data.success) {
+          const response = await adminApiRequestAction({
+            path: `/api/leagues`,
+            method: 'GET',
+            params: { clubId },
+          });
+          if (response.data?.success) {
             setLeagues(response.data.data);
           }
         } catch (leagueError) {
@@ -146,11 +150,15 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       
       if (editingLeague) {
         // Szerkesztés
-        const response = await axios.put(`/api/leagues/${editingLeague._id}`, {
+        const response = await adminApiRequestAction({
+          path: `/api/leagues/${editingLeague._id}`,
+          method: 'PUT',
+          body: {
           ...cleanedData,
           tournaments: editingLeague.tournaments
+          },
         });
-        if (response.data.success) {
+        if (response.data?.success) {
           setShowCreateModal(false);
           setEditingLeague(null);
           reset();
@@ -158,11 +166,15 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
         }
       } else {
         // Új létrehozás
-        const response = await axios.post('/api/leagues', {
+        const response = await adminApiRequestAction({
+          path: '/api/leagues',
+          method: 'POST',
+          body: {
           ...cleanedData,
           clubId
+          },
         });
-        if (response.data.success) {
+        if (response.data?.success) {
           setShowCreateModal(false);
           reset();
           fetchLeagues();
@@ -170,7 +182,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       }
     } catch (error: any) {
       console.error('Error saving league:', error);
-      setError(error.response?.data?.error || t('errors.save_error'));
+      setError(error?.message || t('errors.save_error'));
     }
   };
 
@@ -190,13 +202,13 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
     if (!confirm(t('actions.confirm_delete'))) return;
 
     try {
-      const response = await axios.delete(`/api/leagues/${leagueId}`);
-      if (response.data.success) {
+      const response = await adminApiRequestAction({ path: `/api/leagues/${leagueId}`, method: 'DELETE' });
+      if (response.data?.success) {
         fetchLeagues();
       }
     } catch (error: any) {
       console.error('Error deleting league:', error);
-      setError(error.response?.data?.error || t('errors.delete_error'));
+      setError(error?.message || t('errors.delete_error'));
     }
   };
 
@@ -387,8 +399,10 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     // Ellenőrizd, hogy már benne van-e
                     if (editingLeague?.players.some(p => p.playerId === player._id)) return;
                     // API hívás a hozzáadáshoz
-                    await axios.post(`/api/leagues/${openAddPlayerModal}/players`, {
-                      playerId: player._id,
+                    await adminApiRequestAction({
+                      path: `/api/leagues/${openAddPlayerModal}/players`,
+                      method: 'POST',
+                      body: { playerId: player._id },
                     });
                     // Frissítsd a ligákat
                     fetchLeagues();
@@ -430,8 +444,10 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                               min={0}
                               onChange={async (e) => {
                                 const newPoints = e.target.value === '' ? 0 : Number(e.target.value);
-                                await axios.put(`/api/leagues/${openAddPlayerModal}/players/${player.playerId}`, {
-                                  totalPoints: newPoints,
+                                await adminApiRequestAction({
+                                  path: `/api/leagues/${openAddPlayerModal}/players/${player.playerId}`,
+                                  method: 'PUT',
+                                  body: { totalPoints: newPoints },
                                 });
                                 fetchLeagues();
                               }}
@@ -442,7 +458,10 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                               className="admin-btn-danger btn-xs"
                               title={t('player_modal.remove_title')}
                               onClick={async () => {
-                                await axios.delete(`/api/leagues/${openAddPlayerModal}/players/${player.playerId}`);
+                                await adminApiRequestAction({
+                                  path: `/api/leagues/${openAddPlayerModal}/players/${player.playerId}`,
+                                  method: 'DELETE',
+                                });
                                 fetchLeagues();
                               }}
                             >

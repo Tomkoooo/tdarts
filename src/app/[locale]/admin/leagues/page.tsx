@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import {
   IconCalendar,
   IconSearch,
@@ -36,6 +35,7 @@ import { cn } from "@/lib/utils"
 // Use common Pagination if exists, otherwise assume implementation or import
 import Pagination from "@/components/common/Pagination"
 import { getPointSystemDefinition } from "@/lib/leaguePointSystems"
+import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
 
 interface League {
   _id: string;
@@ -89,20 +89,18 @@ export default function AdminLeaguesPage() {
   const fetchLeagues = async (p: number, search: string, verified: string) => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/leagues", {
-        params: {
-          page: p,
-          limit: 10,
-          search,
-          verified
-        }
+      const response = await adminApiRequestAction({
+        path: "/api/admin/leagues",
+        method: "GET",
+        params: { page: p, limit: 10, search, verified },
       })
       
-      setLeagues(response.data.leagues || [])
-      setStats(response.data.stats || { total: 0, verified: 0, unverified: 0 })
-      setTotalPages(response.data.pagination.totalPages || 1)
-      setPaginationTotal(response.data.pagination.total || 0)
-      setPage(response.data.pagination.page || 1)
+      const payload = response.data || {}
+      setLeagues(payload.leagues || [])
+      setStats(payload.stats || { total: 0, verified: 0, unverified: 0 })
+      setTotalPages(payload.pagination?.totalPages || 1)
+      setPaginationTotal(payload.pagination?.total || 0)
+      setPage(payload.pagination?.page || 1)
     } catch (error: any) {
       console.error("Error fetching leagues:", error)
       toast.error(t("hiba_történt_a_14"))

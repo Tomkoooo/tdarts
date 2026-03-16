@@ -13,6 +13,7 @@ function mapFeedbackStatusToTicketStatus(
 import { FeedbackService } from '@/database/services/feedback.service';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
+import { serializeForClient } from '@/shared/lib/serializeForClient';
 
 export async function getTicketsAction() {
   const run = withTelemetry(
@@ -33,7 +34,7 @@ export async function getTicketsAction() {
           priority: obj.priority || t.priority || 'medium',
         };
       });
-      return { success: true, data: tickets };
+      return serializeForClient({ success: true, data: tickets });
     },
     {
       method: 'ACTION',

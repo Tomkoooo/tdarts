@@ -84,7 +84,8 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
         }
       );
       if (club && typeof club === 'object' && '_id' in club) {
-        router.push(`/clubs/${(club as unknown as Club)._id}`);
+        const clubId = String((club as any)._id);
+        router.push(`/clubs/${clubId}`);
       }
     } catch (error) {
       console.error('Club creation error:', error);
