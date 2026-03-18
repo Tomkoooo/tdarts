@@ -2,8 +2,20 @@
 
 import React from "react";
 import Link from "next/link";
-import { IconDeviceTv, IconRefresh, IconScreenShare } from "@tabler/icons-react";
+import {
+  IconChevronDown,
+  IconDeviceTv,
+  IconRefresh,
+  IconScreenShare,
+  IconTargetArrow,
+} from "@tabler/icons-react";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TournamentHeaderActionsProps {
   tournament: any;
@@ -36,26 +48,27 @@ export function TournamentHeaderActions({
   return (
     <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         onClick={onRefetch}
-        className="gap-2 bg-card/80 hover:bg-card"
+        className="gap-2"
       >
         <IconRefresh className="h-4 w-4" /> {refreshLabel}
       </Button>
       {tournamentId && (
         <>
-          <Button asChild variant="outline" size="sm" className="gap-2">
+          <Button asChild variant="default" size="sm" className="gap-2">
             <Link
               href={`/board/${tournamentId}`}
               target="_blank"
               rel="noopener noreferrer"
             >
+              <IconTargetArrow className="h-4 w-4" />
               {boardsWriterLabel}
             </Link>
           </Button>
           {showLive && (
-            <Button asChild variant="outline" size="sm" className="gap-2 bg-card/80 hover:bg-card">
+            <Button asChild variant="secondary" size="sm" className="gap-2">
               <Link
                 href={`/tournaments/${tournamentId}/live`}
                 target="_blank"
@@ -66,16 +79,38 @@ export function TournamentHeaderActions({
               </Link>
             </Button>
           )}
-          <Button asChild variant="info" size="sm" className="gap-2">
-            <Link
-              href={`/tournaments/${tournamentCode}/tv`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <IconDeviceTv />
-              {tvViewLabel}
-            </Link>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 bg-card/80">
+                More
+                <IconChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/tournaments/${tournamentCode}/tv`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer"
+                >
+                  <IconDeviceTv className="mr-2 h-4 w-4" />
+                  {tvViewLabel}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/board/${tournamentId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer"
+                >
+                  <IconTargetArrow className="mr-2 h-4 w-4" />
+                  {boardsWriterLabel}
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </>
       )}
     </div>

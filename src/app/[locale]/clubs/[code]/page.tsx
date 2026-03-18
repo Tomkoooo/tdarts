@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import * as React from "react"
 import { useRouter } from "@/i18n/routing"
 import { useParams, useSearchParams } from "next/navigation"
-import axios from "axios"
 import toast from "react-hot-toast"
 import { showErrorToast, showLocationReviewToast } from "@/lib/toastUtils"
 import { getClubAction } from "@/features/clubs/actions/getClub.action"
@@ -29,6 +28,10 @@ import CreateTournamentModal from "@/components/club/CreateTournamentModal"
 import ClubShareModal from "@/components/club/ClubShareModal"
 import DeleteTournamentModal from "@/components/club/DeleteTournamentModal"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  deleteTournamentAction,
+  getTournamentDeletionInfoAction,
+} from "@/features/tournaments/actions/manageTournament.action"
 
 export default function ClubDetailPage() {
     const t = useTranslations("Club.pages");
@@ -233,14 +236,14 @@ export default function ClubDetailPage() {
 
     // Get tournament deletion info (players with emails count)
     try {
-      const deletionInfo = await axios.get(`/api/tournaments/${tournamentId}/deletion-info`)
+      const deletionInfo = await getTournamentDeletionInfoAction({ code: tournamentId }) as any
       
       setDeleteTournamentModal({
         isOpen: true,
         tournamentId,
         tournamentName: tournament.tournamentSettings?.name || 'Torna',
-        hasPlayers: deletionInfo.data.hasPlayers,
-        playersWithEmailCount: deletionInfo.data.playersWithEmailCount,
+        hasPlayers: Boolean(deletionInfo?.hasPlayers),
+        playersWithEmailCount: Number(deletionInfo?.playersWithEmailCount || 0),
       })
     } catch (err: any) {
       showErrorToast(err.response?.data?.error || 'Torna információk betöltése sikertelen', {
@@ -256,8 +259,9 @@ export default function ClubDetailPage() {
 
     const toastId = toast.loading(t("torna_törlése"))
     try {
-      await axios.delete(`/api/tournaments/${deleteTournamentModal.tournamentId}`, {
-        data: { emailData }
+      await deleteTournamentAction({
+        code: deleteTournamentModal.tournamentId,
+        emailData,
       })
       await fetchClub()
       toast.success(t("torna_sikeresen_törölve"), { id: toastId })
@@ -334,7 +338,9 @@ export default function ClubDetailPage() {
   if (isClubLoading) return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto space-y-6 px-4 py-6">
-        <Skeleton className="h-14 w-64 rounded-xl" />
+        <div className="rounded-3xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
+          <Skeleton className="h-14 w-64 rounded-xl" />
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           <Skeleton className="h-32 rounded-xl" />
           <Skeleton className="h-32 rounded-xl" />
@@ -346,12 +352,11 @@ export default function ClubDetailPage() {
   )
 
   if (!club) return (
-    //club not found section -- use icons and spacing
-    <div className="flex items-center justify-center h-screen">
-      <div className="flex flex-col items-center">
-        <div className="text-4xl font-bold mb-4">{t("klub_nem_található")}</div>
-        <div className="text-xl mb-4">{t("sajnálom_de_a")}</div>
-        <div className="text-xl mb-4">{t("kérem_ellenőrizd_a")}</div>
+    <div className="flex h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-lg rounded-3xl border border-border/60 bg-card/80 p-8 text-center shadow-[0_18px_45px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+        <div className="mb-4 text-4xl font-bold">{t("klub_nem_található")}</div>
+        <div className="mb-4 text-xl">{t("sajnálom_de_a")}</div>
+        <div className="text-xl">{t("kérem_ellenőrizd_a")}</div>
       </div>
     </div>
   )

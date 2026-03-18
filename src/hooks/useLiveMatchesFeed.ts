@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSocket } from "@/hooks/useSocket";
+import { getTournamentLiveMatchesClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
 
 export interface LiveFeedMatch {
   _id: string;
@@ -61,8 +62,7 @@ export function useLiveMatchesFeed(tournamentCode: string) {
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch(`/api/tournaments/${tournamentCode}/live-matches`, { cache: "no-store" });
-      const data = await response.json();
+      const data = await getTournamentLiveMatchesClientAction({ code: tournamentCode }) as any;
       if (!data?.success) return;
       const normalized = (data.matches || []).map(normalizeMatch);
       setMatches(normalized);

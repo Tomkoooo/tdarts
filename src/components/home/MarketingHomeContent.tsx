@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from "react"
 import ParallaxBackground from "@/components/homapage/ParallaxBackground"
-import HeroSectionNew from "@/components/homapage/HeroSectionNew"
-import InfiniteCarousel from "@/components/homapage/InfiniteCarousel"
-import FeaturesSectionNew from "@/components/homapage/FeaturesSectionNew"
-import PricingSection from "@/components/homapage/PricingSection"
 import AnnouncementToast from "@/components/common/AnnouncementToast"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
 import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action"
+import LandingHeroSection from "@/components/home/LandingHeroSection"
+import LandingFeaturesSection from "@/components/home/LandingFeaturesSection"
+import LandingHowItWorksSection from "@/components/home/LandingHowItWorksSection"
+import LandingTestimonialsSection from "@/components/home/LandingTestimonialsSection"
+import LandingCtaSection from "@/components/home/LandingCtaSection"
 
 interface Announcement {
   _id: string
@@ -78,7 +79,7 @@ export default function MarketingHomeContent() {
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="relative min-h-screen overflow-x-hidden">
       <ParallaxBackground />
 
       <div
@@ -107,12 +108,13 @@ export default function MarketingHomeContent() {
         <UnreadTicketToast unreadCount={unreadCount} onDismiss={handleDismissTicketToast} />
       )}
 
-      <main className="relative z-10">
-        <HeroSectionNew />
-        <InfiniteCarousel />
-        <FeaturesSectionNew />
-        <PricingSection />
-        <div className="h-20" />
+      <main className="relative z-10 pb-12">
+        <LandingHeroSection />
+        <LandingFeaturesSection />
+        <LandingHowItWorksSection />
+        <LandingTestimonialsSection enabled={false} />
+        <LandingCtaSection />
+        <div className="h-8" />
       </main>
     </div>
   )

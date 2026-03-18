@@ -153,78 +153,76 @@ export function ClubTournamentsSection({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex md:items-center justify-between md:flex-row flex-col gap-3 items-start">
-        <div className="flex flex-col items-center gap-3 md:flex-row ">
-          <div className="flex items-center gap-3 ">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+    <div className="space-y-6 pb-16 md:pb-4">
+      <div className="rounded-3xl border border-border/60 bg-linear-to-br from-card/95 via-card/80 to-card/65 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.3)] backdrop-blur-xl md:p-6">
+        <div className="flex items-start justify-between gap-4 md:items-center">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20">
               <IconTrophy className="w-5 h-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold md:text-3xl">{t('title')}</h2>
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold">{t('title')}</h2>
+            {(userRole === 'admin' || userRole === 'moderator') && (
+              <div className="flex flex-wrap items-center gap-1 rounded-xl bg-muted/25 p-1">
+                <button
+                  onClick={() => setViewMode('active')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all sm:text-sm ${
+                    viewMode === 'active'
+                      ? 'bg-background text-foreground shadow'
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  {t('view_mode.active')}
+                </button>
+                <button
+                  onClick={() => setViewMode('sandbox')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all sm:text-sm ${
+                    viewMode === 'sandbox'
+                      ? 'bg-warning/12 text-warning ring-1 ring-warning/30'
+                      : 'text-muted-foreground hover:text-warning/80'
+                  }`}
+                >
+                  {t('view_mode.sandbox')}
+                </button>
+                <button
+                  onClick={() => setViewMode('deleted')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all sm:text-sm ${
+                    viewMode === 'deleted'
+                      ? 'bg-destructive/12 text-destructive ring-1 ring-destructive/30'
+                      : 'text-muted-foreground hover:text-destructive/80'
+                  }`}
+                >
+                  {t('view_mode.deleted')}
+                </button>
+              </div>
+            )}
           </div>
-          {/* Sandbox Toggle */}
-          {/* Sandbox Toggle - Only visible to admins/moderators */}
+
           {(userRole === 'admin' || userRole === 'moderator') && (
-            <div className="flex flex-wrap items-center gap-1 ml-6 bg-muted/30 p-1 rounded-lg">
-              <button
-                onClick={() => setViewMode('active')}
-                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
-                  viewMode === 'active'
-                    ? 'bg-background shadow-sm text-foreground' 
-                    : 'text-muted-foreground hover:text-foreground/80'
-                }`}
-              >
-                {t('view_mode.active')}
-              </button>
-              <button
-                onClick={() => setViewMode('sandbox')}
-                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
-                  viewMode === 'sandbox'
-                    ? 'bg-warning/10 text-warning shadow-sm ring-1 ring-warning/20' 
-                    : 'text-muted-foreground hover:text-warning/80'
-                }`}
-              >
-                {t('view_mode.sandbox')}
-              </button>
-              <button
-                onClick={() => setViewMode('deleted')}
-                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
-                  viewMode === 'deleted'
-                    ? 'bg-destructive/10 text-destructive shadow-sm ring-1 ring-destructive/20' 
-                    : 'text-muted-foreground hover:text-destructive/80'
-                }`}
-              >
-                {t('view_mode.deleted')}
-              </button>
+            <div className="flex gap-2">
+              {isVerified && onCreateOacTournament && viewMode === 'active' && (
+                <Button
+                  onClick={onCreateOacTournament}
+                  size="sm"
+                  variant="outline"
+                  className="h-10 border-warning text-warning hover:bg-warning/10"
+                >
+                  <IconTrophy className="mr-2 h-4 w-4" />
+                  {t('new_oac')}
+                </Button>
+              )}
+              <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="h-10">
+                <IconPlus className="mr-2 h-4 w-4" />
+                {viewMode === 'sandbox' ? t('new_test') : t('new_tournament')}
+              </Button>
             </div>
           )}
         </div>
-
-      {(userRole === 'admin' || userRole === 'moderator') && (
-        <div className="flex gap-2">
-          {isVerified && onCreateOacTournament && viewMode === 'active' && (
-            <Button 
-              onClick={onCreateOacTournament} 
-              size="sm" 
-              variant="outline"
-              className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6 border-warning text-warning hover:bg-warning/10"
-            >
-              <IconTrophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-              <span className="hidden xs:inline">{t('new_oac')}</span>
-              <span className="xs:hidden">{t('new_oac')}</span>
-            </Button>
-          )}
-          <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-6">
-            <IconPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            <span className="hidden xs:inline">{viewMode === 'sandbox' ? t('new_test') : t('new_tournament')}</span>
-            <span className="xs:hidden">{viewMode === 'sandbox' ? t('new_test') : t('new_tournament')}</span>
-          </Button>
-        </div>
-      )}
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:flex sm:items-end flex-wrap gap-4 bg-card/40 p-4 rounded-xl border border-border/50 backdrop-blur-sm">
+      <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border/50 bg-card/50 p-4 backdrop-blur-xl sm:flex sm:flex-wrap sm:items-end">
         <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.status')}</label>
           <select 

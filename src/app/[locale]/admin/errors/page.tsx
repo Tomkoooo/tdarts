@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   IconAlertTriangle,
   IconRefresh,
@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Label } from "@/components/ui/Label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminErrorsActions } from "@/features/admin/actions/adminDomains.action"
 
 interface ErrorLog {
   _id: string
@@ -79,32 +79,29 @@ export default function AdminErrorsPage() {
   const [showExpectedErrors, setShowExpectedErrors] = useState<boolean>(false)
   const [schemaVersion, setSchemaVersion] = useState<SchemaVersion>("new")
   const [expandedError, setExpandedError] = useState<string | null>(null)
+  const loadErrorDailyChart = useCallback(
+    () =>
+      adminErrorsActions.daily({
+        days: dateRange.toString(),
+        showAuthErrors: showAuthErrors.toString(),
+        showExpectedErrors: showExpectedErrors.toString(),
+        schemaVersion,
+      }),
+    [dateRange, schemaVersion, showAuthErrors, showExpectedErrors]
+  )
 
   const fetchErrorData = async () => {
     try {
       setLoading(true)
 
-      const params = new URLSearchParams({
-        days: dateRange.toString(),
-        category: selectedCategory,
-        level: selectedLevel,
-        showAuthErrors: showAuthErrors.toString(),
-        showExpectedErrors: showExpectedErrors.toString(),
-        schemaVersion,
-      })
-
       const [statsResponse] = await Promise.all([
-        adminApiRequestAction({
-          path: `/api/admin/errors/stats`,
-          method: "GET",
-          params: {
-            days: dateRange.toString(),
-            category: selectedCategory,
-            level: selectedLevel,
-            showAuthErrors: showAuthErrors.toString(),
-            showExpectedErrors: showExpectedErrors.toString(),
-            schemaVersion,
-          },
+        adminErrorsActions.stats({
+          days: dateRange.toString(),
+          category: selectedCategory,
+          level: selectedLevel,
+          showAuthErrors: showAuthErrors.toString(),
+          showExpectedErrors: showExpectedErrors.toString(),
+          schemaVersion,
         }),
       ])
 
@@ -261,7 +258,8 @@ export default function AdminErrorsPage() {
       {/* Daily Chart */}
       <DailyChart
         title={t("hibák_napi_előfordulása")}
-        apiEndpoint={`/api/admin/errors/daily?days=${dateRange}&showAuthErrors=${showAuthErrors}&showExpectedErrors=${showExpectedErrors}&schemaVersion=${schemaVersion}`}
+        loadData={loadErrorDailyChart}
+        loadKey={`${dateRange}-${showAuthErrors}-${showExpectedErrors}-${schemaVersion}`}
         color="error"
       />
 

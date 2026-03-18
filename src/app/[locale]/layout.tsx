@@ -224,7 +224,7 @@ export default async function RootLayout({
         <meta name="google-site-verification" content="0fadL9zSu0Oc0kyt3hnRa_S1jEOTUVQp4PaHLJm7JF4" />
 
       </head>
-      <body className="flex flex-col">
+      <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider messages={messages} timeZone={userTimeZone}>
           <SessionProvider>
             <UserProvider initialUser={initialUser}>

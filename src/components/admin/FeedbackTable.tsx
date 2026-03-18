@@ -45,7 +45,7 @@ import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import AdminTicketDetail from "@/components/admin/AdminTicketDetail"
 import { useTranslations } from "next-intl"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminFeedbackActions, adminTodosActions } from "@/features/admin/actions/adminDomains.action"
 
 interface FeedbackHistory {
   action: string
@@ -97,7 +97,7 @@ export default function FeedbackTable() {
         category: categoryFilter !== "all" ? categoryFilter : undefined,
       }
 
-      const response = await adminApiRequestAction({ path: "/api/admin/feedback", method: "GET", params })
+      const response = await adminFeedbackActions.list(params)
       if (response.data?.success) {
         setData(response.data.feedback)
         setTotal(response.data.total)
@@ -126,7 +126,7 @@ export default function FeedbackTable() {
   const deleteFeedback = async (id: string) => {
     if (!confirm(t("actions.confirm_delete"))) return
     try {
-      await adminApiRequestAction({ path: `/api/admin/feedback/${id}`, method: "DELETE" })
+      await adminFeedbackActions.delete(id)
       toast.success(t("toasts.delete_success"))
       fetchData()
     } catch {
@@ -170,16 +170,12 @@ export default function FeedbackTable() {
   
   const createTodoFromFeedback = async (feedback: Feedback) => {
       try {
-          await adminApiRequestAction({
-              path: '/api/admin/todos',
-              method: 'POST',
-              body: {
+          await adminTodosActions.create({
               title: `[Feedback] ${feedback.title}`,
               description: feedback.description,
               priority: feedback.priority === 'critical' ? 'high' : 'medium',
               category: 'other', 
               dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // +1 week
-              },
           });
           toast.success(t("toasts.todo_success"));
       } catch(e: any) {

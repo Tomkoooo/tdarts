@@ -46,7 +46,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import {
+  adminPlayersActions,
+  adminUsersActions,
+} from "@/features/admin/actions/adminDomains.action"
 // import Pagination from "@/components/common/Pagination" // Replaced with custom or shadcn pagination below
 
 interface AdminUser {
@@ -108,11 +111,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async (pageToFetch: number, search: string, role: string) => {
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({
-        path: `/api/admin/users`,
-        method: 'GET',
-        params: { page: pageToFetch, limit: 10, search, role },
-      })
+      const response = await adminUsersActions.list({ page: pageToFetch, limit: 10, search, role })
       
       const payload = response.data || {}
       setUsers(payload.users || [])
@@ -130,8 +129,7 @@ export default function AdminUsersPage() {
 
   const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      const action = currentStatus ? "remove-admin" : "make-admin"
-      await adminApiRequestAction({ path: `/api/admin/users/${userId}/${action}`, method: 'POST' })
+      await adminUsersActions.toggleAdmin(userId, !currentStatus)
       fetchUsers(page, searchTerm, roleFilter) // Refresh to ensure data consistency
       toast.success(currentStatus ? "Admin jogosultság eltávolítva" : "Admin jogosultság hozzáadva")
     } catch {
@@ -142,7 +140,7 @@ export default function AdminUsersPage() {
   const deactivateUser = async (userId: string) => {
     if (!window.confirm("Biztosan deaktiválja ezt a felhasználót?")) return
     try {
-      await adminApiRequestAction({ path: `/api/admin/users/${userId}/deactivate`, method: 'POST' })
+      await adminUsersActions.deactivate(userId)
       fetchUsers(page, searchTerm, roleFilter)
       toast.success(t("felhasználó_deaktiválva"))
     } catch {
@@ -152,11 +150,7 @@ export default function AdminUsersPage() {
 
   const toggleVerifiedStatus = async (user: AdminUser) => {
     try {
-      await adminApiRequestAction({
-        path: `/api/admin/users/${user._id}`,
-        method: 'PATCH',
-        body: { isVerified: !user.isVerified },
-      })
+      await adminUsersActions.updateVerification(user._id, !user.isVerified)
       fetchUsers(page, searchTerm, roleFilter)
       toast.success(!user.isVerified ? "Email megerősítve" : "Email megerősítés visszavonva")
     } catch (error: any) {
@@ -173,11 +167,7 @@ export default function AdminUsersPage() {
     }
 
     try {
-      await adminApiRequestAction({
-        path: `/api/admin/users/${user._id}/set-password`,
-        method: 'POST',
-        body: { newPassword },
-      })
+      await adminUsersActions.setPassword(user._id, newPassword)
       toast.success("Jelszó sikeresen frissítve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Jelszó frissítése sikertelen")
@@ -188,7 +178,7 @@ export default function AdminUsersPage() {
     if (!window.confirm(`Reset jelszó email küldése ennek a felhasználónak?\n${user.email}`)) return
 
     try {
-      await adminApiRequestAction({ path: `/api/admin/users/${user._id}/send-reset`, method: 'POST' })
+      await adminUsersActions.sendReset(user._id)
       toast.success("Reset email elküldve")
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Reset email küldése sikertelen")
@@ -205,11 +195,7 @@ export default function AdminUsersPage() {
     if (!newName || newName.trim().length < 2) return
 
     try {
-      await adminApiRequestAction({
-        path: `/api/admin/players/${user.playerProfile._id}`,
-        method: 'PATCH',
-        body: { name: newName.trim() },
-      })
+      await adminPlayersActions.updateProfile(user.playerProfile._id, { name: newName.trim() })
       fetchUsers(page, searchTerm, roleFilter)
       toast.success("Játékos profil név frissítve")
     } catch (error: any) {
@@ -233,11 +219,7 @@ export default function AdminUsersPage() {
 
     try {
       const parsedHonors = JSON.parse(input)
-      await adminApiRequestAction({
-        path: `/api/admin/players/${user.playerProfile._id}`,
-        method: 'PATCH',
-        body: { honors: parsedHonors },
-      })
+      await adminPlayersActions.updateProfile(user.playerProfile._id, { honors: parsedHonors })
       fetchUsers(page, searchTerm, roleFilter)
       toast.success("Játékos honors frissítve")
     } catch (error: any) {
@@ -251,11 +233,7 @@ export default function AdminUsersPage() {
   const sendEmail = async (subject: string, message: string, language: "hu" | "en") => {
     if (!emailModal.user) return
     try {
-      await adminApiRequestAction({
-        path: "/api/admin/send-email",
-        method: 'POST',
-        body: { userId: emailModal.user._id, subject, message, language },
-      })
+      await adminUsersActions.sendEmail({ userId: emailModal.user._id, subject, message, language })
       toast.success(t("email_sikeresen_elküldve"))
       setEmailModal({ isOpen: false, user: null })
     } catch {

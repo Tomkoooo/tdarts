@@ -15,10 +15,10 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconHome,
+  IconInfoCircle,
   IconLanguage,
   IconLogout,
-  IconMapPin,
-  IconSearch,
+  IconPlayerPlay,
   IconSettings,
   IconTargetArrow,
   IconTrophy,
@@ -42,7 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import IconDart from "@/components/homapage/icons/IconDart";
 import { Badge } from "@/components/ui/Badge";
-import { motion } from "framer-motion";
+import { useOngoingTournamentQuickLink } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
 
 interface NavItem {
   href: string;
@@ -66,7 +66,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   const searchParams = useSearchParams();
   const router = useRouter();
   const t = useTranslations("Navbar");
-  const [hasLive, setHasLive] = React.useState(false);
+  const { ongoingTournament } = useOngoingTournamentQuickLink(user?._id);
 
   const normalizedPath = stripLocalePrefix(pathname);
   const maybeLocale = pathname?.split("/")[1];
@@ -78,32 +78,35 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
 
   const navItems = React.useMemo<NavItem[]>(
     () => [
-      { href: user?._id ? "/home" : "/", icon: IconHome, label: t.has("home") ? t("home") : "Home" },
-      { href: "/landing", icon: IconMapPin, label: t.has("landing") ? t("landing") : "Landing" },
-      { href: "/search", icon: IconSearch, label: t("search") },
       {
-        href: "/search?tab=tournaments",
+        href: "/",
+        icon: IconHome,
+        label: "Home",
+        match: (path) => path === "/" || path === "/home" || path === "/landing",
+      },
+      {
+        href: "/search",
         icon: IconTrophy,
-        label: t("tournaments"),
-        match: (path, params) => path === "/search" && params.get("tab") === "tournaments",
+        label: "Versenyek",
+        match: (path, params) => path === "/search" && params.get("tab") !== "clubs",
       },
       {
         href: "/search?tab=clubs",
         icon: IconUsers,
-        label: t("clubs"),
-        match: (path, params) => path === "/search" && params.get("tab") === "clubs",
+        label: "Klubok",
+        match: (path, params) =>
+          (path === "/search" && params.get("tab") === "clubs") || path.startsWith("/clubs"),
       },
-      { href: "/board", icon: IconTargetArrow, label: t("board") },
-      { href: "/map", icon: IconMapPin, label: "Map" },
+      { href: "/board", icon: IconTargetArrow, label: "Tábla" },
+      { href: "/how-it-works", icon: IconInfoCircle, label: "Hogyan működik" },
       {
-        href: "/profile?tab=stats",
-        icon: IconBolt,
-        label: t.has("statistics") ? t("statistics") : t("stats"),
-        match: (path, params) => path === "/profile" && params.get("tab") === "stats",
+        href: "/profile",
+        icon: IconUser,
+        label: "Profil",
       },
-      { href: "/myclub", icon: IconDart, label: t("my_club") },
+      { href: "/myclub", icon: IconDart, label: "Saját klub" },
     ],
-    [t, user?._id]
+    []
   );
 
   const languageOptions = React.useMemo(
@@ -116,12 +119,6 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
     ],
     []
   );
-
-  React.useEffect(() => {
-    const livePaths = ["/tournaments", "/board"];
-    const isLiveRoute = livePaths.some((path) => normalizedPath.startsWith(path));
-    setHasLive(isLiveRoute);
-  }, [normalizedPath]);
 
   const toLocalizedHref = React.useCallback(
     (href: string): string => {
@@ -165,15 +162,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   }, [onToggleCollapsed]);
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 72 : 256 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
+    <aside
       className={cn(
         "hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:flex-col",
-        "border-r border-border/70 bg-card/80 backdrop-blur-xl",
-        "shadow-[0_0_40px_color-mix(in_srgb,black_24%)]",
-        collapsed ? "w-[var(--sidebar-collapsed-width)]" : "w-[var(--sidebar-width)]"
+        "border-r border-border/60 bg-linear-to-b from-card/75 via-card/65 to-card/55 backdrop-blur-2xl",
+        "shadow-[0_0_40px_color-mix(in_srgb,black_24%)] transition-[width] duration-300 ease-out",
+        collapsed ? "w-(--sidebar-collapsed-width)" : "w-(--sidebar-width)"
       )}
     >
       <div className="p-4 flex items-center justify-between border-b border-border/70">
@@ -211,21 +205,6 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       </div>
 
       <div className="px-3 pt-4">
-        {hasLive ? (
-          <div
-            className={cn(
-              "mb-4 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-primary",
-              collapsed && "justify-center px-2"
-            )}
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-            </span>
-            {!collapsed ? <span className="text-xs font-semibold">Live</span> : null}
-          </div>
-        ) : null}
-
         <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -238,7 +217,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                   "group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-3 text-sm font-medium transition-all",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   active
-                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-nav-active)]"
+                    ? "scale-[1.02] bg-primary text-primary-foreground shadow-(--shadow-nav-active)"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   collapsed && "justify-center px-2"
                 )}
@@ -246,14 +225,25 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                 <Icon size={18} className="shrink-0" />
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
                 {active ? (
-                  <motion.span
-                    layoutId="desktop-active-pill"
-                    className="absolute inset-0 -z-10 rounded-xl bg-primary"
-                  />
+                  <span className="absolute inset-0 -z-10 rounded-xl bg-primary" />
                 ) : null}
               </Link>
             );
           })}
+
+          {ongoingTournament?.code ? (
+            <Link
+              href={toLocalizedHref(`/tournaments/${ongoingTournament.code}`)}
+              className={cn(
+                "group relative mt-2 flex items-center gap-3 overflow-hidden rounded-xl border border-primary/35 bg-primary/10 px-3 py-3 text-sm font-medium text-primary transition-all hover:bg-primary/15",
+                collapsed && "justify-center px-2"
+              )}
+              title={ongoingTournament.name}
+            >
+              <IconPlayerPlay size={18} className="shrink-0" />
+              {!collapsed ? <span className="truncate">Aktív torna</span> : null}
+            </Link>
+          ) : null}
         </nav>
       </div>
 
@@ -346,8 +336,8 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href={toLocalizedHref("/landing")} className="cursor-pointer">
-                  <IconMapPin size={16} className="mr-2" />
-                  {t.has("landing") ? t("landing") : "Landing"}
+                  <IconHome size={16} className="mr-2" />
+                  Home
                 </Link>
               </DropdownMenuItem>
               {user.isAdmin ? (
@@ -373,6 +363,6 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
           </Link>
         )}
       </div>
-    </motion.aside>
+    </aside>
   );
 };

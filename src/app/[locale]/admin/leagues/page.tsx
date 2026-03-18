@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils"
 // Use common Pagination if exists, otherwise assume implementation or import
 import Pagination from "@/components/common/Pagination"
 import { getPointSystemDefinition } from "@/lib/leaguePointSystems"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminLeaguesActions } from "@/features/admin/actions/adminDomains.action"
 
 interface League {
   _id: string;
@@ -89,10 +89,11 @@ export default function AdminLeaguesPage() {
   const fetchLeagues = async (p: number, search: string, verified: string) => {
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({
-        path: "/api/admin/leagues",
-        method: "GET",
-        params: { page: p, limit: 10, search, verified },
+      const response = await adminLeaguesActions.list({
+        page: p,
+        limit: 10,
+        search,
+        verified,
       })
       
       const payload = response.data || {}

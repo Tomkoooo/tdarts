@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect } from 'react';
 import { Mail, Code, Eye, Save, Check, X } from 'lucide-react';
 import { showErrorToast, showSuccessToast } from '@/lib/toastUtils';
-import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
+import { adminEmailsActions } from '@/features/admin/actions/adminDomains.action';
 
 interface EmailTemplate {
   _id: string;
@@ -81,7 +81,7 @@ export default function EmailTemplatesPage() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await adminApiRequestAction({ path: '/api/admin/email-templates', method: 'GET' });
+      const response = await adminEmailsActions.listTemplates();
       const data = response.data;
       
       if (data.success) {
@@ -110,14 +110,10 @@ export default function EmailTemplatesPage() {
 
     setSaving(true);
     try {
-      const response = await adminApiRequestAction({
-        path: `/api/admin/email-templates/${selectedTemplate._id}`,
-        method: 'PATCH',
-        body: {
-          subject: editedSubject,
-          htmlContent: editedHtmlContent,
-          textContent: editedTextContent,
-        },
+      const response = await adminEmailsActions.updateTemplate(selectedTemplate._id, {
+        subject: editedSubject,
+        htmlContent: editedHtmlContent,
+        textContent: editedTextContent,
       });
       const data = response.data;
 
@@ -145,11 +141,7 @@ export default function EmailTemplatesPage() {
 
     setSendingTest(true);
     try {
-      const response = await adminApiRequestAction({
-        path: `/api/admin/email-templates/${selectedTemplate._id}/test`,
-        method: 'POST',
-        body: { recipientEmail: testRecipient },
-      });
+      const response = await adminEmailsActions.sendTest(selectedTemplate._id, testRecipient);
       const data = response.data;
       if (data.success) {
         showSuccessToast(t("teszt_email_elküldve"));
@@ -165,13 +157,7 @@ export default function EmailTemplatesPage() {
 
   const toggleActive = async (template: EmailTemplate) => {
     try {
-      const response = await adminApiRequestAction({
-        path: `/api/admin/email-templates/${template._id}`,
-        method: 'PATCH',
-        body: {
-          isActive: !template.isActive,
-        },
-      });
+      const response = await adminEmailsActions.setActive(template._id, !template.isActive);
       const data = response.data;
 
       if (data.success) {

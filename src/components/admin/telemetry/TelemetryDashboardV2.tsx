@@ -23,7 +23,7 @@ import {
   TelemetryRange,
   TrendPoint,
 } from "./types";
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action";
+import { adminTelemetryActions } from "@/features/admin/actions/adminDomains.action";
 
 type SortKey = "route" | "calls" | "errors" | "errorrate" | "latency" | "traffic" | "lastseen";
 type SortDir = "asc" | "desc";
@@ -182,10 +182,10 @@ export default function TelemetryDashboardV2() {
       if (routes.length === 0) setIsRoutesLoading(true);
 
       const [overviewRes, trendsRes, incidentsRes, routesRes] = await Promise.all([
-        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/overview`, method: "GET", params: Object.fromEntries(common.entries()) }),
-        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/trends`, method: "GET", params: Object.fromEntries(common.entries()) }),
-        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/incidents`, method: "GET", params: Object.fromEntries(common.entries()) }),
-        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/routes`, method: "GET", params: Object.fromEntries(routesParams.entries()) }),
+        adminTelemetryActions.overview(Object.fromEntries(common.entries())),
+        adminTelemetryActions.trends(Object.fromEntries(common.entries())),
+        adminTelemetryActions.incidents(Object.fromEntries(common.entries())),
+        adminTelemetryActions.routes(Object.fromEntries(routesParams.entries())),
       ]);
 
       setOverview(overviewRes.data?.data || null);
@@ -213,11 +213,7 @@ export default function TelemetryDashboardV2() {
     try {
       const common = buildCommonParams(range, granularity, row.method, row.routeKey, customStart, customEnd);
       if (errorId) common.set("errorId", errorId);
-      const response = await adminApiRequestAction({
-        path: `/api/admin/charts/api-traffic/v2/route-details`,
-        method: "GET",
-        params: Object.fromEntries(common.entries()),
-      });
+      const response = await adminTelemetryActions.routeDetails(Object.fromEntries(common.entries()));
       setRouteDetails(response.data?.data || null);
       setSelectedErrorId(errorId || "");
     } catch (error: any) {
@@ -230,10 +226,9 @@ export default function TelemetryDashboardV2() {
   const markRouteFixed = async () => {
     if (!selectedRoute) return;
     try {
-      await adminApiRequestAction({
-        path: "/api/admin/charts/api-traffic/error-resets",
-        method: "POST",
-        body: { routeKey: selectedRoute.routeKey, method: selectedRoute.method },
+      await adminTelemetryActions.errorResets({
+        routeKey: selectedRoute.routeKey,
+        method: selectedRoute.method,
       });
       toast.success("Route baseline reset and old errors marked fixed.");
       await Promise.all([refreshDashboard(), fetchRouteDetails(selectedRoute)]);
@@ -246,11 +241,7 @@ export default function TelemetryDashboardV2() {
     const params = buildCommonParams(range, granularity, method, "", customStart, customEnd);
     if (debouncedRouteSearch) params.set("search", debouncedRouteSearch);
     params.set("mode", "ai_prompt");
-    const response = await adminApiRequestAction({
-      path: `/api/admin/charts/api-traffic/export`,
-      method: "GET",
-      params: Object.fromEntries(params.entries()),
-    });
+    const response = await adminTelemetryActions.export(Object.fromEntries(params.entries()));
     return response.data;
   };
 
@@ -306,11 +297,7 @@ export default function TelemetryDashboardV2() {
         return;
       }
 
-      const response = await adminApiRequestAction({
-        path: "/api/admin/charts/api-traffic/error-resets",
-        method: "POST",
-        body: { routes },
-      });
+      const response = await adminTelemetryActions.errorResets({ routes });
       const processed = response.data?.data?.totalRoutesProcessed || routes.length;
       const resolved = response.data?.data?.totalResolvedCount || 0;
       toast.success(`Applied fixes to ${processed} routes (${resolved} errors resolved).`);
@@ -369,8 +356,8 @@ export default function TelemetryDashboardV2() {
       const common = buildCommonParams(range, granularity, method, "", customStart, customEnd);
       if (debouncedRouteSearch) common.set("search", debouncedRouteSearch);
       Promise.all([
-        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/overview`, method: "GET", params: Object.fromEntries(common.entries()) }),
-        adminApiRequestAction({ path: `/api/admin/charts/api-traffic/v2/incidents`, method: "GET", params: Object.fromEntries(common.entries()) }),
+        adminTelemetryActions.overview(Object.fromEntries(common.entries())),
+        adminTelemetryActions.incidents(Object.fromEntries(common.entries())),
       ])
         .then(([overviewRes, incidentsRes]) => {
           setOverview(overviewRes.data?.data || null);
@@ -564,7 +551,7 @@ export default function TelemetryDashboardV2() {
             <textarea
               value={fixesJsonInput}
               onChange={(e) => setFixesJsonInput(e.target.value)}
-              placeholder={`{\n  \"fixes\": [\n    { \"routeKey\": \"/api/foo\", \"method\": \"GET\" }\n  ]\n}`}
+              placeholder={`{\n  \"fixes\": [\n    { \"routeKey\": \"/v1/foo\", \"method\": \"GET\" }\n  ]\n}`}
               className="h-64 w-full rounded-md border border-border bg-background p-3 text-xs font-mono"
             />
             <input

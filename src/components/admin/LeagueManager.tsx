@@ -10,7 +10,7 @@ import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { checkFeatureFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
 import { isGuardFailureResult } from '@/shared/lib/guards/result';
-import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
+import { adminLeaguesActions } from '@/features/admin/actions/adminDomains.action';
 
 interface League {
   _id: string;
@@ -108,11 +108,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       // Ligák betöltése csak akkor, ha nincs előfizetés szükség
       if (!requiresSubscription) {
         try {
-          const response = await adminApiRequestAction({
-            path: `/api/leagues`,
-            method: 'GET',
-            params: { clubId },
-          });
+          const response = await adminLeaguesActions.listForClub(clubId);
           if (response.data?.success) {
             setLeagues(response.data.data);
           }
@@ -150,13 +146,9 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
       
       if (editingLeague) {
         // Szerkesztés
-        const response = await adminApiRequestAction({
-          path: `/api/leagues/${editingLeague._id}`,
-          method: 'PUT',
-          body: {
+        const response = await adminLeaguesActions.update(editingLeague._id, {
           ...cleanedData,
           tournaments: editingLeague.tournaments
-          },
         });
         if (response.data?.success) {
           setShowCreateModal(false);
@@ -166,13 +158,9 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
         }
       } else {
         // Új létrehozás
-        const response = await adminApiRequestAction({
-          path: '/api/leagues',
-          method: 'POST',
-          body: {
+        const response = await adminLeaguesActions.createForClub({
           ...cleanedData,
           clubId
-          },
         });
         if (response.data?.success) {
           setShowCreateModal(false);
@@ -202,7 +190,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
     if (!confirm(t('actions.confirm_delete'))) return;
 
     try {
-      const response = await adminApiRequestAction({ path: `/api/leagues/${leagueId}`, method: 'DELETE' });
+      const response = await adminLeaguesActions.delete(leagueId);
       if (response.data?.success) {
         fetchLeagues();
       }
@@ -399,11 +387,7 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                     // Ellenőrizd, hogy már benne van-e
                     if (editingLeague?.players.some(p => p.playerId === player._id)) return;
                     // API hívás a hozzáadáshoz
-                    await adminApiRequestAction({
-                      path: `/api/leagues/${openAddPlayerModal}/players`,
-                      method: 'POST',
-                      body: { playerId: player._id },
-                    });
+                    await adminLeaguesActions.addPlayer(openAddPlayerModal, player._id);
                     // Frissítsd a ligákat
                     fetchLeagues();
                   }}
@@ -444,11 +428,11 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                               min={0}
                               onChange={async (e) => {
                                 const newPoints = e.target.value === '' ? 0 : Number(e.target.value);
-                                await adminApiRequestAction({
-                                  path: `/api/leagues/${openAddPlayerModal}/players/${player.playerId}`,
-                                  method: 'PUT',
-                                  body: { totalPoints: newPoints },
-                                });
+                                await adminLeaguesActions.updatePlayerPoints(
+                                  openAddPlayerModal,
+                                  player.playerId,
+                                  newPoints
+                                );
                                 fetchLeagues();
                               }}
                             />
@@ -458,10 +442,10 @@ export default function LeagueManager({ clubId, onLeagueSelect }: LeagueManagerP
                               className="admin-btn-danger btn-xs"
                               title={t('player_modal.remove_title')}
                               onClick={async () => {
-                                await adminApiRequestAction({
-                                  path: `/api/leagues/${openAddPlayerModal}/players/${player.playerId}`,
-                                  method: 'DELETE',
-                                });
+                                await adminLeaguesActions.removePlayer(
+                                  openAddPlayerModal,
+                                  player.playerId
+                                );
                                 fetchLeagues();
                               }}
                             >

@@ -1,54 +1,143 @@
-'use server';
+import {
+  adminChartsClubsDailyAction,
+  adminChartsFeedbackDailyAction,
+  adminChartsTournamentsDailyAction,
+  adminClubsListAction,
+  adminEmailsListTemplatesAction,
+  adminEmailsSendTestAction,
+  adminEmailsSetActiveAction,
+  adminEmailsUpdateTemplateAction,
+  adminErrorsDailyAction,
+  adminErrorsStatsAction,
+  adminFeedbackDeleteAction,
+  adminFeedbackGetByIdAction,
+  adminFeedbackListAction,
+  adminFeedbackMarkReadAction,
+  adminFeedbackReplyAction,
+  adminFeedbackUpdateAction,
+  adminLeaguesAddPlayerAction,
+  adminLeaguesCreateForClubAction,
+  adminLeaguesDeleteAction,
+  adminLeaguesListAction,
+  adminLeaguesListForClubAction,
+  adminLeaguesRemovePlayerAction,
+  adminLeaguesUpdateAction,
+  adminLeaguesUpdatePlayerPointsAction,
+  adminPlayersUpdateProfileAction,
+  adminSettingsGetSystemInfoAction,
+  adminTelemetryErrorResetsAction,
+  adminTelemetryExportAction,
+  adminTelemetryIncidentsAction,
+  adminTelemetryOverviewAction,
+  adminTelemetryRouteDetailsAction,
+  adminTelemetryRoutesAction,
+  adminTelemetryTrendsAction,
+  adminTodosCreateAction,
+  adminTodosDeleteAction,
+  adminTodosListAction,
+  adminTodosStatsAction,
+  adminTodosUpdateAction,
+  adminTournamentsListAction,
+  adminUsersDeactivateAction,
+  adminUsersListAction,
+  adminUsersSendEmailAction,
+  adminUsersSendResetAction,
+  adminUsersSetPasswordAction,
+  adminUsersToggleAdminAction,
+  adminUsersUpdateVerificationAction,
+  adminYearWrapRestoreAction,
+  adminYearWrapWrapAction,
+} from './adminDomainsServer.action';
 
-import { adminApiRequestAction } from './adminApiProxy.action';
+const call = <Args extends any[]>(fn: (...args: Args) => Promise<unknown>) => {
+  return async (...args: Args): Promise<any> => {
+    return (await fn(...args)) as any;
+  };
+};
 
 export const adminUsersActions = {
-  list: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/users', method: 'GET', params }),
+  list: call(adminUsersListAction),
+  toggleAdmin: call(adminUsersToggleAdminAction),
+  deactivate: call(adminUsersDeactivateAction),
+  updateVerification: call(adminUsersUpdateVerificationAction),
+  setPassword: call(adminUsersSetPasswordAction),
+  sendReset: call(adminUsersSendResetAction),
+  sendEmail: call(adminUsersSendEmailAction),
 };
 
 export const adminClubsActions = {
-  list: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/clubs', method: 'GET', params }),
+  list: call(adminClubsListAction),
 };
 
 export const adminTournamentsActions = {
-  list: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/tournaments', method: 'GET', params }),
+  list: call(adminTournamentsListAction),
 };
 
 export const adminLeaguesActions = {
-  list: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/leagues', method: 'GET', params }),
+  list: call(adminLeaguesListAction),
+  listForClub: call(adminLeaguesListForClubAction),
+  createForClub: call(adminLeaguesCreateForClubAction),
+  update: call(adminLeaguesUpdateAction),
+  delete: call(adminLeaguesDeleteAction),
+  addPlayer: call(adminLeaguesAddPlayerAction),
+  updatePlayerPoints: call(adminLeaguesUpdatePlayerPointsAction),
+  removePlayer: call(adminLeaguesRemovePlayerAction),
+};
+
+export const adminPlayersActions = {
+  updateProfile: call(adminPlayersUpdateProfileAction),
 };
 
 export const adminEmailsActions = {
-  listTemplates: () => adminApiRequestAction({ path: '/api/admin/email-templates', method: 'GET' }),
+  listTemplates: call(adminEmailsListTemplatesAction),
+  updateTemplate: call(adminEmailsUpdateTemplateAction),
+  sendTest: call(adminEmailsSendTestAction),
+  setActive: call(adminEmailsSetActiveAction),
 };
 
 export const adminErrorsActions = {
-  stats: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/errors/stats', method: 'GET', params }),
+  stats: call(adminErrorsStatsAction),
+  daily: call(adminErrorsDailyAction),
 };
 
 export const adminFeedbackActions = {
-  list: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/feedback', method: 'GET', params }),
+  list: call(adminFeedbackListAction),
+  getById: call(adminFeedbackGetByIdAction),
+  update: call(adminFeedbackUpdateAction),
+  delete: call(adminFeedbackDeleteAction),
+  markRead: call(adminFeedbackMarkReadAction),
+  reply: call(adminFeedbackReplyAction),
 };
 
 export const adminTodosActions = {
-  list: () => adminApiRequestAction({ path: '/api/admin/todos', method: 'GET' }),
-  stats: () => adminApiRequestAction({ path: '/api/admin/todos/stats', method: 'GET' }),
+  list: call(adminTodosListAction),
+  stats: call(adminTodosStatsAction),
+  create: call(adminTodosCreateAction),
+  update: call(adminTodosUpdateAction),
+  delete: call(adminTodosDeleteAction),
+};
+
+export const adminSettingsActions = {
+  getSystemInfo: call(adminSettingsGetSystemInfoAction),
+};
+
+export const adminChartsActions = {
+  clubsDaily: call(adminChartsClubsDailyAction),
+  tournamentsDaily: call(adminChartsTournamentsDailyAction),
+  feedbackDaily: call(adminChartsFeedbackDailyAction),
 };
 
 export const adminTelemetryActions = {
-  overview: (params: Record<string, string | number | boolean>) =>
-    adminApiRequestAction({ path: '/api/admin/charts/api-traffic/v2/overview', method: 'GET', params }),
+  overview: call(adminTelemetryOverviewAction),
+  trends: call(adminTelemetryTrendsAction),
+  incidents: call(adminTelemetryIncidentsAction),
+  routes: call(adminTelemetryRoutesAction),
+  routeDetails: call(adminTelemetryRouteDetailsAction),
+  errorResets: call(adminTelemetryErrorResetsAction),
+  export: call(adminTelemetryExportAction),
 };
 
 export const adminYearWrapActions = {
-  wrap: (year: number, confirm: string) =>
-    adminApiRequestAction({ path: '/api/admin/year-wrap', method: 'POST', body: { year, confirm } }),
-  restore: (year: number) =>
-    adminApiRequestAction({ path: '/api/admin/restore-stats', method: 'POST', body: { year } }),
+  wrap: call(adminYearWrapWrapAction),
+  restore: call(adminYearWrapRestoreAction),
 };

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useFormatter, useTranslations } from 'next-intl'
 import { getUserTimeZone } from '@/lib/date-time'
+import { buildTournamentInvoiceDownloadUrl } from '@/features/tournaments/lib/readFlowPolicy'
 
 interface ClubTournamentCardProps {
   tournament: {
@@ -196,7 +197,10 @@ export default function ClubTournamentCard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  window.open(`/api/tournaments/${tournament.tournamentId}/invoice`, '_blank');
+                  window.open(
+                    buildTournamentInvoiceDownloadUrl(String(tournament.tournamentId || tournament._id)),
+                    '_blank'
+                  );
                 }}
               >
                 <IconFileInvoice className="w-3.5 h-3.5" />

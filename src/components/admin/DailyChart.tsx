@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action'
 
 interface DailyChartProps {
   title: string
-  apiEndpoint: string
+  loadData: () => Promise<{ data?: any } | any>
+  loadKey?: string
   color?: string
   icon?: React.ReactNode
 }
@@ -27,7 +27,7 @@ interface ChartData {
   }[]
 }
 
-export default function DailyChart({ title, apiEndpoint, color = 'primary', icon }: DailyChartProps) {
+export default function DailyChart({ title, loadData, loadKey, color = 'primary', icon }: DailyChartProps) {
     const t = useTranslations("Admin.components");
   const [data, setData] = useState<ChartData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -37,7 +37,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
     try {
       setLoading(true)
       setError(null)
-      const response = await adminApiRequestAction({ path: apiEndpoint, method: 'GET' })
+      const response = await loadData()
       const payload = response.data
       
       // Handle different API response formats
@@ -83,7 +83,7 @@ export default function DailyChart({ title, apiEndpoint, color = 'primary', icon
 
   useEffect(() => {
     fetchData()
-  }, [apiEndpoint])
+  }, [loadKey])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   IconCheck,
   IconMail,
@@ -129,6 +129,9 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const code = tournament?.tournamentId
   const participationMode = tournament?.tournamentSettings?.participationMode || 'individual'
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const autoJoinHandledRef = React.useRef(false)
 
   React.useEffect(() => {
     console.log(tournament)
@@ -309,15 +312,18 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     }
   }
 
-  const handleSelfWithdraw = async () => {
-    if (!localUserPlayerId || !code) return
+  const handleSelfWithdraw = async (playerIdOverride?: string | null) => {
+    const effectivePlayerId = playerIdOverride || localUserPlayerId
+    if (!effectivePlayerId || !code) return
     try {
       const response = await removeTournamentPlayerClientAction({
         code,
-        playerId: localUserPlayerId,
+        playerId: effectivePlayerId,
       })
       if (response && typeof response === 'object' && 'success' in response && response.success) {
-        setLocalPlayers((prev) => prev.filter((p) => p.playerReference._id !== localUserPlayerId))
+        setLocalPlayers((prev) =>
+          prev.filter((p) => p.playerReference?._id?.toString() !== effectivePlayerId.toString()),
+        )
         setLocalUserPlayerStatus('none')
         setLocalUserPlayerId(null)
         toast.success('Jelentkezés sikeresen visszavonva!')
@@ -523,6 +529,78 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
 
   const allowAdminActions = isPending
   const allowPlayerRegistration = registrationOpen
+  const currentUserAppliedEntryId = useMemo(() => {
+    if (localUserPlayerId) return localUserPlayerId.toString()
+    if (!user?._id) return null
+
+    const currentEntry = localPlayers.find((player: any) => {
+      const playerReference = player?.playerReference
+      if (!playerReference) return false
+
+      if (playerReference.userRef?.toString() === user._id) return true
+      if (playerReference.userRef?._id?.toString() === user._id) return true
+
+      if (Array.isArray(playerReference.members)) {
+        return playerReference.members.some((member: any) => {
+          const memberUserRef = member?.userRef?._id?.toString() || member?.userRef?.toString()
+          return memberUserRef === user._id
+        })
+      }
+
+      return false
+    })
+
+    return currentEntry?.playerReference?._id?.toString() || currentEntry?._id?.toString() || null
+  }, [localPlayers, localUserPlayerId, user?._id])
+  const isUserRegistered = localUserPlayerStatus !== "none" || Boolean(currentUserAppliedEntryId)
+
+  const clearAutoJoinQuery = React.useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (!params.has("autoJoin")) return
+    params.delete("autoJoin")
+    const next = params.toString()
+    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false })
+  }, [pathname, router, searchParams])
+
+  React.useEffect(() => {
+    const shouldAutoJoin = searchParams.get("autoJoin") === "1"
+    if (!shouldAutoJoin || autoJoinHandledRef.current) return
+
+    // Ensure the intent only runs once for this visit.
+    autoJoinHandledRef.current = true
+
+    if (!user?._id) return
+    if (!allowPlayerRegistration) {
+      clearAutoJoinQuery()
+      return
+    }
+    if (!hasFreeSpots) {
+      clearAutoJoinQuery()
+      return
+    }
+    if (localUserPlayerStatus !== "none" || isOnWaitingList) {
+      clearAutoJoinQuery()
+      return
+    }
+    if (participationMode === "pair" || participationMode === "team") {
+      clearAutoJoinQuery()
+      return
+    }
+
+    void (async () => {
+      await handleSelfSignUp()
+      clearAutoJoinQuery()
+    })()
+  }, [
+    allowPlayerRegistration,
+    clearAutoJoinQuery,
+    hasFreeSpots,
+    isOnWaitingList,
+    localUserPlayerStatus,
+    participationMode,
+    searchParams,
+    user?._id,
+  ])
 
   const handleCopyPlayers = () => {
     try{
@@ -543,6 +621,13 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
     if (!playerId) return null
 
     const isCheckedIn = player.status === 'checked-in'
+    const isCurrentUser = Boolean(
+      currentUserAppliedEntryId && playerId?.toString() === currentUserAppliedEntryId.toString(),
+    )
+    const canWithdrawOwnApplication =
+      isCurrentUser &&
+      player.status === "applied" &&
+      isPending
 
     return (
       <div className="flex flex-col items-center gap-2">
@@ -584,6 +669,11 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             </Button>
           </div>
         )}
+        {canWithdrawOwnApplication ? (
+          <Button size="sm" variant="warning" onClick={() => handleSelfWithdraw(currentUserAppliedEntryId)}>
+            Jelentkezés törlése
+          </Button>
+        ) : null}
       </div>
     )
   }
@@ -662,7 +752,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                   Leiratkozás a várólistáról
                 </Button>
               </div>
-            ) : localUserPlayerId && localUserPlayerStatus !== 'none' ? (
+            ) : isUserRegistered ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">Már jelentkeztél erre a tornára.</p>
@@ -670,8 +760,12 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
                     Ha mégsem tudsz részt venni, itt visszavonhatod a jelentkezésedet.
                   </p>
                 </div>
-                {localUserPlayerStatus === 'applied' && (
-                  <Button size="sm" variant="warning" onClick={handleSelfWithdraw}>
+                {(localUserPlayerStatus === 'applied' || Boolean(currentUserAppliedEntryId)) && (
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    onClick={() => handleSelfWithdraw(currentUserAppliedEntryId)}
+                  >
                     Jelentkezés visszavonása
                   </Button>
                 )}
@@ -680,7 +774,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             
             <div className={cn(
               "flex items-center gap-2 pt-2",
-              (localUserPlayerId && localUserPlayerStatus !== 'none' || isOnWaitingList) ? "border-t border-indigo-500/20" : ""
+              (isUserRegistered || isOnWaitingList) ? "border-t border-indigo-500/20" : ""
             )}>
               <Button
                 size="sm"
@@ -729,7 +823,7 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
             )
           ) : (
             <Button asChild>
-              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}?tab=players`)}`}>
+              <Link href={`/auth/login?redirect=${encodeURIComponent(`/tournaments/${code}?tab=players&autoJoin=1`)}`}>
                 Jelentkezéshez lépj be
               </Link>
             </Button>

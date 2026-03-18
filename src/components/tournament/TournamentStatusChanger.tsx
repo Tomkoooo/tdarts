@@ -29,6 +29,7 @@ interface TournamentStatusManagerProps {
   tournament: Tournament
   userClubRole: "admin" | "moderator" | "member" | "none"
   onRefetch: () => void
+  section?: "all" | "groups" | "knockout"
 }
 
 type KnockoutMode = "automatic" | "manual"
@@ -48,6 +49,7 @@ export default function TournamentStatusChanger({
   tournament,
   userClubRole,
   onRefetch,
+  section = "all",
 }: TournamentStatusManagerProps) {
   const t = useTranslations("Tournament.components");
   const tTour = useTranslations("Tournament");
@@ -99,6 +101,8 @@ export default function TournamentStatusChanger({
     boardCount === 0 ||
     tournamentFormat === "knockout" ||
     (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(boardCount))
+  const showGroupsControls = section === "all" || section === "groups"
+  const showKnockoutControls = section === "all" || section === "knockout"
 
   const resetError = () => setError(null)
 
@@ -478,7 +482,8 @@ export default function TournamentStatusChanger({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {tournamentStatus === "pending" &&
+            {showGroupsControls &&
+              tournamentStatus === "pending" &&
               (tournamentFormat === "group" || tournamentFormat === "group_knockout") && (
                 <Button
                   variant="secondary"
@@ -490,7 +495,8 @@ export default function TournamentStatusChanger({
                 </Button>
               )}
 
-            {((tournamentStatus === "group-stage" &&
+            {showKnockoutControls &&
+              ((tournamentStatus === "group-stage" &&
               (tournamentFormat === "knockout" || tournamentFormat === "group_knockout")) ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
                 <Button
@@ -503,7 +509,7 @@ export default function TournamentStatusChanger({
                   {t("egyenes_kieses_generalasa_msbj")}</Button>
               )}
 
-            {tournamentStatus === "knockout" && (
+            {showKnockoutControls && tournamentStatus === "knockout" && (
               <Button
                 variant="outline"
                 className="flex-1 min-w-[200px]"
@@ -516,7 +522,8 @@ export default function TournamentStatusChanger({
               </Button>
             )}
 
-            {(tournamentStatus === "knockout" ||
+            {showKnockoutControls &&
+              (tournamentStatus === "knockout" ||
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
                 <Button variant="destructive" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
@@ -525,7 +532,8 @@ export default function TournamentStatusChanger({
               )}
           </div>
 
-          {!isGroupGenerationAllowed &&
+          {showGroupsControls &&
+            !isGroupGenerationAllowed &&
             tournamentStatus === "pending" &&
             (tournamentFormat === "group" || tournamentFormat === "group_knockout") &&
             boardCount > 0 && (
@@ -549,7 +557,7 @@ export default function TournamentStatusChanger({
             </Alert>
           )}
 
-          {isPendingKnockoutCancel && (
+          {showKnockoutControls && isPendingKnockoutCancel && (
             <Alert variant="warning">
               <AlertTitle>{tTour('status_changer.cancel_knockout_dialog.pending_title')}</AlertTitle>
               <AlertDescription className="space-y-3">

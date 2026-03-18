@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/Input"
 import { Label } from "@/components/ui/Label"
 import { coerceNumericValue } from "@/lib/number-input"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminYearWrapActions } from "@/features/admin/actions/adminDomains.action"
 
 export function YearWrapCard() {
     const t = useTranslations("Admin.components");
@@ -28,11 +28,7 @@ export function YearWrapCard() {
 
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({
-        path: "/api/admin/year-wrap",
-        method: "POST",
-        body: { year, confirm: confirmText },
-      })
+      const response = await adminYearWrapActions.wrap(year, confirmText)
 
       if (response.data?.success) {
         toast.success(`Sikeres évzárás! Feldolgozva: ${response.data.processed}, Kiosztott címek: ${response.data.honorsAwarded}`)
@@ -55,11 +51,7 @@ export function YearWrapCard() {
 
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({
-        path: "/api/admin/restore-stats",
-        method: "POST",
-        body: { year },
-      })
+      const response = await adminYearWrapActions.restore(year)
 
       if (response.data?.success) {
         toast.success(response.data.message || "Sikeres visszaállítás!")

@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/Label"
 import { Input } from "@/components/ui/Input"
-import axios from "axios"
 import { showErrorToast } from "@/lib/toastUtils"
 import toast from "react-hot-toast"
+import { updateTournamentBoardAction } from "@/features/tournaments/actions/manageTournament.action"
 
 interface TournamentBoardsViewProps {
   tournament: any
@@ -85,12 +85,18 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
       if (!editingBoard) return;
       setIsSaving(true);
       try {
-          const response = await axios.patch(`/api/tournaments/${tournamentId}/boards/${editingBoard.boardNumber}`, editForm);
-          if (response.data.success) {
+          const response = await updateTournamentBoardAction({
+            code: tournamentId,
+            boardNumber: editingBoard.boardNumber,
+            name: editForm.name,
+            scoliaSerialNumber: editForm.scoliaSerialNumber,
+            scoliaAccessToken: editForm.scoliaAccessToken,
+          });
+          if ((response as any)?.success) {
               toast.success(tTour('boards_view.toast_save_success'));
               setEditingBoard(null);
               // Update local state
-              setTournament(response.data.tournament);
+              setTournament((response as any).tournament);
           }
       } catch (error: any) {
           console.error("Failed to save board settings:", error);

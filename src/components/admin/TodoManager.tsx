@@ -18,7 +18,7 @@ import {
   IconCircleX
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
+import { adminTodosActions } from '@/features/admin/actions/adminDomains.action';
 
 interface Todo {
   _id: string;
@@ -88,8 +88,8 @@ export default function TodoManager() {
     try {
       setLoading(true);
       const [todosResponse, statsResponse] = await Promise.all([
-        adminApiRequestAction({ path: '/api/admin/todos', method: 'GET' }),
-        adminApiRequestAction({ path: '/api/admin/todos/stats', method: 'GET' })
+        adminTodosActions.list(),
+        adminTodosActions.stats()
       ]);
 
       setTodos((todosResponse.data?.todos || []) as Todo[]);
@@ -109,7 +109,7 @@ export default function TodoManager() {
     try {
       if (!newTodo.title.trim()) return;
 
-      await adminApiRequestAction({ path: '/api/admin/todos', method: 'POST', body: newTodo });
+      await adminTodosActions.create(newTodo as unknown as Record<string, unknown>);
       setNewTodo({
         title: '',
         description: '',
@@ -127,7 +127,7 @@ export default function TodoManager() {
 
   const handleUpdateTodo = async (todoId: string, updates: Partial<Todo>) => {
     try {
-      await adminApiRequestAction({ path: `/api/admin/todos/${todoId}`, method: 'PUT', body: updates });
+      await adminTodosActions.update(todoId, updates as unknown as Record<string, unknown>);
       setEditingTodo(null);
       fetchTodos();
     } catch (error) {
@@ -139,7 +139,7 @@ export default function TodoManager() {
     if (!confirm(t('toasts.delete_confirm'))) return;
 
     try {
-      await adminApiRequestAction({ path: `/api/admin/todos/${todoId}`, method: 'DELETE' });
+      await adminTodosActions.delete(todoId);
       fetchTodos();
     } catch (error) {
       console.error('Error deleting todo:', error);

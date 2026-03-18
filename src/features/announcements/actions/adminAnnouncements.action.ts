@@ -10,15 +10,12 @@ import { withTelemetry } from '@/shared/lib/withTelemetry';
 
 async function assertGlobalAdmin() {
   const authResult = await authorizeUserResult();
-  if (!authResult.ok) return authResult;
+  if (!authResult.ok) {
+    throw new Error(authResult.message || 'Unauthorized');
+  }
   const isAdmin = await AuthorizationService.isGlobalAdmin(authResult.data.userId);
   if (!isAdmin) {
-    return {
-      ok: false as const,
-      code: 'FORBIDDEN' as const,
-      status: 403,
-      message: 'Admin access required',
-    };
+    throw new Error('Admin access required');
   }
   return authResult;
 }
@@ -31,8 +28,7 @@ export async function getAdminAnnouncementsAction(input: {
   const run = withTelemetry(
     'admin.announcements.list',
     async (payload: { page?: number; limit?: number; search?: string }) => {
-      const authResult = await assertGlobalAdmin();
-      if (!authResult.ok) return authResult;
+      await assertGlobalAdmin();
       const page = Number(payload.page || 1);
       const limit = Number(payload.limit || 10);
       const data = await AnnouncementService.getAnnouncementsForAdmin(
@@ -68,8 +64,7 @@ export async function createAdminAnnouncementAction(input: unknown) {
   const run = withTelemetry(
     'admin.announcements.create',
     async (payload: unknown) => {
-      const authResult = await assertGlobalAdmin();
-      if (!authResult.ok) return authResult;
+      await assertGlobalAdmin();
       const parsed = announcementPayloadSchema.parse(payload);
       const created = await AnnouncementService.createAnnouncement(parsed as any);
       return serializeForClient({ success: true, announcement: created });
@@ -90,8 +85,7 @@ export async function updateAdminAnnouncementAction(input: {
   const run = withTelemetry(
     'admin.announcements.update',
     async ({ id, payload }: { id: string; payload: unknown }) => {
-      const authResult = await assertGlobalAdmin();
-      if (!authResult.ok) return authResult;
+      await assertGlobalAdmin();
       const parsedPayload = announcementPayloadSchema.parse(payload);
       const updated = await AnnouncementService.updateAnnouncement(id, parsedPayload as any);
       return serializeForClient({ success: true, announcement: updated });
@@ -109,8 +103,7 @@ export async function deleteAdminAnnouncementAction(input: { id: string }) {
   const run = withTelemetry(
     'admin.announcements.delete',
     async ({ id }: { id: string }) => {
-      const authResult = await assertGlobalAdmin();
-      if (!authResult.ok) return authResult;
+      await assertGlobalAdmin();
       const deleted = await AnnouncementService.deleteAnnouncement(id);
       return { success: deleted };
     },
@@ -127,8 +120,7 @@ export async function toggleAdminAnnouncementAction(input: { id: string }) {
   const run = withTelemetry(
     'admin.announcements.toggle',
     async ({ id }: { id: string }) => {
-      const authResult = await assertGlobalAdmin();
-      if (!authResult.ok) return authResult;
+      await assertGlobalAdmin();
       const toggled = await AnnouncementService.toggleAnnouncement(id);
       return serializeForClient({ success: true, announcement: toggled });
     },

@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import {
   IconTrophy,
@@ -34,7 +34,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import Pagination from "@/components/common/Pagination"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminChartsActions, adminTournamentsActions } from "@/features/admin/actions/adminDomains.action"
 
 interface AdminTournament {
   _id: string
@@ -92,6 +92,10 @@ export default function AdminTournamentsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [paginationTotal, setPaginationTotal] = useState(0)
+  const loadTournamentsDailyChart = useCallback(
+    () => adminChartsActions.tournamentsDaily(),
+    []
+  )
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -108,10 +112,13 @@ export default function AdminTournamentsPage() {
   const fetchTournaments = async (p: number, search: string, status: string, verified: string, sandbox: string) => {
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({
-        path: "/api/admin/tournaments",
-        method: "GET",
-        params: { page: p, limit: 10, search, status, verified, sandbox },
+      const response = await adminTournamentsActions.list({
+        page: p,
+        limit: 10,
+        search,
+        status,
+        verified,
+        sandbox,
       })
       const payload = response.data || {}
       setTournaments(payload.tournaments || [])
@@ -202,7 +209,12 @@ export default function AdminTournamentsPage() {
       </div>
 
       {/* Daily Chart */}
-      <DailyChart title={t("versenyek_napi_indítása")} apiEndpoint="/api/admin/charts/tournaments/daily" color="warning" />
+      <DailyChart
+        title={t("versenyek_napi_indítása")}
+        loadData={loadTournamentsDailyChart}
+        loadKey="tournaments-daily"
+        color="warning"
+      />
 
       {/* Filters & Content */}
       <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">

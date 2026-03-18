@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/Button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { SmartInput } from "@/components/admin/SmartInput"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminTodosActions } from "@/features/admin/actions/adminDomains.action"
 
 // --- Types ---
 interface TodoItem {
@@ -138,7 +138,7 @@ export default function SmartTodoManager() {
   const fetchTodos = async () => {
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({ path: "/api/admin/todos", method: "GET" })
+      const response = await adminTodosActions.list()
       setTodos((response.data?.todos || []) as TodoItem[])
     } catch (error) {
       console.error("Error fetching todos", error)
@@ -154,14 +154,10 @@ export default function SmartTodoManager() {
 
   const handleAddTodo = async (todoData: Partial<TodoItem>) => {
     try {
-      const response = await adminApiRequestAction({
-        path: "/api/admin/todos",
-        method: "POST",
-        body: {
+      const response = await adminTodosActions.create({
         ...todoData,
         status: "pending",
         isPublic: true // Default to public
-        },
       })
       setTodos(prev => [response.data?.todo || response.data, ...prev]) // Handle different API responses
       toast.success(t("feladat_hozzáadva"))
@@ -182,7 +178,7 @@ export default function SmartTodoManager() {
     setTodos(prev => prev.map(t => t._id === id ? { ...t, status: newStatus } : t))
 
     try {
-      await adminApiRequestAction({ path: `/api/admin/todos/${id}`, method: "PUT", body: { status: newStatus } })
+      await adminTodosActions.update(id, { status: newStatus })
     } catch (error) {
       console.error("Error updating todo", error)
       toast.error(t("nem_sikerült_frissíteni"))
@@ -198,7 +194,7 @@ export default function SmartTodoManager() {
     setTodos(prev => prev.filter(t => t._id !== id))
 
     try {
-      await adminApiRequestAction({ path: `/api/admin/todos/${id}`, method: "DELETE" })
+      await adminTodosActions.delete(id)
       toast.success(t("feladat_törölve"))
     } catch (error) {
       console.error("Error deleting todo", error)

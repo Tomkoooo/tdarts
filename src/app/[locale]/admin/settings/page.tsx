@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { YearWrapCard } from "@/components/admin/YearWrapCard"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminSettingsActions } from "@/features/admin/actions/adminDomains.action"
 
 interface SystemInfo {
   version: string
@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
   const fetchSystemInfo = async () => {
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({ path: "/api/admin/system-info", method: "GET" })
+      const response = await adminSettingsActions.getSystemInfo()
       setSystemInfo((response.data || null) as any)
     } catch (error: any) {
       console.error("Error fetching system info:", error)

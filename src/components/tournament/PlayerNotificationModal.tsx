@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import axios from "axios"
 import { toast } from "react-hot-toast"
 import { IconMail, IconSend, IconEye, IconEyeOff } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
@@ -20,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/Badge"
 import { Separator } from "@/components/ui/separator"
 import { showErrorToast } from "@/lib/toastUtils"
+import { sendTournamentPlayerNotificationAction } from "@/features/tournaments/actions/manageTournament.action"
 
 interface PlayerNotificationModalProps {
   isOpen: boolean
@@ -55,7 +55,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
 
     try {
       setIsLoading(true)
-      const response = await axios.post("/api/tournaments/notify-player", {
+      const response = await sendTournamentPlayerNotificationAction({
         playerId: player.playerReference._id,
         subject: subject.trim(),
         message: message.trim(),
@@ -63,7 +63,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
         tournamentName,
       })
 
-      if (response.data?.success) {
+      if ((response as any)?.success) {
         toast.success(t("success"))
         setSubject("")
         setMessage("")
@@ -96,7 +96,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
       <DialogContent className={`max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-card/95 p-0 text-foreground ${PANEL_SHADOW}`}>
-        <DialogHeader className="space-y-3 bg-card/90 px-6 py-5 flex-shrink-0 shadow-sm shadow-primary/5">
+        <DialogHeader className="space-y-3 bg-card/90 px-6 py-5 shrink-0 shadow-sm shadow-primary/5">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <IconMail className="h-5 w-5 text-primary" />
             {t("title")}
@@ -179,7 +179,7 @@ export default function PlayerNotificationModal({ isOpen, onClose, player, tourn
           </div>
           </div>
 
-          <DialogFooter className="flex-shrink-0 flex flex-col items-stretch gap-3 px-6 py-4 sm:flex-row sm:justify-end shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+          <DialogFooter className="shrink-0 flex flex-col items-stretch gap-3 px-6 py-4 sm:flex-row sm:justify-end shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
             <Button type="submit" disabled={isLoading} variant="success" className="gap-2">
               <IconSend className="h-4 w-4" />
               {t("send")}

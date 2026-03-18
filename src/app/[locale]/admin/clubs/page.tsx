@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 
-import { useEffect, useState, useMemo } from "react"
+import { useCallback, useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import {
   IconBuilding,
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminChartsActions, adminClubsActions } from "@/features/admin/actions/adminDomains.action"
 // Use the same pagination component as Users page if it exists, or a simple placeholder
 import Pagination from "@/components/common/Pagination"
 
@@ -77,6 +77,7 @@ export default function AdminClubsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [paginationTotal, setPaginationTotal] = useState(0)
+  const loadClubsDailyChart = useCallback(() => adminChartsActions.clubsDaily(), [])
 
   // Debounce Search
   useEffect(() => {
@@ -95,10 +96,11 @@ export default function AdminClubsPage() {
   const fetchClubs = async (pageToFetch: number, search: string, verified: string) => {
     try {
       setLoading(true)
-      const response = await adminApiRequestAction({
-        path: "/api/admin/clubs",
-        method: "GET",
-        params: { page: pageToFetch, limit: 10, search, verified },
+      const response = await adminClubsActions.list({
+        page: pageToFetch,
+        limit: 10,
+        search,
+        verified,
       })
       
       const payload = response.data || {}
@@ -158,7 +160,12 @@ export default function AdminClubsPage() {
       </div>
 
       {/* Daily Chart */}
-      <DailyChart title={t("klubok_napi_létrehozása")} apiEndpoint="/api/admin/charts/clubs/daily" color="secondary" />
+      <DailyChart
+        title={t("klubok_napi_létrehozása")}
+        loadData={loadClubsDailyChart}
+        loadKey="clubs-daily"
+        color="secondary"
+      />
 
       {/* Main Content Card */}
       <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">

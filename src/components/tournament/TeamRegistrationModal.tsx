@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button"
 import { FormField } from "@/components/ui/form-field"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import PlayerSearch from "@/components/club/PlayerSearch"
+import { registerTeamForTournamentClientAction } from "@/features/tournaments/actions/tournamentRoster.action"
 
 interface TeamRegistrationModalProps {
   isOpen: boolean
@@ -74,20 +75,16 @@ export default function TeamRegistrationModal({
               : [{ name: partnerEmail.trim().split("@")[0], email: partnerEmail.trim().toLowerCase() }]),
           ]
 
-      const response = await fetch(`/api/tournaments/${tournamentCode}/players`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: teamName,
-          members,
-          partnerEmail: !isModeratorMode && !member1 ? partnerEmail.trim().toLowerCase() : undefined,
-        }),
-      })
+      const data = await registerTeamForTournamentClientAction({
+        code: tournamentCode,
+        teamName,
+        members,
+        partnerEmail: !isModeratorMode && !member1 ? partnerEmail.trim().toLowerCase() : undefined,
+        isModeratorMode,
+      }) as any
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Hiba történt a csapat regisztráció során")
+      if (!data?.success) {
+        throw new Error(data?.message || data?.error || "Hiba történt a csapat regisztráció során")
       }
 
       if (data.message === 'waiting_for_partner') {

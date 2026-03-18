@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-16T10:16:49.476Z",
+  "generatedAt": "2026-03-18T07:20:42.412Z",
   "issuesByContext": {
     "page-matrix-landing": [
       {
@@ -25,12 +25,6 @@
         "url": "http://127.0.0.1:3000/en/landing",
         "category": "console",
         "message": "[warning] Image with src \"/partners/efott_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
-      },
-      {
-        "context": "page-matrix-landing",
-        "url": "http://127.0.0.1:3000/en/landing",
-        "category": "requestfailure",
-        "message": "POST http://127.0.0.1:3000/en/landing - net::ERR_ABORTED"
       },
       {
         "context": "page-matrix-landing",
@@ -145,6 +139,12 @@
         "url": "http://127.0.0.1:3000/en/home",
         "category": "requestfailure",
         "message": "POST http://127.0.0.1:3000/en/home - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-home",
+        "url": "http://127.0.0.1:3000/en/home",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/home - net::ERR_ABORTED"
       }
     ],
     "page-matrix-search": [
@@ -177,6 +177,18 @@
         "url": "http://127.0.0.1:3000/en/search",
         "category": "requestfailure",
         "message": "POST http://127.0.0.1:3000/en/search - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-search",
+        "url": "http://127.0.0.1:3000/en/search",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/search - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-search",
+        "url": "http://127.0.0.1:3000/en/search",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/search - net::ERR_ABORTED"
       }
     ],
     "page-matrix-map": [
@@ -185,11 +197,30 @@
         "url": "http://127.0.0.1:3000/en/map",
         "category": "requestfailure",
         "message": "POST http://127.0.0.1:3000/en/map - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-map",
+        "url": "http://127.0.0.1:3000/en/map",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/map - net::ERR_ABORTED"
       }
     ],
-    "page-matrix-board": [],
+    "page-matrix-board": [
+      {
+        "context": "page-matrix-board",
+        "url": "http://127.0.0.1:3000/en/board",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/board - net::ERR_ABORTED"
+      }
+    ],
     "page-matrix-board-tournament": [],
     "page-matrix-tournament-detail": [
+      {
+        "context": "page-matrix-tournament-detail",
+        "url": "http://127.0.0.1:3000/en/tournaments/N7A8",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/tournaments/N7A8 - net::ERR_ABORTED"
+      },
       {
         "context": "page-matrix-tournament-detail",
         "url": "http://127.0.0.1:3000/en/tournaments/N7A8",
@@ -198,6 +229,30 @@
       }
     ],
     "page-matrix-club-detail": [
+      {
+        "context": "page-matrix-club-detail",
+        "url": "http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55 - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-club-detail",
+        "url": "http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55 - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-club-detail",
+        "url": "http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55 - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-club-detail",
+        "url": "http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55 - net::ERR_ABORTED"
+      },
       {
         "context": "page-matrix-club-detail",
         "url": "http://127.0.0.1:3000/en/clubs/68f6afb145352f8e4076ed55",
@@ -316,6 +371,18 @@
         "context": "page-matrix-admin-dashboard",
         "url": "http://127.0.0.1:3000/en/profile",
         "category": "console",
+        "message": "[error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <div className=\"mt-auto p-...\">\n      <div>\n      ...\n        <MenuProvider scope={{Menu:[...], ...}} open={false} onOpenChange={function useCallbackRef.useMemo} ...>\n          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>\n            <DropdownMenuTrigger asChild={true}>\n              <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>\n                <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" id=\"radix-_R_2...\" aria-haspopup=\"menu\" aria-expanded={false} ...>\n                          <Primitive.button.Slot type=\"button\" id=\"radix-_R_2...\" aria-haspopup=\"menu\" ...>\n                            <Primitive.button.SlotClone type=\"button\" id=\"radix-_R_2...\" aria-haspopup=\"menu\" ...>\n                              <button\n                                className=\"w-full flex items-center gap-3 rounded-xl p-2.5 text-left transition-colors...\"\n                                type=\"button\"\n+                               id=\"radix-_R_2qp9etb_\"\n-                               id=\"radix-_R_1dcl9etb_\"\n                                aria-haspopup=\"menu\"\n                                aria-expanded={false}\n                                aria-controls={undefined}\n                                data-state=\"closed\"\n                                data-disabled={undefined}\n                                disabled={false}\n                                onPointerDown={function handleEvent}\n                                onKeyDown={function handleEvent}\n                                ref={function}\n                              >\n            ...\n      ...\n        <MenuProvider scope={{Menu:[...], ...}} open={false} onOpenChange={function useCallbackRef.useMemo} ...>\n          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>\n            <DropdownMenuTrigger asChild={true}>\n              <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>\n                <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" id=\"radix-_R_3...\" aria-haspopup=\"menu\" aria-expanded={false} ...>\n                          <Primitive.button.Slot type=\"button\" id=\"radix-_R_3...\" aria-haspopup=\"menu\" ...>\n                            <Primitive.button.SlotClone type=\"button\" id=\"radix-_R_3...\" aria-haspopup=\"menu\" ...>\n                              <button\n                                className=\"w-full flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-...\"\n                                type=\"button\"\n+                               id=\"radix-_R_3qp9etb_\"\n-                               id=\"radix-_R_1tcl9etb_\"\n                                aria-haspopup=\"menu\"\n                                aria-expanded={false}\n                                aria-controls={undefined}\n                                data-state=\"closed\"\n                                data-disabled={undefined}\n                                disabled={false}\n                                onPointerDown={function handleEvent}\n                                onKeyDown={function handleEvent}\n                                ref={function}\n                              >\n            ...\n"
+      },
+      {
+        "context": "page-matrix-admin-dashboard",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "console",
+        "message": "[error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <SelectProvider required={undefined} scope={undefined} trigger={null} ...>\n      <SelectCollectionProvider scope={undefined}>\n        <SelectCollectionProviderProvider scope={undefined} itemMap={Map} collectionRef={{current:null}}>\n          <SelectProvider scope={undefined} onNativeOptionAdd={function Select.useCallback} ...>\n            <_c id=\"country\">\n              <SelectTrigger ref={null} className={\"flex h-1...\"} id=\"country\">\n                <PopperAnchor asChild={true} __scopePopper={{Popper:[...]}}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" role=\"combobox\" aria-controls=\"radix-_R_5...\" ...>\n                          <button\n                            type=\"button\"\n                            role=\"combobox\"\n+                           aria-controls=\"radix-_R_534r5esnencp9etb_\"\n-                           aria-controls=\"radix-_R_2hidinebnbmcl9etb_\"\n                            aria-expanded={false}\n                            aria-required={undefined}\n                            aria-autocomplete=\"none\"\n                            dir=\"ltr\"\n                            data-state=\"closed\"\n                            disabled={false}\n                            data-disabled={undefined}\n                            data-placeholder=\"\"\n                            className={\"flex h-10 w-full items-center justify-between rounded-md border border-input ...\"}\n                            id=\"country\"\n                            onClick={function handleEvent}\n                            onPointerDown={function handleEvent}\n                            onKeyDown={function handleEvent}\n                            ref={function}\n                          >\n            ...\n      ...\n"
+      },
+      {
+        "context": "page-matrix-admin-dashboard",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "console",
         "message": "[warning] Image with src \"/partners/mdsz_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
       },
       {
@@ -335,12 +402,6 @@
         "url": "http://127.0.0.1:3000/en/profile",
         "category": "console",
         "message": "[warning] Image with src \"/partners/efott_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
-      },
-      {
-        "context": "page-matrix-admin-dashboard",
-        "url": "http://127.0.0.1:3000/en/profile",
-        "category": "requestfailure",
-        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
       },
       {
         "context": "page-matrix-admin-dashboard",
@@ -366,6 +427,18 @@
         "context": "page-matrix-admin-users",
         "url": "http://127.0.0.1:3000/en/profile",
         "category": "console",
+        "message": "[error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <div className=\"mt-auto p-...\">\n      <div>\n      ...\n        <MenuProvider scope={{Menu:[...], ...}} open={false} onOpenChange={function useCallbackRef.useMemo} ...>\n          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>\n            <DropdownMenuTrigger asChild={true}>\n              <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>\n                <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" id=\"radix-_R_b...\" aria-haspopup=\"menu\" aria-expanded={false} ...>\n                          <Primitive.button.Slot type=\"button\" id=\"radix-_R_b...\" aria-haspopup=\"menu\" ...>\n                            <Primitive.button.SlotClone type=\"button\" id=\"radix-_R_b...\" aria-haspopup=\"menu\" ...>\n                              <button\n                                className=\"w-full flex items-center gap-3 rounded-xl p-2.5 text-left transition-colors...\"\n                                type=\"button\"\n+                               id=\"radix-_R_bb59etb_\"\n-                               id=\"radix-_R_1dcl9etb_\"\n                                aria-haspopup=\"menu\"\n                                aria-expanded={false}\n                                aria-controls={undefined}\n                                data-state=\"closed\"\n                                data-disabled={undefined}\n                                disabled={false}\n                                onPointerDown={function handleEvent}\n                                onKeyDown={function handleEvent}\n                                ref={function}\n                              >\n            ...\n      ...\n        <MenuProvider scope={{Menu:[...], ...}} open={false} onOpenChange={function useCallbackRef.useMemo} ...>\n          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>\n            <DropdownMenuTrigger asChild={true}>\n              <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>\n                <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" id=\"radix-_R_f...\" aria-haspopup=\"menu\" aria-expanded={false} ...>\n                          <Primitive.button.Slot type=\"button\" id=\"radix-_R_f...\" aria-haspopup=\"menu\" ...>\n                            <Primitive.button.SlotClone type=\"button\" id=\"radix-_R_f...\" aria-haspopup=\"menu\" ...>\n                              <button\n                                className=\"w-full flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-...\"\n                                type=\"button\"\n+                               id=\"radix-_R_fb59etb_\"\n-                               id=\"radix-_R_1tcl9etb_\"\n                                aria-haspopup=\"menu\"\n                                aria-expanded={false}\n                                aria-controls={undefined}\n                                data-state=\"closed\"\n                                data-disabled={undefined}\n                                disabled={false}\n                                onPointerDown={function handleEvent}\n                                onKeyDown={function handleEvent}\n                                ref={function}\n                              >\n            ...\n"
+      },
+      {
+        "context": "page-matrix-admin-users",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "console",
+        "message": "[error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <SelectProvider required={undefined} scope={undefined} trigger={null} ...>\n      <SelectCollectionProvider scope={undefined}>\n        <SelectCollectionProviderProvider scope={undefined} itemMap={Map} collectionRef={{current:null}}>\n          <SelectProvider scope={undefined} onNativeOptionAdd={function Select.useCallback} ...>\n            <_c id=\"country\">\n              <SelectTrigger ref={null} className={\"flex h-1...\"} id=\"country\">\n                <PopperAnchor asChild={true} __scopePopper={{Popper:[...]}}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" role=\"combobox\" aria-controls=\"radix-_R_k...\" ...>\n                          <button\n                            type=\"button\"\n                            role=\"combobox\"\n+                           aria-controls=\"radix-_R_kcjclritqtj59etb_\"\n-                           aria-controls=\"radix-_R_2hidinebnbmcl9etb_\"\n                            aria-expanded={false}\n                            aria-required={undefined}\n                            aria-autocomplete=\"none\"\n                            dir=\"ltr\"\n                            data-state=\"closed\"\n                            disabled={false}\n                            data-disabled={undefined}\n                            data-placeholder=\"\"\n                            className={\"flex h-10 w-full items-center justify-between rounded-md border border-input ...\"}\n                            id=\"country\"\n                            onClick={function handleEvent}\n                            onPointerDown={function handleEvent}\n                            onKeyDown={function handleEvent}\n                            ref={function}\n                          >\n            ...\n      ...\n"
+      },
+      {
+        "context": "page-matrix-admin-users",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "console",
         "message": "[warning] Image with src \"/partners/mdsz_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
       },
       {
@@ -385,18 +458,6 @@
         "url": "http://127.0.0.1:3000/en/profile",
         "category": "console",
         "message": "[warning] Image with src \"/partners/efott_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
-      },
-      {
-        "context": "page-matrix-admin-users",
-        "url": "http://127.0.0.1:3000/en/profile",
-        "category": "requestfailure",
-        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
-      },
-      {
-        "context": "page-matrix-admin-users",
-        "url": "http://127.0.0.1:3000/en/profile",
-        "category": "requestfailure",
-        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
       },
       {
         "context": "page-matrix-admin-users",
@@ -416,18 +477,6 @@
         "context": "page-matrix-admin-clubs",
         "url": "http://127.0.0.1:3000/en/profile",
         "category": "console",
-        "message": "[error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <div className=\"mt-auto p-...\">\n      <div>\n      ...\n        <MenuProvider scope={{Menu:[...], ...}} open={false} onOpenChange={function useCallbackRef.useMemo} ...>\n          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>\n            <DropdownMenuTrigger asChild={true}>\n              <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>\n                <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" id=\"radix-_R_1...\" aria-haspopup=\"menu\" aria-expanded={false} ...>\n                          <Primitive.button.Slot type=\"button\" id=\"radix-_R_1...\" aria-haspopup=\"menu\" ...>\n                            <Primitive.button.SlotClone type=\"button\" id=\"radix-_R_1...\" aria-haspopup=\"menu\" ...>\n                              <button\n                                className=\"w-full flex items-center gap-3 rounded-xl p-2.5 text-left transition-colors...\"\n                                type=\"button\"\n+                               id=\"radix-_R_1eb59etb_\"\n-                               id=\"radix-_R_5pcl9etb_\"\n                                aria-haspopup=\"menu\"\n                                aria-expanded={false}\n                                aria-controls={undefined}\n                                data-state=\"closed\"\n                                data-disabled={undefined}\n                                disabled={false}\n                                onPointerDown={function handleEvent}\n                                onKeyDown={function handleEvent}\n                                ref={function}\n                              >\n            ...\n      ...\n        <MenuProvider scope={{Menu:[...], ...}} open={false} onOpenChange={function useCallbackRef.useMemo} ...>\n          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>\n            <DropdownMenuTrigger asChild={true}>\n              <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>\n                <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" id=\"radix-_R_1...\" aria-haspopup=\"menu\" aria-expanded={false} ...>\n                          <Primitive.button.Slot type=\"button\" id=\"radix-_R_1...\" aria-haspopup=\"menu\" ...>\n                            <Primitive.button.SlotClone type=\"button\" id=\"radix-_R_1...\" aria-haspopup=\"menu\" ...>\n                              <button\n                                className=\"w-full flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-...\"\n                                type=\"button\"\n+                               id=\"radix-_R_1ub59etb_\"\n-                               id=\"radix-_R_7pcl9etb_\"\n                                aria-haspopup=\"menu\"\n                                aria-expanded={false}\n                                aria-controls={undefined}\n                                data-state=\"closed\"\n                                data-disabled={undefined}\n                                disabled={false}\n                                onPointerDown={function handleEvent}\n                                onKeyDown={function handleEvent}\n                                ref={function}\n                              >\n            ...\n"
-      },
-      {
-        "context": "page-matrix-admin-clubs",
-        "url": "http://127.0.0.1:3000/en/profile",
-        "category": "console",
-        "message": "[error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <SelectProvider required={undefined} scope={undefined} trigger={null} ...>\n      <SelectCollectionProvider scope={undefined}>\n        <SelectCollectionProviderProvider scope={undefined} itemMap={Map} collectionRef={{current:null}}>\n          <SelectProvider scope={undefined} onNativeOptionAdd={function Select.useCallback} ...>\n            <_c id=\"country\">\n              <SelectTrigger ref={null} className={\"flex h-1...\"} id=\"country\">\n                <PopperAnchor asChild={true} __scopePopper={{Popper:[...]}}>\n                  <Primitive.div asChild={true} ref={function}>\n                    <Primitive.div.Slot ref={function}>\n                      <Primitive.div.SlotClone ref={function}>\n                        <Primitive.button type=\"button\" role=\"combobox\" aria-controls=\"radix-_R_k...\" ...>\n                          <button\n                            type=\"button\"\n                            role=\"combobox\"\n+                           aria-controls=\"radix-_R_kcjclritqtj59etb_\"\n-                           aria-controls=\"radix-_R_2hidinebnbmcl9etb_\"\n                            aria-expanded={false}\n                            aria-required={undefined}\n                            aria-autocomplete=\"none\"\n                            dir=\"ltr\"\n                            data-state=\"closed\"\n                            disabled={false}\n                            data-disabled={undefined}\n                            data-placeholder=\"\"\n                            className={\"flex h-10 w-full items-center justify-between rounded-md border border-input ...\"}\n                            id=\"country\"\n                            onClick={function handleEvent}\n                            onPointerDown={function handleEvent}\n                            onKeyDown={function handleEvent}\n                            ref={function}\n                          >\n            ...\n      ...\n"
-      },
-      {
-        "context": "page-matrix-admin-clubs",
-        "url": "http://127.0.0.1:3000/en/profile",
-        "category": "console",
         "message": "[warning] Image with src \"/partners/mdsz_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
       },
       {
@@ -447,6 +496,30 @@
         "url": "http://127.0.0.1:3000/en/profile",
         "category": "console",
         "message": "[warning] Image with src \"/partners/efott_logo.png\" has \"fill\" but is missing \"sizes\" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes"
+      },
+      {
+        "context": "page-matrix-admin-clubs",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-admin-clubs",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-admin-clubs",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
+      },
+      {
+        "context": "page-matrix-admin-clubs",
+        "url": "http://127.0.0.1:3000/en/profile",
+        "category": "requestfailure",
+        "message": "POST http://127.0.0.1:3000/en/profile - net::ERR_ABORTED"
       },
       {
         "context": "page-matrix-admin-clubs",

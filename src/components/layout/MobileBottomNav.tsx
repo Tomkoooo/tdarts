@@ -1,125 +1,172 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
-  IconActivityHeartbeat,
   IconDeviceDesktop,
   IconHome,
   IconSearch,
+  IconTrophy,
   IconUser,
   IconUsersGroup,
-  IconWorld,
 } from "@tabler/icons-react";
 import { stripLocalePrefix } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { useUnreadTickets } from "@/hooks/useUnreadTickets";
 import { useUserContext } from "@/hooks/useUser";
-import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/Badge";
+import { Link } from "@/i18n/routing";
+import { useOngoingTournamentQuickLink } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
 
 interface NavItem {
+  id: string;
   href: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
-  highlighted?: boolean;
+  match?: (path: string, searchParams: URLSearchParams) => boolean;
 }
 
 export const MobileBottomNav: React.FC = () => {
   const { user } = useUserContext();
   const pathname = usePathname();
-  const t = useTranslations("Navbar");
+  const searchParams = useSearchParams();
   const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) });
+  const { ongoingTournament } = useOngoingTournamentQuickLink(user?._id);
+  const hasQuickTournament = Boolean(ongoingTournament?.code);
 
   const normalizedPath = stripLocalePrefix(pathname);
 
   const navItems = React.useMemo<NavItem[]>(
     () => [
-      { href: user?._id ? "/home" : "/", icon: IconHome, label: t.has("home") ? t("home") : "Home" },
-      { href: "/landing", icon: IconWorld, label: t.has("landing") ? t("landing") : "Landing" },
-      { href: "/search", icon: IconSearch, label: t("search") },
-      { href: "/board", icon: IconDeviceDesktop, label: t("board"), highlighted: true },
-      { href: "/myclub", icon: IconUsersGroup, label: t("my_club") },
-      { href: "/profile", icon: IconUser, label: t("profile") },
+      {
+        id: "home",
+        href: "/",
+        icon: IconHome,
+        label: "Home",
+        match: (path) => path === "/" || path === "/home" || path === "/landing",
+      },
+      {
+        id: "tournaments",
+        href: "/search",
+        icon: IconSearch,
+        label: "Versenyek",
+        match: (path) => path === "/search",
+      },
+      {
+        id: "board",
+        href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
+        icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
+        label: hasQuickTournament ? "Current tournament" : "Tábla",
+        match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
+      },
+      {
+        id: "profile",
+        href: "/profile",
+        icon: IconUser,
+        label: "Profil",
+      },
+      {
+        id: "myclub",
+        href: "/myclub",
+        icon: IconUsersGroup,
+        label: "Saját klub",
+        match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
+      },
     ],
-    [t, user?._id]
+    [hasQuickTournament, ongoingTournament?.code]
   );
 
-  const isActive = (href: string): boolean => {
-    const hrefPath = href.split("?")[0];
+  const isActive = (item: NavItem): boolean => {
+    if (item.match) return item.match(normalizedPath, searchParams);
+    const hrefPath = item.href.split("?")[0];
     if (hrefPath === "/") return normalizedPath === "/" || normalizedPath === "";
-    if (hrefPath === "/search" && normalizedPath === "/search") return true;
     return normalizedPath.startsWith(hrefPath);
   };
 
-  const isLiveBoard = normalizedPath.startsWith("/board") || normalizedPath.startsWith("/tournaments");
+  const activeIndex = React.useMemo(() => {
+    const index = navItems.findIndex((item) => isActive(item));
+    return index >= 0 ? index : 0;
+  }, [navItems, normalizedPath, searchParams]);
+
+  const slotPercent = 100 / navItems.length;
+
+  const bubbleStyle = {
+    left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 1.75rem)`,
+  };
+
+  const notchStyle = {
+    left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 2.5rem)`,
+  };
 
   return (
     <nav
       className={cn(
-        "md:hidden fixed bottom-0 left-0 right-0 z-50",
-        "border-t border-border/70 bg-card/80 backdrop-blur-xl",
-        "pb-[calc(env(safe-area-inset-bottom)+0.2rem)]"
+        "fixed inset-x-0 bottom-0 z-50 md:hidden",
+        "bg-background/45 backdrop-blur-[2px]",
+        "pb-[calc(env(safe-area-inset-bottom)+0.35rem)]"
       )}
     >
-      <div
-        className="mx-auto grid h-16 max-w-xl gap-1 px-2"
-        style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
-      >
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
-          const showProfileBadge = item.href === "/profile" && unreadCount > 0;
-          const showLiveBadge = item.href === "/board" && isLiveBoard;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "relative flex flex-col items-center justify-center rounded-xl px-1 text-[11px] font-medium transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                active ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              {active ? (
-                <motion.span
-                  layoutId="mobile-bottom-active-pill"
-                  className="absolute inset-1 rounded-xl bg-primary/12"
-                  transition={{ duration: 0.2 }}
-                />
-              ) : null}
-              <div
-                className={cn(
-                  "relative z-10 flex items-center justify-center transition-transform duration-200",
-                  active ? "scale-110" : "scale-100",
-                  item.highlighted && "rounded-full bg-primary/12 p-2"
-                )}
-              >
-                <Icon size={item.highlighted ? 20 : 18} />
-                {showProfileBadge ? (
-                  <Badge className="absolute -right-3 -top-2 h-5 min-w-5 px-1 text-[10px]">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </Badge>
-                ) : null}
-                {showLiveBadge ? (
-                  <span className="absolute -right-2 -top-1 flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+      <div className="mx-auto w-full max-w-md px-3">
+        <div
+          className={cn(
+            "relative h-[4.35rem] rounded-[1.15rem] border border-border/70",
+            "bg-linear-to-b from-card/90 to-card/70 backdrop-blur-xl",
+            "shadow-[0_8px_26px_rgba(0,0,0,0.32)]"
+          )}
+        >
+          <span
+            className="pointer-events-none absolute -top-4 h-8 w-20 rounded-b-[999px] border-b border-border/60 bg-card/95 transition-all duration-500 ease-out"
+            style={notchStyle}
+          />
+          <span
+            className="pointer-events-none absolute -top-6 h-14 w-14 rounded-full border-2 border-primary/35 bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(146,34,16,0.45)] transition-all duration-500 ease-out"
+            style={bubbleStyle}
+          />
+
+          <div
+            className="grid h-full"
+            style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+          >
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item);
+              const showProfileBadge = item.href === "/profile" && unreadCount > 0;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={cn(
+                    "group relative flex h-full flex-col items-center justify-center gap-1 rounded-xl px-1",
+                    "transition-all duration-500 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+                    active ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "relative z-10 flex h-8 w-8 items-center justify-center rounded-full transition-all duration-500 ease-out",
+                      active ? "-translate-y-4 scale-110 text-primary-foreground" : "translate-y-0 scale-100"
+                    )}
+                  >
+                    <Icon size={18} />
+                    {showProfileBadge ? (
+                      <Badge className="absolute -right-3 -top-2 h-5 min-w-5 px-1 text-[10px]">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <span
+                    className={cn(
+                      "truncate text-[11px] font-semibold transition-all duration-500 ease-out",
+                      active ? "translate-y-1 scale-105 text-primary" : "translate-y-0 scale-95 opacity-80"
+                    )}
+                  >
+                    {item.label}
                   </span>
-                ) : null}
-              </div>
-              <span className="relative z-10 truncate">{item.label}</span>
-              {item.highlighted ? (
-                <IconActivityHeartbeat
-                  size={12}
-                  className={cn("absolute right-2 top-2", active ? "text-primary" : "text-muted-foreground")}
-                />
-              ) : null}
-            </Link>
-          );
-        })}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </nav>
   );

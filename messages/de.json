@@ -3698,11 +3698,63 @@
     "subheadline": "Dein Club, Turniere und Board-Aktionen sind nur einen Tipp entfernt.",
     "joinTournament": "Turnier beitreten",
     "viewStats": "Statistiken ansehen",
+    "header": {
+      "title": "Turnier-Status",
+      "openActiveTournament": "Aktives Turnier öffnen",
+      "daysUntil": "{count} Tage bis zu deinem nächsten Turnier",
+      "noDate": "Termin folgt",
+      "noTournament": "Noch keine Turnieranmeldung. Tritt einem Turnier bei und dein Plan erscheint hier.",
+      "players": "Spieler",
+      "entryFee": "Startgeld",
+      "notificationsWarning": "Du hast {count} aktive Benachrichtigungen",
+      "performance": "Deine Leistung",
+      "matchRecord": "Matches: {wins}S - {losses}N",
+      "legRecord": "Legs: {won}S - {lost}N",
+      "boardNumber": "Board {number}",
+      "boardTbd": "Board offen",
+      "nextPlaying": "Du spielst gerade auf {board}",
+      "nextScoring": "Du schreibst gerade auf {board}",
+      "nextPending": "Dein nächster Einsatz ist auf {board}",
+      "nextUnknown": "Noch keine nächste Board-Zuweisung"
+    },
     "stats": {
       "matches": "Gespielte Matches",
       "winRate": "Siegquote",
       "tournaments": "Teilgenommene Turniere",
-      "checkout": "Durchschn. Checkout"
+      "checkout": "Durchschn. Checkout",
+      "ranking": "Aktuelles Ranking"
+    },
+    "calendar": {
+      "title": "Kommender Kalender",
+      "export": "In Kalender exportieren"
+    },
+    "notifications": {
+      "title": "Benachrichtigungscenter",
+      "unread": "{count} ungelesen",
+      "profileActions": "Profilaktionen",
+      "profileActionsHint": "Vervollständige deine Profildaten und Einstellungen",
+      "feedbackResponses": "Feedback-Antworten",
+      "feedbackUnread": "{count} ungelesene Feedback-Threads",
+      "tournamentReminders": "Turniererinnerungen",
+      "reminderCount": "{count} Turniere in den nächsten 7 Tagen",
+      "spotAvailability": "Freie Turnierplätze",
+      "spotHint": "{count} Verfügbarkeitsmeldungen"
+    },
+    "currentTournament": {
+      "title": "Aktuelle Turnierübersicht",
+      "empty": "Kein aktives oder kommendes Turnier vorhanden.",
+      "boardStatusActive": "Board-Status: live und verfügbar",
+      "boardStatusUpcoming": "Board-Status: öffnet am Turniertag",
+      "openOverview": "Übersicht öffnen",
+      "openBoard": "Board öffnen",
+      "players": "Spieler",
+      "entryFee": "Startgeld"
+    },
+    "league": {
+      "title": "Liga Tabelle",
+      "empty": "Keine aktive Ligatabelle verfügbar.",
+      "points": "Pkt",
+      "open": "Liga-Details öffnen"
     },
     "upcomingTitle": "Bevorstehende Turniere",
     "seeAll": "Alle anzeigen",

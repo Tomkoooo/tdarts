@@ -22,7 +22,7 @@ test.describe("tournament admin flow", () => {
 
   test("tournament page tab navigation works", async ({ page }) => {
     await page.goto(`/en/tournaments/${tournamentCode}`);
-    const playersTab = page.getByRole("tab", { name: /players|játékos/i });
+    const playersTab = page.getByRole("tab", { name: /players|játékos/i }).first();
     if (await playersTab.isVisible()) {
       await playersTab.click();
       await expect(playersTab).toHaveAttribute("data-state", "active");

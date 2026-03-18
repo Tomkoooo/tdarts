@@ -10,9 +10,6 @@ import { stripLocalePrefix } from "@/lib/seo"
 import {
   shouldHideNavbar,
   shouldShowFooter,
-  shouldUseAppShell,
-  shouldUseAuthShell,
-  shouldUseMarketingShell,
 } from "@/lib/navigation/shell-routing"
 import { ModalProvider } from '@/components/modal/UnifiedModal'
 
@@ -31,9 +28,6 @@ export function NavbarProvider({
     return {
       shouldHide: initialShouldHide,
       showFooter: shouldShowFooter(path),
-      useAppShell: shouldUseAppShell(path),
-      useAuthShell: shouldUseAuthShell(path),
-      useMarketingShell: shouldUseMarketingShell(path),
     }
   })
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -42,16 +36,10 @@ export function NavbarProvider({
     const normalizedPath = stripLocalePrefix(pathname || "/")
     const hide = shouldHideNavbar(normalizedPath)
     const showFooter = shouldShowFooter(normalizedPath)
-    const useAppShell = shouldUseAppShell(normalizedPath)
-    const useAuthShell = shouldUseAuthShell(normalizedPath)
-    const useMarketingShell = shouldUseMarketingShell(normalizedPath)
 
     setShellState({
       shouldHide: hide,
       showFooter,
-      useAppShell,
-      useAuthShell,
-      useMarketingShell,
     })
   }, [pathname])
 
@@ -70,37 +58,36 @@ export function NavbarProvider({
     })
   }
 
-  const content = shellState.shouldHide ? (
-    <main className="flex-1">{children}</main>
-  ) : shellState.useMarketingShell ? (
-    <div className="flex min-h-screen flex-col">
+  const shellContainerClass = shellState.shouldHide
+    ? "flex min-h-screen flex-col"
+    : isCollapsed
+      ? "flex min-h-screen flex-col md:pl-(--sidebar-collapsed-width)"
+      : "flex min-h-screen flex-col md:pl-(--sidebar-width)"
+
+  const content = (
+    <div
+      className={shellContainerClass}
+      style={
+        {
+          "--app-shell-left-offset": shellState.shouldHide
+            ? "0px"
+            : isCollapsed
+              ? "var(--sidebar-collapsed-width)"
+              : "var(--sidebar-width)",
+        } as React.CSSProperties
+      }
+    >
+      {!shellState.shouldHide ? (
+        <DesktopSidebar collapsed={isCollapsed} onToggleCollapsed={handleToggleCollapsed} />
+      ) : null}
       <div className="flex flex-1 flex-col min-h-0">
-        <main className="flex-1 pb-20 md:pb-0">
+        <main className={shellState.shouldHide ? "flex-1" : "flex-1 pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-0"}>
           <PageTransitionWrapper>{children}</PageTransitionWrapper>
         </main>
-        {shellState.showFooter && <Footer />}
+        {!shellState.shouldHide && shellState.showFooter ? <Footer /> : null}
       </div>
-      <MobileBottomNav />
+      {!shellState.shouldHide ? <MobileBottomNav /> : null}
     </div>
-  ) : shellState.useAppShell ? (
-    <div className={isCollapsed ? "flex min-h-screen flex-col md:pl-[var(--sidebar-collapsed-width)]" : "flex min-h-screen flex-col md:pl-[var(--sidebar-width)]"}>
-      <DesktopSidebar collapsed={isCollapsed} onToggleCollapsed={handleToggleCollapsed} />
-      <div className="flex flex-1 flex-col min-h-0">
-        <main className="flex-1 pb-20 md:pb-0">
-          <PageTransitionWrapper>{children}</PageTransitionWrapper>
-        </main>
-        {shellState.showFooter && <Footer />}
-      </div>
-      <MobileBottomNav />
-    </div>
-  ) : shellState.useAuthShell ? (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-6">
-      <PageTransitionWrapper>{children}</PageTransitionWrapper>
-    </main>
-  ) : (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-6">
-      {children}
-    </main>
   )
 
   return <ModalProvider>{content}</ModalProvider>

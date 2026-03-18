@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import LegsViewModal from './LegsViewModal';
 import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
 import { useUserContext } from '@/hooks/useUser';
@@ -18,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import{ Label } from '@/components/ui/Label';
 import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
 import { coerceNumericValue } from '@/lib/number-input';
+import { moveTournamentPlayerInGroupAction } from '@/features/tournaments/actions/manageTournament.action';
 
 interface Player {
   playerId: {
@@ -150,12 +150,14 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     }
 
     try {
-      const response = await axios.patch(`/api/tournaments/${tournament.tournamentId}/groups/${groupId}/move-player`, {
+      const response = await moveTournamentPlayerInGroupAction({
+        code: tournament.tournamentId,
+        groupId,
         playerId,
-        direction
+        direction,
       });
 
-      if (response.data.success) {
+      if ((response as any)?.success) {
         toast.success(tTour('groups.success_moved'), {
           duration: 4000,
         });

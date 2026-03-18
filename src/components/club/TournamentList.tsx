@@ -37,7 +37,7 @@ export default function TournamentList({
     const t = useTranslations("Club.components");
   if (!tournaments.length) {
     return (
-      <Card className="border-dashed border-muted bg-card/50">
+      <Card className="border-dashed border-border/60 bg-linear-to-br from-card/80 to-card/60 backdrop-blur-xl">
         <CardContent className="py-12 text-center text-muted-foreground space-y-3">
           <IconTrophy className="w-10 h-10 mx-auto" />
           <div className="space-y-1">
@@ -51,7 +51,7 @@ export default function TournamentList({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {tournaments.map((tournament) => (
         <ClubTournamentCard
           key={tournament._id}

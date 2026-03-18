@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { useDebounce } from "use-debounce"
 import { SearchTabs } from "@/components/search/SearchTabs"
@@ -50,6 +50,8 @@ export default function SearchPage() {
     const [query, setQuery] = useState(searchParams.get("q") || "")
     const [debouncedQuery] = useDebounce(query, 500)
     const [isScrolled, setIsScrolled] = useState(false)
+    const [headerHeight, setHeaderHeight] = useState(112)
+    const headerRef = useRef<HTMLDivElement | null>(null)
     
     const parseFiltersFromUrl = useCallback((): SearchFilters => ({
         status: searchParams.get("status") || undefined,
@@ -101,6 +103,16 @@ export default function SearchPage() {
         }
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    useEffect(() => {
+        if (!headerRef.current) return
+        const element = headerRef.current
+        const updateHeight = () => setHeaderHeight(Math.ceil(element.getBoundingClientRect().height) + 8)
+        updateHeight()
+        const observer = new ResizeObserver(updateHeight)
+        observer.observe(element)
+        return () => observer.disconnect()
     }, [])
     
     const [filters, setFilters] = useState<SearchFilters>({
@@ -246,6 +258,11 @@ export default function SearchPage() {
         setFilters(prev => ({ ...prev, page: 1 }))
     }
 
+    const clearQuery = useCallback(() => {
+        setQuery("")
+        updateUrl({ q: undefined, page: 1 })
+    }, [updateUrl])
+
     const loadMore = () => {
         const newPage = pagination.page + 1
         setFilters(prev => ({ ...prev, page: newPage }))
@@ -262,9 +279,14 @@ export default function SearchPage() {
                 onTabChange={handleTabChange}
                 counts={counts}
                 isLoading={isLoading}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                cities={metadata.cities || []}
+                hasActiveQuery={!!debouncedQuery}
+                onClearQuery={clearQuery}
             />
 
-            <div className="z-40 sticky top-0 border-b border-border/70 bg-card/75 backdrop-blur-xl">
+            <div ref={headerRef} className="z-40 sticky top-0 border-b border-border/70 bg-card/75 backdrop-blur-xl">
                 <div className="container mx-auto px-4 py-4 space-y-4">
                     <div className="flex gap-3 w-full justify-center">
                         <div className="relative w-full max-w-3xl items-center flex">
@@ -343,12 +365,12 @@ export default function SearchPage() {
                         </div>
                     )}
 
-                    {activeTab === 'tournaments' && <TournamentList tournaments={results} />}
+                    {activeTab === 'tournaments' && <TournamentList tournaments={results} stickyOffset={headerHeight} />}
                     {activeTab === 'global' && (
                         <div className="space-y-10">
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.tournaments')}</h3>
-                                <TournamentList tournaments={groupedResults.tournaments} />
+                                <TournamentList tournaments={groupedResults.tournaments} stickyOffset={headerHeight} />
                             </section>
                             <section className="space-y-4">
                                 <h3 className="text-xl font-bold">{t('tabs.players')}</h3>

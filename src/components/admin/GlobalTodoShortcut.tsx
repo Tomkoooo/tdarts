@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { SmartInput, TodoItemData } from "@/components/admin/SmartInput"
 import { IconCheck } from "@tabler/icons-react"
 import toast from "react-hot-toast"
-import { adminApiRequestAction } from "@/features/admin/actions/adminApiProxy.action"
+import { adminTodosActions } from "@/features/admin/actions/adminDomains.action"
 
 export function GlobalTodoShortcut() {
     const t = useTranslations("Admin.components");
@@ -25,14 +25,10 @@ export function GlobalTodoShortcut() {
 
   const handleAddTodo = async (todoData: Partial<TodoItemData>) => {
     try {
-      await adminApiRequestAction({
-        path: "/api/admin/todos",
-        method: "POST",
-        body: {
+      await adminTodosActions.create({
         ...todoData,
         status: "pending",
         isPublic: true
-        },
       })
       toast.success(t("feladat_gyorsan_hozzáadva"), {
         icon: <IconCheck className="text-emerald-500" />,

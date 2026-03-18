@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, ReactNode, useMemo } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useTranslations } from "next-intl";

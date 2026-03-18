@@ -9,9 +9,10 @@ import { staggerContainer, staggerChild } from "@/lib/motion"
 
 interface TournamentListProps {
     tournaments: any[];
+    stickyOffset?: number;
 }
 
-export function TournamentList({ tournaments }: TournamentListProps) {
+export function TournamentList({ tournaments, stickyOffset = 96 }: TournamentListProps) {
     const tResults = useTranslations('Search.tournament_results')
     const locale = useLocale()
     const timeZone = getUserTimeZone()
@@ -83,7 +84,10 @@ export function TournamentList({ tournaments }: TournamentListProps) {
                         className="space-y-5"
                         variants={staggerChild}
                     >
-                        <div className="flex items-center gap-4 sticky top-[60px] md:top-[70px] z-10 py-2 bg-base-100/95 backdrop-blur-sm border-b border-base-200">
+                        <div
+                            className="sticky z-20 flex items-center gap-4 border-b border-base-200 bg-base-100/95 py-2 backdrop-blur-sm"
+                            style={{ top: `${stickyOffset}px` }}
+                        >
                             <h3 className="text-lg md:text-xl font-bold text-primary-foreground capitalize flex items-center gap-2">
                                 <IconCalendar className="w-5 h-5 opacity-70" />
                                 {formatDateHeader(dateKey)}

@@ -1,18 +1,27 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useUserContext } from "@/hooks/useUser"
-import { useTranslations } from "next-intl"
-import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
-import { AnimatedCounter } from "@/components/ui/animated-counter"
-import { IconArrowRight, IconCalendarEvent, IconChartBar, IconSparkles, IconTargetArrow, IconTrophy } from "@tabler/icons-react"
-import { Button } from "@/components/ui/Button"
-import Link from "next/link"
 import AnnouncementToast from "@/components/common/AnnouncementToast"
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
-import { getPlayerStatsAction } from "@/features/profile/actions"
+import { getPlayerStatsAction } from "@/features/profile/actions/getPlayerStats.action"
+import { getLeagueHistoryAction } from "@/features/profile/actions/getLeagueHistory.action"
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
 import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action"
+import { getAuthorizedSessionAction } from "@/features/auth/actions"
+import { checkFeatureFlagAction } from "@/features/feature-flags/actions/checkFeatureFlags.action"
+import {
+  HomeHeaderTile,
+  HomeMetrics,
+  HomeNotifications,
+  HomeLeagueStanding,
+  HomeTournament,
+  LeagueStandingsTile,
+  NotificationCenterTile,
+  QuickStatsTileGrid,
+  UpcomingCalendarTile,
+} from "@/features/home/ui"
+import { getActiveOrNextTournament, getDaysUntil, getUpcomingTournaments } from "@/features/home/ui/homeUtils"
 
 interface Announcement {
   _id: string
@@ -27,36 +36,24 @@ interface Announcement {
   expiresAt: string
 }
 
-interface DashboardMetrics {
-  matchesPlayed: number
-  winRate: number
-  tournamentsJoined: number
-  avgCheckout: number
-}
-
-interface DashboardTournament {
-  _id: string
-  name: string
-  code: string
-  date?: string
-  status?: string
-}
-
 export default function AuthenticatedHomeContent() {
-  const t = useTranslations("HomeDashboard")
   const { user } = useUserContext()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set())
-  const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) })
+  const { unreadCount, loading: unreadLoading } = useUnreadTickets({ enabled: Boolean(user?._id) })
   const [ticketToastDismissed, setTicketToastDismissed] = useState(false)
   const [dashboardLoading, setDashboardLoading] = useState(false)
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
+  const [metrics, setMetrics] = useState<HomeMetrics>({
     matchesPlayed: 0,
     winRate: 0,
     tournamentsJoined: 0,
-    avgCheckout: 0,
+    currentRanking: null,
   })
-  const [upcomingTournaments, setUpcomingTournaments] = useState<DashboardTournament[]>([])
+  const [upcomingTournaments, setUpcomingTournaments] = useState<HomeTournament[]>([])
+  const [leagueStandings, setLeagueStandings] = useState<HomeLeagueStanding[]>([])
+  const [advancedStatsEnabled, setAdvancedStatsEnabled] = useState(false)
+  const [highlightUnreadNotifications, setHighlightUnreadNotifications] = useState(false)
+  const notificationCenterRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const dismissed = localStorage.getItem("ticketToastDismissed")
@@ -64,6 +61,7 @@ export default function AuthenticatedHomeContent() {
   }, [])
 
   useEffect(() => {
+    let isCancelled = false
     const fetchAnnouncements = async () => {
       try {
         const response = await getActiveAnnouncementsAction({
@@ -81,7 +79,9 @@ export default function AuthenticatedHomeContent() {
           const activeAnnouncements = (response as { announcements: Announcement[] }).announcements.filter((announcement: Announcement) =>
             announcement.isActive && new Date(announcement.expiresAt) > now
           )
-          setAnnouncements(activeAnnouncements)
+          if (!isCancelled) {
+            setAnnouncements(activeAnnouncements)
+          }
         }
       } catch (error) {
         console.error("Error fetching announcements:", error)
@@ -89,17 +89,48 @@ export default function AuthenticatedHomeContent() {
     }
 
     fetchAnnouncements()
+
+    return () => {
+      isCancelled = true
+    }
   }, [])
 
   useEffect(() => {
+    let isCancelled = false
     const fetchDashboardData = async () => {
       if (!user?._id) return
-      setDashboardLoading(true)
+      if (!isCancelled) {
+        setDashboardLoading(true)
+      }
       try {
-        const [statsRes, tournamentsRes] = await Promise.allSettled([
+        const [sessionRes, featureRes, statsRes, tournamentsRes, leaguesRes] = await Promise.allSettled([
+          getAuthorizedSessionAction(undefined),
+          checkFeatureFlagAction({ feature: "ADVANCED_STATISTICS" }),
           getPlayerStatsAction(),
           getUserTournamentsAction({ limit: 5 }),
+          getLeagueHistoryAction(),
         ])
+
+        if (sessionRes.status === "fulfilled") {
+          const sessionData = sessionRes.value as { userId?: string } | { ok?: boolean }
+          if (!sessionData || typeof sessionData !== "object" || !("userId" in sessionData)) {
+            if (!isCancelled) {
+              setDashboardLoading(false)
+            }
+            return
+          }
+        }
+
+        if (
+          featureRes.status === "fulfilled" &&
+          featureRes.value &&
+          typeof featureRes.value === "object" &&
+          "enabled" in featureRes.value
+        ) {
+          if (!isCancelled) {
+            setAdvancedStatsEnabled(Boolean(featureRes.value.enabled))
+          }
+        }
 
         if (
           statsRes.status === "fulfilled" &&
@@ -111,12 +142,31 @@ export default function AuthenticatedHomeContent() {
           const stats = statsRes.value.data
           const summary = (stats?.summary || {}) as any
           const playerStats = (stats?.player?.stats || {}) as any
-          setMetrics({
-            matchesPlayed: Number(summary.wins || 0) + Number(summary.losses || 0),
-            winRate: Number(summary.winRate || 0),
-            tournamentsJoined: Number(summary.totalTournaments || playerStats.tournamentsPlayed || 0),
-            avgCheckout: Number(playerStats.highestCheckout || 0),
-          })
+          const currentSeasonTournamentCount = Array.isArray(stats?.player?.tournamentHistory)
+            ? stats.player.tournamentHistory.length
+            : Number(summary.totalTournaments || 0)
+          const previousSeasonsTournamentCount = Array.isArray(stats?.player?.previousSeasons)
+            ? stats.player.previousSeasons.reduce(
+                (acc: number, season: any) =>
+                  acc + (Array.isArray(season?.tournamentHistory) ? season.tournamentHistory.length : 0),
+                0
+              )
+            : 0
+          const lifetimeTournamentCount = currentSeasonTournamentCount + previousSeasonsTournamentCount
+          const globalRankRaw = stats?.player?.globalRank
+          const globalRank = typeof globalRankRaw === "number" ? globalRankRaw : null
+          if (!isCancelled) {
+            setMetrics({
+              matchesPlayed: Number(summary.wins || 0) + Number(summary.losses || 0),
+              winRate: Number(summary.winRate || 0),
+              tournamentsJoined: Math.max(
+                lifetimeTournamentCount,
+                Number(playerStats.tournamentsPlayed || 0),
+                Number(summary.totalTournaments || 0)
+              ),
+              currentRanking: globalRank,
+            })
+          }
         }
 
         if (
@@ -133,17 +183,47 @@ export default function AuthenticatedHomeContent() {
             code: item.code || item.tournamentCode || "",
             date: item.startDate || item.date,
             status: item.status || "pending",
+            currentPlayers: Number(item.currentPlayers || 0),
+            maxPlayers: Number(item.maxPlayers || 0),
+            entryFee: Number(item.entryFee || 0),
+            wins: Number(item.wins || 0),
+            losses: Number(item.losses || 0),
+            legsWon: Number(item.legsWon || 0),
+            legsLost: Number(item.legsLost || 0),
+            nextMatchType: item.nextMatchType || "unknown",
+            nextMatchBoard: typeof item.nextMatchBoard === "number" ? item.nextMatchBoard : null,
           }))
-          setUpcomingTournaments(list)
+          if (!isCancelled) {
+            setUpcomingTournaments(list)
+          }
+        }
+
+        if (
+          leaguesRes.status === "fulfilled" &&
+          leaguesRes.value &&
+          typeof leaguesRes.value === "object" &&
+          "success" in leaguesRes.value &&
+          leaguesRes.value.success &&
+          Array.isArray(leaguesRes.value.data)
+        ) {
+          if (!isCancelled) {
+            setLeagueStandings(leaguesRes.value.data as HomeLeagueStanding[])
+          }
         }
       } catch (error) {
         console.error("Dashboard data fetch failed", error)
       } finally {
-        setDashboardLoading(false)
+        if (!isCancelled) {
+          setDashboardLoading(false)
+        }
       }
     }
 
     fetchDashboardData()
+
+    return () => {
+      isCancelled = true
+    }
   }, [user?._id])
 
   const handleCloseAnnouncement = (id: string) => {
@@ -151,7 +231,10 @@ export default function AuthenticatedHomeContent() {
     setAnnouncements((prev) => prev.filter((announcement) => announcement._id !== id))
   }
 
-  const activeAnnouncements = announcements.filter((announcement) => !closedAnnouncements.has(announcement._id))
+  const activeAnnouncements = useMemo(
+    () => announcements.filter((announcement) => !closedAnnouncements.has(announcement._id)),
+    [announcements, closedAnnouncements]
+  )
 
   const handleDismissTicketToast = () => {
     setTicketToastDismissed(true)
@@ -160,6 +243,45 @@ export default function AuthenticatedHomeContent() {
       localStorage.removeItem("ticketToastDismissed")
     }, 60 * 60 * 1000)
   }
+
+  const handleNotificationWarningClick = () => {
+    notificationCenterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    setHighlightUnreadNotifications(true)
+    window.setTimeout(() => setHighlightUnreadNotifications(false), 4000)
+  }
+
+  const activeOrNextTournament = useMemo(
+    () => getActiveOrNextTournament(upcomingTournaments),
+    [upcomingTournaments]
+  )
+  const upcomingOnly = useMemo(
+    () => getUpcomingTournaments(upcomingTournaments),
+    [upcomingTournaments]
+  )
+  const reminderCount = useMemo(
+    () =>
+      upcomingOnly.filter((tor) => {
+        const daysUntil = getDaysUntil(tor.date)
+        return daysUntil !== null && daysUntil >= 0 && daysUntil <= 7
+      }).length,
+    [upcomingOnly]
+  )
+  const notifications: HomeNotifications = useMemo(
+    () => ({
+      unreadTickets: unreadCount,
+      reminderCount,
+      spotAvailabilityCount: 0,
+    }),
+    [unreadCount, reminderCount]
+  )
+  const totalNotifications = useMemo(
+    () => notifications.unreadTickets + notifications.reminderCount + notifications.spotAvailabilityCount,
+    [notifications]
+  )
+  const firstName = useMemo(
+    () => (user?.name || user?.username || "Player").split(" ")[0],
+    [user?.name, user?.username]
+  )
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -178,112 +300,34 @@ export default function AuthenticatedHomeContent() {
           <UnreadTicketToast unreadCount={unreadCount} onDismiss={handleDismissTicketToast} />
         )}
 
-        <div className="rounded-3xl border border-border/70 bg-card/70 backdrop-blur-xl p-6 md:p-8 relative overflow-hidden">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-20"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 10% 30%, var(--color-primary) 0%, transparent 40%), radial-gradient(circle at 85% 20%, var(--color-accent) 0%, transparent 35%)",
-            }}
-          />
-          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t("welcome")}</p>
-              <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
-                {t("headline", { name: (user?.name || user?.username || "Player").split(" ")[0] })}
-              </h1>
-              <p className="mt-2 text-muted-foreground">{t("subheadline")}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild>
-                <Link href="/search?tab=tournaments">
-                  <IconSparkles className="mr-2 h-4 w-4" />
-                  {t("joinTournament")}
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/profile?tab=stats">
-                  <IconChartBar className="mr-2 h-4 w-4" />
-                  {t("viewStats")}
-                </Link>
-              </Button>
-            </div>
+        <HomeHeaderTile
+          firstName={firstName}
+          profilePicture={user?.profilePicture}
+          activeOrNextTournament={activeOrNextTournament}
+          notificationCount={totalNotifications}
+          onNotificationWarningClick={handleNotificationWarningClick}
+          loading={dashboardLoading}
+        />
+
+        <QuickStatsTileGrid
+          metrics={metrics}
+          loading={dashboardLoading}
+          advancedStatsEnabled={advancedStatsEnabled}
+        />
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="space-y-4 xl:col-span-2">
+            <UpcomingCalendarTile tournaments={upcomingTournaments} loading={dashboardLoading} />
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          <GlassmorphismCard className="p-4 md:p-5">
-            <p className="text-xs text-muted-foreground">{t("stats.matches")}</p>
-            <div className="mt-2 text-2xl font-bold"><AnimatedCounter value={metrics.matchesPlayed} /></div>
-          </GlassmorphismCard>
-          <GlassmorphismCard className="p-4 md:p-5">
-            <p className="text-xs text-muted-foreground">{t("stats.winRate")}</p>
-            <div className="mt-2 text-2xl font-bold"><AnimatedCounter value={metrics.winRate} suffix="%" /></div>
-          </GlassmorphismCard>
-          <GlassmorphismCard className="p-4 md:p-5">
-            <p className="text-xs text-muted-foreground">{t("stats.tournaments")}</p>
-            <div className="mt-2 text-2xl font-bold"><AnimatedCounter value={metrics.tournamentsJoined} /></div>
-          </GlassmorphismCard>
-          <GlassmorphismCard className="p-4 md:p-5">
-            <p className="text-xs text-muted-foreground">{t("stats.checkout")}</p>
-            <div className="mt-2 text-2xl font-bold"><AnimatedCounter value={metrics.avgCheckout} /></div>
-          </GlassmorphismCard>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <GlassmorphismCard className="p-5 lg:col-span-2">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{t("upcomingTitle")}</h2>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/search?tab=tournaments">
-                  {t("seeAll")} <IconArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {dashboardLoading ? (
-                <p className="text-sm text-muted-foreground">{t("loading")}</p>
-              ) : upcomingTournaments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("emptyTournaments")}</p>
-              ) : (
-                upcomingTournaments.map((tor) => (
-                  <Link
-                    key={tor._id}
-                    href={`/tournaments/${tor.code}`}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-background/50 p-3 transition-colors hover:bg-muted/40"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{tor.name}</p>
-                      <p className="text-xs text-muted-foreground">{tor.code}</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <IconCalendarEvent className="h-3.5 w-3.5" />
-                      <span>{tor.status}</span>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </GlassmorphismCard>
-
           <div className="space-y-4">
-            <GlassmorphismCard className="p-5">
-              <h3 className="font-semibold">{t("quickActions")}</h3>
-              <div className="mt-3 space-y-2">
-                <Button asChild className="w-full justify-start">
-                  <Link href="/board">
-                    <IconTargetArrow className="mr-2 h-4 w-4" />
-                    {t("actions.openBoard")}
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="w-full justify-start">
-                  <Link href="/myclub">
-                    <IconTrophy className="mr-2 h-4 w-4" />
-                    {t("actions.myClub")}
-                  </Link>
-                </Button>
-              </div>
-            </GlassmorphismCard>
+            <LeagueStandingsTile standings={leagueStandings} loading={dashboardLoading} />
+            <div ref={notificationCenterRef}>
+              <NotificationCenterTile
+                notifications={notifications}
+                loading={dashboardLoading || unreadLoading}
+                highlightUnread={highlightUnreadNotifications}
+              />
+            </div>
           </div>
         </div>
       </div>

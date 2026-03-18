@@ -7,7 +7,7 @@ import { useUserContext } from '@/hooks/useUser';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { adminApiRequestAction } from '@/features/admin/actions/adminApiProxy.action';
+import { adminFeedbackActions } from '@/features/admin/actions/adminDomains.action';
 
 interface Message {
   _id?: string;
@@ -70,7 +70,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
       if (!ticket.isReadByAdmin && markedReadTicketRef.current !== ticket._id) {
         try {
           markedReadTicketRef.current = ticket._id;
-          await adminApiRequestAction({ path: `/api/feedback/${ticket._id}/mark-read`, method: 'POST' });
+          await adminFeedbackActions.markRead(ticket._id);
           setTicket((prev) => ({ ...prev, isReadByAdmin: true }));
           onUpdate?.();
         } catch (error) {
@@ -100,11 +100,7 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
 
     setIsSending(true);
     try {
-      const response = await adminApiRequestAction({
-        path: `/api/feedback/${ticket._id}/reply`,
-        method: 'POST',
-        body: { content: replyContent.trim() },
-      });
+      const response = await adminFeedbackActions.reply(ticket._id, replyContent.trim());
 
       if (response.data?.success) {
         setTicket(response.data.data);
@@ -127,15 +123,11 @@ export default function AdminTicketDetail({ ticket: initialTicket, onBack, onUpd
     }
 
     try {
-      await adminApiRequestAction({
-        path: `/api/admin/feedback/${ticket._id}`,
-        method: 'PATCH',
-        body: { status, priority, emailNotification: 'status' },
-      });
+      await adminFeedbackActions.update(ticket._id, { status, priority, emailNotification: 'status' });
 
       toast.success('Státusz frissítve');
       // Refresh ticket to get updated messages
-      const response = await adminApiRequestAction({ path: `/api/admin/feedback/${ticket._id}`, method: 'GET' });
+      const response = await adminFeedbackActions.getById(ticket._id);
       if (response.data?.success) {
         setTicket(response.data.feedback);
       }

@@ -3863,11 +3863,63 @@
     "subheadline": "Your club, tournaments, and board actions are one tap away.",
     "joinTournament": "Join Tournament",
     "viewStats": "View Statistics",
+    "header": {
+      "title": "Your Tournament Pulse",
+      "openActiveTournament": "Open active tournament",
+      "daysUntil": "{count} days until your next tournament",
+      "noDate": "Date to be announced",
+      "noTournament": "No tournament signup yet. Join one and your schedule appears here.",
+      "players": "Players",
+      "entryFee": "Entry fee",
+      "notificationsWarning": "You have {count} active notifications",
+      "performance": "Your performance",
+      "matchRecord": "Matches: {wins}W - {losses}L",
+      "legRecord": "Legs: {won}W - {lost}L",
+      "boardNumber": "Board {number}",
+      "boardTbd": "Board TBD",
+      "nextPlaying": "You are currently playing on {board}",
+      "nextScoring": "You are currently scoring on {board}",
+      "nextPending": "Your next assignment is on {board}",
+      "nextUnknown": "No upcoming board assignment yet"
+    },
     "stats": {
       "matches": "Matches Played",
       "winRate": "Win Rate",
       "tournaments": "Tournaments Joined",
-      "checkout": "Avg Checkout"
+      "checkout": "Avg Checkout",
+      "ranking": "Current Ranking"
+    },
+    "calendar": {
+      "title": "Upcoming Calendar",
+      "export": "Export to calendar"
+    },
+    "notifications": {
+      "title": "Notification Center",
+      "unread": "{count} unread",
+      "profileActions": "Profile actions",
+      "profileActionsHint": "Complete your profile details and preferences",
+      "feedbackResponses": "Feedback responses",
+      "feedbackUnread": "{count} unread feedback threads",
+      "tournamentReminders": "Upcoming tournament reminders",
+      "reminderCount": "{count} tournaments in the next 7 days",
+      "spotAvailability": "Tournament spot availability",
+      "spotHint": "{count} availability alerts"
+    },
+    "currentTournament": {
+      "title": "Current Tournament Overview",
+      "empty": "No active or upcoming tournament in your lineup.",
+      "boardStatusActive": "Board status: live and available",
+      "boardStatusUpcoming": "Board status: opens on tournament day",
+      "openOverview": "Open overview",
+      "openBoard": "Open board",
+      "players": "Players",
+      "entryFee": "Entry fee"
+    },
+    "league": {
+      "title": "League Standings",
+      "empty": "No active league standings available.",
+      "points": "pts",
+      "open": "Open league details"
     },
     "upcomingTitle": "Upcoming Tournaments",
     "seeAll": "See all",
