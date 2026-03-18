@@ -24,6 +24,7 @@ import {
   IconMenu2,
   IconMail,
   IconActivity,
+  IconFlame,
 } from "@tabler/icons-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -40,7 +41,8 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
   const t = useTranslations("Admin.layout")
 
   type SidebarItem = {
-    title: string;
+    title?: string;
+    rawTitle?: string;
     href: string;
     icon: React.ComponentType<{ className?: string }>;
   };
@@ -106,6 +108,11 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
       href: "/admin/telemetry",
       icon: IconActivity,
     },
+    {
+      rawTitle: "Stress tests",
+      href: "/admin/stress",
+      icon: IconFlame,
+    },
   ]), []);
 
   return (
@@ -131,7 +138,11 @@ function SidebarContent({ isCollapsed = false, onNavigate, onToggleCollapse }: {
             )}
           >
             <Icon className={cn("h-5 w-5 shrink-0")} />
-            {!isCollapsed && <span className="truncate">{t(item.title)}</span>}
+            {!isCollapsed && (
+              <span className="truncate">
+                {item.rawTitle || (item.title ? t(item.title) : "")}
+              </span>
+            )}
           </Link>
         )
       })}

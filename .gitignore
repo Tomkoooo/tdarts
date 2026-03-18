@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+**/playwright-report/
+**/test-results/
 
 # next.js
 /.next/
@@ -42,3 +46,12 @@ next-env.d.ts
 
 docs/openapi.yaml
 docs/api-docs.md
+
+.pnpm
+.pnpm-store
+.pnpm-store/*
+.pnpm-store*
+/.pnpm-store*
+/.pnpm-store/*
+/.pnpm-store
+/pnpm/
