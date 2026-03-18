@@ -44,9 +44,9 @@ fi
 echo ""
 echo "📝 Running ESLint..."
 if [ -n "$RUN_PREFIX" ]; then
-  $RUN_PREFIX "$NODE_BIN" "$NEXT_CLI" lint
+  $RUN_PREFIX "$NPM_BIN" run lint
 else
-  "$NODE_BIN" "$NEXT_CLI" lint
+  "$NPM_BIN" run lint
 fi || {
   echo ""
   echo "❌ ESLint failed. Please fix the errors before pushing."
