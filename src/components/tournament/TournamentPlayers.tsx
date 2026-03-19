@@ -214,7 +214,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         }
         toast.success("Játékos sikeresen hozzáadva")
         if (onRefresh) onRefresh()
-        router.refresh()
       }
     } catch (error: any) {
       console.error("Error adding player:", error)
@@ -1207,7 +1206,6 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
         onSuccess={() => {
           setShowTeamRegistrationModal(false)
           if (onRefresh) onRefresh()
-          router.refresh()
         }}
         isModeratorMode={isModeratorRegistration}
       />

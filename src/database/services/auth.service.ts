@@ -83,15 +83,25 @@ export class AuthService {
     return verificationCode;
   }
 
-  static async generateAuthToken(user: IUserDocument): Promise<string> {
-    return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: '180d' });
+  static async generateAuthToken(user: { _id: unknown }): Promise<string> {
+    const userId = typeof user?._id === 'string' ? user._id : String(user?._id ?? '');
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      throw new BadRequestError('Invalid user id for token generation', 'auth', {
+        errorCode: 'AUTH_INVALID_USER_ID',
+        expected: false,
+        operation: 'auth.generateAuthToken',
+      });
+    }
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '180d' });
   }
 
   static async verifyToken(token: string): Promise<IUserDocument> {
     await connectMongo();
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
-      const user = await UserModel.findById(decoded.id);
+      const user = await UserModel.findById(decoded.id).select(
+        '_id username name email isVerified isAdmin profilePicture isDeleted'
+      );
       if (!user) {
         throw new BadRequestError('User not found', 'auth', {
           userId: decoded.id,
@@ -100,7 +110,8 @@ export class AuthService {
           operation: 'auth.verifyToken',
         });
       }
-      await user.updateLastLogin();
+      // Avoid write amplification on high-traffic auth checks.
+      // Last-login should be updated on explicit sign-in flows, not per request verification.
       return user;
     } catch {
       throw new BadRequestError('Invalid token', 'auth', {

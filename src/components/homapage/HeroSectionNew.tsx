@@ -6,11 +6,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from "@/components/ui/Card";
 import { Separator } from '@/components/ui/separator';
 import { useTranslations } from 'next-intl';
+import { useUserContext } from "@/hooks/useUser";
 
 
 
 const HeroSectionNew = () => {
   const t = useTranslations('Hero');
+  const tNavbar = useTranslations("Navbar");
+  const { user } = useUserContext();
 
   const stats = [
     { number: '170+', label: t('stats_labels.clubs'), sublabel: t('stats_labels.clubs_sub') },
@@ -74,7 +77,7 @@ const HeroSectionNew = () => {
                 key={index}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/30 border border-border"
               >
-                <IconCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                <IconCheck className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm font-medium text-muted-foreground">{feature}</span>
               </div>
             ))}
@@ -83,17 +86,17 @@ const HeroSectionNew = () => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '400ms' }}>
             <Button size="lg" className="gap-2 group min-w-[160px]" asChild>
-              <Link href="/search">
+              <Link href={user ? "/search" : "/auth/login"}>
                 <IconPlayerPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                {t('cta_start')}
+                {user ? t('cta_start') : tNavbar("login")}
                 <IconArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
             
             <Button size="lg" variant="outline" className="gap-2 group min-w-[160px]" asChild>
-              <Link href="/myclub">
+              <Link href={user ? "/myclub" : "/auth/register"}>
                 <IconTrophy className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                {t('cta_create')}
+                {user ? t('cta_create') : (tNavbar.has("register") ? tNavbar("register") : "Register")}
               </Link>
             </Button>
           </div>

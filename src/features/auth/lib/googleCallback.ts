@@ -5,6 +5,30 @@ import { connectMongo } from '@/lib/mongoose';
 import { AuthService } from '@/database/services/auth.service';
 import { findSessionUserByEmail, findSessionUserById } from '@/features/auth/lib/sessionUser.db';
 
+type SessionUserShape = {
+  _id: string;
+  username?: string;
+  email?: string;
+  name?: string;
+  isAdmin?: boolean;
+  isVerified?: boolean;
+  profilePicture?: string | null;
+  country?: string | null;
+  authProvider?: string;
+  locale?: 'hu' | 'en' | 'de';
+};
+
+function normalizeSessionUser(user: unknown): SessionUserShape | null {
+  if (!user || typeof user !== 'object') return null;
+  const candidate = user as SessionUserShape;
+  const id = String((candidate as any)._id ?? '');
+  if (!id || id === 'undefined' || id === 'null') return null;
+  return {
+    ...candidate,
+    _id: id,
+  };
+}
+
 function buildAuthCookie(token: string) {
   return {
     name: 'token',
@@ -26,7 +50,8 @@ export async function handleGoogleCallbackGet(request: NextRequest) {
   }
 
   await connectMongo();
-  const user = await findSessionUserByEmail(session.user.email);
+  const userResult = await findSessionUserByEmail(session.user.email);
+  const user = normalizeSessionUser(Array.isArray(userResult) ? userResult[0] : userResult);
   if (!user) {
     return NextResponse.redirect(new URL('/auth/login?error=UserNotFound', request.url));
   }
@@ -50,9 +75,11 @@ export async function handleGoogleCallbackPost() {
   }
 
   await connectMongo();
-  let user = await findSessionUserByEmail(session.user.email);
+  let userResult = await findSessionUserByEmail(session.user.email);
+  let user = normalizeSessionUser(Array.isArray(userResult) ? userResult[0] : userResult);
   if (!user) {
-    user = await findSessionUserById((session.user as { id?: string }).id);
+    userResult = await findSessionUserById((session.user as { id?: string }).id);
+    user = normalizeSessionUser(Array.isArray(userResult) ? userResult[0] : userResult);
   }
 
   if (!user) {
@@ -63,13 +90,13 @@ export async function handleGoogleCallbackPost() {
   const response = NextResponse.json({
     success: true,
     user: {
-      _id: user._id.toString(),
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      isAdmin: user.isAdmin,
-      isVerified: user.isVerified,
-      profilePicture: user.profilePicture,
+      _id: user._id,
+      username: user.username || '',
+      email: user.email || '',
+      name: user.name || '',
+      isAdmin: Boolean(user.isAdmin),
+      isVerified: Boolean(user.isVerified),
+      profilePicture: user.profilePicture || undefined,
       country: user.country || null,
       authProvider: user.authProvider,
       locale: user.locale || 'hu',

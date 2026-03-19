@@ -7,6 +7,7 @@ import { authorizeUserResult } from '@/shared/lib/guards';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
+import { revalidateTag } from 'next/cache';
 
 async function assertGlobalAdmin() {
   const authResult = await authorizeUserResult();
@@ -67,6 +68,7 @@ export async function createAdminAnnouncementAction(input: unknown) {
       await assertGlobalAdmin();
       const parsed = announcementPayloadSchema.parse(payload);
       const created = await AnnouncementService.createAnnouncement(parsed as any);
+      revalidateTag('home:announcements', 'max');
       return serializeForClient({ success: true, announcement: created });
     },
     {
@@ -88,6 +90,7 @@ export async function updateAdminAnnouncementAction(input: {
       await assertGlobalAdmin();
       const parsedPayload = announcementPayloadSchema.parse(payload);
       const updated = await AnnouncementService.updateAnnouncement(id, parsedPayload as any);
+      revalidateTag('home:announcements', 'max');
       return serializeForClient({ success: true, announcement: updated });
     },
     {
@@ -105,6 +108,7 @@ export async function deleteAdminAnnouncementAction(input: { id: string }) {
     async ({ id }: { id: string }) => {
       await assertGlobalAdmin();
       const deleted = await AnnouncementService.deleteAnnouncement(id);
+      revalidateTag('home:announcements', 'max');
       return { success: deleted };
     },
     {
@@ -122,6 +126,7 @@ export async function toggleAdminAnnouncementAction(input: { id: string }) {
     async ({ id }: { id: string }) => {
       await assertGlobalAdmin();
       const toggled = await AnnouncementService.toggleAnnouncement(id);
+      revalidateTag('home:announcements', 'max');
       return serializeForClient({ success: true, announcement: toggled });
     },
     {

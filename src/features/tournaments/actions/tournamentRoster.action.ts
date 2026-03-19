@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { revalidateTag } from 'next/cache';
 import { TournamentService } from '@/database/services/tournament.service';
 import { MatchModel } from '@/database/models/match.model';
 import { PlayerService } from '@/database/services/player.service';
@@ -78,6 +79,8 @@ export async function addTournamentPlayerClientAction(
         throw new Error('Player resolution failed');
       }
       await TournamentService.addTournamentPlayer(parsed.code, targetPlayerId);
+      revalidateTag(`tournament:${parsed.code}`, 'max');
+      revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, playerId: targetPlayerId });
     },
     {

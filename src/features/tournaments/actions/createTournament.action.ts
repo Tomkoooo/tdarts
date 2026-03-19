@@ -1,6 +1,7 @@
 'use server';
 
 import Stripe from 'stripe';
+import { revalidateTag } from 'next/cache';
 import { TournamentService } from '@/database/services/tournament.service';
 import { ClubService } from '@/database/services/club.service';
 import { SubscriptionService } from '@/database/services/subscription.service';
@@ -217,6 +218,8 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
       }
 
       const newTournament = await TournamentService.createTournament(tournamentPayload);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
 
       if (payload.leagueId && newTournament) {
         try {

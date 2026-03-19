@@ -203,21 +203,27 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       if (response && typeof response === 'object' && 'isValid' in response && response.isValid) {
         setIsAuthenticated(true);
         localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
-        
-        // Load tournament data to get clubId
-        try {
-          const tournamentResponse = await getBoardTournamentAction({ tournamentId });
-          setTournamentData(tournamentResponse);
-        } catch (err: any) {
-          console.error('Failed to load tournament data:', err);
-          showErrorToast(t("nem_sikerült_betölteni_34"), {
-            error: err?.response?.data?.error,
-            context: 'Torna adatok betöltése',
-            errorName: 'Torna adatok betöltése sikertelen',
-          });
+        if ('tournament' in response && response.tournament) {
+          setTournamentData(response.tournament);
+        } else {
+          try {
+            const tournamentResponse = await getBoardTournamentAction({ tournamentId });
+            setTournamentData(tournamentResponse);
+          } catch (err: any) {
+            console.error('Failed to load tournament data:', err);
+            showErrorToast(t("nem_sikerült_betölteni_34"), {
+              error: err?.response?.data?.error,
+              context: 'Torna adatok betöltése',
+              errorName: 'Torna adatok betöltése sikertelen',
+            });
+          }
         }
-        
-        await loadBoards();
+
+        if ('boards' in response && Array.isArray(response.boards)) {
+          setBoards(response.boards as Board[]);
+        } else {
+          await loadBoards();
+        }
       } else {
         toast.error(t("hibás_jelszó"));
       }

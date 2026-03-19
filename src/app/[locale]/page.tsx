@@ -1,18 +1,6 @@
-import { redirect } from "next/navigation";
 import MarketingHomeContent from "@/components/home/MarketingHomeContent";
-import { getServerUser } from "@/lib/getServerUser";
+export const revalidate = 300;
 
-type Props = {
-  params: Promise<{ locale: string }>;
-};
-
-export default async function HomePage({ params }: Props) {
-  const { locale } = await params;
-  const user = await getServerUser();
-
-  if (user?._id) {
-    redirect(`/${locale}/home`);
-  }
-
+export default function HomePage() {
   return <MarketingHomeContent />;
 }

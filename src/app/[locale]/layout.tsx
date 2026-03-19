@@ -1,24 +1,36 @@
 import "../globals.css";
-import { cookies, headers } from "next/headers";
-import { AuthService } from "@/database/services/auth.service";
 import { UserProvider } from "@/hooks/useUser";
 import { NavbarProvider } from "@/components/providers/NavbarProvider";
 import SessionProvider from "@/components/providers/SessionProvider";
 import AuthSync from "@/components/providers/AuthSync";
 import PWAProvider from "@/components/providers/PWAProvider";
 import TimezoneSync from "@/components/providers/TimezoneSync";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { Toaster } from "react-hot-toast";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Metadata } from "next";
-import { buildLocaleAlternates, getBaseUrl, stripLocalePrefix } from "@/lib/seo";
-import { shouldHideNavbar } from "@/lib/navigation/shell-routing";
+import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 import { getUserTimeZone } from "@/lib/date-time";
-import { findSessionUserByEmail } from "@/features/auth/lib/sessionUser.db";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
+
+async function loadLocaleMessages(locale: string) {
+  const fallbackLocale = routing.defaultLocale;
+  const resolvedLocale = routing.locales.includes(locale as any) ? locale : fallbackLocale;
+  if ((globalThis as any).__tdartsLocaleMessages?.[resolvedLocale]) {
+    return (globalThis as any).__tdartsLocaleMessages[resolvedLocale] as Record<string, unknown>;
+  }
+  const filePath = path.join(process.cwd(), "messages", `${resolvedLocale}.json`);
+  const raw = await readFile(filePath, "utf8");
+  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  if (!(globalThis as any).__tdartsLocaleMessages) {
+    (globalThis as any).__tdartsLocaleMessages = {};
+  }
+  (globalThis as any).__tdartsLocaleMessages[resolvedLocale] = parsed;
+  return parsed;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -133,87 +145,8 @@ export default async function RootLayout({
   }
 
   // Providing all messages to the client
-  // side is the easiest way to get started
-  const messages = await getMessages();
-  const fallbackTimeZone = getUserTimeZone();
-
-  // Get pathname from headers for initial shell classification (server-side)
-  const headersList = await headers();
-  const rawPathname = headersList.get("x-pathname") || "";
-  const normalizedPath = stripLocalePrefix(rawPathname || "/");
-  const initialShouldHide = shouldHideNavbar(normalizedPath);
-
-  
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const userTimeZone = cookieStore.get("user-timezone")?.value || fallbackTimeZone;
-  let initialUser = undefined;
-
-  // Először próbáljuk meg a JWT token-t
-  if (token) {
-    try {
-      const user = await AuthService.verifyToken(token);
-      initialUser = {
-        _id: user._id.toString(),
-        username: user.username,
-        name: user.name,
-        email: user.email,
-        isVerified: user.isVerified,
-        isAdmin: user.isAdmin,
-        profilePicture: user.profilePicture,
-      };
-      console.log("Layout - JWT user found:", initialUser._id);
-    } catch (error) {
-      console.error("JWT verification error:", error);
-      // Ha a JWT token érvénytelen, töröljük a cookie-t
-      try {
-        const { cookies } = await import('next/headers');
-        const cookieStore = await cookies();
-        cookieStore.delete('token');
-        console.log("Layout - Invalid JWT token deleted");
-      } catch (deleteError) {
-        console.error("Error deleting invalid JWT token:", deleteError);
-      }
-    }
-  }
-
-  // Csak akkor ellenőrizzük a NextAuth session-t, ha nincs érvényes JWT token
-  if (!initialUser) {
-    try {
-      const session = await getServerSession(authOptions);
-      if (session?.user) {
-        console.log("Layout - NextAuth session found:", session.user);
-        // Ha van NextAuth session, de nincs JWT token, akkor generáljunk egyet
-        try {
-          const user = await findSessionUserByEmail(session.user.email);
-          
-          if (user) {
-            // Csak akkor generáljunk JWT token-t, ha nincs már érvényes
-            const existingToken = (await cookies()).get('token')?.value;
-            if (!existingToken) {
-              console.log("Layout - NextAuth user found but no JWT token, will be handled by AuthSync component");
-            } else {
-              console.log("Layout - JWT token already exists, skipping generation");
-            }
-            
-            initialUser = {
-              _id: user._id.toString(),
-              username: user.username,
-              name: user.name,
-              email: user.email,
-              isVerified: user.isVerified,
-              isAdmin: user.isAdmin,
-              profilePicture: user.profilePicture,
-            };
-          }
-        } catch (error) {
-          console.error("Error generating JWT for NextAuth user:", error);
-        }
-      }
-    } catch (error) {
-      console.error("NextAuth session error:", error);
-    }
-  }
+  const messages = await loadLocaleMessages(locale);
+  const userTimeZone = getUserTimeZone();
 
   return (
     <html lang={locale} className="dark">
@@ -227,11 +160,11 @@ export default async function RootLayout({
       <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider messages={messages} timeZone={userTimeZone}>
           <SessionProvider>
-            <UserProvider initialUser={initialUser}>
+            <UserProvider initialUser={undefined}>
               <AuthSync />
               <TimezoneSync />
               <PWAProvider />
-              <NavbarProvider initialShouldHide={initialShouldHide} initialPath={normalizedPath}>
+              <NavbarProvider>
               
                 <Toaster position="top-left" />
                 {children}

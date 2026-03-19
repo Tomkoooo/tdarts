@@ -8,7 +8,6 @@ import { getPlayerStatsAction } from "@/features/profile/actions/getPlayerStats.
 import { getLeagueHistoryAction } from "@/features/profile/actions/getLeagueHistory.action"
 import { getUserTournamentsAction } from "@/features/tournaments/actions/getUserTournaments.action"
 import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action"
-import { getAuthorizedSessionAction } from "@/features/auth/actions"
 import { checkFeatureFlagAction } from "@/features/feature-flags/actions/checkFeatureFlags.action"
 import {
   HomeHeaderTile,
@@ -42,7 +41,8 @@ export default function AuthenticatedHomeContent() {
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set())
   const { unreadCount, loading: unreadLoading } = useUnreadTickets({ enabled: Boolean(user?._id) })
   const [ticketToastDismissed, setTicketToastDismissed] = useState(false)
-  const [dashboardLoading, setDashboardLoading] = useState(false)
+  const [primaryLoading, setPrimaryLoading] = useState(false)
+  const [secondaryLoading, setSecondaryLoading] = useState(false)
   const [metrics, setMetrics] = useState<HomeMetrics>({
     matchesPlayed: 0,
     winRate: 0,
@@ -54,6 +54,7 @@ export default function AuthenticatedHomeContent() {
   const [advancedStatsEnabled, setAdvancedStatsEnabled] = useState(false)
   const [highlightUnreadNotifications, setHighlightUnreadNotifications] = useState(false)
   const notificationCenterRef = useRef<HTMLDivElement | null>(null)
+  const dashboardLoading = primaryLoading || secondaryLoading
 
   useEffect(() => {
     const dismissed = localStorage.getItem("ticketToastDismissed")
@@ -97,29 +98,72 @@ export default function AuthenticatedHomeContent() {
 
   useEffect(() => {
     let isCancelled = false
-    const fetchDashboardData = async () => {
+    const fetchPrimaryHomeData = async () => {
       if (!user?._id) return
       if (!isCancelled) {
-        setDashboardLoading(true)
+        setPrimaryLoading(true)
       }
       try {
-        const [sessionRes, featureRes, statsRes, tournamentsRes, leaguesRes] = await Promise.allSettled([
-          getAuthorizedSessionAction(undefined),
-          checkFeatureFlagAction({ feature: "ADVANCED_STATISTICS" }),
-          getPlayerStatsAction(),
-          getUserTournamentsAction({ limit: 5 }),
-          getLeagueHistoryAction(),
-        ])
-
-        if (sessionRes.status === "fulfilled") {
-          const sessionData = sessionRes.value as { userId?: string } | { ok?: boolean }
-          if (!sessionData || typeof sessionData !== "object" || !("userId" in sessionData)) {
-            if (!isCancelled) {
-              setDashboardLoading(false)
-            }
-            return
+        const tournamentsRes = await getUserTournamentsAction({ limit: 5 })
+        if (
+          tournamentsRes &&
+          typeof tournamentsRes === "object" &&
+          "success" in tournamentsRes &&
+          tournamentsRes.success &&
+          Array.isArray(tournamentsRes.data)
+        ) {
+          const list = tournamentsRes.data.map((item: any) => ({
+            _id: String(item._id),
+            name: item.name || "Tournament",
+            code: item.code || item.tournamentCode || "",
+            date: item.startDate || item.date,
+            status: item.status || "pending",
+            currentPlayers: Number(item.currentPlayers || 0),
+            maxPlayers: Number(item.maxPlayers || 0),
+            entryFee: Number(item.entryFee || 0),
+            wins: Number(item.wins || 0),
+            losses: Number(item.losses || 0),
+            legsWon: Number(item.legsWon || 0),
+            legsLost: Number(item.legsLost || 0),
+            nextMatchType: item.nextMatchType || "unknown",
+            nextMatchBoard: typeof item.nextMatchBoard === "number" ? item.nextMatchBoard : null,
+          }))
+          if (!isCancelled) {
+            setUpcomingTournaments(list)
           }
         }
+      } catch (error) {
+        console.error("Primary dashboard fetch failed", error)
+      } finally {
+        if (!isCancelled) {
+          setPrimaryLoading(false)
+        }
+      }
+    }
+
+    fetchPrimaryHomeData()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [user?._id])
+
+  useEffect(() => {
+    let isCancelled = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    let idleId: number | null = null
+
+    const fetchDeferredHomeData = async () => {
+      if (!user?._id) return
+      if (!isCancelled) {
+        setSecondaryLoading(true)
+      }
+      try {
+        const [featureRes, statsRes, leaguesRes] = await Promise.allSettled([
+          checkFeatureFlagAction({ feature: "ADVANCED_STATISTICS" }),
+          getPlayerStatsAction(),
+          getLeagueHistoryAction(),
+        ])
 
         if (
           featureRes.status === "fulfilled" &&
@@ -170,35 +214,6 @@ export default function AuthenticatedHomeContent() {
         }
 
         if (
-          tournamentsRes.status === "fulfilled" &&
-          tournamentsRes.value &&
-          typeof tournamentsRes.value === "object" &&
-          "success" in tournamentsRes.value &&
-          tournamentsRes.value.success &&
-          Array.isArray(tournamentsRes.value.data)
-        ) {
-          const list = tournamentsRes.value.data.map((item: any) => ({
-            _id: String(item._id),
-            name: item.name || "Tournament",
-            code: item.code || item.tournamentCode || "",
-            date: item.startDate || item.date,
-            status: item.status || "pending",
-            currentPlayers: Number(item.currentPlayers || 0),
-            maxPlayers: Number(item.maxPlayers || 0),
-            entryFee: Number(item.entryFee || 0),
-            wins: Number(item.wins || 0),
-            losses: Number(item.losses || 0),
-            legsWon: Number(item.legsWon || 0),
-            legsLost: Number(item.legsLost || 0),
-            nextMatchType: item.nextMatchType || "unknown",
-            nextMatchBoard: typeof item.nextMatchBoard === "number" ? item.nextMatchBoard : null,
-          }))
-          if (!isCancelled) {
-            setUpcomingTournaments(list)
-          }
-        }
-
-        if (
           leaguesRes.status === "fulfilled" &&
           leaguesRes.value &&
           typeof leaguesRes.value === "object" &&
@@ -211,18 +226,30 @@ export default function AuthenticatedHomeContent() {
           }
         }
       } catch (error) {
-        console.error("Dashboard data fetch failed", error)
+        console.error("Deferred dashboard fetch failed", error)
       } finally {
         if (!isCancelled) {
-          setDashboardLoading(false)
+          setSecondaryLoading(false)
         }
       }
     }
 
-    fetchDashboardData()
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = (window as any).requestIdleCallback(fetchDeferredHomeData, { timeout: 1200 })
+    } else {
+      timeoutId = setTimeout(fetchDeferredHomeData, 200)
+    }
 
     return () => {
       isCancelled = true
+      if (idleId !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        try {
+          ;(window as any).cancelIdleCallback(idleId)
+        } catch {}
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
     }
   }, [user?._id])
 

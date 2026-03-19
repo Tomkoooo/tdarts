@@ -83,4 +83,6 @@ const PlayerSchema = new mongoose.Schema<PlayerDocument>({
     country: { type: String, default: null },
 }, {collection: 'players'});
 
+PlayerSchema.index({ 'stats.mmr': 1 });
+
 export const PlayerModel = mongoose.models.Player || mongoose.model<PlayerDocument>("Player", PlayerSchema);

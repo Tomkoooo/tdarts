@@ -8,6 +8,7 @@ import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { resolveGuardAwareStatus } from '@/shared/lib/guards/result';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
+import { revalidateTag } from 'next/cache';
 
 const tournamentIdSchema = z.object({
   tournamentId: z.string().min(1),
@@ -30,7 +31,27 @@ export async function validateBoardPasswordAction(input: {
         parsed.tournamentId,
         parsed.password
       );
-      return { isValid };
+      if (!isValid) {
+        return { isValid: false };
+      }
+      const [tournament, boards] = await Promise.all([
+        TournamentService.getTournamentLite(parsed.tournamentId),
+        TournamentService.getBoards(parsed.tournamentId),
+      ]);
+      return serializeForClient({
+        isValid: true,
+        tournament: {
+          _id: tournament._id,
+          clubId: tournament.clubId,
+          tournamentId: tournament.tournamentId,
+          tournamentSettings: {
+            status: tournament.status,
+            format: tournament.format,
+            startingScore: tournament.startingScore,
+          },
+        },
+        boards,
+      });
     },
     {
       method: 'ACTION',
@@ -47,8 +68,17 @@ export async function getBoardTournamentAction(input: { tournamentId: string }) 
     'board.getTournament',
     async (payload: { tournamentId: string }) => {
       const { tournamentId } = tournamentIdSchema.parse(payload);
-      const tournament = await TournamentService.getTournament(tournamentId);
-      return serializeForClient(tournament);
+      const tournament = await TournamentService.getTournamentLite(tournamentId);
+      return serializeForClient({
+        _id: tournament._id,
+        clubId: tournament.clubId,
+        tournamentId: tournament.tournamentId,
+        tournamentSettings: {
+          status: tournament.status,
+          format: tournament.format,
+          startingScore: tournament.startingScore,
+        },
+      });
     },
     {
       method: 'ACTION',
@@ -89,15 +119,14 @@ export async function getBoardMatchesAction(input: {
           boardNumber: z.number(),
         })
         .parse(payload);
-      const tournament = await TournamentService.getTournament(parsed.tournamentId);
-      const clubId = String((tournament as any)?.clubId?._id || (tournament as any)?.clubId || '');
+      const ctx = await TournamentService.getTournamentMatchContext(parsed.tournamentId);
       const matches = await MatchService.getBoardMatches(
         parsed.tournamentId,
-        clubId,
+        ctx.clubId,
         parsed.boardNumber,
         {
-          tournamentObjectId: String((tournament as any)?._id || ''),
-          startingScore: Number((tournament as any)?.tournamentSettings?.startingScore || 501),
+          tournamentObjectId: ctx.tournamentObjectId,
+          startingScore: ctx.startingScore,
         }
       );
       return serializeForClient({ matches });
@@ -118,8 +147,7 @@ export async function getBoardUserRoleAction(input: { tournamentId: string }) {
       const { tournamentId } = tournamentIdSchema.parse(payload);
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return { clubRole: 'member' as const };
-      const tournament = await TournamentService.getTournament(tournamentId);
-      const clubId = String((tournament as any)?.clubId?._id || (tournament as any)?.clubId || '');
+      const { clubId } = await TournamentService.getTournamentRoleContext(tournamentId);
       const role = await ClubService.getUserRoleInClub(authResult.data.userId, clubId);
       return serializeForClient({ clubRole: role || 'member' });
     },
@@ -163,6 +191,8 @@ export async function startBoardMatchAction(input: {
         parsed.legsToWin,
         parsed.startingPlayer
       );
+      revalidateTag(`tournament:${parsed.tournamentId}`, 'max');
+      revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, match });
     },
     {
@@ -222,6 +252,9 @@ export async function finishBoardMatchAction(input: {
         isManual: true,
         adminId,
       });
+      revalidateTag('home:stats', 'max');
+      revalidateTag('home:tournaments', 'max');
+      revalidateTag('home:leagues', 'max');
       return serializeForClient({ success: true, match });
     },
     {

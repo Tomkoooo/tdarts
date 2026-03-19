@@ -1,5 +1,6 @@
 'use server';
 
+import { unstable_cache } from 'next/cache';
 import { TournamentService } from '@/database/services/tournament.service';
 import { ClubService } from '@/database/services/club.service';
 import { BadRequestError } from '@/middleware/errorHandle';
@@ -12,6 +13,13 @@ export type GetTournamentPageDataInput = {
   includeViewer?: boolean;
 };
 
+const getCachedTournamentSummary = (code: string) =>
+  unstable_cache(
+    () => TournamentService.getTournamentSummaryForPublicPage(code),
+    [`tournament-summary`, code],
+    { tags: [`tournament:${code}`], revalidate: 30 },
+  )();
+
 export async function getTournamentPageDataAction(input: GetTournamentPageDataInput) {
   const run = withTelemetry(
     'tournaments.getTournamentPageData',
@@ -21,7 +29,7 @@ export async function getTournamentPageDataAction(input: GetTournamentPageDataIn
         throw new BadRequestError('code is required');
       }
 
-      const tournament = await TournamentService.getTournamentSummaryForPublicPage(code);
+      const tournament = await getCachedTournamentSummary(code);
 
       if (!includeViewer) {
         return serializeForClient({ tournament });

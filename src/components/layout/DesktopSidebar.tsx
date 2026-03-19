@@ -356,11 +356,20 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Link href={toLocalizedHref("/auth/login")} className="block">
-            <Button className="w-full" size={collapsed ? "icon" : "default"}>
-              {collapsed ? <IconUser size={16} /> : t("login")}
-            </Button>
-          </Link>
+          <div className="space-y-2">
+            <Link href={toLocalizedHref("/auth/login")} className="block">
+              <Button className="w-full" size={collapsed ? "icon" : "default"}>
+                {collapsed ? <IconUser size={16} /> : t("login")}
+              </Button>
+            </Link>
+            {!collapsed ? (
+              <Link href={toLocalizedHref("/auth/register")} className="block">
+                <Button variant="outline" className="w-full">
+                  {t.has("register") ? t("register") : "Register"}
+                </Button>
+              </Link>
+            ) : null}
+          </div>
         )}
       </div>
     </aside>

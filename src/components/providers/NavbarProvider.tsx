@@ -25,8 +25,9 @@ export function NavbarProvider({
   const pathname = usePathname()
   const [shellState, setShellState] = useState(() => {
     const path = initialPath || stripLocalePrefix(pathname || "/")
+    const computedHide = shouldHideNavbar(path)
     return {
-      shouldHide: initialShouldHide,
+      shouldHide: initialPath ? initialShouldHide : computedHide,
       showFooter: shouldShowFooter(path),
     }
   })

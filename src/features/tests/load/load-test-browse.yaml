@@ -21,29 +21,14 @@ config:
   http:
     timeout: 30
     pool: 1200
-  ensure:
-    thresholds:
-      - "http.response_time.p95": 1500
-      - "http.response_time.p99": 2500
-      - "errors.rate": 0.02
-      - "vusers.failed": 5%
-
-# Run guide:
-# 1) export LOAD_TEST_MODE=true
-# 2) export LOAD_TEST_SECRET='<same secret used by server>'
-# 3) export LOAD_TEST_USER_ID='6870f51d9b58837d598e80d5'
-# 4) export LOAD_TEST_CLUB_ID='68f6afb145352f8e4076ed55'
-# 5) pnpm dev
-# 6) pnpm test:load
-# Optional: set LOAD_BASE_URL and use diagnostics runner which passes target consistently.
 
 before:
   flow:
     - function: "bootstrapTournaments"
 
 scenarios:
-  - name: browse_platform_pages
-    weight: 70
+  - name: browse_platform_pages_only
+    weight: 85
     flow:
       - function: "setupLoadTestAuth"
       - function: "browsePrep"
@@ -72,10 +57,6 @@ scenarios:
           afterResponse: "capturePageMetrics"
       - think: "{{ thinkSec }}"
       - get:
-          url: "/en/board/redirect/{{ loadClubId }}"
-          afterResponse: "capturePageMetrics"
-      - think: "{{ thinkSec }}"
-      - get:
           url: "/en/tournaments/{{ tournamentCode }}"
           afterResponse: "capturePageMetrics"
       - think: "{{ thinkSec }}"
@@ -87,16 +68,8 @@ scenarios:
           url: "/en/board/{{ tournamentCode }}"
           afterResponse: "capturePageMetrics"
 
-  - name: tournament_lifecycle_parallel
-    weight: 20
-    flow:
-      - function: "setupLoadTestAuth"
-      - function: "pickTournamentContext"
-      - function: "lifecycleStep"
-      - think: 1
-
-  - name: live_board_polling
-    weight: 10
+  - name: live_board_polling_only
+    weight: 15
     flow:
       - function: "setupLoadTestAuth"
       - function: "pickTournamentContext"

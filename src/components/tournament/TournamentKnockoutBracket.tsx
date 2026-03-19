@@ -205,26 +205,36 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const [showActionsInFullscreen, setShowActionsInFullscreen] = useState(true)
   const [tournamentStatus, setTournamentStatus] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchKnockoutData()
-    fetchAvailableBoards()
-  }, [tournamentCode])
+  const applyKnockoutViewData = (response: any) => {
+    if (!response || typeof response !== "object" || !("success" in response) || !response.success) {
+      return false
+    }
 
-  useEffect(() => {
-    if (tournamentPlayers && tournamentPlayers.length > 0) {
+    const knockoutRounds = (response as { knockout?: any[] }).knockout || []
+    knockoutRounds.forEach((round: any) => {
+      if (!round.matches) {
+        round.matches = []
+      }
+    })
+    setKnockoutData(knockoutRounds)
+    setAvailableBoards((response as { availableBoards?: any[] }).availableBoards || [])
+    setTournamentStatus((response as { tournamentStatus?: string | null }).tournamentStatus || null)
+    setCurrentKnockoutMethod((response as { knockoutMethod?: "automatic" | "manual" }).knockoutMethod || "automatic")
+
+    const responsePlayers = (response as { tournamentPlayers?: any[] }).tournamentPlayers || []
+    if (Array.isArray(responsePlayers) && responsePlayers.length > 0) {
+      setAvailablePlayers(responsePlayers)
+    } else if (Array.isArray(tournamentPlayers) && tournamentPlayers.length > 0) {
       setAvailablePlayers(tournamentPlayers)
     } else {
-      fetchTournamentPlayers()
+      setAvailablePlayers([])
     }
-  }, [tournamentPlayers])
+    return true
+  }
 
   useEffect(() => {
-    if (!knockoutMethod) {
-      fetchKnockoutMethod()
-    } else {
-      setCurrentKnockoutMethod(knockoutMethod)
-    }
-  }, [knockoutMethod])
+    void fetchKnockoutData()
+  }, [tournamentCode])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -305,62 +315,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     })
   }, [availablePlayers, playerSearchTerm])
 
-  const fetchKnockoutMethod = async () => {
-    try {
-      const response = await getKnockoutViewDataAction({ tournamentCode })
-      if (response && typeof response === 'object' && 'success' in response && response.success && 'knockoutMethod' in response) {
-        setCurrentKnockoutMethod((response as { knockoutMethod?: "automatic" | "manual" }).knockoutMethod)
-      }
-    } catch (err) {
-      console.error("Failed to fetch knockout method", err)
-      setCurrentKnockoutMethod("automatic")
-    }
-  }
-
-  const fetchTournamentPlayers = async () => {
-    try {
-      const response = await getKnockoutViewDataAction({ tournamentCode })
-      if (response && typeof response === 'object' && 'tournamentPlayers' in response) {
-        setAvailablePlayers((response as { tournamentPlayers?: any[] }).tournamentPlayers || [])
-      }
-      const statusFromResponse = (response as { tournamentStatus?: string | null })?.tournamentStatus || null
-
-      if (statusFromResponse) {
-        setTournamentStatus(statusFromResponse as string)
-      }
-    } catch (err) {
-      console.error("Failed to fetch tournament players", err)
-    }
-  }
-
-  const fetchAvailableBoards = async () => {
-    try {
-      const response = await getKnockoutViewDataAction({ tournamentCode })
-      if (response && typeof response === 'object' && 'availableBoards' in response) {
-        setAvailableBoards((response as { availableBoards?: any[] }).availableBoards || [])
-      }
-    } catch (err) {
-      console.error("Failed to fetch available boards", err)
-    }
-  }
-
   const fetchKnockoutData = async () => {
     setLoading(true)
     try {
       const response = await getKnockoutViewDataAction({ tournamentCode })
-      if (response && typeof response === 'object' && 'success' in response && response.success) {
-        const knockoutRounds = (response as { knockout?: any[] }).knockout || []
-        knockoutRounds.forEach((round: any) => {
-          if (!round.matches) {
-            round.matches = []
-          }
-        })
-        setKnockoutData(knockoutRounds)
-        const statusFromKnockout = (response as { tournamentStatus?: string | null }).tournamentStatus || null
-        if (statusFromKnockout) {
-          setTournamentStatus(statusFromKnockout as string)
-        }
-      } else {
+      if (!applyKnockoutViewData(response)) {
         showErrorToast("Nem sikerült betölteni a knockout adatokat.", {
           context: "Knockout adatok betöltése",
           errorName: "Betöltés sikertelen",

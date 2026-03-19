@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
+import { cache } from 'react';
 import { AuthService } from '@/database/services/auth.service';
 import { AuthorizationService } from '@/database/services/authorization.service';
 import { AuthorizationError } from '@/middleware/errorHandle';
@@ -13,20 +14,7 @@ type AuthorizeUserOptions = {
   request?: NextRequest;
 };
 
-export async function authorizeUserResult(options?: AuthorizeUserOptions): Promise<GuardResult<AuthorizedSession>> {
-  if (options?.request) {
-    const userId = await AuthorizationService.getUserIdFromRequest(options.request);
-    if (!userId) {
-      return {
-        ok: false,
-        code: 'UNAUTHORIZED',
-        status: 401,
-        message: 'Unauthorized',
-      };
-    }
-    return { ok: true, data: { userId } };
-  }
-
+const authorizeFromCookiesCached = cache(async (): Promise<GuardResult<AuthorizedSession>> => {
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
   if (!token) {
@@ -52,6 +40,34 @@ export async function authorizeUserResult(options?: AuthorizeUserOptions): Promi
       message: 'Unauthorized',
     };
   }
+});
+
+export async function authorizeUserResult(options?: AuthorizeUserOptions): Promise<GuardResult<AuthorizedSession>> {
+  if (process.env.LOAD_TEST_MODE === 'true' && process.env.LOAD_TEST_USER_ID) {
+    if (!options?.request) {
+      return { ok: true, data: { userId: process.env.LOAD_TEST_USER_ID } };
+    }
+
+    const loadTestSecret = options.request.headers.get('x-load-test-secret');
+    if (loadTestSecret && loadTestSecret === process.env.LOAD_TEST_SECRET) {
+      return { ok: true, data: { userId: process.env.LOAD_TEST_USER_ID } };
+    }
+  }
+
+  if (options?.request) {
+    const userId = await AuthorizationService.getUserIdFromRequest(options.request);
+    if (!userId) {
+      return {
+        ok: false,
+        code: 'UNAUTHORIZED',
+        status: 401,
+        message: 'Unauthorized',
+      };
+    }
+    return { ok: true, data: { userId } };
+  }
+
+  return authorizeFromCookiesCached();
 }
 
 export async function authorizeUser(options?: AuthorizeUserOptions): Promise<AuthorizedSession> {

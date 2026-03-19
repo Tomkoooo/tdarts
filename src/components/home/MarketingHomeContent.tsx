@@ -1,15 +1,16 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import ParallaxBackground from "@/components/homapage/ParallaxBackground"
+import dynamic from "next/dynamic"
 import AnnouncementToast from "@/components/common/AnnouncementToast"
-import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets"
 import { getActiveAnnouncementsAction } from "@/features/announcements/actions/getActiveAnnouncements.action"
 import LandingHeroSection from "@/components/home/LandingHeroSection"
-import LandingFeaturesSection from "@/components/home/LandingFeaturesSection"
-import LandingHowItWorksSection from "@/components/home/LandingHowItWorksSection"
-import LandingTestimonialsSection from "@/components/home/LandingTestimonialsSection"
-import LandingCtaSection from "@/components/home/LandingCtaSection"
+
+const ParallaxBackground = dynamic(() => import("@/components/homapage/ParallaxBackground"), { ssr: false })
+const LandingFeaturesSection = dynamic(() => import("@/components/home/LandingFeaturesSection"))
+const LandingHowItWorksSection = dynamic(() => import("@/components/home/LandingHowItWorksSection"))
+const LandingTestimonialsSection = dynamic(() => import("@/components/home/LandingTestimonialsSection"))
+const LandingCtaSection = dynamic(() => import("@/components/home/LandingCtaSection"))
 
 interface Announcement {
   _id: string
@@ -27,15 +28,10 @@ interface Announcement {
 export default function MarketingHomeContent() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [closedAnnouncements, setClosedAnnouncements] = useState<Set<string>>(new Set())
-  const { unreadCount } = useUnreadTickets({ enabled: false })
-  const [ticketToastDismissed, setTicketToastDismissed] = useState(false)
 
   useEffect(() => {
-    const dismissed = localStorage.getItem("ticketToastDismissed")
-    if (dismissed) setTicketToastDismissed(true)
-  }, [])
-
-  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    let idleId: number | null = null
     const fetchAnnouncements = async () => {
       try {
         const response = await getActiveAnnouncementsAction({
@@ -60,7 +56,24 @@ export default function MarketingHomeContent() {
       }
     }
 
-    fetchAnnouncements()
+    // Avoid competing with first paint; request idle first.
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = (window as any).requestIdleCallback(fetchAnnouncements, { timeout: 1200 })
+    } else {
+      timeoutId = setTimeout(fetchAnnouncements, 250)
+    }
+
+    return () => {
+      if (idleId !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        try {
+          ;(window as any).cancelIdleCallback(idleId)
+          return
+        } catch {}
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
+    }
   }, [])
 
   const handleCloseAnnouncement = (id: string) => {
@@ -69,14 +82,6 @@ export default function MarketingHomeContent() {
   }
 
   const activeAnnouncements = announcements.filter((announcement) => !closedAnnouncements.has(announcement._id))
-
-  const handleDismissTicketToast = () => {
-    setTicketToastDismissed(true)
-    localStorage.setItem("ticketToastDismissed", "true")
-    setTimeout(() => {
-      localStorage.removeItem("ticketToastDismissed")
-    }, 60 * 60 * 1000)
-  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -103,10 +108,6 @@ export default function MarketingHomeContent() {
           </div>
         ))}
       </div>
-
-      {!ticketToastDismissed && (
-        <UnreadTicketToast unreadCount={unreadCount} onDismiss={handleDismissTicketToast} />
-      )}
 
       <main className="relative z-10 pb-12">
         <LandingHeroSection />

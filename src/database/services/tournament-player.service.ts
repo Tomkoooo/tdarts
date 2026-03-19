@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { TournamentModel } from '@/database/models/tournament.model';
 import { PlayerModel } from '../models/player.model';
 import { connectMongo } from '@/lib/mongoose';
@@ -70,31 +71,31 @@ export class TournamentPlayerService {
     static async addTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
         try {
             await connectMongo();
-            
-            // Check if player exists
-            const player = await PlayerModel.findOne({ _id: playerId });
-            if (!player) {
+
+            if (!mongoose.isValidObjectId(playerId)) {
+                throw new BadRequestError('Invalid player ID');
+            }
+
+            // Keep existence validation, but avoid hydrating full player document.
+            const playerExists = await PlayerModel.exists({ _id: playerId });
+            if (!playerExists) {
                 throw new BadRequestError('Player not found');
             }
-            
-            // Check if player is already in tournament
-            const existingPlayer = await TournamentModel.findOne({
-                tournamentId: tournamentId,
-                'tournamentPlayers.playerReference': player._id
-            });
-            
-            if (existingPlayer) {
-                console.log(`Player ${playerId} is already in tournament ${tournamentId}`);
-                return true; // Player already exists, consider it success
-            }
-            
-            // Use atomic operation to add player
+
+            const playerObjectId = new mongoose.Types.ObjectId(playerId);
+
+            // Single-write idempotent add:
+            // - insert player only if they are not already in tournamentPlayers
+            // - avoids separate read-before-write on hot path
             const result = await TournamentModel.updateOne(
-                { tournamentId: tournamentId },
+                {
+                    tournamentId,
+                    'tournamentPlayers.playerReference': { $ne: playerObjectId }
+                },
                 { 
                     $push: { 
                         tournamentPlayers: { 
-                            playerReference: player._id, 
+                            playerReference: playerObjectId, 
                             status: 'applied',
                             stats: {
                                 matchesWon: 0,
@@ -111,6 +112,11 @@ export class TournamentPlayerService {
             );
             
             if (result.matchedCount === 0) {
+                // Either tournament is missing OR player already exists in this tournament.
+                const tournamentExists = await TournamentModel.exists({ tournamentId });
+                if (tournamentExists) {
+                    return true;
+                }
                 throw new BadRequestError('Tournament not found');
             }
             
@@ -197,4 +203,5 @@ export class TournamentPlayerService {
             return false;
         }
     }
+
 }

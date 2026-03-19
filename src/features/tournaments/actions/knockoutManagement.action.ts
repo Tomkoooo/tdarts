@@ -17,38 +17,11 @@ export async function getKnockoutViewDataAction(input: { tournamentCode: string 
     'tournaments.knockout.viewData',
     async (payload: { tournamentCode: string }) => {
       const { tournamentCode } = tournamentCodeSchema.parse(payload);
-      const tournament = await TournamentService.getTournament(tournamentCode);
-      const knockout = Array.isArray((tournament as any)?.knockout) ? (tournament as any).knockout : [];
-      const tournamentPlayers = Array.isArray((tournament as any)?.tournamentPlayers)
-        ? (tournament as any).tournamentPlayers
-        : [];
-      const boards = Array.isArray((tournament as any)?.boards) ? (tournament as any).boards : [];
-      const status = (tournament as any)?.tournamentSettings?.status || null;
-      const knockoutMethod = (tournament as any)?.tournamentSettings?.knockoutMethod || 'automatic';
-
-      const usedBoards = new Set<number>();
-      knockout.forEach((round: any) =>
-        (round?.matches || []).forEach((match: any) => {
-          const boardRef = Number(match?.matchReference?.boardReference || 0);
-          if (boardRef > 0) usedBoards.add(boardRef);
-        })
-      );
-
-      const availableBoards = boards
-        .filter((board: any) => board?.isActive !== false)
-        .map((board: any) => ({
-          boardNumber: Number(board.boardNumber),
-          name: board.name,
-          isUsed: usedBoards.has(Number(board.boardNumber)),
-        }));
+      const data = await TournamentService.getKnockoutViewDataLite(tournamentCode);
 
       return serializeForClient({
         success: true,
-        knockout,
-        tournamentPlayers,
-        availableBoards,
-        tournamentStatus: status,
-        knockoutMethod,
+        ...data,
       });
     },
     {

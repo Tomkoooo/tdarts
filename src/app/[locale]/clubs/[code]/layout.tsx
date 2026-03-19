@@ -2,7 +2,6 @@ import React, { ReactNode } from "react";
 import { Metadata } from "next";
 import { ClubService } from "@/database/services/club.service";
 import "./layout.css";
-import { getTranslations } from "next-intl/server";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 
 interface LayoutProps {
@@ -23,14 +22,13 @@ export async function generateMetadata({
   params: Promise<{ code: string; locale: string }>;
 }): Promise<Metadata> {
   const { code, locale } = await params;
-  const t = await getTranslations({ locale, namespace: "Auto" });
   const baseUrl = getBaseUrl();
   const clubPath = `/clubs/${code}`;
   const localeAlternates = buildLocaleAlternates(clubPath);
   const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
 
   try {
-    const club = await ClubService.getClub(code);
+    const club = await ClubService.getClubMetadataTheme(code);
     
     const name = club.name || "Darts Klub";
     const title = club.landingPage?.seo?.title || name;
@@ -43,7 +41,7 @@ export async function generateMetadata({
 
     const location = club.address || club.location || "Magyarország";
     const canonicalUrl = `${baseUrl}/${locale}${clubPath}`;
-    const memberCount = club.members?.length || 0;
+    const memberCount = club.membersCount || 0;
 
     return {
       title: {
@@ -96,8 +94,13 @@ export async function generateMetadata({
     };
   } catch (e) {
     console.error(e);
+    const fallbackTitleByLocale: Record<string, string> = {
+      hu: "Klub nem található",
+      en: "Club not found",
+      de: "Club nicht gefunden",
+    };
     return {
-      title: t("club_not_found_ecjo"),
+      title: fallbackTitleByLocale[locale] || fallbackTitleByLocale.en,
     };
   }
 }
@@ -106,7 +109,7 @@ export default async function ClubLayout({ children, params }: LayoutProps) {
     const { code } = await params;
     let club;
     try {
-        club = await ClubService.getClub(code);
+        club = await ClubService.getClubMetadataTheme(code);
     } catch {
         // Handle error or let page handle it
     }

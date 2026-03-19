@@ -105,8 +105,11 @@ export class TournamentService {
             try {
                 await TournamentModel.collection.dropIndex('code_1');
             } catch (error) {
-                // Index doesn't exist, which is fine
-                console.log(error)
+                // Ignore "index not found"; surface any other index issue.
+                const code = (error as { code?: number } | null)?.code;
+                if (code !== 27) {
+                    console.error('Failed to drop legacy index code_1', error);
+                }
             }
             
             this.indexesInitialized = true;
@@ -168,7 +171,7 @@ export class TournamentService {
         const needsAsyncGeocoding = typeof locationInput === 'string' && locationInput.trim().length > 0;
 
         // Sandbox check: Limit to 5 per month per club
-        if (tournamentData.clubId && tournamentData.isSandbox) {
+        if (tournamentData.clubId && tournamentData.isSandbox && process.env.LOAD_TEST_MODE !== 'true') {
             const startOfMonth = new Date();
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
@@ -246,7 +249,6 @@ export class TournamentService {
             isArchived: { $ne: true }
         })
             .populate('clubId')
-            .populate('clubId')
             .populate({
                 path: 'tournamentPlayers.playerReference',
                 populate: { path: 'members', model: 'Player' }
@@ -293,7 +295,6 @@ export class TournamentService {
                 isDeleted: { $ne: true },
                 isArchived: { $ne: true }
             })
-              .populate('clubId')
               .populate('clubId')
             .populate({
                 path: 'tournamentPlayers.playerReference',
@@ -394,6 +395,174 @@ export class TournamentService {
             }
         }
         return tournament;
+    }
+
+    private static buildCodeOrIdFilter(tournamentId: string) {
+        const filter: any = {
+            isDeleted: { $ne: true },
+            isArchived: { $ne: true },
+            $or: [{ tournamentId }],
+        };
+        if (mongoose.isValidObjectId(tournamentId)) {
+            filter.$or.push({ _id: tournamentId });
+        }
+        return filter;
+    }
+
+    static async getTournamentLite(tournamentId: string): Promise<{
+        _id: string;
+        tournamentId: string;
+        clubId: string;
+        status: string;
+        format: string;
+        startingScore: number;
+        isSandbox: boolean;
+        boards: Array<{ boardNumber: number; isActive: boolean; status: string }>;
+    }> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const doc: any = await TournamentModel.findOne(filter)
+            .select('_id tournamentId clubId isSandbox tournamentSettings.status tournamentSettings.format tournamentSettings.startingScore boards.boardNumber boards.isActive boards.status')
+            .lean();
+        if (!doc) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentLite',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+        return {
+            _id: doc._id.toString(),
+            tournamentId: doc.tournamentId,
+            clubId: typeof doc.clubId === 'object' ? doc.clubId.toString() : String(doc.clubId),
+            status: doc.tournamentSettings?.status || 'pending',
+            format: doc.tournamentSettings?.format || 'group_knockout',
+            startingScore: Number(doc.tournamentSettings?.startingScore || 501),
+            isSandbox: Boolean(doc.isSandbox),
+            boards: (doc.boards || []).map((b: any) => ({
+                boardNumber: b.boardNumber,
+                isActive: b.isActive,
+                status: b.status || 'waiting',
+            })),
+        };
+    }
+
+    static async getKnockoutViewDataLite(tournamentId: string): Promise<{
+        knockout: any[];
+        tournamentPlayers: any[];
+        availableBoards: Array<{ boardNumber: number; name?: string; isUsed: boolean }>;
+        tournamentStatus: string | null;
+        knockoutMethod: 'automatic' | 'manual';
+    }> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament: any = await TournamentModel.findOne(filter)
+            .select(
+                'knockout tournamentPlayers.playerReference boards.boardNumber boards.name boards.isActive tournamentSettings.status tournamentSettings.knockoutMethod'
+            )
+            .populate('tournamentPlayers.playerReference', 'name')
+            .populate('knockout.matches.player1', 'name')
+            .populate('knockout.matches.player2', 'name')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                model: 'Match',
+                select: 'status winnerId boardReference player1 player2 scorer',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name' },
+                    { path: 'scorer', model: 'Player', select: 'name' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getKnockoutViewDataLite',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        const knockout = Array.isArray(tournament.knockout) ? tournament.knockout : [];
+        const tournamentPlayers = Array.isArray(tournament.tournamentPlayers) ? tournament.tournamentPlayers : [];
+        const boards = Array.isArray(tournament.boards) ? tournament.boards : [];
+        const status = tournament?.tournamentSettings?.status || null;
+        const knockoutMethod = tournament?.tournamentSettings?.knockoutMethod || 'automatic';
+
+        const usedBoards = new Set<number>();
+        knockout.forEach((round: any) =>
+            (round?.matches || []).forEach((match: any) => {
+                const boardRef = Number(match?.matchReference?.boardReference || 0);
+                if (boardRef > 0) usedBoards.add(boardRef);
+            })
+        );
+
+        const availableBoards = boards
+            .filter((board: any) => board?.isActive !== false)
+            .map((board: any) => ({
+                boardNumber: Number(board.boardNumber),
+                name: board.name,
+                isUsed: usedBoards.has(Number(board.boardNumber)),
+            }));
+
+        return {
+            knockout,
+            tournamentPlayers,
+            availableBoards,
+            tournamentStatus: status,
+            knockoutMethod,
+        };
+    }
+
+    static async getTournamentIdOnly(tournamentCode: string): Promise<{ _id: string; tournamentId: string }> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentCode);
+        const doc: any = await TournamentModel.findOne(filter)
+            .select('_id tournamentId')
+            .lean();
+        if (!doc) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentCode,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentIdOnly',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
+        }
+        return { _id: doc._id.toString(), tournamentId: doc.tournamentId };
+    }
+
+    static async getTournamentPlayerIds(tournamentCode: string): Promise<string[]> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentCode);
+        const doc: any = await TournamentModel.findOne(filter)
+            .select('tournamentPlayers.playerReference')
+            .lean();
+        if (!doc) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentCode,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentPlayerIds',
+                entityType: 'tournament',
+                entityId: tournamentCode,
+            });
+        }
+
+        return (doc.tournamentPlayers || [])
+            .map((tp: any) => {
+                const ref = tp?.playerReference;
+                if (!ref) return null;
+                return typeof ref === 'object' ? ref.toString?.() : String(ref);
+            })
+            .filter(Boolean) as string[];
     }
 
     static async getTournamentSummaryForPublicPage(tournamentId: string): Promise<any> {

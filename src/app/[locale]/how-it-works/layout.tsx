@@ -4,7 +4,7 @@ import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
     const { locale } = await params;
-    const t = await getTranslations({ locale, namespace: "Auto" });
+    const t = await getTranslations({ locale, namespace: "HowItWorks" });
     const baseUrl = getBaseUrl();
     const pagePath = '/how-it-works';
     const localeAlternates = buildLocaleAlternates(pagePath);
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     const description = descriptionByLocale[locale] || descriptionByLocale.en;
 
     return {
-        title: t("hogyan_mukodik_247b"),
+        title: t("hero.title_part1"),
         description,
         metadataBase: new URL(baseUrl),
         alternates: {
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
             },
         },
         openGraph: {
-            title: t("hogyan_mukodik_247b"),
+            title: t("hero.title_part1"),
             description,
             url: `${baseUrl}/${locale}${pagePath}`,
             siteName: "tDarts",
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         },
         twitter: {
             card: "summary_large_image",
-            title: t("hogyan_mukodik_247b"),
+            title: t("hero.title_part1"),
             description,
         },
     }

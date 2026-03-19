@@ -126,6 +126,7 @@ export default function SearchPage() {
     const [metadata, setMetadata] = useState<{ cities: {city: string, count: number}[] }>({ cities: [] })
     const [isLoading, setIsLoading] = useState(false)
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 })
+    const latestRequestIdRef = useRef(0)
 
     const updateUrl = useCallback((newParams: any) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -141,14 +142,18 @@ export default function SearchPage() {
 
     useEffect(() => {
         const fetchData = async () => {
+            const requestId = ++latestRequestIdRef.current
+            const requestTab = activeTab
+            const requestPage = Number(filters.page || 1)
             setIsLoading(true)
             try {
-                if (activeTab === 'map') {
+                if (requestTab === 'map') {
                     const mapData = await mapSearchAction({
                         query: debouncedQuery,
                         showClubs: true,
                         showTournaments: true,
                     })
+                    if (requestId !== latestRequestIdRef.current) return
                     setResults(mapData.items || [])
                     setCounts((prev) => ({
                         ...prev,
@@ -160,13 +165,14 @@ export default function SearchPage() {
 
                 const data = await searchAction({
                     query: debouncedQuery,
-                    tab: activeTab,
+                    tab: requestTab,
                     filters: { ...filters, page: filters.page, timeZone: userTimeZone },
                     includeCounts: (filters.page || 1) === 1,
                     includeMetadata: (filters.page || 1) === 1,
                 })
+                if (requestId !== latestRequestIdRef.current) return
                 
-                if (filters.page && filters.page > 1) {
+                if (requestPage > 1 && requestTab === activeTab) {
                     setResults(prev => [...prev, ...data.results])
                 } else {
                     setResults(data.results)
@@ -182,25 +188,12 @@ export default function SearchPage() {
                 if (data.metadata) setMetadata(data.metadata)
                 if (data.pagination) setPagination(data.pagination)
 
-                if (debouncedQuery && data.counts && activeTab !== 'map') {
-                    const currentCount = (data.counts as Record<string, number>)[activeTab] || 0;
-                    const resultEntries = Object.entries(data.counts) as [string, number][];
-                    const tabsWithResults = resultEntries.filter(([, v]) => v > 0);
-                    if (currentCount === 0 && tabsWithResults.length === 1) {
-                        const targetTab = tabsWithResults[0][0];
-                        if (targetTab !== activeTab) {
-                            setActiveTab(targetTab);
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.set('tab', targetTab);
-                            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-                        }
-                    }
-                }
-
             } catch (error) {
                 console.error("Search error:", error)
             } finally {
-                setIsLoading(false)
+                if (requestId === latestRequestIdRef.current) {
+                    setIsLoading(false)
+                }
             }
         }
 
@@ -210,6 +203,7 @@ export default function SearchPage() {
     const handleTabChange = (tab: string) => {
         setActiveTab(tab)
         setResults([])
+        setGroupedResults({ tournaments: [], players: [], clubs: [], leagues: [] })
         setPagination(prev => ({ ...prev, page: 1 }))
         
         if (!query) {

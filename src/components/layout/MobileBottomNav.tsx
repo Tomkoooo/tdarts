@@ -37,43 +37,75 @@ export const MobileBottomNav: React.FC = () => {
   const normalizedPath = stripLocalePrefix(pathname);
 
   const navItems = React.useMemo<NavItem[]>(
-    () => [
-      {
-        id: "home",
-        href: "/",
-        icon: IconHome,
-        label: "Home",
-        match: (path) => path === "/" || path === "/home" || path === "/landing",
-      },
-      {
-        id: "tournaments",
-        href: "/search",
-        icon: IconSearch,
-        label: "Versenyek",
-        match: (path) => path === "/search",
-      },
-      {
-        id: "board",
-        href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
-        icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
-        label: hasQuickTournament ? "Current tournament" : "Tábla",
-        match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
-      },
-      {
-        id: "profile",
-        href: "/profile",
-        icon: IconUser,
-        label: "Profil",
-      },
-      {
-        id: "myclub",
-        href: "/myclub",
-        icon: IconUsersGroup,
-        label: "Saját klub",
-        match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
-      },
-    ],
-    [hasQuickTournament, ongoingTournament?.code]
+    () =>
+      user
+        ? [
+            {
+              id: "home",
+              href: "/",
+              icon: IconHome,
+              label: "Home",
+              match: (path) => path === "/" || path === "/home" || path === "/landing",
+            },
+            {
+              id: "tournaments",
+              href: "/search",
+              icon: IconSearch,
+              label: "Versenyek",
+              match: (path) => path === "/search",
+            },
+            {
+              id: "board",
+              href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
+              icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
+              label: hasQuickTournament ? "Current tournament" : "Tábla",
+              match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
+            },
+            {
+              id: "profile",
+              href: "/profile",
+              icon: IconUser,
+              label: "Profil",
+            },
+            {
+              id: "myclub",
+              href: "/myclub",
+              icon: IconUsersGroup,
+              label: "Saját klub",
+              match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
+            },
+          ]
+        : [
+            {
+              id: "home",
+              href: "/",
+              icon: IconHome,
+              label: "Home",
+              match: (path) => path === "/" || path === "/landing",
+            },
+            {
+              id: "search",
+              href: "/search",
+              icon: IconSearch,
+              label: "Search",
+              match: (path) => path === "/search",
+            },
+            {
+              id: "login",
+              href: "/auth/login",
+              icon: IconUser,
+              label: "Login",
+              match: (path) => path.startsWith("/auth/login"),
+            },
+            {
+              id: "register",
+              href: "/auth/register",
+              icon: IconUsersGroup,
+              label: "Register",
+              match: (path) => path.startsWith("/auth/register"),
+            },
+          ],
+    [user, hasQuickTournament, ongoingTournament?.code]
   );
 
   const isActive = (item: NavItem): boolean => {

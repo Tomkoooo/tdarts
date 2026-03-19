@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { revalidateTag } from 'next/cache';
 import { TournamentService } from '@/database/services/tournament.service';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
@@ -131,6 +132,9 @@ export async function generateGroupsAction(input: { code: string }) {
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
       await TournamentService.generateGroups(code, authResult.data.userId);
+      revalidateTag(`tournament:${code}`, 'max');
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return { success: true };
     },
     {
@@ -162,6 +166,10 @@ export async function generateKnockoutAction(input: z.infer<typeof knockoutSchem
           parsed.code,
           authResult.data.userId
         );
+        revalidateTag(`tournament:${parsed.code}`, 'max');
+        revalidateTag('search', 'max');
+        revalidateTag('home:tournaments', 'max');
+        revalidateTag('home:leagues', 'max');
         return { success: true };
       }
 
@@ -170,6 +178,10 @@ export async function generateKnockoutAction(input: z.infer<typeof knockoutSchem
         playersCount: isKnockoutOnly ? undefined : parsed.selectedPlayers,
         qualifiersPerGroup: isKnockoutOnly ? undefined : parsed.selectedPlayers,
       });
+      revalidateTag(`tournament:${parsed.code}`, 'max');
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
+      revalidateTag('home:leagues', 'max');
       return { success: true };
     },
     {
@@ -196,6 +208,11 @@ export async function finishTournamentAction(input: {
         authResult.data.userId,
         payload.thirdPlacePlayerId || undefined
       );
+      revalidateTag(`tournament:${code}`, 'max');
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
+      revalidateTag('home:stats', 'max');
+      revalidateTag('home:leagues', 'max');
       return { success: true };
     },
     {
@@ -255,6 +272,9 @@ export async function updateTournamentSettingsAction(input: {
         } as any
       );
 
+      revalidateTag(`tournament:${parsed.code}`, 'max');
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, tournament: updated });
     },
     {

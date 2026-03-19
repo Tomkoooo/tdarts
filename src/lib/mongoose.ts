@@ -28,12 +28,21 @@ export async function connectMongo() {
   }
 
   if (!cached.promise) {
-    const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE ?? 75);
-    const minPoolSize = Number(process.env.MONGO_MIN_POOL_SIZE ?? 20);
-    const maxConnecting = Number(process.env.MONGO_MAX_CONNECTING ?? 10);
-    const waitQueueTimeoutMS = Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS ?? 15000);
-    const serverSelectionTimeoutMS = Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS ?? 5000);
-    const socketTimeoutMS = Number(process.env.MONGO_SOCKET_TIMEOUT_MS ?? 45000);
+    const isLoadTest = process.env.LOAD_TEST_MODE === 'true';
+    const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE ?? (isLoadTest ? 200 : 75));
+    const minPoolSize = Number(process.env.MONGO_MIN_POOL_SIZE ?? (isLoadTest ? 30 : 20));
+    const maxConnecting = Number(process.env.MONGO_MAX_CONNECTING ?? (isLoadTest ? 30 : 10));
+    const waitQueueTimeoutMS = Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS ?? (isLoadTest ? 60000 : 15000));
+    const serverSelectionTimeoutMS = Number(
+      process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS ?? (isLoadTest ? 10000 : 5000)
+    );
+    const socketTimeoutMS = Number(process.env.MONGO_SOCKET_TIMEOUT_MS ?? (isLoadTest ? 120000 : 45000));
+
+    if (isLoadTest) {
+      console.log(
+        `[mongo] load-test pool config: maxPoolSize=${maxPoolSize}, minPoolSize=${minPoolSize}, maxConnecting=${maxConnecting}, waitQueueTimeoutMS=${waitQueueTimeoutMS}, serverSelectionTimeoutMS=${serverSelectionTimeoutMS}, socketTimeoutMS=${socketTimeoutMS}`
+      );
+    }
 
     cached.promise = mongoose
       .connect(process.env.MONGODB_URI, {

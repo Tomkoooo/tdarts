@@ -6,8 +6,13 @@ import { Link } from "@/i18n/routing"
 import { Button } from "@/components/ui/Button"
 import { GlassmorphismCard } from "@/components/ui/glassmorphism-card"
 import PricingSection from "@/components/homapage/PricingSection"
+import { useUserContext } from "@/hooks/useUser"
+import { useTranslations } from "next-intl"
 
 export default function LandingCtaSection() {
+  const { user } = useUserContext()
+  const tNavbar = useTranslations("Navbar")
+
   return (
     <section id="cta" className="relative">
       <div className="mx-auto max-w-368 px-2 sm:px-4">
@@ -34,15 +39,15 @@ export default function LandingCtaSection() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" className="min-w-[220px]" asChild>
-                <Link href="/search">
-                  Versenyek bongeszese
+                <Link href={user ? "/search" : "/auth/login"}>
+                  {user ? "Versenyek bongeszese" : tNavbar("login")}
                   <IconArrowRight size={18} className="ml-2" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="min-w-[220px]" asChild>
-                <Link href="/myclub">
+                <Link href={user ? "/myclub" : "/auth/register"}>
                   <IconCalendarEvent size={18} className="mr-2" />
-                  Klub inditasa
+                  {user ? "Klub inditasa" : (tNavbar.has("register") ? tNavbar("register") : "Register")}
                 </Link>
               </Button>
             </div>

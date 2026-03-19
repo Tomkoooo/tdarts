@@ -1,8 +1,11 @@
 import { connectMongo } from '@/lib/mongoose';
 import { PlayerModel } from '@/database/models/player.model';
 import { MatchModel } from '@/database/models/match.model';
+import { TournamentModel } from '@/database/models/tournament.model';
 import { PlayerService } from '@/database/services/player.service';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
+import mongoose from 'mongoose';
+import { unstable_cache } from 'next/cache';
 function getMMRTier(mmr: number): { name: string; color: string } {
   if (mmr >= 1600) return { name: 'Elit', color: 'text-error' };
   if (mmr >= 1400) return { name: 'Mester', color: 'text-warning' };
@@ -41,6 +44,15 @@ export type ProfilePlayerStatsResult = {
   };
 };
 
+const getGlobalRankByMmr = unstable_cache(
+  async (mmr: number) => {
+    await connectMongo();
+    return (await PlayerModel.countDocuments({ 'stats.mmr': { $gt: mmr } })) + 1;
+  },
+  ['profile-global-rank-by-mmr'],
+  { revalidate: 300, tags: ['home:stats'] }
+);
+
 export async function getProfilePlayerStats(userId: string): Promise<ProfilePlayerStatsResult> {
   await connectMongo();
 
@@ -50,37 +62,93 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
   }
 
   const playerId = player._id.toString();
+  const playerObjectId = new mongoose.Types.ObjectId(playerId);
   const stats = player.stats || {};
   const mmr = (stats as { mmr?: number }).mmr ?? 800;
   const mmrTier = getMMRTier(mmr);
-  const globalRank = (await PlayerModel.countDocuments({ 'stats.mmr': { $gt: mmr } })) + 1;
+  const globalRank = await getGlobalRankByMmr(mmr);
 
-  // Get match history - all finished matches for this player
-  const matches = await MatchModel.find({
-    status: 'finished',
-    $or: [{ 'player1.playerId': playerId }, { 'player2.playerId': playerId }],
-  })
-    .populate('tournamentRef', 'tournamentId tournamentSettings groups knockout boards')
-    .populate('player1.playerId', 'name country')
-    .populate('player2.playerId', 'name country')
+  // Get match history with lean projection to avoid expensive populate chains.
+  const matches = await MatchModel.find(
+    {
+      status: 'finished',
+      $or: [{ 'player1.playerId': playerObjectId }, { 'player2.playerId': playerObjectId }],
+    },
+    {
+      _id: 1,
+      tournamentRef: 1,
+      type: 1,
+      winnerId: 1,
+      createdAt: 1,
+      player1: 1,
+      player2: 1,
+      boardReference: 1,
+      round: 1,
+      legsToWin: 1,
+      status: 1,
+    }
+  )
     .sort({ createdAt: -1 })
-    .limit(100);
+    .limit(100)
+    .lean();
+
+  const tournamentIds = Array.from(
+    new Set(
+      matches
+        .map((match) => String(match.tournamentRef || ''))
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  const tournaments = tournamentIds.length
+    ? await TournamentModel.find(
+        { _id: { $in: tournamentIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+        {
+          _id: 1,
+          tournamentId: 1,
+          tournamentSettings: 1,
+          groups: 1,
+          knockout: 1,
+          boards: 1,
+        }
+      ).lean()
+    : [];
+  const tournamentMap = new Map<string, any>(tournaments.map((t: any) => [String(t._id), t]));
+
+  const participantIds = Array.from(
+    new Set(
+      matches.flatMap((match: any) => [
+        match?.player1?.playerId ? String(match.player1.playerId) : '',
+        match?.player2?.playerId ? String(match.player2.playerId) : '',
+      ]).filter((id): id is string => Boolean(id))
+    )
+  );
+  const participants = participantIds.length
+    ? await PlayerModel.find(
+        { _id: { $in: participantIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+        { _id: 1, name: 1, country: 1 }
+      ).lean()
+    : [];
+  const participantMap = new Map<string, any>(participants.map((p: any) => [String(p._id), p]));
 
   const matchHistory = matches.map((match) => {
     const p1Ref = match.player1?.playerId;
-    const p1IdStr = p1Ref ? (typeof p1Ref === 'object' && p1Ref !== null && '_id' in p1Ref ? String((p1Ref as { _id: unknown })._id) : String(p1Ref)) : '';
+    const p1IdStr = p1Ref ? String(p1Ref) : '';
     const isPlayer1 = p1IdStr === playerId;
     const playerData = isPlayer1 ? match.player1 : match.player2;
     const opponentData = isPlayer1 ? match.player2 : match.player1;
-    const opponentName =
-      typeof opponentData?.playerId === 'object' && opponentData?.playerId && 'name' in opponentData.playerId
-        ? String((opponentData.playerId as { name?: unknown }).name || '')
-        : '';
-    const tournament = match.tournamentRef as { groups?: Array<{ matches?: unknown[]; board?: number }>; knockout?: Array<{ matches?: Array<{ matchReference?: unknown }> }>; boards?: Array<{ boardNumber?: number; name?: string }> } | null;
+    const opponentId = opponentData?.playerId ? String(opponentData.playerId) : '';
+    const opponentName = String(participantMap.get(opponentId)?.name || '');
+    const tournament = tournamentMap.get(String(match.tournamentRef || '')) as
+      | {
+          groups?: Array<{ matches?: unknown[]; board?: number }>;
+          knockout?: Array<{ matches?: Array<{ matchReference?: unknown }> }>;
+          boards?: Array<{ boardNumber?: number; name?: string }>;
+        }
+      | undefined;
     let round: string | undefined;
     let groupName: string | undefined;
 
-    if (match.type === 'group' && tournament?.groups) {
+    if (match.type === 'group' && Array.isArray(tournament?.groups)) {
       const group = tournament.groups.find(
         (g) =>
           Array.isArray(g.matches) && g.matches.some((mid) => String(mid) === match._id?.toString())
@@ -99,7 +167,7 @@ export async function getProfilePlayerStats(userId: string): Promise<ProfilePlay
       }
     }
 
-    const matchObj = match.toObject ? match.toObject() : match;
+    const matchObj = match;
     const winnerId = match?.winnerId ? String(match.winnerId) : '';
     const won = Boolean(winnerId && winnerId === playerId);
     const player1Score = Number(isPlayer1 ? match?.player1?.legsWon : match?.player2?.legsWon) || 0;

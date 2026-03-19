@@ -504,29 +504,27 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    const fallbackAddress = (club.location || club.address || '').trim();
-    if (!club.structuredLocation?.rawInput && fallbackAddress) {
-      try {
-        club.location = fallbackAddress;
-        club.address = fallbackAddress;
-        const geocodeResult = await GeocodingService.geocodeAddress(fallbackAddress, 'legacy');
-        club.structuredLocation = geocodeResult.location as any;
-        await club.save();
-      } catch (error) {
-        console.error('Club lazy geocode failed:', error);
-      }
-    }
-
     // Lekérjük a klubhoz tartozó tornákat külön
     const tournaments = await TournamentModel.find({ clubId: club._id })
       .select('_id tournamentId tournamentSettings code tournamentPlayers isSandbox isDeleted invoiceId verified')
 
     // Válasz: minden szereplőhöz role mező
     // For members, always include name, userRef, and username ("vendég" if not registered)
-    const membersWithUsernames = await Promise.all(club.members.map(async (player: any) => {
+    const userRefIds = club.members
+      .map((player: any) => (player?.userRef ? String(player.userRef) : ''))
+      .filter(Boolean);
+    const usersById = userRefIds.length
+      ? new Map(
+          (
+            await UserModel.find({ _id: { $in: userRefIds } }).select('username').lean()
+          ).map((u: any) => [String(u._id), u])
+        )
+      : new Map<string, any>();
+
+    const membersWithUsernames = club.members.map((player: any) => {
       let username = 'vendég';
       if (player.userRef) {
-        const user = await UserModel.findById(player.userRef).select('username');
+        const user = usersById.get(String(player.userRef));
         if (user && user.username) username = user.username;
       }
 
@@ -546,7 +544,7 @@ export class ClubService {
         username,
         role: playerRole,
       };
-    }));
+    });
     const result = {
       ...club.toJSON(),
       admin: club.admin.map((user: any) => ({
@@ -576,24 +574,71 @@ export class ClubService {
     return result;
   }
 
+  static async getClubMetadataTheme(clubId: string): Promise<{
+    _id: string;
+    name: string;
+    description?: string;
+    location?: string;
+    address?: string;
+    logo?: string;
+    membersCount: number;
+    landingPage?: {
+      seo?: {
+        title?: string;
+        description?: string;
+        keywords?: string;
+      };
+      coverImage?: string;
+      logo?: string;
+      primaryColor?: string;
+      secondaryColor?: string;
+    };
+  }> {
+    await connectMongo();
+    const club = await ClubModel.findById(clubId)
+      .select('name description location address logo members landingPage')
+      .lean();
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const membersCount = Array.isArray((club as any).members) ? (club as any).members.length : 0;
+    return {
+      _id: String((club as any)._id),
+      name: (club as any).name || 'Darts Klub',
+      description: (club as any).description,
+      location: (club as any).location,
+      address: (club as any).address,
+      logo: (club as any).logo,
+      membersCount,
+      landingPage: (club as any).landingPage,
+    };
+  }
+
   static async getUserClubs(userId: string): Promise<{ clubs: ClubDocument[], userRoleInClub: string }> {
     await connectMongo();
 
+    const userObjectId = new Types.ObjectId(userId);
+    const playerResult = await PlayerModel.findOne({ userRef: userObjectId }).select('_id').lean();
+    const player = Array.isArray(playerResult) ? playerResult[0] : playerResult;
+    const playerId = player && typeof player === 'object' && '_id' in player && (player as { _id?: unknown })._id
+      ? new Types.ObjectId(String((player as { _id: unknown })._id))
+      : null;
+
     const clubs = await ClubModel.find({
       $or: [
-        { members: userId },
-        { admin: userId },
-        { moderators: userId },
+        ...(playerId ? [{ members: playerId }] : []),
+        { admin: userObjectId },
+        { moderators: userObjectId },
       ],
     });
     if (clubs.length === 0) {
       return { clubs: [], userRoleInClub: 'none' };
     }
     const club = clubs[0];
-    const userObjectId = new Types.ObjectId(userId);
     const userRoleInClub = club.admin.includes(userObjectId) ? 'admin' :
                            club.moderators.includes(userObjectId) ? 'moderator' :
-                           club.members.includes(userObjectId) ? 'member' :
+                           (playerId && club.members.includes(playerId)) ? 'member' :
                            await AuthorizationService.checkAdminOnly(userId, club._id.toString()) ? 'admin' : 'none';
     return { clubs, userRoleInClub };
   }
