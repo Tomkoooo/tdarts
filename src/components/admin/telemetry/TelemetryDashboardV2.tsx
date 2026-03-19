@@ -46,6 +46,17 @@ type TelemetryRange = "24h" | "7d" | "30d" | "90d" | "custom";
 type TelemetryGranularity = "minute" | "hour" | "day";
 type TelemetrySource = "all" | "api" | "action" | "page";
 type Delta = { direction: "up" | "down" | "flat"; deltaPct: number };
+type EntitySortKey =
+  | "source"
+  | "entity"
+  | "calls"
+  | "callsPerSecond"
+  | "avgLatencyMs"
+  | "errorRate"
+  | "timeouts"
+  | "traffic"
+  | "avgPacket";
+type SortDir = "asc" | "desc";
 
 function formatNumber(value: number, decimals = 3): string {
   if (!Number.isFinite(value)) return "0";
@@ -77,6 +88,21 @@ function trendBadge(delta?: Delta, inverseBad = false) {
   const sign = delta.deltaPct > 0 ? "+" : "";
   return <Badge variant={trendBadgeVariant(delta, inverseBad)}>{`${delta.direction} (${sign}${formatNumber(delta.deltaPct, 2)}%)`}</Badge>;
 }
+
+const tooltipTheme = {
+  contentStyle: {
+    backgroundColor: "#fefce8",
+    borderColor: "#d6d3d1",
+    borderRadius: 8,
+  },
+  labelStyle: {
+    color: "#000000",
+    fontWeight: 600,
+  },
+  itemStyle: {
+    color: "#000000",
+  },
+} as const;
 
 function buildParams(args: {
   range: TelemetryRange;
@@ -115,6 +141,8 @@ export default function TelemetryDashboardV2() {
   const [selectedErrorDetail, setSelectedErrorDetail] = useState<any | null>(null);
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const [isErrorDetailLoading, setIsErrorDetailLoading] = useState(false);
+  const [entitySortKey, setEntitySortKey] = useState<EntitySortKey>("traffic");
+  const [entitySortDir, setEntitySortDir] = useState<SortDir>("desc");
 
   const [overview, setOverview] = useState<any>(null);
   const [trends, setTrends] = useState<any[]>([]);
@@ -176,6 +204,58 @@ export default function TelemetryDashboardV2() {
     () => [...(activeEntities || [])].sort((a: any, b: any) => Number(b.totalErrors || 0) - Number(a.totalErrors || 0)).slice(0, 10),
     [activeEntities]
   );
+
+  const sortedEntities = useMemo(() => {
+    const rows = [...(activeEntities || [])];
+    const getSortValue = (row: any) => {
+      switch (entitySortKey) {
+        case "source":
+          return String(row.sourceType || "");
+        case "entity":
+          return `${String(row.method || "")} ${String(row.routeKey || "")}`;
+        case "calls":
+          return Number(row.totalCalls || 0);
+        case "callsPerSecond":
+          return activeOverview?.window?.seconds
+            ? Number(row.totalCalls || 0) / Number(activeOverview.window.seconds || 1)
+            : 0;
+        case "avgLatencyMs":
+          return Number(row.avgLatencyMs || 0);
+        case "errorRate":
+          return Number(row.errorRate || 0);
+        case "timeouts":
+          return Number(row.totalTimeouts || 0);
+        case "traffic":
+          return Number(row.totalTrafficBytes || 0);
+        case "avgPacket":
+          return Number(row.avgPacketBytes || 0);
+        default:
+          return 0;
+      }
+    };
+    rows.sort((a: any, b: any) => {
+      const av = getSortValue(a);
+      const bv = getSortValue(b);
+      const cmp =
+        typeof av === "string" || typeof bv === "string"
+          ? String(av).localeCompare(String(bv))
+          : Number(av) - Number(bv);
+      return entitySortDir === "asc" ? cmp : -cmp;
+    });
+    return rows;
+  }, [activeEntities, activeOverview?.window?.seconds, entitySortDir, entitySortKey]);
+
+  const toggleEntitySort = (key: EntitySortKey) => {
+    if (entitySortKey === key) {
+      setEntitySortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setEntitySortKey(key);
+    setEntitySortDir(key === "source" || key === "entity" ? "asc" : "desc");
+  };
+
+  const sortLabel = (key: EntitySortKey, label: string) =>
+    `${label}${entitySortKey === key ? (entitySortDir === "asc" ? " ↑" : " ↓") : ""}`;
 
   const exportSnapshot = async () => {
     try {
@@ -413,6 +493,7 @@ export default function TelemetryDashboardV2() {
                 <YAxis yAxisId="left" />
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
+                  {...tooltipTheme}
                   formatter={(value: any, name: any) => {
                     if (String(name).includes("Rate")) return `${formatNumber(Number(value))}%`;
                     if (String(name).toLowerCase().includes("latency")) return formatLatency(Number(value));
@@ -437,6 +518,7 @@ export default function TelemetryDashboardV2() {
                 <XAxis dataKey="label" minTickGap={20} />
                 <YAxis />
                 <Tooltip
+                  {...tooltipTheme}
                   formatter={(value: any, name: any) => {
                     if (String(name).toLowerCase().includes("packet")) return `${formatNumber(Number(value))} KB`;
                     return formatLatency(Number(value));
@@ -461,7 +543,7 @@ export default function TelemetryDashboardV2() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="key" hide />
                 <YAxis />
-                <Tooltip />
+                <Tooltip {...tooltipTheme} />
                 <Bar dataKey="calls" fill="#2563eb" />
               </BarChart>
             </ResponsiveContainer>
@@ -475,7 +557,7 @@ export default function TelemetryDashboardV2() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="key" hide />
                 <YAxis />
-                <Tooltip />
+                <Tooltip {...tooltipTheme} />
                 <Bar dataKey="errors" fill="#ef4444" />
               </BarChart>
             </ResponsiveContainer>
@@ -485,23 +567,72 @@ export default function TelemetryDashboardV2() {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-4 xl:col-span-2">
-          <h3 className="mb-2 text-sm font-semibold">Heavy entity table</h3>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Heavy entity table</h3>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEntitySortKey("traffic");
+                setEntitySortDir("desc");
+              }}
+            >
+              Reset sort
+            </Button>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>source</TableHead>
-                <TableHead>entity</TableHead>
-                <TableHead>calls</TableHead>
-                <TableHead>calls/sec</TableHead>
-                <TableHead>avg latency</TableHead>
-                <TableHead>error %</TableHead>
-                <TableHead>timeouts</TableHead>
-                <TableHead>traffic</TableHead>
-                <TableHead>avg packet</TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("source")} className="hover:text-foreground">
+                    {sortLabel("source", "source")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("entity")} className="hover:text-foreground">
+                    {sortLabel("entity", "entity")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("calls")} className="hover:text-foreground">
+                    {sortLabel("calls", "calls")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("callsPerSecond")} className="hover:text-foreground">
+                    {sortLabel("callsPerSecond", "calls/sec")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("avgLatencyMs")} className="hover:text-foreground">
+                    {sortLabel("avgLatencyMs", "avg latency")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("errorRate")} className="hover:text-foreground">
+                    {sortLabel("errorRate", "error %")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("timeouts")} className="hover:text-foreground">
+                    {sortLabel("timeouts", "timeouts")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("traffic")} className="hover:text-foreground">
+                    {sortLabel("traffic", "traffic")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("avgPacket")} className="hover:text-foreground">
+                    {sortLabel("avgPacket", "avg packet")}
+                  </button>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(activeEntities || []).map((row: any, idx: number) => (
+              {sortedEntities.map((row: any, idx: number) => (
                 <TableRow key={`${row.sourceType}-${row.method}-${row.routeKey}-${idx}`}>
                   <TableCell><Badge variant="secondary">{row.sourceType || "api"}</Badge></TableCell>
                   <TableCell className="max-w-[340px] truncate">{row.method} {row.routeKey}</TableCell>
