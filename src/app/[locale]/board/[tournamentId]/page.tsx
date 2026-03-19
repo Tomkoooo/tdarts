@@ -94,6 +94,57 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const getBoardLabel = (boardNumber: number, name?: string) =>
     name || t("tabla_sorszam", { number: boardNumber });
 
+  const handlePasswordSubmit = useCallback(async (pwd?: string) => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      const pwdToUse = pwd || password;
+      const response = await validateBoardPasswordAction({
+        tournamentId,
+        password: pwdToUse,
+      });
+      
+      if (response && typeof response === 'object' && 'isValid' in response && response.isValid) {
+        setIsAuthenticated(true);
+        localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
+        if ('tournament' in response && response.tournament) {
+          setTournamentData(response.tournament);
+        } else {
+          try {
+            const tournamentResponse = await getBoardTournamentAction({ tournamentId });
+            setTournamentData(tournamentResponse);
+          } catch (err: any) {
+            console.error('Failed to load tournament data:', err);
+            showErrorToast(t("nem_sikerült_betölteni_34"), {
+              error: err?.response?.data?.error,
+              context: 'Torna adatok betöltése',
+              errorName: 'Torna adatok betöltése sikertelen',
+            });
+          }
+        }
+
+        if ('boards' in response && Array.isArray(response.boards)) {
+          setBoards(response.boards as Board[]);
+        } else {
+          await loadBoards();
+        }
+      } else {
+        toast.error(t("hibás_jelszó"));
+      }
+    } catch (err: any) {
+      setError(t("hiba_tortent_a_bejelentkezes_i7x8"));
+      showErrorToast(t("nem_sikerült_bejelentkezni"), {
+        error: err?.response?.data?.error,
+        context: 'Tábla bejelentkezés',
+        errorName: 'Bejelentkezés sikertelen',
+      });
+      console.error('Password submit error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [password, t, tournamentId]);
+
   // Unified bootstrap: choose URL password first, then saved password, and run once.
   useEffect(() => {
     if (bootstrapDoneRef.current) return;
@@ -186,56 +237,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     };
   }, []);
 
-  const handlePasswordSubmit = useCallback(async (pwd?: string) => {
-    setLoading(true);
-    setError("");
-    
-    try {
-      const pwdToUse = pwd || password;
-      const response = await validateBoardPasswordAction({
-        tournamentId,
-        password: pwdToUse,
-      });
-      
-      if (response && typeof response === 'object' && 'isValid' in response && response.isValid) {
-        setIsAuthenticated(true);
-        localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
-        if ('tournament' in response && response.tournament) {
-          setTournamentData(response.tournament);
-        } else {
-          try {
-            const tournamentResponse = await getBoardTournamentAction({ tournamentId });
-            setTournamentData(tournamentResponse);
-          } catch (err: any) {
-            console.error('Failed to load tournament data:', err);
-            showErrorToast(t("nem_sikerült_betölteni_34"), {
-              error: err?.response?.data?.error,
-              context: 'Torna adatok betöltése',
-              errorName: 'Torna adatok betöltése sikertelen',
-            });
-          }
-        }
 
-        if ('boards' in response && Array.isArray(response.boards)) {
-          setBoards(response.boards as Board[]);
-        } else {
-          await loadBoards();
-        }
-      } else {
-        toast.error(t("hibás_jelszó"));
-      }
-    } catch (err: any) {
-      setError(t("hiba_tortent_a_bejelentkezes_i7x8"));
-      showErrorToast(t("nem_sikerült_bejelentkezni"), {
-        error: err?.response?.data?.error,
-        context: 'Tábla bejelentkezés',
-        errorName: 'Bejelentkezés sikertelen',
-      });
-      console.error('Password submit error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [password, t, tournamentId]);
 
   const loadBoards = async () => {
     const requestId = ++boardsRequestIdRef.current;
