@@ -25,10 +25,21 @@ export async function getPlayerStatisticsAction(input: z.infer<typeof inputSchem
         };
       }
 
-      const matches = await MatchModel.find({
-        status: 'finished',
-        $or: [{ 'player1.playerId': playerId }, { 'player2.playerId': playerId }],
-      }).sort({ createdAt: -1 });
+      const matches = await MatchModel.find(
+        {
+          status: 'finished',
+          $or: [{ 'player1.playerId': playerId }, { 'player2.playerId': playerId }],
+        },
+        {
+          winnerId: 1,
+          createdAt: 1,
+          player1: 1,
+          player2: 1,
+        }
+      )
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .lean();
 
       const matchesPlayed = matches.length;
       let wins = 0;

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Ticket } from 'lucide-react';
-import { getTicketsAction } from '@/features/profile/actions';
+import { getTicketsAction, getUnreadTicketCountAction } from '@/features/profile/actions';
 
 export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {}) {
   const [unreadCount, setUnreadCount] = React.useState(0);
@@ -16,10 +16,21 @@ export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {})
     }
 
     try {
-      const result = await getTicketsAction();
-      if (typeof result === "object" && "success" in result && result.success && result.data) {
-        const unread = result.data.filter((ticket: any) => !ticket.isReadByUser).length;
-        setUnreadCount(unread);
+      const countResult = await getUnreadTicketCountAction();
+      if (
+        typeof countResult === "object" &&
+        "success" in countResult &&
+        countResult.success &&
+        countResult.data
+      ) {
+        setUnreadCount(Number((countResult as any).data.count || 0));
+      } else {
+        // Fallback for compatibility while rolling out count-only action.
+        const result = await getTicketsAction();
+        if (typeof result === "object" && "success" in result && result.success && result.data) {
+          const unread = result.data.filter((ticket: any) => !ticket.isReadByUser).length;
+          setUnreadCount(unread);
+        }
       }
     } catch {
       // User not logged in or error - silently ignore

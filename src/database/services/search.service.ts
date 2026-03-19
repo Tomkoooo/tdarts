@@ -60,48 +60,43 @@ export class SearchService {
         leagues: number;
     }> {
         await connectMongo();
-        
-        const counts = {
-            global: 0,
-            tournaments: 0,
-            players: 0,
-            clubs: 0,
-            leagues: 0
-        };
 
         const regex = query ? new RegExp(query, 'i') : null;
 
-        // 1. Tournaments Count
-    // Ensure query is processed same as search results
-    const tournamentPipeline = this.buildTournamentPipeline(query, filters, true); // true = count only
-    const tournamentCountResult = await TournamentModel.aggregate(tournamentPipeline);
-    counts.tournaments = tournamentCountResult[0]?.total || 0;
+        const playerQuery: any = {};
+        if (regex) playerQuery.name = regex;
+        if (filters.playerMode && filters.playerMode !== 'all') {
+            playerQuery.type = filters.playerMode;
+        }
+        if (filters.isOac) {
+            // Consistent with searchPlayers logic: check for verified tournament history
+            playerQuery['tournamentHistory.isVerified'] = true;
+        }
 
-    // 2. Players Count
-    const playerQuery: any = {};
-    if (regex) playerQuery.name = regex;
-    if (filters.playerMode && filters.playerMode !== 'all') {
-        playerQuery.type = filters.playerMode;
-    }
-    
-    if (filters.isOac) {
-         // Consistent with searchPlayers logic: check for verified tournament history
-         playerQuery['tournamentHistory.isVerified'] = true;
-    }
-
-    counts.players = await PlayerModel.countDocuments(playerQuery);
-
-        // 3. Clubs Count
+        const tournamentPipeline = this.buildTournamentPipeline(query, filters, true);
         const clubQuery = this.buildClubQuery(query, filters);
-        counts.clubs = await ClubModel.countDocuments(clubQuery);
-
-        // 4. Leagues Count
         const leagueQuery = this.buildLeagueQuery(query, filters);
         const { LeagueModel } = await import('../models/league.model');
-        counts.leagues = await LeagueModel.countDocuments(leagueQuery);
-        counts.global = counts.tournaments + counts.players + counts.clubs + counts.leagues;
 
-        return counts;
+        const [tournamentCountResult, playersCount, clubsCount, leaguesCount] = await Promise.all([
+            TournamentModel.aggregate(tournamentPipeline),
+            PlayerModel.countDocuments(playerQuery),
+            ClubModel.countDocuments(clubQuery),
+            LeagueModel.countDocuments(leagueQuery),
+        ]);
+
+        const tournaments = tournamentCountResult[0]?.total || 0;
+        const players = Number(playersCount || 0);
+        const clubs = Number(clubsCount || 0);
+        const leagues = Number(leaguesCount || 0);
+
+        return {
+            tournaments,
+            players,
+            clubs,
+            leagues,
+            global: tournaments + players + clubs + leagues,
+        };
     }
 
     /**
@@ -247,33 +242,51 @@ export class SearchService {
         // Requirement: "ranking based on tournament count"
         
         const pipeline: any[] = [
-             { $match: queryObj },
-             {
-                 $lookup: {
-                     from: 'tournaments',
-                     localField: '_id',
-                     foreignField: 'clubId',
-                     as: 'tournaments'
-                 }
-             },
-             {
-                 $addFields: {
-                     tournamentCount: { $size: { $filter: {
-                        input: '$tournaments',
-                        as: 't',
-                        cond: { $and: [
-                            { $ne: ['$$t.isDeleted', true] },
-                            { $ne: ['$$t.isArchived', true] },
-                            { $ne: ['$$t.isSandbox', true] }
-                        ]}
-                     }} },
-                     memberCount: { $size: { $ifNull: ['$members', []] } }
-                 }
-             },
-             { $sort: { tournamentCount: -1 } }, // Ranking logic
-             { $skip: skip },
-             { $limit: limit },
-             // Populate members/moderators if needed, but keeping it light
+            { $match: queryObj },
+            {
+                // Use a lookup pipeline with $count so we don't materialize huge tournaments arrays.
+                $lookup: {
+                    from: 'tournaments',
+                    let: { clubId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$clubId', '$$clubId'] },
+                                        { $ne: ['$isDeleted', true] },
+                                        { $ne: ['$isArchived', true] },
+                                        { $ne: ['$isSandbox', true] },
+                                    ],
+                                },
+                            },
+                        },
+                        { $count: 'count' },
+                    ],
+                    as: 'tournamentStats',
+                },
+            },
+            {
+                $addFields: {
+                    tournamentCount: {
+                        $ifNull: [{ $arrayElemAt: ['$tournamentStats.count', 0] }, 0],
+                    },
+                    memberCount: { $size: { $ifNull: ['$members', []] } },
+                },
+            },
+            {
+                $project: {
+                    name: 1,
+                    description: 1,
+                    location: 1,
+                    verified: 1,
+                    memberCount: 1,
+                    tournamentCount: 1,
+                },
+            },
+            { $sort: { tournamentCount: -1, name: 1 } }, // Ranking logic + stable order
+            { $skip: skip },
+            { $limit: limit },
         ];
 
         const clubs = await ClubModel.aggregate(pipeline);
@@ -282,12 +295,9 @@ export class SearchService {
         const results = clubs.map(club => ({
             _id: club._id,
             name: club.name,
-            description: club.description,
             location: club.location,
-            verified: club.verified,
             memberCount: club.memberCount, // Calculated in aggregation
             tournamentCount: club.tournamentCount,
-            type: 'club'
         }));
 
         return { results, total };

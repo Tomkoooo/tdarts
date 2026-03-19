@@ -29,7 +29,8 @@ set -a
 set +a
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-ARTIFACT_DIR="src/features/tests/load/artifacts/$TIMESTAMP"
+ARTIFACT_DIR_REL="src/features/tests/load/artifacts/$TIMESTAMP"
+ARTIFACT_DIR="$ROOT_DIR/$ARTIFACT_DIR_REL"
 mkdir -p "$ARTIFACT_DIR"
 LOAD_TEST_CONFIG="$(resolve_load_config)"
 
@@ -50,7 +51,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Artifacts directory: $ARTIFACT_DIR"
+echo "Artifacts directory: $ARTIFACT_DIR_REL"
 
 run_preflight_server_check() {
   local target_url host port
@@ -159,6 +160,8 @@ if [[ -f "$ARTIFACT_DIR/results.json" ]]; then
 
   echo "Generating HTML dashboard..."
   node scripts/generate-load-html-report.mjs "$ARTIFACT_DIR/results.json" "$ARTIFACT_DIR/summary.json" "$ARTIFACT_DIR/analysis.md" "$ARTIFACT_DIR/report.html"
+  echo "Exporting CSV datasets..."
+  node scripts/export-load-report-data.mjs "$ARTIFACT_DIR/results.json" "$ARTIFACT_DIR"
   echo "Refreshing artifacts index..."
   node scripts/generate-load-index-html.mjs "src/features/tests/load/artifacts" "src/features/tests/load/artifacts/index.html"
 else
@@ -168,7 +171,7 @@ fi
 set -e
 
 echo "Load diagnostics completed."
-echo "  Artifacts: $ARTIFACT_DIR"
+echo "  Artifacts: $ARTIFACT_DIR_REL"
 echo "  Artillery exit code: $ARTILLERY_EXIT"
 echo "  Summary exit code: $SUMMARY_EXIT"
 

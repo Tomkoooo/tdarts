@@ -1,5 +1,6 @@
 export { getPlayerStatsAction } from './getPlayerStats.action';
 export { getTicketsAction } from './getTickets.action';
+export { getUnreadTicketCountAction } from './getUnreadTicketCount.action';
 export { getLeagueHistoryAction } from './getLeagueHistory.action';
 export { updateProfileAction } from './updateProfile.action';
 export { verifyEmailAction } from './verifyEmail.action';

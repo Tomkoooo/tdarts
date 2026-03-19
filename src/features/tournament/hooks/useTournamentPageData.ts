@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { SimplifiedUser } from "@/hooks/useUser";
-import { getTournamentPageDataAction } from "@/features/tournaments/actions/getTournamentPageData.action";
+import {
+  getTournamentPageDataAction,
+  getTournamentPageLiteAction,
+} from "@/features/tournaments/actions/getTournamentPageData.action";
 
 type UserClubRole = "admin" | "moderator" | "member" | "none";
 type UserPlayerStatus = "applied" | "checked-in" | "none";
@@ -144,34 +147,28 @@ export function useTournamentPageData(
     if (!code || typeof code !== "string") return;
 
     try {
-      const data = await getTournamentPageDataAction({
-        code,
-        includeViewer: Boolean(user?._id),
-      });
-      const tournamentData = (data as { tournament?: any })?.tournament;
-      if (!tournamentData) {
+      const data = await getTournamentPageLiteAction({ code });
+      const tournamentLite = (data as { tournament?: any })?.tournament;
+      if (!tournamentLite) {
         return;
       }
 
-      setTournament(tournamentData);
-      setPlayers(
-        Array.isArray(tournamentData.tournamentPlayers)
-          ? tournamentData.tournamentPlayers
-          : []
-      );
-
-      const roleData = tournamentData?.viewer || (data as { viewer?: any })?.viewer || { userClubRole: "none", userPlayerStatus: "none" };
-
-      applyTournamentData(
-        { ...tournamentData, viewer: roleData },
-        user?._id,
-        code,
-        setters
-      );
+      setTournament((prev: any) => {
+        if (!prev) return tournamentLite;
+        return {
+          ...prev,
+          ...tournamentLite,
+          tournamentSettings: {
+            ...(prev.tournamentSettings || {}),
+            ...(tournamentLite.tournamentSettings || {}),
+          },
+          boards: Array.isArray(tournamentLite.boards) ? tournamentLite.boards : prev.boards,
+        };
+      });
     } catch (err) {
       console.error("Silent refresh failed", err);
     }
-  }, [code, user?._id]);
+  }, [code]);
 
   useEffect(() => {
     fetchAll();

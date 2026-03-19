@@ -24,6 +24,8 @@ import TicketList from "@/components/profile/TicketList";
 import TicketDetail from "@/components/profile/TicketDetail";
 import LegsViewModal from "@/components/tournament/LegsViewModal";
 import { useUnreadTickets, UnreadTicketToast } from "@/hooks/useUnreadTickets";
+import { useProfileCompletenessToast } from "@/hooks/useProfileCompletenessToast";
+import { usePendingInvitesToast } from "@/hooks/usePendingInvitesToast";
 import { useTranslations } from "next-intl";
 import GoogleAuthSection from "@/components/profile/GoogleAuthSection";
 import { useLogout } from "@/hooks/useLogout";
@@ -36,6 +38,8 @@ export function ProfilePageClient() {
   const { user, setUser } = useUserContext();
   const userId = user?._id;
   const { logout } = useLogout();
+  useProfileCompletenessToast();
+  usePendingInvitesToast();
 
   const [activeTab, setActiveTab] = React.useState<"details" | "stats" | "tickets">("details");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -67,10 +71,26 @@ export function ProfilePageClient() {
   React.useEffect(() => {
     if (!userId) return;
     setNeedsEmailVerification(!user?.isVerified);
-    loadPlayerStats();
-    loadLeagueHistory();
-    loadTickets();
   }, [user?.isVerified, userId]);
+
+  React.useEffect(() => {
+    if (!userId) return;
+    if (activeTab !== "stats") return;
+    if (!playerStats) {
+      void loadPlayerStats();
+    }
+    if (!leagueHistory.length) {
+      void loadLeagueHistory();
+    }
+  }, [activeTab, leagueHistory.length, playerStats, userId]);
+
+  React.useEffect(() => {
+    if (!userId) return;
+    if (activeTab !== "tickets") return;
+    if (!tickets.length) {
+      void loadTickets();
+    }
+  }, [activeTab, tickets.length, userId]);
 
   const loadPlayerStats = async () => {
     if (!userId) return;

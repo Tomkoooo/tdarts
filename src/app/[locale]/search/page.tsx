@@ -20,7 +20,6 @@ import MapExplorer from "@/components/map/MapExplorer"
 import { useTranslations } from "next-intl"
 import { getUserTimeZone } from "@/lib/date-time"
 import { searchAction } from "@/features/search/actions/search.action"
-import { mapSearchAction } from "@/features/search/actions/mapSearch.action"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface TabCounts {
@@ -148,18 +147,11 @@ export default function SearchPage() {
             setIsLoading(true)
             try {
                 if (requestTab === 'map') {
-                    const mapData = await mapSearchAction({
-                        query: debouncedQuery,
-                        showClubs: true,
-                        showTournaments: true,
-                    })
-                    if (requestId !== latestRequestIdRef.current) return
-                    setResults(mapData.items || [])
-                    setCounts((prev) => ({
-                        ...prev,
-                        map: mapData?.counts?.total || 0,
-                    }))
-                    setPagination({ total: mapData?.counts?.total || 0, page: 1, limit: 100 })
+                    // Map tab has its own canonical data source inside MapExplorer.
+                    if (requestId === latestRequestIdRef.current) {
+                        setResults([])
+                        setPagination({ total: 0, page: 1, limit: 100 })
+                    }
                     return
                 }
 
@@ -167,8 +159,8 @@ export default function SearchPage() {
                     query: debouncedQuery,
                     tab: requestTab,
                     filters: { ...filters, page: filters.page, timeZone: userTimeZone },
-                    includeCounts: (filters.page || 1) === 1,
-                    includeMetadata: (filters.page || 1) === 1,
+                    includeCounts: false,
+                    includeMetadata: false,
                 })
                 if (requestId !== latestRequestIdRef.current) return
                 
@@ -185,11 +177,44 @@ export default function SearchPage() {
                     }))
                 }
                 setGroupedResults(data.groupedResults || { tournaments: [], players: [], clubs: [], leagues: [] })
-                if (data.metadata) setMetadata(data.metadata)
                 if (data.pagination) setPagination(data.pagination)
+
+                // Fetch expensive first-page metadata/counts in the background so first paint is faster.
+                if (requestPage === 1) {
+                    void (async () => {
+                        try {
+                            const metaData = await searchAction({
+                                query: debouncedQuery,
+                                tab: requestTab,
+                                filters: { ...filters, page: 1, timeZone: userTimeZone },
+                                includeCounts: true,
+                                includeMetadata: true,
+                            })
+                            if (requestId !== latestRequestIdRef.current) return
+                            if (metaData.counts) {
+                                setCounts((prev) => ({
+                                    ...prev,
+                                    ...metaData.counts,
+                                }))
+                            }
+                            if (metaData.metadata) setMetadata(metaData.metadata)
+                        } catch (metaError) {
+                            console.error("Search metadata fetch error:", metaError)
+                        }
+                    })()
+                }
 
             } catch (error) {
                 console.error("Search error:", error)
+                if (requestId === latestRequestIdRef.current) {
+                    // Prevent stale cross-tab UI when the active request fails.
+                    if (requestTab === 'global') {
+                        setGroupedResults({ tournaments: [], players: [], clubs: [], leagues: [] })
+                    } else {
+                        setResults([])
+                    }
+                    setPagination(prev => ({ ...prev, total: 0, page: 1 }))
+                }
             } finally {
                 if (requestId === latestRequestIdRef.current) {
                     setIsLoading(false)

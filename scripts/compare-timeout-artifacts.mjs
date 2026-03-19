@@ -3,6 +3,17 @@ import path from 'node:path';
 
 const artifactsRoot = path.join('src', 'features', 'tests', 'load', 'artifacts');
 const requiredProfiles = ['full', 'browse', 'lifecycle'];
+const keyRoutes = [
+  '/en',
+  '/en/home',
+  '/en/search',
+  '/en/profile',
+  '/en/statistics',
+  '/en/myclub',
+  '/en/board/{{ tournamentCode }}',
+  '/en/tournaments/{{ tournamentCode }}',
+  '/en/tournaments/{{ tournamentCode }}/live',
+];
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -68,6 +79,25 @@ function buildRow(profile, entry) {
   const rootRespSummary = entry.summaries['plugins.metrics-by-endpoint.response_time./en'] || {};
   const rootP95 = Number(rootRespSummary.p95 || 0);
   const rootP99 = Number(rootRespSummary.p99 || 0);
+  const routeStats = keyRoutes.map((route) => {
+    const summaryKey = `plugins.metrics-by-endpoint.response_time.${route}`;
+    const routeSummary = entry.summaries[summaryKey] || {};
+    const timeoutErrors = Number(entry.counters[`plugins.metrics-by-endpoint.${route}.errors.ETIMEDOUT`] || 0);
+    const ok200 = Number(entry.counters[`plugins.metrics-by-endpoint.${route}.codes.200`] || 0);
+    const total = timeoutErrors + ok200;
+    return {
+      route,
+      p95: Number(routeSummary.p95 || 0),
+      p99: Number(routeSummary.p99 || 0),
+      timeoutErrors,
+      timeoutRate: total > 0 ? timeoutErrors / total : 0,
+      total,
+    };
+  });
+  const actionP99 = Object.entries(entry.summaries)
+    .filter(([key]) => key.startsWith('loadtest.') && key.endsWith('.latency_ms'))
+    .map(([key, stat]) => ({ key, p99: Number(stat?.p99 || 0) }))
+    .sort((a, b) => b.p99 - a.p99);
   return {
     profile,
     artifact: entry.artifactDir,
@@ -81,6 +111,8 @@ function buildRow(profile, entry) {
     rootTimeoutShare,
     rootP95,
     rootP99,
+    routeStats,
+    actionP99,
   };
 }
 
@@ -104,6 +136,34 @@ function report(rows, outputPath) {
     );
   }
   lines.push('');
+  lines.push('## Browse Route Gates');
+  lines.push('');
+  const browseRow = rows.find((row) => row.profile === 'browse');
+  if (browseRow) {
+    lines.push('| Route | p95 (ms) | p99 (ms) | Timeouts | Timeout Rate |');
+    lines.push('|---|---:|---:|---:|---:|');
+    for (const routeRow of browseRow.routeStats) {
+      lines.push(
+        `| \`${routeRow.route}\` | ${routeRow.p95.toFixed(1)} | ${routeRow.p99.toFixed(1)} | ${routeRow.timeoutErrors} | ${pct(routeRow.timeoutRate)} |`
+      );
+    }
+  } else {
+    lines.push('_No browse artifact row found._');
+  }
+  lines.push('');
+  lines.push('## Action p99 Gates');
+  lines.push('');
+  const lifecycleRow = rows.find((row) => row.profile === 'lifecycle');
+  if (lifecycleRow && lifecycleRow.actionP99.length) {
+    lines.push('| Action Metric | p99 (ms) |');
+    lines.push('|---|---:|');
+    for (const action of lifecycleRow.actionP99) {
+      lines.push(`| \`${action.key}\` | ${action.p99.toFixed(1)} |`);
+    }
+  } else {
+    lines.push('_No lifecycle action metrics found._');
+  }
+  lines.push('');
   lines.push('## Auto Evaluation');
 
   const failureReasons = [];
@@ -123,6 +183,21 @@ function report(rows, outputPath) {
       }
       if (row.rootTimeoutShare > 0.5) {
         failureReasons.push(`browse: /en timeout share ${pct(row.rootTimeoutShare)} > 50%`);
+      }
+      for (const routeRow of row.routeStats) {
+        if (routeRow.total > 0 && routeRow.timeoutRate > 0.03) {
+          failureReasons.push(`browse: ${routeRow.route} timeout rate ${pct(routeRow.timeoutRate)} > 3%`);
+        }
+        if (routeRow.p95 > 800) {
+          failureReasons.push(`browse: ${routeRow.route} p95 ${routeRow.p95.toFixed(1)}ms > 800ms`);
+        }
+      }
+    }
+    if (row.profile === 'lifecycle') {
+      for (const action of row.actionP99.slice(0, 6)) {
+        if (action.p99 > 1500) {
+          failureReasons.push(`lifecycle: ${action.key} p99 ${action.p99.toFixed(1)}ms > 1500ms`);
+        }
       }
     }
   }

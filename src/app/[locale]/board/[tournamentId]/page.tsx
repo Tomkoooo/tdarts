@@ -1,7 +1,7 @@
 "use client";
 import { useTranslations } from "next-intl";
 
-import React, { useState, useEffect, use, useRef } from "react";
+import React, { useState, useEffect, use, useRef, useCallback } from "react";
 import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
 import { useUserContext } from "@/hooks/useUser";
@@ -86,40 +86,41 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [localMatchActive, setLocalMatchActive] = useState<boolean>(false);
   const [localMatchId, setLocalMatchId] = useState<string>("");
   const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bootstrapDoneRef = useRef(false);
+  const boardsRequestIdRef = useRef(0);
+  const matchesRequestIdRef = useRef(0);
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
   const getBoardLabel = (boardNumber: number, name?: string) =>
     name || t("tabla_sorszam", { number: boardNumber });
 
-  // Check URL parameters for QR code authentication
+  // Unified bootstrap: choose URL password first, then saved password, and run once.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlPassword = urlParams.get('password');
-      const urlBoard = urlParams.get('board');
-      
-      if (urlPassword) {
-        setPassword(urlPassword);
-        handlePasswordSubmit(urlPassword);
-      }
-      
-      if (urlBoard) {
-        const boardNum = parseInt(urlBoard);
+    if (bootstrapDoneRef.current) return;
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPassword = urlParams.get('password');
+    const urlBoard = urlParams.get('board');
+    const savedPassword = localStorage.getItem(getTournamentPasswordKey(tournamentId));
+    const passwordToUse = urlPassword || savedPassword;
+
+    if (urlBoard) {
+      const boardNum = parseInt(urlBoard);
+      if (Number.isFinite(boardNum)) {
         localStorage.setItem(getSelectedBoardKey(tournamentId), boardNum.toString());
       }
     }
-  }, [tournamentId]);
 
-  // Check for saved authentication on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedPassword = localStorage.getItem(getTournamentPasswordKey(tournamentId));
-      if (savedPassword) {
-        setPassword(savedPassword);
-        handlePasswordSubmit(savedPassword);
-      }
+    if (passwordToUse) {
+      setPassword(passwordToUse);
+      bootstrapDoneRef.current = true;
+      void handlePasswordSubmit(passwordToUse);
+      return;
     }
-  }, [tournamentId]);
+
+    bootstrapDoneRef.current = true;
+  }, [handlePasswordSubmit, tournamentId]);
 
   // Check for saved board selection
   useEffect(() => {
@@ -159,24 +160,20 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           clearTimeout(sseRefreshTimerRef.current);
         }
         // Merge bursts of events to avoid back-to-back expensive API calls.
-        sseRefreshTimerRef.current = setTimeout(action, 300);
+        sseRefreshTimerRef.current = setTimeout(action, 600);
       };
       
-      // Auto-refresh on relevant events
-      if (lastEvent.type === 'tournament-update' || lastEvent.type === 'match-update') {
-        // If viewing matches, reload them
-        if (selectedBoard) {
-          console.log('Board - Auto-refreshing matches due to SSE event');
-          scheduleRefresh(() => {
-            void loadMatches();
-          });
-        } else {
-          // If on board selection, reload boards
-          console.log('Board - Auto-refreshing boards due to SSE event');
-          scheduleRefresh(() => {
-            void loadBoards();
-          });
-        }
+      // Auto-refresh only relevant slice to avoid redundant calls.
+      if (lastEvent.type === 'match-update' && selectedBoard) {
+        console.log('Board - Auto-refreshing selected board matches');
+        scheduleRefresh(() => {
+          void loadMatches();
+        });
+      } else if ((lastEvent.type === 'tournament-update' || lastEvent.type === 'match-update') && !selectedBoard) {
+        console.log('Board - Auto-refreshing board list');
+        scheduleRefresh(() => {
+          void loadBoards();
+        });
       }
     }
   }, [lastEvent, isAuthenticated, selectedBoard]);
@@ -189,7 +186,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     };
   }, []);
 
-  const handlePasswordSubmit = async (pwd?: string) => {
+  const handlePasswordSubmit = useCallback(async (pwd?: string) => {
     setLoading(true);
     setError("");
     
@@ -238,18 +235,21 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [password, t, tournamentId]);
 
   const loadBoards = async () => {
+    const requestId = ++boardsRequestIdRef.current;
     setLoading(true);
     try {
       const response = await getBoardListAction({ tournamentId });
+      if (requestId !== boardsRequestIdRef.current) return;
       if (response && typeof response === 'object' && 'boards' in response) {
         setBoards((response as { boards: Board[] }).boards || []);
       } else {
         setBoards([]);
       }
     } catch (err: any) {
+      if (requestId !== boardsRequestIdRef.current) return;
       setError(t("nem_sikerult_betolteni_a_px4t"));
       showErrorToast(t("nem_sikerült_betölteni_72"), {
         error: err?.response?.data?.error,
@@ -258,19 +258,23 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       });
       console.error('Load boards error:', err);
     } finally {
-      setLoading(false);
+      if (requestId === boardsRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const loadMatches = async () => {
     if (!selectedBoard) return;
-    
+
+    const requestId = ++matchesRequestIdRef.current;
     setLoading(true);
     try {
       const response = await getBoardMatchesAction({
         tournamentId,
         boardNumber: Number(selectedBoard.boardNumber),
       });
+      if (requestId !== matchesRequestIdRef.current) return;
       if (response && typeof response === 'object' && 'matches' in response) {
         const nextMatches = ((response as { matches?: unknown }).matches || []) as unknown as Match[];
         setMatches(nextMatches);
@@ -278,6 +282,7 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         setMatches([]);
       }
     } catch (err: any) {
+      if (requestId !== matchesRequestIdRef.current) return;
       setError(t("nem_sikerult_betolteni_a_qh0h"));
       showErrorToast(t("nem_sikerült_betölteni_13"), {
         error: err?.response?.data?.error,
@@ -286,7 +291,9 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       });
       console.error('Load matches error:', err);
     } finally {
-      setLoading(false);
+      if (requestId === matchesRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 

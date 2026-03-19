@@ -41,6 +41,15 @@ async function executeSearch(params: SearchActionInput) {
   let metadata: SearchActionResult['metadata'];
   let groupedResults: SearchActionResult['groupedResults'];
 
+  const countsPromise =
+    isFirstPage && includeCounts
+      ? SearchService.getTabCounts(query, searchFilters)
+      : Promise.resolve(undefined);
+  const metadataPromise =
+    isFirstPage && includeMetadata
+      ? SearchService.getMetadata(query, searchFilters)
+      : Promise.resolve(undefined);
+
   if (tab === 'global') {
     const globalRes = await SearchService.searchGlobal(query, searchFilters);
     results = [
@@ -73,14 +82,12 @@ async function executeSearch(params: SearchActionInput) {
     total = tRes.total;
   }
 
-  if (isFirstPage && includeCounts) {
-    counts = await SearchService.getTabCounts(query, searchFilters);
-  }
-
-  if (isFirstPage && includeMetadata) {
-    const meta = await SearchService.getMetadata(query, searchFilters);
-    metadata = meta;
-  }
+  const [resolvedCounts, resolvedMetadata] = await Promise.all([
+    countsPromise,
+    metadataPromise,
+  ]);
+  counts = resolvedCounts;
+  metadata = resolvedMetadata;
 
   const page = searchFilters.page || 1;
   const limit = searchFilters.limit || 10;
