@@ -18,5 +18,7 @@ const gallerySchema = new Schema<GalleryDocument>(
   { timestamps: true }
 );
 
+gallerySchema.index({ clubId: 1, createdAt: -1 });
+
 export const GalleryModel: Model<GalleryDocument> =
   mongoose.models.Gallery || mongoose.model<GalleryDocument>("Gallery", gallerySchema);

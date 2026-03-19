@@ -21,8 +21,10 @@ export function useTournamentRealtimeRefresh(
     tournament?.tournamentSettings?.status
   );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isVisibleRef = useRef(true);
 
   const scheduleSilentRefresh = useCallback(() => {
+    if (!isVisibleRef.current) return;
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
@@ -30,6 +32,16 @@ export function useTournamentRealtimeRefresh(
       void silentRefresh();
     }, COALESCE_MS);
   }, [silentRefresh]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleVisibility = () => {
+      isVisibleRef.current = !document.hidden;
+    };
+    handleVisibility();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   const { lastEvent } = useRealTimeUpdates({
     tournamentId,

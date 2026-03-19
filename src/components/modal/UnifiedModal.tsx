@@ -79,7 +79,13 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {isOpen && config && (
         <UnifiedModal
           config={config}
+          isOpen={isOpen}
           isLoading={isLoading}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              handleCancel()
+            }
+          }}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
         />
@@ -98,12 +104,21 @@ export function useModal() {
 
 interface UnifiedModalProps {
   config: ModalConfig
+  isOpen: boolean
   isLoading: boolean
+  onOpenChange: (nextOpen: boolean) => void
   onConfirm: () => void | Promise<void>
   onCancel: () => void
 }
 
-function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalProps) {
+function UnifiedModal({
+  config,
+  isOpen,
+  isLoading,
+  onOpenChange,
+  onConfirm,
+  onCancel,
+}: UnifiedModalProps) {
   const t = useTranslations("Modal")
   const sizeClass =
     config.size === "sm"
@@ -134,12 +149,12 @@ function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalPr
   const showActions = config.type === "confirm" || config.type === "alert"
 
   return (
-    <Dialog open={true}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className={`${sizeClass} border-border/70 bg-card/90 backdrop-blur-xl`}>
         <motion.div initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.18 }}>
         <DialogHeader>
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 mt-0.5">
+            <div className="shrink-0 mt-0.5">
               {getIcon()}
             </div>
             <div className="flex-1">
@@ -147,6 +162,7 @@ function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalPr
             </div>
             <button
               onClick={onCancel}
+              aria-label={t("confirm.cancel")}
               className="inline-flex items-center justify-center rounded-md p-2 hover:bg-muted"
             >
               <IconX className="w-4 h-4" />
@@ -185,6 +201,11 @@ function UnifiedModal({ config, isLoading, onConfirm, onCancel }: UnifiedModalPr
               )}
               {config.confirmText || t("confirm.confirm")}
             </Button>
+          </DialogFooter>
+        )}
+        {!showActions && (
+          <DialogFooter className="mt-8 flex justify-end">
+            <Button onClick={onCancel}>{config.cancelText || t("confirm.cancel")}</Button>
           </DialogFooter>
         )}
         </motion.div>

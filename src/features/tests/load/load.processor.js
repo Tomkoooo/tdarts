@@ -13,19 +13,21 @@ for (const envFile of ['.env.load-test', '.env']) {
 const BASE_URL = process.env.LOAD_BASE_URL || 'http://localhost:3000';
 const LOAD_TEST_SECRET = process.env.LOAD_TEST_SECRET || '';
 const LOAD_TEST_CLUB_ID = process.env.LOAD_TEST_CLUB_ID || '68f6afb145352f8e4076ed55';
-const TOURNAMENT_POOL_SIZE = Number(process.env.LOAD_TOURNAMENT_POOL_SIZE || 10);
-const TARGET_MIN_PLAYERS = Number(process.env.LOAD_TOURNAMENT_MIN_PLAYERS || 50);
-const TARGET_MAX_PLAYERS = Number(process.env.LOAD_TOURNAMENT_MAX_PLAYERS || 80);
-const PLAYER_ADD_CHUNK_MAX = Number(process.env.LOAD_PLAYER_ADD_CHUNK_MAX || 2);
-const LIFECYCLE_INTERVAL_MS = Number(process.env.LOAD_LIFECYCLE_INTERVAL_MS || 4000);
-const MAX_GLOBAL_ADD_PLAYER_IN_FLIGHT = Number(process.env.LOAD_MAX_GLOBAL_ADD_PLAYER_IN_FLIGHT || 12);
+const TOURNAMENT_POOL_SIZE = Number(process.env.LOAD_TOURNAMENT_POOL_SIZE || 4);
+const TARGET_MIN_PLAYERS = Number(process.env.LOAD_TOURNAMENT_MIN_PLAYERS || 12);
+const TARGET_MAX_PLAYERS = Number(process.env.LOAD_TOURNAMENT_MAX_PLAYERS || 20);
+const PLAYER_ADD_CHUNK_MAX = Number(process.env.LOAD_PLAYER_ADD_CHUNK_MAX || 1);
+const LIFECYCLE_INTERVAL_MS = Number(process.env.LOAD_LIFECYCLE_INTERVAL_MS || 3500);
+const MAX_GLOBAL_ADD_PLAYER_IN_FLIGHT = Number(process.env.LOAD_MAX_GLOBAL_ADD_PLAYER_IN_FLIGHT || 6);
 const MAX_PER_TOURNAMENT_ADD_PLAYER_IN_FLIGHT = Number(
-  process.env.LOAD_MAX_PER_TOURNAMENT_ADD_PLAYER_IN_FLIGHT || 2
+  process.env.LOAD_MAX_PER_TOURNAMENT_ADD_PLAYER_IN_FLIGHT || 1
 );
-const MAX_GLOBAL_CHECKIN_IN_FLIGHT = Number(process.env.LOAD_MAX_GLOBAL_CHECKIN_IN_FLIGHT || 4);
+const MAX_GLOBAL_CHECKIN_IN_FLIGHT = Number(process.env.LOAD_MAX_GLOBAL_CHECKIN_IN_FLIGHT || 2);
 const MAX_PER_TOURNAMENT_CHECKIN_IN_FLIGHT = Number(
   process.env.LOAD_MAX_PER_TOURNAMENT_CHECKIN_IN_FLIGHT || 1
 );
+const THINK_MIN_SECONDS = Number(process.env.LOAD_THINK_MIN_SECONDS || 1);
+const THINK_MAX_SECONDS = Number(process.env.LOAD_THINK_MAX_SECONDS || 3);
 const CAPTURE_WEB_VITALS = String(process.env.LOAD_CAPTURE_WEB_VITALS || 'true').toLowerCase() !== 'false';
 const WEB_VITALS_TIMEOUT_MS = Number(process.env.LOAD_WEB_VITALS_TIMEOUT_MS || 25000);
 
@@ -78,7 +80,11 @@ function sleep(ms) {
 }
 
 function randomThinkSeconds() {
-  return randomInt(1, 5);
+  const min = Number.isFinite(THINK_MIN_SECONDS) ? THINK_MIN_SECONDS : 0;
+  const max = Number.isFinite(THINK_MAX_SECONDS) ? THINK_MAX_SECONDS : 2;
+  const normalizedMin = Math.max(0, Math.floor(Math.min(min, max)));
+  const normalizedMax = Math.max(normalizedMin, Math.floor(Math.max(min, max)));
+  return randomInt(normalizedMin, normalizedMax);
 }
 
 function buildHeaders() {
@@ -337,6 +343,16 @@ async function ensureTournamentPool(events) {
   }
 }
 
+function removeTournamentState(tournamentCode) {
+  sharedState.tournamentCodes = sharedState.tournamentCodes.filter((code) => code !== tournamentCode);
+  sharedState.playerTargets.delete(tournamentCode);
+  sharedState.playerAdded.delete(tournamentCode);
+  sharedState.groupGenerated.delete(tournamentCode);
+  sharedState.knockoutGenerated.delete(tournamentCode);
+  sharedState.lifecycleBusy.delete(tournamentCode);
+  sharedState.nextLifecycleAt.delete(tournamentCode);
+}
+
 async function addPlayersChunk(tournamentCode, events) {
   const target = sharedState.playerTargets.get(tournamentCode) || TARGET_MAX_PLAYERS;
   const current = sharedState.playerAdded.get(tournamentCode) || 0;
@@ -371,7 +387,11 @@ async function addPlayersChunk(tournamentCode, events) {
   }
 }
 
-async function ensureGroupAndKnockout(tournamentCode, events) {
+async function ensureGroupStage(tournamentCode, events) {
+  if (sharedState.groupGenerated.has(tournamentCode)) {
+    return true;
+  }
+
   const currentPlayers = sharedState.playerAdded.get(tournamentCode) || 0;
   const minPlayersBeforeGroups = Math.min(
     TARGET_MIN_PLAYERS,
@@ -379,7 +399,47 @@ async function ensureGroupAndKnockout(tournamentCode, events) {
   );
   if (currentPlayers < minPlayersBeforeGroups) {
     events.emit('counter', 'loadtest.groups.deferred_insufficient_players', 1);
-    return;
+    return false;
+  }
+
+  try {
+    await runWithThrottle(
+      'checkin_all_players',
+      tournamentCode,
+      events,
+      {
+        globalLimit: MAX_GLOBAL_CHECKIN_IN_FLIGHT,
+        perTournamentLimit: MAX_PER_TOURNAMENT_CHECKIN_IN_FLIGHT,
+      },
+      () =>
+        apiPost(
+          'check-in-all-players',
+          { tournamentCode },
+          events,
+          'loadtest.checkin_all_players'
+        )
+    );
+    await apiPost(
+      'generate-groups',
+      { tournamentCode },
+      events,
+      'loadtest.generate_groups'
+    );
+    sharedState.groupGenerated.add(tournamentCode);
+    events.emit('counter', 'loadtest.groups.generated', 1);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function maybeGenerateKnockout(tournamentCode, events) {
+  if (sharedState.knockoutGenerated.has(tournamentCode)) {
+    return true;
+  }
+  if (!sharedState.groupGenerated.has(tournamentCode)) {
+    events.emit('counter', 'loadtest.knockout.deferred_groups_missing', 1);
+    return false;
   }
 
   let tournamentState;
@@ -391,71 +451,60 @@ async function ensureGroupAndKnockout(tournamentCode, events) {
       'loadtest.get_tournament'
     );
   } catch {
-    return;
+    return false;
   }
 
-  if (!sharedState.groupGenerated.has(tournamentCode)) {
-    try {
-      await runWithThrottle(
-        'checkin_all_players',
-        tournamentCode,
-        events,
-        {
-          globalLimit: MAX_GLOBAL_CHECKIN_IN_FLIGHT,
-          perTournamentLimit: MAX_PER_TOURNAMENT_CHECKIN_IN_FLIGHT,
-        },
-        () =>
-          apiPost(
-            'check-in-all-players',
-            { tournamentCode },
-            events,
-            'loadtest.checkin_all_players'
-          )
-      );
-      await apiPost(
-        'generate-groups',
-        { tournamentCode },
-        events,
-        'loadtest.generate_groups'
-      );
-      sharedState.groupGenerated.add(tournamentCode);
-      tournamentState = await apiPost(
-        'get-tournament',
-        { tournamentCode },
-        events,
-        'loadtest.get_tournament'
-      );
-    } catch {
-      return;
-    }
+  const format = tournamentState?.format;
+  if (format !== 'group_knockout') {
+    sharedState.knockoutGenerated.add(tournamentCode);
+    return true;
   }
 
-  if (!sharedState.knockoutGenerated.has(tournamentCode)) {
-    const status = tournamentState?.status;
-    const format = tournamentState?.format;
-    if (format === 'group_knockout' && status !== 'group-stage') {
-      events.emit('counter', 'loadtest.knockout.deferred_not_group_stage', 1);
-      return;
-    }
+  let summary;
+  try {
+    summary = await apiPost(
+      'list-matches',
+      { tournamentCode, summaryOnly: true },
+      events,
+      'loadtest.list_matches'
+    );
+  } catch {
+    return false;
+  }
 
-    try {
-      await apiPost(
-        'generate-knockout',
-        { tournamentCode, selectedPlayers: 16 },
-        events,
-        'loadtest.generate_knockout'
-      );
-      sharedState.knockoutGenerated.add(tournamentCode);
-    } catch (error) {
-      events.emit('counter', 'loadtest.knockout.generate_failures', 1);
-      if (events && error?.message) {
-        events.emit('counter', `loadtest.knockout.error_seen`, 1);
-      }
+  const counts = summary?.counts || {};
+  const unfinished = Number(counts.pending || 0) + Number(counts.ongoing || 0);
+  const total = Number(counts.total || 0);
+  if (total === 0 || unfinished > 0) {
+    events.emit('counter', 'loadtest.knockout.deferred_group_matches_remaining', 1);
+    return false;
+  }
+
+  try {
+    await apiPost(
+      'generate-knockout',
+      { tournamentCode, selectedPlayers: 16 },
+      events,
+      'loadtest.generate_knockout'
+    );
+    sharedState.knockoutGenerated.add(tournamentCode);
+    events.emit('counter', 'loadtest.knockout.generated', 1);
+    return true;
+  } catch (error) {
+    events.emit('counter', 'loadtest.knockout.generate_failures', 1);
+    if (events && error?.message) {
+      events.emit('counter', 'loadtest.knockout.error_seen', 1);
     }
+    return false;
   }
 }
 
 async function maybeFinishTournament(tournamentCode, events) {
+  if (!sharedState.knockoutGenerated.has(tournamentCode)) {
+    events.emit('counter', 'loadtest.finish_tournament.deferred_knockout_missing', 1);
+    return;
+  }
+
   let list;
   try {
     list = await apiPost(
@@ -503,6 +552,9 @@ async function maybeFinishTournament(tournamentCode, events) {
       events,
       'loadtest.finish_tournament'
     );
+    events.emit('counter', 'loadtest.tournaments.finished', 1);
+    removeTournamentState(tournamentCode);
+    await ensureTournamentPool(events);
   } catch {
     events.emit('counter', 'loadtest.finish_tournament.failures', 1);
   }
@@ -548,12 +600,17 @@ async function runBoardUpdateCycle(tournamentCode, events) {
   const finishBatch = ongoing.slice(0, randomInt(1, 3));
   for (const match of finishBatch) {
     try {
+      let player1LegsWon = randomInt(1, 3);
+      let player2LegsWon = randomInt(0, 3);
+      if (player1LegsWon === player2LegsWon) {
+        player2LegsWon = Math.max(0, player2LegsWon - 1);
+      }
       await apiPost(
         'finish-match',
         {
           matchId: match.id,
-          player1LegsWon: 3,
-          player2LegsWon: randomInt(0, 2),
+          player1LegsWon,
+          player2LegsWon,
         },
         events,
         'loadtest.finish_match'
@@ -632,17 +689,27 @@ module.exports = {
 
     try {
       await addPlayersChunk(tournamentCode, events);
-      await ensureGroupAndKnockout(tournamentCode, events);
+      const groupReady = await ensureGroupStage(tournamentCode, events);
+      if (!groupReady) {
+        return;
+      }
 
-      const cycles = 1;
-      for (let i = 0; i < cycles; i++) {
+      const groupCycles = randomInt(1, 2);
+      for (let i = 0; i < groupCycles; i++) {
         await runBoardUpdateCycle(tournamentCode, events);
-        await sleep(randomInt(3000, 8000));
+        await sleep(randomInt(300, 1200));
       }
 
-      if (Math.random() < 0.1) {
-        await maybeFinishTournament(tournamentCode, events);
+      const knockoutReady = await maybeGenerateKnockout(tournamentCode, events);
+      if (knockoutReady) {
+        const knockoutCycles = randomInt(1, 2);
+        for (let i = 0; i < knockoutCycles; i++) {
+          await runBoardUpdateCycle(tournamentCode, events);
+          await sleep(randomInt(300, 1200));
+        }
       }
+
+      await maybeFinishTournament(tournamentCode, events);
     } finally {
       sharedState.lifecycleBusy.delete(tournamentCode);
     }

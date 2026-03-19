@@ -1090,13 +1090,27 @@ function buildTelemetryMatch(params: QueryParams) {
   const routeKey = String(params.routeKey || '').trim();
   const method = String(params.method || '').toUpperCase();
   const search = String(params.search || '').trim();
+  const source = String(params.source || 'all').toLowerCase();
   const match: any = {
     bucket: { $gte: startDate, $lte: endDate },
   };
   if (routeKey) match.routeKey = routeKey;
   if (method && method !== 'ALL') match.method = method;
+  if (source && source !== 'all') match.source = source;
   if (search) match.routeKey = { $regex: escapeRegex(search), $options: 'i' };
   return { match, startDate, endDate };
+}
+
+function calcDirection(current: number, baseline: number): 'up' | 'down' | 'flat' {
+  if (!Number.isFinite(current) || !Number.isFinite(baseline)) return 'flat';
+  if (Math.abs(current - baseline) < 0.0001) return 'flat';
+  return current > baseline ? 'up' : 'down';
+}
+
+function calcDeltaPct(current: number, baseline: number): number {
+  if (!Number.isFinite(current) || !Number.isFinite(baseline)) return 0;
+  if (baseline === 0) return current > 0 ? 100 : 0;
+  return ((current - baseline) / Math.abs(baseline)) * 100;
 }
 
 export async function adminTelemetryOverviewAction(params: QueryParams) {
@@ -1117,10 +1131,35 @@ export async function adminTelemetryOverviewAction(params: QueryParams) {
             _id: null,
             totalCalls: { $sum: '$count' },
             totalErrors: { $sum: '$errorCount' },
+            totalTimeouts: { $sum: '$timeoutCount' },
             totalDurationMs: { $sum: '$totalDurationMs' },
+            minLatencyMs: { $min: '$minDurationMs' },
             peakLatencyMs: { $max: '$maxDurationMs' },
             totalRequestBytes: { $sum: '$totalRequestBytes' },
+            minRequestBytes: { $min: '$minRequestBytes' },
             totalResponseBytes: { $sum: '$totalResponseBytes' },
+            minResponseBytes: { $min: '$minResponseBytes' },
+            maxRequestBytes: { $max: '$maxRequestBytes' },
+            maxResponseBytes: { $max: '$maxResponseBytes' },
+            readCalls: {
+              $sum: {
+                $cond: [{ $eq: ['$operationClass', 'read'] }, '$count', 0],
+              },
+            },
+            writeCalls: {
+              $sum: {
+                $cond: [{ $eq: ['$operationClass', 'write'] }, '$count', 0],
+              },
+            },
+            pageSampleCount: { $sum: '$pageLoadMetrics.sampleCount' },
+            ttfbTotalMs: { $sum: '$pageLoadMetrics.ttfbTotalMs' },
+            fcpTotalMs: { $sum: '$pageLoadMetrics.fcpTotalMs' },
+            lcpTotalMs: { $sum: '$pageLoadMetrics.lcpTotalMs' },
+            inpTotalMs: { $sum: '$pageLoadMetrics.inpTotalMs' },
+            ttfbMaxMs: { $max: '$pageLoadMetrics.ttfbMaxMs' },
+            fcpMaxMs: { $max: '$pageLoadMetrics.fcpMaxMs' },
+            lcpMaxMs: { $max: '$pageLoadMetrics.lcpMaxMs' },
+            inpMaxMs: { $max: '$pageLoadMetrics.inpMaxMs' },
           },
         },
       ]),
@@ -1131,13 +1170,22 @@ export async function adminTelemetryOverviewAction(params: QueryParams) {
             _id: null,
             totalCalls: { $sum: '$count' },
             totalErrors: { $sum: '$errorCount' },
+            totalTimeouts: { $sum: '$timeoutCount' },
             totalDurationMs: { $sum: '$totalDurationMs' },
+            totalTrafficBytes: { $sum: { $add: ['$totalRequestBytes', '$totalResponseBytes'] } },
           },
         },
       ]),
       ApiRouteAnomalyModel.countDocuments({ isActive: true }),
       ApiRequestErrorEventModel.aggregate([
-        { $match: { occurredAt: { $gte: startDate, $lte: endDate } } },
+        {
+          $match: {
+            occurredAt: { $gte: startDate, $lte: endDate },
+            ...(match.method ? { method: match.method } : {}),
+            ...(match.routeKey ? { routeKey: match.routeKey } : {}),
+            ...(match.source ? { sourceType: match.source } : {}),
+          },
+        },
         {
           $group: {
             _id: null,
@@ -1152,38 +1200,108 @@ export async function adminTelemetryOverviewAction(params: QueryParams) {
     const prev = prevRows[0] || {};
     const totalCalls = Number(cur.totalCalls || 0);
     const totalErrors = Number(cur.totalErrors || 0);
+    const totalTimeouts = Number(cur.totalTimeouts || 0);
     const totalDurationMs = Number(cur.totalDurationMs || 0);
     const totalRequestBytes = Number(cur.totalRequestBytes || 0);
     const totalResponseBytes = Number(cur.totalResponseBytes || 0);
+    const totalTrafficBytes = totalRequestBytes + totalResponseBytes;
+    const windowSeconds = Math.max(1, Math.floor(windowMs / 1000));
     const errorRate = totalCalls > 0 ? totalErrors / totalCalls : 0;
     const avgLatencyMs = totalCalls > 0 ? totalDurationMs / totalCalls : 0;
-    const avgPacketBytes = totalCalls > 0 ? (totalRequestBytes + totalResponseBytes) / totalCalls : 0;
+    const avgPacketBytes = totalCalls > 0 ? totalTrafficBytes / totalCalls : 0;
+    const callsPerSecond = totalCalls / windowSeconds;
     const baselineCalls = Number(prev.totalCalls || 0);
     const baselineErrors = Number(prev.totalErrors || 0);
+    const baselineTimeouts = Number(prev.totalTimeouts || 0);
     const baselineDuration = Number(prev.totalDurationMs || 0);
+    const baselineTraffic = Number(prev.totalTrafficBytes || 0);
     const baselineErrorRate = baselineCalls > 0 ? baselineErrors / baselineCalls : 0;
     const baselineAvgLatencyMs = baselineCalls > 0 ? baselineDuration / baselineCalls : 0;
+    const baselineCallsPerSecond = baselineCalls / windowSeconds;
+    const baselineTimeoutRate = baselineCalls > 0 ? baselineTimeouts / baselineCalls : 0;
+    const timeoutRate = totalCalls > 0 ? totalTimeouts / totalCalls : 0;
+    const readCalls = Number(cur.readCalls || 0);
+    const writeCalls = Number(cur.writeCalls || 0);
+    const rwRatio = writeCalls > 0 ? readCalls / writeCalls : readCalls > 0 ? readCalls : 0;
+    const pageSampleCount = Number(cur.pageSampleCount || 0);
 
     const status =
-      errorRate > 0.12 || avgLatencyMs > 900 ? 'critical' : errorRate > 0.05 || avgLatencyMs > 450 ? 'degraded' : 'healthy';
+      errorRate > 0.12 || avgLatencyMs > 900 || timeoutRate > 0.08
+        ? 'critical'
+        : errorRate > 0.05 || avgLatencyMs > 450 || timeoutRate > 0.03
+          ? 'degraded'
+          : 'healthy';
     const incident = errAgg[0] || {};
+
+    const deltas = {
+      calls: {
+        direction: calcDirection(totalCalls, baselineCalls),
+        deltaPct: calcDeltaPct(totalCalls, baselineCalls),
+      },
+      callsPerSecond: {
+        direction: calcDirection(callsPerSecond, baselineCallsPerSecond),
+        deltaPct: calcDeltaPct(callsPerSecond, baselineCallsPerSecond),
+      },
+      errors: {
+        direction: calcDirection(errorRate, baselineErrorRate),
+        deltaPct: calcDeltaPct(errorRate, baselineErrorRate),
+      },
+      latency: {
+        direction: calcDirection(avgLatencyMs, baselineAvgLatencyMs),
+        deltaPct: calcDeltaPct(avgLatencyMs, baselineAvgLatencyMs),
+      },
+      traffic: {
+        direction: calcDirection(totalTrafficBytes, baselineTraffic),
+        deltaPct: calcDeltaPct(totalTrafficBytes, baselineTraffic),
+      },
+      timeouts: {
+        direction: calcDirection(timeoutRate, baselineTimeoutRate),
+        deltaPct: calcDeltaPct(timeoutRate, baselineTimeoutRate),
+      },
+    };
 
     return success({
       data: {
         status,
+        window: {
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          seconds: windowSeconds,
+        },
         kpis: {
           totalCalls,
           totalErrors,
+          totalTimeouts,
           errorRate,
+          timeoutRate,
+          callsPerSecond,
           avgLatencyMs,
+          minLatencyMs: Number(cur.minLatencyMs || 0),
           peakLatencyMs: Number(cur.peakLatencyMs || 0),
           totalRequestBytes,
           totalResponseBytes,
-          totalMovedBytes: totalRequestBytes + totalResponseBytes,
+          totalMovedBytes: totalTrafficBytes,
           avgPacketBytes,
+          minPacketBytes: Number(cur.minRequestBytes || 0) + Number(cur.minResponseBytes || 0),
+          maxPacketBytes: Number(cur.maxRequestBytes || 0) + Number(cur.maxResponseBytes || 0),
+          readCalls,
+          writeCalls,
+          readWriteRatio: rwRatio,
+          pageLoad: {
+            sampleCount: pageSampleCount,
+            avgTtfbMs: pageSampleCount > 0 ? Number(cur.ttfbTotalMs || 0) / pageSampleCount : 0,
+            avgFcpMs: pageSampleCount > 0 ? Number(cur.fcpTotalMs || 0) / pageSampleCount : 0,
+            avgLcpMs: pageSampleCount > 0 ? Number(cur.lcpTotalMs || 0) / pageSampleCount : 0,
+            avgInpMs: pageSampleCount > 0 ? Number(cur.inpTotalMs || 0) / pageSampleCount : 0,
+            maxTtfbMs: Number(cur.ttfbMaxMs || 0),
+            maxFcpMs: Number(cur.fcpMaxMs || 0),
+            maxLcpMs: Number(cur.lcpMaxMs || 0),
+            maxInpMs: Number(cur.inpMaxMs || 0),
+          },
           baselineAvgLatencyMs,
           baselineErrorRate,
         },
+        deltas,
         incidents: {
           activeAnomalies,
           count4xx: Number(incident.count4xx || 0),
@@ -1219,9 +1337,25 @@ export async function adminTelemetryTrendsAction(params: QueryParams) {
           },
           calls: { $sum: '$count' },
           errors: { $sum: '$errorCount' },
+          timeouts: { $sum: '$timeoutCount' },
           duration: { $sum: '$totalDurationMs' },
           requestBytes: { $sum: '$totalRequestBytes' },
           responseBytes: { $sum: '$totalResponseBytes' },
+          readCalls: {
+            $sum: {
+              $cond: [{ $eq: ['$operationClass', 'read'] }, '$count', 0],
+            },
+          },
+          writeCalls: {
+            $sum: {
+              $cond: [{ $eq: ['$operationClass', 'write'] }, '$count', 0],
+            },
+          },
+          pageSamples: { $sum: '$pageLoadMetrics.sampleCount' },
+          ttfbTotalMs: { $sum: '$pageLoadMetrics.ttfbTotalMs' },
+          fcpTotalMs: { $sum: '$pageLoadMetrics.fcpTotalMs' },
+          lcpTotalMs: { $sum: '$pageLoadMetrics.lcpTotalMs' },
+          inpTotalMs: { $sum: '$pageLoadMetrics.inpTotalMs' },
         },
       },
       { $sort: { _id: 1 } },
@@ -1232,18 +1366,31 @@ export async function adminTelemetryTrendsAction(params: QueryParams) {
       const errors = Number(row.errors || 0);
       const requestBytes = Number(row.requestBytes || 0);
       const responseBytes = Number(row.responseBytes || 0);
+      const totalBytes = requestBytes + responseBytes;
+      const intervalSeconds = unit === 'minute' ? 60 : unit === 'hour' ? 3600 : 86400;
       return {
+        bucketAt: new Date(row._id).toISOString(),
         label: new Date(row._id).toLocaleString('hu-HU', { hour12: false }),
         calls,
-        baselineCalls: 0,
         errors,
+        timeouts: Number(row.timeouts || 0),
         errorRate: calls > 0 ? errors / calls : 0,
+        timeoutRate: calls > 0 ? Number(row.timeouts || 0) / calls : 0,
         avgLatencyMs: calls > 0 ? Number(row.duration || 0) / calls : 0,
-        baselineLatencyMs: 0,
+        callsPerSecond: calls / intervalSeconds,
+        readCalls: Number(row.readCalls || 0),
+        writeCalls: Number(row.writeCalls || 0),
         requestBytes,
         responseBytes,
-        totalBytes: requestBytes + responseBytes,
-        avgPacketBytes: calls > 0 ? (requestBytes + responseBytes) / calls : 0,
+        totalBytes,
+        avgPacketBytes: calls > 0 ? totalBytes / calls : 0,
+        pageLoad: {
+          sampleCount: Number(row.pageSamples || 0),
+          avgTtfbMs: Number(row.pageSamples || 0) > 0 ? Number(row.ttfbTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+          avgFcpMs: Number(row.pageSamples || 0) > 0 ? Number(row.fcpTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+          avgLcpMs: Number(row.pageSamples || 0) > 0 ? Number(row.lcpTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+          avgInpMs: Number(row.pageSamples || 0) > 0 ? Number(row.inpTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+        },
       };
     });
 
@@ -1261,7 +1408,12 @@ export async function adminTelemetryIncidentsAction(params: QueryParams) {
     const { startDate, endDate } = resolveDateRange(params);
     const [anomalies, errors] = await Promise.all([
       ApiRouteAnomalyModel.find({ isActive: true }).sort({ ratio: -1, lastObservedAt: -1 }).limit(100),
-      ApiRequestErrorEventModel.find({ occurredAt: { $gte: startDate, $lte: endDate } })
+      ApiRequestErrorEventModel.find({
+        occurredAt: { $gte: startDate, $lte: endDate },
+        ...(params.method && String(params.method).toUpperCase() !== 'ALL' ? { method: String(params.method).toUpperCase() } : {}),
+        ...(params.routeKey ? { routeKey: String(params.routeKey) } : {}),
+        ...(params.source && String(params.source) !== 'all' ? { sourceType: String(params.source) } : {}),
+      })
         .sort({ occurredAt: -1 })
         .limit(200),
     ]);
@@ -1269,6 +1421,7 @@ export async function adminTelemetryIncidentsAction(params: QueryParams) {
     return success({
       data: {
         anomalies: anomalies.map((a: any) => ({
+          sourceType: a.sourceType || 'api',
           routeKey: a.routeKey,
           method: a.method,
           signal: a.signal,
@@ -1280,6 +1433,7 @@ export async function adminTelemetryIncidentsAction(params: QueryParams) {
         errors: errors.map((e: any) => ({
           id: String(e._id),
           occurredAt: e.occurredAt,
+          sourceType: e.sourceType || 'api',
           routeKey: e.routeKey,
           method: e.method,
           status: Number(e.status || 0),
@@ -1312,13 +1466,28 @@ export async function adminTelemetryRoutesAction(params: QueryParams) {
       { $match: match },
       {
         $group: {
-          _id: { routeKey: '$routeKey', method: '$method' },
+          _id: { sourceType: '$source', routeKey: '$routeKey', method: '$method' },
           totalCalls: { $sum: '$count' },
           totalErrors: { $sum: '$errorCount' },
+          totalTimeouts: { $sum: '$timeoutCount' },
           totalDurationMs: { $sum: '$totalDurationMs' },
+          minDurationMs: { $min: '$minDurationMs' },
           maxDurationMs: { $max: '$maxDurationMs' },
           totalRequestBytes: { $sum: '$totalRequestBytes' },
           totalResponseBytes: { $sum: '$totalResponseBytes' },
+          readCalls: {
+            $sum: {
+              $cond: [{ $eq: ['$operationClass', 'read'] }, '$count', 0],
+            },
+          },
+          writeCalls: {
+            $sum: {
+              $cond: [{ $eq: ['$operationClass', 'write'] }, '$count', 0],
+            },
+          },
+          pageSamples: { $sum: '$pageLoadMetrics.sampleCount' },
+          ttfbTotalMs: { $sum: '$pageLoadMetrics.ttfbTotalMs' },
+          lcpTotalMs: { $sum: '$pageLoadMetrics.lcpTotalMs' },
           lastSeen: { $max: '$bucket' },
         },
       },
@@ -1331,22 +1500,29 @@ export async function adminTelemetryRoutesAction(params: QueryParams) {
       const totalResponseBytes = Number(row.totalResponseBytes || 0);
       const totalTrafficBytes = totalRequestBytes + totalResponseBytes;
       return {
+        sourceType: row._id.sourceType || 'api',
         routeKey: row._id.routeKey,
         method: row._id.method,
         totalCalls,
         totalErrors,
+        totalTimeouts: Number(row.totalTimeouts || 0),
         errorRate: totalCalls > 0 ? totalErrors / totalCalls : 0,
         avgLatencyMs: totalCalls > 0 ? Number(row.totalDurationMs || 0) / totalCalls : 0,
+        minLatencyMs: Number(row.minDurationMs || 0),
+        maxLatencyMs: Number(row.maxDurationMs || 0),
         totalRequestBytes,
         totalResponseBytes,
         totalTrafficBytes,
         avgPacketBytes: totalCalls > 0 ? totalTrafficBytes / totalCalls : 0,
-        baselineAvgLatencyMs: 0,
-        latencyRatio: 0,
-        baselineErrorRate: 0,
-        errorRateRatio: 0,
         avgIncomingPacketBytes: totalCalls > 0 ? totalRequestBytes / totalCalls : 0,
         avgOutgoingPacketBytes: totalCalls > 0 ? totalResponseBytes / totalCalls : 0,
+        readCalls: Number(row.readCalls || 0),
+        writeCalls: Number(row.writeCalls || 0),
+        pageLoad: {
+          sampleCount: Number(row.pageSamples || 0),
+          avgTtfbMs: Number(row.pageSamples || 0) > 0 ? Number(row.ttfbTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+          avgLcpMs: Number(row.pageSamples || 0) > 0 ? Number(row.lcpTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+        },
         lastSeen: row.lastSeen,
       };
     });
@@ -1381,6 +1557,7 @@ export async function adminTelemetryRoutesAction(params: QueryParams) {
       largestIncomingPackets: [...rows].sort((a: any, b: any) => b.avgIncomingPacketBytes - a.avgIncomingPacketBytes).slice(0, 10),
       largestOutgoingPackets: [...rows].sort((a: any, b: any) => b.avgOutgoingPacketBytes - a.avgOutgoingPacketBytes).slice(0, 10),
       risingErrorRate: rows.filter((r: any) => r.errorRate > 0.03).slice(0, 10),
+      risingTimeouts: rows.filter((r: any) => r.totalTimeouts > 5).slice(0, 10),
     };
 
     return success({
@@ -1422,21 +1599,42 @@ export async function adminTelemetryRouteDetailsAction(params: QueryParams) {
 
     const [summaryRows, trendRows, recentErrors, selected] = await Promise.all([
       ApiRequestMetricModel.aggregate([
-        { $match: { routeKey, method, bucket: { $gte: startDate, $lte: endDate } } },
+        {
+          $match: {
+            routeKey,
+            method,
+            bucket: { $gte: startDate, $lte: endDate },
+            ...(params.source && String(params.source) !== 'all' ? { source: String(params.source) } : {}),
+          },
+        },
         {
           $group: {
             _id: null,
             totalCalls: { $sum: '$count' },
             totalErrors: { $sum: '$errorCount' },
+            totalTimeouts: { $sum: '$timeoutCount' },
             totalDurationMs: { $sum: '$totalDurationMs' },
+            minLatencyMs: { $min: '$minDurationMs' },
             maxLatencyMs: { $max: '$maxDurationMs' },
             totalRequestBytes: { $sum: '$totalRequestBytes' },
             totalResponseBytes: { $sum: '$totalResponseBytes' },
+            pageSamples: { $sum: '$pageLoadMetrics.sampleCount' },
+            ttfbTotalMs: { $sum: '$pageLoadMetrics.ttfbTotalMs' },
+            fcpTotalMs: { $sum: '$pageLoadMetrics.fcpTotalMs' },
+            lcpTotalMs: { $sum: '$pageLoadMetrics.lcpTotalMs' },
+            inpTotalMs: { $sum: '$pageLoadMetrics.inpTotalMs' },
           },
         },
       ]),
       ApiRequestMetricModel.aggregate([
-        { $match: { routeKey, method, bucket: { $gte: startDate, $lte: endDate } } },
+        {
+          $match: {
+            routeKey,
+            method,
+            bucket: { $gte: startDate, $lte: endDate },
+            ...(params.source && String(params.source) !== 'all' ? { source: String(params.source) } : {}),
+          },
+        },
         {
           $group: {
             _id: {
@@ -1448,7 +1646,11 @@ export async function adminTelemetryRouteDetailsAction(params: QueryParams) {
             },
             calls: { $sum: '$count' },
             errors: { $sum: '$errorCount' },
+            timeouts: { $sum: '$timeoutCount' },
             duration: { $sum: '$totalDurationMs' },
+            pageSamples: { $sum: '$pageLoadMetrics.sampleCount' },
+            ttfbTotalMs: { $sum: '$pageLoadMetrics.ttfbTotalMs' },
+            lcpTotalMs: { $sum: '$pageLoadMetrics.lcpTotalMs' },
           },
         },
         { $sort: { _id: 1 } },
@@ -1457,6 +1659,7 @@ export async function adminTelemetryRouteDetailsAction(params: QueryParams) {
         routeKey,
         method,
         occurredAt: { $gte: startDate, $lte: endDate },
+        ...(params.source && String(params.source) !== 'all' ? { sourceType: String(params.source) } : {}),
       })
         .sort({ occurredAt: -1 })
         .limit(100),
@@ -1472,7 +1675,13 @@ export async function adminTelemetryRouteDetailsAction(params: QueryParams) {
       label: new Date(row._id).toLocaleString('hu-HU', { hour12: false }),
       calls: Number(row.calls || 0),
       errors: Number(row.errors || 0),
+      timeouts: Number(row.timeouts || 0),
       avgLatencyMs: Number(row.calls || 0) > 0 ? Number(row.duration || 0) / Number(row.calls || 0) : 0,
+      pageLoad: {
+        sampleCount: Number(row.pageSamples || 0),
+        avgTtfbMs: Number(row.pageSamples || 0) > 0 ? Number(row.ttfbTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+        avgLcpMs: Number(row.pageSamples || 0) > 0 ? Number(row.lcpTotalMs || 0) / Number(row.pageSamples || 0) : 0,
+      },
     }));
 
     const recent = recentErrors.map((e: any) => ({
@@ -1485,6 +1694,7 @@ export async function adminTelemetryRouteDetailsAction(params: QueryParams) {
       requestBytes: Number(e.requestBytes || 0),
       responseBytes: Number(e.responseBytes || 0),
       source: e.source || '',
+      sourceType: e.sourceType || 'api',
       errorMessage: e.errorMessage || '',
     }));
 
@@ -1527,16 +1737,21 @@ export async function adminTelemetryRouteDetailsAction(params: QueryParams) {
         method,
         summary: {
           totalCalls,
-          baselineCalls: 0,
           totalErrors,
+          totalTimeouts: Number(sum.totalTimeouts || 0),
           errorRate: totalCalls > 0 ? totalErrors / totalCalls : 0,
-          baselineErrorRate: 0,
           avgLatencyMs: totalCalls > 0 ? Number(sum.totalDurationMs || 0) / totalCalls : 0,
-          baselineAvgLatencyMs: 0,
+          minLatencyMs: Number(sum.minLatencyMs || 0),
           maxLatencyMs: Number(sum.maxLatencyMs || 0),
           totalTrafficBytes,
           avgPacketBytes: totalCalls > 0 ? totalTrafficBytes / totalCalls : 0,
-          baselineAvgPacketBytes: 0,
+          pageLoad: {
+            sampleCount: Number(sum.pageSamples || 0),
+            avgTtfbMs: Number(sum.pageSamples || 0) > 0 ? Number(sum.ttfbTotalMs || 0) / Number(sum.pageSamples || 0) : 0,
+            avgFcpMs: Number(sum.pageSamples || 0) > 0 ? Number(sum.fcpTotalMs || 0) / Number(sum.pageSamples || 0) : 0,
+            avgLcpMs: Number(sum.pageSamples || 0) > 0 ? Number(sum.lcpTotalMs || 0) / Number(sum.pageSamples || 0) : 0,
+            avgInpMs: Number(sum.pageSamples || 0) > 0 ? Number(sum.inpTotalMs || 0) / Number(sum.pageSamples || 0) : 0,
+          },
         },
         trend,
         recentErrors: recent,
@@ -1578,6 +1793,10 @@ export async function adminTelemetryErrorResetsAction(payload: Record<string, un
       if (route.method !== 'ALL') {
         errorMatch.method = route.method;
         anomalyMatch.method = route.method;
+      }
+      if (payload.source && String(payload.source) !== 'all') {
+        errorMatch.sourceType = String(payload.source);
+        anomalyMatch.sourceType = String(payload.source);
       }
       const res = await ApiRequestErrorEventModel.updateMany(errorMatch, {
         $set: { isResolved: true, resolvedAt: new Date() },
@@ -1624,6 +1843,26 @@ export async function adminTelemetryExportAction(params: QueryParams) {
     });
   } catch (error: any) {
     return failure(error?.message || 'Failed to export telemetry snapshot', 500);
+  }
+}
+
+export async function adminTelemetryImportSnapshotAction(payload: Record<string, unknown>) {
+  try {
+    const guard = await assertGlobalAdmin();
+    if ('error' in guard) return guard.error;
+
+    const snapshot = payload?.snapshot;
+    if (!snapshot || typeof snapshot !== 'object') {
+      return failure('Invalid snapshot payload', 400);
+    }
+
+    return success({
+      success: true,
+      importedAt: new Date().toISOString(),
+      snapshot,
+    });
+  } catch (error: any) {
+    return failure(error?.message || 'Failed to import telemetry snapshot', 500);
   }
 }
 

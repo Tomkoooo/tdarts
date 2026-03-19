@@ -126,6 +126,7 @@ matchSchema.index({ tournamentRef: 1, manualOverride: 1 });
 matchSchema.index({ manualChangeType: 1 });
 matchSchema.index({ manualChangedBy: 1 });
 matchSchema.index({ tournamentRef: 1, status: 1 });
+matchSchema.index({ tournamentRef: 1, status: 1, updatedAt: -1 });
 matchSchema.index({ tournamentRef: 1, status: 1, createdAt: 1 });
 matchSchema.index({ tournamentRef: 1, boardReference: 1, status: 1, createdAt: 1 });
 matchSchema.index({ tournamentRef: 1, status: 1, 'player1.playerId': 1, createdAt: -1 });

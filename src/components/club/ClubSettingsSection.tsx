@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/Button"
 import { getMapSettingsTranslations } from "@/data/translations/map-settings"
 import ClubGlassSectionCard from "./ClubGlassSectionCard"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ClubSettingsSectionProps {
   club: Club
@@ -35,6 +36,7 @@ interface ClubSettingsSectionProps {
   onLeaveClub: () => Promise<void>
   onDeactivateClub: () => Promise<void>
   onClubUpdated: () => void | Promise<void>
+  membersLoading?: boolean
 }
 
 export function ClubSettingsSection({
@@ -45,6 +47,7 @@ export function ClubSettingsSection({
   onLeaveClub,
   onDeactivateClub,
   onClubUpdated,
+  membersLoading = false,
 }: ClubSettingsSectionProps) {
   const t = getMapSettingsTranslations(typeof navigator !== "undefined" ? navigator.language : "hu")
   const [activeSection, setActiveSection] = React.useState("general")
@@ -194,16 +197,23 @@ export function ClubSettingsSection({
                 placeholder="Játékos keresése vagy hozzáadása..."
                 userRole={userRole}
               />
-              <MemberList
-                members={club.members as any[]}
-                userRole={userRole}
-                userId={userId}
-                clubId={club._id}
-                onClubUpdated={async () => {
-                  if (onClubUpdated) await onClubUpdated()
-                }}
-                showActions={true}
-              />
+              {membersLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-20 rounded-xl" />
+                  <Skeleton className="h-20 rounded-xl" />
+                </div>
+              ) : (
+                <MemberList
+                  members={club.members as any[]}
+                  userRole={userRole}
+                  userId={userId}
+                  clubId={club._id}
+                  onClubUpdated={async () => {
+                    if (onClubUpdated) await onClubUpdated()
+                  }}
+                  showActions={true}
+                />
+              )}
             </div>
           </ClubGlassSectionCard>
         )}
@@ -285,16 +295,23 @@ export function ClubSettingsSection({
                         placeholder="Játékos keresése vagy hozzáadása..."
                         userRole={userRole}
                       />
-                      <MemberList
-                        members={club.members as any[]}
-                        userRole={userRole}
-                        userId={userId}
-                        clubId={club._id}
-                        onClubUpdated={async () => {
-                          if (onClubUpdated) await onClubUpdated()
-                        }}
-                        showActions={true}
-                      />
+                      {membersLoading ? (
+                        <div className="space-y-3">
+                          <Skeleton className="h-20 rounded-xl" />
+                          <Skeleton className="h-20 rounded-xl" />
+                        </div>
+                      ) : (
+                        <MemberList
+                          members={club.members as any[]}
+                          userRole={userRole}
+                          userId={userId}
+                          clubId={club._id}
+                          onClubUpdated={async () => {
+                            if (onClubUpdated) await onClubUpdated()
+                          }}
+                          showActions={true}
+                        />
+                      )}
                     </div>
                   )}
                   {section.id === "danger" && (

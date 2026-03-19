@@ -16,7 +16,7 @@ import { useUnreadTickets } from "@/hooks/useUnreadTickets";
 import { useUserContext } from "@/hooks/useUser";
 import { Badge } from "@/components/ui/Badge";
 import { Link } from "@/i18n/routing";
-import { useOngoingTournamentQuickLink } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
+import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
 
 interface NavItem {
   id: string;
@@ -30,11 +30,26 @@ export const MobileBottomNav: React.FC = () => {
   const { user } = useUserContext();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) });
-  const { ongoingTournament } = useOngoingTournamentQuickLink(user?._id);
-  const hasQuickTournament = Boolean(ongoingTournament?.code);
-
+  const [allowDeferredHooks, setAllowDeferredHooks] = React.useState(false);
   const normalizedPath = stripLocalePrefix(pathname);
+  const isClubRoute = normalizedPath.startsWith("/clubs");
+  const hooksEnabled = !isClubRoute || allowDeferredHooks;
+  const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) && hooksEnabled, deferMs: isClubRoute ? 1200 : 0 });
+  const { ongoingTournament } = useOngoingTournamentQuickLinkWithOptions(user?._id, {
+    enabled: hooksEnabled,
+    deferMs: isClubRoute ? 1200 : 0,
+  });
+  const hasQuickTournament = Boolean(ongoingTournament?.code);
+  React.useEffect(() => {
+    if (!isClubRoute) {
+      setAllowDeferredHooks(true);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setAllowDeferredHooks(true);
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [isClubRoute]);
 
   const navItems = React.useMemo<NavItem[]>(
     () =>

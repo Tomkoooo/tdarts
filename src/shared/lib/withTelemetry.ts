@@ -19,6 +19,25 @@ import {
 } from '@/shared/lib/telemetry/types';
 import { isGuardFailureResult } from '@/shared/lib/guards/result';
 
+function classifyMethodOperation(method: string): 'read' | 'write' | 'other' {
+  const m = method.toUpperCase();
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return 'read';
+  if (m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE') return 'write';
+  return 'other';
+}
+
+function classifyActionOperation(actionKey: string): 'read' | 'write' | 'other' {
+  if (/get|list|fetch|search|stats|overview|detail|load|read/i.test(actionKey)) return 'read';
+  if (/create|update|delete|remove|add|toggle|set|write|finish|start|manage/i.test(actionKey)) return 'write';
+  return 'other';
+}
+
+function detectTimeout(status: number, error: unknown): boolean {
+  if (status === 408 || status === 504) return true;
+  if (!(error instanceof Error)) return false;
+  return /timeout|timed out|etimedout|abort/i.test(error.message || '');
+}
+
 export function withRouteTelemetry<TArgs extends unknown[]>(
   routeKey: string,
   handler: RouteTelemetryHandler<TArgs>
@@ -53,10 +72,13 @@ export function withRouteTelemetry<TArgs extends unknown[]>(
           recordAggregate({
             routeKey: normalizedRoute,
             method: request.method,
+            sourceType: 'api',
+            operationClass: classifyMethodOperation(request.method),
             durationMs,
             requestBytes,
             responseBytes,
             status,
+            isTimeout: detectTimeout(status, capturedError),
           });
 
           if (status >= 400 || capturedError) {
@@ -64,7 +86,10 @@ export function withRouteTelemetry<TArgs extends unknown[]>(
               occurredAt: new Date(),
               routeKey: normalizedRoute,
               method: request.method,
+              sourceType: 'api',
+              operationClass: classifyMethodOperation(request.method),
               status,
+              isTimeout: detectTimeout(status, capturedError),
               requestId: request.headers.get('x-request-id') || undefined,
               durationMs,
               requestBytes,
@@ -123,10 +148,15 @@ export function withTelemetry<TInput, TOutput>(
       recordAggregate({
         routeKey: normalizedRoute,
         method,
+        sourceType: 'action',
+        operationClass:
+          options?.metadata?.operationClass ||
+          (method === 'ACTION' ? classifyActionOperation(actionKey) : classifyMethodOperation(method)),
         durationMs,
         requestBytes,
         responseBytes,
         status,
+        isTimeout: detectTimeout(status, capturedError),
       });
 
       const guardFailure = isGuardFailureResult(result) ? result : undefined;
@@ -135,7 +165,12 @@ export function withTelemetry<TInput, TOutput>(
           occurredAt: new Date(),
           routeKey: normalizedRoute,
           method,
+          sourceType: 'action',
+          operationClass:
+            options?.metadata?.operationClass ||
+            (method === 'ACTION' ? classifyActionOperation(actionKey) : classifyMethodOperation(method)),
           status,
+          isTimeout: detectTimeout(status, capturedError),
           requestId: options?.requestId,
           durationMs,
           requestBytes,

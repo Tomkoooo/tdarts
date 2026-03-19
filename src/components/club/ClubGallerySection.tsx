@@ -20,18 +20,43 @@ interface Gallery {
 
 interface ClubGallerySectionProps {
   clubId: string;
+  deferUntilVisible?: boolean;
 }
 
-export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) {
+export default function ClubGallerySection({ clubId, deferUntilVisible = false }: ClubGallerySectionProps) {
     const t = useTranslations("Club.components");
   const [galleries, setGalleries] = React.useState<Gallery[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const [loading, setLoading] = React.useState(!deferUntilVisible)
+  const [shouldLoad, setShouldLoad] = React.useState(!deferUntilVisible)
   const [selectedGallery, setSelectedGallery] = React.useState<Gallery | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0)
+  const sectionRef = React.useRef<HTMLDivElement | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
 
   React.useEffect(() => {
+    if (!deferUntilVisible || shouldLoad) return
+    const target = sectionRef.current
+    if (!target) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (entry?.isIntersecting) {
+          setShouldLoad(true)
+          setLoading(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: "240px 0px" }
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [deferUntilVisible, shouldLoad])
+
+  React.useEffect(() => {
+    if (!shouldLoad) return
     const fetchGalleries = async () => {
       try {
         const res = await getClubGalleriesAction({ clubId })
@@ -52,7 +77,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
       }
     }
     fetchGalleries()
-  }, [clubId])
+  }, [clubId, shouldLoad])
 
   // Handle galleryId URL parameter
   React.useEffect(() => {
@@ -108,9 +133,23 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
     setCurrentImageIndex((prev) => (prev - 1 + selectedGallery.images.length) % selectedGallery.images.length)
   }
 
+  if (!shouldLoad) {
+    return (
+      <div ref={sectionRef} className="space-y-6">
+        <h2 className="text-2xl font-bold">{t("képgaléria")}</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+          <Skeleton className="aspect-4/3 rounded-xl" />
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div ref={sectionRef} className="space-y-6">
         <Skeleton className="h-8 w-56 rounded-lg" />
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <Skeleton className="aspect-4/3 rounded-xl" />
@@ -124,7 +163,7 @@ export default function ClubGallerySection({ clubId }: ClubGallerySectionProps) 
   if (galleries.length === 0) return null
 
   return (
-    <div className="space-y-6">
+    <div ref={sectionRef} className="space-y-6">
       <h2 className="text-2xl font-bold">{t("képgaléria")}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {galleries.map((gallery) => (

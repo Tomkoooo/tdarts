@@ -651,6 +651,31 @@ export class TournamentService {
         return tournament;
     }
 
+    static async getTournamentSummaryOverviewForPublicPage(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+
+        const tournament: any = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId tournamentPlayers.playerReference waitingList.playerReference boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
+            )
+            .populate('clubId', 'name location contact')
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentSummaryOverviewForPublicPage',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
     static async getTournamentKnockoutView(tournamentId: string): Promise<{
         knockout: any[] | null;
         tournamentStatus: string | null;
@@ -693,13 +718,17 @@ export class TournamentService {
 
 
     static async getPlayerStatusInTournament(tournamentId: string, userId: string): Promise<string> {
-        const status = await TournamentPlayerService.getPlayerStatusInTournament(tournamentId, userId);
+        const status = await TournamentPlayerService.getPlayerStatusInTournamentFast(tournamentId, userId);
         return status || '';
     }
 
     //method to add, remove and update tournament players status, the rquest takes the player._id form the player collection
     static async addTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
         return TournamentPlayerService.addTournamentPlayer(tournamentId, playerId);
+    }
+
+    static async addTournamentPlayerCheckedIn(tournamentId: string, playerId: string): Promise<boolean> {
+        return TournamentPlayerService.addTournamentPlayerCheckedIn(tournamentId, playerId);
     }
 
     static async removeTournamentPlayer(tournamentId: string, playerId: string): Promise<boolean> {
@@ -712,6 +741,10 @@ export class TournamentService {
 
     static async updateTournamentPlayerStatus(tournamentId: string, playerId: string, status: string): Promise<boolean> {
         return TournamentPlayerService.updateTournamentPlayerStatus(tournamentId, playerId, status);
+    }
+
+    static async checkInAllTournamentPlayers(tournamentId: string): Promise<{ checkedInCount: number; failedCount: number }> {
+        return TournamentPlayerService.checkInAllTournamentPlayers(tournamentId);
     }
 
     static async generateGroups(tournamentId: string, requesterId: string): Promise<boolean> {

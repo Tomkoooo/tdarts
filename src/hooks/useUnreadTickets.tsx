@@ -4,7 +4,7 @@ import React from 'react';
 import { Ticket } from 'lucide-react';
 import { getTicketsAction, getUnreadTicketCountAction } from '@/features/profile/actions';
 
-export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {}) {
+export function useUnreadTickets({ enabled = true, deferMs = 0 }: { enabled?: boolean; deferMs?: number } = {}) {
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
 
@@ -47,11 +47,16 @@ export function useUnreadTickets({ enabled = true }: { enabled?: boolean } = {})
       return;
     }
 
-    checkUnreadTickets();
+    const timer = window.setTimeout(() => {
+      void checkUnreadTickets();
+    }, deferMs);
     // Re-check every 5 minutes
     const interval = setInterval(checkUnreadTickets, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [checkUnreadTickets, enabled]);
+    return () => {
+      window.clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [checkUnreadTickets, enabled, deferMs]);
 
   return { unreadCount, loading, refresh: checkUnreadTickets };
 }

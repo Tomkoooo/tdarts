@@ -34,7 +34,32 @@ describe('withRouteTelemetry', () => {
     expect(response.status).toBe(200);
 
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(recordAggregateMock).toHaveBeenCalledWith(expect.objectContaining({ routeKey: '/api/test', status: 200 }));
+    expect(recordAggregateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        routeKey: '/api/test',
+        status: 200,
+        sourceType: 'api',
+        operationClass: 'read',
+      })
+    );
     expect(recordErrorEventMock).not.toHaveBeenCalled();
+  });
+
+  it('marks timeout-like route failures as timeout', async () => {
+    const handler = withRouteTelemetry('/api/test-timeout', async () => {
+      throw new Error('ETIMEDOUT upstream call');
+    });
+
+    const request = new NextRequest('http://localhost:3000/api/test-timeout', { method: 'GET' });
+    await expect(handler(request)).rejects.toThrow('ETIMEDOUT upstream call');
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(recordErrorEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        routeKey: '/api/test-timeout',
+        sourceType: 'api',
+        isTimeout: true,
+      })
+    );
   });
 });

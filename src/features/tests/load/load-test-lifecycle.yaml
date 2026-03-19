@@ -1,20 +1,18 @@
 config:
   target: "http://localhost:3000"
   processor: "./load.processor.js"
+  maxVusers: 50
   phases:
     - duration: 20
-      arrivalRate: 20
-      name: warmup_20
+      arrivalRate: 1
+      name: warmup_1
     - duration: 70
-      arrivalRate: 50
-      rampTo: 150
-      name: ramp_50_to_150
-    - duration: 180
-      arrivalRate: 150
-      name: sustained_150_for_3m
-    - duration: 30
-      arrivalRate: 150
-      name: spike_150
+      arrivalRate: 2
+      rampTo: 4
+      name: ramp_2_to_4
+    - duration: 90
+      arrivalRate: 4
+      name: sustain_4
   defaults:
     headers:
       x-load-test-secret: "{{ $processEnvironment.LOAD_TEST_SECRET }}"
@@ -32,5 +30,7 @@ scenarios:
     flow:
       - function: "setupLoadTestAuth"
       - function: "pickTournamentContext"
-      - function: "lifecycleStep"
-      - think: 1
+      - loop:
+          - function: "lifecycleStep"
+          - think: 2
+        count: 3

@@ -18,6 +18,7 @@ interface TournamentListProps {
       status: 'pending' | 'group-stage' | 'knockout' | 'finished'
     }
     tournamentPlayers?: Array<any>
+    playerCount?: number
     clubId?: {
       name: string
     }

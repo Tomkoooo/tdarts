@@ -8,23 +8,34 @@ import {
   ApiRouteAnomalySignal,
   ApiRouteAnomalyModel,
 } from '@/database/models/api-route-anomaly.model';
-import { ErrorService } from '@/database/services/error.service';
 import { sendEmail } from '@/lib/mailer';
 
 type TelemetrySample = {
   routeKey: string;
   method: string;
+  sourceType?: 'api' | 'action' | 'page';
+  operationClass?: 'read' | 'write' | 'other';
   durationMs: number;
   requestBytes: number;
   responseBytes: number;
   status: number;
+  isTimeout?: boolean;
+  pageVitals?: {
+    ttfbMs?: number;
+    fcpMs?: number;
+    lcpMs?: number;
+    inpMs?: number;
+  };
 };
 
 type TelemetryErrorEventSample = {
   occurredAt: Date;
   routeKey: string;
   method: string;
+  sourceType?: 'api' | 'action' | 'page';
+  operationClass?: 'read' | 'write' | 'other';
   status: number;
+  isTimeout?: boolean;
   requestId?: string;
   durationMs: number;
   requestBytes: number;
@@ -42,20 +53,39 @@ type TelemetryErrorEventSample = {
 };
 
 type BucketAggregate = {
+  sourceType: 'api' | 'action' | 'page';
+  operationClass: 'read' | 'write' | 'other';
   count: number;
   errorCount: number;
+  timeoutCount: number;
   totalDurationMs: number;
+  minDurationMs: number;
   maxDurationMs: number;
   durationHistogram: number[];
   totalRequestBytes: number;
+  minRequestBytes: number;
   maxRequestBytes: number;
   totalResponseBytes: number;
+  minResponseBytes: number;
   maxResponseBytes: number;
+  pageLoadMetrics: {
+    ttfbTotalMs: number;
+    ttfbMinMs: number;
+    ttfbMaxMs: number;
+    fcpTotalMs: number;
+    fcpMinMs: number;
+    fcpMaxMs: number;
+    lcpTotalMs: number;
+    lcpMinMs: number;
+    lcpMaxMs: number;
+    inpTotalMs: number;
+    inpMinMs: number;
+    inpMaxMs: number;
+    sampleCount: number;
+  };
 };
 
 const FLUSH_INTERVAL_MS = 60_000;
-const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
-const ERROR_EVENT_RETENTION_DAYS = 30;
 const ANOMALY_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 const ANOMALY_EMAIL_RECIPIENTS = ['toth.tamas@sironic.hu', 'skoda.david@sironic.hu'];
 const ANOMALY_DIGEST_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -63,10 +93,12 @@ const ANOMALY_REALTIME_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 const SIGNAL_THRESHOLD = {
   calls: { activationRatio: 4, recoveryRatio: 1.2 },
+  calls_per_sec: { activationRatio: 3, recoveryRatio: 1.2 },
   traffic: { activationRatio: 4, recoveryRatio: 1.2 },
   latency: { activationRatio: 2.2, recoveryRatio: 1.15 },
   error_rate: { activationRatio: 1.8, recoveryRatio: 1.1 },
   packet_size: { activationRatio: 2, recoveryRatio: 1.2 },
+  timeouts: { activationRatio: 1.8, recoveryRatio: 1.1 },
 } as const;
 
 const MIN_VOLUME_GATES = {
@@ -80,6 +112,7 @@ const MIN_VOLUME_GATES = {
   minLatencyDeltaMs: 200,
   minCurrentErrors: 10,
   minCurrentErrorRate: 0.05,
+  minCurrentTimeouts: 10,
   minCurrentAvgPacketBytes: 100 * 1024,
   minPacketDeltaBytes: 64 * 1024,
 };
@@ -107,7 +140,6 @@ export class ApiTelemetryService {
   private static aggregates = new Map<string, BucketAggregate>();
   private static errorEvents: TelemetryErrorEventSample[] = [];
   private static lastFlushAt = 0;
-  private static lastCleanupAt = 0;
   private static lastAnomalyCheckAt = 0;
   private static isFlushInProgress = false;
 
@@ -122,35 +154,107 @@ export class ApiTelemetryService {
 
   static record(sample: TelemetrySample): void {
     const bucketIso = toMinuteBucket().toISOString();
-    const key = `${bucketIso}|${sample.method}|${sample.routeKey}`;
+    const sourceType = sample.sourceType || 'api';
+    const operationClass = sample.operationClass || 'other';
+    const key = `${bucketIso}|${sourceType}|${operationClass}|${sample.method}|${sample.routeKey}`;
 
     const existing = this.aggregates.get(key);
     if (existing) {
       existing.count += 1;
       existing.errorCount += sample.status >= 400 ? 1 : 0;
+      existing.timeoutCount += sample.isTimeout ? 1 : 0;
       existing.totalDurationMs += sample.durationMs;
+      existing.minDurationMs = Math.min(existing.minDurationMs, sample.durationMs);
       existing.maxDurationMs = Math.max(existing.maxDurationMs, sample.durationMs);
       existing.durationHistogram[getDurationBucketIndex(sample.durationMs)] += 1;
       existing.totalRequestBytes += sample.requestBytes;
+      existing.minRequestBytes = Math.min(existing.minRequestBytes, sample.requestBytes);
       existing.maxRequestBytes = Math.max(existing.maxRequestBytes, sample.requestBytes);
       existing.totalResponseBytes += sample.responseBytes;
+      existing.minResponseBytes = Math.min(existing.minResponseBytes, sample.responseBytes);
       existing.maxResponseBytes = Math.max(existing.maxResponseBytes, sample.responseBytes);
+      this.mergePageVitals(existing, sample.pageVitals);
     } else {
       const durationHistogram = emptyDurationHistogram();
       durationHistogram[getDurationBucketIndex(sample.durationMs)] = 1;
-      this.aggregates.set(key, {
+      const created: BucketAggregate = {
+        sourceType,
+        operationClass,
         count: 1,
         errorCount: sample.status >= 400 ? 1 : 0,
+        timeoutCount: sample.isTimeout ? 1 : 0,
         totalDurationMs: sample.durationMs,
+        minDurationMs: sample.durationMs,
         maxDurationMs: sample.durationMs,
         durationHistogram,
         totalRequestBytes: sample.requestBytes,
+        minRequestBytes: sample.requestBytes,
         maxRequestBytes: sample.requestBytes,
         totalResponseBytes: sample.responseBytes,
+        minResponseBytes: sample.responseBytes,
         maxResponseBytes: sample.responseBytes,
-      });
+        pageLoadMetrics: {
+          ttfbTotalMs: 0,
+          ttfbMinMs: Number.MAX_SAFE_INTEGER,
+          ttfbMaxMs: 0,
+          fcpTotalMs: 0,
+          fcpMinMs: Number.MAX_SAFE_INTEGER,
+          fcpMaxMs: 0,
+          lcpTotalMs: 0,
+          lcpMinMs: Number.MAX_SAFE_INTEGER,
+          lcpMaxMs: 0,
+          inpTotalMs: 0,
+          inpMinMs: Number.MAX_SAFE_INTEGER,
+          inpMaxMs: 0,
+          sampleCount: 0,
+        },
+      };
+      this.mergePageVitals(created, sample.pageVitals);
+      this.aggregates.set(key, created);
     }
   }
+  private static mergePageVitals(
+    target: BucketAggregate,
+    pageVitals?: {
+      ttfbMs?: number;
+      fcpMs?: number;
+      lcpMs?: number;
+      inpMs?: number;
+    }
+  ): void {
+    if (!pageVitals) return;
+    const { ttfbMs, fcpMs, lcpMs, inpMs } = pageVitals;
+    const hasAny =
+      Number.isFinite(ttfbMs) || Number.isFinite(fcpMs) || Number.isFinite(lcpMs) || Number.isFinite(inpMs);
+    if (!hasAny) return;
+
+    if (Number.isFinite(ttfbMs)) {
+      const v = Number(ttfbMs);
+      target.pageLoadMetrics.ttfbTotalMs += v;
+      target.pageLoadMetrics.ttfbMinMs = Math.min(target.pageLoadMetrics.ttfbMinMs, v);
+      target.pageLoadMetrics.ttfbMaxMs = Math.max(target.pageLoadMetrics.ttfbMaxMs, v);
+    }
+    if (Number.isFinite(fcpMs)) {
+      const v = Number(fcpMs);
+      target.pageLoadMetrics.fcpTotalMs += v;
+      target.pageLoadMetrics.fcpMinMs = Math.min(target.pageLoadMetrics.fcpMinMs, v);
+      target.pageLoadMetrics.fcpMaxMs = Math.max(target.pageLoadMetrics.fcpMaxMs, v);
+    }
+    if (Number.isFinite(lcpMs)) {
+      const v = Number(lcpMs);
+      target.pageLoadMetrics.lcpTotalMs += v;
+      target.pageLoadMetrics.lcpMinMs = Math.min(target.pageLoadMetrics.lcpMinMs, v);
+      target.pageLoadMetrics.lcpMaxMs = Math.max(target.pageLoadMetrics.lcpMaxMs, v);
+    }
+    if (Number.isFinite(inpMs)) {
+      const v = Number(inpMs);
+      target.pageLoadMetrics.inpTotalMs += v;
+      target.pageLoadMetrics.inpMinMs = Math.min(target.pageLoadMetrics.inpMinMs, v);
+      target.pageLoadMetrics.inpMaxMs = Math.max(target.pageLoadMetrics.inpMaxMs, v);
+    }
+    target.pageLoadMetrics.sampleCount += 1;
+  }
+
 
   static recordErrorEvent(sample: TelemetryErrorEventSample): void {
     this.errorEvents.push(sample);
@@ -184,29 +288,56 @@ export class ApiTelemetryService {
       await connectMongo();
 
       const operations = Array.from(snapshot.entries()).map(([key, agg]) => {
-        const [bucketIso, method, routeKey] = key.split('|');
+        const [bucketIso, sourceType, operationClass, method, routeKey] = key.split('|');
         const bucket = new Date(bucketIso);
+        const histogramInc: Record<string, number> = {};
+        for (let i = 0; i < agg.durationHistogram.length; i += 1) {
+          if (agg.durationHistogram[i] > 0) {
+            histogramInc[`durationHistogram.${i}`] = agg.durationHistogram[i];
+          }
+        }
         return {
           updateOne: {
-            filter: { bucket, method, routeKey },
+            filter: { bucket, method, routeKey, source: sourceType, operationClass },
             update: {
               $inc: {
                 count: agg.count,
                 errorCount: agg.errorCount,
+                timeoutCount: agg.timeoutCount,
                 totalDurationMs: agg.totalDurationMs,
                 totalRequestBytes: agg.totalRequestBytes,
                 totalResponseBytes: agg.totalResponseBytes,
+                ...histogramInc,
+                'pageLoadMetrics.ttfbTotalMs': agg.pageLoadMetrics.ttfbTotalMs,
+                'pageLoadMetrics.fcpTotalMs': agg.pageLoadMetrics.fcpTotalMs,
+                'pageLoadMetrics.lcpTotalMs': agg.pageLoadMetrics.lcpTotalMs,
+                'pageLoadMetrics.inpTotalMs': agg.pageLoadMetrics.inpTotalMs,
+                'pageLoadMetrics.sampleCount': agg.pageLoadMetrics.sampleCount,
               },
               $max: {
                 maxDurationMs: agg.maxDurationMs,
                 maxRequestBytes: agg.maxRequestBytes,
                 maxResponseBytes: agg.maxResponseBytes,
+                'pageLoadMetrics.ttfbMaxMs': agg.pageLoadMetrics.ttfbMaxMs,
+                'pageLoadMetrics.fcpMaxMs': agg.pageLoadMetrics.fcpMaxMs,
+                'pageLoadMetrics.lcpMaxMs': agg.pageLoadMetrics.lcpMaxMs,
+                'pageLoadMetrics.inpMaxMs': agg.pageLoadMetrics.inpMaxMs,
+              },
+              $min: {
+                minDurationMs: agg.minDurationMs,
+                minRequestBytes: agg.minRequestBytes,
+                minResponseBytes: agg.minResponseBytes,
+                'pageLoadMetrics.ttfbMinMs': agg.pageLoadMetrics.ttfbMinMs,
+                'pageLoadMetrics.fcpMinMs': agg.pageLoadMetrics.fcpMinMs,
+                'pageLoadMetrics.lcpMinMs': agg.pageLoadMetrics.lcpMinMs,
+                'pageLoadMetrics.inpMinMs': agg.pageLoadMetrics.inpMinMs,
               },
               $setOnInsert: {
                 bucket,
                 method,
                 routeKey,
-                durationHistogram: emptyDurationHistogram(),
+                source: sourceType,
+                operationClass,
               },
             },
             upsert: true,
@@ -223,21 +354,6 @@ export class ApiTelemetryService {
       }
 
       const now = Date.now();
-      if (now - this.lastCleanupAt > CLEANUP_INTERVAL_MS) {
-        this.lastCleanupAt = now;
-        const cutoff = new Date(now - ERROR_EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-        const cleanupResult = await ApiRequestErrorEventModel.deleteMany({ occurredAt: { $lt: cutoff } });
-        await ErrorService.logInfo('API telemetry error-event retention cleanup completed', 'api', {
-          operation: 'api_telemetry_error_event_retention_cleanup',
-          endpoint: '/api/internal/telemetry/flush',
-          metadata: {
-            deletedCount: cleanupResult.deletedCount || 0,
-            retentionDays: ERROR_EVENT_RETENTION_DAYS,
-            cutoffIso: cutoff.toISOString(),
-          },
-        });
-      }
-
       if (now - this.lastAnomalyCheckAt > ANOMALY_CHECK_INTERVAL_MS) {
         this.lastAnomalyCheckAt = now;
         await this.detectAndNotifyRouteAnomalies();
@@ -254,15 +370,32 @@ export class ApiTelemetryService {
         }
         existing.count += value.count;
         existing.errorCount += value.errorCount;
+        existing.timeoutCount += value.timeoutCount;
         existing.totalDurationMs += value.totalDurationMs;
+        existing.minDurationMs = Math.min(existing.minDurationMs, value.minDurationMs);
         existing.maxDurationMs = Math.max(existing.maxDurationMs, value.maxDurationMs);
         for (let i = 0; i < value.durationHistogram.length; i += 1) {
           existing.durationHistogram[i] = (existing.durationHistogram[i] || 0) + (value.durationHistogram[i] || 0);
         }
         existing.totalRequestBytes += value.totalRequestBytes;
+        existing.minRequestBytes = Math.min(existing.minRequestBytes, value.minRequestBytes);
         existing.maxRequestBytes = Math.max(existing.maxRequestBytes, value.maxRequestBytes);
         existing.totalResponseBytes += value.totalResponseBytes;
+        existing.minResponseBytes = Math.min(existing.minResponseBytes, value.minResponseBytes);
         existing.maxResponseBytes = Math.max(existing.maxResponseBytes, value.maxResponseBytes);
+        existing.pageLoadMetrics.ttfbTotalMs += value.pageLoadMetrics.ttfbTotalMs;
+        existing.pageLoadMetrics.ttfbMinMs = Math.min(existing.pageLoadMetrics.ttfbMinMs, value.pageLoadMetrics.ttfbMinMs);
+        existing.pageLoadMetrics.ttfbMaxMs = Math.max(existing.pageLoadMetrics.ttfbMaxMs, value.pageLoadMetrics.ttfbMaxMs);
+        existing.pageLoadMetrics.fcpTotalMs += value.pageLoadMetrics.fcpTotalMs;
+        existing.pageLoadMetrics.fcpMinMs = Math.min(existing.pageLoadMetrics.fcpMinMs, value.pageLoadMetrics.fcpMinMs);
+        existing.pageLoadMetrics.fcpMaxMs = Math.max(existing.pageLoadMetrics.fcpMaxMs, value.pageLoadMetrics.fcpMaxMs);
+        existing.pageLoadMetrics.lcpTotalMs += value.pageLoadMetrics.lcpTotalMs;
+        existing.pageLoadMetrics.lcpMinMs = Math.min(existing.pageLoadMetrics.lcpMinMs, value.pageLoadMetrics.lcpMinMs);
+        existing.pageLoadMetrics.lcpMaxMs = Math.max(existing.pageLoadMetrics.lcpMaxMs, value.pageLoadMetrics.lcpMaxMs);
+        existing.pageLoadMetrics.inpTotalMs += value.pageLoadMetrics.inpTotalMs;
+        existing.pageLoadMetrics.inpMinMs = Math.min(existing.pageLoadMetrics.inpMinMs, value.pageLoadMetrics.inpMinMs);
+        existing.pageLoadMetrics.inpMaxMs = Math.max(existing.pageLoadMetrics.inpMaxMs, value.pageLoadMetrics.inpMaxMs);
+        existing.pageLoadMetrics.sampleCount += value.pageLoadMetrics.sampleCount;
       }
       this.errorEvents.unshift(...errorEventsSnapshot);
       throw error;
@@ -280,7 +413,7 @@ export class ApiTelemetryService {
       { $match: { bucket: { $gte: eightDaysAgo, $lte: now } } },
       {
         $group: {
-          _id: { routeKey: '$routeKey', method: '$method' },
+          _id: { sourceType: '$source', routeKey: '$routeKey', method: '$method' },
           calls24h: { $sum: { $cond: [{ $gte: ['$bucket', dayAgo] }, '$count', 0] } },
           callsPrev7d: {
             $sum: {
@@ -327,11 +460,18 @@ export class ApiTelemetryService {
               $cond: [{ $and: [{ $lt: ['$bucket', dayAgo] }, { $gte: ['$bucket', eightDaysAgo] }] }, '$count', 0],
             },
           },
+          timeout24h: { $sum: { $cond: [{ $gte: ['$bucket', dayAgo] }, '$timeoutCount', 0] } },
+          timeoutPrev7d: {
+            $sum: {
+              $cond: [{ $and: [{ $lt: ['$bucket', dayAgo] }, { $gte: ['$bucket', eightDaysAgo] }] }, '$timeoutCount', 0],
+            },
+          },
         },
       },
     ]);
 
     type Candidate = {
+      sourceType: 'api' | 'action' | 'page';
       routeKey: string;
       method: string;
       signal: ApiRouteAnomalySignal;
@@ -340,8 +480,11 @@ export class ApiTelemetryService {
       ratio: number;
     };
 
-    const keyFor = (x: { routeKey: string; method: string; signal: ApiRouteAnomalySignal }) =>
-      `${x.routeKey}|${x.method}|${x.signal}`;
+    const keyFor = (x: {
+      routeKey: string;
+      method: string;
+      signal: ApiRouteAnomalySignal;
+    }) => `${x.routeKey}|${x.method}|${x.signal}`;
 
     const existingRows = await ApiRouteAnomalyModel.find({}).lean();
     const existingByKey = new Map(existingRows.map((x) => [keyFor(x as any), x]));
@@ -349,10 +492,13 @@ export class ApiTelemetryService {
     const newlyActivated: Candidate[] = [];
 
     for (const row of rows) {
+      const sourceType = row._id.sourceType || 'api';
       const routeKey = row._id.routeKey;
       const method = row._id.method;
       const currentCalls = row.calls24h || 0;
       const baselineCalls = (row.callsPrev7d || 0) / 7;
+      const currentCallsPerSecond = currentCalls / 86400;
+      const baselineCallsPerSecond = baselineCalls / 86400;
       const currentTraffic = row.bytes24h || 0;
       const baselineTraffic = (row.bytesPrev7d || 0) / 7;
       const currentLatency = row.count24h > 0 ? row.duration24h / row.count24h : 0;
@@ -361,6 +507,8 @@ export class ApiTelemetryService {
       const baselineErrorsPerDay = (row.errorsPrev7d || 0) / 7;
       const currentErrorRate = currentCalls > 0 ? currentErrors / currentCalls : 0;
       const baselineErrorRate = row.callsPrev7d > 0 ? (row.errorsPrev7d || 0) / row.callsPrev7d : 0;
+      const currentTimeouts = row.timeout24h || 0;
+      const baselineTimeouts = (row.timeoutPrev7d || 0) / 7;
       const currentPacketBytes = currentCalls > 0 ? currentTraffic / currentCalls : 0;
       const baselinePacketBytes = baselineCalls > 0 ? baselineTraffic / baselineCalls : 0;
 
@@ -381,12 +529,20 @@ export class ApiTelemetryService {
 
         if (!shouldActivate && !shouldStayActive) return;
 
-        const candidate: Candidate = { routeKey, method, signal, currentValue, baselineValue, ratio };
+        const candidate: Candidate = { sourceType, routeKey, method, signal, currentValue, baselineValue, ratio };
         desiredActive.push(candidate);
         if (!existingRow?.isActive) {
           newlyActivated.push(candidate);
         }
       };
+
+      evaluateSignal(
+        'calls_per_sec',
+        currentCallsPerSecond,
+        baselineCallsPerSecond,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay
+      );
 
       evaluateSignal(
         'calls',
@@ -444,15 +600,28 @@ export class ApiTelemetryService {
           currentPacketBytes - baselinePacketBytes >= MIN_VOLUME_GATES.minPacketDeltaBytes,
         currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && baselineCalls >= MIN_VOLUME_GATES.minBaselineCallsPerDay
       );
+
+      evaluateSignal(
+        'timeouts',
+        currentTimeouts,
+        baselineTimeouts,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && currentTimeouts >= MIN_VOLUME_GATES.minCurrentTimeouts,
+        currentCalls >= MIN_VOLUME_GATES.minCurrentCalls && currentTimeouts >= MIN_VOLUME_GATES.minCurrentTimeouts
+      );
     }
 
     const desiredKeys = new Set(desiredActive.map((x) => keyFor(x)));
 
     for (const anomaly of desiredActive) {
       await ApiRouteAnomalyModel.updateOne(
-        { routeKey: anomaly.routeKey, method: anomaly.method, signal: anomaly.signal },
+        {
+          routeKey: anomaly.routeKey,
+          method: anomaly.method,
+          signal: anomaly.signal,
+        },
         {
           $set: {
+            sourceType: anomaly.sourceType,
             currentValue: anomaly.currentValue,
             baselineValue: anomaly.baselineValue,
             ratio: anomaly.ratio,
@@ -470,7 +639,11 @@ export class ApiTelemetryService {
       await ApiRouteAnomalyModel.updateMany(
         {
           isActive: true,
-          $nor: desiredActive.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
+          $nor: desiredActive.map((x) => ({
+            routeKey: x.routeKey,
+            method: x.method,
+            signal: x.signal,
+          })),
         },
         { $set: { isActive: false, lastObservedAt: now } }
       );
@@ -492,10 +665,18 @@ export class ApiTelemetryService {
           'New API anomalies were detected:',
           ...realtimeDue.map((a) => {
             const unit =
-              a.signal === 'latency' ? 'ms' : a.signal === 'error_rate' ? '%' : 'bytes';
+              a.signal === 'latency'
+                ? 'ms'
+                : a.signal === 'error_rate'
+                  ? '%'
+                  : a.signal === 'calls' || a.signal === 'timeouts'
+                    ? 'count'
+                    : a.signal === 'calls_per_sec'
+                      ? 'rps'
+                      : 'bytes';
             const currentValue = a.signal === 'error_rate' ? a.currentValue * 100 : a.currentValue;
             const baselineValue = a.signal === 'error_rate' ? a.baselineValue * 100 : a.baselineValue;
-            return `- ${a.method} ${a.routeKey} | ${a.signal}: ${currentValue.toFixed(2)} ${unit} vs baseline ${baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
+            return `- [${a.sourceType}] ${a.method} ${a.routeKey} | ${a.signal}: ${currentValue.toFixed(2)} ${unit} vs baseline ${baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
           }),
           `Detected at: ${now.toISOString()}`,
         ].join('\n'),
@@ -503,7 +684,11 @@ export class ApiTelemetryService {
 
       await ApiRouteAnomalyModel.updateMany(
         {
-          $or: realtimeDue.map((x) => ({ routeKey: x.routeKey, method: x.method, signal: x.signal })),
+          $or: realtimeDue.map((x) => ({
+            routeKey: x.routeKey,
+            method: x.method,
+            signal: x.signal,
+          })),
         },
         { $set: { lastRealtimeEmailAt: now } }
       );
@@ -525,10 +710,18 @@ export class ApiTelemetryService {
           'Active API anomalies (daily digest):',
           ...digestDue.map((a) => {
             const unit =
-              a.signal === 'latency' ? 'ms' : a.signal === 'error_rate' ? '%' : 'bytes';
+              a.signal === 'latency'
+                ? 'ms'
+                : a.signal === 'error_rate'
+                  ? '%'
+                  : a.signal === 'calls' || a.signal === 'timeouts'
+                    ? 'count'
+                    : a.signal === 'calls_per_sec'
+                      ? 'rps'
+                      : 'bytes';
             const currentValue = a.signal === 'error_rate' ? a.currentValue * 100 : a.currentValue;
             const baselineValue = a.signal === 'error_rate' ? a.baselineValue * 100 : a.baselineValue;
-            return `- ${a.method} ${a.routeKey} | ${a.signal}: ${currentValue.toFixed(2)} ${unit} vs baseline ${baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
+            return `- [${a.sourceType}] ${a.method} ${a.routeKey} | ${a.signal}: ${currentValue.toFixed(2)} ${unit} vs baseline ${baselineValue.toFixed(2)} (${a.ratio.toFixed(2)}x)`;
           }),
           `Generated at: ${now.toISOString()}`,
         ].join('\n'),

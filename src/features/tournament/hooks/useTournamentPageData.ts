@@ -98,6 +98,7 @@ export function useTournamentPageData(
     useState<UserPlayerStatus>("none");
   const [userPlayerId, setUserPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
+  const [hasFullData, setHasFullData] = useState(false);
 
   const setters = {
     setUserClubRole,
@@ -105,7 +106,7 @@ export function useTournamentPageData(
     setUserPlayerId,
   };
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (detailLevel: "overview" | "full" = "overview") => {
     if (!code || typeof code !== "string") return;
     setLoading(true);
     setError("");
@@ -114,6 +115,7 @@ export function useTournamentPageData(
       const data = await getTournamentPageDataAction({
         code,
         includeViewer: Boolean(user?._id),
+        detailLevel,
       });
       const tournamentData = (data as { tournament?: any })?.tournament;
       if (!tournamentData) {
@@ -126,6 +128,7 @@ export function useTournamentPageData(
           ? tournamentData.tournamentPlayers
           : []
       );
+      setHasFullData(detailLevel === "full");
 
       const roleData = tournamentData?.viewer || (data as { viewer?: any })?.viewer || { userClubRole: "none", userPlayerStatus: "none" };
 
@@ -142,6 +145,12 @@ export function useTournamentPageData(
       setLoading(false);
     }
   }, [code, user?._id, errorMessage]);
+
+  const ensureFullData = useCallback(async () => {
+    if (!code || typeof code !== "string") return;
+    if (hasFullData) return;
+    await fetchAll("full");
+  }, [code, fetchAll, hasFullData]);
 
   const silentRefresh = useCallback(async () => {
     if (!code || typeof code !== "string") return;
@@ -171,7 +180,7 @@ export function useTournamentPageData(
   }, [code]);
 
   useEffect(() => {
-    fetchAll();
+    fetchAll("overview");
   }, [fetchAll]);
 
   return {
@@ -182,7 +191,9 @@ export function useTournamentPageData(
     userClubRole,
     userPlayerStatus,
     userPlayerId,
+    hasFullData,
     fetchAll,
+    ensureFullData,
     silentRefresh,
   };
 }

@@ -29,8 +29,9 @@ export async function connectMongo() {
 
   if (!cached.promise) {
     const isLoadTest = process.env.LOAD_TEST_MODE === 'true';
-    const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE ?? (isLoadTest ? 200 : 75));
-    const minPoolSize = Number(process.env.MONGO_MIN_POOL_SIZE ?? (isLoadTest ? 30 : 20));
+    const isDev = process.env.NODE_ENV !== 'production' && !isLoadTest;
+    const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE ?? (isLoadTest ? 200 : isDev ? 40 : 75));
+    const minPoolSize = Number(process.env.MONGO_MIN_POOL_SIZE ?? (isLoadTest ? 30 : isDev ? 1 : 20));
     const maxConnecting = Number(process.env.MONGO_MAX_CONNECTING ?? (isLoadTest ? 30 : 10));
     const waitQueueTimeoutMS = Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS ?? (isLoadTest ? 60000 : 15000));
     const serverSelectionTimeoutMS = Number(

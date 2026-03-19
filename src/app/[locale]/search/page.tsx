@@ -126,6 +126,7 @@ export default function SearchPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 })
     const latestRequestIdRef = useRef(0)
+    const lastFetchKeyRef = useRef<string>("")
 
     const updateUrl = useCallback((newParams: any) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -144,6 +145,14 @@ export default function SearchPage() {
             const requestId = ++latestRequestIdRef.current
             const requestTab = activeTab
             const requestPage = Number(filters.page || 1)
+            const requestKey = JSON.stringify({
+                requestTab,
+                debouncedQuery,
+                filters,
+                userTimeZone,
+            })
+            if (requestKey === lastFetchKeyRef.current) return
+            lastFetchKeyRef.current = requestKey
             setIsLoading(true)
             try {
                 if (requestTab === 'map') {
@@ -159,8 +168,8 @@ export default function SearchPage() {
                     query: debouncedQuery,
                     tab: requestTab,
                     filters: { ...filters, page: filters.page, timeZone: userTimeZone },
-                    includeCounts: false,
-                    includeMetadata: false,
+                    includeCounts: requestPage === 1,
+                    includeMetadata: requestPage === 1,
                 })
                 if (requestId !== latestRequestIdRef.current) return
                 
@@ -178,30 +187,8 @@ export default function SearchPage() {
                 }
                 setGroupedResults(data.groupedResults || { tournaments: [], players: [], clubs: [], leagues: [] })
                 if (data.pagination) setPagination(data.pagination)
-
-                // Fetch expensive first-page metadata/counts in the background so first paint is faster.
-                if (requestPage === 1) {
-                    void (async () => {
-                        try {
-                            const metaData = await searchAction({
-                                query: debouncedQuery,
-                                tab: requestTab,
-                                filters: { ...filters, page: 1, timeZone: userTimeZone },
-                                includeCounts: true,
-                                includeMetadata: true,
-                            })
-                            if (requestId !== latestRequestIdRef.current) return
-                            if (metaData.counts) {
-                                setCounts((prev) => ({
-                                    ...prev,
-                                    ...metaData.counts,
-                                }))
-                            }
-                            if (metaData.metadata) setMetadata(metaData.metadata)
-                        } catch (metaError) {
-                            console.error("Search metadata fetch error:", metaError)
-                        }
-                    })()
+                if (requestPage === 1 && data.metadata) {
+                    setMetadata(data.metadata)
                 }
 
             } catch (error) {

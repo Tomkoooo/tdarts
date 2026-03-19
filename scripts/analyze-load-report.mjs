@@ -73,6 +73,9 @@ const errorCounters = Object.entries(counters)
   .filter(([key, value]) => key.includes('errors') || key.includes('fail') || key.includes('dropped'))
   .filter(([, value]) => Number(value) > 0)
   .sort((a, b) => Number(b[1]) - Number(a[1]));
+const totalErrorCount = Object.entries(counters)
+  .filter(([key, value]) => key.startsWith('errors.') && Number(value) > 0)
+  .reduce((sum, [, value]) => sum + Number(value), 0);
 
 const lines = [];
 lines.push('# Load Test Analysis Input');
@@ -84,7 +87,7 @@ lines.push('');
 lines.push('## Overall HTTP Latency');
 lines.push('');
 lines.push(`- requests: ${Number(counters['http.requests'] || 0)}`);
-lines.push(`- errors: ${Number(counters.errors || 0)}`);
+lines.push(`- errors: ${totalErrorCount}`);
 lines.push(`- vusers.created: ${Number(counters['vusers.created'] || 0)}`);
 lines.push(`- vusers.failed: ${Number(counters['vusers.failed'] || 0)}`);
 lines.push(`- latency p50/p95/p99/max (ms): ${overall.p50}/${overall.p95}/${overall.p99}/${overall.max}`);

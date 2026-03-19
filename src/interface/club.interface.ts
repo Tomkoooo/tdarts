@@ -28,6 +28,7 @@ export interface Club {
   };
   // Player collection references (members can be guests or registered)
   members: { _id: string; name: string; username: string; userRef?: string }[];
+  membersCount?: number;
   // User collection references (only registered users)
   admin: { _id: string; name: string; username: string }[];
   moderators: { _id: string; name: string; username: string }[];

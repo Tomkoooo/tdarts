@@ -8,7 +8,6 @@ import { MatchService } from '@/database/services/match.service';
 import { MatchModel } from '@/database/models/match.model';
 
 type Params = { params: Promise<{ action: string[] }> };
-const CHECKIN_BATCH_SIZE = 25;
 
 const createTournamentSchema = z.object({
   name: z.string().min(1).optional(),
@@ -169,8 +168,7 @@ async function postHandler(request: NextRequest, context: Params) {
         const payload = addPlayerSchema.parse(body);
         const playerName = payload.playerName || `Load Player ${Math.floor(Math.random() * 1_000_000_000)}`;
         const playerId = payload.playerId || (await PlayerService.findOrCreatePlayerByName(playerName))._id.toString();
-        await TournamentService.addTournamentPlayer(payload.tournamentCode, playerId);
-        await TournamentService.updateTournamentPlayerStatus(payload.tournamentCode, playerId, 'checked-in');
+        await TournamentService.addTournamentPlayerCheckedIn(payload.tournamentCode, playerId);
         return NextResponse.json({ success: true, playerId, status: 'checked-in' });
       }
 
@@ -182,26 +180,9 @@ async function postHandler(request: NextRequest, context: Params) {
 
       case 'check-in-all-players': {
         const payload = tournamentCodeSchema.parse(body);
-        const playerIds = await TournamentService.getTournamentPlayerIds(payload.tournamentCode);
-        let checkedInCount = 0;
-        let failedCount = 0;
-
-        for (let i = 0; i < playerIds.length; i += CHECKIN_BATCH_SIZE) {
-          const batch = playerIds.slice(i, i + CHECKIN_BATCH_SIZE);
-          const results = await Promise.allSettled(
-            batch.map((playerId) =>
-              TournamentService.updateTournamentPlayerStatus(payload.tournamentCode, playerId, 'checked-in'),
-            ),
-          );
-          for (const result of results) {
-            if (result.status === 'fulfilled' && result.value) {
-              checkedInCount += 1;
-            } else {
-              failedCount += 1;
-            }
-          }
-        }
-
+        const { checkedInCount, failedCount } = await TournamentService.checkInAllTournamentPlayers(
+          payload.tournamentCode,
+        );
         return NextResponse.json({ success: true, checkedInCount, failedCount });
       }
 

@@ -89,7 +89,9 @@ const TournamentPage = () => {
     userClubRole,
     userPlayerStatus,
     userPlayerId,
+    hasFullData,
     fetchAll,
+    ensureFullData,
     silentRefresh,
   } = useTournamentPageData(code, user, t("error.retry"));
 
@@ -107,9 +109,14 @@ const TournamentPage = () => {
     }
   }, [searchParams, tabs]);
 
+  useEffect(() => {
+    if (activeTab === "overview") return;
+    void ensureFullData();
+  }, [activeTab, ensureFullData]);
+
   const handleRefetch = useCallback(() => {
-    fetchAll();
-  }, [fetchAll]);
+    void fetchAll(activeTab === "overview" && !hasFullData ? "overview" : "full");
+  }, [activeTab, fetchAll, hasFullData]);
 
   const handleReopenTournament = useCallback(async () => {
     if (!user || !user._id || user.isAdmin !== true) {
@@ -138,7 +145,10 @@ const TournamentPage = () => {
   }, [tournament?.tournamentSettings?.status, statusMeta]);
 
   const tournamentStats = useMemo(() => {
-    const playersCount = Array.isArray(players) ? players.length : 0;
+    const playersCount =
+      Array.isArray(players) && players.length > 0
+        ? players.length
+        : Number(tournament?.tournamentPlayers?.length || 0);
     const boardsCount = Array.isArray(tournament?.boards) ? tournament.boards.length : 0;
     const format = toReadableFormatLabel(tournament?.tournamentSettings?.format);
     return { playersCount, boardsCount, format };

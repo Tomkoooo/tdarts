@@ -27,6 +27,7 @@ import {
   adminSettingsGetSystemInfoAction,
   adminTelemetryErrorResetsAction,
   adminTelemetryExportAction,
+  adminTelemetryImportSnapshotAction,
   adminTelemetryIncidentsAction,
   adminTelemetryOverviewAction,
   adminTelemetryRouteDetailsAction,
@@ -135,6 +136,7 @@ export const adminTelemetryActions = {
   routeDetails: call(adminTelemetryRouteDetailsAction),
   errorResets: call(adminTelemetryErrorResetsAction),
   export: call(adminTelemetryExportAction),
+  importSnapshot: call(adminTelemetryImportSnapshotAction),
 };
 
 export const adminYearWrapActions = {

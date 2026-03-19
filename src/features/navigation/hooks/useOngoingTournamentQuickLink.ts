@@ -37,10 +37,19 @@ function isTodayDate(dateValue?: string | Date | null): boolean {
 }
 
 export function useOngoingTournamentQuickLink(userId?: string) {
+  return useOngoingTournamentQuickLinkWithOptions(userId)
+}
+
+export function useOngoingTournamentQuickLinkWithOptions(
+  userId?: string,
+  options?: { enabled?: boolean; deferMs?: number }
+) {
+  const enabled = options?.enabled ?? true
+  const deferMs = options?.deferMs ?? 0
   const [ongoingTournament, setOngoingTournament] = React.useState<QuickTournamentLink | null>(null)
 
   React.useEffect(() => {
-    if (!userId) {
+    if (!enabled || !userId) {
       setOngoingTournament(null)
       return
     }
@@ -76,12 +85,15 @@ export function useOngoingTournamentQuickLink(userId?: string) {
       }
     }
 
-    loadOngoingTournament()
+    const timer = window.setTimeout(() => {
+      void loadOngoingTournament()
+    }, deferMs)
 
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
     }
-  }, [userId])
+  }, [userId, enabled, deferMs])
 
   return { ongoingTournament }
 }

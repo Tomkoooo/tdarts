@@ -1,13 +1,17 @@
 /**
  * Global nav should be hidden only on:
  * - board* pages (immersive gameplay)
+ * - tournament tv pages (immersive display)
  * - admin pages (they have their own admin navigation/layout)
  */
 export function shouldHideNavbar(path: string): boolean {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const trimmed = normalized.replace(/\/$/, "") || "/";
   const isBoardSubRoute = trimmed.startsWith("/board/");
-  return isBoardSubRoute || trimmed.startsWith("/admin");
+  const isAdminSubRoute = trimmed === "/admin" || trimmed.startsWith("/admin/");
+  // Strict segment match: /tournaments/:code/tv (and optional trailing sub-routes)
+  const isTournamentTvRoute = /^\/tournaments\/[^/]+\/tv(?:\/.*)?$/.test(trimmed);
+  return isBoardSubRoute || isAdminSubRoute || isTournamentTvRoute;
 }
 
 const FOOTER_EXACT = ["/", "/landing", "/how-it-works", "/home", "/myclub"] as const;

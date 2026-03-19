@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -42,6 +42,7 @@ export function useConfirmModal() {
       close();
     } catch (err) {
       console.error("Confirm modal action failed:", err);
+      close();
     } finally {
       setIsLoading(false);
     }
@@ -52,35 +53,69 @@ export function useConfirmModal() {
     close();
   }, [options, close]);
 
-  const ConfirmModal = useCallback(
-    () =>
-      isOpen && options ? (
-        <Dialog open={isOpen} onOpenChange={(nextOpen) => { if (!nextOpen) close(); }}>
+  const stateRef = useRef({
+    isOpen,
+    options,
+    isLoading,
+  });
+  stateRef.current = {
+    isOpen,
+    options,
+    isLoading,
+  };
+
+  const handlersRef = useRef({
+    handleConfirm,
+    handleCancel,
+    close,
+  });
+  handlersRef.current = {
+    handleConfirm,
+    handleCancel,
+    close,
+  };
+
+  const tRef = useRef(t);
+  tRef.current = t;
+
+  const ConfirmModal = useMemo(() => {
+    return function ConfirmModalComponent() {
+      const { isOpen: openState, options: currentOptions, isLoading: loadingState } = stateRef.current;
+      const {
+        handleConfirm: currentHandleConfirm,
+        handleCancel: currentHandleCancel,
+        close: currentClose,
+      } = handlersRef.current;
+
+      if (!openState || !currentOptions) return null;
+
+      return (
+        <Dialog open={openState} onOpenChange={(nextOpen) => { if (!nextOpen) currentClose(); }}>
           <DialogContent className="sm:max-w-md border-border/70 bg-card/90 backdrop-blur-xl">
             <DialogHeader>
-              <DialogTitle>{options.title}</DialogTitle>
-              <DialogDescription>{options.message}</DialogDescription>
+              <DialogTitle>{currentOptions.title}</DialogTitle>
+              <DialogDescription>{currentOptions.message}</DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-6 gap-2">
-              <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
-                {options.cancelText ?? t("confirm.cancel")}
+              <Button variant="outline" onClick={currentHandleCancel} disabled={loadingState}>
+                {currentOptions.cancelText ?? tRef.current("confirm.cancel")}
               </Button>
               <Button
-                onClick={handleConfirm}
-                disabled={isLoading}
-                variant={options.variant === "destructive" ? "destructive" : "default"}
+                onClick={currentHandleConfirm}
+                disabled={loadingState}
+                variant={currentOptions.variant === "destructive" ? "destructive" : "default"}
               >
-                {isLoading && (
+                {loadingState && (
                   <span className="w-4 h-4 border-2 border-transparent border-t-current rounded-full animate-spin mr-2" />
                 )}
-                {options.confirmText ?? t("confirm.confirm")}
+                {currentOptions.confirmText ?? tRef.current("confirm.confirm")}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      ) : null,
-    [isOpen, options, handleConfirm, handleCancel, isLoading, close, t]
-  );
+      );
+    };
+  }, []);
 
   return { open, close, ConfirmModal };
 }

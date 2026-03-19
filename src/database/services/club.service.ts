@@ -17,6 +17,14 @@ import { GeocodingService } from './geocoding.service';
 
 export class ClubService {
   private static readonly MANUAL_GEOCODE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  private static logTiming(label: string, startedAt: number, requestId?: string, meta?: Record<string, string>) {
+    if (process.env.NODE_ENV === 'production') return;
+    const elapsed = Date.now() - startedAt;
+    const details = meta
+      ? ` ${Object.entries(meta).map(([key, value]) => `${key}=${value}`).join(' ')}`
+      : '';
+    console.log(`[perf][club]${requestId ? ` [${requestId}]` : ''} ${label} ${elapsed}ms${details}`);
+  }
 
   static async createClub(
     creatorId: string,
@@ -574,7 +582,120 @@ export class ClubService {
     return result;
   }
 
-  static async getClubMetadataTheme(clubId: string): Promise<{
+  static async getClubSummary(clubId: string, requestId?: string): Promise<any> {
+    const startedAt = Date.now();
+    await connectMongo();
+
+    const club = await ClubModel.findById(clubId)
+      .select('name description location structuredLocation address logo contact landingPage verified members')
+      .lean();
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const tournaments = await TournamentModel.aggregate([
+      { $match: { clubId: (club as any)._id } },
+      { $sort: { 'tournamentSettings.startDate': -1 } },
+      { $limit: 50 },
+      {
+        $project: {
+          _id: 1,
+          tournamentId: 1,
+          tournamentSettings: {
+            name: '$tournamentSettings.name',
+            startDate: '$tournamentSettings.startDate',
+            status: '$tournamentSettings.status',
+            location: '$tournamentSettings.location',
+            type: '$tournamentSettings.type',
+            entryFee: '$tournamentSettings.entryFee',
+            maxPlayers: '$tournamentSettings.maxPlayers',
+            registrationDeadline: '$tournamentSettings.registrationDeadline',
+          },
+          isSandbox: 1,
+          isDeleted: 1,
+          invoiceId: 1,
+          verified: 1,
+          playerCount: { $size: { $ifNull: ['$tournamentPlayers', []] } },
+        },
+      },
+    ]);
+    const membersCount = Array.isArray((club as any).members) ? (club as any).members.length : 0;
+
+    const summaryResult = {
+      _id: String((club as any)._id),
+      name: (club as any).name,
+      description: (club as any).description,
+      location: (club as any).location,
+      structuredLocation: (club as any).structuredLocation,
+      address: (club as any).address,
+      logo: (club as any).logo,
+      contact: (club as any).contact || {},
+      landingPage: (club as any).landingPage,
+      verified: Boolean((club as any).verified),
+      admin: [],
+      moderators: [],
+      members: [],
+      membersCount,
+      tournaments: tournaments.map((t: any) => ({
+        _id: String(t._id),
+        tournamentSettings: t.tournamentSettings,
+        tournamentId: t.tournamentId,
+        isSandbox: t.isSandbox,
+        isDeleted: t.isDeleted,
+        invoiceId: t.invoiceId,
+        verified: t.verified,
+        playerCount: Number(t.playerCount || 0),
+      })),
+    };
+    this.logTiming('getClubSummary', startedAt, requestId, { clubId });
+    return summaryResult;
+  }
+
+  static async getClubMembersForManagement(clubId: string, requestId?: string): Promise<{
+    members: Array<{ _id: string; name: string; userRef?: string; username: string; role: 'admin' | 'moderator' | 'member' }>;
+    admin: Array<{ _id: string; role: 'admin' }>;
+    moderators: Array<{ _id: string; role: 'moderator' }>;
+    membersCount: number;
+  }> {
+    const startedAt = Date.now();
+    await connectMongo();
+
+    const club = await ClubModel.findById(clubId)
+      .select('members admin moderators')
+      .populate('members', 'name userRef')
+      .lean();
+
+    if (!club) {
+      throw new BadRequestError('Club not found');
+    }
+
+    const adminIds = (club.admin || []).map((id: any) => String(id));
+    const moderatorIds = (club.moderators || []).map((id: any) => String(id));
+
+    const members = (club.members || []).map((player: any) => {
+      const userRefStr = player?.userRef ? String(player.userRef) : '';
+      const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
+      const isModerator = userRefStr ? moderatorIds.includes(userRefStr) : false;
+      return {
+        _id: String(player._id),
+        name: String(player?.name || ''),
+        userRef: player?.userRef ? String(player.userRef) : undefined,
+        username: 'vendég',
+        role: isAdmin ? 'admin' : isModerator ? 'moderator' : 'member',
+      };
+    });
+
+    const response = {
+      members,
+      admin: adminIds.map((id) => ({ _id: id, role: 'admin' as const })),
+      moderators: moderatorIds.map((id) => ({ _id: id, role: 'moderator' as const })),
+      membersCount: members.length,
+    };
+    this.logTiming('getClubMembersForManagement', startedAt, requestId, { clubId });
+    return response;
+  }
+
+  static async getClubMetadataTheme(clubId: string, requestId?: string): Promise<{
     _id: string;
     name: string;
     description?: string;
@@ -594,6 +715,7 @@ export class ClubService {
       secondaryColor?: string;
     };
   }> {
+    const startedAt = Date.now();
     await connectMongo();
     const club = await ClubModel.findById(clubId)
       .select('name description location address logo members landingPage')
@@ -603,7 +725,7 @@ export class ClubService {
     }
 
     const membersCount = Array.isArray((club as any).members) ? (club as any).members.length : 0;
-    return {
+    const metadataTheme = {
       _id: String((club as any)._id),
       name: (club as any).name || 'Darts Klub',
       description: (club as any).description,
@@ -613,6 +735,8 @@ export class ClubService {
       membersCount,
       landingPage: (club as any).landingPage,
     };
+    this.logTiming('getClubMetadataTheme', startedAt, requestId, { clubId });
+    return metadataTheme;
   }
 
   static async getUserClubs(userId: string): Promise<{ clubs: ClubDocument[], userRoleInClub: string }> {
@@ -643,7 +767,8 @@ export class ClubService {
     return { clubs, userRoleInClub };
   }
 
-  static async getUserRoleInClub(userId: string, clubId: string): Promise<string> {
+  static async getUserRoleInClub(userId: string, clubId: string, requestId?: string): Promise<string> {
+    const startedAt = Date.now();
     await connectMongo();
 
     const userObjectId = new Types.ObjectId(userId);
@@ -657,11 +782,13 @@ export class ClubService {
 
     // Check Admin (User ID)
     if (club.admin.some((id: Types.ObjectId) => id.equals(userObjectId))) {
+      this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
       return 'admin';
     }
 
     // Check Moderator (User ID)
     if (club.moderators.some((id: Types.ObjectId) => id.equals(userObjectId))) {
+      this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
       return 'moderator';
     }
 
@@ -671,6 +798,7 @@ export class ClubService {
     const player = await PlayerModel.findOne({ userRef: userObjectId });
     
     if (player && club.members.some((id: Types.ObjectId) => id.equals(player._id))) {
+      this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
       return 'member';
     }
     
@@ -680,9 +808,11 @@ export class ClubService {
     // Only give admin access to users who are ACTUALLY global admins (isAdmin: true)
     if (user?.isAdmin === true) {
       console.log('Global admin detected, granting admin access to club:', clubId);
+      this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
       return 'admin';
     }
 
+    this.logTiming('getUserRoleInClub', startedAt, requestId, { clubId, userId });
     return 'none';
   }
 

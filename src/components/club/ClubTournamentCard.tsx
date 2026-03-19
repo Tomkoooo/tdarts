@@ -36,6 +36,7 @@ interface ClubTournamentCardProps {
     name?: string
     startDate?: string
     tournamentPlayers?: Array<any>
+    playerCount?: number
     clubId?: {
       name: string
     } | string
@@ -80,7 +81,9 @@ export default function ClubTournamentCard({
   }
 
   const status = tournament.tournamentSettings?.status || 'pending'
-  const playerCount = tournament.tournamentPlayers?.length || 0
+  const playerCount = typeof tournament.playerCount === 'number'
+    ? tournament.playerCount
+    : (tournament.tournamentPlayers?.length || 0)
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
   const isFull = maxPlayers > 0 && playerCount >= maxPlayers
   const entryFee = tournament.tournamentSettings?.entryFee || 0

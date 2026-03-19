@@ -1,5 +1,7 @@
 import React, { ReactNode } from "react";
 import { Metadata } from "next";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { ClubService } from "@/database/services/club.service";
 import "./layout.css";
 import { buildLocaleAlternates, getBaseUrl } from "@/lib/seo";
@@ -8,6 +10,14 @@ interface LayoutProps {
   children: ReactNode;
   params: Promise<{ code: string }>;
 }
+
+const getClubMetadataThemeCached = cache(
+  unstable_cache(
+    async (clubId: string) => ClubService.getClubMetadataTheme(clubId),
+    ["club-metadata-theme"],
+    { revalidate: 15 }
+  )
+);
 
 // Helper to build absolute URL for images
 function getAbsoluteUrl(path: string): string {
@@ -28,7 +38,7 @@ export async function generateMetadata({
   const ogLocale = locale === 'hu' ? 'hu_HU' : locale === 'de' ? 'de_DE' : 'en_US';
 
   try {
-    const club = await ClubService.getClubMetadataTheme(code);
+    const club = await getClubMetadataThemeCached(code);
     
     const name = club.name || "Darts Klub";
     const title = club.landingPage?.seo?.title || name;
@@ -109,7 +119,7 @@ export default async function ClubLayout({ children, params }: LayoutProps) {
     const { code } = await params;
     let club;
     try {
-        club = await ClubService.getClubMetadataTheme(code);
+        club = await getClubMetadataThemeCached(code);
     } catch {
         // Handle error or let page handle it
     }

@@ -11,6 +11,7 @@ import { serializeForClient } from '@/shared/lib/serializeForClient';
 export type GetTournamentPageDataInput = {
   code: string;
   includeViewer?: boolean;
+  detailLevel?: 'overview' | 'full';
 };
 
 export type GetTournamentPageLiteInput = {
@@ -24,6 +25,13 @@ const getCachedTournamentSummary = (code: string) =>
     { tags: [`tournament:${code}`], revalidate: 30 },
   )();
 
+const getCachedTournamentOverview = (code: string) =>
+  unstable_cache(
+    () => TournamentService.getTournamentSummaryOverviewForPublicPage(code),
+    [`tournament-overview`, code],
+    { tags: [`tournament:${code}`], revalidate: 10 },
+  )();
+
 const getCachedTournamentLite = (code: string) =>
   unstable_cache(
     () => TournamentService.getTournamentLite(code),
@@ -31,16 +39,53 @@ const getCachedTournamentLite = (code: string) =>
     { tags: [`tournament:${code}`], revalidate: 10 },
   )();
 
+function resolveViewerStatusFromFullTournament(tournament: any, userId: string): string {
+  const matchesUser = (playerRef: any) => {
+    if (!playerRef) return false;
+    if (playerRef?.userRef === userId) return true;
+    if (playerRef?.userRef?._id?.toString?.() === userId) return true;
+    if (Array.isArray(playerRef?.members)) {
+      return playerRef.members.some((member: any) => {
+        if (!member) return false;
+        if (member?.userRef === userId) return true;
+        if (member?.userRef?._id?.toString?.() === userId) return true;
+        if (member?._id?.toString?.() === userId) return true;
+        return false;
+      });
+    }
+    return false;
+  };
+
+  const tournamentPlayer = (tournament?.tournamentPlayers || []).find((entry: any) =>
+    matchesUser(entry?.playerReference),
+  );
+  if (tournamentPlayer?.status) {
+    return String(tournamentPlayer.status);
+  }
+
+  const waitingPlayer = (tournament?.waitingList || []).find((entry: any) =>
+    matchesUser(entry?.playerReference),
+  );
+  if (waitingPlayer) {
+    return 'applied';
+  }
+
+  return 'none';
+}
+
 export async function getTournamentPageDataAction(input: GetTournamentPageDataInput) {
   const run = withTelemetry(
     'tournaments.getTournamentPageData',
     async (params: GetTournamentPageDataInput) => {
-      const { code, includeViewer = false } = params;
+      const { code, includeViewer = false, detailLevel = 'overview' } = params;
       if (!code) {
         throw new BadRequestError('code is required');
       }
 
-      const tournament = await getCachedTournamentSummary(code);
+      const tournament =
+        detailLevel === 'full'
+          ? await getCachedTournamentSummary(code)
+          : await getCachedTournamentOverview(code);
 
       if (!includeViewer) {
         return serializeForClient({ tournament });
@@ -58,9 +103,16 @@ export async function getTournamentPageDataAction(input: GetTournamentPageDataIn
         ? String(tournament.clubId._id)
         : String(tournament.clubId);
 
+      // Security boundary: viewer identity must come from the server session only.
+      const userClubRolePromise = ClubService.getUserRoleInClub(authResult.data.userId, clubId);
+      const userPlayerStatusPromise =
+        detailLevel === 'full'
+          ? Promise.resolve(resolveViewerStatusFromFullTournament(tournament, authResult.data.userId))
+          : TournamentService.getPlayerStatusInTournament(code, authResult.data.userId);
+
       const [userClubRole, userPlayerStatus] = await Promise.all([
-        ClubService.getUserRoleInClub(authResult.data.userId, clubId),
-        TournamentService.getPlayerStatusInTournament(code, authResult.data.userId),
+        userClubRolePromise,
+        userPlayerStatusPromise,
       ]);
 
       return serializeForClient({

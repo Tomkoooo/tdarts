@@ -48,6 +48,8 @@ describe('withTelemetry non-throw guard failures', () => {
       expect.objectContaining({
         routeKey: 'players.createPlayer',
         status: 401,
+        sourceType: 'action',
+        operationClass: 'write',
       })
     );
     expect(recordErrorEventMock).toHaveBeenCalledWith(
@@ -55,6 +57,8 @@ describe('withTelemetry non-throw guard failures', () => {
         routeKey: 'players.createPlayer',
         status: 401,
         source: 'http_status',
+        sourceType: 'action',
+        operationClass: 'write',
         requestQuery: expect.objectContaining({
           feature: 'players',
           actionName: 'createPlayer',

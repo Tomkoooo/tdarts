@@ -42,7 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import IconDart from "@/components/homapage/icons/IconDart";
 import { Badge } from "@/components/ui/Badge";
-import { useOngoingTournamentQuickLink } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
+import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
 
 interface NavItem {
   href: string;
@@ -66,9 +66,15 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   const searchParams = useSearchParams();
   const router = useRouter();
   const t = useTranslations("Navbar");
-  const { ongoingTournament } = useOngoingTournamentQuickLink(user?._id);
+  const [allowDeferredHooks, setAllowDeferredHooks] = React.useState(false);
 
   const normalizedPath = stripLocalePrefix(pathname);
+  const isClubRoute = normalizedPath.startsWith("/clubs");
+  const hooksEnabled = !isClubRoute || allowDeferredHooks;
+  const { ongoingTournament } = useOngoingTournamentQuickLinkWithOptions(user?._id, {
+    enabled: hooksEnabled,
+    deferMs: isClubRoute ? 1200 : 0,
+  });
   const maybeLocale = pathname?.split("/")[1];
   const currentLocale: SupportedLocale = SUPPORTED_LOCALES.includes(
     maybeLocale as SupportedLocale
@@ -149,6 +155,17 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
     },
     [normalizedPath, searchParams]
   );
+
+  React.useEffect(() => {
+    if (!isClubRoute) {
+      setAllowDeferredHooks(true);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setAllowDeferredHooks(true);
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [isClubRoute]);
 
   React.useEffect(() => {
     const handler = (event: KeyboardEvent) => {

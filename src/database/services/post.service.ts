@@ -4,6 +4,15 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { Types } from 'mongoose';
 
 export class PostService {
+  private static logTiming(label: string, startedAt: number, requestId?: string, meta?: Record<string, string>) {
+    if (process.env.NODE_ENV === 'production') return;
+    const elapsed = Date.now() - startedAt;
+    const details = meta
+      ? ` ${Object.entries(meta).map(([key, value]) => `${key}=${value}`).join(' ')}`
+      : '';
+    console.log(`[perf][post]${requestId ? ` [${requestId}]` : ''} ${label} ${elapsed}ms${details}`);
+  }
+
   static async createPost(
     clubId: string,
     authorId: string,
@@ -44,7 +53,13 @@ export class PostService {
     return post;
   }
 
-  static async getClubPosts(clubId: string, page = 1, limit = 10): Promise<{ posts: PostDocument[]; total: number }> {
+  static async getClubPosts(
+    clubId: string,
+    page = 1,
+    limit = 10,
+    requestId?: string
+  ): Promise<{ posts: PostDocument[]; total: number }> {
+    const startedAt = Date.now();
     await connectMongo();
     
     if (!Types.ObjectId.isValid(clubId)) {
@@ -62,6 +77,12 @@ export class PostService {
       PostModel.countDocuments({ clubId: new Types.ObjectId(clubId) }),
     ]);
 
+    this.logTiming('getClubPosts', startedAt, requestId, {
+      clubId,
+      page: String(page),
+      limit: String(limit),
+      posts: String(posts.length),
+    });
     return { posts, total };
   }
 

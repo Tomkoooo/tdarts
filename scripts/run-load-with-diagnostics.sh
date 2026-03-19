@@ -15,8 +15,11 @@ resolve_load_config() {
     lifecycle)
       echo "src/features/tests/load/load-test-lifecycle.yaml"
       ;;
+    stress)
+      echo "src/features/tests/load/load-test-stress.yaml"
+      ;;
     *)
-      echo "Invalid LOAD_TEST_PROFILE='${LOAD_TEST_PROFILE:-}'. Use one of: full, browse, lifecycle." >&2
+      echo "Invalid LOAD_TEST_PROFILE='${LOAD_TEST_PROFILE:-}'. Use one of: full, browse, lifecycle, stress." >&2
       exit 2
       ;;
   esac

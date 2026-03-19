@@ -27,13 +27,40 @@ export function ClubTournamentsSection({
   const t = useTranslations('Club.tournaments')
   const locale = useLocale()
   const timeZone = getUserTimeZone()
+  const getAdaptiveDefaults = React.useCallback(() => {
+    const todayKey = getLocalDateKey(new Date(), timeZone)
+    const hasUpcomingActiveTournament = tournaments.some((tournament) => {
+      const isDeleted = tournament.isDeleted === true
+      const isSandbox = tournament.isSandbox === true
+      if (isDeleted || isSandbox) return false
+      const startDateValue = tournament.tournamentSettings?.startDate
+        ? new Date(tournament.tournamentSettings.startDate)
+        : null
+      if (!startDateValue || Number.isNaN(startDateValue.getTime()) || !todayKey) return false
+      const tournamentDateKey = getLocalDateKey(startDateValue, timeZone)
+      return !!tournamentDateKey && tournamentDateKey >= todayKey
+    })
+
+    return hasUpcomingActiveTournament
+      ? { timePreset: 'upcoming' as const, sortOrder: 'asc' as const }
+      : { timePreset: 'all' as const, sortOrder: 'desc' as const }
+  }, [timeZone, tournaments])
+
+  const adaptiveDefaults = React.useMemo(() => getAdaptiveDefaults(), [getAdaptiveDefaults])
   const [viewMode, setViewMode] = React.useState<'active' | 'sandbox' | 'deleted'>('active')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [verificationFilter, setVerificationFilter] = React.useState<string>('all')
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc')
-  const [timePreset, setTimePreset] = React.useState<'upcoming' | 'next7' | 'next30' | 'onDate' | 'all'>('upcoming')
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(adaptiveDefaults.sortOrder)
+  const [timePreset, setTimePreset] = React.useState<'upcoming' | 'next7' | 'next30' | 'onDate' | 'all'>(adaptiveDefaults.timePreset)
   const [selectedDate, setSelectedDate] = React.useState<string>('')
   const [nameQuery, setNameQuery] = React.useState<string>('')
+  const [filtersTouched, setFiltersTouched] = React.useState(false)
+
+  React.useEffect(() => {
+    if (filtersTouched) return
+    setTimePreset(adaptiveDefaults.timePreset)
+    setSortOrder(adaptiveDefaults.sortOrder)
+  }, [adaptiveDefaults.sortOrder, adaptiveDefaults.timePreset, filtersTouched])
 
   // Filter tournaments
   const filteredTournaments = React.useMemo(() => {
@@ -227,7 +254,10 @@ export function ClubTournamentsSection({
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.status')}</label>
           <select 
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setFiltersTouched(true)
+              setStatusFilter(e.target.value)
+            }}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
             <option value="all">{t('status_options.all')}</option>
@@ -242,7 +272,10 @@ export function ClubTournamentsSection({
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.verification')}</label>
           <select 
             value={verificationFilter}
-            onChange={(e) => setVerificationFilter(e.target.value)}
+            onChange={(e) => {
+              setFiltersTouched(true)
+              setVerificationFilter(e.target.value)
+            }}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
             <option value="all">{t('verification_options.all')}</option>
@@ -255,7 +288,10 @@ export function ClubTournamentsSection({
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.sort')}</label>
           <select 
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            onChange={(e) => {
+              setFiltersTouched(true)
+              setSortOrder(e.target.value as 'asc' | 'desc')
+            }}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
             <option value="desc">{t('sort_options.desc')}</option>
@@ -267,7 +303,10 @@ export function ClubTournamentsSection({
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">{t('filters.time')}</label>
           <select
             value={timePreset}
-            onChange={(e) => setTimePreset(e.target.value as 'upcoming' | 'next7' | 'next30' | 'onDate' | 'all')}
+            onChange={(e) => {
+              setFiltersTouched(true)
+              setTimePreset(e.target.value as 'upcoming' | 'next7' | 'next30' | 'onDate' | 'all')
+            }}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           >
             <option value="upcoming">{t('time_options.upcoming')}</option>
@@ -284,7 +323,10 @@ export function ClubTournamentsSection({
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                setFiltersTouched(true)
+                setSelectedDate(e.target.value)
+              }}
               className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
             />
           </div>
@@ -295,7 +337,10 @@ export function ClubTournamentsSection({
           <input
             type="text"
             value={nameQuery}
-            onChange={(e) => setNameQuery(e.target.value)}
+            onChange={(e) => {
+              setFiltersTouched(true)
+              setNameQuery(e.target.value)
+            }}
             placeholder={t('search_placeholder')}
             className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           />
@@ -304,17 +349,19 @@ export function ClubTournamentsSection({
         {(statusFilter !== 'all' ||
           verificationFilter !== 'all' ||
           sortOrder !== 'asc' ||
-          timePreset !== 'upcoming' ||
+          timePreset !== 'all' ||
           selectedDate !== '' ||
           nameQuery.trim() !== '') && (
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => {
+              const defaults = getAdaptiveDefaults();
+              setFiltersTouched(false);
               setStatusFilter('all');
               setVerificationFilter('all');
-              setSortOrder('asc');
-              setTimePreset('upcoming');
+              setSortOrder(defaults.sortOrder);
+              setTimePreset(defaults.timePreset);
               setSelectedDate('');
               setNameQuery('');
             }}

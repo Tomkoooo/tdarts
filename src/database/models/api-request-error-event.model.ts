@@ -1,12 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type ApiErrorEventSource = 'http_status' | 'exception';
+export type TelemetrySource = 'api' | 'action' | 'page';
+export type TelemetryOperationClass = 'read' | 'write' | 'other';
 
 export interface IApiRequestErrorEvent extends Document {
   occurredAt: Date;
   routeKey: string;
   method: string;
+  sourceType: TelemetrySource;
+  operationClass: TelemetryOperationClass;
   status: number;
+  isTimeout: boolean;
   requestId?: string;
   durationMs: number;
   requestBytes: number;
@@ -29,10 +34,25 @@ export interface IApiRequestErrorEvent extends Document {
 
 const ApiRequestErrorEventSchema = new Schema<IApiRequestErrorEvent>(
   {
-    occurredAt: { type: Date, required: true, index: true },
+    occurredAt: { type: Date, required: true },
     routeKey: { type: String, required: true, index: true },
     method: { type: String, required: true, index: true },
+    sourceType: {
+      type: String,
+      enum: ['api', 'action', 'page'],
+      required: true,
+      default: 'api',
+      index: true,
+    },
+    operationClass: {
+      type: String,
+      enum: ['read', 'write', 'other'],
+      required: true,
+      default: 'other',
+      index: true,
+    },
     status: { type: Number, required: true, index: true },
+    isTimeout: { type: Boolean, required: true, default: false, index: true },
     requestId: { type: String },
     durationMs: { type: Number, required: true, default: 0 },
     requestBytes: { type: Number, required: true, default: 0 },
@@ -64,6 +84,7 @@ const ApiRequestErrorEventSchema = new Schema<IApiRequestErrorEvent>(
 ApiRequestErrorEventSchema.index({ routeKey: 1, method: 1, occurredAt: -1 });
 ApiRequestErrorEventSchema.index({ status: 1, occurredAt: -1 });
 ApiRequestErrorEventSchema.index({ isResolved: 1, occurredAt: -1 });
+ApiRequestErrorEventSchema.index({ occurredAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
 
 export const ApiRequestErrorEventModel =
   mongoose.models.ApiRequestErrorEvent ||

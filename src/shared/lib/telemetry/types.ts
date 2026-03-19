@@ -28,17 +28,29 @@ export type GuardResult<T> = GuardSuccessResult<T> | GuardFailureResult;
 export type TelemetryAggregateSample = {
   routeKey: string;
   method: string;
+  sourceType?: 'api' | 'action' | 'page';
+  operationClass?: 'read' | 'write' | 'other';
   durationMs: number;
   requestBytes: number;
   responseBytes: number;
   status: number;
+  isTimeout?: boolean;
+  pageVitals?: {
+    ttfbMs?: number;
+    fcpMs?: number;
+    lcpMs?: number;
+    inpMs?: number;
+  };
 };
 
 export type TelemetryErrorSample = {
   occurredAt: Date;
   routeKey: string;
   method: string;
+  sourceType?: 'api' | 'action' | 'page';
+  operationClass?: 'read' | 'write' | 'other';
   status: number;
+  isTimeout?: boolean;
   requestId?: string;
   durationMs: number;
   requestBytes: number;
@@ -60,6 +72,7 @@ export type ActionTelemetryMeta = {
   actionName?: string;
   actorId?: string;
   clubId?: string;
+  operationClass?: 'read' | 'write' | 'other';
   eligibilityOutcome?: 'allowed' | 'blocked' | 'not_checked';
   denialCode?: GuardFailureCode | 'none';
 };

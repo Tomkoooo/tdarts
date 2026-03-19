@@ -20,9 +20,16 @@ interface ClubShareModalProps {
 export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: ClubShareModalProps) {
   const t = useTranslations('Club.share_modal')
   const [shareType, setShareType] = useState<'public' | 'auth'>('public')
+  const [baseUrl, setBaseUrl] = useState('')
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin)
+    }
+  }, [])
 
   const generateQRCodeData = () => {
-    const baseUrl = window.location.origin
+    if (!baseUrl) return ''
     if (shareType === 'auth') {
       return `${baseUrl}/auth/login?redirect=${encodeURIComponent(`/clubs/${clubCode}?page=tournaments`)}`
     }
@@ -114,7 +121,7 @@ export default function ClubShareModal({ isOpen, onClose, clubCode, clubName }: 
 
           <div className="flex justify-center">
             <div className="rounded-lg border-0 bg-white p-3 shadow-lg">
-              <QRCodeSVG value={generateQRCodeData()} size={140} level="M" fgColor="#000000" bgColor="#FFFFFF" />
+              <QRCodeSVG value={generateQRCodeData() || `${clubCode}-${shareType}`} size={140} level="M" fgColor="#000000" bgColor="#FFFFFF" />
             </div>
           </div>
 
