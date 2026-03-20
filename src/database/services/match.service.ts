@@ -166,12 +166,13 @@ export class MatchService {
                 .populate('player2.playerId', 'name profilePicture')
                 .populate('scorer', 'name profilePicture')
                 .lean();
+            const nextMatchCandidate = Array.isArray(nextMatch) ? nextMatch[0] : nextMatch;
 
             // Frissítjük a board mezőit
             tournament.boards[boardIndex].status = 'playing';
             tournament.boards[boardIndex].currentMatch = matchId as any;
-            tournament.boards[boardIndex].nextMatch = nextMatch?._id as any || undefined;
-            nextMatchForSse = nextMatch || null;
+            tournament.boards[boardIndex].nextMatch = (nextMatchCandidate?._id as any) || undefined;
+            nextMatchForSse = nextMatchCandidate || null;
 
             // Mentsük el a tournament dokumentumot
             await tournament.save();
@@ -789,12 +790,13 @@ export class MatchService {
                     .populate('player2.playerId', 'name profilePicture')
                     .populate('scorer', 'name profilePicture')
                     .lean();
+                const nextMatchCandidate = Array.isArray(nextMatch) ? nextMatch[0] : nextMatch;
 
-                if (nextMatch) {
+                if (nextMatchCandidate) {
                     tournament.boards[boardIndex].status = 'waiting';
                     tournament.boards[boardIndex].currentMatch = undefined;
-                    tournament.boards[boardIndex].nextMatch = nextMatch._id as any;
-                    nextMatchForSse = nextMatch;
+                    tournament.boards[boardIndex].nextMatch = nextMatchCandidate._id as any;
+                    nextMatchForSse = nextMatchCandidate;
                 } else {
                     tournament.boards[boardIndex].status = 'idle';
                     tournament.boards[boardIndex].currentMatch = undefined;
