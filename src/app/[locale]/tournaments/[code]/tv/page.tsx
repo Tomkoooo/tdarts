@@ -6,6 +6,7 @@ import { useParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
 import { IconAdjustments, IconGripVertical, IconPlayerPause, IconPlayerPlay, IconPlayerSkipForward, IconQrcode, IconX } from "@tabler/icons-react"
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates"
+import type { SseDeltaPayload } from "@/lib/events";
 import { getTournamentPageDataAction } from "@/features/tournaments/actions/getTournamentPageData.action"
 import QRCode from 'react-qr-code'
 import { Button } from "@/components/ui/Button";
@@ -58,8 +59,10 @@ export default function TVModePage() {
   const [knockoutRequiredDisplayMs, setKnockoutRequiredDisplayMs] = useState(0);
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdAppliedSlideIdRef = useRef<string>("");
+  const tournamentRef = useRef<any>(null);
   const tournamentCode = typeof code === "string" ? code : "";
   const { settings, setSettings, resetSettings, loaded: settingsLoaded } = useTvSettingsLocal(tournamentCode);
+  const settingsRef = useRef(settings);
   const urgentQueue = useUrgentQueue({ cooldownMs: 20000, maxQueueSize: 30 });
 
   const rankings180 = useMemo(() => getRankings180(tournament), [tournament]);
@@ -93,6 +96,7 @@ export default function TVModePage() {
       const res = await getTournamentPageDataAction({
         code: String(code),
         includeViewer: false,
+        detailLevel: "full",
       })
       const nextTournament =
         res && typeof res === "object" && "tournament" in res
@@ -106,6 +110,14 @@ export default function TVModePage() {
     }
   }, [code])
 
+  useEffect(() => {
+    tournamentRef.current = tournament;
+  }, [tournament]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
   // Silent refresh for live updates
   const silentRefresh = useCallback(async () => {
     if (!code) return
@@ -113,6 +125,8 @@ export default function TVModePage() {
       const res = await getTournamentPageDataAction({
         code: String(code),
         includeViewer: false,
+        detailLevel: "full",
+        bypassCache: true,
       })
       const nextTournament =
         res && typeof res === "object" && "tournament" in res
@@ -121,17 +135,89 @@ export default function TVModePage() {
       if (!nextTournament) return
       setTournament(nextTournament)
 
-      if (tournament) {
-        const urgentEvents = buildUrgentEvents(tournament, nextTournament, settings);
+      const prevTournament = tournamentRef.current;
+      const currentSettings = settingsRef.current;
+      if (prevTournament) {
+        const urgentEvents = buildUrgentEvents(prevTournament, nextTournament, currentSettings);
         const added = urgentQueue.enqueueMany(urgentEvents);
-        if (added > 0 && settings.highAlertInterrupts) {
+        if (added > 0 && currentSettings.highAlertInterrupts) {
           scheduler.showUrgentNow();
         }
       }
+      tournamentRef.current = nextTournament;
     } catch (error) {
       console.error('Silent refresh error:', error)
     }
-  }, [code, tournament, settings, urgentQueue, scheduler])
+  }, [code, urgentQueue, scheduler])
+
+  const applyTvDelta = useCallback((delta: SseDeltaPayload<any>) => {
+    if (delta.kind !== "delta" || delta.schemaVersion !== 1) return false;
+    const canApply =
+      (delta.scope === "match" && Boolean(delta.data?.match?._id)) ||
+      (delta.scope === "board" && Boolean(delta.data?.board));
+    if (!canApply) return false;
+
+    setTournament((prev: any) => {
+      if (!prev) return prev;
+      const next = { ...prev };
+
+      if (delta.scope === "match") {
+        const incomingMatch = delta.data?.match;
+        if (!incomingMatch?._id) return next;
+        const incomingId = String(incomingMatch._id);
+
+        if (Array.isArray(next.matches)) {
+          next.matches = next.matches.map((match: any) =>
+            String(match?._id) === incomingId ? { ...match, ...incomingMatch } : match
+          );
+        }
+
+        if (Array.isArray(next.groups)) {
+          next.groups = next.groups.map((group: any) => {
+            if (!Array.isArray(group?.matches)) return group;
+            const matches = group.matches.map((match: any) =>
+              String(match?._id) === incomingId ? { ...match, ...incomingMatch } : match
+            );
+            return { ...group, matches };
+          });
+        }
+
+        if (Array.isArray(next.boards) && typeof delta.data?.boardNumber === "number") {
+          next.boards = next.boards.map((board: any) =>
+            board?.boardNumber === delta.data.boardNumber
+              ? {
+                  ...board,
+                  status:
+                    delta.action === "started"
+                      ? "playing"
+                      : delta.action === "finished"
+                        ? "waiting"
+                        : board.status,
+                }
+              : board
+          );
+        }
+      }
+
+      if (delta.scope === "board" && Array.isArray(next.boards)) {
+        const boardPatch = delta.data?.board;
+        if (boardPatch && typeof boardPatch.boardNumber === "number") {
+          next.boards = next.boards.map((board: any) =>
+            board?.boardNumber === boardPatch.boardNumber ? { ...board, ...boardPatch } : board
+          );
+        }
+      }
+
+      return next;
+    });
+
+    return true;
+  }, []);
+
+  const silentRefreshRef = useRef(silentRefresh);
+  useEffect(() => {
+    silentRefreshRef.current = silentRefresh;
+  }, [silentRefresh]);
 
   useEffect(() => {
     fetchTournament()
@@ -144,22 +230,22 @@ export default function TVModePage() {
     enabled: isRealtimeEnabled,
   })
   useEffect(() => {
-    if (lastEvent) {
-      console.log('TV Mode - Received event:', lastEvent.type, lastEvent.data)
-      if (lastEvent.type === 'tournament-update' ||
-        lastEvent.type === 'match-update' ||
-        lastEvent.type === 'group-update') {
-        // Always refresh on these events to catch knockout rounds and other updates
-        console.log('TV Mode - Triggering silent refresh')
-        if (sseRefreshTimerRef.current) {
-          clearTimeout(sseRefreshTimerRef.current)
-        }
-        sseRefreshTimerRef.current = setTimeout(() => {
-          void silentRefresh()
-        }, 400)
-      }
+    if (!lastEvent) return;
+    console.log('TV Mode - Received event:', lastEvent.type, lastEvent.data)
+    const delta = lastEvent.delta;
+    if (!delta) return;
+    if (delta.tournamentId && tournamentCode && delta.tournamentId !== tournamentCode) return;
+    const applied = applyTvDelta(delta);
+    if (!delta.requiresResync && applied) return;
+
+    console.log('TV Mode - Triggering fallback resync')
+    if (sseRefreshTimerRef.current) {
+      clearTimeout(sseRefreshTimerRef.current)
     }
-  }, [lastEvent, silentRefresh])
+    sseRefreshTimerRef.current = setTimeout(() => {
+      void silentRefreshRef.current()
+    }, 400)
+  }, [lastEvent, tournamentCode, applyTvDelta])
 
   useEffect(() => {
     return () => {

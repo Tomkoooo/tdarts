@@ -9,12 +9,12 @@ export class TournamentPlayerService {
         await connectMongo();
 
         const playerProfile = await PlayerModel.findOne({ userRef: userId }).select('_id').lean();
-        if (!playerProfile?._id) return undefined;
+        if (!playerProfile || !(playerProfile as any)._id) return undefined;
 
-        const playerId = String(playerProfile._id);
+        const playerId = String((playerProfile as any)._id);
         const teamDocs = await PlayerModel.find({
             type: { $in: ['pair', 'team'] },
-            members: playerProfile._id,
+            members: (playerProfile as any)._id,
         })
             .select('_id')
             .lean();
@@ -28,21 +28,22 @@ export class TournamentPlayerService {
             throw new BadRequestError('Tournament not found');
         }
 
-        const playerStatus = (tournament.tournamentPlayers || []).find((entry: any) => {
+        const playerStatus = ((tournament as any).tournamentPlayers || []).find((entry: any) => {
             const ref = entry?.playerReference;
             const id = typeof ref === 'object' ? ref?.toString?.() : String(ref);
             return candidateIds.includes(id);
         });
-        if (playerStatus?.status) {
-            return String(playerStatus.status);
+
+        if (playerStatus) {
+            return playerStatus.status || 'applied';
         }
 
-        const waitListMatch = (tournament.waitingList || []).find((entry: any) => {
-            const ref = entry?.playerReference;
+        const checkWaitList = ((tournament as any).waitingList || []).find((waitEntry: any) => {
+            const ref = waitEntry?.playerReference;
             const id = typeof ref === 'object' ? ref?.toString?.() : String(ref);
             return candidateIds.includes(id);
         });
-        return waitListMatch ? 'applied' : undefined;
+        return checkWaitList ? 'applied' : undefined;
     }
 
     static async getPlayerStatusInTournament(tournamentId: string, userId: string): Promise<string | undefined> {

@@ -6,7 +6,6 @@ import LegsViewModal from './LegsViewModal';
 import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
-import { useUserContext } from '@/hooks/useUser';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +17,7 @@ import{ Label } from '@/components/ui/Label';
 import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
 import { coerceNumericValue } from '@/lib/number-input';
 import { moveTournamentPlayerInGroupAction } from '@/features/tournaments/actions/manageTournament.action';
+import { finishBoardMatchAction } from '@/features/board/actions/boardPage.action';
 
 interface Player {
   playerId: {
@@ -61,7 +61,6 @@ interface TournamentGroupsViewProps {
 }
 
 const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament, userClubRole }) => {
-  const { user } = useUserContext();
   const t = useTranslations("Tournament.components");
   const tTour = useTranslations("Tournament");
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -182,33 +181,30 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/matches/${selectedMatch._id}/finish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player1LegsWon: coerceNumericValue(player1Legs),
-          player2LegsWon: coerceNumericValue(player2Legs),
-          player1Stats: {
-            ...player1Stats,
-            oneEightiesCount: coerceNumericValue(player1Stats.oneEightiesCount),
-            highestCheckout: coerceNumericValue(player1Stats.highestCheckout),
-            average: coerceNumericValue(player1Stats.average),
-          },
-          player2Stats: {
-            ...player2Stats,
-            oneEightiesCount: coerceNumericValue(player2Stats.oneEightiesCount),
-            highestCheckout: coerceNumericValue(player2Stats.highestCheckout),
-            average: coerceNumericValue(player2Stats.average),
-          },
-          allowManualFinish: true,
-          isManual: true,
-          adminId: user?._id
-        })
+      const response = await finishBoardMatchAction({
+        matchId: selectedMatch._id,
+        player1LegsWon: coerceNumericValue(player1Legs),
+        player2LegsWon: coerceNumericValue(player2Legs),
+        player1Stats: {
+          ...player1Stats,
+          oneEightiesCount: coerceNumericValue(player1Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(player1Stats.highestCheckout),
+          average: coerceNumericValue(player1Stats.average),
+        },
+        player2Stats: {
+          ...player2Stats,
+          oneEightiesCount: coerceNumericValue(player2Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(player2Stats.highestCheckout),
+          average: coerceNumericValue(player2Stats.average),
+        },
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data?.error || 'Hiba történt a mentés során');
+      if (!(response as any)?.success) {
+        const maybeGuardMessage =
+          (response as any)?.message ||
+          (response as any)?.error ||
+          tTour('groups.error_save');
+        throw new Error(maybeGuardMessage);
       }
 
       setShowAdminModal(false);

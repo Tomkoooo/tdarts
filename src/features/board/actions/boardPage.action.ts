@@ -14,6 +14,44 @@ const tournamentIdSchema = z.object({
   tournamentId: z.string().min(1),
 });
 
+const validateBoardPasswordSchema = z.object({
+  tournamentId: z.string().min(1),
+  password: z.string().min(1),
+});
+
+const boardMatchesSchema = z.object({
+  tournamentId: z.string().min(1),
+  boardNumber: z.number(),
+});
+
+const startBoardMatchSchema = z.object({
+  tournamentId: z.string().min(1),
+  boardNumber: z.number(),
+  matchId: z.string().min(1),
+  legsToWin: z.number(),
+  startingPlayer: z.union([z.literal(1), z.literal(2)]),
+});
+
+const finishBoardMatchSchema = z.object({
+  matchId: z.string().min(1),
+  player1LegsWon: z.number(),
+  player2LegsWon: z.number(),
+  player1Stats: z
+    .object({
+      highestCheckout: z.number().optional(),
+      oneEightiesCount: z.number().optional(),
+      average: z.number().optional(),
+    })
+    .optional(),
+  player2Stats: z
+    .object({
+      highestCheckout: z.number().optional(),
+      oneEightiesCount: z.number().optional(),
+      average: z.number().optional(),
+    })
+    .optional(),
+});
+
 export async function validateBoardPasswordAction(input: {
   tournamentId: string;
   password: string;
@@ -21,12 +59,7 @@ export async function validateBoardPasswordAction(input: {
   const run = withTelemetry(
     'board.validatePassword',
     async (payload: { tournamentId: string; password: string }) => {
-      const parsed = z
-        .object({
-          tournamentId: z.string().min(1),
-          password: z.string().min(1),
-        })
-        .parse(payload);
+      const parsed = validateBoardPasswordSchema.parse(payload);
       const isValid = await TournamentService.validateTournamentByPassword(
         parsed.tournamentId,
         parsed.password
@@ -113,12 +146,7 @@ export async function getBoardMatchesAction(input: {
   const run = withTelemetry(
     'board.getMatches',
     async (payload: { tournamentId: string; boardNumber: number }) => {
-      const parsed = z
-        .object({
-          tournamentId: z.string().min(1),
-          boardNumber: z.number(),
-        })
-        .parse(payload);
+      const parsed = boardMatchesSchema.parse(payload);
       const ctx = await TournamentService.getTournamentMatchContext(parsed.tournamentId);
       const matches = await MatchService.getBoardMatches(
         parsed.tournamentId,
@@ -176,22 +204,16 @@ export async function startBoardMatchAction(input: {
       legsToWin: number;
       startingPlayer: 1 | 2;
     }) => {
-      const parsed = z
-        .object({
-          tournamentId: z.string().min(1),
-          boardNumber: z.number(),
-          matchId: z.string().min(1),
-          legsToWin: z.number(),
-          startingPlayer: z.union([z.literal(1), z.literal(2)]),
-        })
-        .parse(payload);
+      const parsed = startBoardMatchSchema.parse(payload);
       const match = await MatchService.startMatch(
         parsed.tournamentId,
         parsed.matchId,
         parsed.legsToWin,
         parsed.startingPlayer
       );
+      const canonicalTournamentId = String((match as any)?.tournamentCode || parsed.tournamentId);
       revalidateTag(`tournament:${parsed.tournamentId}`, 'max');
+      revalidateTag(`tournament:${canonicalTournamentId}`, 'max');
       revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, match });
     },
@@ -220,27 +242,7 @@ export async function finishBoardMatchAction(input: {
       player1Stats?: { highestCheckout?: number; oneEightiesCount?: number; average?: number };
       player2Stats?: { highestCheckout?: number; oneEightiesCount?: number; average?: number };
     }) => {
-      const parsed = z
-        .object({
-          matchId: z.string().min(1),
-          player1LegsWon: z.number(),
-          player2LegsWon: z.number(),
-          player1Stats: z
-            .object({
-              highestCheckout: z.number().optional(),
-              oneEightiesCount: z.number().optional(),
-              average: z.number().optional(),
-            })
-            .optional(),
-          player2Stats: z
-            .object({
-              highestCheckout: z.number().optional(),
-              oneEightiesCount: z.number().optional(),
-              average: z.number().optional(),
-            })
-            .optional(),
-        })
-        .parse(payload);
+      const parsed = finishBoardMatchSchema.parse(payload);
       const authResult = await authorizeUserResult();
       const adminId = authResult.ok ? authResult.data.userId : null;
       const match = await MatchService.finishMatch(parsed.matchId, {

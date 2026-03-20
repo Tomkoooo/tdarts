@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { getMatchByIdClientAction } from '@/features/tournaments/actions/tournamentRoster.action';
 
 interface LiveMatchViewerProps {
   matchId: string;
@@ -107,8 +108,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     if (fetchInFlightRef.current) return;
     fetchInFlightRef.current = true;
     try {
-      const response = await fetch(`/api/matches/${matchId}`);
-      const data = await response.json();
+      const data = await getMatchByIdClientAction({ matchId });
       
       if (data.success && data.match) {
         setMatchData(data.match);

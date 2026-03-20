@@ -97,6 +97,7 @@ class KnockoutErrorBoundary extends React.Component<
 
 interface TournamentKnockoutBracketProps {
   tournamentCode: string
+  tournament?: any
   userClubRole: "admin" | "moderator" | "member" | "none"
   tournamentPlayers?: any[]
   knockoutMethod?: "automatic" | "manual"
@@ -140,6 +141,7 @@ interface KnockoutRound {
 
 const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps> = ({
   tournamentCode,
+  tournament,
   userClubRole,
   tournamentPlayers = [],
   knockoutMethod,
@@ -233,8 +235,17 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   }
 
   useEffect(() => {
+    if (Array.isArray(tournament?.knockout) && tournament.knockout.length > 0) {
+      setKnockoutData(tournament.knockout)
+      setAvailableBoards(Array.isArray(tournament?.boards) ? tournament.boards : [])
+      setTournamentStatus(tournament?.tournamentSettings?.status || null)
+      setCurrentKnockoutMethod(
+        (tournament?.tournamentSettings?.knockoutMethod as "automatic" | "manual" | undefined) || knockoutMethod
+      )
+      return
+    }
     void fetchKnockoutData()
-  }, [tournamentCode])
+  }, [tournamentCode, tournament?.knockout, tournament?.boards, tournament?.tournamentSettings?.status, tournament?.tournamentSettings?.knockoutMethod, knockoutMethod])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -669,10 +669,10 @@ export class ClubService {
       throw new BadRequestError('Club not found');
     }
 
-    const adminIds = (club.admin || []).map((id: any) => String(id));
-    const moderatorIds = (club.moderators || []).map((id: any) => String(id));
+    const adminIds = ((club as any).admin || []).map((id: any) => String(id));
+    const moderatorIds = ((club as any).moderators || []).map((id: any) => String(id));
 
-    const members = (club.members || []).map((player: any) => {
+    const members = ((club as any).members || []).map((player: any) => {
       const userRefStr = player?.userRef ? String(player.userRef) : '';
       const isAdmin = userRefStr ? adminIds.includes(userRefStr) : false;
       const isModerator = userRefStr ? moderatorIds.includes(userRefStr) : false;
@@ -687,8 +687,8 @@ export class ClubService {
 
     const response = {
       members,
-      admin: adminIds.map((id) => ({ _id: id, role: 'admin' as const })),
-      moderators: moderatorIds.map((id) => ({ _id: id, role: 'moderator' as const })),
+      admin: adminIds.map((id: string) => ({ _id: id, role: 'admin' as const })),
+      moderators: moderatorIds.map((id: string) => ({ _id: id, role: 'moderator' as const })),
       membersCount: members.length,
     };
     this.logTiming('getClubMembersForManagement', startedAt, requestId, { clubId });

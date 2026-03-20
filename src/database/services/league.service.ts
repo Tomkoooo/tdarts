@@ -1037,7 +1037,7 @@ export class LeagueService {
       new Set(
         league.players
           .map((p: any) => this.getPlayerId(p.player))
-          .filter((id) => !!id)
+          .filter((id: any) => !!id)
       )
     );
     const adjustedByIds = Array.from(

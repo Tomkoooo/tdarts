@@ -17,6 +17,7 @@ import { TournamentStatsService } from './tournament-stats.service';
 import { TournamentPlayerService } from './tournament-player.service';
 import { GeocodingService } from './geocoding.service';
 import { ErrorService } from './error.service';
+import { eventEmitter, EVENTS, createSseDeltaPayload } from '@/lib/events';
 
 export class TournamentService {
     private static toThreeDartAverage(score: number, darts: number): number {
@@ -243,11 +244,9 @@ export class TournamentService {
 
     static async getTournament(tournamentId: string): Promise<TournamentDocument> {
         await connectMongo();
-        let tournament = await TournamentModel.findOne({ 
-            tournamentId: tournamentId,
-            isDeleted: { $ne: true },
-            isArchived: { $ne: true }
-        })
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+
+        const tournament = await TournamentModel.findOne(filter)
             .populate('clubId')
             .populate({
                 path: 'tournamentPlayers.playerReference',
@@ -259,26 +258,35 @@ export class TournamentService {
             })
             .populate('waitingList.addedBy', 'name username')
             .populate('notificationSubscribers.userRef', 'name username email')
-            .populate('groups.matches')
+            .populate({
+                path: 'groups.matches',
+                select:
+                    'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
             .populate('knockout.matches.player1')
             .populate('knockout.matches.player2')
             .populate({
                 path: 'knockout.matches.matchReference',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
+                model: 'Match',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player' },
+                    { path: 'player2.playerId', model: 'Player' },
+                    { path: 'scorer', model: 'Player' }
+                ]
             })
             .populate({
                 path: 'boards.currentMatch',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
+                model: 'Match',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player' },
+                    { path: 'player2.playerId', model: 'Player' },
+                    { path: 'scorer', model: 'Player' }
+                ]
             })
             .populate({
                 path: 'boards.nextMatch',
@@ -289,64 +297,7 @@ export class TournamentService {
                     { path: 'scorer', model: 'Player' }
                 ]
             });
-        if (!tournament && mongoose.isValidObjectId(tournamentId)) {
-            tournament = await TournamentModel.findOne({
-                _id: tournamentId,
-                isDeleted: { $ne: true },
-                isArchived: { $ne: true }
-            })
-              .populate('clubId')
-            .populate({
-                path: 'tournamentPlayers.playerReference',
-                populate: { path: 'members', model: 'Player' }
-            })
-            .populate({
-                path: 'waitingList.playerReference',
-                populate: { path: 'members', model: 'Player' }
-            })
-            .populate('waitingList.addedBy', 'name username')
-            .populate('notificationSubscribers.userRef', 'name username email')
-            .populate('groups.matches')
-            .populate('knockout.matches.player1')
-            .populate('knockout.matches.player2')
-            .populate({
-                path: 'knockout.matches.matchReference',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
-            })
-            .populate({
-                path: 'boards.currentMatch',
-                            model: 'Match',
-                            populate: [
-                                { path: 'player1.playerId', model: 'Player' },
-                                { path: 'player2.playerId', model: 'Player' },
-                                { path: 'scorer', model: 'Player' }
-                            ]
-            })
-            .populate({
-                path: 'boards.nextMatch',
-                model: 'Match',
-                populate: [
-                    { path: 'player1.playerId', model: 'Player' },
-                    { path: 'player2.playerId', model: 'Player' },
-                    { path: 'scorer', model: 'Player' }
-                ]
-            });
-            if (!tournament) {
-                throw new BadRequestError('Tournament not found', 'tournament', {
-                    tournamentId,
-                    errorCode: 'TOURNAMENT_NOT_FOUND',
-                    expected: true,
-                    operation: 'tournament.getTournament',
-                    entityType: 'tournament',
-                    entityId: tournamentId,
-                });
-            }
-        }
+
         if (!tournament) {
             throw new BadRequestError('Tournament not found', 'tournament', {
                 tournamentId,
@@ -357,43 +308,7 @@ export class TournamentService {
                 entityId: tournamentId,
             });
         }
-        // Deep populate matches' player fields
-        for (const group of tournament.groups) {
-            if (group.matches && Array.isArray(group.matches)) {
-                for (let i = 0; i < group.matches.length; i++) {
-                    const match = group.matches[i];
-                    if (match && match.populate) {
-                        await match.populate('player1.playerId');
-                        await match.populate('player2.playerId');
-                        await match.populate('scorer');
-                    }
-                }
-            }
-        }
 
-        if (!tournament.tournamentSettings?.locationData?.rawInput && tournament.tournamentSettings?.location) {
-            try {
-                const geocodeResult = await GeocodingService.geocodeAddress(tournament.tournamentSettings.location, 'legacy');
-                tournament.tournamentSettings.locationData = geocodeResult.location as any;
-                await tournament.save();
-            } catch (error) {
-                await ErrorService.logWarning(
-                    'Tournament lazy geocode failed',
-                    'tournament',
-                    {
-                        tournamentId: tournament.tournamentId,
-                        errorCode: 'TOURNAMENT_LAZY_GEOCODE_FAILED',
-                        expected: true,
-                        operation: 'tournament.getTournament',
-                        entityType: 'tournament',
-                        entityId: tournament.tournamentId,
-                        metadata: {
-                            reason: error instanceof Error ? error.message : String(error),
-                        },
-                    }
-                );
-            }
-        }
         return tournament;
     }
 
@@ -565,6 +480,183 @@ export class TournamentService {
             .filter(Boolean) as string[];
     }
 
+    static async getTournamentReadModelForSection(
+        tournamentId: string,
+        section: 'overview' | 'players' | 'boards' | 'groups' | 'bracket'
+    ): Promise<any> {
+        switch (section) {
+            case 'overview':
+                return this.getTournamentSummaryOverviewForPublicPage(tournamentId);
+            case 'players':
+                return this.getTournamentPlayersReadModel(tournamentId);
+            case 'boards':
+                return this.getTournamentBoardsReadModel(tournamentId);
+            case 'groups':
+                return this.getTournamentGroupsReadModel(tournamentId);
+            case 'bracket':
+                return this.getTournamentBracketReadModel(tournamentId);
+            default: {
+                const exhaustiveCheck: never = section;
+                throw new BadRequestError(`Unsupported tournament read-model section: ${String(exhaustiveCheck)}`);
+            }
+        }
+    }
+
+    static async getTournamentPlayersReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId tournamentPlayers waitingList tournamentSettings.status tournamentSettings.format tournamentSettings.name verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate('waitingList.addedBy', 'name username')
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentPlayersReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentBoardsReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId boards tournamentSettings.status tournamentSettings.format tournamentSettings.name groups._id groups.board verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'boards.currentMatch',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .populate({
+                path: 'boards.nextMatch',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentBoardsReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentGroupsReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId groups tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'groups.matches',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentGroupsReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
+    static async getTournamentBracketReadModel(tournamentId: string): Promise<any> {
+        await connectMongo();
+        const filter = this.buildCodeOrIdFilter(tournamentId);
+        const tournament = await TournamentModel.findOne(filter)
+            .select(
+                'tournamentId clubId knockout tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.knockoutMethod verified paymentStatus isSandbox'
+            )
+            .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate('knockout.matches.player1', 'name profilePicture')
+            .populate('knockout.matches.player2', 'name profilePicture')
+            .populate({
+                path: 'knockout.matches.matchReference',
+                select: 'boardReference type round player1 player2 scorer legsToWin startingPlayer status winnerId tournamentRef createdAt updatedAt',
+                populate: [
+                    { path: 'player1.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'player2.playerId', model: 'Player', select: 'name profilePicture' },
+                    { path: 'scorer', model: 'Player', select: 'name profilePicture' },
+                ],
+            })
+            .lean();
+
+        if (!tournament) {
+            throw new BadRequestError('Tournament not found', 'tournament', {
+                tournamentId,
+                errorCode: 'TOURNAMENT_NOT_FOUND',
+                expected: true,
+                operation: 'tournament.getTournamentBracketReadModel',
+                entityType: 'tournament',
+                entityId: tournamentId,
+            });
+        }
+
+        return tournament;
+    }
+
     static async getTournamentSummaryForPublicPage(tournamentId: string): Promise<any> {
         await connectMongo();
         const filter: any = {
@@ -578,7 +670,7 @@ export class TournamentService {
 
         const tournament: any = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId league tournamentPlayers waitingList notificationSubscribers groups knockout boards tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus stripeSessionId invoiceId billingInfoSnapshot'
+                'tournamentId clubId league tournamentPlayers waitingList groups knockout boards tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
             )
             .populate('clubId')
             .populate({
@@ -592,7 +684,6 @@ export class TournamentService {
                 populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
             })
             .populate('waitingList.addedBy', 'name username')
-            .populate('notificationSubscribers.userRef', 'name username email')
             .populate({
                 path: 'groups.matches',
                 select:
@@ -660,6 +751,16 @@ export class TournamentService {
                 'tournamentId clubId tournamentPlayers.playerReference waitingList.playerReference boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
             )
             .populate('clubId', 'name location contact')
+            .populate({
+                path: 'tournamentPlayers.playerReference',
+                select: 'name userRef members type stats profilePicture country honors',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
+            .populate({
+                path: 'waitingList.playerReference',
+                select: 'name userRef members type stats profilePicture country',
+                populate: { path: 'members', model: 'Player', select: 'name userRef profilePicture' },
+            })
             .lean();
 
         if (!tournament) {
@@ -950,11 +1051,18 @@ export class TournamentService {
             await tournament.save();
             
             // Emit SSE event to notify frontend of knockout bracket update
-            const { eventEmitter, EVENTS } = await import('@/lib/events');
-            eventEmitter.emit(EVENTS.TOURNAMENT_UPDATE, {
-                tournamentId: tournament.tournamentId,
-                type: 'knockout-update'
-            });
+            eventEmitter.emit(
+                EVENTS.TOURNAMENT_UPDATE,
+                createSseDeltaPayload({
+                    tournamentId: tournament.tournamentId,
+                    scope: 'tournament',
+                    action: 'knockout-updated',
+                    requiresResync: true,
+                    data: {
+                        legacyType: 'knockout-update',
+                    },
+                })
+            );
         } catch (error) {
             console.error('Auto-advance knockout winner error:', error);
             throw error;
@@ -3834,7 +3942,8 @@ export class TournamentService {
                 ]
             })
             .populate('player1.playerId player2.playerId')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
             // Calculate stats for each match
             return matches.map((match: any) => {
@@ -3842,7 +3951,7 @@ export class TournamentService {
                 const isPlayer2 = match.player2?.playerId?._id?.toString() === playerId;
                 
                 if (!isPlayer1 && !isPlayer2) {
-                    return match.toObject();
+                    return match;
                 }
 
                 // Use stored average from match model
@@ -3909,7 +4018,7 @@ export class TournamentService {
                 }
 
                 return {
-                    ...match.toObject(),
+                    ...match,
                     average: Math.round(average * 100) / 100, // Round to 2 decimal places
                     firstNineAvg: Math.round(firstNineAvg * 100) / 100,
                     checkout: highestCheckout > 0 ? highestCheckout.toString() : undefined,
@@ -4010,55 +4119,96 @@ export class TournamentService {
         }
 
         const aggregateCareerStats = async (playerId: string) => {
-            const finishedMatches = await MatchModel.find({
-                status: "finished",
-                $or: [{ "player1.playerId": playerId }, { "player2.playerId": playerId }],
-            }).select("player1 player2 winnerId legs");
+            const playerObjectId = new mongoose.Types.ObjectId(playerId);
+            const aggregateResult = await MatchModel.aggregate([
+                {
+                    $match: {
+                        status: "finished",
+                        $or: [{ "player1.playerId": playerObjectId }, { "player2.playerId": playerObjectId }],
+                    },
+                },
+                {
+                    $project: {
+                        winnerId: 1,
+                        isP1: { $eq: ["$player1.playerId", playerObjectId] },
+                        player1: 1,
+                        player2: 1,
+                    },
+                },
+                {
+                    $project: {
+                        winnerId: 1,
+                        playerData: { $cond: ["$isP1", "$player1", "$player2"] },
+                        wins: {
+                            $cond: [{ $eq: ["$winnerId", playerObjectId] }, 1, 0],
+                        },
+                        losses: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $ne: ["$winnerId", null] },
+                                        { $ne: ["$winnerId", playerObjectId] },
+                                    ],
+                                },
+                                1,
+                                0,
+                            ],
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        matchesPlayed: { $sum: 1 },
+                        wins: { $sum: "$wins" },
+                        losses: { $sum: "$losses" },
+                        avgTotal: {
+                            $sum: {
+                                $cond: [{ $gt: [{ $ifNull: ["$playerData.average", 0] }, 0] }, "$playerData.average", 0],
+                            },
+                        },
+                        avgCount: {
+                            $sum: {
+                                $cond: [{ $gt: [{ $ifNull: ["$playerData.average", 0] }, 0] }, 1, 0],
+                            },
+                        },
+                        firstNineAvgTotal: {
+                            $sum: {
+                                $cond: [
+                                    { $gt: [{ $ifNull: ["$playerData.firstNineAvg", 0] }, 0] },
+                                    "$playerData.firstNineAvg",
+                                    0,
+                                ],
+                            },
+                        },
+                        firstNineAvgCount: {
+                            $sum: {
+                                $cond: [{ $gt: [{ $ifNull: ["$playerData.firstNineAvg", 0] }, 0] }, 1, 0],
+                            },
+                        },
+                        highestCheckout: { $max: { $ifNull: ["$playerData.highestCheckout", 0] } },
+                        oneEightiesCount: { $sum: { $ifNull: ["$playerData.oneEightiesCount", 0] } },
+                    },
+                },
+            ]);
 
-            let wins = 0;
-            let losses = 0;
-            let totalScore = 0;
-            let totalDarts = 0;
-            let firstNineScore = 0;
-            let firstNineDarts = 0;
-            let highestCheckout = 0;
-            let oneEightiesCount = 0;
-
-            for (const match of finishedMatches) {
-                const isP1 = match.player1?.playerId?.toString() === playerId;
-                const isP2 = match.player2?.playerId?.toString() === playerId;
-                if (!isP1 && !isP2) continue;
-
-                if (match.winnerId?.toString() === playerId) {
-                    wins++;
-                } else {
-                    losses++;
-                }
-
-                for (const leg of match.legs || []) {
-                    const playerThrows = isP1 ? (leg.player1Throws as any[]) : (leg.player2Throws as any[]);
-                    const legScore = Number(isP1 ? leg.player1Score || 0 : leg.player2Score || 0);
-                    const legDarts = this.getLegDarts(
-                        playerThrows,
-                        isP1 ? (leg as any).player1TotalDarts : (leg as any).player2TotalDarts
-                    );
-                    totalScore += legScore;
-                    totalDarts += legDarts;
-
-                    const f9 = this.getFirstNineScoreAndDarts(playerThrows);
-                    firstNineScore += f9.score;
-                    firstNineDarts += f9.darts;
-
-                    for (const throwData of playerThrows || []) {
-                        if (Number(throwData?.score || 0) === 180) oneEightiesCount++;
-                        if (throwData?.isCheckout) {
-                            highestCheckout = Math.max(highestCheckout, Number(throwData?.score || 0));
-                        }
-                    }
-                }
+            const stats = aggregateResult[0];
+            if (!stats) {
+                return {
+                    matchesPlayed: 0,
+                    wins: 0,
+                    losses: 0,
+                    winRate: 0,
+                    avg: 0,
+                    firstNineAvg: 0,
+                    highestCheckout: 0,
+                    oneEightiesCount: 0,
+                };
             }
 
-            const matchesPlayed = wins + losses;
+            const matchesPlayed = Number(stats.matchesPlayed || 0);
+            const wins = Number(stats.wins || 0);
+            const losses = Number(stats.losses || 0);
             const winRate = matchesPlayed > 0 ? Number(((wins / matchesPlayed) * 100).toFixed(1)) : 0;
 
             return {
@@ -4066,10 +4216,13 @@ export class TournamentService {
                 wins,
                 losses,
                 winRate,
-                avg: this.toThreeDartAverage(totalScore, totalDarts),
-                firstNineAvg: this.toThreeDartAverage(firstNineScore, firstNineDarts),
-                highestCheckout,
-                oneEightiesCount,
+                avg: stats.avgCount > 0 ? Number((Number(stats.avgTotal) / Number(stats.avgCount)).toFixed(2)) : 0,
+                firstNineAvg:
+                    stats.firstNineAvgCount > 0
+                        ? Number((Number(stats.firstNineAvgTotal) / Number(stats.firstNineAvgCount)).toFixed(2))
+                        : 0,
+                highestCheckout: Number(stats.highestCheckout || 0),
+                oneEightiesCount: Number(stats.oneEightiesCount || 0),
             };
         };
 
@@ -4082,11 +4235,11 @@ export class TournamentService {
         };
 
         if (options?.tournamentCode) {
-            const tournament = await TournamentModel.findOne({ tournamentId: options.tournamentCode }).select("_id");
+            const tournament = await TournamentModel.findOne({ tournamentId: options.tournamentCode }).select("_id").lean();
             if (!tournament) {
                 throw new BadRequestError("Tournament not found");
             }
-            query.tournamentRef = tournament._id;
+            query.tournamentRef = (tournament as any)._id;
         }
 
         if (options?.season) {
@@ -4099,7 +4252,8 @@ export class TournamentService {
             .populate("player1.playerId", "name country")
             .populate("player2.playerId", "name country")
             .populate("tournamentRef", "tournamentId tournamentSettings.name tournamentSettings.startDate")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
         let playerAWins = 0;
         let playerBWins = 0;
@@ -5534,7 +5688,7 @@ export class TournamentService {
             clubId: clubId,
             isDeleted: { $ne: true },
             isArchived: { $ne: true }
-        }).sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 }).lean();
         if (!tournament) {
             return null;
         }
@@ -5561,13 +5715,14 @@ export class TournamentService {
             })
             .populate('player1.playerId')
             .populate('player2.playerId')
-            .sort({ updatedAt: -1 });
+            .sort({ updatedAt: -1 })
+            .lean();
 
             return liveMatches.map((match: any) => {
                 const player1LegsWon = Number(match?.player1?.legsWon || 0);
                 const player2LegsWon = Number(match?.player2?.legsWon || 0);
                 return {
-                    ...match.toObject(),
+                    ...match,
                     currentLeg: player1LegsWon + player2LegsWon + 1,
                     player1Remaining: 501,
                     player2Remaining: 501,
@@ -5710,7 +5865,8 @@ export class TournamentService {
                 isArchived: { $ne: true }
             })
             .sort({ createdAt: -1 })
-            .populate('tournamentPlayers.playerReference');
+            .populate('tournamentPlayers.playerReference')
+            .lean();
             
             return tournaments;
         } catch (error) {

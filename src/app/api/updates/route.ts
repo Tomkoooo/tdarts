@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventEmitter, EVENTS } from '@/lib/events';
+import { eventEmitter, EVENTS, createSseDeltaPayload } from '@/lib/events';
 import { withApiTelemetry } from '@/lib/api-telemetry';
 import { assertEligibilityResult } from '@/shared/lib/guards';
 import { findTournamentByCode } from '@/features/tournaments/lib/liveLayout.db';
@@ -51,12 +51,61 @@ function debugMemory(connectionId: string, message: string) {
   });
 }
 
+function normalizeEventPayload(eventName: string, payload: any) {
+  if (payload?.kind === 'delta' && payload?.schemaVersion === 1) {
+    return payload;
+  }
+
+  const tournamentId =
+    typeof payload?.tournamentId === 'string' && payload.tournamentId
+      ? payload.tournamentId
+      : '';
+
+  if (!tournamentId) return payload;
+
+  if (eventName === EVENTS.MATCH_UPDATE) {
+    return createSseDeltaPayload({
+      tournamentId,
+      scope: 'match',
+      action:
+        payload?.type === 'started'
+          ? 'started'
+          : payload?.type === 'finished'
+            ? 'finished'
+            : payload?.type === 'leg-finished'
+              ? 'leg-finished'
+              : 'updated',
+      data: payload,
+    });
+  }
+
+  if (eventName === EVENTS.GROUP_UPDATE) {
+    return createSseDeltaPayload({
+      tournamentId,
+      scope: 'group',
+      action: 'standings-updated',
+      data: payload,
+      requiresResync: true,
+    });
+  }
+
+  return createSseDeltaPayload({
+    tournamentId,
+    scope: 'tournament',
+    action: payload?.type === 'knockout-update' ? 'knockout-updated' : 'updated',
+    data: payload,
+    requiresResync: payload?.type === 'knockout-update',
+  });
+}
+
 async function __GET(req: NextRequest) {
   const encoder = new TextEncoder();
   const scopedTournamentId = req.nextUrl.searchParams.get('tournamentId')?.trim() || undefined;
+  let scopedTournamentMongoId: string | undefined;
   const maxConnectionMs = clampMaxConnectionMs(req.nextUrl.searchParams.get('maxConnectionMs'));
   if (scopedTournamentId) {
     const tournament = await findTournamentByCode(scopedTournamentId);
+    scopedTournamentMongoId = tournament?._id?.toString();
     const clubId = tournament?.clubId?.toString();
     if (clubId) {
       const eligibility = await assertEligibilityResult({
@@ -80,22 +129,39 @@ async function __GET(req: NextRequest) {
       const shouldDispatch = (data: any) => {
         if (!scopedTournamentId) return true;
         const eventTournamentId = data?.tournamentId;
-        return typeof eventTournamentId === 'string' && eventTournamentId === scopedTournamentId;
+        return (
+          typeof eventTournamentId === 'string' &&
+          (eventTournamentId === scopedTournamentId ||
+            (scopedTournamentMongoId !== undefined &&
+              eventTournamentId === scopedTournamentMongoId))
+        );
       };
 
       const onTournamentUpdate = (data: any) => {
         if (!shouldDispatch(data)) return;
-        safeEnqueue(EVENTS.TOURNAMENT_UPDATE, data, 'tournament-update-enqueue-failed');
+        safeEnqueue(
+          EVENTS.TOURNAMENT_UPDATE,
+          normalizeEventPayload(EVENTS.TOURNAMENT_UPDATE, data),
+          'tournament-update-enqueue-failed'
+        );
       };
 
       const onMatchUpdate = (data: any) => {
         if (!shouldDispatch(data)) return;
-        safeEnqueue(EVENTS.MATCH_UPDATE, data, 'match-update-enqueue-failed');
+        safeEnqueue(
+          EVENTS.MATCH_UPDATE,
+          normalizeEventPayload(EVENTS.MATCH_UPDATE, data),
+          'match-update-enqueue-failed'
+        );
       };
 
       const onGroupUpdate = (data: any) => {
         if (!shouldDispatch(data)) return;
-        safeEnqueue(EVENTS.GROUP_UPDATE, data, 'group-update-enqueue-failed');
+        safeEnqueue(
+          EVENTS.GROUP_UPDATE,
+          normalizeEventPayload(EVENTS.GROUP_UPDATE, data),
+          'group-update-enqueue-failed'
+        );
       };
 
       const onAbort = () => cleanup('request-aborted');

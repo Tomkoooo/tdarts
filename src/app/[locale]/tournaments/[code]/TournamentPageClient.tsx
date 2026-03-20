@@ -1,21 +1,25 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
-import { IconDeviceDesktop, IconDeviceTv, IconEdit, IconRefresh, IconScreenShare, IconShare2 } from "@tabler/icons-react";
+import {
+  IconDeviceDesktop,
+  IconDeviceTv,
+  IconEdit,
+  IconRefresh,
+  IconScreenShare,
+  IconShare2,
+} from "@tabler/icons-react";
 import { useUserContext } from "@/hooks/useUser";
 import { reopenTournamentAction } from "@/features/tournaments/actions/reopenTournament.action";
 import { useTournamentPageData } from "@/features/tournament/hooks/useTournamentPageData";
 import { useTournamentRealtimeRefresh } from "@/features/tournament/hooks/useTournamentRealtimeRefresh";
 import { TournamentTabsNavigation } from "@/features/tournament/components/TournamentTabsNavigation";
 import TournamentOverview from "@/components/tournament/TournamentOverview";
-import TournamentPlayers from "@/components/tournament/TournamentPlayers";
 import TournamentGroupsGenerator from "@/components/tournament/TournamentStatusChanger";
-import TournamentGroupsView from "@/components/tournament/TournamentGroupsView";
-import TournamentBoardsView from "@/components/tournament/TournamentBoardsView";
-import TournamentKnockoutBracket from "@/components/tournament/TournamentKnockoutBracket";
 import TournamentShareModal from "@/components/tournament/TournamentShareModal";
 import EditTournamentModal from "@/components/tournament/EditTournamentModal";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -25,6 +29,23 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TournamentStatTile } from "@/features/tournament/components/TournamentStatTile";
+
+const TournamentPlayers = dynamic(
+  () => import("@/components/tournament/TournamentPlayers")
+);
+const TournamentGroupsView = dynamic(
+  () => import("@/components/tournament/TournamentGroupsView")
+);
+const TournamentBoardsView = dynamic(
+  () => import("@/components/tournament/TournamentBoardsView")
+);
+const TournamentKnockoutBracket = dynamic(
+  () => import("@/components/tournament/TournamentKnockoutBracket")
+);
+
+type TournamentPageClientProps = {
+  initialData?: any;
+};
 
 const getStatusMeta = (t: (key: string) => string) => ({
   pending: {
@@ -59,16 +80,18 @@ const getTabs = (t: (key: string) => string) => [
 ];
 
 const toReadableFormatLabel = (format?: string) => {
-  if (!format) return "-"
-  if (format === "group_knockout") return "Group + Knockout"
-  if (format === "group") return "Group"
-  if (format === "knockout") return "Knockout"
+  if (!format) return "-";
+  if (format === "group_knockout") return "Group + Knockout";
+  if (format === "group") return "Group";
+  if (format === "knockout") return "Knockout";
   return format
     .replaceAll("_", " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase())
-}
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
-const TournamentPage = () => {
+const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
+  initialData,
+}) => {
   const { code } = useParams();
   const searchParams = useSearchParams();
   const { user } = useUserContext();
@@ -76,7 +99,11 @@ const TournamentPage = () => {
   const tTour = useTranslations("Tournament");
 
   const statusMeta = useMemo(
-    () => getStatusMeta(t) as Record<string, { label: string; badgeClass: string; description: string }>,
+    () =>
+      getStatusMeta(t) as Record<
+        string,
+        { label: string; badgeClass: string; description: string }
+      >,
     [t]
   );
   const tabs = useMemo(() => getTabs(t), [t]);
@@ -94,7 +121,7 @@ const TournamentPage = () => {
     ensureFullData,
     applySseDelta,
     resyncFullData,
-  } = useTournamentPageData(code, user, t("error.retry"));
+  } = useTournamentPageData(code, user, t("error.retry"), initialData);
 
   useTournamentRealtimeRefresh(
     tournament,
@@ -123,6 +150,13 @@ const TournamentPage = () => {
   const handleRefetch = useCallback(() => {
     void fetchAll(activeTab === "overview" && !hasFullData ? "overview" : "full");
   }, [activeTab, fetchAll, hasFullData]);
+
+  const handleTournamentRefresh = useCallback(
+    async (mode: "lite" | "full" = "full") => {
+      await fetchAll(mode === "lite" ? "overview" : "full");
+    },
+    [fetchAll]
+  );
 
   const handleReopenTournament = useCallback(async () => {
     if (!user || !user._id || user.isAdmin !== true) {
@@ -412,6 +446,7 @@ const TournamentPage = () => {
                 <TournamentGroupsView
                   tournament={tournament}
                   userClubRole={userClubRole}
+                  onTournamentRefresh={handleTournamentRefresh}
                 />
               </TabsContent>
             )}
@@ -511,4 +546,4 @@ const TournamentPage = () => {
   );
 };
 
-export default TournamentPage;
+export default TournamentPageClient;

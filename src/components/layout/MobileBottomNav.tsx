@@ -1,22 +1,31 @@
 "use client";
 
 import React from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconDeviceDesktop,
   IconHome,
+  IconLanguage,
   IconSearch,
   IconTrophy,
   IconUser,
   IconUsersGroup,
 } from "@tabler/icons-react";
-import { stripLocalePrefix } from "@/lib/seo";
+import { DEFAULT_LOCALE, localePath, stripLocalePrefix, SUPPORTED_LOCALES, type SupportedLocale } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { useUnreadTickets } from "@/hooks/useUnreadTickets";
 import { useUserContext } from "@/hooks/useUser";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/routing";
 import { useOngoingTournamentQuickLinkWithOptions } from "@/features/navigation/hooks/useOngoingTournamentQuickLink";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   id: string;
@@ -28,10 +37,18 @@ interface NavItem {
 
 export const MobileBottomNav: React.FC = () => {
   const { user } = useUserContext();
+  const t = useTranslations("Navbar");
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [allowDeferredHooks, setAllowDeferredHooks] = React.useState(false);
   const normalizedPath = stripLocalePrefix(pathname);
+  const maybeLocale = pathname?.split("/")[1];
+  const currentLocale: SupportedLocale = SUPPORTED_LOCALES.includes(
+    maybeLocale as SupportedLocale
+  )
+    ? (maybeLocale as SupportedLocale)
+    : DEFAULT_LOCALE;
   const isClubRoute = normalizedPath.startsWith("/clubs");
   const hooksEnabled = !isClubRoute || allowDeferredHooks;
   const { unreadCount } = useUnreadTickets({ enabled: Boolean(user?._id) && hooksEnabled, deferMs: isClubRoute ? 1200 : 0 });
@@ -59,34 +76,34 @@ export const MobileBottomNav: React.FC = () => {
               id: "home",
               href: "/",
               icon: IconHome,
-              label: "Home",
+              label: t("home"),
               match: (path) => path === "/" || path === "/home" || path === "/landing",
             },
             {
               id: "tournaments",
               href: "/search",
               icon: IconSearch,
-              label: "Versenyek",
+              label: t("tournaments"),
               match: (path) => path === "/search",
             },
             {
               id: "board",
               href: ongoingTournament?.code ? `/tournaments/${ongoingTournament.code}` : "/board",
               icon: hasQuickTournament ? IconTrophy : IconDeviceDesktop,
-              label: hasQuickTournament ? "Current tournament" : "Tábla",
+              label: hasQuickTournament ? t("active_tournament") : t("board"),
               match: (path) => path.startsWith("/board") || path.startsWith("/tournaments"),
             },
             {
               id: "profile",
               href: "/profile",
               icon: IconUser,
-              label: "Profil",
+              label: t("profile"),
             },
             {
               id: "myclub",
               href: "/myclub",
               icon: IconUsersGroup,
-              label: "Saját klub",
+              label: t("my_club"),
               match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
             },
           ]
@@ -95,32 +112,39 @@ export const MobileBottomNav: React.FC = () => {
               id: "home",
               href: "/",
               icon: IconHome,
-              label: "Home",
+              label: t("home"),
               match: (path) => path === "/" || path === "/landing",
             },
             {
               id: "search",
               href: "/search",
               icon: IconSearch,
-              label: "Search",
+              label: t("search"),
               match: (path) => path === "/search",
+            },
+            {
+              id: "board",
+              href: "/board",
+              icon: IconDeviceDesktop,
+              label: t("board"),
+              match: (path) => path.startsWith("/board"),
             },
             {
               id: "login",
               href: "/auth/login",
               icon: IconUser,
-              label: "Login",
+              label: t("login"),
               match: (path) => path.startsWith("/auth/login"),
             },
             {
               id: "register",
               href: "/auth/register",
               icon: IconUsersGroup,
-              label: "Register",
+              label: t("register"),
               match: (path) => path.startsWith("/auth/register"),
             },
           ],
-    [user, hasQuickTournament, ongoingTournament?.code]
+    [user, hasQuickTournament, ongoingTournament?.code, t]
   );
 
   const isActive = (item: NavItem): boolean => {
@@ -145,6 +169,25 @@ export const MobileBottomNav: React.FC = () => {
     left: `calc(${slotPercent * activeIndex}% + ${slotPercent / 2}% - 2.5rem)`,
   };
 
+  const languageOptions = React.useMemo(
+    () => [
+      { code: "hu", label: "Magyar" },
+      { code: "en", label: "English" },
+      { code: "de", label: "Deutsch" },
+    ],
+    []
+  );
+
+  const switchLocale = React.useCallback(
+    (targetLocale: string) => {
+      if (!SUPPORTED_LOCALES.includes(targetLocale as SupportedLocale)) return;
+      const targetPath = localePath(normalizedPath || "/", targetLocale as SupportedLocale);
+      const query = searchParams.toString();
+      router.push(query ? `${targetPath}?${query}` : targetPath);
+    },
+    [normalizedPath, router, searchParams]
+  );
+
   return (
     <nav
       className={cn(
@@ -153,6 +196,34 @@ export const MobileBottomNav: React.FC = () => {
         "pb-[calc(env(safe-area-inset-bottom)+0.35rem)]"
       )}
     >
+      <div className="mx-auto mb-1 flex w-full max-w-md justify-end px-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-full border-border/70 bg-card/80 px-2.5 text-xs shadow-sm"
+              aria-label={t("select_language")}
+            >
+              <IconLanguage size={14} className="mr-1.5" />
+              {currentLocale.toUpperCase()}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            {languageOptions.map((lang) => (
+              <DropdownMenuItem
+                key={lang.code}
+                onClick={() => switchLocale(lang.code)}
+                className="flex items-center justify-between"
+              >
+                <span>{lang.label}</span>
+                {currentLocale === lang.code ? <span className="text-xs text-muted-foreground">•</span> : null}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="mx-auto w-full max-w-md px-3">
         <div
           className={cn(

@@ -69,18 +69,14 @@ export default function SearchPage() {
     useEffect(() => {
         const urlTab = searchParams.get("tab") || "global"
         const urlQuery = searchParams.get("q") || ""
-        if (urlTab !== activeTab) {
-            setActiveTab(urlTab)
-        }
-        if (urlQuery !== query) {
-            setQuery(urlQuery)
-        }
+        setActiveTab(prev => (prev === urlTab ? prev : urlTab))
+        setQuery(prev => (prev === urlQuery ? prev : urlQuery))
         const nextFromUrl = parseFiltersFromUrl()
         setFilters(prev => {
             const next = { ...prev, ...nextFromUrl }
             return JSON.stringify(prev) === JSON.stringify(next) ? prev : next
         })
-    }, [searchParams, activeTab, query, parseFiltersFromUrl])
+    }, [searchParams, parseFiltersFromUrl])
 
     useEffect(() => {
         const params = new URLSearchParams(searchParams.toString())
@@ -142,7 +138,6 @@ export default function SearchPage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const requestId = ++latestRequestIdRef.current
             const requestTab = activeTab
             const requestPage = Number(filters.page || 1)
             const requestKey = JSON.stringify({
@@ -153,6 +148,7 @@ export default function SearchPage() {
             })
             if (requestKey === lastFetchKeyRef.current) return
             lastFetchKeyRef.current = requestKey
+            const requestId = ++latestRequestIdRef.current
             setIsLoading(true)
             try {
                 if (requestTab === 'map') {

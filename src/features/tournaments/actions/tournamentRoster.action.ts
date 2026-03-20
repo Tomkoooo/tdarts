@@ -616,7 +616,8 @@ export async function getTournamentHeadToHeadClientAction(input: {
       if (!currentPlayer) throw new Error('Current player not found');
       const data = await TournamentService.getHeadToHead(
         currentPlayer._id.toString(),
-        parsed.opponentId
+        parsed.opponentId,
+        { tournamentCode: parsed.code }
       );
       return serializeForClient({ success: true, data });
     },

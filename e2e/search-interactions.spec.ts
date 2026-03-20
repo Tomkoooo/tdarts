@@ -1,7 +1,27 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { assertNoCriticalDiagnostics } from './helpers/assertions';
 import { attachDiagnostics } from './helpers/diagnostics';
 import { clickIfVisible, gotoAndWaitStable, openDialogIfPresent } from './helpers/navigation';
+
+async function navigateByVisibleLink(
+  page: Parameters<typeof clickIfVisible>[0],
+  selectors: string[],
+  urlPattern: RegExp
+): Promise<void> {
+  const clicked = await clickIfVisible(page, selectors);
+  expect(clicked, `Expected to find visible link from selectors: ${selectors.join(', ')}`).toBe(true);
+  await page.waitForURL(urlPattern, { timeout: 10_000 });
+}
+
+async function expectSearchToSettle(page: Parameters<typeof clickIfVisible>[0]): Promise<void> {
+  const tabList = page.locator('[role="tablist"]').first();
+  await expect(tabList).toBeVisible({ timeout: 10_000 });
+
+  const headerSpinner = page.locator('main').locator('.animate-spin').first();
+  await expect
+    .poll(async () => headerSpinner.isVisible().catch(() => false), { timeout: 12_000, intervals: [200, 500, 1000] })
+    .toBe(false);
+}
 
 test.describe('search interactions diagnostics', () => {
   test('search page tabs, filters, and map toggles', async ({ page }, testInfo) => {
@@ -14,7 +34,28 @@ test.describe('search interactions diagnostics', () => {
       }
     );
 
-    await gotoAndWaitStable(page, '/en/search');
+    await gotoAndWaitStable(page, '/en/home');
+
+    await navigateByVisibleLink(
+      page,
+      ['a[href="/en/search"]', 'a[href^="/en/search?"]', 'a[href="/search"]', 'a[href^="/search?"]'],
+      /\/search(\?|$)/
+    );
+    await expectSearchToSettle(page);
+
+    await navigateByVisibleLink(
+      page,
+      ['a[href="/en/home"]', 'a[href="/home"]', 'a[href="/en"]', 'a[href="/en/"]', 'a[href="/"]'],
+      /(?:\/en(?:\/home)?|\/home|\/)$/
+    );
+    await page.waitForTimeout(250);
+
+    await navigateByVisibleLink(
+      page,
+      ['a[href="/en/search"]', 'a[href^="/en/search?"]', 'a[href="/search"]', 'a[href^="/search?"]'],
+      /\/search(\?|$)/
+    );
+    await expectSearchToSettle(page);
 
     await clickIfVisible(page, [
       'button:has-text("Players")',

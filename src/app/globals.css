@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
@@ -49,6 +50,10 @@
   --color-glass-bg: rgba(26, 10, 10, 0.7);
   --color-glass-border: #92221033;
   --color-glass-blur: blur(12px);
+
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-label: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
 
   --shadow-glow-primary: 0 0 20px color-mix(in srgb, var(--color-primary) 15%);
   --shadow-glow-accent: 0 0 20px color-mix(in srgb, var(--color-accent) 15%);
@@ -188,6 +193,7 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-headline);
   }
 }
 

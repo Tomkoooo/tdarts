@@ -34,6 +34,16 @@ type VerifyPaymentResult =
   | { kind: 'error'; status: number; body: { error: string } }
   | GuardFailureResult;
 
+function isStripeInvalidRequest(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const maybeStripe = error as Error & { type?: string; code?: string };
+  return (
+    maybeStripe.type === 'StripeInvalidRequestError' ||
+    maybeStripe.code === 'resource_missing' ||
+    /no such checkout\\.session|invalid.+session/i.test(maybeStripe.message)
+  );
+}
+
 function isVerifyPaymentErrorResult(result: unknown): result is { kind: 'error'; status: number } {
   if (!result || typeof result !== 'object') {
     return false;
@@ -61,7 +71,15 @@ export async function verifyPaymentAction(input: VerifyPaymentInput): Promise<Ve
       }
       await connectMongo();
       const { sessionId } = parsedInput.data;
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      let session: Stripe.Response<Stripe.Checkout.Session>;
+      try {
+        session = await stripe.checkout.sessions.retrieve(sessionId);
+      } catch (error) {
+        if (isStripeInvalidRequest(error)) {
+          return { kind: 'error', status: 400, body: { error: 'Invalid session_id' } };
+        }
+        throw error;
+      }
 
       if (session.payment_status !== 'paid') {
         return { kind: 'error', status: 400, body: { error: 'Payment not completed' } };

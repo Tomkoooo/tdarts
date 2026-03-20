@@ -181,7 +181,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         const boardNum = parseInt(savedBoardNum);
         const savedBoard = boards.find(b => b.boardNumber === boardNum);
         if (savedBoard) {
-          setSelectedBoard(savedBoard);
+          setSelectedBoard((prev) => {
+            if (prev?.boardNumber === savedBoard.boardNumber) return prev;
+            return savedBoard;
+          });
         }
       }
     }
@@ -189,10 +192,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   // Load matches when board is selected
   useEffect(() => {
-    if (selectedBoard) {
+    if (selectedBoard?.boardNumber) {
       loadMatches();
     }
-  }, [selectedBoard, tournamentId]);
+  }, [selectedBoard?.boardNumber, tournamentId]);
 
   // Load user role when authenticated
   useEffect(() => {
@@ -213,21 +216,69 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         // Merge bursts of events to avoid back-to-back expensive API calls.
         sseRefreshTimerRef.current = setTimeout(action, 600);
       };
-      
-      // Auto-refresh only relevant slice to avoid redundant calls.
-      if (lastEvent.type === 'match-update' && selectedBoard) {
-        console.log('Board - Auto-refreshing selected board matches');
-        scheduleRefresh(() => {
-          void loadMatches();
-        });
-      } else if ((lastEvent.type === 'tournament-update' || lastEvent.type === 'match-update') && !selectedBoard) {
-        console.log('Board - Auto-refreshing board list');
-        scheduleRefresh(() => {
-          void loadBoards();
-        });
+
+      const delta = lastEvent.delta;
+      const eventTournamentId = delta?.tournamentId || lastEvent.data?.tournamentId;
+      const isForTournament =
+        !eventTournamentId ||
+        eventTournamentId === tournamentId ||
+        eventTournamentId === tournamentData?._id?.toString?.();
+      if (!isForTournament) return;
+
+      let handled = false;
+
+      if (delta?.scope === 'match') {
+        const incomingMatch = delta.data?.match;
+        const incomingMatchId = incomingMatch?._id ? String(incomingMatch._id) : undefined;
+        const boardNumberFromDelta = Number(
+          delta.data?.boardNumber ?? incomingMatch?.boardReference
+        );
+
+        if (selectedBoard && Number.isFinite(boardNumberFromDelta) && boardNumberFromDelta === selectedBoard.boardNumber) {
+          if (incomingMatch && incomingMatchId) {
+            setMatches((prev) => {
+              const index = prev.findIndex((m) => String(m._id) === incomingMatchId);
+              if (index === -1) return prev;
+              const next = [...prev];
+              next[index] = { ...next[index], ...incomingMatch };
+              return next;
+            });
+            handled = true;
+          }
+        }
+
+        if (!selectedBoard && Number.isFinite(boardNumberFromDelta)) {
+          setBoards((prev) =>
+            prev.map((board) => {
+              if (board.boardNumber !== boardNumberFromDelta) return board;
+              const nextStatus =
+                delta.action === 'started'
+                  ? 'playing'
+                  : delta.action === 'finished'
+                    ? 'waiting'
+                    : board.status;
+              return { ...board, status: nextStatus };
+            })
+          );
+          handled = true;
+        }
+      }
+
+      if (!handled || delta?.requiresResync) {
+        if (selectedBoard) {
+          console.log('Board - Resyncing selected board matches');
+          scheduleRefresh(() => {
+            void loadMatches();
+          });
+        } else {
+          console.log('Board - Resyncing board list');
+          scheduleRefresh(() => {
+            void loadBoards();
+          });
+        }
       }
     }
-  }, [lastEvent, isAuthenticated, selectedBoard]);
+  }, [lastEvent, isAuthenticated, selectedBoard, tournamentId, tournamentData?._id]);
 
   useEffect(() => {
     return () => {

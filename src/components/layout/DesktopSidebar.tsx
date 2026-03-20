@@ -19,11 +19,13 @@ import {
   IconLanguage,
   IconLogout,
   IconPlayerPlay,
+  IconSearch,
   IconSettings,
   IconTargetArrow,
   IconTrophy,
   IconUser,
   IconUsers,
+  IconWorld,
 } from "@tabler/icons-react";
 import {
   DropdownMenu,
@@ -87,32 +89,44 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       {
         href: "/",
         icon: IconHome,
-        label: "Home",
+        label: t("home"),
         match: (path) => path === "/" || path === "/home" || path === "/landing",
       },
       {
+        href: "/landing",
+        icon: IconWorld,
+        label: t("landing"),
+        match: (path) => path === "/landing",
+      },
+      {
         href: "/search",
+        icon: IconSearch,
+        label: t("search"),
+        match: (path, params) => path === "/search" && params.get("tab") !== "clubs" && params.get("tab") !== "tournaments",
+      },
+      {
+        href: "/search?tab=tournaments",
         icon: IconTrophy,
-        label: "Versenyek",
-        match: (path, params) => path === "/search" && params.get("tab") !== "clubs",
+        label: t("tournaments"),
+        match: (path, params) => path === "/search" && params.get("tab") === "tournaments",
       },
       {
         href: "/search?tab=clubs",
         icon: IconUsers,
-        label: "Klubok",
+        label: t("clubs"),
         match: (path, params) =>
           (path === "/search" && params.get("tab") === "clubs") || path.startsWith("/clubs"),
       },
-      { href: "/board", icon: IconTargetArrow, label: "Tábla" },
-      { href: "/how-it-works", icon: IconInfoCircle, label: "Hogyan működik" },
+      { href: "/board", icon: IconTargetArrow, label: t("board") },
+      { href: "/how-it-works", icon: IconInfoCircle, label: t("how_it_works") },
       {
         href: "/profile",
         icon: IconUser,
-        label: "Profil",
+        label: t("profile"),
       },
-      { href: "/myclub", icon: IconDart, label: "Saját klub" },
+      { href: "/myclub", icon: IconDart, label: t("my_club") },
     ],
-    []
+    [t]
   );
 
   const languageOptions = React.useMemo(
@@ -187,7 +201,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         collapsed ? "w-(--sidebar-collapsed-width)" : "w-(--sidebar-width)"
       )}
     >
-      <div className="p-4 flex items-center justify-between border-b border-border/70">
+      <div className="p-4 flex items-center border-b border-border/70">
         <Link
           href={toLocalizedHref(user?._id ? "/home" : "/")}
           className={cn("flex min-w-0 items-center", collapsed ? "justify-center" : "gap-3")}
@@ -209,16 +223,6 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             </div>
           ) : null}
         </Link>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={onToggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
-        </Button>
       </div>
 
       <div className="px-3 pt-4">
@@ -258,7 +262,11 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               title={ongoingTournament.name}
             >
               <IconPlayerPlay size={18} className="shrink-0" />
-              {!collapsed ? <span className="truncate">Aktív torna</span> : null}
+              {!collapsed ? (
+                <span className="truncate">
+                  {t.has("active_tournament") ? t("active_tournament") : t("tournaments")}
+                </span>
+              ) : null}
             </Link>
           ) : null}
         </nav>
@@ -275,6 +283,24 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             </p>
           </div>
         ) : null}
+
+        <Button
+          type="button"
+          variant="ghost"
+          className={cn(
+            "w-full h-10 justify-start gap-3 px-2.5",
+            collapsed && "justify-center px-2"
+          )}
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+          {!collapsed ? (
+            <span className="text-sm">
+              {t.has("collapse_sidebar") ? t("collapse_sidebar") : "Collapse sidebar"}
+            </span>
+          ) : null}
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -354,7 +380,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               <DropdownMenuItem asChild>
                 <Link href={toLocalizedHref("/landing")} className="cursor-pointer">
                   <IconHome size={16} className="mr-2" />
-                  Home
+                  {t("home")}
                 </Link>
               </DropdownMenuItem>
               {user.isAdmin ? (

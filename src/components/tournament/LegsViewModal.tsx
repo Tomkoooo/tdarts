@@ -4,36 +4,21 @@ import React, { useEffect, useState } from "react"
 import { useFeatureFlag } from "@/hooks/useFeatureFlag"
 import { getMatchByIdClientAction, getMatchLegsClientAction } from "@/features/tournaments/actions/tournamentRoster.action"
 import MatchStatisticsCharts from "./MatchStatisticsCharts"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/Badge"
-import { Separator } from "@/components/ui/separator"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import {
   IconArrowLeft,
-  IconArrowRight,
-  IconClock,
+  IconCircleCheck,
   IconLoader2,
   IconTarget,
-  IconTargetArrow,
-  IconTrendingDown,
-  IconTrophy,
   IconSparkles,
   IconAlertTriangle,
-  IconChartLine,
   IconLock,
 } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
+import { SmartAvatar } from "@/components/ui/smart-avatar"
 
 type Throw = {
   score: number
@@ -57,6 +42,8 @@ type Leg = {
   loserRemainingScore?: number
   doubleAttempts: number
   createdAt: string
+  player1TotalDarts?: number
+  player2TotalDarts?: number
 }
 
 type Match = {
@@ -93,7 +80,6 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   const [error, setError] = useState("")
   const [showDetailedStats, setShowDetailedStats] = useState(false)
   const [clubId, setClubId] = useState<string | undefined>(undefined)
-  const [activeTab, setActiveTab] = useState<"legs" | "stats">("legs")
 
   const { isEnabled: isDetailedStatsEnabled, isLoading: isFeatureFlagLoading } = useFeatureFlag("detailedStatistics", clubId)
 
@@ -104,6 +90,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   useEffect(() => {
     if (!match?._id || !isOpen) return
     void fetchMatchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match?._id, isOpen])
 
   const fetchMatchData = async () => {
@@ -157,43 +144,27 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
     if (isOpen && match) {
       void fetchLegs()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, match])
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
       setShowDetailedStats(false)
       setLegs([])
-      setActiveTab("legs")
       onClose()
     }
   }
 
-  const playerOneName = match?.player1?.playerId?.name || "Player 1"
-  const playerTwoName = match?.player2?.playerId?.name || "Player 2"
+  const playerOneName = match?.player1?.playerId?.name || "Player A"
+  const playerTwoName = match?.player2?.playerId?.name || "Player B"
   const playerOneId = match?.player1?.playerId?._id
   const playerTwoId = match?.player2?.playerId?._id
 
-  // Determine winning player based on leg wins
-  const getWinningPlayer = () => {
-    if (legs.length === 0) return null
-    const player1Wins = legs.filter(leg => leg.winnerId?._id === playerOneId).length
-    const player2Wins = legs.filter(leg => leg.winnerId?._id === playerTwoId).length
-    if (player1Wins > player2Wins) return playerOneId
-    if (player2Wins > player1Wins) return playerTwoId
-    return null // Tie
-  }
-
-  const winningPlayerId = getWinningPlayer()
-  const isPlayer1Winner = winningPlayerId === playerOneId
-  const isPlayer2Winner = winningPlayerId === playerTwoId
+  const player1Wins = legs.filter(leg => leg.winnerId?._id === playerOneId).length
+  const player2Wins = legs.filter(leg => leg.winnerId?._id === playerTwoId).length
 
   const calculatePlayerArrows = (throws: Throw[], storedTotalDarts?: number, isWinner?: boolean, winnerArrowCount?: number) => {
-    // Use stored totalDarts if available (new matches)
-    if (storedTotalDarts !== undefined && storedTotalDarts !== null) {
-      return storedTotalDarts
-    }
-    
-    // Fallback calculation for older matches
+    if (storedTotalDarts !== undefined && storedTotalDarts !== null) return storedTotalDarts
     if (!throws.length) return 0
     if (isWinner && typeof winnerArrowCount === "number") {
       return (throws.length - 1) * 3 + winnerArrowCount
@@ -201,373 +172,438 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
     return throws.length * 3
   }
 
-  const calculateWinnerArrowsForLeg = (leg: Leg, isPlayer1Winner: boolean, isPlayer2Winner: boolean) => {
-    const winnerThrows = isPlayer1Winner ? leg.player1Throws : isPlayer2Winner ? leg.player2Throws : []
-    const winnerStoredTotalDarts = isPlayer1Winner
-      ? (leg as any).player1TotalDarts
-      : isPlayer2Winner
-        ? (leg as any).player2TotalDarts
-        : undefined
-
-    if (typeof winnerStoredTotalDarts === "number" && winnerStoredTotalDarts > 0) {
-      return winnerStoredTotalDarts
-    }
-
-    if (!winnerThrows.length) return 0
-
-    const lastThrow = winnerThrows[winnerThrows.length - 1]
-    // Legacy payloads can include winnerArrowCount as "checkout visit darts".
-    // If missing, fallback to the last throw's darts value.
-    const checkoutVisitDarts =
-      typeof leg.winnerArrowCount === "number" && leg.winnerArrowCount > 0 && leg.winnerArrowCount <= 3
-        ? leg.winnerArrowCount
-        : Number(lastThrow?.darts || 3)
-
-    return (winnerThrows.length - 1) * 3 + checkoutVisitDarts
-  }
-
   const calculateLoserRemainingForLeg = (leg: Leg, isPlayer1Winner: boolean, isPlayer2Winner: boolean) => {
     if (typeof leg.loserRemainingScore === "number" && leg.loserRemainingScore >= 0) {
       return leg.loserRemainingScore
     }
-
-    const player1Score = Number(leg.player1Score || 0)
-    const player2Score = Number(leg.player2Score || 0)
-
-    if (isPlayer1Winner) {
-      return Math.max(0, player1Score - player2Score)
-    }
-    if (isPlayer2Winner) {
-      return Math.max(0, player2Score - player1Score)
-    }
+    const p1 = Number(leg.player1Score || 0)
+    const p2 = Number(leg.player2Score || 0)
+    if (isPlayer1Winner) return Math.max(0, p1 - p2)
+    if (isPlayer2Winner) return Math.max(0, p2 - p1)
     return 0
   }
 
-  const calculateRunningAverages = (throws: Throw[]) => {
-    let total = 0
-    return throws.map((entry, idx) => {
-      total += entry.score
-      return Number(((total / (idx + 1)) || 0).toFixed(2))
+  const createThrowRows = (leg: Leg, startingScore: number) => {
+    let p1Remaining = startingScore
+    let p2Remaining = startingScore
+    const visits = Math.max(leg.player1Throws.length, leg.player2Throws.length)
+
+    return Array.from({ length: visits }, (_, throwIndex) => {
+      const p1Throw = leg.player1Throws[throwIndex]
+      const p2Throw = leg.player2Throws[throwIndex]
+      let p1After: number | null = null
+      let p2After: number | null = null
+
+      if (p1Throw) {
+        p1Remaining = Math.max(0, p1Remaining - Number(p1Throw.score || 0))
+        p1After = p1Remaining
+      }
+      if (p2Throw) {
+        p2Remaining = Math.max(0, p2Remaining - Number(p2Throw.score || 0))
+        p2After = p2Remaining
+      }
+
+      return {
+        throwIndex,
+        p1Throw,
+        p2Throw,
+        p1After,
+        p2After,
+        arrowCount: (throwIndex + 1) * 3,
+      }
     })
   }
 
-  const calculateLegStats = (throws: Throw[]) => {
-    if (throws.length === 0) return { average: 0, highestThrow: 0, oneEighties: 0 }
-    const totalScore = throws.reduce((sum, t) => sum + t.score, 0)
-    const average = throws.length > 0 ? Math.round((totalScore / throws.length) * 100) / 100 : 0
-    const highestThrow = Math.max(...throws.map(t => t.score))
-    const oneEighties = throws.filter(t => t.score === 180).length
-    return { average, highestThrow, oneEighties }
-  }
+  // Calculate Match Pulse Stats over all fetched legs
+  const getMatchPulseStats = () => {
+    let p1ThrowsTotal = 0
+    let p1ScoreTotal = 0
+    let p1180s = 0
+    let p1140s = 0
+    let p1100s = 0
 
-  const formatThrow = (throwData: Throw, isWinner: boolean) => {
-    if (throwData.isCheckout && isWinner) {
-      return "bg-success/20 text-success"
-    } else if (throwData.score === 180) {
-      return "bg-warning/20 text-warning"
-    } else if (throwData.score === 0) {
-      return "bg-destructive/20 text-destructive"
-    } else if (throwData.score >= 140) {
-      return "bg-info/20 text-info"
-    } else if (throwData.score >= 100) {
-      return "bg-primary/20 text-primary"
-    } else {
-      return "bg-muted text-muted-foreground"
+    let p2ThrowsTotal = 0
+    let p2ScoreTotal = 0
+    let p2180s = 0
+    let p2140s = 0
+    let p2100s = 0
+
+    let totalMatchDarts = 0
+
+    legs.forEach(leg => {
+      leg.player1Throws.forEach(t => {
+        p1ThrowsTotal++
+        p1ScoreTotal += t.score
+        if (t.score === 180) p1180s++
+        if (t.score >= 140 && t.score < 180) p1140s++
+        if (t.score >= 100 && t.score < 140) p1100s++
+      })
+      leg.player2Throws.forEach(t => {
+        p2ThrowsTotal++
+        p2ScoreTotal += t.score
+        if (t.score === 180) p2180s++
+        if (t.score >= 140 && t.score < 180) p2140s++
+        if (t.score >= 100 && t.score < 140) p2100s++
+      })
+      totalMatchDarts += calculatePlayerArrows(leg.player1Throws, leg.player1TotalDarts, leg.winnerId?._id === playerOneId, leg.winnerArrowCount)
+      totalMatchDarts += calculatePlayerArrows(leg.player2Throws, leg.player2TotalDarts, leg.winnerId?._id === playerTwoId, leg.winnerArrowCount)
+    })
+
+    const avgA = p1ThrowsTotal > 0 ? p1ScoreTotal / p1ThrowsTotal : 0
+    const avgB = p2ThrowsTotal > 0 ? p2ScoreTotal / p2ThrowsTotal : 0
+
+    return {
+      avgA: avgA.toFixed(2),
+      avgB: avgB.toFixed(2),
+      p1180s,
+      p1140s,
+      p1100s,
+      p2180s,
+      p2140s,
+      p2100s,
     }
   }
+
+  const matchStats = getMatchPulseStats()
 
   if (!match) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="text-2xl font-bold">
-            <span className={cn(isPlayer1Winner ? "text-primary" : "text-foreground")}>{playerOneName}</span>
-            <span className="mx-2 text-muted-foreground">vs</span>
-            <span className={cn(isPlayer2Winner ? "text-primary" : "text-foreground")}>{playerTwoName}</span>
-          </DialogTitle>
-          <DialogDescription>{t('title')}</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-[1040px] max-h-[95vh] w-[94vw] p-0 flex flex-col overflow-hidden bg-background border-border font-body text-foreground shadow-glow-primary">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-8 py-8 relative custom-scrollbar">
+          {/* Ambient Glows */}
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 
-        <div className="px-6 pb-4 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2">
-            {onBackToMatches && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onBackToMatches}
-                className="gap-2"
-              >
-                <IconArrowLeft className="h-4 w-4" />
-                {t('back')}
-              </Button>
-            )}
-            {!isFeatureFlagLoading && (
-              <Button
-                variant={showDetailedStats ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  if (isDetailedStatsEnabled) {
-                    setShowDetailedStats((prev) => !prev)
-                  } else {
-                    // Optionally show a toast or just rely on the badge/icon
-                  }
-                }}
-                className={cn("gap-2", !isDetailedStatsEnabled && "opacity-50 cursor-not-allowed")}
-                disabled={!isDetailedStatsEnabled}
-              >
-                {isDetailedStatsEnabled ? (
-                  <IconSparkles className="h-4 w-4" />
-                ) : (
-                  <IconLock className="h-4 w-4 text-primary/40" />
-                )}
-                {showDetailedStats ? t('hide_charts') : t('show_charts')}
-              </Button>
-            )}
-          </div>
+          {/* Header Section */}
+          <header className="mb-10 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6">
+            <div>
+              <h1 className="font-headline text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 uppercase">{t('title') || 'Match Analysis'}</h1>
+              <p className="text-muted-foreground font-medium tracking-wide uppercase text-xs">
+                {t("leg_by_leg_detail") || "Leg-by-leg detail"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {onBackToMatches && (
+                <Button variant="outline" onClick={onBackToMatches} className="bg-card text-foreground font-label border-border hover:bg-muted/60 transition-all shadow-sm">
+                  <IconArrowLeft className="h-4 w-4 mr-2" />
+                  {t('back')}
+                </Button>
+              )}
+              {!isFeatureFlagLoading && (
+                <Button 
+                  variant={showDetailedStats ? "default" : "secondary"}
+                  onClick={() => isDetailedStatsEnabled && setShowDetailedStats(!showDetailedStats)}
+                  className={cn("font-label transition-all shadow-sm", !isDetailedStatsEnabled && "opacity-50 cursor-not-allowed", showDetailedStats && "bg-primary text-primary-foreground hover:bg-primary/90")}
+                  disabled={!isDetailedStatsEnabled}
+                >
+                  {isDetailedStatsEnabled ? <IconSparkles className="h-4 w-4 mr-2" /> : <IconLock className="h-4 w-4 mr-2 opacity-50" />}
+                  {showDetailedStats ? (t('hide_charts') || 'Hide Charts') : (t('show_charts') || 'Részletes grafikonok')}
+                </Button>
+              )}
+            </div>
+          </header>
 
-          {!isFeatureFlagLoading && !isDetailedStatsEnabled && (
-            <Badge variant="outline" className="text-xs bg-primary/5 text-primary/60 border-primary/20 gap-1.5 px-3 py-1">
-              <IconLock size={12} />
-              {t('pro_feature')}
-            </Badge>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <IconLoader2 className="h-12 w-12 animate-spin text-primary" />
+              <span className="text-sm font-label uppercase tracking-widest text-muted-foreground animate-pulse">{t("loading_logs") || "Loading..."}</span>
+            </div>
+          ) : error ? (
+            <div className="max-w-xl mx-auto py-12">
+              <Alert variant="destructive" className="bg-card border border-destructive/20">
+                <IconAlertTriangle className="h-5 w-5" />
+                <AlertTitle>{t('error_generic')}</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          ) : legs.length === 0 ? (
+            <div className="py-24 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+                <IconTarget className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <p className="text-muted-foreground font-medium">{t('no_stats')}</p>
+            </div>
+          ) : (
+            showDetailedStats ? (
+              <div className="pb-4 animate-fade-in relative z-10 bg-card rounded-2xl border border-border p-4 shadow-xl">
+                <MatchStatisticsCharts
+                  legs={legs.map((leg, index) => ({ ...leg, legNumber: index + 1 }))}
+                  player1Name={playerOneName}
+                  player2Name={playerTwoName}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4 animate-fade-in">
+                <div className="w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 md:gap-3 mb-2 items-center">
+                  <div className="bg-card p-4 rounded-xl flex items-center justify-between border border-border shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <SmartAvatar
+                        playerId={playerOneId || "player-1"}
+                        name={playerOneName}
+                        size="md"
+                        className="border border-primary/20"
+                      />
+                      <div>
+                        <p className="font-headline text-lg font-bold line-clamp-1">{playerOneName}</p>
+                        <p className="text-xs text-muted-foreground font-label uppercase tracking-widest">{t("player_one") || "Player 1"}</p>
+                      </div>
+                    </div>
+                    <div className="text-right pl-2">
+                      <p className="font-headline text-2xl font-black text-primary">{player1Wins}</p>
+                      <p className="text-[10px] text-muted-foreground font-label uppercase">{t("legs_won") || "Legs Won"}</p>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:flex flex-col items-center justify-center opacity-40 px-1">
+                    <p className="font-headline text-sm font-black italic">VS</p>
+                  </div>
+
+                  <div className="bg-card p-4 rounded-xl flex items-center justify-between border border-border shadow-lg">
+                    <div className="text-left pr-2">
+                      <p className="font-headline text-2xl font-black text-muted-foreground/50">{player2Wins}</p>
+                      <p className="text-[10px] text-muted-foreground font-label uppercase">{t("legs_won") || "Legs Won"}</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-right">
+                      <div>
+                        <p className="font-headline text-lg font-bold line-clamp-1">{playerTwoName}</p>
+                        <p className="text-xs text-muted-foreground font-label uppercase tracking-widest text-right">{t("player_two") || "Player 2"}</p>
+                      </div>
+                      <SmartAvatar
+                        playerId={playerTwoId || "player-2"}
+                        name={playerTwoName}
+                        size="md"
+                      />
+                    </div>
+                  </div>
+                  </div>
+                </div>
+
+                <div className="xl:w-fit xl:mx-auto">
+                  <div className="grid grid-cols-1 xl:grid-cols-[360px_360px] xl:justify-center gap-4 items-start">
+                  <div className="space-y-4">
+                    {legs.map((leg, legIndex) => {
+                      const isPlayer1Winner = leg.winnerId?._id === playerOneId
+                      const isPlayer2Winner = leg.winnerId?._id === playerTwoId
+                      const winnerName = isPlayer1Winner ? playerOneName : isPlayer2Winner ? playerTwoName : ''
+                      
+                      const legStartScore = Number((match as any)?.startingScore ?? (match as any)?.tournamentSettings?.startingScore ?? 501)
+                      const throwRows = createThrowRows(leg, legStartScore)
+
+                      return (
+                        <section key={`${leg.createdAt}-${legIndex}`} className={cn(
+                          "w-full bg-card rounded-2xl overflow-hidden shadow-sm transition-all border",
+                          legIndex === legs.length - 1 ? "border-accent/40 shadow-[0_0_30px_-10px_rgba(255,68,31,0.15)] ring-1 ring-accent/10" : "border-border"
+                        )}>
+                          <div className={cn(
+                            "px-3 py-2.5 sm:px-4 sm:py-3 flex justify-between items-center border-b border-border/50",
+                            legIndex === legs.length - 1 ? "bg-accent/5" : "bg-muted/20"
+                          )}>
+                            <div className="flex items-center gap-3">
+                              <span className={cn(
+                                "px-3 py-1 rounded text-xs font-black font-headline uppercase",
+                                legIndex === legs.length - 1 ? "bg-accent text-primary-foreground" : "bg-muted text-muted-foreground"
+                              )}>
+                                {(t("leg") || "Leg").toUpperCase()} {legIndex + 1}
+                              </span>
+                              {legIndex === legs.length - 1 && !winnerName && (
+                                <span className="text-accent text-sm font-label font-bold hidden sm:inline-block">{t("in_progress") || "In Progress..."}</span>
+                              )}
+                              <span className="text-muted-foreground text-[10px] font-label hidden sm:inline-block ml-2">
+                                {new Date(leg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {winnerName ? (
+                                <>
+                                  <IconCircleCheck className="h-5 w-5 text-primary" />
+                                  <span className="text-xs font-bold font-label text-foreground uppercase">{t("winner") || "Winner"}: {winnerName}</span>
+                                  {typeof leg.winnerArrowCount === "number" ? (
+                                    <span className="text-[10px] font-bold font-label text-primary uppercase tracking-wide">
+                                      ({leg.winnerArrowCount}D)
+                                    </span>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <span className="text-xs font-bold font-label text-accent uppercase tracking-widest hidden sm:inline-block">{t("in_progress") || "In Progress..."}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-2.5 sm:p-3">
+                            <div className="mx-auto w-full rounded-lg border border-border/30 overflow-hidden">
+                              <div className="grid grid-cols-[60px_48px_28px_48px_60px] items-end gap-1 border-b border-border/40 px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                                <div className="min-w-0 text-center">
+                                  <p className="truncate">{playerOneName}</p>
+                                  <p className="font-label text-[8px] tracking-normal normal-case text-muted-foreground">
+                                    {(t("arrows") || "Arrows").replace("{count}", String(calculatePlayerArrows(leg.player1Throws, leg.player1TotalDarts, isPlayer1Winner, leg.winnerArrowCount)))}
+                                  </p>
+                                </div>
+                                <div className="text-center">S</div>
+                                <div className="text-center">D</div>
+                                <div className="text-center">S</div>
+                                <div className="min-w-0 text-center">
+                                  <p className="truncate">{playerTwoName}</p>
+                                  <p className="font-label text-[8px] tracking-normal normal-case text-muted-foreground">
+                                    {(t("arrows") || "Arrows").replace("{count}", String(calculatePlayerArrows(leg.player2Throws, leg.player2TotalDarts, isPlayer2Winner, leg.winnerArrowCount)))}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="space-y-1.5 p-2">
+                                {throwRows.length === 0 ? (
+                                  <div className="py-2 text-center text-[10px] text-muted-foreground italic tracking-wide">{t("no_throws") || "No throws recorded yet..."}</div>
+                                ) : (
+                                  throwRows.map(({ throwIndex, p1Throw, p2Throw, p1After, p2After, arrowCount }) => {
+                                    return (
+                                      <div key={`${legIndex}-throw-${throwIndex}`} className="grid grid-cols-[60px_48px_28px_48px_60px] items-center gap-1 rounded border border-border/20 bg-muted/10 px-1.5 py-1">
+                                        <div className={cn(
+                                          "rounded px-1 py-0.5 text-center font-headline text-[11px] font-bold bg-background/40 text-muted-foreground",
+                                        )}>
+                                          {p1After ?? "--"}
+                                        </div>
+                                        <div className={cn(
+                                          "rounded px-1 py-0.5 text-center font-headline text-[11px] font-bold",
+                                          p1Throw
+                                            ? p1Throw.isCheckout && isPlayer1Winner
+                                              ? "bg-primary/20 text-primary ring-1 ring-primary/50"
+                                              : p1Throw.score >= 180
+                                              ? "bg-accent/20 text-accent border border-accent/20"
+                                              : p1Throw.score >= 140
+                                              ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
+                                              : p1Throw.score >= 120
+                                              ? "bg-orange-500/15 text-orange-400 border border-orange-500/20"
+                                              : p1Throw.score >= 100
+                                              ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                                              : p1Throw.score >= 60
+                                              ? "bg-muted/70 text-foreground"
+                                              : "bg-muted/40 text-muted-foreground"
+                                            : "border border-dashed border-primary/30 bg-muted/20 text-primary"
+                                        )}>
+                                          {p1Throw ? p1Throw.score : "--"}
+                                        </div>
+                                        <div className="text-[9px] font-bold uppercase tracking-tight text-muted-foreground text-center">
+                                          {(() => {
+                                            const checkoutCount = typeof leg.winnerArrowCount === "number" ? leg.winnerArrowCount : 3
+                                            if (isPlayer1Winner && p1Throw?.isCheckout) return throwIndex * 3 + checkoutCount
+                                            if (isPlayer2Winner && p2Throw?.isCheckout) return throwIndex * 3 + checkoutCount
+                                            return arrowCount
+                                          })()}
+                                        </div>
+                                        <div className={cn(
+                                          "rounded px-1 py-0.5 text-center font-headline text-[11px] font-bold",
+                                          p2Throw
+                                            ? p2Throw.isCheckout && isPlayer2Winner
+                                              ? "bg-primary/20 text-primary ring-1 ring-primary/50"
+                                              : p2Throw.score >= 180
+                                              ? "bg-accent/20 text-accent border border-accent/20"
+                                              : p2Throw.score >= 140
+                                              ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
+                                              : p2Throw.score >= 120
+                                              ? "bg-orange-500/15 text-orange-400 border border-orange-500/20"
+                                              : p2Throw.score >= 100
+                                              ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                                              : p2Throw.score >= 60
+                                              ? "bg-muted/70 text-foreground"
+                                              : "bg-muted/40 text-muted-foreground"
+                                            : "border border-dashed border-accent/30 bg-muted/20 text-accent"
+                                        )}>
+                                          {p2Throw ? p2Throw.score : "--"}
+                                        </div>
+                                        <div className={cn(
+                                          "rounded px-1 py-0.5 text-center font-headline text-[11px] font-bold bg-background/40 text-muted-foreground",
+                                        )}>
+                                          {p2After ?? "--"}
+                                        </div>
+                                      </div>
+                                    )
+                                  })
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 border-t border-border/40 px-2 py-1.5 text-[9px] font-label uppercase tracking-wide text-muted-foreground">
+                                <div>
+                                  {t("remains") || "Remaining"}:{" "}
+                                  <span className={cn("font-bold text-xs ml-1", isPlayer1Winner ? "text-primary" : "text-foreground")}>
+                                    {isPlayer1Winner ? "0" : calculateLoserRemainingForLeg(leg, isPlayer1Winner, isPlayer2Winner) || leg.player1Score}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  {t("remains") || "Remaining"}:{" "}
+                                  <span className={cn("font-bold text-xs ml-1", isPlayer2Winner ? "text-primary" : "text-foreground")}>
+                                    {isPlayer2Winner ? "0" : calculateLoserRemainingForLeg(leg, isPlayer1Winner, isPlayer2Winner) || leg.player2Score}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      )
+                    })}
+                  </div>
+                <aside className="w-full xl:sticky xl:top-0 flex flex-col gap-4">
+                  <div className="w-full bg-card/80 backdrop-blur-xl p-4 rounded-2xl border border-border shadow-glow-primary">
+                    <h4 className="font-headline font-bold text-sm text-primary mb-6 tracking-tighter uppercase flex items-center gap-2">
+                      {t("match_pulse") || "Match Pulse"}
+                    </h4>
+                    
+                    <div className="space-y-6">
+                      {/* P1 Stats */}
+                      <div className="space-y-4">
+                        <p className="text-xs font-label font-bold uppercase text-muted-foreground pb-2 border-b border-border/50 line-clamp-1">{playerOneName}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-muted-foreground font-label uppercase">{t("avg") || "Average"}</span>
+                          <span className="text-sm font-headline font-black text-primary">{matchStats.avgA}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-2">
+                          <div className="bg-muted/30 p-2.5 rounded-lg text-center border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-label">{t("one_eighties") || "180s"}</p>
+                            <p className="text-lg font-headline font-black text-foreground">{matchStats.p1180s}</p>
+                          </div>
+                          <div className="bg-muted/30 p-2.5 rounded-lg text-center border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-label">140+</p>
+                            <p className="text-lg font-headline font-black text-foreground">{matchStats.p1140s}</p>
+                          </div>
+                          <div className="bg-muted/30 p-2.5 rounded-lg text-center border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-label">100+</p>
+                            <p className="text-lg font-headline font-black text-foreground">{matchStats.p1100s}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full h-px bg-border my-6"></div>
+
+                      {/* P2 Stats */}
+                      <div className="space-y-4">
+                        <p className="text-xs font-label font-bold uppercase text-muted-foreground pb-2 border-b border-border/50 line-clamp-1">{playerTwoName}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-muted-foreground font-label uppercase">{t("avg") || "Average"}</span>
+                          <span className="text-sm font-headline font-black text-primary">{matchStats.avgB}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-2">
+                          <div className="bg-muted/30 p-2.5 rounded-lg text-center border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-label">{t("one_eighties") || "180s"}</p>
+                            <p className="text-lg font-headline font-black text-muted-foreground/80">{matchStats.p2180s}</p>
+                          </div>
+                          <div className="bg-muted/30 p-2.5 rounded-lg text-center border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-label">140+</p>
+                            <p className="text-lg font-headline font-black text-muted-foreground/80">{matchStats.p2140s}</p>
+                          </div>
+                          <div className="bg-muted/30 p-2.5 rounded-lg text-center border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-label">100+</p>
+                            <p className="text-lg font-headline font-black text-muted-foreground/80">{matchStats.p2100s}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+                </div>
+              </div>
+            )
           )}
         </div>
-
-        {loading ? (
-          <div className="flex h-48 items-center justify-center shrink-0">
-            <IconLoader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : error ? (
-          <div className="px-6 pb-4 shrink-0">
-            <Alert variant="destructive">
-              <IconAlertTriangle className="h-5 w-5" />
-              <AlertTitle>{t('error_generic')}</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        ) : legs.length === 0 ? (
-          <div className="px-6 pb-4 shrink-0">
-            <Card className="border-0">
-              <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                {t('no_stats')}
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-y-scroll px-6">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "legs" | "stats")} className="flex flex-col h-full">
-              <TabsList className="mb-4 shrink-0">
-                <TabsTrigger value="legs" className="gap-2">
-                  <IconTarget className="h-4 w-4" />
-                  {t('tabs_legs')}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="stats" 
-                  disabled={!isDetailedStatsEnabled}
-                  className={cn("gap-2", !isDetailedStatsEnabled && "opacity-50")}
-                >
-                  {isDetailedStatsEnabled ? (
-                    <IconChartLine className="h-4 w-4" />
-                  ) : (
-                    <IconLock className="h-4 w-4" />
-                  )}
-                  {t('tabs_stats')}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="legs" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
-                <div className="space-y-4 pb-4">
-                  {legs.map((leg, legIndex) => {
-                    const isPlayer1Winner = leg.winnerId?._id === match.player1?.playerId?._id
-                    const isPlayer2Winner = leg.winnerId?._id === match.player2?.playerId?._id
-                    const winnerArrows = calculateWinnerArrowsForLeg(leg, isPlayer1Winner, isPlayer2Winner)
-                    const loserRemaining = calculateLoserRemainingForLeg(leg, isPlayer1Winner, isPlayer2Winner)
-
-                    const player1LegStats = showDetailedStats ? calculateLegStats(leg.player1Throws) : null
-                    const player2LegStats = showDetailedStats ? calculateLegStats(leg.player2Throws) : null
-                    const player1RunningAverages = showDetailedStats ? calculateRunningAverages(leg.player1Throws) : []
-                    const player2RunningAverages = showDetailedStats ? calculateRunningAverages(leg.player2Throws) : []
-
-                    return (
-                      <Card key={`${leg.createdAt}-${legIndex}`} className="overflow-hidden border-0">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                <span className="text-base font-bold text-primary">{legIndex + 1}</span>
-                              </div>
-                              <div>
-                                <CardTitle className="text-base">{t('leg', { count: legIndex + 1 })}</CardTitle>
-                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <IconTrophy className="h-3 w-3 text-warning" />
-                                    <span>{leg.winnerId?.name}</span>
-                                  </div>
-                                  {
-                                    <div className="flex items-center gap-1">
-                                      <IconTarget className="h-3 w-3 text-primary" />
-                                      <span>{t('arrows')} { winnerArrows }</span>
-                                    </div>
-                                  }
-                                  {
-                                    <div className="flex items-center gap-1">
-                                      <IconTrendingDown className="h-3 w-3 text-destructive" />
-                                      <span>{t('remains')} { loserRemaining }</span>
-                                    </div>
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                            {leg.checkoutScore && (
-                              <Badge variant="success" className="gap-1">
-                                <IconTargetArrow className="h-3 w-3" />
-                                {leg.checkoutScore}
-                              </Badge>
-                            )}
-                          </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-4">
-                          {/* Player 1 */}
-                          <div className={cn(
-                            "rounded-lg p-4",
-                            isPlayer1Winner ? "bg-success/10" : "bg-card"
-                          )}>
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="default" className="text-xs">P1</Badge>
-                                <span className="font-semibold text-primary">{playerOneName}</span>
-                                {isPlayer1Winner && <IconTrophy className="h-4 w-4 text-warning" />}
-                                <span className="text-xs text-muted-foreground">
-                                  {calculatePlayerArrows(
-                                    leg.player1Throws,
-                                    (leg as any).player1TotalDarts,
-                                    isPlayer1Winner,
-                                    leg.winnerArrowCount
-                                  )} {t('arrows')}
-                                </span>
-                              </div>
-                              {showDetailedStats && player1LegStats && (
-                                <div className="flex gap-2 text-xs">
-                                  <span className="text-muted-foreground">{t('avg')}: <strong>{player1LegStats.average}</strong></span>
-                                  <span className="text-muted-foreground">{t('max')}: <strong>{player1LegStats.highestThrow}</strong></span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {leg.player1Throws.map((throwData, throwIndex) => (
-                                <React.Fragment key={throwIndex}>
-                                  <div className="flex items-center gap-1">
-                                    <span className={cn(
-                                      "inline-flex min-w-[40px] items-center justify-center rounded px-2 py-1 text-xs font-medium",
-                                      formatThrow(throwData, isPlayer1Winner)
-                                    )}>
-                                      {throwData.score}
-                                    </span>
-                                    {showDetailedStats && player1RunningAverages[throwIndex] !== undefined && (
-                                      <span className="text-[10px] text-muted-foreground">
-                                        ({player1RunningAverages[throwIndex].toFixed(1)})
-                                      </span>
-                                    )}
-                                  </div>
-                                  {throwIndex < leg.player1Throws.length - 1 && (
-                                    <IconArrowRight className="h-3 w-3 text-muted-foreground/50" />
-                                  )}
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Player 2 */}
-                          <div className={cn(
-                            "rounded-lg p-4",
-                            isPlayer2Winner ? "bg-success/10" : "bg-card"
-                          )}>
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="destructive" className="text-xs">P2</Badge>
-                                <span className="font-semibold text-destructive">{playerTwoName}</span>
-                                {isPlayer2Winner && <IconTrophy className="h-4 w-4 text-warning" />}
-                                <span className="text-xs text-muted-foreground">
-                                  {calculatePlayerArrows(
-                                    leg.player2Throws,
-                                    (leg as any).player2TotalDarts,
-                                    isPlayer2Winner,
-                                    leg.winnerArrowCount
-                                  )} {t('arrows')}
-                                </span>
-                              </div>
-                              {showDetailedStats && player2LegStats && (
-                                <div className="flex gap-2 text-xs">
-                                  <span className="text-muted-foreground">{t('avg')}: <strong>{player2LegStats.average}</strong></span>
-                                  <span className="text-muted-foreground">{t('max')}: <strong>{player2LegStats.highestThrow}</strong></span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {leg.player2Throws.map((throwData, throwIndex) => (
-                                <React.Fragment key={throwIndex}>
-                                  <div className="flex items-center gap-1">
-                                    <span className={cn(
-                                      "inline-flex min-w-[40px] items-center justify-center rounded px-2 py-1 text-xs font-medium",
-                                      formatThrow(throwData, isPlayer2Winner)
-                                    )}>
-                                      {throwData.score}
-                                    </span>
-                                    {showDetailedStats && player2RunningAverages[throwIndex] !== undefined && (
-                                      <span className="text-[10px] text-muted-foreground">
-                                        ({player2RunningAverages[throwIndex].toFixed(1)})
-                                      </span>
-                                    )}
-                                  </div>
-                                  {throwIndex < leg.player2Throws.length - 1 && (
-                                    <IconArrowRight className="h-3 w-3 text-muted-foreground/50" />
-                                  )}
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          </div>
-
-                          <Separator />
-
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <IconClock className="h-4 w-4" />
-                            <span>
-                              {new Date(leg.createdAt).toLocaleString("hu-HU", {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              </TabsContent>
-
-              {isDetailedStatsEnabled && (
-                <TabsContent value="stats" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
-                  <div className="pb-4">
-                    <MatchStatisticsCharts
-                      legs={legs.map((leg, index) => ({ ...leg, legNumber: index + 1 }))}
-                      player1Name={playerOneName}
-                      player2Name={playerTwoName}
-                    />
-                  </div>
-                </TabsContent>
-              )}
-            </Tabs>
-          </div>
-        )}
-
-        <DialogFooter className="px-6 pb-6 pt-4 shrink-0">
-          <Button onClick={onClose}>{t('close')}</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

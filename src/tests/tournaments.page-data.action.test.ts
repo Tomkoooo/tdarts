@@ -5,6 +5,7 @@ jest.mock('next/cache', () => ({
 jest.mock('@/database/services/tournament.service', () => ({
   TournamentService: {
     getTournamentSummaryForPublicPage: jest.fn(),
+    getTournamentSummaryOverviewForPublicPage: jest.fn(),
     getPlayerStatusInTournament: jest.fn(),
     getTournamentLite: jest.fn(),
   },
@@ -39,6 +40,11 @@ describe('getTournamentPageDataAction auth boundary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (TournamentService.getTournamentSummaryForPublicPage as jest.Mock).mockResolvedValue({
+      _id: 't1',
+      code: 'ABC',
+      clubId: 'club-123',
+    });
+    (TournamentService.getTournamentSummaryOverviewForPublicPage as jest.Mock).mockResolvedValue({
       _id: 't1',
       code: 'ABC',
       clubId: 'club-123',

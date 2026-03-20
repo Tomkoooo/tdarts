@@ -6,7 +6,7 @@ import { TournamentModel } from "../models/tournament.model";
 import { PlayerModel } from "../models/player.model";
 import { AuthorizationService } from "./authorization.service";
 import { connectMongo } from "@/lib/mongoose";
-import { eventEmitter, EVENTS } from "@/lib/events";
+import { eventEmitter, EVENTS, createSseDeltaPayload } from "@/lib/events";
 
 export class MatchService {
     private static calculateFirstNineForLeg(throws: any[] | undefined) {
@@ -133,6 +133,10 @@ export class MatchService {
           tournamentId,
           matchId
         });
+
+        const tournament = await TournamentModel.findById(match.tournamentRef);
+        if (!tournament) throw new BadRequestError('Tournament not found');
+        const canonicalTournamentId = String(tournament.tournamentId || tournamentId);
         
         // Meccs beállítások mentése
         match.legsToWin = legsToWin;
@@ -145,10 +149,6 @@ export class MatchService {
             // Use the new knockout board status update method
             await TournamentService.updateBoardStatusAfterMatch(matchId);
         } else {
-            // Group match - use existing logic
-            const tournament = await TournamentModel.findById(match.tournamentRef);
-            if (!tournament) throw new BadRequestError('Tournament not found');
-
             // Keressük meg a megfelelő board-ot a tournament.boards tömbben
             const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
             if (boardIndex === -1) throw new BadRequestError('Board not found');
@@ -178,8 +178,6 @@ export class MatchService {
             
         if (!populatedMatch) throw new BadRequestError('Match not found after update');
         
-        // Get tournament for startingScore
-        const tournament = await TournamentService.getTournament(tournamentId);
         const startingScore = tournament?.tournamentSettings.startingScore;
         
         const result = {
@@ -187,15 +185,24 @@ export class MatchService {
             startingScore: startingScore,
             startingPlayer: populatedMatch.startingPlayer || 1,
             winnerId: populatedMatch.winnerId || null,
+            tournamentCode: canonicalTournamentId,
         };
 
         // Emit match update event
-        eventEmitter.emit(EVENTS.MATCH_UPDATE, {
-            tournamentId,
-            matchId,
-            match: result,
-            type: 'started'
-        });
+        eventEmitter.emit(
+            EVENTS.MATCH_UPDATE,
+            createSseDeltaPayload({
+                tournamentId: canonicalTournamentId,
+                scope: 'match',
+                action: 'started',
+                data: {
+                    legacyType: 'started',
+                    matchId,
+                    boardNumber: result.boardReference,
+                    match: result,
+                },
+            })
+        );
         
         return result;
     }
@@ -413,12 +420,20 @@ export class MatchService {
         // Emit match update event
         const tournament = await TournamentModel.findById(updatedMatch.tournamentRef);
         if (tournament) {
-            eventEmitter.emit(EVENTS.MATCH_UPDATE, {
-                tournamentId: tournament.tournamentId,
-                matchId: matchId,
-                match: updatedMatch.toObject(),
-                type: 'leg-finished'
-            });
+            eventEmitter.emit(
+                EVENTS.MATCH_UPDATE,
+                createSseDeltaPayload({
+                    tournamentId: tournament.tournamentId,
+                    scope: 'match',
+                    action: 'leg-finished',
+                    data: {
+                        legacyType: 'leg-finished',
+                        matchId,
+                        boardNumber: updatedMatch.boardReference,
+                        match: updatedMatch.toObject(),
+                    },
+                })
+            );
         }
 
         return updatedMatch;
@@ -782,22 +797,39 @@ export class MatchService {
                 await TournamentService.updateGroupStanding(tournament.tournamentId);
                 
                 // Emit group update event
-                eventEmitter.emit(EVENTS.GROUP_UPDATE, {
-                    tournamentId: tournament.tournamentId,
-                    type: 'standings-updated'
-                });
+                eventEmitter.emit(
+                    EVENTS.GROUP_UPDATE,
+                    createSseDeltaPayload({
+                        tournamentId: tournament.tournamentId,
+                        scope: 'group',
+                        action: 'standings-updated',
+                        requiresResync: true,
+                        data: {
+                            legacyType: 'standings-updated',
+                        },
+                    })
+                );
             }
         }
 
         // Emit match update event
         const tournament = await TournamentModel.findById(match.tournamentRef);
         if (tournament) {
-            eventEmitter.emit(EVENTS.MATCH_UPDATE, {
-                tournamentId: tournament.tournamentId,
-                matchId: matchId,
-                match: match.toObject(),
-                type: 'finished'
-            });
+            eventEmitter.emit(
+                EVENTS.MATCH_UPDATE,
+                createSseDeltaPayload({
+                    tournamentId: tournament.tournamentId,
+                    scope: 'match',
+                    action: 'finished',
+                    data: {
+                        legacyType: 'finished',
+                        matchId,
+                        boardNumber: match.boardReference,
+                        winnerId: match.winnerId ? String(match.winnerId) : null,
+                        match: match.toObject(),
+                    },
+                })
+            );
 
             // Handle knockout match advancement
             if (match.type === 'knockout') {

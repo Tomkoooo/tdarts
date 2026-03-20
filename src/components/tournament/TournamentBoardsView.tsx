@@ -30,10 +30,9 @@ const LEGACY_DEFAULT_BOARD_NAME_KEYS = new Set([
 
 export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
   const tTour = useTranslations("Tournament");
-  const [tournament, setTournament] = useState(initialTournament);
-  const boards = tournament?.boards || []
-  const tournamentId = tournament?.tournamentId
-  const tournamentPassword = tournament?.tournamentSettings?.password
+  const boards = initialTournament?.boards || []
+  const tournamentId = initialTournament?.tournamentId
+  const tournamentPassword = initialTournament?.tournamentSettings?.password
 
   const statusMap: Record<string, { label: string; badgeClass: string; description: string; cardClass: string; accentClass: string; scoreClass: string }> = {
     idle: {
@@ -67,11 +66,6 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
   const [editForm, setEditForm] = useState({ name: '', scoliaSerialNumber: '', scoliaAccessToken: '' });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync state if prop changes
-  if (initialTournament !== tournament && initialTournament?.updatedAt !== tournament?.updatedAt) {
-      setTournament(initialTournament);
-  }
-
   const handleEditClick = (board: any) => {
       setEditingBoard(board);
       setEditForm({ 
@@ -95,8 +89,6 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
           if ((response as any)?.success) {
               toast.success(tTour('boards_view.toast_save_success'));
               setEditingBoard(null);
-              // Update local state
-              setTournament((response as any).tournament);
           }
       } catch (error: any) {
           console.error("Failed to save board settings:", error);

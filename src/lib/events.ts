@@ -26,3 +26,44 @@ export const EVENTS = {
   MATCH_UPDATE: 'match-update',
   GROUP_UPDATE: 'group-update',
 };
+
+export type SseDeltaScope = 'tournament' | 'board' | 'match' | 'group' | 'ranking';
+export type SseDeltaAction =
+  | 'created'
+  | 'updated'
+  | 'started'
+  | 'finished'
+  | 'leg-finished'
+  | 'standings-updated'
+  | 'knockout-updated'
+  | 'resync-required';
+
+export type SseDeltaPayload<TData = Record<string, unknown>> = {
+  schemaVersion: 1;
+  kind: 'delta';
+  tournamentId: string;
+  scope: SseDeltaScope;
+  action: SseDeltaAction;
+  data: TData;
+  requiresResync?: boolean;
+  emittedAt: string;
+};
+
+export function createSseDeltaPayload<TData = Record<string, unknown>>(input: {
+  tournamentId: string;
+  scope: SseDeltaScope;
+  action: SseDeltaAction;
+  data: TData;
+  requiresResync?: boolean;
+}): SseDeltaPayload<TData> {
+  return {
+    schemaVersion: 1,
+    kind: 'delta',
+    tournamentId: input.tournamentId,
+    scope: input.scope,
+    action: input.action,
+    data: input.data,
+    requiresResync: input.requiresResync ?? false,
+    emittedAt: new Date().toISOString(),
+  };
+}

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import dotenv from 'dotenv';
+import { ApiTelemetryService } from '@/database/services/api-telemetry.service';
 
 // Load .env file
 dotenv.config({ path: '<rootDir>/.env' });
@@ -39,6 +40,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
+    ApiTelemetryService.reset();
     await mongoose.disconnect();
     if (mongoServer) {
       await mongoServer.stop();

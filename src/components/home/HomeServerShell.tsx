@@ -32,6 +32,15 @@ interface Announcement {
   expiresAt: string;
 }
 
+function toSafeNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 function toHomeTournament(item: any): HomeTournament {
   return {
     _id: String(item?._id || ""),
@@ -39,13 +48,13 @@ function toHomeTournament(item: any): HomeTournament {
     code: item?.code || item?.tournamentCode || "",
     date: item?.startDate || item?.date || null,
     status: item?.status || "pending",
-    currentPlayers: Number(item?.currentPlayers || 0),
-    maxPlayers: Number(item?.maxPlayers || 0),
-    entryFee: Number(item?.entryFee || 0),
-    wins: Number(item?.wins || 0),
-    losses: Number(item?.losses || 0),
-    legsWon: Number(item?.legsWon || 0),
-    legsLost: Number(item?.legsLost || 0),
+    currentPlayers: toSafeNumber(item?.currentPlayers),
+    maxPlayers: toSafeNumber(item?.maxPlayers),
+    entryFee: toSafeNumber(item?.entryFee),
+    wins: toSafeNumber(item?.wins),
+    losses: toSafeNumber(item?.losses),
+    legsWon: toSafeNumber(item?.legsWon),
+    legsLost: toSafeNumber(item?.legsLost),
     nextMatchType: item?.nextMatchType || "unknown",
     nextMatchBoard: typeof item?.nextMatchBoard === "number" ? item.nextMatchBoard : null,
   };

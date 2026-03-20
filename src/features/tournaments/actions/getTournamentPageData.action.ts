@@ -7,15 +7,19 @@ import { BadRequestError } from '@/middleware/errorHandle';
 import { withTelemetry } from '@/shared/lib/withTelemetry';
 import { authorizeUserResult } from '@/shared/lib/guards';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
+import { perfFlags } from '@/features/performance/lib/perfFlags';
 
 export type GetTournamentPageDataInput = {
   code: string;
   includeViewer?: boolean;
   detailLevel?: 'overview' | 'full';
+  section?: 'overview' | 'players' | 'boards' | 'groups' | 'bracket';
+  bypassCache?: boolean;
 };
 
 export type GetTournamentPageLiteInput = {
   code: string;
+  bypassCache?: boolean;
 };
 
 const getCachedTournamentSummary = (code: string) =>
@@ -77,15 +81,35 @@ export async function getTournamentPageDataAction(input: GetTournamentPageDataIn
   const run = withTelemetry(
     'tournaments.getTournamentPageData',
     async (params: GetTournamentPageDataInput) => {
-      const { code, includeViewer = false, detailLevel = 'overview' } = params;
+      const {
+        code,
+        includeViewer = false,
+        detailLevel = 'overview',
+        section = detailLevel === 'full' ? 'groups' : 'overview',
+        bypassCache = false,
+      } = params;
       if (!code) {
         throw new BadRequestError('code is required');
       }
 
-      const tournament =
-        detailLevel === 'full'
-          ? await getCachedTournamentSummary(code)
-          : await getCachedTournamentOverview(code);
+      let tournament: any;
+      if (detailLevel === 'full' && perfFlags.tournamentReadModelV2) {
+        tournament = bypassCache
+          ? await TournamentService.getTournamentReadModelForSection(code, section)
+          : await unstable_cache(
+              () => TournamentService.getTournamentReadModelForSection(code, section),
+              [`tournament-section`, code, section],
+              { tags: [`tournament:${code}`, `tournament:${code}:${section}`], revalidate: 10 },
+            )();
+      } else {
+        tournament = bypassCache
+          ? detailLevel === 'full'
+            ? await TournamentService.getTournamentSummaryForPublicPage(code)
+            : await TournamentService.getTournamentSummaryOverviewForPublicPage(code)
+          : detailLevel === 'full'
+            ? await getCachedTournamentSummary(code)
+            : await getCachedTournamentOverview(code);
+      }
 
       if (!includeViewer) {
         return serializeForClient({ tournament });
@@ -133,12 +157,14 @@ export async function getTournamentPageLiteAction(input: GetTournamentPageLiteIn
   const run = withTelemetry(
     'tournaments.getTournamentPageLite',
     async (params: GetTournamentPageLiteInput) => {
-      const { code } = params;
+      const { code, bypassCache = false } = params;
       if (!code) {
         throw new BadRequestError('code is required');
       }
 
-      const lite = await getCachedTournamentLite(code);
+      const lite = bypassCache
+        ? await TournamentService.getTournamentLite(code)
+        : await getCachedTournamentLite(code);
       return serializeForClient({
         tournament: {
           _id: lite._id,

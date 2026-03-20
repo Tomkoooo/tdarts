@@ -161,7 +161,9 @@
     "home": "Főoldal",
     "landing": "Landing",
     "settings": "Beállítások",
-    "statistics": "Statisztika"
+    "statistics": "Statisztika",
+    "active_tournament": "Verseny",
+    "collapse_sidebar": "Oldalsáv összecsukása"
   },
   "Search": {
     "placeholder": "Keress versenyeket, játékosokat, klubokat...",
@@ -734,7 +736,8 @@
         "menu": "menü",
         "hello": "Szia,"
       },
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "back_to_home": "Vissza a főoldalra"
     },
     "dashboard": {
       "title": "Szia, {name}! 👋",
@@ -1632,7 +1635,10 @@
       "tagok": "Tagok:",
       "hc": "HC:",
       "standing_top": "Top {standing}",
-      "matches_btn": "Meccsek"
+      "matches_btn": "Meccsek",
+      "rank_label": "Rang",
+      "registration_open": "Nevezés nyitva",
+      "full_capacity": "Betelt"
     },
     "registration": {
       "sign_up": "Jelentkezés a tornára",
@@ -2110,6 +2116,8 @@
     },
     "legs_modal": {
       "title": "Legek részletei",
+      "leg_by_leg_detail": "Legenkénti részletek",
+      "live": "Élő",
       "vs": "vs",
       "back": "Vissza",
       "hide_charts": "Grafikonok elrejtése",
@@ -2118,6 +2126,16 @@
       "error_loading": "Nem sikerült betölteni a legek adatát",
       "error_generic": "Hiba történt a legek betöltésekor",
       "no_stats": "Ehhez a meccshez még nem érkeztek részletes statisztikák.",
+      "loading_logs": "Betöltés...",
+      "player_one": "1. játékos",
+      "player_two": "2. játékos",
+      "legs_won": "Nyert legek",
+      "in_progress": "Folyamatban...",
+      "winner": "Győztes",
+      "live_updates": "Élő frissítések",
+      "no_throws": "Még nincs rögzített dobás...",
+      "match_pulse": "Meccs Pulzus",
+      "one_eighties": "180-ak",
       "tabs_legs": "Legek",
       "tabs_stats": "Statisztikák",
       "leg": "Leg",
@@ -2209,19 +2227,27 @@
       "remove": "Eltávolítás"
     },
     "player_matches_modal": {
+      "title": "Játékos Profil",
       "event_matches": "Esemény Meccsei",
       "played_matches": "{count} lejátszott meccs",
+      "avg_score": "Átlag",
       "loading": "Meccsek betöltése...",
       "wins": "Győzelmek",
       "losses": "Vereségek",
       "win_rate": "Győzelmi Arány",
       "list_title": "Mérkőzések Listája",
+      "tournament_match": "Torna Meccs",
       "result_win": "Győzelem",
       "result_loss": "Vereség",
       "result_ongoing": "Folyamatban",
       "avg": "Átlag",
       "checkout": "Kiszálló",
       "details": "Részletek",
+      "scoring_trends": "Dobási Trendek",
+      "last_n_matches": "Utolsó {count} meccs",
+      "trend_max": "Maximum",
+      "tournament_average": "Torna Átlag",
+      "overall_across_played": "Összesítés a lejátszott meccsek alapján",
       "close": "Bezárás",
       "no_data": "Nincs mérkőzés adat",
       "error_missing": "Hiányzó játékos azonosító vagy torna kód",
@@ -2380,6 +2406,16 @@
         "legs": "Leg részletek"
       },
       "overview": {
+        "comp_title": "Összesített Mutatók",
+        "comp_subtitle": "Részletes statisztikai bontás",
+        "table_avg": "Átlag",
+        "table_first9": "First 9 Átlag",
+        "table_180s": "180-as Dobások",
+        "table_140s": "140+ Dobások",
+        "table_100s": "100+ Dobások",
+        "table_highout": "Legmagasabb Kiszálló",
+        "table_bestleg": "Legjobb Leg Átlag",
+        "metric": "Mutató",
         "running_avg_suffix": "futó átlag",
         "final_avg": "Végső átlag",
         "max_leg_avg": "Legjobb leg átlag",
@@ -2580,6 +2616,8 @@
       "mmr": "MMR",
       "oac_mmr": "OAC MMR",
       "nem_sikerült_betölteni_76": "Nem sikerült betölteni a játékos statisztikákat",
+      "player_profile": "Játékos profil",
+      "recent_honors": "Eredmények és infó",
       "legjobb_helyezes_i1t1": "Legjobb helyezés",
       "atlagos_helyezes_ctvu": "Átlagos helyezés",
       "gyozelmi_arany_vqqj": "Győzelmi arány",
@@ -3751,8 +3789,8 @@
       "entryFee": "Nevezési díj",
       "notificationsWarning": "{count} aktív értesítésed van",
       "performance": "Teljesítményed",
-      "matchRecord": "Meccsek: {wins}GY - {losses}V",
-      "legRecord": "Legek: {won}GY - {lost}V",
+      "matchRecord": "Meccsek: {wins} győzelem / {losses} vereség",
+      "legRecord": "Legek: {won} nyert / {lost} vesztett",
       "boardNumber": "{number}. tábla",
       "boardTbd": "Tábla hamarosan",
       "nextPlaying": "Jelenleg játszol: {board}",

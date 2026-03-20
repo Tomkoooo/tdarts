@@ -142,6 +142,7 @@ export class ApiTelemetryService {
   private static lastFlushAt = 0;
   private static lastAnomalyCheckAt = 0;
   private static isFlushInProgress = false;
+  private static flushTimer: ReturnType<typeof setTimeout> | null = null;
 
   static normalizeRouteKey(pathname: string): string {
     if (!pathname) return '/api/unknown';
@@ -264,13 +265,27 @@ export class ApiTelemetryService {
     const now = Date.now();
     if (this.isFlushInProgress) return;
     if (now - this.lastFlushAt < FLUSH_INTERVAL_MS) return;
+    if (this.flushTimer) return;
     this.lastFlushAt = now;
 
-    setTimeout(() => {
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
       this.flush().catch((error) => {
         console.error('ApiTelemetryService flush failed:', error);
       });
     }, 0);
+  }
+
+  static reset(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    this.aggregates = new Map<string, BucketAggregate>();
+    this.errorEvents = [];
+    this.lastFlushAt = 0;
+    this.lastAnomalyCheckAt = 0;
+    this.isFlushInProgress = false;
   }
 
   static async flush(): Promise<number> {
