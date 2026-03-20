@@ -2,8 +2,7 @@
 import { useTranslations } from "next-intl";
 
 
-import { useEffect, useState, useMemo } from "react"
-import axios from "axios"
+import { useCallback, useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import {
   IconBuilding,
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { adminChartsActions, adminClubsActions } from "@/features/admin/actions/adminDomains.action"
 // Use the same pagination component as Users page if it exists, or a simple placeholder
 import Pagination from "@/components/common/Pagination"
 
@@ -77,6 +77,7 @@ export default function AdminClubsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [paginationTotal, setPaginationTotal] = useState(0)
+  const loadClubsDailyChart = useCallback(() => adminChartsActions.clubsDaily(), [])
 
   // Debounce Search
   useEffect(() => {
@@ -95,20 +96,19 @@ export default function AdminClubsPage() {
   const fetchClubs = async (pageToFetch: number, search: string, verified: string) => {
     try {
       setLoading(true)
-      const response = await axios.get("/api/admin/clubs", {
-        params: {
-          page: pageToFetch,
-          limit: 10,
-          search,
-          verified
-        }
+      const response = await adminClubsActions.list({
+        page: pageToFetch,
+        limit: 10,
+        search,
+        verified,
       })
       
-      setClubs(response.data.clubs || [])
-      setStats(response.data.stats || { total: 0, active: 0, deleted: 0, verified: 0, unverified: 0 })
-      setTotalPages(response.data.pagination.totalPages || 1)
-      setPaginationTotal(response.data.pagination.total || 0)
-      setPage(response.data.pagination.page || 1)
+      const payload = response.data || {}
+      setClubs(payload.clubs || [])
+      setStats(payload.stats || { total: 0, active: 0, deleted: 0, verified: 0, unverified: 0 })
+      setTotalPages(payload.pagination?.totalPages || 1)
+      setPaginationTotal(payload.pagination?.total || 0)
+      setPage(payload.pagination?.page || 1)
     } catch (error: any) {
       console.error("Error fetching clubs:", error)
       toast.error(tCommon("hiba_történt_az"))
@@ -160,7 +160,12 @@ export default function AdminClubsPage() {
       </div>
 
       {/* Daily Chart */}
-      <DailyChart title={t("klubok_napi_létrehozása")} apiEndpoint="/api/admin/charts/clubs/daily" color="secondary" />
+      <DailyChart
+        title={t("klubok_napi_létrehozása")}
+        loadData={loadClubsDailyChart}
+        loadKey="clubs-daily"
+        color="secondary"
+      />
 
       {/* Main Content Card */}
       <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { getMapSettingsTranslations } from "@/data/translations/map-settings";
 import { useLocale } from "next-intl";
+import { mapSearchAction } from "@/features/search/actions/mapSearch.action";
 
 export interface MapItem {
   id: string;
@@ -107,13 +108,11 @@ export default function MapExplorer({ initialQuery = "" }: MapExplorerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/map", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, showClubs: clubsOnly, showTournaments: tournamentsOnly }),
+      const data = await mapSearchAction({
+        query: q,
+        showClubs: clubsOnly,
+        showTournaments: tournamentsOnly,
       });
-      if (!response.ok) throw new Error("Map data load failed");
-      const data = await response.json();
       setItems(data.items || []);
     } catch (err) {
       console.error(err);

@@ -1,12 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import axios from "axios"
 import {
   CreateManualGroupsRequest,
   ManualGroupsAvailablePlayer,
   ManualGroupsContextResponse,
   Tournament,
 } from "@/interface/tournament.interface"
+import {
+  cancelKnockoutAction,
+  createManualGroupsAction,
+  finishTournamentAction,
+  generateGroupsAction,
+  generateKnockoutAction,
+  getManualGroupsContextAction,
+} from "@/features/tournaments/actions/manageTournament.action"
 
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
@@ -21,7 +28,8 @@ import { showErrorToast } from "@/lib/toastUtils"
 interface TournamentStatusManagerProps {
   tournament: Tournament
   userClubRole: "admin" | "moderator" | "member" | "none"
-  onRefetch: () => void
+  onRefetch: () => void | Promise<void>
+  section?: "all" | "groups" | "knockout"
 }
 
 type KnockoutMode = "automatic" | "manual"
@@ -41,6 +49,7 @@ export default function TournamentStatusChanger({
   tournament,
   userClubRole,
   onRefetch,
+  section = "all",
 }: TournamentStatusManagerProps) {
   const t = useTranslations("Tournament.components");
   const tTour = useTranslations("Tournament");
@@ -81,17 +90,21 @@ export default function TournamentStatusChanger({
   )
   const availablePlayers = checkedInPlayers.length
   const boardCount = tournament?.tournamentSettings?.boardCount ?? 0
+  const groupCount = Array.isArray(tournament?.groups) ? tournament.groups.length : 0
+  const effectiveBoardCount = boardCount > 0 ? boardCount : groupCount
 
-  const minPlayersRequired = boardCount * MIN_PLAYERS_PER_GROUP
-  const maxPlayersAllowed = boardCount * MAX_PLAYERS_PER_GROUP
+  const minPlayersRequired = effectiveBoardCount * MIN_PLAYERS_PER_GROUP
+  const maxPlayersAllowed = effectiveBoardCount * MAX_PLAYERS_PER_GROUP
 
   const isGroupGenerationAllowed =
-    boardCount > 0 && availablePlayers >= minPlayersRequired && availablePlayers <= maxPlayersAllowed
+    effectiveBoardCount > 0 && availablePlayers >= minPlayersRequired && availablePlayers <= maxPlayersAllowed
 
   const isAutomaticKnockoutAllowed =
-    boardCount === 0 ||
+    effectiveBoardCount === 0 ||
     tournamentFormat === "knockout" ||
-    (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(boardCount))
+    (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(effectiveBoardCount))
+  const showGroupsControls = section === "all" || section === "groups"
+  const showKnockoutControls = section === "all" || section === "knockout"
 
   const resetError = () => setError(null)
 
@@ -102,12 +115,12 @@ export default function TournamentStatusChanger({
 
       try {
         await request()
-        onRefetch()
+        await onRefetch()
       } catch (err: any) {
-        const message = err?.response?.data?.error || err?.message || tTour('status_changer.error_unknown')
+        const message = err?.message || tTour('status_changer.error_unknown')
         setError(message)
         showErrorToast(message, {
-          error: err?.response?.data?.details || err?.message,
+          error: err?.message,
           context: `Action: ${pendingAction}`,
           errorName: "Tournament Status Change Error"
         })
@@ -125,9 +138,12 @@ export default function TournamentStatusChanger({
 
   const handleAutomaticGroups = () => {
     handleApiRequest("generate-groups", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/generateGroups`)
-      if (!response?.data || response.status !== 200) {
-        throw new Error(response?.data?.error || tTour('status_changer.error_groups_generate'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.error_groups_generate'))
+      }
+      const response = await generateGroupsAction({ code: tournamentCode })
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.error_groups_generate'))
       }
       setIsGroupsDialogOpen(false)
     })
@@ -135,16 +151,21 @@ export default function TournamentStatusChanger({
 
   const handleLoadManualContext = () => {
     handleApiRequest("manual-groups", async () => {
-      const { data } = await axios.get(`/api/tournaments/${tournamentCode}/manualGroups/context`)
-      if (!data?.success) {
-        throw new Error(data?.error || tTour('status_changer.manual_groups_dialog.error_load'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_load'))
       }
+      const data = await getManualGroupsContextAction({ code: tournamentCode })
+      if (!data || typeof data !== 'object' || !('success' in data) || !data.success) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_load'))
+      }
+      const context = data as ManualGroupsContextResponse & { success: boolean }
 
-      const availableBoards = (data.boards || []).filter((board: { isUsed: boolean }) => !board.isUsed)
+      const availableBoards = (context.boards || []).filter((board: { isUsed: boolean }) => !board.isUsed)
       const defaultBoard = availableBoards.length > 0 ? availableBoards[0].boardNumber : null
 
       setManualContext({
-        ...data,
+        boards: context.boards || [],
+        availablePlayers: context.availablePlayers || [],
         searchQuery: "",
       })
       setSelectedBoard(defaultBoard)
@@ -169,9 +190,15 @@ export default function TournamentStatusChanger({
     }
 
     handleApiRequest("generate-groups", async () => {
-      const { data } = await axios.post(`/api/tournaments/${tournamentCode}/manualGroups/create`, payload)
-      if (!data?.success) {
-        throw new Error(data?.error || tTour('status_changer.manual_groups_dialog.error_create'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_create'))
+      }
+      const data = await createManualGroupsAction({
+        code: tournamentCode,
+        groups: payload.groups,
+      })
+      if (!data || typeof data !== 'object' || ('ok' in data && data.ok === false)) {
+        throw new Error(tTour('status_changer.manual_groups_dialog.error_create'))
       }
 
       setIsManualGroupsDialogOpen(false)
@@ -183,31 +210,17 @@ export default function TournamentStatusChanger({
 
   const handleGenerateKnockout = () => {
     handleApiRequest("generate-knockout", async () => {
-      let response
-
-      if (tournamentFormat === "knockout") {
-        if (knockoutMode === "automatic") {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
-            useSeededPlayers: false,
-            seededPlayersCount: 0,
-          })
-        } else {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateManualKnockout`)
-        }
-      } else {
-        if (knockoutMode === "automatic") {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateKnockout`, {
-            qualifiersPerGroup: selectedPlayers,
-            useSeededPlayers: false,
-            seededPlayersCount: 0,
-          })
-        } else {
-          response = await axios.post(`/api/tournaments/${tournamentCode}/generateManualKnockout`)
-        }
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.knockout_dialog.error_generate'))
       }
-
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.error || tTour('status_changer.knockout_dialog.error_generate'))
+      const response = await generateKnockoutAction({
+        code: tournamentCode,
+        tournamentFormat,
+        selectedPlayers,
+        mode: knockoutMode,
+      })
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.knockout_dialog.error_generate'))
       }
 
       setIsKnockoutDialogOpen(false)
@@ -255,11 +268,15 @@ export default function TournamentStatusChanger({
     }
 
     handleApiRequest("finish", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/finish`, {
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.third_place_dialog.error'))
+      }
+      const response = await finishTournamentAction({
+        code: tournamentCode,
         thirdPlacePlayerId: thirdPlaceId,
       })
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.error || tTour('status_changer.third_place_dialog.error'))
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.third_place_dialog.error'))
       }
       setIsThirdPlaceDialogOpen(false)
     })
@@ -267,9 +284,12 @@ export default function TournamentStatusChanger({
 
   const handleCancelKnockout = () => {
     handleApiRequest("cancel-knockout", async () => {
-      const response = await axios.post(`/api/tournaments/${tournamentCode}/cancel-knockout`)
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.error || tTour('status_changer.cancel_knockout_dialog.error'))
+      if (!tournamentCode) {
+        throw new Error(tTour('status_changer.cancel_knockout_dialog.error'))
+      }
+      const response = await cancelKnockoutAction({ code: tournamentCode })
+      if (!response || typeof response !== 'object' || ('ok' in response && response.ok === false)) {
+        throw new Error(tTour('status_changer.cancel_knockout_dialog.error'))
       }
       setIsCancelKnockoutDialogOpen(false)
       setCancelKnockoutConfirmStep(1)
@@ -464,7 +484,8 @@ export default function TournamentStatusChanger({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {tournamentStatus === "pending" &&
+            {showGroupsControls &&
+              tournamentStatus === "pending" &&
               (tournamentFormat === "group" || tournamentFormat === "group_knockout") && (
                 <Button
                   variant="secondary"
@@ -476,7 +497,8 @@ export default function TournamentStatusChanger({
                 </Button>
               )}
 
-            {((tournamentStatus === "group-stage" &&
+            {showKnockoutControls &&
+              ((tournamentStatus === "group-stage" &&
               (tournamentFormat === "knockout" || tournamentFormat === "group_knockout")) ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
                 <Button
@@ -489,7 +511,7 @@ export default function TournamentStatusChanger({
                   {t("egyenes_kieses_generalasa_msbj")}</Button>
               )}
 
-            {tournamentStatus === "knockout" && (
+            {showKnockoutControls && tournamentStatus === "knockout" && (
               <Button
                 variant="outline"
                 className="flex-1 min-w-[200px]"
@@ -502,7 +524,8 @@ export default function TournamentStatusChanger({
               </Button>
             )}
 
-            {(tournamentStatus === "knockout" ||
+            {showKnockoutControls &&
+              (tournamentStatus === "knockout" ||
               (tournamentStatus === "group-stage" && tournamentFormat === "group") ||
               (tournamentStatus === "pending" && tournamentFormat === "knockout")) && (
                 <Button variant="destructive" className="flex-1 min-w-[200px]" onClick={() => handleFinishTournament()}>
@@ -511,7 +534,8 @@ export default function TournamentStatusChanger({
               )}
           </div>
 
-          {!isGroupGenerationAllowed &&
+          {showGroupsControls &&
+            !isGroupGenerationAllowed &&
             tournamentStatus === "pending" &&
             (tournamentFormat === "group" || tournamentFormat === "group_knockout") &&
             boardCount > 0 && (
@@ -535,7 +559,7 @@ export default function TournamentStatusChanger({
             </Alert>
           )}
 
-          {isPendingKnockoutCancel && (
+          {showKnockoutControls && isPendingKnockoutCancel && (
             <Alert variant="warning">
               <AlertTitle>{tTour('status_changer.cancel_knockout_dialog.pending_title')}</AlertTitle>
               <AlertDescription className="space-y-3">
@@ -841,7 +865,7 @@ export default function TournamentStatusChanger({
                   {tTour('status_changer.knockout_dialog.qualifiers_desc')}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[2, 3, 4].filter(count => !(boardCount >= 16 && count === 4)).map((count) => (
+                  {[2, 3, 4].filter(count => !(effectiveBoardCount >= 16 && count === 4)).map((count) => (
                     <Button
                       key={count}
                       type="button"
@@ -853,7 +877,7 @@ export default function TournamentStatusChanger({
                   ))}
                 </div>
                 <div className="text-sm text-muted-foreground mt-2">
-                  {tTour('status_changer.knockout_dialog.bracket_size', { size: boardCount * selectedPlayers, boards: boardCount })}
+                  {tTour('status_changer.knockout_dialog.bracket_size', { size: effectiveBoardCount * selectedPlayers, boards: effectiveBoardCount })}
                 </div>
 
                 <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">

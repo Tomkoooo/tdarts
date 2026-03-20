@@ -13,13 +13,11 @@ if (!(global as any).mongoose) {
 
 export async function connectMongo() {
   if (cached.conn) {
-    console.log('Using existing MongoDB connection');
     return cached.conn;
   }
 
   // Check if there's an active connection
   if (mongoose.connection.readyState === 1) {
-    console.log('Reusing active MongoDB connection');
     cached.conn = mongoose;
     return cached.conn;
   }
@@ -30,18 +28,34 @@ export async function connectMongo() {
   }
 
   if (!cached.promise) {
-    console.log('Connecting to:', process.env.MONGODB_URI);
+    const isLoadTest = process.env.LOAD_TEST_MODE === 'true';
+    const isDev = process.env.NODE_ENV !== 'production' && !isLoadTest;
+    const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE ?? (isLoadTest ? 200 : isDev ? 40 : 75));
+    const minPoolSize = Number(process.env.MONGO_MIN_POOL_SIZE ?? (isLoadTest ? 30 : isDev ? 1 : 20));
+    const maxConnecting = Number(process.env.MONGO_MAX_CONNECTING ?? (isLoadTest ? 30 : 10));
+    const waitQueueTimeoutMS = Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS ?? (isLoadTest ? 60000 : 15000));
+    const serverSelectionTimeoutMS = Number(
+      process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS ?? (isLoadTest ? 10000 : 5000)
+    );
+    const socketTimeoutMS = Number(process.env.MONGO_SOCKET_TIMEOUT_MS ?? (isLoadTest ? 120000 : 45000));
+
+    if (isLoadTest) {
+      console.log(
+        `[mongo] load-test pool config: maxPoolSize=${maxPoolSize}, minPoolSize=${minPoolSize}, maxConnecting=${maxConnecting}, waitQueueTimeoutMS=${waitQueueTimeoutMS}, serverSelectionTimeoutMS=${serverSelectionTimeoutMS}, socketTimeoutMS=${socketTimeoutMS}`
+      );
+    }
+
     cached.promise = mongoose
       .connect(process.env.MONGODB_URI, {
         dbName: process.env.MONGODB_DB_NAME || 'tdarts_v2_test',
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
+        maxPoolSize,
+        minPoolSize,
+        maxConnecting,
+        waitQueueTimeoutMS,
+        serverSelectionTimeoutMS,
+        socketTimeoutMS,
       })
-      .then((mongooseInstance) => {
-        console.log('MongoDB connected via Mongoose');
-        return mongooseInstance;
-      })
+      .then((mongooseInstance) => mongooseInstance)
       .catch((error) => {
         console.error('Mongoose connection error:', error);
         cached.conn = null;

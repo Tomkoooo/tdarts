@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { IconUsers, IconLocation, IconBrowser, IconMail, IconPhone, IconPencil, IconMapPin } from '@tabler/icons-react';
 import { useRouter } from '@/i18n/routing';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { createClubAction } from '@/features/clubs/actions/createClub.action';
 import { Club } from '@/interface/club.interface';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -66,8 +66,8 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
       const location = `${data.city}, ${data.address}`;
       const { name, description, contact, country } = data;
       
-      await toast.promise(
-        axios.post<Club>('/api/clubs/create', {
+      const club = await toast.promise(
+        createClubAction({
           creatorId: userId,
           clubData: {
             name,
@@ -76,18 +76,17 @@ const ClubRegistrationForm: React.FC<ClubRegistrationFormProps> = ({ userId }) =
             location,
             country,
           },
-        }, {
-          headers: { 'Content-Type': 'application/json' },
         }),
         {
           loading: t('toast.loading'),
-          success: (response) => {
-            router.push(`/clubs/${response.data._id}`);
-            return t('toast.success');
-          },
-          error: (error) => error.response?.data?.error || t('toast.error'),
+          success: t('toast.success'),
+          error: (err: { message?: string }) => err?.message || t('toast.error'),
         }
       );
+      if (club && typeof club === 'object' && '_id' in club) {
+        const clubId = String((club as any)._id);
+        router.push(`/clubs/${clubId}`);
+      }
     } catch (error) {
       console.error('Club creation error:', error);
     }

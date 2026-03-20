@@ -1,80 +1,39 @@
-"use client"
+"use client";
 import { useTranslations } from "next-intl";
 
-import React, { useState, useEffect, use, useRef } from "react";
-import axios from "axios";
+import React, { useState, useEffect, use, useRef, useCallback } from "react";
 import MatchGame from "@/components/board/MatchGame";
 import LocalMatchGame from "@/components/board/LocalMatchGame";
-import Link from "next/link";
 import { useUserContext } from "@/hooks/useUser";
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
+import { BoardAuthScreen } from "@/features/board/components/BoardAuthScreen";
+import { BoardSelectionScreen } from "@/features/board/components/BoardSelectionScreen";
+import { BoardMatchSetupScreen } from "@/features/board/components/BoardMatchSetupScreen";
+import { getSelectedBoardKey, getTournamentPasswordKey } from "@/features/board/hooks/useBoardData";
+import type { Board, Match, UserRole } from "@/features/board/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   IconArrowLeft,
-  IconDeviceDesktop,
   IconRefresh,
   IconPlayerPlay,
 } from "@tabler/icons-react";
 import { showErrorToast } from "@/lib/toastUtils";
 import toast from "react-hot-toast";
-
-// --- Types ---
-interface Player {
-  playerId: {
-    _id: string;
-    name: string;
-  };
-  highestCheckout?: number;
-  oneEightiesCount?: number;
-  legsWon?: number;
-  legsLost?: number;
-  average?: number;
-}
-
-interface Scorer {
-  playerId: string;
-  name: string;
-}
-
-interface Board {
-  boardNumber: number;
-  name?: string;
-  status: string;
-  currentMatch?: string;
-  nextMatch?: string;
-  scoliaSerialNumber?: string;
-  scoliaAccessToken?: string;
-}
-
-interface Match {
-  _id: string;
-  boardReference: number;
-  type: string;
-  round: number;
-  player1: Player;
-  player2: Player;
-  scorer: Scorer;
-  status: string;
-  startingScore: number;
-  legsToWin?: number;
-  startingPlayer?: 1 | 2;
-}
-
-interface UserRole {
-  clubRole: 'admin' | 'moderator' | 'member';
-  tournamentRole?: 'player' | 'moderator' | 'admin';
-}
-
-// LocalStorage keys
-const getTournamentPasswordKey = (tournamentId: string) => `tournament_password_${tournamentId}`;
-const getSelectedBoardKey = (tournamentId: string) => `selected_board_${tournamentId}`;
+import {
+  finishBoardMatchAction,
+  getBoardListAction,
+  getBoardMatchesAction,
+  getBoardTournamentAction,
+  getBoardUserRoleAction,
+  startBoardMatchAction,
+  validateBoardPasswordAction,
+} from "@/features/board/actions/boardPage.action";
 
 interface BoardPageProps {
   params: Promise<{ tournamentId: string }>;
@@ -127,40 +86,92 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   const [localMatchActive, setLocalMatchActive] = useState<boolean>(false);
   const [localMatchId, setLocalMatchId] = useState<string>("");
   const sseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bootstrapDoneRef = useRef(false);
+  const boardsRequestIdRef = useRef(0);
+  const matchesRequestIdRef = useRef(0);
   
   const startingScoreOptions = [170, 201, 301, 401, 501, 601, 701];
   const getBoardLabel = (boardNumber: number, name?: string) =>
     name || t("tabla_sorszam", { number: boardNumber });
 
-  // Check URL parameters for QR code authentication
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlPassword = urlParams.get('password');
-      const urlBoard = urlParams.get('board');
+  const handlePasswordSubmit = useCallback(async (pwd?: string) => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      const pwdToUse = pwd || password;
+      const response = await validateBoardPasswordAction({
+        tournamentId,
+        password: pwdToUse,
+      });
       
-      if (urlPassword) {
-        setPassword(urlPassword);
-        handlePasswordSubmit(urlPassword);
+      if (response && typeof response === 'object' && 'isValid' in response && response.isValid) {
+        setIsAuthenticated(true);
+        localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
+        if ('tournament' in response && response.tournament) {
+          setTournamentData(response.tournament);
+        } else {
+          try {
+            const tournamentResponse = await getBoardTournamentAction({ tournamentId });
+            setTournamentData(tournamentResponse);
+          } catch (err: any) {
+            console.error('Failed to load tournament data:', err);
+            showErrorToast(t("nem_sikerült_betölteni_34"), {
+              error: err?.response?.data?.error,
+              context: 'Torna adatok betöltése',
+              errorName: 'Torna adatok betöltése sikertelen',
+            });
+          }
+        }
+
+        if ('boards' in response && Array.isArray(response.boards)) {
+          setBoards(response.boards as Board[]);
+        } else {
+          await loadBoards();
+        }
+      } else {
+        toast.error(t("hibás_jelszó"));
       }
-      
-      if (urlBoard) {
-        const boardNum = parseInt(urlBoard);
+    } catch (err: any) {
+      setError(t("hiba_tortent_a_bejelentkezes_i7x8"));
+      showErrorToast(t("nem_sikerült_bejelentkezni"), {
+        error: err?.response?.data?.error,
+        context: 'Tábla bejelentkezés',
+        errorName: 'Bejelentkezés sikertelen',
+      });
+      console.error('Password submit error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [password, t, tournamentId]);
+
+  // Unified bootstrap: choose URL password first, then saved password, and run once.
+  useEffect(() => {
+    if (bootstrapDoneRef.current) return;
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPassword = urlParams.get('password');
+    const urlBoard = urlParams.get('board');
+    const savedPassword = localStorage.getItem(getTournamentPasswordKey(tournamentId));
+    const passwordToUse = urlPassword || savedPassword;
+
+    if (urlBoard) {
+      const boardNum = parseInt(urlBoard);
+      if (Number.isFinite(boardNum)) {
         localStorage.setItem(getSelectedBoardKey(tournamentId), boardNum.toString());
       }
     }
-  }, [tournamentId]);
 
-  // Check for saved authentication on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedPassword = localStorage.getItem(getTournamentPasswordKey(tournamentId));
-      if (savedPassword) {
-        setPassword(savedPassword);
-        handlePasswordSubmit(savedPassword);
-      }
+    if (passwordToUse) {
+      setPassword(passwordToUse);
+      bootstrapDoneRef.current = true;
+      void handlePasswordSubmit(passwordToUse);
+      return;
     }
-  }, [tournamentId]);
+
+    bootstrapDoneRef.current = true;
+  }, [handlePasswordSubmit, tournamentId]);
 
   // Check for saved board selection
   useEffect(() => {
@@ -170,7 +181,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
         const boardNum = parseInt(savedBoardNum);
         const savedBoard = boards.find(b => b.boardNumber === boardNum);
         if (savedBoard) {
-          setSelectedBoard(savedBoard);
+          setSelectedBoard((prev) => {
+            if (prev?.boardNumber === savedBoard.boardNumber) return prev;
+            return savedBoard;
+          });
         }
       }
     }
@@ -178,10 +192,10 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
 
   // Load matches when board is selected
   useEffect(() => {
-    if (selectedBoard) {
+    if (selectedBoard?.boardNumber) {
       loadMatches();
     }
-  }, [selectedBoard, tournamentId]);
+  }, [selectedBoard?.boardNumber, tournamentId]);
 
   // Load user role when authenticated
   useEffect(() => {
@@ -200,27 +214,71 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
           clearTimeout(sseRefreshTimerRef.current);
         }
         // Merge bursts of events to avoid back-to-back expensive API calls.
-        sseRefreshTimerRef.current = setTimeout(action, 300);
+        sseRefreshTimerRef.current = setTimeout(action, 600);
       };
-      
-      // Auto-refresh on relevant events
-      if (lastEvent.type === 'tournament-update' || lastEvent.type === 'match-update') {
-        // If viewing matches, reload them
+
+      const delta = lastEvent.delta;
+      const eventTournamentId = delta?.tournamentId || lastEvent.data?.tournamentId;
+      const isForTournament =
+        !eventTournamentId ||
+        eventTournamentId === tournamentId ||
+        eventTournamentId === tournamentData?._id?.toString?.();
+      if (!isForTournament) return;
+
+      let handled = false;
+
+      if (delta?.scope === 'match') {
+        const incomingMatch = delta.data?.match;
+        const incomingMatchId = incomingMatch?._id ? String(incomingMatch._id) : undefined;
+        const boardNumberFromDelta = Number(
+          delta.data?.boardNumber ?? incomingMatch?.boardReference
+        );
+
+        if (selectedBoard && Number.isFinite(boardNumberFromDelta) && boardNumberFromDelta === selectedBoard.boardNumber) {
+          if (incomingMatch && incomingMatchId) {
+            setMatches((prev) => {
+              const index = prev.findIndex((m) => String(m._id) === incomingMatchId);
+              if (index === -1) return prev;
+              const next = [...prev];
+              next[index] = { ...next[index], ...incomingMatch };
+              return next;
+            });
+            handled = true;
+          }
+        }
+
+        if (!selectedBoard && Number.isFinite(boardNumberFromDelta)) {
+          setBoards((prev) =>
+            prev.map((board) => {
+              if (board.boardNumber !== boardNumberFromDelta) return board;
+              const nextStatus =
+                delta.action === 'started'
+                  ? 'playing'
+                  : delta.action === 'finished'
+                    ? 'waiting'
+                    : board.status;
+              return { ...board, status: nextStatus };
+            })
+          );
+          handled = true;
+        }
+      }
+
+      if (!handled || delta?.requiresResync) {
         if (selectedBoard) {
-          console.log('Board - Auto-refreshing matches due to SSE event');
+          console.log('Board - Resyncing selected board matches');
           scheduleRefresh(() => {
             void loadMatches();
           });
         } else {
-          // If on board selection, reload boards
-          console.log('Board - Auto-refreshing boards due to SSE event');
+          console.log('Board - Resyncing board list');
           scheduleRefresh(() => {
             void loadBoards();
           });
         }
       }
     }
-  }, [lastEvent, isAuthenticated, selectedBoard]);
+  }, [lastEvent, isAuthenticated, selectedBoard, tournamentId, tournamentData?._id]);
 
   useEffect(() => {
     return () => {
@@ -230,56 +288,21 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     };
   }, []);
 
-  const handlePasswordSubmit = async (pwd?: string) => {
-    setLoading(true);
-    setError("");
-    
-    try {
-      const pwdToUse = pwd || password;
-      const response = await axios.post(`/api/boards/${tournamentId}/validate`, {
-        password: pwdToUse
-      });
-      
-      if (response.data.isValid) {
-        setIsAuthenticated(true);
-        localStorage.setItem(getTournamentPasswordKey(tournamentId), pwdToUse);
-        
-        // Load tournament data to get clubId
-        try {
-          const tournamentResponse = await axios.get(`/api/tournaments/${tournamentId}`);
-          setTournamentData(tournamentResponse.data);
-        } catch (err: any) {
-          console.error('Failed to load tournament data:', err);
-          showErrorToast(t("nem_sikerült_betölteni_34"), {
-            error: err?.response?.data?.error,
-            context: 'Torna adatok betöltése',
-            errorName: 'Torna adatok betöltése sikertelen',
-          });
-        }
-        
-        await loadBoards();
-      } else {
-        toast.error(t("hibás_jelszó"));
-      }
-    } catch (err: any) {
-      setError(t("hiba_tortent_a_bejelentkezes_i7x8"));
-      showErrorToast(t("nem_sikerült_bejelentkezni"), {
-        error: err?.response?.data?.error,
-        context: 'Tábla bejelentkezés',
-        errorName: 'Bejelentkezés sikertelen',
-      });
-      console.error('Password submit error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const loadBoards = async () => {
+    const requestId = ++boardsRequestIdRef.current;
     setLoading(true);
     try {
-      const response = await axios.get(`/api/boards/${tournamentId}/getBoards`);
-      setBoards(response.data.boards);
+      const response = await getBoardListAction({ tournamentId });
+      if (requestId !== boardsRequestIdRef.current) return;
+      if (response && typeof response === 'object' && 'boards' in response) {
+        setBoards((response as { boards: Board[] }).boards || []);
+      } else {
+        setBoards([]);
+      }
     } catch (err: any) {
+      if (requestId !== boardsRequestIdRef.current) return;
       setError(t("nem_sikerult_betolteni_a_px4t"));
       showErrorToast(t("nem_sikerült_betölteni_72"), {
         error: err?.response?.data?.error,
@@ -288,18 +311,31 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       });
       console.error('Load boards error:', err);
     } finally {
-      setLoading(false);
+      if (requestId === boardsRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const loadMatches = async () => {
     if (!selectedBoard) return;
-    
+
+    const requestId = ++matchesRequestIdRef.current;
     setLoading(true);
     try {
-      const response = await axios.get(`/api/boards/${tournamentId}/${selectedBoard.boardNumber}/matches`);
-      setMatches(response.data.matches);
+      const response = await getBoardMatchesAction({
+        tournamentId,
+        boardNumber: Number(selectedBoard.boardNumber),
+      });
+      if (requestId !== matchesRequestIdRef.current) return;
+      if (response && typeof response === 'object' && 'matches' in response) {
+        const nextMatches = ((response as { matches?: unknown }).matches || []) as unknown as Match[];
+        setMatches(nextMatches);
+      } else {
+        setMatches([]);
+      }
     } catch (err: any) {
+      if (requestId !== matchesRequestIdRef.current) return;
       setError(t("nem_sikerult_betolteni_a_qh0h"));
       showErrorToast(t("nem_sikerült_betölteni_13"), {
         error: err?.response?.data?.error,
@@ -308,19 +344,16 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
       });
       console.error('Load matches error:', err);
     } finally {
-      setLoading(false);
+      if (requestId === matchesRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const loadUserRole = async () => {
     try {
-      
-      const response = await axios.get(`/api/tournaments/${tournamentId}/getUserRole`, {
-        headers: {
-          'x-user-id': user?._id || ''
-        }
-      });
-      setUserRole(response.data);
+      const response = await getBoardUserRoleAction({ tournamentId });
+      setUserRole(response as UserRole);
     } catch (err) {
       console.error('Failed to load user role:', err);
     }
@@ -352,20 +385,19 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     setError("");
     
     try {
-      await axios.post(`/api/matches/${adminMatch._id}/finish`, {
+      await finishBoardMatchAction({
+        matchId: String(adminMatch._id),
         player1LegsWon: cleanedPlayer1Legs,
         player2LegsWon: cleanedPlayer2Legs,
         player1Stats: {
           highestCheckout: adminMatch.player1.highestCheckout || 0,
           oneEightiesCount: adminMatch.player1.oneEightiesCount || 0,
-          totalThrows: 0,
-          totalScore: 0
+          average: 0,
         },
         player2Stats: {
           highestCheckout: adminMatch.player2.highestCheckout || 0,
           oneEightiesCount: adminMatch.player2.oneEightiesCount || 0,
-          totalThrows: 0,
-          totalScore: 0
+          average: 0,
         }
       });
       
@@ -393,17 +425,19 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     setSetupLoading(true);
     try {
       // Start the match
-      const response = await axios.post(`/api/boards/${tournamentId}/${selectedBoard.boardNumber}/start`, {
+      const response = await startBoardMatchAction({
+        tournamentId,
+        boardNumber: Number(selectedBoard.boardNumber),
         matchId: selectedMatch._id,
         legsToWin,
-        startingPlayer
+        startingPlayer,
       });
       
-      if (response.data.success) {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
         setShowMatchSetup(false);
         // Update selectedMatch with fresh data from the API response
-        if (response.data.match) {
-          setSelectedMatch(response.data.match);
+        if ('match' in response && (response as { match?: Match }).match) {
+          setSelectedMatch((response as { match: Match }).match);
         } else {
           // Fallback: reload matches to get updated status
           await loadMatches();
@@ -491,164 +525,51 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
   }
 
 
-  // Password authentication screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">
-            <CardHeader>
-              <div className="text-center space-y-4">
-                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/10">
-                  <IconDeviceDesktop className="text-primary" size={32} />
-                </div>
-                <div>
-                  <CardTitle className="text-3xl font-bold tracking-tight">{t("torna_jelszó")}</CardTitle>
-                  <CardDescription className="text-base mt-2">
-                    {t("add_meg_a")}</CardDescription>
-                </div>
-                <div className="flex gap-2 justify-center pt-2">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/board">
-                      <IconArrowLeft size={18} />
-                      {t("vissza")}</Link>
-                  </Button>
-                  <Button size="sm" asChild>
-                    <Link href={`/tournaments/${tournamentId}`}>{t("torna_oldal")}</Link>
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="board-password" className="text-sm font-semibold">
-                    {t("torna_jelszó_1")}</Label>
-                  <Input
-                    id="board-password"
-                    type="password"
-                    placeholder={t("torna_jelszó_31")}
-                    className="h-14"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                    autoFocus
-                  />
-                </div>
-                
-                <Button
-                  size="lg"
-                  className="w-full"
-                  onClick={() => handlePasswordSubmit()}
-                  disabled={loading || !password.trim()}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                      {t("bejelentkezés")}</>
-                  ) : (
-                    t("bejelentkezés")
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <BoardAuthScreen
+        tournamentId={tournamentId}
+        password={password}
+        onPasswordChange={setPassword}
+        onSubmit={() => handlePasswordSubmit()}
+        loading={loading}
+        error={error}
+        backHref="/board"
+        backLabel={t("vissza")}
+        title={t("torna_jelszó")}
+        description={t("add_meg_a")}
+        passwordLabel={t("torna_jelszó_1")}
+        passwordPlaceholder={t("torna_jelszó_31")}
+        submitLabel={t("bejelentkezés")}
+        tournamentPageLabel={t("torna_oldal")}
+        tournamentPageHref={`/tournaments/${tournamentId}`}
+      />
     );
   }
 
-  // Board selection screen
   if (!selectedBoard) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 p-4">
-        <div className="container mx-auto max-w-6xl py-8">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <IconDeviceDesktop className="text-primary" size={24} />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{t("válassz_táblát")}</h1>
-                <p className="text-muted-foreground mt-1">{t("válaszd_ki_a")}</p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
-              <Button variant="ghost" size="sm" asChild className="w-full sm:w-auto">
-                <Link href="/board">
-                  <IconArrowLeft size={18} />
-                  {t("vissza")}</Link>
-              </Button>
-              <Button size="sm" asChild className="w-full sm:w-auto">
-                <Link href={`/tournaments/${tournamentId}`}>{t("torna_oldal")}</Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowLocalMatchSetup(true)}
-                className="w-full sm:w-auto gap-2"
-              >
-                <IconPlayerPlay size={18} />
-                {t("helyi_meccs_indítása")}</Button>
-            </div>
-          </div>
-          
-          {error && (
-            <Alert variant="destructive" className="mb-6 max-w-2xl mx-auto">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="w-8 h-8 border-2 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {boards.map((board) => {
-                const statusConfig = {
-                  playing: { label: t("jatekban_oj3d"), variant: 'default' as const, ring: 'ring-2 ring-primary' },
-                  waiting: { label: t("varakozik_nvfk"), variant: 'secondary' as const, ring: 'ring-2 ring-amber-500/50' },
-                  idle: { label: t("szabad_ttii"), variant: 'outline' as const, ring: '' },
-                };
-                const config = statusConfig[board.status as keyof typeof statusConfig] || statusConfig.idle;
-                
-                return (
-                  <button
-                    key={board.boardNumber}
-                    onClick={() => handleBoardSelect(board)}
-                    className={cn(
-                      "text-left p-6 rounded-xl transition-all",
-                      "bg-card/50 backdrop-blur-xl shadow-xl shadow-black/20 hover:shadow-2xl",
-                      config.ring
-                    )}
-                  >
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold">
-                          {getBoardLabel(board.boardNumber, board.name)}
-                        </h2>
-                        <Badge variant={config.variant}>{config.label}</Badge>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button size="sm" variant="outline">
-                          {t("kiválaszt")}</Button>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Local Match Setup Dialog */}
-          <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
+      <>
+        <BoardSelectionScreen
+          boards={boards}
+          loading={loading}
+          error={error}
+          getBoardLabel={getBoardLabel}
+          onBoardSelect={handleBoardSelect}
+          onLocalMatchClick={() => setShowLocalMatchSetup(true)}
+          backHref="/board"
+          backLabel={t("vissza")}
+          tournamentPageHref={`/tournaments/${tournamentId}`}
+          tournamentPageLabel={t("torna_oldal")}
+          title={t("válassz_táblát")}
+          subtitle={t("válaszd_ki_a")}
+          selectLabel={t("kiválaszt")}
+          playingLabel={t("jatekban_oj3d")}
+          waitingLabel={t("varakozik_nvfk")}
+          idleLabel={t("szabad_ttii")}
+          localMatchLabel={t("helyi_meccs_indítása")}
+        />
+        <Dialog open={showLocalMatchSetup} onOpenChange={setShowLocalMatchSetup}>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>{t("helyi_meccs_beállítása")}</DialogTitle>
@@ -702,15 +623,14 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+      </>
     );
   }
 
   // Match selection screen
   if (!selectedMatch) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 p-4">
+      <div className="min-h-screen w-full bg-linear-to-br from-background via-background/95 to-muted/40 p-4">
         <div className="container mx-auto max-w-6xl py-8">
           <div className="flex flex-col gap-4 mb-6">
             {/* Top row: Back button and title */}
@@ -993,163 +913,39 @@ const BoardPage: React.FC<BoardPageProps> = (props) => {
     );
   }
 
-  // Match setup screen
   if (showMatchSetup && selectedMatch) {
-    const startingPlayerName = startingPlayer === 1 
-      ? selectedMatch.player1.playerId.name 
-      : selectedMatch.player2.playerId.name;
-    
     return (
-      <>
-        <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-muted/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <Card className="bg-card/50 backdrop-blur-xl shadow-2xl shadow-black/20">
-              <CardHeader>
-                <div className="flex items-center justify-between mb-4">
-                  <Button variant="ghost" size="sm" onClick={handleBackToMatches} className="gap-2">
-                    <IconArrowLeft size={18} />
-                    {t("vissza")}</Button>
-                  <h2 className="text-lg font-bold">
-                    {selectedBoard ? getBoardLabel(selectedBoard.boardNumber, selectedBoard.name) : ""}
-                  </h2>
-                </div>
-                <div className="text-center space-y-2">
-                  <CardTitle className="text-xl">
-                    {selectedMatch.player1.playerId.name} vs {selectedMatch.player2.playerId.name}
-                  </CardTitle>
-                  <CardDescription>{t("író")}{selectedMatch.scorer ? selectedMatch.scorer.name : t("elozo_kor_vesztese")}</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">{t("hány_nyert_legig")}</Label>
-                  <select
-                    value={legsToWin}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? 0 : parseInt(e.target.value);
-                      setLegsToWin(value);
-                    }}
-                    onBlur={(e) => {
-                      if (e.target.value === '') {
-                        setLegsToWin(0);
-                      }
-                    }}
-                    className="select select-bordered w-full h-14 rounded-xl bg-muted/20 border border-border/40 shadow-sm text-foreground font-medium focus:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <option value="" disabled>{t("válassz_számot")}</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                      <option key={num} value={num}>
-                        {num} {t("leg")}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold">{t("ki_kezdi")}</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {t("a_bull_t")}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      size="lg"
-                      variant={startingPlayer === 1 ? "default" : "outline"}
-                      onClick={() => setStartingPlayer(1)}
-                      className="h-14"
-                    >
-                      {selectedMatch.player1.playerId.name}
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant={startingPlayer === 2 ? "default" : "outline"}
-                      onClick={() => setStartingPlayer(2)}
-                      className="h-14"
-                    >
-                      {selectedMatch.player2.playerId.name}
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={handleBackToMatches}
-                  >
-                    {t("mégse")}</Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => setShowConfirmDialog(true)}
-                    disabled={setupLoading}
-                  >
-                    {t("meccs_indítása")}</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Confirm Dialog */}
-        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t("meccs_indítása")}</DialogTitle>
-              <DialogDescription>
-                {t("ellenőrizd_a_beállításokat")}</DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">{t("kezdő_játékos")}</span>
-                  <span className="text-sm font-semibold text-foreground">{startingPlayerName}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">{t("nyert_legek_0")}</span>
-                  <span className="text-sm font-semibold text-foreground">{legsToWin} {t("leg")}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">{t("tábla")}</span>
-                  <span className="text-sm font-semibold text-foreground">
-                    {selectedBoard ? getBoardLabel(selectedBoard.boardNumber, selectedBoard.name) : ""}
-                  </span>
-                </div>
-                <div className="flex items-start justify-between pt-2 border-t border-border/40">
-                  <span className="text-sm font-medium text-muted-foreground">{t("játékosok_86")}</span>
-                  <span className="text-sm font-semibold text-foreground text-right">
-                    {selectedMatch.player1.playerId.name}<br />
-                    vs<br />
-                    {selectedMatch.player2.playerId.name}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowConfirmDialog(false)}
-              >
-                {t("mégse")}</Button>
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  setShowConfirmDialog(false);
-                  handleStartMatch();
-                }}
-                disabled={setupLoading}
-              >
-                {setupLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-t-primary-foreground border-r-primary-foreground border-b-transparent border-l-transparent rounded-full animate-spin mr-2" />
-                    {t("indítás")}</>
-                ) : (
-                  t("meccs_indítása")
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </>
+      <BoardMatchSetupScreen
+        match={selectedMatch}
+        board={selectedBoard}
+        legsToWin={legsToWin}
+        startingPlayer={startingPlayer}
+        onLegsToWinChange={setLegsToWin}
+        onStartingPlayerChange={setStartingPlayer}
+        onStart={handleStartMatch}
+        onBack={handleBackToMatches}
+        loading={setupLoading}
+        showConfirmDialog={showConfirmDialog}
+        onConfirmDialogChange={setShowConfirmDialog}
+        getBoardLabel={getBoardLabel}
+        backLabel={t("vissza")}
+        scorerLabel={t("író")}
+        previousRoundLoserLabel={t("elozo_kor_vesztese")}
+        legsLabel={t("leg")}
+        legsToWinLabel={t("hány_nyert_legig")}
+        selectNumberLabel={t("válassz_számot")}
+        whoStartsLabel={t("ki_kezdi")}
+        bullLabel={t("a_bull_t")}
+        cancelLabel={t("mégse")}
+        startMatchLabel={t("meccs_indítása")}
+        confirmTitle={t("meccs_indítása")}
+        confirmDescription={t("ellenőrizd_a_beállításokat")}
+        startingPlayerLabel={t("kezdő_játékos")}
+        legsWonLabel={t("nyert_legek_0")}
+        boardLabel={t("tábla")}
+        playersLabel={t("játékosok_86")}
+        saveLabel={t("indítás")}
+      />
     );
   }
 

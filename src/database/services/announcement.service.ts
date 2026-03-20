@@ -69,10 +69,17 @@ export class AnnouncementService {
     const announcements = await AnnouncementModel.find({
       isActive: true,
       expiresAt: { $gt: now }
-    }).sort({ createdAt: -1 }).lean();
+    }).sort({ createdAt: -1 });
 
     return announcements
-      .map((announcement: any) => this.resolveLocaleFields(announcement, locale))
+      .map((announcement: any) =>
+        this.resolveLocaleFields(
+          typeof announcement?.toObject === 'function'
+            ? announcement.toObject()
+            : announcement,
+          locale
+        )
+      )
       .filter(Boolean);
   }
 

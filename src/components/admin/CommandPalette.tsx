@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import { cn } from "@/lib/utils"
 import {
   Dialog,

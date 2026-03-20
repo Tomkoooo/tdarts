@@ -1,0 +1,73 @@
+config:
+  target: "http://localhost:3000"
+  processor: "./load.processor.js"
+  maxVusers: 50
+  phases:
+    - duration: 20
+      arrivalRate: 1
+      name: warmup_1
+    - duration: 70
+      arrivalRate: 2
+      rampTo: 4
+      name: ramp_2_to_4
+    - duration: 90
+      arrivalRate: 4
+      name: sustain_4
+  defaults:
+    headers:
+      x-load-test-secret: "{{ $processEnvironment.LOAD_TEST_SECRET }}"
+  http:
+    timeout: 30
+    pool: 1200
+
+before:
+  flow:
+    - function: "bootstrapTournaments"
+
+scenarios:
+  - name: browse_platform_pages_only
+    weight: 85
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "browsePrep"
+      - loop:
+          - get:
+              url: "/en/home"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}/live"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/profile"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/home"
+              afterResponse: "capturePageMetrics"
+        count: 3
+
+  - name: live_board_polling_only
+    weight: 15
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "pickTournamentContext"
+      - loop:
+          - get:
+              url: "/en/board/{{ tournamentCode }}"
+              afterResponse: "capturePageMetrics"
+          - think: 2
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}/live"
+              afterResponse: "capturePageMetrics"
+          - think: 2
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}"
+              afterResponse: "capturePageMetrics"
+          - think: 2
+        count: 2

@@ -2,56 +2,95 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import NavbarNew from '@/components/homapage/NavbarNew'
 import Footer from '@/components/homapage/Footer'
+import { DesktopSidebar } from '@/components/layout/DesktopSidebar'
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { PageTransitionWrapper } from '@/components/layout/PageTransitionWrapper'
 import { stripLocalePrefix } from "@/lib/seo"
+import {
+  shouldHideNavbar,
+  shouldShowFooter,
+} from "@/lib/navigation/shell-routing"
+import { ModalProvider } from '@/components/modal/UnifiedModal'
 
 export function NavbarProvider({ 
   children, 
-  initialShouldHide = false 
+  initialShouldHide = false,
+  initialPath = "",
 }: { 
   children: React.ReactNode
-  initialShouldHide?: boolean 
+  initialShouldHide?: boolean
+  initialPath?: string
 }) {
   const pathname = usePathname()
-  const [shouldHideNavbar, setShouldHideNavbar] = useState(initialShouldHide)
-  const [showFooter, setShowFooter] = useState(false)
+  const [shellState, setShellState] = useState(() => {
+    const path = initialPath || stripLocalePrefix(pathname || "/")
+    const computedHide = shouldHideNavbar(path)
+    return {
+      shouldHide: initialPath ? initialShouldHide : computedHide,
+      showFooter: shouldShowFooter(path),
+    }
+  })
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   useEffect(() => {
-    if (!pathname) return;
+    const normalizedPath = stripLocalePrefix(pathname || "/")
+    const hide = shouldHideNavbar(normalizedPath)
+    const showFooter = shouldShowFooter(normalizedPath)
 
-    const normalizedPath = stripLocalePrefix(pathname);
-
-    const hideNavbarPaths = ['/board', '/test', '/tv', '/api/admin']
-    const shouldHide = hideNavbarPaths.some(path => normalizedPath.startsWith(path)) || normalizedPath.includes('/tv')
-    
-    // Footer visibility logic
-    const shownFooterPaths = ['/search', '/profile', '/club'];
-    const shouldShowFooter =
-      shownFooterPaths.some(path => normalizedPath.startsWith(path)) || normalizedPath === '/';
-
-      console.log("NavbarProvider - Normalized Path:", normalizedPath, "Should Show Footer:", shouldShowFooter, "should hide:", shouldHide);
-    
-    // console.log("NavbarProvider - Pathname:", pathname, "Should Hide:", shouldHide, "Show Footer:", shouldShowFooter);
-    
-    setShouldHideNavbar(shouldHide)
-    setShowFooter(shouldShowFooter)
+    setShellState({
+      shouldHide: hide,
+      showFooter,
+    })
   }, [pathname])
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      {!shouldHideNavbar && (
-        <>
-          <NavbarNew />
-          {/* Spacer to prevent content from being hidden behind fixed navbar */}
-          <div className="h-16 md:h-20" />
-        </>
-      )}
-      <main className="flex-1">
-        {children}
-      </main>
-      {!shouldHideNavbar && showFooter && <Footer />}
+  useEffect(() => {
+    const saved = localStorage.getItem("tdarts.sidebar.collapsed")
+    if (saved !== null) {
+      setIsCollapsed(saved === "true")
+    }
+  }, [])
+
+  const handleToggleCollapsed = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem("tdarts.sidebar.collapsed", String(next))
+      return next
+    })
+  }
+
+  const shellContainerClass = shellState.shouldHide
+    ? "flex min-h-screen flex-col"
+    : isCollapsed
+      ? "flex min-h-screen flex-col md:pl-(--sidebar-collapsed-width)"
+      : "flex min-h-screen flex-col md:pl-(--sidebar-width)"
+
+  const content = (
+    <div
+      className={shellContainerClass}
+      style={
+        {
+          "--app-shell-left-offset": shellState.shouldHide
+            ? "0px"
+            : isCollapsed
+              ? "var(--sidebar-collapsed-width)"
+              : "var(--sidebar-width)",
+        } as React.CSSProperties
+      }
+    >
+      {!shellState.shouldHide ? (
+        <DesktopSidebar collapsed={isCollapsed} onToggleCollapsed={handleToggleCollapsed} />
+      ) : null}
+      <div className="flex flex-1 flex-col min-h-0">
+        <main className={shellState.shouldHide ? "flex-1" : "flex-1 pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-0"}>
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+        </main>
+        {!shellState.shouldHide && shellState.showFooter ? <Footer /> : null}
+      </div>
+      {!shellState.shouldHide ? <MobileBottomNav /> : null}
     </div>
   )
+
+  return <ModalProvider>{content}</ModalProvider>
 }
 

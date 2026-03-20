@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/Label"
 import { Input } from "@/components/ui/Input"
-import axios from "axios"
 import { showErrorToast } from "@/lib/toastUtils"
 import toast from "react-hot-toast"
+import { updateTournamentBoardAction } from "@/features/tournaments/actions/manageTournament.action"
 
 interface TournamentBoardsViewProps {
   tournament: any
@@ -28,12 +28,68 @@ const LEGACY_DEFAULT_BOARD_NAME_KEYS = new Set([
   "boards.default_board_name",
 ]);
 
+const unwrapMatch = (matchRef: any) => {
+  if (!matchRef) return null;
+  if (matchRef?.matchReference) return matchRef.matchReference;
+  return matchRef;
+};
+
+const matchBelongsToBoard = (matchRef: any, boardNumber: number) =>
+  Number(matchRef?.boardReference) === Number(boardNumber);
+
+const getBoardFallbackCurrentMatch = (tournament: any, boardNumber: number) => {
+  const groups = Array.isArray(tournament?.groups) ? tournament.groups : [];
+  for (const group of groups) {
+    const matches = Array.isArray(group?.matches) ? group.matches : [];
+    const ongoing = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "ongoing" && matchBelongsToBoard(match, boardNumber));
+    if (ongoing) return ongoing;
+  }
+
+  const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout : [];
+  for (const round of knockoutRounds) {
+    const matches = Array.isArray(round?.matches) ? round.matches : [];
+    const ongoing = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "ongoing" && matchBelongsToBoard(match, boardNumber));
+    if (ongoing) return ongoing;
+  }
+
+  return null;
+};
+
+const getBoardFallbackNextMatch = (tournament: any, boardNumber: number) => {
+  const groups = Array.isArray(tournament?.groups) ? tournament.groups : [];
+  for (const group of groups) {
+    const matches = Array.isArray(group?.matches) ? group.matches : [];
+    const pending = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "pending" && matchBelongsToBoard(match, boardNumber));
+    if (pending) return pending;
+    const ongoing = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "ongoing" && matchBelongsToBoard(match, boardNumber));
+    if (ongoing) return ongoing;
+  }
+
+  const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout : [];
+  for (const round of knockoutRounds) {
+    const matches = Array.isArray(round?.matches) ? round.matches : [];
+    const pending = matches
+      .map(unwrapMatch)
+      .find((match: any) => match?.status === "pending" && matchBelongsToBoard(match, boardNumber));
+    if (pending) return pending;
+  }
+
+  return null;
+};
+
 export function TournamentBoardsView({ tournament: initialTournament, userClubRole }: TournamentBoardsViewProps) {
   const tTour = useTranslations("Tournament");
-  const [tournament, setTournament] = useState(initialTournament);
-  const boards = tournament?.boards || []
-  const tournamentId = tournament?.tournamentId
-  const tournamentPassword = tournament?.tournamentSettings?.password
+  const boards = initialTournament?.boards || []
+  const tournamentId = initialTournament?.tournamentId
+  const tournamentPassword = initialTournament?.tournamentSettings?.password
 
   const statusMap: Record<string, { label: string; badgeClass: string; description: string; cardClass: string; accentClass: string; scoreClass: string }> = {
     idle: {
@@ -67,11 +123,6 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
   const [editForm, setEditForm] = useState({ name: '', scoliaSerialNumber: '', scoliaAccessToken: '' });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync state if prop changes
-  if (initialTournament !== tournament && initialTournament?.updatedAt !== tournament?.updatedAt) {
-      setTournament(initialTournament);
-  }
-
   const handleEditClick = (board: any) => {
       setEditingBoard(board);
       setEditForm({ 
@@ -85,12 +136,16 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
       if (!editingBoard) return;
       setIsSaving(true);
       try {
-          const response = await axios.patch(`/api/tournaments/${tournamentId}/boards/${editingBoard.boardNumber}`, editForm);
-          if (response.data.success) {
+          const response = await updateTournamentBoardAction({
+            code: tournamentId,
+            boardNumber: editingBoard.boardNumber,
+            name: editForm.name,
+            scoliaSerialNumber: editForm.scoliaSerialNumber,
+            scoliaAccessToken: editForm.scoliaAccessToken,
+          });
+          if ((response as any)?.success) {
               toast.success(tTour('boards_view.toast_save_success'));
               setEditingBoard(null);
-              // Update local state
-              setTournament(response.data.tournament);
           }
       } catch (error: any) {
           console.error("Failed to save board settings:", error);
@@ -132,8 +187,8 @@ export function TournamentBoardsView({ tournament: initialTournament, userClubRo
         const statusKey = board.status || "idle"
         const statusInfo = statusMap[statusKey] || statusMap.idle
 
-        const currentMatch = board.currentMatch
-        const nextMatch = board.nextMatch
+        const currentMatch = board.currentMatch || getBoardFallbackCurrentMatch(initialTournament, board.boardNumber)
+        const nextMatch = board.nextMatch || getBoardFallbackNextMatch(initialTournament, board.boardNumber)
 
         return (
           <Card

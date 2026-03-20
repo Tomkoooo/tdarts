@@ -10,16 +10,12 @@ import {
   IconCoin,
   IconTarget,
   IconUserPlus,
-  IconRefresh,
   IconId,
-  IconEdit,
   IconMail,
   IconPhone,
   IconExternalLink,
-  IconShare2,
 } from "@tabler/icons-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Badge } from "@/components/ui/Badge"
+import { Card, CardContent, CardHeader } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Separator } from "@/components/ui/separator"
 import { getUserTimeZone } from "@/lib/date-time"
@@ -27,10 +23,8 @@ import { getUserTimeZone } from "@/lib/date-time"
 interface TournamentOverviewProps {
   tournament: any
   userRole?: string
-  onEdit?: () => void
-  onRefetch?: () => void
-  onShare?: () => void
-  shareLabel?: string
+  userPlayerStatus?: 'applied' | 'checked-in' | 'none'
+  isLoggedIn?: boolean
 }
 
 
@@ -74,13 +68,17 @@ const formatDescription = (text: string) => {
   return parts
 }
 
-export function TournamentOverview({ tournament, userRole, onEdit, onRefetch, onShare, shareLabel }: TournamentOverviewProps) {
+export function TournamentOverview({
+  tournament,
+  userRole,
+  userPlayerStatus = "none",
+  isLoggedIn = false,
+}: TournamentOverviewProps) {
   const tTour = useTranslations("Tournament");
   const format = useFormatter()
   const timeZone = getUserTimeZone()
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
-  const canEdit = userRole === "admin" || userRole === "moderator"
   const descriptionText = tournament.tournamentSettings?.description || tTour('overview.no_description')
   const shouldTruncate = descriptionText.length > 180
   const fullDescriptionNodes = useMemo(() => formatDescription(descriptionText), [descriptionText])
@@ -90,19 +88,19 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch, on
     return formatDescription(truncated)
   }, [descriptionText, fullDescriptionNodes, shouldTruncate])
   const status = tournament.tournamentSettings?.status || "pending"
-
-  const statusBadgeClass: Record<string, string> = {
-    pending: "bg-warning/10 text-warning border-warning/20",
-    "group-stage": "bg-info/10 text-info border-info/20",
-    knockout: "bg-primary/10 text-primary border-primary/20",
-    finished: "bg-success/10 text-success border-success/20",
-  }
-  const statusLabel: Record<string, string> = {
-    pending: tTour('overview.status.pending'),
-    "group-stage": tTour('overview.status.group_stage'),
-    knockout: tTour('overview.status.knockout'),
-    finished: tTour('overview.status.finished'),
-  }
+  const now = useMemo(() => new Date(), [])
+  const registrationDeadline = tournament?.tournamentSettings?.registrationDeadline
+  const startDate = tournament?.tournamentSettings?.startDate
+  const isPending = status === "pending"
+  const registrationOpen = useMemo(() => {
+    if (!isPending) return false
+    if (registrationDeadline) return now < new Date(registrationDeadline)
+    if (startDate) return now < new Date(startDate)
+    return true
+  }, [isPending, now, registrationDeadline, startDate])
+  const canShowRegistrationCta = registrationOpen && userPlayerStatus === "none"
+  const registrationTarget = `/tournaments/${tournament.tournamentId}?tab=players&autoJoin=1`
+  const loginRedirectTarget = `/auth/login?redirect=${encodeURIComponent(registrationTarget)}`
 
   const details = [
     {
@@ -154,90 +152,67 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch, on
   ]
 
   return (
-    <Card className="bg-card/92 shadow-xl shadow-black/35">
-      <CardHeader className="space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <CardTitle className="text-2xl font-semibold text-foreground">
-                {tournament.tournamentSettings?.name || tTour('common.default_name')}
-              </CardTitle>
-              <Badge variant="outline" className={statusBadgeClass[status] || "bg-warning/10 text-warning border-warning/20"}>
-                {statusLabel[status] || statusLabel.pending}
-              </Badge>
-            </div>
-            <CardDescription className="mt-1 flex items-center gap-2 text-sm">
-              <IconId className="h-4 w-4" />
-              {tTour('overview.tournament_code')} <span className="font-mono">{tournament.tournamentId}</span>
-            </CardDescription>
-          </div>
+    <Card className="overflow-hidden border-border/60 bg-linear-to-br from-card/95 via-card/82 to-card/70 shadow-[0_14px_34px_rgba(0,0,0,0.28)] pt-3">
+     
 
-          <div className="flex flex-wrap justify-start gap-2 md:justify-end">
-            <Button variant="outline" size="sm" onClick={onRefetch} className="bg-card/80 hover:bg-card">
-              <IconRefresh className="mr-2 h-4 w-4" />
-              {tTour('overview.btn_refresh')}
-            </Button>
-            <Button asChild size="sm" className="bg-card/80 hover:bg-card">
-              <Link href={`/board/${tournament.tournamentId}`} target="_blank" className="flex items-center gap-2">
-                <IconTarget className="h-4 w-4" />
-                {tTour('overview.btn_scoring')}
-              </Link>
-            </Button>
-            {onShare && (
-              <Button variant="default" size="sm" onClick={onShare} className="gap-2">
-                <IconShare2 className="h-4 w-4" />
-                {shareLabel || "Share"}
-              </Button>
-            )}
-            {canEdit && status !== 'finished' && (
-              <Button variant="secondary" size="sm" onClick={onEdit}>
-                <IconEdit className="mr-2 h-4 w-4" />
-                {tTour('overview.btn_edit')}
-              </Button>
-            )}
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="md:hidden"
-            >
-              <Link href={`/tournaments/${tournament.tournamentId}?tab=players#registration`} className="flex items-center gap-2">
+      <CardContent className="space-y-5 pt-0">
+        {canShowRegistrationCta ? (
+          <div className="rounded-xl border border-primary/40 bg-primary/10 p-3">
+            <p className="text-sm font-semibold text-foreground">Nevezés nyitva</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Jelentkezz most egy kattintással. A nevezes utan automatikusan a jatekosok listajaban jelensz meg.
+            </p>
+            <Button asChild size="sm" className="mt-2 gap-2">
+              <Link
+                href={isLoggedIn ? registrationTarget : loginRedirectTarget}
+                className="flex items-center gap-2"
+              >
                 <IconUserPlus className="h-4 w-4" />
                 {tTour('overview.btn_register')}
               </Link>
             </Button>
           </div>
-        </div>
-      </CardHeader>
+        ) : null}
 
-      <CardContent className="space-y-6">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {details.map((detail) => (
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {details.slice(0, 4).map((detail) => (
             <div
               key={detail.label}
-              className="rounded-xl bg-muted/15 px-4 py-3 shadow-inner shadow-black/10"
+              className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5"
             >
-              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {detail.icon}
                 {detail.label}
               </div>
-              <div className="mt-1 text-base font-semibold text-foreground">
+              <div className="mt-1 text-sm font-semibold text-foreground md:text-base">
                 {detail.value}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {details.slice(4).map((detail) => (
+            <div key={detail.label} className="rounded-lg border border-border/40 bg-card/35 px-3 py-2 text-sm">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {detail.icon}
+                {detail.label}
+              </div>
+              <div className="mt-1 font-semibold text-foreground">{detail.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-xl border border-border/50 bg-muted/15 p-3">
           <h4 className="text-sm font-semibold text-foreground">{tTour('overview.description_label')}</h4>
-          <p className="text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {isDescriptionExpanded ? fullDescriptionNodes : truncatedDescriptionNodes}
           </p>
           {shouldTruncate && (
             <Button
               size="sm"
               variant="ghost"
-              className="px-0 text-primary hover:text-primary/80"
+              className="mt-1 h-auto px-0 text-primary hover:text-primary/80"
               onClick={() => setIsDescriptionExpanded((prev) => !prev)}
             >
               {isDescriptionExpanded ? tTour('overview.show_less') : tTour('overview.show_more')}
@@ -247,24 +222,24 @@ export function TournamentOverview({ tournament, userRole, onEdit, onRefetch, on
 
         <Separator />
 
-        <div>
+        <div className="rounded-xl border border-border/50 bg-muted/15 p-3">
           <h4 className="text-sm font-semibold text-foreground">{tTour('overview.organizer_title')}</h4>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="space-y-1 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-border/50 bg-card/35 p-3 text-sm text-muted-foreground">
               <p className="font-medium text-foreground">{tTour('overview.club_label')}</p>
               {tournament.clubId?._id ? (
                 <Link
                   href={`/clubs/${tournament.clubId._id}`}
-                  className="font-medium text-primary hover:text-primary/80"
+                  className="mt-1 block font-medium text-primary hover:text-primary/80"
                 >
                   {tournament.clubId?.name}
                 </Link>
               ) : (
-                <span>{tournament.clubId?.name || tTour('overview.unknown_club')}</span>
+                <span className="mt-1 block">{tournament.clubId?.name || tTour('overview.unknown_club')}</span>
               )}
-              <p>{tournament.clubId?.location || tTour('overview.no_location')}</p>
+              <p className="mt-1">{tournament.clubId?.location || tTour('overview.no_location')}</p>
             </div>
-            <div className="space-y-1 text-sm text-muted-foreground">
+            <div className="space-y-2 rounded-lg border border-border/50 bg-card/35 p-3 text-sm text-muted-foreground">
               {tournament.clubId?.contact?.email && (
                 <a
                   href={`mailto:${tournament.clubId.contact.email}`}

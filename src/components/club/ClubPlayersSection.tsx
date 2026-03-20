@@ -5,12 +5,14 @@ import * as React from "react"
 import { IconUsers } from "@tabler/icons-react"
 import MemberList from "./MemberList"
 import { Club } from "@/interface/club.interface"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ClubPlayersSectionProps {
   club: Club
   userRole: 'admin' | 'moderator' | 'member' | 'none'
   userId?: string
   onClubUpdated: () => void | Promise<void>
+  membersLoading?: boolean
 }
 
 export function ClubPlayersSection({
@@ -18,6 +20,7 @@ export function ClubPlayersSection({
   userRole,
   userId,
   onClubUpdated,
+  membersLoading = false,
 }: ClubPlayersSectionProps) {
     const t = useTranslations("Club.components");
   return (
@@ -29,22 +32,30 @@ export function ClubPlayersSection({
         <h2 className="text-2xl md:text-3xl font-bold">{t("játékosok")}</h2>
       </div>
 
-      <MemberList
-        members={club.members as {
-          _id: string
-          userRef?: string
-          role: 'admin' | 'moderator' | 'member'
-          name: string
-          username: string
-        }[]}
-        userRole={userRole}
-        userId={userId}
-        clubId={club._id}
-        onClubUpdated={async () => {
-          await onClubUpdated()
-        }}
-        showActions={false}
-      />
+      {membersLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+      ) : (
+        <MemberList
+          members={club.members as {
+            _id: string
+            userRef?: string
+            role: 'admin' | 'moderator' | 'member'
+            name: string
+            username: string
+          }[]}
+          userRole={userRole}
+          userId={userId}
+          clubId={club._id}
+          onClubUpdated={async () => {
+            await onClubUpdated()
+          }}
+          showActions={false}
+        />
+      )}
     </div>
   )
 }

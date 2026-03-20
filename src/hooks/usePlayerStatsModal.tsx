@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import axios from 'axios';
 import { Fragment } from 'react';
 import { useTranslations } from "next-intl";
+import { getPlayerModalDataAction } from '@/features/players/actions/getPlayerModalData.action';
 
 // Types
 interface PlayerStats {
@@ -52,18 +52,73 @@ const usePlayerStatsModal = (): UsePlayerStatsModalReturn => {
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations("Common");
 
+  const toLegacyPlayerStats = (player: any): PlayerStats => {
+    const stats = player?.stats || {};
+    const history = Array.isArray(player?.tournamentHistory) ? player.tournamentHistory : [];
+    const wins = Number(stats.totalMatchesWon || 0);
+    const played = Number(stats.matchesPlayed || wins + Number(stats.totalMatchesLost || 0));
+    const tournamentsPlayed = Number(stats.tournamentsPlayed || history.length || 0);
+    const tournamentsWon = history.filter((h: any) => Number(h?.position) === 1).length;
+    const checkoutRate = Number(stats.checkoutRate || 0);
+
+    return {
+      name: String(player?.name || ''),
+      overallStats: {
+        average: Number(stats.avg || 0),
+        checkoutRate,
+        totalLegsWon: Number(stats.totalLegsWon || stats.legsWon || 0),
+        totalLegsPlayed: Number(stats.totalLegsWon || stats.legsWon || 0) + Number(stats.totalLegsLost || stats.legsLost || 0),
+        totalMatchesWon: wins,
+        totalMatchesPlayed: played,
+        totalTournamentsPlayed: tournamentsPlayed,
+        totalTournamentsWon: tournamentsWon,
+        totalHighestCheckout: Number(stats.highestCheckout || 0),
+        totalOneEighties: Number(stats.oneEightiesCount || stats.total180s || 0),
+        bestPlacement: Number.isFinite(Number(stats.bestPosition)) ? Number(stats.bestPosition) : null,
+      },
+    };
+  };
+
   const openPlayerStatsModal = useCallback(async (playerId: string) => {
     setIsLoading(true);
     setError(null);
     setPlayerStats(null);
     try {
-      // Fetch player stats
-      const statsResponse = await axios.get(`/api/players/${playerId}/stats`);
-      setPlayerStats(statsResponse.data);
+      const response = await getPlayerModalDataAction({ playerId });
+      const payload =
+        response &&
+        typeof response === 'object' &&
+        'success' in response &&
+        response.success &&
+        'data' in response
+          ? (response as { data?: { player?: any } }).data
+          : null;
+      const player = payload?.player;
+      if (!player) throw new Error('Player data unavailable');
 
-      // Fetch tournament history
-      const historyResponse = await axios.get(`/api/players/${playerId}/tournaments`);
-      setTournamentHistory(historyResponse.data);
+      setPlayerStats(toLegacyPlayerStats(player));
+      const history = Array.isArray(player?.tournamentHistory)
+        ? player.tournamentHistory.map((entry: any, idx: number) => ({
+            tournamentId: String(entry?.tournamentId || entry?._id || idx),
+            tournamentName: String(entry?.tournamentName || entry?.name || 'Tournament'),
+            placement: Number(entry?.position || 0),
+            stats: {
+              average: Number(entry?.stats?.average || entry?.stats?.avg || 0),
+              checkoutRate: Number(entry?.stats?.checkoutRate || 0),
+              legsWon: Number(entry?.stats?.legsWon || entry?.stats?.totalLegsWon || 0),
+              legsPlayed:
+                Number(entry?.stats?.legsWon || entry?.stats?.totalLegsWon || 0) +
+                Number(entry?.stats?.legsLost || entry?.stats?.totalLegsLost || 0),
+              matchesWon: Number(entry?.stats?.matchesWon || entry?.stats?.totalMatchesWon || 0),
+              matchesPlayed:
+                Number(entry?.stats?.matchesPlayed || entry?.stats?.totalMatchesWon || 0) +
+                Number(entry?.stats?.matchesLost || entry?.stats?.totalMatchesLost || 0),
+              oneEighties: Number(entry?.stats?.oneEighties || entry?.stats?.oneEightiesCount || 0),
+              highestCheckout: Number(entry?.stats?.highestCheckout || 0),
+            },
+          }))
+        : [];
+      setTournamentHistory(history);
 
       setIsModalOpen(true);
     } catch (err) {

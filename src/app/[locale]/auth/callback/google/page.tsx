@@ -9,7 +9,7 @@ import GoogleAccountLinkModal from '@/components/auth/GoogleAccountLinkModal';
 import { useTranslations } from "next-intl";
 
 export default function GoogleCallbackPage() {
-  const t = useTranslations("Common");
+  const t = useTranslations("Auth.googleCallback");
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,7 +23,7 @@ export default function GoogleCallbackPage() {
       if (status === 'loading') return;
 
       if (status === 'unauthenticated') {
-        setError(t("google_bejelentkezes_sikertelen_gllv"));
+        setError(t("loginFailed"));
         setLoading(false);
         return;
       }
@@ -42,10 +42,10 @@ export default function GoogleCallbackPage() {
             setUser(response.data.user);
 
             // Átirányítás
-            const redirect = searchParams.get('redirect') || '/';
+            const redirect = searchParams.get('redirect') || '/home';
             router.push(redirect);
           } else {
-            setError(t("hiba_tortent_a_bejelentkezes_mbps"));
+            setError(t("loginError"));
           }
         } catch (error: any) {
           console.error('Google OAuth callback error:', error);
@@ -78,7 +78,7 @@ export default function GoogleCallbackPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="loading loading-spinner loading-lg text-primary mb-4"></div>
-          <p className="text-lg">{t("google_bejelentkezes_feldolgozasa_nq04")}</p>
+          <p className="text-lg">{t("processing")}</p>
         </div>
       </div>
     );
@@ -89,13 +89,13 @@ export default function GoogleCallbackPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-error text-6xl mb-4">❌</div>
-          <h1 className="text-2xl font-bold text-error mb-4">{t("bejelentkezesi_hiba_hqbc")}</h1>
+          <h1 className="text-2xl font-bold text-error mb-4">{t("errorTitle")}</h1>
           <p className="text-base-content/70 mb-6">{error}</p>
           <button
             onClick={() => router.push('/auth/login')}
             className="btn btn-primary"
           >
-            {t("vissza_a_bejelentkezeshez_kk0h")}</button>
+            {t("backToLogin")}</button>
         </div>
       </div>
     );

@@ -12,10 +12,9 @@
 
 # testing
 /coverage
-/playwright-report/
-/test-results/
-**/playwright-report/
-**/test-results/
+/test-results
+/playwright-report
+/src/features/tests/load/artifacts/
 
 # next.js
 /.next/
@@ -36,6 +35,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.load-test.example
 
 # vercel
 .vercel
@@ -46,12 +46,8 @@ next-env.d.ts
 
 docs/openapi.yaml
 docs/api-docs.md
-
 .pnpm
-.pnpm-store
-.pnpm-store/*
+.pnpm-store 
+.pnpm-store/
 .pnpm-store*
-/.pnpm-store*
-/.pnpm-store/*
 /.pnpm-store
-/pnpm/

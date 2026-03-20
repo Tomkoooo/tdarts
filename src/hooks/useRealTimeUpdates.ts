@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import type { SseDeltaPayload } from '@/lib/events';
 
 type UseRealTimeUpdatesOptions = {
   tournamentId?: string;
@@ -6,14 +7,21 @@ type UseRealTimeUpdatesOptions = {
   maxSessionAgeMs?: number;
 };
 
+type RealtimeUpdateEvent = {
+  type: string;
+  data: any;
+  delta?: SseDeltaPayload<any>;
+};
+
 const DEFAULT_MAX_SESSION_AGE_MS = 96 * 60 * 60 * 1000; // 4 days
+const SSE_DEBUG = process.env.NEXT_PUBLIC_SSE_DEBUG === 'true';
 
 export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
   const tournamentId = options?.tournamentId;
   const enabled = options?.enabled ?? true;
   const maxSessionAgeMs = options?.maxSessionAgeMs ?? DEFAULT_MAX_SESSION_AGE_MS;
   const [isConnected, setIsConnected] = useState(false);
-  const [lastEvent, setLastEvent] = useState<{ type: string; data: any } | null>(null);
+  const [lastEvent, setLastEvent] = useState<RealtimeUpdateEvent | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -21,6 +29,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
   const sessionStartedAtRef = useRef<number>(Date.now());
   const maxReconnectDelay = 30000; // Max 30 seconds
   const baseDelay = 1000; // Start with 1 second
+  const reconnectJitterMs = 400;
 
   const clearReconnectTimer = () => {
     if (reconnectTimeoutRef.current) {
@@ -39,6 +48,72 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
 
   const hasExceededSessionAge = () => Date.now() - sessionStartedAtRef.current >= maxSessionAgeMs;
 
+  const toDeltaPayload = (eventType: string, payload: any): SseDeltaPayload<any> | undefined => {
+    if (payload?.kind === 'delta' && payload?.schemaVersion === 1) {
+      return payload as SseDeltaPayload<any>;
+    }
+
+    const tournamentCode =
+      typeof payload?.tournamentId === 'string' && payload.tournamentId ? payload.tournamentId : undefined;
+    if (!tournamentCode) return undefined;
+
+    if (eventType === 'match-update') {
+      return {
+        schemaVersion: 1,
+        kind: 'delta',
+        tournamentId: tournamentCode,
+        scope: 'match',
+        action:
+          payload?.type === 'started'
+            ? 'started'
+            : payload?.type === 'finished'
+              ? 'finished'
+              : payload?.type === 'leg-finished'
+                ? 'leg-finished'
+                : 'updated',
+        data: payload,
+        emittedAt: new Date().toISOString(),
+      };
+    }
+
+    if (eventType === 'group-update') {
+      return {
+        schemaVersion: 1,
+        kind: 'delta',
+        tournamentId: tournamentCode,
+        scope: 'group',
+        action: 'standings-updated',
+        data: payload,
+        requiresResync: true,
+        emittedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      schemaVersion: 1,
+      kind: 'delta',
+      tournamentId: tournamentCode,
+      scope: 'tournament',
+      action: payload?.type === 'knockout-update' ? 'knockout-updated' : 'updated',
+      data: payload,
+      requiresResync: payload?.type === 'knockout-update',
+      emittedAt: new Date().toISOString(),
+    };
+  };
+
+  const handleIncomingEvent = (eventType: string, payload: any) => {
+    const delta = toDeltaPayload(eventType, payload);
+    if (SSE_DEBUG) {
+      console.log('[SSE][RealtimeHook] event', {
+        eventType,
+        scope: delta?.scope,
+        action: delta?.action,
+        tournamentId: delta?.tournamentId,
+      });
+    }
+    setLastEvent({ type: eventType, data: payload, delta });
+  };
+
   const connect = () => {
     if (!enabled) return;
     if (sessionExpired || hasExceededSessionAge()) {
@@ -56,12 +131,16 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     query.set('maxConnectionMs', String(maxSessionAgeMs));
     const url = query.size > 0 ? `/api/updates?${query.toString()}` : '/api/updates';
 
-    console.log('SSE: Attempting to connect...');
+    if (SSE_DEBUG) {
+      console.log('SSE: Attempting to connect...', { tournamentId, maxSessionAgeMs });
+    }
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log('SSE Connected');
+      if (SSE_DEBUG) {
+        console.log('SSE Connected');
+      }
       setIsConnected(true);
       reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
     };
@@ -73,7 +152,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
         if (data.message === 'SSE Connected' || data.time || data.reason === 'max-connection-age-reached') {
           return;
         }
-        setLastEvent({ type: 'message', data });
+        handleIncomingEvent('message', data);
       } catch (e) {
         console.error('Error parsing SSE message', e);
       }
@@ -83,7 +162,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     eventSource.addEventListener('tournament-update', (event: any) => {
         try {
             const data = JSON.parse(event.data);
-            setLastEvent({ type: 'tournament-update', data });
+            handleIncomingEvent('tournament-update', data);
         } catch (e) {
             console.error('Error parsing tournament update', e);
         }
@@ -92,7 +171,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     eventSource.addEventListener('match-update', (event: any) => {
         try {
             const data = JSON.parse(event.data);
-            setLastEvent({ type: 'match-update', data });
+            handleIncomingEvent('match-update', data);
         } catch (e) {
             console.error('Error parsing match update', e);
         }
@@ -101,7 +180,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     eventSource.addEventListener('group-update', (event: any) => {
         try {
             const data = JSON.parse(event.data);
-            setLastEvent({ type: 'group-update', data });
+            handleIncomingEvent('group-update', data);
         } catch (e) {
             console.error('Error parsing group update', e);
         }
@@ -111,7 +190,9 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
     eventSource.addEventListener('heartbeat', (event: any) => {
         // Just to keep the connection alive, we can log it if needed
         // console.log('Heartbeat received');
-        console.log('Heartbeat received');
+        if (SSE_DEBUG) {
+          console.log('Heartbeat received');
+        }
         
     });
 
@@ -138,8 +219,12 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
         baseDelay * Math.pow(2, reconnectAttemptsRef.current - 1),
         maxReconnectDelay
       );
+      const jitter = Math.floor(Math.random() * reconnectJitterMs);
+      const reconnectDelay = Math.min(delay + jitter, maxReconnectDelay);
       
-      console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})...`);
+      if (SSE_DEBUG) {
+        console.log(`SSE: Reconnecting in ${reconnectDelay}ms (attempt ${reconnectAttemptsRef.current})...`);
+      }
       
       reconnectTimeoutRef.current = setTimeout(() => {
         if (!enabled || sessionExpired || hasExceededSessionAge()) {
@@ -148,7 +233,7 @@ export const useRealTimeUpdates = (options?: UseRealTimeUpdatesOptions) => {
           return;
         }
         connect();
-      }, delay);
+      }, reconnectDelay);
     };
   };
 

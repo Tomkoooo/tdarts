@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use CreateTournamentModal with the wizard domain (src/features/tournaments/wizard) instead.
+ * This form diverges from the active create flow and will be removed in a future release.
+ */
 "use client"
 import { useTranslations } from "next-intl";
 
@@ -40,6 +44,7 @@ export function CreateTournamentFormEnhanced({
     const t = useTranslations("Common");
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitSuccess, setSubmitSuccess] = React.useState(false)
+  const [currentStep, setCurrentStep] = React.useState(1)
 
   const form = useForm<CreateTournamentFormData>({
     resolver: zodResolver(createTournamentSchema) as any,
@@ -91,10 +96,34 @@ export function CreateTournamentFormEnhanced({
   })
 
   const isPublic = form.watch("isPublic")
+  const watched = form.watch()
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="rounded-xl border border-border/60 bg-card/60 p-3">
+          <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
+            {[
+              { id: 1, label: "Basics" },
+              { id: 2, label: "Settings" },
+              { id: 3, label: "Preview" },
+            ].map((step) => (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => setCurrentStep(step.id)}
+                className={cn(
+                  "rounded-lg px-3 py-2 transition-colors",
+                  currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground"
+                )}
+              >
+                {step.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={cn(currentStep === 3 && "hidden")}>
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -306,6 +335,37 @@ export function CreateTournamentFormEnhanced({
             />
           </CardContent>
         </Card>
+        </div>
+
+        {currentStep === 3 && (
+          <Card className="border-primary/40 bg-card/80 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IconInfoCircle className="w-5 h-5 text-primary" />
+                Tournament Preview
+              </CardTitle>
+              <CardDescription>Review data before creating the tournament.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm">
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+                <p className="text-muted-foreground">Name</p>
+                <p className="font-semibold">{watched.name || "-"}</p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+                <p className="text-muted-foreground">Date</p>
+                <p className="font-semibold">{watched.startDate ? new Date(watched.startDate as any).toLocaleString() : "-"}</p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+                <p className="text-muted-foreground">Players / Format</p>
+                <p className="font-semibold">{watched.maxPlayers || 0} players - {watched.format || "-"}</p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+                <p className="text-muted-foreground">Visibility</p>
+                <p className="font-semibold">{isPublic ? "Public" : "Private"}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Boards */}
         <Card>
@@ -445,6 +505,16 @@ export function CreateTournamentFormEnhanced({
             <Button type="button" variant="outline" onClick={onCancel}>
               {t("mégse")}</Button>
           )}
+          {currentStep > 1 ? (
+            <Button type="button" variant="outline" onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}>
+              Back
+            </Button>
+          ) : null}
+          {currentStep < 3 ? (
+            <Button type="button" onClick={() => setCurrentStep((prev) => Math.min(3, prev + 1))}>
+              Next
+            </Button>
+          ) : (
           <Button type="submit" disabled={isSubmitting} className="gap-2">
             {isSubmitting ? (
               <>
@@ -456,6 +526,7 @@ export function CreateTournamentFormEnhanced({
                 {t("verseny_létrehozása")}</>
             )}
           </Button>
+          )}
         </div>
       </form>
     </Form>

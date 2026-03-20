@@ -1,6 +1,5 @@
 "use client";
 import React, { createContext, useContext, useState } from "react";
-import { Toaster } from "react-hot-toast";
 
 export interface SimplifiedUser {
   _id: string
@@ -10,6 +9,7 @@ export interface SimplifiedUser {
   isVerified: boolean;
   isAdmin: boolean;
   profilePicture?: string;
+  city?: string | null;
   country?: string | null;
   locale?: "hu" | "en";
 }
@@ -29,7 +29,6 @@ export const UserProvider: React.FC<{
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
-      <Toaster position="top-left" />
       {children}
     </UserContext.Provider>
   );

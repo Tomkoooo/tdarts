@@ -82,14 +82,14 @@ export interface TournamentSettings {
     coverImage?: string; // Optional cover image for SEO
 }
 
-export interface PlayerDocument extends Document {
-    _id: string;
+export interface PlayerDocument extends Omit<Document, 'toJSON' | '_id'> {
+    _id: Types.ObjectId;
     name: string;
     // Add other player fields as needed
 }
 
-export interface MatchDocument extends Document {
-    _id: string;
+export interface MatchDocument extends Omit<Document, 'toJSON' | '_id'> {
+    _id: Types.ObjectId;
     // Add other match fields as needed
 }
 
@@ -166,7 +166,7 @@ export interface NotificationSubscriberDocument {
     notifiedAt?: Date;
 }
 
-export interface TournamentDocument extends Document, Omit<Tournament, '_id' | 'tournamentPlayers' | 'waitingList' | 'notificationSubscribers' | 'groups' | 'boards' | 'clubId' | 'league'> {
+export interface TournamentDocument extends Omit<Document, 'toJSON'>, Omit<Tournament, '_id' | 'tournamentPlayers' | 'waitingList' | 'notificationSubscribers' | 'groups' | 'boards' | 'clubId' | 'league'> {
     _id: Types.ObjectId;
     tournamentPlayers: TournamentPlayerDocument[];
     waitingList?: WaitingListPlayerDocument[];

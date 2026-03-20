@@ -5,8 +5,8 @@ import React, { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { SmartInput, TodoItemData } from "@/components/admin/SmartInput"
 import { IconCheck } from "@tabler/icons-react"
-import axios from "axios"
 import toast from "react-hot-toast"
+import { adminTodosActions } from "@/features/admin/actions/adminDomains.action"
 
 export function GlobalTodoShortcut() {
     const t = useTranslations("Admin.components");
@@ -25,7 +25,7 @@ export function GlobalTodoShortcut() {
 
   const handleAddTodo = async (todoData: Partial<TodoItemData>) => {
     try {
-      await axios.post("/api/admin/todos", {
+      await adminTodosActions.create({
         ...todoData,
         status: "pending",
         isPublic: true

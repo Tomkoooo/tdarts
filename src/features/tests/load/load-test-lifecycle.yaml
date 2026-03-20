@@ -1,0 +1,36 @@
+config:
+  target: "http://localhost:3000"
+  processor: "./load.processor.js"
+  maxVusers: 50
+  phases:
+    - duration: 20
+      arrivalRate: 1
+      name: warmup_1
+    - duration: 70
+      arrivalRate: 2
+      rampTo: 4
+      name: ramp_2_to_4
+    - duration: 90
+      arrivalRate: 4
+      name: sustain_4
+  defaults:
+    headers:
+      x-load-test-secret: "{{ $processEnvironment.LOAD_TEST_SECRET }}"
+  http:
+    timeout: 30
+    pool: 1200
+
+before:
+  flow:
+    - function: "bootstrapTournaments"
+
+scenarios:
+  - name: tournament_lifecycle_parallel_only
+    weight: 100
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "pickTournamentContext"
+      - loop:
+          - function: "lifecycleStep"
+          - think: 2
+        count: 3

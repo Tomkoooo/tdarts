@@ -1,11 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { IconSearch, IconX, IconFilter } from "@tabler/icons-react"
+import { IconFilter } from "@tabler/icons-react"
 import { Input } from "@/components/ui/Input"
 import { SearchTabs } from "./SearchTabs"
 import { Button } from "@/components/ui/Button"
 import { useTranslations } from "next-intl"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { FilterBar } from "./FilterBar"
 
 interface FloatingSearchMenuProps {
     isVisible: boolean;
@@ -19,8 +21,14 @@ interface FloatingSearchMenuProps {
         players: number;
         clubs: number;
         leagues: number;
+        map?: number;
     };
     isLoading?: boolean;
+    filters: any;
+    onFilterChange: (key: string, value: any) => void;
+    cities: { city: string; count: number }[];
+    hasActiveQuery?: boolean;
+    onClearQuery?: () => void;
 }
 
 export function FloatingSearchMenu({
@@ -30,6 +38,11 @@ export function FloatingSearchMenu({
     activeTab,
     onTabChange,
     counts,
+    filters,
+    onFilterChange,
+    cities,
+    hasActiveQuery,
+    onClearQuery,
 }: FloatingSearchMenuProps) {
     const t = useTranslations('Search.floating_menu')
     const [isOpen, setIsOpen] = useState(false)
@@ -37,75 +50,52 @@ export function FloatingSearchMenu({
     if (!isVisible) return null
 
     return (
-        <>
-            {/* Backdrop */}
-            {isOpen && (
-                <div 
-                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 animate-in fade-in duration-200"
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 animate-in slide-in-from-bottom-2 duration-300">
+                <Button
+                    size="lg"
+                    onClick={() => setIsOpen(true)}
+                    className="h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/35 hover:bg-primary/90"
+                >
+                    <IconFilter className="mr-2 h-5 w-5" />
+                    {t('title')}
+                </Button>
+            </div>
+            <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-3xl border-border/60 bg-linear-to-b from-card to-background p-0 sm:max-w-none">
+                <div className="p-4 md:p-6">
+                    <SheetHeader className="mb-4 text-left">
+                        <SheetTitle className="flex items-center gap-2">
+                            <IconFilter className="h-5 w-5 text-primary" />
+                            {t('title')}
+                        </SheetTitle>
+                        <SheetDescription>{t('search_placeholder')}</SheetDescription>
+                    </SheetHeader>
 
-            {/* Floating Button */}
-            <div className="fixed top-20 md:top-24 right-4 z-30 animate-in slide-in-from-top duration-300">
-                {!isOpen ? (
-                    <Button
-                        size="lg"
-                        onClick={() => setIsOpen(true)}
-                        className="shadow-lg rounded-full h-12 px-4 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-                    >
-                        <IconSearch className="w-5 h-5" />
-                        <span className="hidden sm:inline">{t('title')}</span>
-                    </Button>
-                ) : (
-                    <div className="bg-background border border-border rounded-2xl shadow-2xl p-4 w-[calc(100vw-2rem)] sm:w-96 max-h-[70vh] overflow-y-auto animate-in slide-in-from-top duration-200">
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                <IconFilter className="w-5 h-5 text-primary" />
-                                {t('title')}
-                            </h3>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsOpen(false)}
-                                className="h-8 w-8"
-                            >
-                                <IconX className="w-5 h-5" />
-                            </Button>
-                        </div>
-
-                        {/* Search Input */}
-                        <div className="relative mb-4">
-                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                            <Input 
-                                value={query}
-                                onChange={onQueryChange}
-                                placeholder={t('search_placeholder')} 
-                                className="pl-10 h-10"
-                            />
-                        </div>
-
-                        {/* Tabs */}
-                        <div className="mb-4">
+                    <div className="space-y-4">
+                        <Input
+                            value={query}
+                            onChange={onQueryChange}
+                            placeholder={t('search_placeholder')}
+                            className="h-11 rounded-xl border-border/60 bg-background/90"
+                        />
+                        <div className="overflow-x-auto pb-1">
                             <SearchTabs
                                 activeTab={activeTab}
                                 onTabChange={onTabChange}
-                                counts={counts}
+                                counts={counts as any}
                             />
                         </div>
-
-                        {/* Close Button */}
-                        <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            {t('close')}
-                        </Button>
+                        <FilterBar
+                            activeTab={activeTab}
+                            filters={filters}
+                            onFilterChange={onFilterChange}
+                            cities={cities}
+                            hasActiveQuery={hasActiveQuery}
+                            onClearQuery={onClearQuery}
+                        />
                     </div>
-                )}
-            </div>
-        </>
+                </div>
+            </SheetContent>
+        </Sheet>
     )
 }

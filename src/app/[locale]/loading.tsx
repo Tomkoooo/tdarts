@@ -12,9 +12,9 @@ export default function Loading() {
         
         {/* Loading Text */}
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          {t("betöltés")}</h2>
+          {t("loading")}</h2>
         <p className="text-muted-foreground">
-          {t("kérjük_várj_az")}</p>
+          {t("pleaseWait")}</p>
         
         {/* Progress Bar */}
         <div className="mt-8 w-64 mx-auto">

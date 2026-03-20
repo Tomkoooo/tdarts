@@ -4,6 +4,7 @@ import { IconScreenShare, IconRefresh, IconEdit, IconUserPlus, IconFileInvoice }
 import EditTournamentModal from './EditTournamentModal';
 import { toast } from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
+import { buildTournamentInvoiceDownloadUrl } from '@/features/tournaments/lib/readFlowPolicy';
 
 interface TournamentInfoProps {
   tournament: any;
@@ -128,7 +129,10 @@ const TournamentInfo = ({ tournament, onRefetch, userRole, userId }: TournamentI
         {canEdit && tournament.invoiceId && (
           <button
             onClick={() => {
-              window.open(`/api/tournaments/${tournament._id}/invoice`, '_blank');
+              window.open(
+                buildTournamentInvoiceDownloadUrl(String(tournament.tournamentId || tournament._id)),
+                '_blank'
+              );
             }}
             className="btn btn-outline btn-md flex items-center gap-2 ml-auto"
             title={t('invoice')}

@@ -25,5 +25,7 @@ const postSchema = new Schema<PostDocument>(
   { timestamps: true }
 );
 
+postSchema.index({ clubId: 1, createdAt: -1 });
+
 export const PostModel =
   mongoose.models.Post || mongoose.model<PostDocument>('Post', postSchema);

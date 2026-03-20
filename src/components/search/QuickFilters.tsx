@@ -4,6 +4,7 @@ import * as React from "react"
 import { IconRosette, IconMapPin, IconCalendar, IconListCheck } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
+import { getSearchMetadataAction } from "@/features/search/actions/getSearchMetadata.action"
 
 interface QuickFiltersProps {
   filters: any
@@ -20,12 +21,9 @@ export function QuickFilters({ filters, onFilterChange, showAllTournaments, onTo
   React.useEffect(() => {
     const fetchCities = async () => {
       try {
-        const queryParams = new URLSearchParams()
-        if (showAllTournaments) {
-          queryParams.set('showFinished', 'true')
-        }
-        const response = await fetch(`/api/search/metadata?${queryParams.toString()}`)
-        const data = await response.json()
+        const data = await getSearchMetadataAction({
+          showFinished: !!showAllTournaments,
+        })
         if (data.success) {
           setPopularCities(data.cities)
         }

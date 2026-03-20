@@ -6,7 +6,7 @@ import { TournamentModel } from "../models/tournament.model";
 import { PlayerModel } from "../models/player.model";
 import { AuthorizationService } from "./authorization.service";
 import { connectMongo } from "@/lib/mongoose";
-import { eventEmitter, EVENTS } from "@/lib/events";
+import { eventsBus, EVENTS, createSseDeltaPayload } from "@/lib/events";
 
 export class MatchService {
     private static calculateFirstNineForLeg(throws: any[] | undefined) {
@@ -133,6 +133,10 @@ export class MatchService {
           tournamentId,
           matchId
         });
+
+        const tournament = await TournamentModel.findById(match.tournamentRef);
+        if (!tournament) throw new BadRequestError('Tournament not found');
+        const canonicalTournamentId = String(tournament.tournamentId || tournamentId);
         
         // Meccs beállítások mentése
         match.legsToWin = legsToWin;
@@ -140,15 +144,13 @@ export class MatchService {
         match.status = 'ongoing';
         await match.save();
         
+        let nextMatchForSse: any = null;
+
         // Tábla állapot frissítése
         if (match.type === 'knockout') {
             // Use the new knockout board status update method
             await TournamentService.updateBoardStatusAfterMatch(matchId);
         } else {
-            // Group match - use existing logic
-            const tournament = await TournamentModel.findById(match.tournamentRef);
-            if (!tournament) throw new BadRequestError('Tournament not found');
-
             // Keressük meg a megfelelő board-ot a tournament.boards tömbben
             const boardIndex = tournament.boards.findIndex((b: any) => b.boardNumber === match.boardReference);
             if (boardIndex === -1) throw new BadRequestError('Board not found');
@@ -159,12 +161,18 @@ export class MatchService {
                 tournamentRef: match.tournamentRef,
                 status: 'pending',
                 _id: { $ne: matchId } // Ne a jelenlegi meccset adja vissza
-            });
+            })
+                .populate('player1.playerId', 'name profilePicture')
+                .populate('player2.playerId', 'name profilePicture')
+                .populate('scorer', 'name profilePicture')
+                .lean();
+            const nextMatchCandidate = Array.isArray(nextMatch) ? nextMatch[0] : nextMatch;
 
             // Frissítjük a board mezőit
             tournament.boards[boardIndex].status = 'playing';
             tournament.boards[boardIndex].currentMatch = matchId as any;
-            tournament.boards[boardIndex].nextMatch = nextMatch?._id as any || undefined;
+            tournament.boards[boardIndex].nextMatch = (nextMatchCandidate?._id as any) || undefined;
+            nextMatchForSse = nextMatchCandidate || null;
 
             // Mentsük el a tournament dokumentumot
             await tournament.save();
@@ -178,8 +186,6 @@ export class MatchService {
             
         if (!populatedMatch) throw new BadRequestError('Match not found after update');
         
-        // Get tournament for startingScore
-        const tournament = await TournamentService.getTournament(tournamentId);
         const startingScore = tournament?.tournamentSettings.startingScore;
         
         const result = {
@@ -187,15 +193,25 @@ export class MatchService {
             startingScore: startingScore,
             startingPlayer: populatedMatch.startingPlayer || 1,
             winnerId: populatedMatch.winnerId || null,
+            tournamentCode: canonicalTournamentId,
         };
 
         // Emit match update event
-        eventEmitter.emit(EVENTS.MATCH_UPDATE, {
-            tournamentId,
-            matchId,
-            match: result,
-            type: 'started'
-        });
+        eventsBus.publish(
+            EVENTS.MATCH_UPDATE,
+            createSseDeltaPayload({
+                tournamentId: canonicalTournamentId,
+                scope: 'match',
+                action: 'started',
+                data: {
+                    legacyType: 'started',
+                    matchId,
+                    boardNumber: result.boardReference,
+                    match: result,
+                    nextMatch: nextMatchForSse,
+                },
+            })
+        );
         
         return result;
     }
@@ -387,38 +403,48 @@ export class MatchService {
         }
 
         // --- Post-update side effects (non-critical if they repeat, but ideally idempotent) ---
-        
-        // Update tournament player statistics immediately
-        await this.updateTournamentPlayerStats(
-            updatedMatch.tournamentRef.toString(),
-            updatedMatch.player1.playerId.toString(),
-            {
-                highestCheckout: player1HighestCheckout,
-                oneEightiesCount: player1OneEighties,
-                average: newP1Average,
-                firstNineAvg: newP1FirstNineAverage
-            }
-        );
-        await this.updateTournamentPlayerStats(
-            updatedMatch.tournamentRef.toString(),
-            updatedMatch.player2.playerId.toString(),
-            {
-                highestCheckout: player2HighestCheckout,
-                oneEightiesCount: player2OneEighties,
-                average: newP2Average,
-                firstNineAvg: newP2FirstNineAverage
-            }
-        );
+
+        // Update tournament player statistics in parallel for better performance
+        await Promise.all([
+            this.updateTournamentPlayerStats(
+                updatedMatch.tournamentRef.toString(),
+                updatedMatch.player1.playerId.toString(),
+                {
+                    highestCheckout: player1HighestCheckout,
+                    oneEightiesCount: player1OneEighties,
+                    average: newP1Average,
+                    firstNineAvg: newP1FirstNineAverage
+                }
+            ),
+            this.updateTournamentPlayerStats(
+                updatedMatch.tournamentRef.toString(),
+                updatedMatch.player2.playerId.toString(),
+                {
+                    highestCheckout: player2HighestCheckout,
+                    oneEightiesCount: player2OneEighties,
+                    average: newP2Average,
+                    firstNineAvg: newP2FirstNineAverage
+                }
+            )
+        ]);
 
         // Emit match update event
         const tournament = await TournamentModel.findById(updatedMatch.tournamentRef);
         if (tournament) {
-            eventEmitter.emit(EVENTS.MATCH_UPDATE, {
-                tournamentId: tournament.tournamentId,
-                matchId: matchId,
-                match: updatedMatch.toObject(),
-                type: 'leg-finished'
-            });
+            eventsBus.publish(
+                EVENTS.MATCH_UPDATE,
+                createSseDeltaPayload({
+                    tournamentId: tournament.tournamentId,
+                    scope: 'match',
+                    action: 'leg-finished',
+                    data: {
+                        legacyType: 'leg-finished',
+                        matchId,
+                        boardNumber: updatedMatch.boardReference,
+                        match: updatedMatch.toObject(),
+                    },
+                })
+            );
         }
 
         return updatedMatch;
@@ -720,27 +746,31 @@ export class MatchService {
         match.status = 'finished';
         await match.save();
 
-        // Update tournament player statistics
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player1.playerId.toString(),
-            {
-                highestCheckout: player1HighestCheckoutFinal,
-                oneEightiesCount: player1OneEightiesFinal,
-                average: match.player1.average,
-                firstNineAvg: match.player1.firstNineAvg || 0
-            }
-        );
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player2.playerId.toString(),
-            {
-                highestCheckout: player2HighestCheckoutFinal,
-                oneEightiesCount: player2OneEightiesFinal,
-                average: match.player2.average,
-                firstNineAvg: match.player2.firstNineAvg || 0
-            }
-        );
+        // Update tournament player statistics in parallel for better performance
+        await Promise.all([
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player1.playerId.toString(),
+                {
+                    highestCheckout: player1HighestCheckoutFinal,
+                    oneEightiesCount: player1OneEightiesFinal,
+                    average: match.player1.average,
+                    firstNineAvg: match.player1.firstNineAvg || 0
+                }
+            ),
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player2.playerId.toString(),
+                {
+                    highestCheckout: player2HighestCheckoutFinal,
+                    oneEightiesCount: player2OneEightiesFinal,
+                    average: match.player2.average,
+                    firstNineAvg: match.player2.firstNineAvg || 0
+                }
+            )
+        ]);
+
+        let nextMatchForSse: any = null;
 
         // Update board status for all matches
         if (match.type === 'knockout') {
@@ -759,16 +789,23 @@ export class MatchService {
                     tournamentRef: match.tournamentRef,
                     status: 'pending',
                     _id: { $ne: matchId }
-                });
+                })
+                    .populate('player1.playerId', 'name profilePicture')
+                    .populate('player2.playerId', 'name profilePicture')
+                    .populate('scorer', 'name profilePicture')
+                    .lean();
+                const nextMatchCandidate = Array.isArray(nextMatch) ? nextMatch[0] : nextMatch;
 
-                if (nextMatch) {
+                if (nextMatchCandidate) {
                     tournament.boards[boardIndex].status = 'waiting';
                     tournament.boards[boardIndex].currentMatch = undefined;
-                    tournament.boards[boardIndex].nextMatch = nextMatch._id as any;
+                    tournament.boards[boardIndex].nextMatch = nextMatchCandidate._id as any;
+                    nextMatchForSse = nextMatchCandidate;
                 } else {
                     tournament.boards[boardIndex].status = 'idle';
                     tournament.boards[boardIndex].currentMatch = undefined;
                     tournament.boards[boardIndex].nextMatch = undefined;
+                    nextMatchForSse = null;
                 }
 
                 await tournament.save();
@@ -782,22 +819,40 @@ export class MatchService {
                 await TournamentService.updateGroupStanding(tournament.tournamentId);
                 
                 // Emit group update event
-                eventEmitter.emit(EVENTS.GROUP_UPDATE, {
-                    tournamentId: tournament.tournamentId,
-                    type: 'standings-updated'
-                });
+                eventsBus.publish(
+                    EVENTS.GROUP_UPDATE,
+                    createSseDeltaPayload({
+                        tournamentId: tournament.tournamentId,
+                        scope: 'group',
+                        action: 'standings-updated',
+                        requiresResync: true,
+                        data: {
+                            legacyType: 'standings-updated',
+                        },
+                    })
+                );
             }
         }
 
         // Emit match update event
         const tournament = await TournamentModel.findById(match.tournamentRef);
         if (tournament) {
-            eventEmitter.emit(EVENTS.MATCH_UPDATE, {
-                tournamentId: tournament.tournamentId,
-                matchId: matchId,
-                match: match.toObject(),
-                type: 'finished'
-            });
+            eventsBus.publish(
+                EVENTS.MATCH_UPDATE,
+                createSseDeltaPayload({
+                    tournamentId: tournament.tournamentId,
+                    scope: 'match',
+                    action: 'finished',
+                    data: {
+                        legacyType: 'finished',
+                        matchId,
+                        boardNumber: match.boardReference,
+                        winnerId: match.winnerId ? String(match.winnerId) : null,
+                        match: match.toObject(),
+                        nextMatch: nextMatchForSse,
+                    },
+                })
+            );
 
             // Handle knockout match advancement
             if (match.type === 'knockout') {
@@ -927,27 +982,29 @@ export class MatchService {
 
         await match.save();
 
-        // Update tournament player statistics
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player1.playerId.toString(),
-            {
-                highestCheckout: player1HighestCheckout,
-                oneEightiesCount: player1OneEighties,
-                average: match.player1.average,
-                firstNineAvg: match.player1.firstNineAvg || 0
-            }
-        );
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player2.playerId.toString(),
-            {
-                highestCheckout: player2HighestCheckout,
-                oneEightiesCount: player2OneEighties,
-                average: match.player2.average,
-                firstNineAvg: match.player2.firstNineAvg || 0
-            }
-        );
+        // Update tournament player statistics in parallel for better performance
+        await Promise.all([
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player1.playerId.toString(),
+                {
+                    highestCheckout: player1HighestCheckout,
+                    oneEightiesCount: player1OneEighties,
+                    average: match.player1.average,
+                    firstNineAvg: match.player1.firstNineAvg || 0
+                }
+            ),
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player2.playerId.toString(),
+                {
+                    highestCheckout: player2HighestCheckout,
+                    oneEightiesCount: player2OneEighties,
+                    average: match.player2.average,
+                    firstNineAvg: match.player2.firstNineAvg || 0
+                }
+            )
+        ]);
 
         return match;
     }

@@ -17,8 +17,6 @@ const TeamInvitationSchema = new Schema<ITeamInvitation>({
   expiresAt: { type: Date, required: true },
 });
 
-// Index for quick lookup by token
-TeamInvitationSchema.index({ token: 1 });
 TeamInvitationSchema.index({ inviteeId: 1, status: 1, expiresAt: 1 });
 TeamInvitationSchema.index({ inviteeEmail: 1, status: 1, expiresAt: 1 });
 // TTL index to automatically remove expired invitations

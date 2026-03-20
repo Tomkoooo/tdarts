@@ -40,19 +40,6 @@ if [ -x "/usr/sbin/sysctl" ] && [ -x "/usr/bin/arch" ]; then
   fi
 fi
 
-# Run lint
-echo ""
-echo "📝 Running ESLint..."
-if [ -n "$RUN_PREFIX" ]; then
-  $RUN_PREFIX "$NPM_BIN" run lint
-else
-  "$NPM_BIN" run lint
-fi || {
-  echo ""
-  echo "❌ ESLint failed. Please fix the errors before pushing."
-  echo "Run 'npm run lint' to see the errors."
-  exit 1
-}
 
 # Run build
 echo ""

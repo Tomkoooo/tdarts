@@ -1,0 +1,513 @@
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
+import { useParams, useSearchParams } from "next/navigation";
+import { IconEdit, IconRefresh, IconShare2 } from "@tabler/icons-react";
+import { useUserContext } from "@/hooks/useUser";
+import { reopenTournamentAction } from "@/features/tournaments/actions/reopenTournament.action";
+import { useTournamentPageData } from "@/features/tournament/hooks/useTournamentPageData";
+import { useTournamentRealtimeRefresh } from "@/features/tournament/hooks/useTournamentRealtimeRefresh";
+import { TournamentTabsNavigation } from "@/features/tournament/components/TournamentTabsNavigation";
+import TournamentOverview from "@/components/tournament/TournamentOverview";
+import TournamentShareModal from "@/components/tournament/TournamentShareModal";
+import EditTournamentModal from "@/components/tournament/EditTournamentModal";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TournamentStatTile } from "@/features/tournament/components/TournamentStatTile";
+
+const TournamentPlayers = dynamic(
+  () => import("@/components/tournament/TournamentPlayers")
+);
+const TournamentGroupsView = dynamic(
+  () => import("@/components/tournament/TournamentGroupsView")
+);
+const TournamentBoardsView = dynamic(
+  () => import("@/components/tournament/TournamentBoardsView")
+);
+const TournamentKnockoutBracket = dynamic(
+  () => import("@/components/tournament/TournamentKnockoutBracket")
+);
+const TournamentStatusChanger = dynamic(
+  () => import("@/components/tournament/TournamentStatusChanger")
+);
+
+type TournamentPageClientProps = {
+  initialData?: any;
+  initialSections?: Partial<Record<"players" | "boards" | "groups" | "bracket", any>>;
+};
+
+type TournamentSectionView = "overview" | "players" | "boards" | "groups" | "bracket";
+const SECTION_FRESHNESS_MS = 8_000;
+
+const getStatusMeta = (t: (key: string) => string) => ({
+  pending: {
+    label: t("status.pending.label"),
+    badgeClass: "bg-warning/10 text-warning border-warning/20",
+    description: t("status.pending.description"),
+  },
+  "group-stage": {
+    label: t("status.group-stage.label"),
+    badgeClass: "bg-info/10 text-info border-info/20",
+    description: t("status.group-stage.description"),
+  },
+  knockout: {
+    label: t("status.knockout.label"),
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
+    description: t("status.knockout.description"),
+  },
+  finished: {
+    label: t("status.finished.label"),
+    badgeClass: "bg-success/10 text-success border-success/20",
+    description: t("status.finished.description"),
+  },
+});
+
+const getTabs = (t: (key: string) => string) => [
+  { value: "overview", label: t("tabs.overview") },
+  { value: "players", label: t("tabs.players") },
+  { value: "boards", label: t("tabs.boards") },
+  { value: "groups", label: t("tabs.groups") },
+  { value: "bracket", label: t("tabs.bracket") },
+  { value: "admin", label: t("tabs.admin") },
+];
+
+const toReadableFormatLabel = (format?: string) => {
+  if (!format) return "-";
+  if (format === "group_knockout") return "Group + Knockout";
+  if (format === "group") return "Group";
+  if (format === "knockout") return "Knockout";
+  return format
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
+  initialData,
+  initialSections,
+}) => {
+  const { code } = useParams();
+  const searchParams = useSearchParams();
+  const { user } = useUserContext();
+  const t = useTranslations("Tournament.page");
+
+  const statusMeta = useMemo(
+    () =>
+      getStatusMeta(t) as Record<
+        string,
+        { label: string; badgeClass: string; description: string }
+      >,
+    [t]
+  );
+  const tabs = useMemo(() => getTabs(t), [t]);
+
+  const {
+    tournament,
+    players,
+    loading,
+    error,
+    userClubRole,
+    userPlayerStatus,
+    userPlayerId,
+    fetchAll,
+    resyncLiteData,
+    applySseDelta,
+    resyncFullData,
+  } = useTournamentPageData(code, user, t("error.retry"), initialData, initialSections);
+
+  useTournamentRealtimeRefresh(
+    tournament,
+    typeof code === "string" ? code : undefined,
+    applySseDelta,
+    resyncLiteData,
+    resyncFullData
+  );
+
+  const [tournamentShareModal, setTournamentShareModal] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const lastFetchedAtRef = useRef<Record<TournamentSectionView, number>>({
+    overview: Date.now(),
+    players: 0,
+    boards: 0,
+    groups: 0,
+    bracket: 0,
+  });
+  const invalidatedSectionsRef = useRef<Set<TournamentSectionView>>(new Set());
+  const previousTournamentStateRef = useRef<{ status: string; groupCount: number; knockoutRounds: number } | null>(null);
+  const getViewForTab = useCallback(
+    (tab: string): TournamentSectionView =>
+      tab === "players" ||
+      tab === "boards" ||
+      tab === "groups" ||
+      tab === "bracket"
+        ? tab
+        : "overview",
+    []
+  );
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && tabs.some((tab) => tab.value === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, tabs]);
+
+  useEffect(() => {
+    const now = Date.now();
+    lastFetchedAtRef.current = {
+      overview: now,
+      players: initialSections?.players ? now : 0,
+      boards: initialSections?.boards ? now : 0,
+      groups: initialSections?.groups ? now : 0,
+      bracket: initialSections?.bracket ? now : 0,
+    };
+    invalidatedSectionsRef.current.clear();
+    previousTournamentStateRef.current = null;
+  }, [code, initialSections]);
+
+  useEffect(() => {
+    const status = String(tournament?.tournamentSettings?.status || "");
+    const groupCount = Array.isArray(tournament?.groups) ? tournament.groups.length : 0;
+    const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout.length : 0;
+    const previous = previousTournamentStateRef.current;
+
+    if (previous) {
+      const enteredGroupStage = status === "group-stage" && previous.status !== "group-stage";
+      const enteredKnockout = status === "knockout" && previous.status !== "knockout";
+      const groupStructureChanged = groupCount > previous.groupCount;
+      const knockoutStructureChanged = knockoutRounds > previous.knockoutRounds;
+
+      if (enteredGroupStage || groupStructureChanged) {
+        invalidatedSectionsRef.current.add("groups");
+        lastFetchedAtRef.current.groups = 0;
+      }
+      if (enteredKnockout || knockoutStructureChanged) {
+        invalidatedSectionsRef.current.add("bracket");
+        lastFetchedAtRef.current.bracket = 0;
+      }
+    }
+
+    previousTournamentStateRef.current = { status, groupCount, knockoutRounds };
+  }, [tournament?.groups, tournament?.knockout, tournament?.tournamentSettings?.status]);
+
+  useEffect(() => {
+    if (activeTab === "overview") {
+      return;
+    }
+    const view = getViewForTab(activeTab);
+    const now = Date.now();
+    const lastFetchedAt = lastFetchedAtRef.current[view];
+    const isInvalidated = invalidatedSectionsRef.current.has(view);
+    const isStale = now - lastFetchedAt >= SECTION_FRESHNESS_MS;
+    const shouldFetch = lastFetchedAt === 0 || isInvalidated || isStale;
+    if (!shouldFetch) {
+      return;
+    }
+    void (async () => {
+      try {
+        await fetchAll(view, { bypassCache: true });
+        lastFetchedAtRef.current[view] = Date.now();
+        invalidatedSectionsRef.current.delete(view);
+      } catch (error) {
+        console.error("Tab hydration failed:", error);
+      }
+    })();
+  }, [activeTab, fetchAll, getViewForTab]);
+
+  const handleRefetch = useCallback(() => {
+    const view = getViewForTab(activeTab);
+    void (async () => {
+      await fetchAll(view, { bypassCache: true });
+      lastFetchedAtRef.current[view] = Date.now();
+      invalidatedSectionsRef.current.delete(view);
+    })();
+  }, [activeTab, fetchAll, getViewForTab]);
+
+  const handleTournamentRefresh = useCallback(
+    async (options?: { bypassCache?: boolean }) => {
+      const view = getViewForTab(activeTab);
+      await fetchAll(view, { bypassCache: options?.bypassCache ?? true });
+      lastFetchedAtRef.current[view] = Date.now();
+      invalidatedSectionsRef.current.delete(view);
+    },
+    [activeTab, fetchAll, getViewForTab]
+  );
+
+  const handleTournamentRefreshFresh = useCallback(async () => {
+    await handleTournamentRefresh({ bypassCache: true });
+  }, [handleTournamentRefresh]);
+
+  const handlePlayersRefresh = useCallback(async () => {
+    await fetchAll("players", { bypassCache: true });
+    lastFetchedAtRef.current.players = Date.now();
+    invalidatedSectionsRef.current.delete("players");
+  }, [fetchAll]);
+
+  const handleReopenTournament = useCallback(async () => {
+    if (!user || !user._id || user.isAdmin !== true) {
+      alert(t("admin.reopen.no_permission"));
+      return;
+    }
+    if (!confirm(t("admin.reopen.confirm"))) return;
+    try {
+      setIsReopening(true);
+      const result = await reopenTournamentAction({ code: String(code || "") });
+      if (result && typeof result === "object" && "success" in result && result.success) {
+        alert(t("admin.reopen.success"));
+        await fetchAll();
+      }
+    } catch (err: any) {
+      console.error("Error reopening tournament:", err);
+      alert(err.response?.data?.error || t("admin.reopen.error_save"));
+    } finally {
+      setIsReopening(false);
+    }
+  }, [code, fetchAll, user, t]);
+
+  const statusInfo = useMemo(() => {
+    const status = tournament?.tournamentSettings?.status || "pending";
+    return statusMeta[status] || statusMeta.pending;
+  }, [tournament?.tournamentSettings?.status, statusMeta]);
+
+  const tournamentStats = useMemo(() => {
+    const playersCount =
+      Array.isArray(players) && players.length > 0
+        ? players.length
+        : Number(tournament?.tournamentPlayers?.length || 0);
+    const boardsCount = Array.isArray(tournament?.boards) ? tournament.boards.length : 0;
+    const format = toReadableFormatLabel(tournament?.tournamentSettings?.format);
+    return { playersCount, boardsCount, format };
+  }, [players, tournament]);
+
+  const tournamentId =
+    typeof tournament?.tournamentId === "string" ? tournament.tournamentId : "";
+  const tournamentCode = typeof code === "string" ? code : code?.[0] ?? "";
+  const tournamentIdentifier = tournamentId || tournamentCode;
+  const showLive = ["group-stage", "knockout"].includes(
+    tournament?.tournamentSettings?.status || ""
+  );
+  const canManageTournament = userClubRole === "admin" || userClubRole === "moderator";
+
+  if (loading && !tournament) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto space-y-6 px-4 py-6 md:py-8">
+          <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
+            <Skeleton className="h-8 w-72" />
+            <div className="mt-4 flex gap-3">
+              <Skeleton className="h-6 w-28 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+          <Skeleton className="h-96 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md border-destructive/40 bg-card">
+          <CardContent className="space-y-4 p-6">
+            <Alert variant="destructive">
+              <AlertTitle>{t("error.title")}</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <Button onClick={() => fetchAll()} className="w-full">
+              {t("error.retry")}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!tournament) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md border-dashed">
+          <CardContent className="space-y-4 py-8 text-center">
+            <div className="text-4xl">🏆</div>
+            <p className="text-base font-semibold text-foreground">
+              {t("error.not_found.title")}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t("error.not_found.description")}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen bg-background pb-20 md:pb-8">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 10% 20%, var(--color-primary) 0%, transparent 38%), radial-gradient(circle at 90% 15%, var(--color-accent) 0%, transparent 30%)",
+        }}
+      />
+      <div className="container relative mx-auto space-y-4 px-4 py-4 md:space-y-6 md:py-8">
+        <header className="rounded-2xl border border-border/70 bg-card/85 p-4 shadow-[0_14px_34px_rgba(0,0,0,0.28)] backdrop-blur-xl md:rounded-3xl md:p-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={statusInfo.badgeClass}>
+                {statusInfo.label}
+              </Badge>
+              <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] text-muted-foreground">
+                {t("header.tournament_code", { code: tournament.tournamentId })}
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold leading-tight text-foreground md:text-4xl">
+              {tournament.tournamentSettings?.name || t("tabs.overview")}
+            </h1>
+            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              {statusInfo.description}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {canManageTournament && tournament?.tournamentSettings?.status !== "finished" ? (
+                <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="gap-2">
+                  <IconEdit className="h-4 w-4" />
+                  {t("tabs.overview")}
+                </Button>
+              ) : null}
+              <Button variant="secondary" size="sm" onClick={handleRefetch} className="gap-2">
+                <IconRefresh className="h-4 w-4" />
+                {t("header.refresh")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setTournamentShareModal(true)} className="gap-2">
+                <IconShare2 className="h-4 w-4" />
+                {t("header.share")}
+              </Button>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+            <TournamentStatTile label={t("tabs.players")} value={tournamentStats.playersCount} />
+            <TournamentStatTile label={t("tabs.boards")} value={tournamentStats.boardsCount} />
+            <TournamentStatTile label="Format" value={tournamentStats.format} />
+          </div>
+        </header>
+
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex flex-col gap-4 pb-24 md:gap-5 md:pb-0"
+        >
+          <div className="flex flex-col gap-3 md:gap-4">
+            <TournamentTabsNavigation
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              userClubRole={userClubRole}
+              format={tournament?.tournamentSettings?.format}
+              scorerHref={tournamentIdentifier ? `/board/${tournamentIdentifier}` : undefined}
+              liveHref={tournamentIdentifier ? `/tournaments/${tournamentIdentifier}/live` : undefined}
+              liveEnabled={showLive}
+            />
+
+            <TabsContent value="overview" className="mt-0 space-y-4">
+              <TournamentOverview
+                tournament={tournament}
+                userRole={userClubRole}
+                userPlayerStatus={userPlayerStatus}
+                isLoggedIn={Boolean(user?._id)}
+              />
+            </TabsContent>
+
+            <TabsContent value="players" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+              <TournamentPlayers
+                tournament={tournament}
+                players={players}
+                userClubRole={userClubRole}
+                userPlayerStatus={userPlayerStatus}
+                userPlayerId={userPlayerId}
+                status={tournament.tournamentSettings?.status}
+                onRefresh={handlePlayersRefresh}
+              />
+            </TabsContent>
+
+            <TabsContent value="boards" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+              <TournamentBoardsView tournament={tournament} userClubRole={userClubRole} />
+            </TabsContent>
+
+            {tournament?.tournamentSettings?.format !== "knockout" && (
+              <TabsContent value="groups" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+                <TournamentStatusChanger
+                  tournament={tournament}
+                  userClubRole={userClubRole}
+                  onRefetch={handleTournamentRefreshFresh}
+                  section="groups"
+                />
+                <TournamentGroupsView
+                  tournament={tournament}
+                  userClubRole={userClubRole}
+                  onDataChanged={handleTournamentRefreshFresh}
+                />
+              </TabsContent>
+            )}
+
+            {tournament?.tournamentSettings?.format !== "group" && (
+              <TabsContent value="bracket" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+                <TournamentStatusChanger
+                  tournament={tournament}
+                  userClubRole={userClubRole}
+                  onRefetch={handleTournamentRefreshFresh}
+                  section="knockout"
+                />
+                <TournamentKnockoutBracket
+                  tournamentCode={tournament.tournamentId}
+                  tournament={tournament}
+                  userClubRole={userClubRole}
+                  tournamentPlayers={players}
+                  knockoutMethod={tournament.tournamentSettings?.knockoutMethod}
+                  clubId={tournament.clubId?.toString()}
+                />
+              </TabsContent>
+            )}
+
+            <TabsContent value="admin" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+              <TournamentStatusChanger
+                tournament={tournament}
+                userClubRole={userClubRole}
+                onRefetch={handleTournamentRefreshFresh}
+                section="all"
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
+      <TournamentShareModal
+        isOpen={tournamentShareModal}
+        onClose={() => setTournamentShareModal(false)}
+        tournamentCode={tournament.tournamentId}
+        tournamentName={tournament.tournamentSettings?.name || t("tabs.overview")}
+      />
+      {editModalOpen && user?._id && (
+        <EditTournamentModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          tournament={tournament}
+          userId={user._id}
+          onTournamentUpdated={handleRefetch}
+        />
+      )}
+    </div>
+  );
+};
+
+export default TournamentPageClient;

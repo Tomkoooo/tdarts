@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import debounce from 'lodash.debounce'
-import axios from 'axios'
 import { IconSearch, IconUserPlus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { Input } from "@/components/ui/Input"
 import { Button } from '@/components/ui/Button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { findPlayerByUserAction, searchPlayersAction } from '@/features/players/actions/searchPlayers.action'
 
 interface PlayerSearchProps {
   onPlayerSelected: (player: any) => void
@@ -149,13 +149,13 @@ export default function PlayerSearch({
 
       setIsLoading(true)
       try {
-        const [usersResponse, playersResponse] = await Promise.all([
-          axios.get(`/api/users/search?query=${encodeURIComponent(query)}&clubId=${clubId || ''}`),
-          axios.get(`/api/players/search?query=${encodeURIComponent(query)}&clubId=${clubId || ''}`),
-        ])
+        const response = await searchPlayersAction({
+          query: query.trim(),
+          clubId: clubId || undefined,
+        })
 
-        const users = usersResponse.data.users || []
-        const players = playersResponse.data.players || []
+        const users = response.users || []
+        const players = response.players || []
 
         let combined = [...users, ...players].reduce((acc: any[], curr) => {
           if (curr.userRef) {
@@ -236,9 +236,9 @@ export default function PlayerSearch({
     if (player.userRef && !player.playerId) {
       try {
         const userId = player.userRef?.toString?.() || player.userRef || player._id
-        const playerResponse = await axios.get(`/api/players/find-by-user/${userId}`)
-        if (playerResponse.data.success && playerResponse.data.player) {
-          const actualPlayer = playerResponse.data.player
+        const playerResponse = await findPlayerByUserAction({ userId: String(userId) })
+        if (playerResponse.success && playerResponse.player) {
+          const actualPlayer = playerResponse.player
           playerData = {
             _id: actualPlayer._id,
             name: actualPlayer.name,
@@ -365,7 +365,7 @@ export default function PlayerSearch({
                       </Button>
                       </div>
                       {!isLast && (
-                        <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mx-4" />
+                        <div className="h-px bg-linear-to-r from-transparent via-border/40 to-transparent mx-4" />
                       )}
                     </div>
                   )

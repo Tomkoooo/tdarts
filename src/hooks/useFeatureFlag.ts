@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { checkFeatureFlagAction, checkSocketFlagAction } from '@/features/feature-flags/actions/checkFeatureFlags.action';
+import { isGuardFailureResult } from '@/shared/lib/guards/result';
 
 export const useFeatureFlag = (featureName: string, clubId?: string) => {
   const [isEnabled, setIsEnabled] = useState<boolean>(false);
@@ -81,12 +83,11 @@ async function checkFeatureFlagClient(featureName: string, clubId?: string): Pro
     // Speciális kezelés a detailedStatistics feature-hez - mindig ellenőrizze az adatbázist
     if (featureName === 'detailedStatistics' && clubId) {
       try {
-        const response = await fetch(`/api/feature-flags/check?feature=${featureName}&clubId=${clubId}`);
-        if (response.ok) {
-          const data = await response.json();
-          return data.enabled;
+        const data = await checkFeatureFlagAction({ feature: featureName, clubId });
+        if (isGuardFailureResult(data)) {
+          return false;
         }
-        return false;
+        return data.enabled;
       } catch (error) {
         console.error('Error checking detailedStatistics feature via API:', error);
         return false;
@@ -109,12 +110,11 @@ async function checkFeatureFlagClient(featureName: string, clubId?: string): Pro
 
   // Klub specifikus ellenőrzés API-n keresztül
   try {
-    const response = await fetch(`/api/feature-flags/check?feature=${featureName}&clubId=${clubId}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.enabled;
+    const data = await checkFeatureFlagAction({ feature: featureName, clubId });
+    if (isGuardFailureResult(data)) {
+      return false;
     }
-    return false;
+    return data.enabled;
   } catch (error) {
     console.error('Error checking feature flag via API:', error);
     return false;
@@ -156,12 +156,11 @@ async function checkSocketFeatureClient(clubId?: string): Promise<boolean> {
 
   // Klub specifikus ellenőrzés API-n keresztül
   try {
-    const response = await fetch(`/api/feature-flags/socket?clubId=${clubId}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.enabled;
+    const data = await checkSocketFlagAction({ clubId });
+    if (isGuardFailureResult(data)) {
+      return false;
     }
-    return false;
+    return data.enabled;
   } catch (error) {
     console.error('Error checking socket feature via API:', error);
     return false;

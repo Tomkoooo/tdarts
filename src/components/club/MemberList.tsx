@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
+import { removeMemberAction } from '@/features/clubs/actions/removeMember.action'
+import { addModeratorAction } from '@/features/clubs/actions/addModerator.action'
+import { removeModeratorAction } from '@/features/clubs/actions/removeModerator.action'
 import {
   IconTrash,
   IconUser,
@@ -55,16 +57,16 @@ export default function MemberList({
     if (!userId) return
     const toastId = toast.loading('Tag törlése...')
     try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/removeMember`, {
-        userId: memberId,
-        requesterId: userId,
-      })
-      onClubUpdated(response.data)
+      const result = await removeMemberAction({ clubId, userId: memberId })
+      if (typeof result === 'object' && 'ok' in result && !result.ok) {
+        throw new Error((result as any).message)
+      }
+      onClubUpdated(result as unknown as Club)
       toast.success(`${memberName} törölve!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Tag törlése sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.message || 'Tag törlése sikertelen', {
+        error: err?.message,
         context: 'Tag törlése',
         errorName: 'Tag törlése sikertelen',
       })
@@ -75,16 +77,16 @@ export default function MemberList({
     if (!userId) return
     const toastId = toast.loading('Moderátor hozzáadása...')
     try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/addModerator`, {
-        userId: memberId,
-        requesterId: userId,
-      })
-      onClubUpdated(response.data)
+      const result = await addModeratorAction({ clubId, userId: memberId })
+      if (typeof result === 'object' && 'ok' in result && !result.ok) {
+        throw new Error((result as any).message)
+      }
+      onClubUpdated(result as unknown as Club)
       toast.success(`${memberName} moderátorrá nevezve!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Moderátor hozzáadása sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.message || 'Moderátor hozzáadása sikertelen', {
+        error: err?.message,
         context: 'Moderátor hozzáadása',
         errorName: 'Moderátor hozzáadása sikertelen',
       })
@@ -95,16 +97,16 @@ export default function MemberList({
     if (!userId) return
     const toastId = toast.loading('Moderátor törlése...')
     try {
-      const response = await axios.post<Club>(`/api/clubs/${clubId}/removeModerator`, {
-        userId: memberId,
-        requesterId: userId,
-      })
-      onClubUpdated(response.data)
+      const result = await removeModeratorAction({ clubId, userId: memberId })
+      if (typeof result === 'object' && 'ok' in result && !result.ok) {
+        throw new Error((result as any).message)
+      }
+      onClubUpdated(result as unknown as Club)
       toast.success(`${memberName} moderátori jogai visszavonva!`, { id: toastId })
     } catch (err: any) {
       toast.dismiss(toastId)
-      showErrorToast(err.response?.data?.error || 'Moderátor törlése sikertelen', {
-        error: err?.response?.data?.error,
+      showErrorToast(err?.message || 'Moderátor törlése sikertelen', {
+        error: err?.message,
         context: 'Moderátor törlése',
         errorName: 'Moderátor törlése sikertelen',
       })

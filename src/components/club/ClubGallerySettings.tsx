@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import axios from "axios"
+import { getClubGalleriesAction } from "@/features/clubs/actions/getClubGalleries.action"
+import { createGalleryAction } from "@/features/clubs/actions/createGallery.action"
+import { updateGalleryAction } from "@/features/clubs/actions/updateGallery.action"
+import { deleteGalleryAction } from "@/features/clubs/actions/deleteGallery.action"
 import toast from "react-hot-toast"
 import { IconTrash, IconPlus, IconDeviceFloppy, IconEdit } from "@tabler/icons-react"
 import { Button } from "@/components/ui/Button"
@@ -33,8 +37,17 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
 
     const fetchGalleries = async () => {
         try {
-            const res = await axios.get(`/api/clubs/${club._id}/galleries`)
-            setGalleries(res.data.galleries)
+            const res = await getClubGalleriesAction({ clubId: club._id })
+            if (res && typeof res === 'object' && 'galleries' in res && Array.isArray((res as { galleries?: unknown[] }).galleries)) {
+                const galleriesRaw = (res as any).galleries as any[]
+                const next = galleriesRaw
+                    .map((g) => ({
+                        _id: String(g._id),
+                        name: g.name,
+                        images: Array.isArray(g.images) ? g.images : [],
+                    }))
+                setGalleries(next)
+            }
         } catch (err) {
             console.error(err)
         }
@@ -100,15 +113,17 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                 }
 
                 // Update
-                await axios.put(`/api/clubs/${club._id}/galleries`, {
-                    id: currentGalleryId,
+                await updateGalleryAction({
+                    clubId: club._id,
+                    galleryId: currentGalleryId,
                     name: galleryName,
                     images: galleryImages
                 })
                 toast.success(t('toast.updated'))
             } else {
                 // Create
-                await axios.post(`/api/clubs/${club._id}/galleries`, {
+                await createGalleryAction({
+                    clubId: club._id,
                     name: galleryName,
                     images: galleryImages
                 })
@@ -147,7 +162,7 @@ export default function ClubGallerySettings({ club }: ClubGallerySettingsProps) 
                 await Promise.all(mediaIds.map(id => axios.delete(`/api/media/${id}`).catch(err => console.error("Failed to delete media", id, err))));
             }
 
-            await axios.delete(`/api/clubs/${club._id}/galleries?id=${gallery._id}`)
+            await deleteGalleryAction({ clubId: club._id, galleryId: gallery._id })
             toast.success(t('toast.deleted'))
             fetchGalleries()
         } catch {

@@ -1,0 +1,61 @@
+import jwt from 'jsonwebtoken';
+import { AuthService } from '@/database/services/auth.service';
+import { assertEligibilityResult } from '@/shared/lib/guards';
+
+type SocketAuthResult =
+  | { ok: true; token: string; expiresAt: number; issuedAt: number; ttlSeconds: number }
+  | { ok: false; status: number; error: string };
+
+export async function issueSocketAuthToken(input: { token?: string; clubId?: string }): Promise<SocketAuthResult> {
+  const jwtSecret = process.env.SOCKET_JWT_SECRET;
+  if (!jwtSecret) {
+    return {
+      ok: false,
+      status: 503,
+      error: 'Socket authentication not configured. Please set SOCKET_JWT_SECRET environment variable.',
+    };
+  }
+
+  let userId: string | null = null;
+  let userRole: 'guest' | 'user' | 'admin' = 'guest';
+  if (input.token) {
+    try {
+      const user = await AuthService.verifyToken(input.token);
+      userId = user._id.toString();
+      userRole = user.isAdmin ? 'admin' : 'user';
+    } catch {
+      userId = null;
+      userRole = 'guest';
+    }
+  }
+
+  if (input.clubId) {
+    const eligibility = await assertEligibilityResult({
+      featureName: 'socket',
+      clubId: input.clubId,
+      allowPaidOverride: true,
+    });
+    if (!eligibility.ok) {
+      return {
+        ok: false,
+        status: eligibility.status,
+        error: eligibility.message,
+      };
+    }
+  }
+
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const ttlSeconds = 60 * 60 * 4; // 4 hours (reduced from 24 hours for security)
+  const expiresAt = issuedAt + ttlSeconds;
+  const socketToken = jwt.sign(
+    {
+      userId: userId || 'guest',
+      userRole,
+      iat: issuedAt,
+      exp: expiresAt,
+    },
+    jwtSecret
+  );
+
+  return { ok: true, token: socketToken, expiresAt, issuedAt, ttlSeconds };
+}

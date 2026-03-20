@@ -1,56 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '@/database/services/auth.service';
-import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
 import { withApiTelemetry } from '@/lib/api-telemetry';
+import { issueSocketAuthToken } from '@/features/socket/lib/socketAuth';
 
 // Environment variables will be checked inside the function
 
 async function __POST(request: NextRequest) {
   try {
-    // Check environment variables
-    const JWT_SECRET = process.env.SOCKET_JWT_SECRET;
-
-    if (!JWT_SECRET) {
-      return NextResponse.json({ 
-        error: 'Socket authentication not configured. Please set SOCKET_JWT_SECRET environment variable.' 
-      }, { status: 503 });
-    }
-
     await connectMongo();
-    
-    // Try to get user from JWT token (optional)
+    const body = await request.json().catch(() => ({} as { clubId?: string }));
     const token = request.cookies.get('token')?.value;
-    let userId = null;
-    let userRole = 'guest';
-
-    if (token) {
-      try {
-        const user = await AuthService.verifyToken(token);
-        if (user) {
-          userId = user._id.toString();
-          userRole = user.isAdmin ? 'admin' : 'user';
-        }
-      } catch (error: any) {
-        // Token is invalid, but we allow guest access
-        console.log('Invalid token, allowing guest access:', error?.message || 'Unknown error');
-      }
+    const result = await issueSocketAuthToken({ token, clubId: body.clubId });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-
-    // Generate socket JWT token (for both authenticated and guest users)
-    const socketToken = jwt.sign(
-      {
-        userId: userId || 'guest',
-        userRole: userRole,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 hours
-      },
-      JWT_SECRET
-    );
 
     return NextResponse.json({
       success: true,
-      token: socketToken
+      token: result.token,
+      expiresAt: result.expiresAt,
+      issuedAt: result.issuedAt,
+      ttlSeconds: result.ttlSeconds,
     });
 
   } catch (error: any) {

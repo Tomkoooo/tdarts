@@ -158,6 +158,9 @@ const tournamentSchema = new mongoose.Schema<TournamentDocument>({
 // Improves subscription checks and idempotent update query performance.
 tournamentSchema.index({ tournamentId: 1, 'notificationSubscribers.userRef': 1 });
 tournamentSchema.index({ tournamentId: 1, isDeleted: 1, isArchived: 1 });
+tournamentSchema.index({ clubId: 1, isDeleted: 1, isArchived: 1, 'tournamentSettings.status': 1, createdAt: -1 });
+tournamentSchema.index({ clubId: 1, isSandbox: 1, createdAt: -1 });
+tournamentSchema.index({ tournamentId: 1, 'tournamentPlayers.playerReference': 1 });
 tournamentSchema.index({
     isDeleted: 1,
     isArchived: 1,

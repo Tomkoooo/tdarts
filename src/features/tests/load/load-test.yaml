@@ -1,0 +1,98 @@
+config:
+  target: "http://localhost:3000"
+  processor: "./load.processor.js"
+  maxVusers: 50
+  phases:
+    - duration: 20
+      arrivalRate: 1
+      name: warmup_1
+    - duration: 70
+      arrivalRate: 2
+      rampTo: 4
+      name: ramp_2_to_4
+    - duration: 90
+      arrivalRate: 4
+      name: sustain_4
+  defaults:
+    headers:
+      x-load-test-secret: "{{ $processEnvironment.LOAD_TEST_SECRET }}"
+  http:
+    timeout: 30
+    pool: 1200
+  ensure:
+    thresholds:
+      - "http.response_time.p95": 1500
+      - "http.response_time.p99": 2500
+      - "errors.rate": 0.02
+      - "vusers.failed": 5%
+
+# Run guide:
+# 1) export LOAD_TEST_MODE=true
+# 2) export LOAD_TEST_SECRET='<same secret used by server>'
+# 3) export LOAD_TEST_USER_ID='6870f51d9b58837d598e80d5'
+# 4) export LOAD_TEST_CLUB_ID='68f6afb145352f8e4076ed55'
+# 5) pnpm dev
+# 6) pnpm test:load
+# Optional: set LOAD_BASE_URL and use diagnostics runner which passes target consistently.
+
+before:
+  flow:
+    - function: "bootstrapTournaments"
+
+scenarios:
+  - name: browse_platform_pages
+    weight: 78
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "browsePrep"
+      - loop:
+          - get:
+              url: "/en/home"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}/live"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/profile"
+              afterResponse: "capturePageMetrics"
+          - think: "{{ thinkSec }}"
+          - get:
+              url: "/en/home"
+              afterResponse: "capturePageMetrics"
+        count: 3
+
+  - name: tournament_lifecycle_parallel
+    weight: 12
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "pickTournamentContext"
+      - loop:
+          - function: "lifecycleStep"
+          - think: 2
+        count: 2
+
+  - name: live_board_polling
+    weight: 10
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "pickTournamentContext"
+      - loop:
+          - get:
+              url: "/en/board/{{ tournamentCode }}"
+              afterResponse: "capturePageMetrics"
+          - think: 2
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}/live"
+              afterResponse: "capturePageMetrics"
+          - think: 2
+          - get:
+              url: "/en/tournaments/{{ tournamentCode }}"
+              afterResponse: "capturePageMetrics"
+          - think: 2
+        count: 2

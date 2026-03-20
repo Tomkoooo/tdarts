@@ -1,277 +1,140 @@
 {
   "Common": {
     "welcome": "Üdvözöljük",
-    "home": "Kezdőlap",
-    "tournaments": "Versenyek",
-    "clubs": "Klubok",
-    "players": "Játékosok",
+    "save": "Mentés",
+    "cancel": "Mégse",
+    "delete": "Törlés",
+    "edit": "Szerkesztés",
+    "close": "Bezárás",
+    "submit": "Küldés",
+    "loading": "Betöltés...",
+    "error": "Hiba",
+    "success": "Sikeres művelet",
+    "back": "Vissza",
+    "next": "Következő",
+    "previous": "Előző",
     "search": "Keresés",
-    "profile": "Profil",
-    "view": "Megtekintés",
-    "later": "Később",
-    "frissítés": "Frissítés",
-    "műveletek": "Műveletek",
-    "nincs_találat_a": "Nincs találat a keresési feltételek alapján.",
-    "státusz": "Státusz",
-    "mégse": "Mégse",
-    "hiba_történt": "Hiba történt",
-    "újrapróbálás": "Újrapróbálás",
-    "betöltés": "Betöltés...",
-    "keresés": "Keresés",
-    "vissza": "Vissza",
-    "létrehozás": "Létrehozás...",
-    "mentés": "Mentés...",
-    "a_játékosoknak_ezt": "A játékosoknak ezt a jelszót kell megadniuk a csatlakozáshoz",
-    "a_verseny_látható": "A verseny látható lesz mindenki számára a kereső oldalon",
-    "add_meg_a_88": "Add meg a versenyen használt táblákat",
-    "add_meg_a_91": "Add meg a verseny alapvető adatait",
-    "alapvető_információk": "Alapvető Információk",
+    "filter": "Szűrés",
+    "sort": "Rendezés",
+    "status": "Státusz",
+    "actions": "Műveletek",
+    "noData": "Nincs rendelkezésre álló adat",
+    "noResults": "Nem található az adott keresési feltételeknek megfelelő eredmény.",
+    "retry": "Ismét próbálkozás",
+    "errorId": "Hiba azonosító:",
+    "viewMore": "Több megtekintése",
+    "confirm": "Megerősítés",
+    "confirmDelete": "Biztosan törölni szeretné?",
+    "yes": "Igen",
+    "no": "Nem",
+    "or": "vagy",
+    "a_játékosoknak_ezt": "Spieler müssen dieses Passwort eingeben, um beizutreten",
+    "a_verseny_látható": "Der Wettbewerb wird auf der Suchseite für alle sichtbar sein",
+    "add_meg_a_88": "Geben Sie die im Wettbewerb verwendeten Boards ein",
+    "add_meg_a_91": "Geben Sie die Grunddaten des Wettbewerbs ein",
+    "alapvető_információk": "Grundlegende Informationen",
     "alternatív_megoldások": "Alternatív megoldások:",
-    "atlag_308n": "Átlag",
+    "atlag_308n": "Durchschnitt",
     "azonnali_megoldások": "Azonnali megoldások:",
-    "bejelentkezesi_hiba_hqbc": "Bejelentkezési hiba",
-    "betoltes_69f8": "Betöltés...",
-    "bezaras_o3av": "Bezárás",
-    "csapat_meghivas_elfogadva_r38s": "Csapat meghívás elfogadva!",
-    "csapat_meghivo_orrr": "Csapat Meghívó",
-    "csapat_neve_b7w7": "Csapat neve",
-    "csoportos_cksc": "Csoportos",
-    "dupla_kieses_g6zf": "Dupla kiesés",
-    "egyenes_kieses_lfsy": "Egyenes kiesés",
-    "elit_1acs": "Elit",
+    "bejelentkezesi_hiba_hqbc": "Anmeldefehler",
+    "betoltes_69f8": "Laden...",
+    "betöltés": "Laden...",
+    "bezaras_o3av": "Schließung",
+    "csapat_meghivas_elfogadva_r38s": "Teameinladung angenommen!",
+    "csapat_meghivo_orrr": "Team Invitational",
+    "csapat_neve_b7w7": "Teamname",
+    "csoportos_cksc": "Gruppe",
+    "dupla_kieses_g6zf": "Doppelte Eliminierung",
+    "egyenes_kieses_lfsy": "Direkt raus",
+    "elit_1acs": "Elite",
     "ellenőrizd_az_internetkapcsolatot": "• Ellenőrizd az internetkapcsolatot",
-    "elutasitas_ymrf": "Elutasítás",
-    "error_id": "Error ID:",
-    "fooldal_iry6": "Főoldal",
+    "elutasitas_ymrf": "Ablehnung",
+    "error_id": "Hiba azonosító:",
+    "fooldal_iry6": "Hauptseite",
     "frissítsd_az_oldalt": "• Frissítsd az oldalt (F5)",
     "főoldal": "Főoldal",
-    "google_bejelentkezes_feldolgozasa_nq04": "Google bejelentkezés feldolgozása...",
-    "google_bejelentkezes_sikertelen_gllv": "Google bejelentkezés sikertelen",
-    "ha_a_probléma": "Ha a probléma továbbra is fennáll, kérjük vedd fel a kapcsolatot a fejlesztőkkel.",
-    "halado_zek6": "Haladó",
-    "helyezes_bugj": "Helyezés",
+    "google_bejelentkezes_feldolgozasa_nq04": "Google-Login wird verarbeitet...",
+    "google_bejelentkezes_sikertelen_gllv": "Die Google-Anmeldung ist fehlgeschlagen",
+    "ha_a_probléma": "Ha a probléma továbbra is fennáll, kérjük lépj kapcsolatba a fejlesztőkkel.",
+    "halado_zek6": "Fortschrittlich",
+    "helyezes_bugj": "Platzierung",
     "hiba_részletei_fejlesztői": "Hiba részletei (fejlesztői mód):",
-    "hiba_tortent_a_bejelentkezes_mbps": "Hiba történt a bejelentkezés során",
-    "hiba_tortent_w14r": "Hiba történt",
+    "hiba_tortent_a_bejelentkezes_mbps": "Beim Anmelden ist ein Fehler aufgetreten",
+    "hiba_tortent_w14r": "Es ist ein Fehler aufgetreten",
+    "hiba_történt": "Hiba történt",
     "hibajelentés_azonosító": "Hibajelentés azonosító:",
-    "hány_játékos_vehet": "Hány játékos vehet részt maximum? (4-128)",
-    "hány_leg_et": "Hány leg-et kell nyerni egy meccs megnyeréséhez?",
-    "jelszó": "Jelszó",
-    "játék_típus": "Játék típus",
-    "kattints_az_ldquo": "• Kattints az &ldquo;Újrapróbálkozás&rdquo; gombra",
-    "kezdo_173n": "Kezdő",
-    "kezdo_xwyz": "Kezdő+",
-    "kezdési_dátum": "Kezdési dátum",
-    "kiszallo_arany_49l1": "Kiszálló arány",
-    "kormerkozes_vrpm": "Körmérkőzés",
-    "kozephalado_uheg": "Középhaladó",
-    "kérjük_várj_az": "Kérjük várj, az oldal betöltése folyamatban van.",
-    "legjobb_helyezes_i1t1": "Legjobb helyezés",
-    "legjobb_helyezés": "Legjobb helyezés",
-    "legmagasabb_kiszallo_v119": "Legmagasabb kiszálló",
-    "leírás": "Leírás",
-    "láthatóság": "Láthatóság",
+    "hány_játékos_vehet": "Wie viele Spieler können maximal teilnehmen? (4-128)",
+    "hány_leg_et": "Wie viele Legs braucht man, um ein Match zu gewinnen?",
+    "jelszó": "Passwort",
+    "játék_típus": "Spieltyp",
+    "kattints_az_ldquo": "• Kattints az \"Újrapróbálkozás\" gombra.",
+    "keresés": "Suchen",
+    "kezdo_173n": "Anfänger",
+    "kezdo_xwyz": "Anfänger+",
+    "kezdési_dátum": "Startdatum",
+    "kiszallo_arany_49l1": "Ausstiegsrate",
+    "kormerkozes_vrpm": "Round-Robin",
+    "kozephalado_uheg": "Dazwischenliegend",
+    "kérjük_várj_az": "Bitte warten Sie, die Seite wird geladen.",
+    "later": "Später",
+    "legjobb_helyezes_i1t1": "Bestes Ranking",
+    "legjobb_helyezés": "Bestes Ranking",
+    "legmagasabb_kiszallo_v119": "Höchster Ausgang",
+    "leírás": "Beschreibung",
+    "láthatóság": "Sichtweite",
     "lépj_vissza_a": "• Lépj vissza a főoldalra",
-    "max_kiszálló": "Max kiszálló",
-    "maximum_játékosszám": "Maximum játékosszám",
-    "meccs": "meccs",
-    "meghivas_elfogadasa_x0n5": "Meghívás elfogadása",
-    "meghivas_elutasitva_vzwy": "Meghívás elutasítva",
-    "meghivast_kaptal_egy_paros_z44a": "Meghívást kaptál egy páros/csapat tornára",
-    "meghivo_betoltese_pctm": "Meghívó betöltése...",
-    "meghivott_hogy_csatlakozz_a_5u8m": "meghívott, hogy csatlakozz a csapatához.",
-    "mester_wz01": "Mester",
-    "mikor_kezdődik_a": "Mikor kezdődik a verseny?",
+    "létrehozás": "Erstellen...",
+    "max_kiszálló": "Maximaler Ausgang",
+    "maximum_játékosszám": "Maximale Spieleranzahl",
+    "meccs": "übereinstimmen",
+    "meghivas_elfogadasa_x0n5": "Eine Einladung annehmen",
+    "meghivas_elutasitva_vzwy": "Einladung abgelehnt",
+    "meghivast_kaptal_egy_paros_z44a": "Sie wurden zu einem Doppel-/Mannschaftsturnier eingeladen",
+    "meghivo_betoltese_pctm": "Einladung wird geladen...",
+    "meghivott_hogy_csatlakozz_a_5u8m": "hat Sie eingeladen, seinem Team beizutreten.",
+    "mester_wz01": "Master",
+    "mikor_kezdődik_a": "Wann beginnt der Wettbewerb?",
     "mit_tehetsz": "Mit tehetsz?",
-    "nem_sikerult_betolteni_a_8vw4": "Nem sikerült betölteni a játékos adatait",
-    "nincs_elerheto_torna_tortenet_8gia": "Nincs elérhető torna történet.",
-    "nyert_lejatszott_leg_47wb": "Nyert/lejátszott leg",
-    "nyert_lejatszott_meccs_61q5": "Nyert/lejátszott meccs",
-    "nyert_lejatszott_torna_5xow": "Nyert/lejátszott torna",
-    "nyeréshez_szükséges_leg": "Nyeréshez szükséges leg-ek",
-    "nyilvános_verseny": "Nyilvános verseny",
-    "opcionális_rövid_leírás": "Opcionális rövid leírás, amit a résztvevők látni fognak",
-    "osszes_180_reco": "Összes 180",
-    "osszesitett_statisztikak_y0ve": "Összesített statisztikák",
-    "pl_tavaszi_darts": "pl. Tavaszi Darts Bajnokság",
-    "próbáld_meg_újratölteni": "Próbáld meg újratölteni az oldalt, vagy lépj vissza a főoldalra.",
-    "próbáld_másik_böngészőben": "• Próbáld másik böngészőben",
-    "rövid_leírás_a": "Rövid leírás a versenyről...",
-    "sajnos_valami_hiba": "Sajnos valami hiba történt az oldal betöltése közben.",
-    "sikeres_muvelet_fiwv": "Sikeres művelet",
-    "torna": "torna •",
-    "torna_1c80": "Torna",
-    "torna_tortenet_jznf": "Torna történet",
-    "tornara_lepes_joqq": "Tornára lépés",
-    "tábla_hozzáadása": "Tábla hozzáadása",
-    "tábla_szám": "Tábla szám",
-    "táblák": "Táblák",
-    "töröld_a_böngésző": "• Töröld a böngésző cache-t",
-    "verseny_beállítások": "Verseny Beállítások",
-    "verseny_formátum": "Verseny formátum",
-    "verseny_jelszava": "Verseny jelszava",
-    "verseny_létrehozása": "Verseny létrehozása",
-    "verseny_neve": "Verseny neve",
-    "verseny_sikeresen_létrehozva": "Verseny sikeresen létrehozva!",
-    "vissza_a_bejelentkezeshez_kk0h": "Vissza a bejelentkezéshez",
-    "vissza_a_fooldalra_hdrp": "Vissza a főoldalra",
-    "válassz_egy_egyedi": "Válassz egy egyedi, beszédes nevet a versenyednek",
-    "válaszd_ki_a_78": "Válaszd ki a verseny formátumát és szabályait",
-    "átlag_19": "Átlag",
-    "újrapróbálkozás": "Újrapróbálkozás"
-  },
-  "Index": {
-    "title": "tDarts - A darts versenykezelő"
-  },
-  "Hero": {
-    "badge": "Professzionális Darts Verseny Levezető Platform",
-    "subtitle_badge": "Verseny Platform",
-    "subtitle": "A következő generációs darts verseny platform. Versenykeresés, klub létrehozás, valós idejű eredmények és teljes testreszabhatóság.",
-    "features": {
-      "organize": "Verseny szervezés percek alatt",
-      "results": "Valós idejű eredmények",
-      "pairing": "Automatikus párosítás",
-      "stats": "Részletes statisztikák"
-    },
-    "cta_start": "Kezdés Most",
-    "cta_create": "Verseny Létrehozása",
-    "stats_labels": {
-      "clubs": "Aktív Klub",
-      "clubs_sub": "országszerte",
-      "tournaments": "Verseny",
-      "tournaments_sub": "havonta",
-      "realtime": "Valós Idejű",
-      "realtime_sub": "követés"
-    },
-    "trust": {
-      "free": "Ingyenes regisztráció",
-      "no_hidden": "Nincs rejtett költség",
-      "support": "24/7 támogatás"
-    },
-    "tdarts_u6qj": "TDARTS"
-  },
-  "HowItWorks": {
-    "hero": {
-      "badge": "Útmutató és Dokumentáció",
-      "title_part1": "Hogyan Működik a",
-      "title_part2": "tDarts Platform?",
-      "subtitle": "Teljes körű útmutató a regisztrációtól a versenyindításig. Minden, amit tudnod kell a tDarts használatához.",
-      "search_placeholder": "Keress a témakörök között..."
-    },
-    "grid": {
-      "title": "Válassz témakört",
-      "items_count": "{count} témakör érhető el",
-      "details_btn": "Részletek",
-      "no_results": "Nincs találat",
-      "no_results_desc": "Próbálj meg más keresési kifejezést használni"
-    },
-    "detail": {
-      "back_btn": "Vissza a témakörökhöz",
-      "prev_btn": "Előző",
-      "next_btn": "Következő",
-      "aria_jump": "Ugrás a {title} témához"
-    },
-    "loading": "Betöltés..."
-  },
-  "ContentRenderer": {
-    "notes": {
-      "info": "Info:",
-      "warning": "Fontos:",
-      "tip": "Tipp:",
-      "important": "Kiemelt:",
-      "default": "Megjegyzés:"
-    }
-  },
-  "Features": {
-    "badge": "Funkciók",
-    "title": "Miért tDarts?",
-    "description": "A legmodernebb darts verseny platform minden funkcióval, amit csak elképzelhetsz. Egyszerű, gyors, professzionális.",
-    "items": {
-      "search": {
-        "title": "Verseny Keresés",
-        "description": "Könnyedén találj versenyt lokáció, szint és időpont alapján. Szűrd az eredményeket és jelentkezz egy kattintással.",
-        "badge": "Népszerű"
-      },
-      "draw": {
-        "title": "Verseny Kiírás",
-        "description": "Hozz létre saját versenyeket egyedi szabályokkal és formátumokkal. Automatikus csoportbeosztás és párosítás.",
-        "badge": "Új"
-      },
-      "club": {
-        "title": "Klub Kezelés",
-        "description": "Alapíts vagy csatlakozz darts klubokhoz, szervezz közösségi eseményeket. Teljes tagság kezelés."
-      },
-      "stats": {
-        "title": "Statisztikai Követés",
-        "description": "Részletes statisztikák minden játékoshoz: átlagok, 180-ak, legmagasabb kiszállók, form grafikon.",
-        "badge": "Pro"
-      },
-      "realtime": {
-        "title": "Valós Idejű Követés",
-        "description": "Kövesd élőben a meccseket és eredményeket. Automatikus frissítés és értesítések."
-      },
-      "custom": {
-        "title": "Teljes Testreszabás",
-        "description": "Minden versenyforma támogatva: 501, 301, Cricket és egyedi szabályok. Testre szabható táblák."
-      },
-      "qr": {
-        "title": "QR Kódos Csatlakozás",
-        "description": "Játékosok QR kóddal és jelszóval csatlakozhatnak, regisztráció nélkül. Gyors és egyszerű."
-      },
-      "tablet": {
-        "title": "Tablet Támogatás",
-        "description": "Támogatja a táblákhoz kihelyezett tableteket. Optimalizált író felület és érintésvezérlés."
-      },
-      "secure": {
-        "title": "Jelszó Védett",
-        "description": "Minden torna saját jelszóval védett. Biztonságos hozzáférés és adatvédelem."
-      }
-    },
-    "cta": {
-      "title": "Készen állsz az indulásra?",
-      "description": "Tudd meg hogyan működik a rendszer, és hozd létre az első tornádat percek alatt.",
-      "how_it_works": "Hogyan Működik?",
-      "register": "Ingyenes Regisztráció"
-    }
-  },
-  "Pricing": {
-    "badge": "Árazás",
-    "title": "Válaszd ki a Tökéletes Csomagot",
-    "description": "Minden méretű klub és verseny szervezőnek megfelelő árazás",
-    "popular": "Legnépszerűbb",
-    "period": "Ft/hó",
-    "period_alt": "/hó",
-    "cta_free": "Kezdés Most",
-    "cta_test": "Teszt Üzem",
-    "test_note": "* Egyelőre teszt üzemben működik az oldal. Az előfizetői model hamarosan elérhető lesz.",
-    "packages": {
-      "free": {
-        "name": "Ingyenes",
-        "description": "Alapvető funkciók kis csapatoknak"
-      },
-      "basic": {
-        "name": "Alap",
-        "description": "Tökéletes választás a rendszer kipróbálására"
-      },
-      "pro": {
-        "name": "Pro",
-        "description": "Kiválló aktív kluboknak"
-      },
-      "enterprise": {
-        "name": "Enterprise",
-        "description": "Korlátlan hozzáférés nagyobb szervezeteknek"
-      }
-    },
-    "features": {
-      "one_tournament": "Havi 1 verseny/klub",
-      "two_tournaments": "Havi 2 verseny/klub",
-      "four_tournaments": "Havi 4 verseny/klub",
-      "unlimited_tournaments": "Korlátlan havi verseny",
-      "unlimited_users": "Korlátlan felhasználó",
-      "live_tracking": "Élő meccs követés",
-      "league_start": "Liga indítási lehetőség",
-      "detailed_stats": "Részletes leg statisztikák"
-    }
+    "mégse": "Nicht stornieren",
+    "nem_sikerult_betolteni_a_8vw4": "Spielerdaten konnten nicht geladen werden",
+    "nincs_elerheto_torna_tortenet_8gia": "Keine Turnierhistorie verfügbar.",
+    "nyert_lejatszott_leg_47wb": "Die meisten haben gewonnen/gespielt",
+    "nyert_lejatszott_meccs_61q5": "Spiel gewonnen/verloren",
+    "nyert_lejatszott_torna_5xow": "Turnier gewonnen/gespielt",
+    "nyeréshez_szükséges_leg": "Man braucht Beine, um zu gewinnen",
+    "nyilvános_verseny": "Öffentlicher Wettbewerb",
+    "opcionális_rövid_leírás": "Optionale Kurzbeschreibung, die den Teilnehmern angezeigt wird",
+    "osszes_180_reco": "Insgesamt 180",
+    "osszesitett_statisztikak_y0ve": "Aggregierte Statistiken",
+    "pl_tavaszi_darts": "z.B. Frühjahrs-Dartmeisterschaft",
+    "próbáld_meg_újratölteni": "Próbáld meg újratölteni az oldalt, vagy térj vissza a főoldalra.",
+    "próbáld_másik_böngészőben": "• Próbáld meg egy másik böngészőben",
+    "rövid_leírás_a": "Kurze Beschreibung des Wettbewerbs...",
+    "sajnos_valami_hiba": "Sajnos hiba történt az oldal betöltése közben.",
+    "sikeres_muvelet_fiwv": "Erfolgreiche Operation",
+    "torna": "Gymnastik •",
+    "torna_1c80": "Gymnastik",
+    "torna_tortenet_jznf": "Turngeschichte",
+    "tornara_lepes_joqq": "Betreten der Turnhalle",
+    "tábla_hozzáadása": "Fügen Sie eine Tabelle hinzu",
+    "tábla_szám": "Kennzeichen",
+    "táblák": "Bretter",
+    "töröld_a_böngésző": "• Töröld a böngésző gyorsítótárát",
+    "verseny_beállítások": "Wettbewerbseinstellungen",
+    "verseny_formátum": "Wettbewerbsformat",
+    "verseny_jelszava": "Passwort für den Wettbewerb",
+    "verseny_létrehozása": "Erstellen Sie einen Wettbewerb",
+    "verseny_neve": "Wettbewerbsname",
+    "verseny_sikeresen_létrehozva": "Wettbewerb erfolgreich erstellt!",
+    "view": "Anzeigen",
+    "vissza": "Zurück",
+    "vissza_a_bejelentkezeshez_kk0h": "Zurück zum Login",
+    "vissza_a_fooldalra_hdrp": "Zurück zur Hauptseite",
+    "válassz_egy_egyedi": "Wählen Sie einen einzigartigen, ausdrucksstarken Namen für Ihre Konkurrenz",
+    "válaszd_ki_a_78": "Wählen Sie das Turnierformat und die Regeln",
+    "átlag_19": "Durchschnitt",
+    "újrapróbálkozás": "Újrapróbálkozás",
+    "pleaseWait": "Kérjük várj, az oldal betöltése folyamatban van."
   },
   "Navbar": {
     "tournaments": "Versenyek",
@@ -294,172 +157,13 @@
     "coming_soon": "Hamarosan",
     "offline": "Offline",
     "tdarts_f0pi": "tDarts",
-    "tdarts_logo_wslq": "tDarts Logo"
-  },
-  "Footer": {
-    "legal_title": "Információk",
-    "privacy": "Adatkezelési tájékoztató",
-    "terms": "Általános Szerződési Feltételek",
-    "contact": "Kapcsolat / Visszajelzés",
-    "all_rights_reserved": "Minden jog fenntartva.",
-    "network_title": "Hálózat",
-    "maintainer": "Fenntartó: ",
-    "sironic": "Sironic Rendszerház",
-    "oac_info": "Tudj meg többet az Országos Amatőr Ligáról!",
-    "oac_button": "OAC - Amatőr Darts",
-    "partners_title": "Partnereink",
-    "partners_note": "Kiemelt partnereink, akik támogatják a magyar darts fejlődését.",
-    "copy_jk6j": "&copy;",
-    "tdarts_vlt8": "tDarts.",
-    "magyar_darts_szovetseg_1x63": "Magyar Darts Szövetség",
-    "dartsbarlang_slgh": "DartsBarlang",
-    "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- és Eseményközpont",
-    "efott_partner": "EFOTT"
-  },
-  "Auth": {
-    "login": {
-      "title": "Bejelentkezés",
-      "subtitle": "Lépj be a tDarts fiókodba",
-      "email_label": "Email cím",
-      "email_placeholder": "email@example.com",
-      "password_label": "Jelszó",
-      "password_placeholder": "••••••••",
-      "show_password": "Jelszó megjelenítése",
-      "hide_password": "Jelszó elrejtése",
-      "forgot_password": "Elfelejtett jelszó?",
-      "submit": "Bejelentkezés",
-      "submitting": "Bejelentkezés...",
-      "google": "Bejelentkezés Google-lel",
-      "separator": "vagy",
-      "no_account": "Még nincs fiókod?",
-      "register_link": "Regisztrálj itt",
-      "language": "Nyelv",
-      "success": "Sikeres bejelentkezés!",
-      "error_generic": "Hiba történt a bejelentkezés során"
-    },
-    "register": {
-      "title": "Regisztráció",
-      "subtitle": "Hozd létre a tDarts fiókod",
-      "username_label": "Felhasználónév",
-      "username_placeholder": "felhasznalo123",
-      "name_label": "Teljes név",
-      "name_placeholder": "Kovács János",
-      "email_label": "Email cím",
-      "email_placeholder": "email@example.com",
-      "password_label": "Jelszó",
-      "password_placeholder": "••••••••",
-      "confirm_password_label": "Jelszó megerősítése",
-      "show_password": "Jelszó megjelenítése",
-      "hide_password": "Jelszó elrejtése",
-      "submit": "Regisztráció",
-      "submitting": "Regisztráció...",
-      "google": "Regisztráció Google-lel",
-      "separator": "vagy",
-      "has_account": "Már van fiókod?",
-      "login_link": "Jelentkezz be itt",
-      "language": "Nyelv",
-      "error_generic": "Hiba történt a regisztráció során",
-      "error_google": "Hiba történt a Google regisztráció során",
-      "loading": "Regisztráció folyamatban...",
-      "success": "Sikeres regisztráció! Ellenőrizd az email címedet a verifikációs kódért."
-    },
-    "forgot_password": {
-      "title": "Jelszó visszaállítás",
-      "subtitle": "Add meg az email címedet a visszaállítási kódért",
-      "email_label": "Email cím",
-      "email_placeholder": "email@example.com",
-      "submit": "Kód küldése",
-      "submitting": "Küldés...",
-      "back_to_login": "Vissza a bejelentkezéshez",
-      "loading": "Email küldése folyamatban...",
-      "success": "Jelszó visszaállítási email elküldve!",
-      "error_generic": "Hiba történt az email küldése során"
-    },
-    "reset_password": {
-      "title": "Új jelszó megadása",
-      "subtitle": "Add meg a kódot és az új jelszavadat",
-      "email_label": "Email cím",
-      "email_placeholder": "email@example.com",
-      "code_label": "Visszaállítási kód",
-      "code_placeholder": "6 karakteres kód",
-      "new_password_label": "Új jelszó",
-      "new_password_placeholder": "Minimum 8 karakter",
-      "confirm_password_label": "Jelszó megerősítés",
-      "confirm_password_placeholder": "Írd be újra a jelszót",
-      "submit": "Jelszó visszaállítása",
-      "submitting": "Visszaállítás...",
-      "back_to_login": "Vissza a bejelentkezéshez",
-      "show_password": "Jelszó megjelenítése",
-      "hide_password": "Jelszó elrejtése",
-      "loading": "Jelszó visszaállítása folyamatban...",
-      "success": "Jelszó sikeresen visszaállítva!",
-      "error_generic": "Hiba történt a jelszó visszaállítása során"
-    },
-    "verify": {
-      "title": "Email Verifikáció",
-      "subtitle": "Add meg a(z) {email} címre küldött verifikációs kódot",
-      "code_label": "Verifikációs kód",
-      "code_placeholder": "Kód",
-      "submit": "Verifikálás",
-      "submitting": "Verifikálás...",
-      "loading": "Verifikáció folyamatban...",
-      "success": "Email sikeresen verifikálva! Automatikus bejelentkezés...",
-      "error_generic": "Hiba történt a verifikáció során"
-    },
-    "validation": {
-      "email_required": "Email cím kötelező",
-      "email_invalid": "Érvényes email címet adj meg",
-      "password_required": "Jelszó kötelező",
-      "password_min": "A jelszónak legalább 6 karakter hosszúnak kell lennie",
-      "username_required": "Felhasználónév kötelező",
-      "username_min": "A felhasználónévnek legalább 3 karakter hosszúnak kell lennie",
-      "username_invalid": "A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat",
-      "username_no_spaces": "A felhasználónév nem tartalmazhat szóközöket",
-      "name_required": "Név kötelező",
-      "name_min": "A névnek legalább 2 karakter hosszúnak kell lennie",
-      "confirm_password_required": "Jelszó megerősítés kötelező",
-      "passwords_mismatch": "A jelszavak nem egyeznek",
-      "code_required": "Verifikációs kód kötelező"
-    },
-    "link": {
-      "title": "Google fiók összekapcsolása",
-      "subtitle": "Kapcsold össze a Google fiókodat",
-      "google_data": "A Google fiókod adatai:",
-      "name": "Név: {name}",
-      "email_label": "Email cím",
-      "password_label": "Jelszó",
-      "cancel": "Mégse",
-      "submit": "Összekapcsolás",
-      "submitting": "Összekapcsolás...",
-      "footer": "A Google fiókod össze lesz kapcsolva a meglévő felhasználói fiókoddal. Ezután mindkét módon be tudsz jelentkezni.",
-      "error_generic": "Hiba történt a fiók összekapcsolása során"
-    },
-    "magyar_x1es": "Magyar",
-    "english_1097": "English"
-  },
-  "Auto": {
-    "club_not_found_ecjo": "Klub nem található",
-    "hogyan_mukodik_247b": "Hogyan működik",
-    "élő_meccs_követés": "Élő meccs követés",
-    "ez_a_klub": "Ez a klub nem rendelkezik élő követés funkcióval.",
-    "pro_előfizetés_előnyei": "Pro előfizetés előnyei",
-    "élő_meccs_követés_59": "Élő meccs követés",
-    "dobásonkénti_statisztikák": "Dobásonkénti statisztikák",
-    "speciális_elemző_eszközök": "Speciális elemző eszközök",
-    "részletes_játékos_adatok": "Részletes játékos adatok",
-    "vissza_a_tornához": "Vissza a tornához",
-    "kapcsolat": "Kapcsolat",
-    "ha_már_pro": "Ha már Pro előfizető vagy, vedd fel velünk a kapcsolatot.",
-    "hiba_történt_20": "Hiba történt",
-    "nem_sikerült_betölteni_8": "Nem sikerült betölteni az élő oldalt"
-  },
-  "Carousel": {
-    "management": "Világszínvonalú Versenykezelés",
-    "targeting": "Precíz Célkövetés",
-    "results": "Professzionális Eredmények",
-    "experience": "Kiváló Felhasználói Élmény",
-    "speed": "Villámgyors Feldolgozás",
-    "platform": "Bajnoki Szintű Platform"
+    "tdarts_logo_wslq": "tDarts Logo",
+    "home": "Főoldal",
+    "landing": "Landing",
+    "settings": "Beállítások",
+    "statistics": "Statisztika",
+    "active_tournament": "Verseny",
+    "collapse_sidebar": "Oldalsáv összecsukása"
   },
   "Search": {
     "placeholder": "Keress versenyeket, játékosokat, klubokat...",
@@ -475,10 +179,12 @@
       "clear_filters": "Szűrők törlése"
     },
     "tabs": {
+      "global": "Összes",
       "tournaments": "Versenyek",
       "players": "Játékosok",
       "clubs": "Klubok",
-      "leagues": "Ligák"
+      "leagues": "Ligák",
+      "map": "Térkép"
     },
     "filter_bar": {
       "popular_cities": "Népszerű városok",
@@ -609,30 +315,1296 @@
       "status_active": "Aktív szezon",
       "status_closed": "Lezárt",
       "details": "Részletek"
+    },
+    "filters": {
+      "all": "Összes",
+      "countryLabel": "Ország",
+      "currentSeason": "Aktuális szezon",
+      "filterLabel": "Szűrők",
+      "seasonLabel": "Szezon",
+      "timeLabel": "Dátum",
+      "typeAll": "Összes típus",
+      "typeAmateur": "Amatőr",
+      "typeLabel": "Típus",
+      "typeOpen": "Nyílt",
+      "upcoming": "Közelgő",
+      "past": "Korábbi",
+      "clear": "Törlés",
+      "activeFilters": "{count} aktív",
+      "countries": {
+        "hu": "Magyarország",
+        "de": "Németország",
+        "at": "Ausztria",
+        "sk": "Szlovákia",
+        "ro": "Románia"
+      }
+    },
+    "noResults": "There are no results matching your search criteria."
+  },
+  "Profile": {
+    "loading_data": "Felhasználói adatok betöltése...",
+    "header": {
+      "title": "Felhasználói Profil",
+      "subtitle": "Kezeld személyes adataidat és tekintsd meg statisztikáidat"
+    },
+    "tabs": {
+      "details": "Adatok",
+      "stats": "Statisztika",
+      "tickets": "Visszajelzések",
+      "achievements": "achievements",
+      "overview": "overview",
+      "settings": "settings",
+      "statistics": "statistics"
+    },
+    "countries": {
+      "hu": "Magyarország",
+      "at": "Ausztria",
+      "de": "Németország",
+      "sk": "Szlovákia",
+      "ro": "Románia",
+      "hr": "Horvátország",
+      "si": "Szlovénia"
+    },
+    "info": {
+      "title": "Személyes Információk",
+      "email": "E-mail cím",
+      "verified": "Ellenőrizve",
+      "not_verified": "Nincs ellenőrizve",
+      "name": "Név",
+      "username": "Felhasználónév",
+      "country": "Ország"
+    },
+    "edit": {
+      "title": "Profil Szerkesztése",
+      "email": "E-mail cím",
+      "name": "Név",
+      "username": "Felhasználónév",
+      "country": "Ország",
+      "password": "Új jelszó",
+      "confirm_password": "Új jelszó megerősítése",
+      "placeholders": {
+        "email": "Példa: john@example.com",
+        "name": "Teljes név",
+        "username": "Felhasználónév",
+        "password": "Hagyd üresen, ha nem változtatod meg"
+      },
+      "updating": "Frissítés...",
+      "update_button": "Adatok mentése",
+      "validation": {
+        "email": "Érvénytelen e-mail cím",
+        "name_required": "Név megadása kötelező",
+        "username_required": "Felhasználónév megadása kötelező",
+        "password_mismatch": "A két jelszó nem egyezik"
+      }
+    },
+    "verification": {
+      "title": "E-mail Megerősítése",
+      "alert": "Kérjük, erősítsd meg az e-mail címedet a biztonságos használat érdekében.",
+      "code_label": "Ellenőrző kód",
+      "code_placeholder": "6 számjegyű kód",
+      "verifying": "Ellenőrzés...",
+      "verify_button": "Megerősítés",
+      "resending": "Küldés...",
+      "resend_button": "Kód újraküldése",
+      "validation": {
+        "code_required": "Az ellenőrző kód megadása kötelező"
+      }
+    },
+    "actions": {
+      "title": "Műveletek",
+      "logging_out": "Kijelentkezés...",
+      "logout": "Kijelentkezés",
+      "my_club": "Klubom",
+      "admin": "Adminisztráció"
+    },
+    "stats": {
+      "title": "Játékos Statisztikák",
+      "period": "Időszak:",
+      "seasons": {
+        "current": "Aktuális szezon",
+        "all_time": "Összesített",
+        "previous": "Korábbi szezonok"
+      },
+      "mmr": {
+        "current": "Aktuális MMR",
+        "season_end": "Szezonvégi MMR",
+        "archived": "Archivált MMR"
+      },
+      "mmr_1n02": "MMR",
+      "oac_mmr_g66r": "OAC MMR",
+      "rank": "Helyezés",
+      "rank_end": "Vezetői helyezés",
+      "global_list": "Globális ranglista",
+      "tournaments": "Versenyek",
+      "career": "Pályafutás",
+      "term": "Időszak",
+      "win_rate": "Győzelmi arány",
+      "wins": "Győzelem",
+      "charts": {
+        "form": "Forma (Átlag)",
+        "no_data": "Nincs elég adat a grafikonhoz",
+        "mmr_history": "MMR Történet",
+        "no_history": "Nincs MMR történet"
+      },
+      "metrics": {
+        "title": "Részletes Adatok",
+        "avg": "Átlag",
+        "one_eighties": "Összes 180",
+        "best_pos": "Legjobb helyezés",
+        "avg_pos": "Átlagos helyezés",
+        "max_checkout": "Legmagasabb kiszálló"
+      },
+      "matches": {
+        "title": "Legutóbbi meccsek"
+      },
+      "teams": {
+        "title": "Csapataim",
+        "pair": "Páros",
+        "team": "Csapat"
+      },
+      "history": {
+        "title": "Verseny Történet",
+        "tournaments_count": "{count} verseny",
+        "open_button": "Megnyitás",
+        "matches": "Meccsek",
+        "legs": "Legek",
+        "avg": "Átlag",
+        "one_eighties": "180-asok",
+        "checkout": "Kiszálló",
+        "date": "Dátum",
+        "empty": "Nincs regisztrált verseny ebben az időszakban"
+      }
+    },
+    "history": {
+      "title": "Liga Történet",
+      "points": "Pontok",
+      "tournaments": "Versenyek",
+      "position": "Helyezés",
+      "last_activity": "Utolsó aktivitás: {date}"
+    },
+    "tickets": {
+      "title": "Visszajelzéseim (Tickets)",
+      "new_ticket": "Új hibajegy",
+      "new_ticket_desc": "Kérdésed vagy észrevételed van? Írj nekünk!",
+      "status": {
+        "open": "Nyitott",
+        "replied": "Válasz érkezett",
+        "closed": "Lezárt"
+      },
+      "priority": {
+        "high": "Magas",
+        "medium": "Közepes",
+        "low": "Alacsony"
+      },
+      "id_prefix": "Ticket #",
+      "updated_at": "Frissítve: {date}",
+      "empty": "Még nincsenek visszajelzéseid.",
+      "reply_placeholder": "Válasz írása...",
+      "send_button": "Küldés",
+      "closed_message": "Ez a hibajegy le lett zárva.",
+      "toasts": {
+        "closed_error": "Lezárt hibajegyhez nem lehet hozzászólni",
+        "reply_error": "Hiba az üzenet küldésekor"
+      }
+    },
+    "toasts": {
+      "updating": "Profil frissítése...",
+      "update_success": "Profil sikeresen frissítve!",
+      "update_error": "Hiba történt a frissítés során",
+      "verification_success": "E-mail cím sikeresen megerősítve!",
+      "verification_error": "Érvénytelen ellenőrző kód",
+      "resending": "Kód újraküldése...",
+      "resend_success": "Új kód elküldve!",
+      "resend_error": "Hiba a kód újraküldése során",
+      "logout_success": "Sikeres kijelentkezés!",
+      "logout_error": "Hiba a kijelentkezés során"
+    },
+    "picture": {
+      "profilkep_giiz": "Profilkép",
+      "consent_error": "A kép nyilvánossá tételéhez hozzá kell járulnod",
+      "success_update": "Profilkép sikeresen frissítve",
+      "error_update": "Hiba a profilkép frissítésekor",
+      "remove_confirm": "Biztosan törölni szeretnéd a profilképedet?",
+      "success_remove": "Profilkép sikeresen eltávolítva",
+      "error_remove": "Hiba a profilkép eltávolításakor",
+      "removing": "Eltávolítás...",
+      "remove_button": "Profilkép törlése",
+      "dialog_title": "Profilkép Szerkesztése",
+      "zoom": "Nagyítás",
+      "consent_label": "Hozzájárulok, hogy a profilképem megjelenjen a játékoslistákban és a versenyeken.",
+      "cancel": "Mégse",
+      "saving": "Mentés...",
+      "save": "Profilkép mentése"
+    },
+    "editForm": {
+      "city": "city",
+      "country": "country",
+      "email": "email",
+      "firstName": "firstName",
+      "save": "save"
+    },
+    "settings": {
+      "dataExport": "dataExport",
+      "emailNotifications": "emailNotifications",
+      "privacySettings": "privacySettings",
+      "pushNotifications": "pushNotifications"
+    },
+    "statistics": {
+      "avgScore": "avgScore",
+      "title": "title",
+      "total180": "total180",
+      "totalMatches": "totalMatches",
+      "winRate": "winRate"
     }
   },
-  "Metadata": {
-    "title": "tDarts - Darts Tournament Levezető Rendszer",
-    "description": "A legjobb darts tournament levezető rendszer. Klubok létrehozása, versenyek szervezése, élő követés és statisztikák.",
-    "keywords": "darts, tournament, verseny, klub, statisztika, élő követés",
-    "og_title": "tDarts - Darts Tournament Rendszer",
-    "twitter_description": "A legjobb darts tournament levezető rendszer",
-    "tdarts_f0pi": "tDarts",
-    "tdarts_team_wsgu": "tDarts Team"
+  "Auth": {
+    "login": {
+      "title": "Bejelentkezés",
+      "subtitle": "Lépj be a tDarts fiókodba",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "password_label": "Jelszó",
+      "password_placeholder": "••••••••",
+      "show_password": "Jelszó megjelenítése",
+      "hide_password": "Jelszó elrejtése",
+      "forgot_password": "Elfelejtett jelszó?",
+      "submit": "Bejelentkezés",
+      "submitting": "Bejelentkezés...",
+      "google": "Bejelentkezés Google-lel",
+      "separator": "vagy",
+      "no_account": "Még nincs fiókod?",
+      "register_link": "Regisztrálj itt",
+      "language": "Nyelv",
+      "success": "Sikeres bejelentkezés!",
+      "error_generic": "Hiba történt a bejelentkezés során",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "email@example.com",
+      "forgotPassword": "Forgot your password?",
+      "hidePassword": "Hide password",
+      "noAccount": "Don't have an account yet?",
+      "passwordLabel": "Password",
+      "registerLink": "Register here",
+      "showPassword": "Show password"
+    },
+    "register": {
+      "title": "Regisztráció",
+      "subtitle": "Hozd létre a tDarts fiókod",
+      "username_label": "Felhasználónév",
+      "username_placeholder": "felhasznalo123",
+      "name_label": "Teljes név",
+      "name_placeholder": "Kovács János",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "password_label": "Jelszó",
+      "password_placeholder": "••••••••",
+      "confirm_password_label": "Jelszó megerősítése",
+      "show_password": "Jelszó megjelenítése",
+      "hide_password": "Jelszó elrejtése",
+      "submit": "Regisztráció",
+      "submitting": "Regisztráció...",
+      "google": "Regisztráció Google-lel",
+      "separator": "vagy",
+      "has_account": "Már van fiókod?",
+      "login_link": "Jelentkezz be itt",
+      "language": "Nyelv",
+      "error_generic": "Hiba történt a regisztráció során",
+      "error_google": "Hiba történt a Google regisztráció során",
+      "loading": "Regisztráció folyamatban...",
+      "success": "Sikeres regisztráció! Ellenőrizd az email címedet a verifikációs kódért.",
+      "confirmPasswordLabel": "Confirm password",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "email@example.com",
+      "errorGeneric": "An error occurred during registration",
+      "firstNameLabel": "First Name",
+      "hasAccount": "Already have an account?",
+      "hidePassword": "Hide password",
+      "lastNameLabel": "Last Name",
+      "loginLink": "Log in here",
+      "passwordLabel": "Password",
+      "showPassword": "Show password"
+    },
+    "forgot_password": {
+      "title": "Jelszó visszaállítás",
+      "subtitle": "Add meg az email címedet a visszaállítási kódért",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "submit": "Kód küldése",
+      "submitting": "Küldés...",
+      "back_to_login": "Vissza a bejelentkezéshez",
+      "loading": "Email küldése folyamatban...",
+      "success": "Jelszó visszaállítási email elküldve!",
+      "error_generic": "Hiba történt az email küldése során"
+    },
+    "reset_password": {
+      "title": "Új jelszó megadása",
+      "subtitle": "Add meg a kódot és az új jelszavadat",
+      "email_label": "Email cím",
+      "email_placeholder": "email@example.com",
+      "code_label": "Visszaállítási kód",
+      "code_placeholder": "6 karakteres kód",
+      "new_password_label": "Új jelszó",
+      "new_password_placeholder": "Minimum 8 karakter",
+      "confirm_password_label": "Jelszó megerősítés",
+      "confirm_password_placeholder": "Írd be újra a jelszót",
+      "submit": "Jelszó visszaállítása",
+      "submitting": "Visszaállítás...",
+      "back_to_login": "Vissza a bejelentkezéshez",
+      "show_password": "Jelszó megjelenítése",
+      "hide_password": "Jelszó elrejtése",
+      "loading": "Jelszó visszaállítása folyamatban...",
+      "success": "Jelszó sikeresen visszaállítva!",
+      "error_generic": "Hiba történt a jelszó visszaállítása során"
+    },
+    "verify": {
+      "title": "Email Verifikáció",
+      "subtitle": "Add meg a(z) {email} címre küldött verifikációs kódot",
+      "code_label": "Verifikációs kód",
+      "code_placeholder": "Kód",
+      "submit": "Verifikálás",
+      "submitting": "Verifikálás...",
+      "loading": "Verifikáció folyamatban...",
+      "success": "Email sikeresen verifikálva! Automatikus bejelentkezés...",
+      "error_generic": "Hiba történt a verifikáció során"
+    },
+    "validation": {
+      "email_required": "Email cím kötelező",
+      "email_invalid": "Érvényes email címet adj meg",
+      "password_required": "Jelszó kötelező",
+      "password_min": "A jelszónak legalább 6 karakter hosszúnak kell lennie",
+      "username_required": "Felhasználónév kötelező",
+      "username_min": "A felhasználónévnek legalább 3 karakter hosszúnak kell lennie",
+      "username_invalid": "A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat",
+      "username_no_spaces": "A felhasználónév nem tartalmazhat szóközöket",
+      "name_required": "Név kötelező",
+      "name_min": "A névnek legalább 2 karakter hosszúnak kell lennie",
+      "confirm_password_required": "Jelszó megerősítés kötelező",
+      "passwords_mismatch": "A jelszavak nem egyeznek",
+      "code_required": "Verifikációs kód kötelező",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "emailInvalid": "Enter a valid email address",
+      "emailRequired": "Email is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordRequired": "Password is required",
+      "passwordsMismatch": "Passwords do not match"
+    },
+    "link": {
+      "title": "Google fiók összekapcsolása",
+      "subtitle": "Kapcsold össze a Google fiókodat",
+      "google_data": "A Google fiókod adatai:",
+      "name": "Név: {name}",
+      "email_label": "Email cím",
+      "password_label": "Jelszó",
+      "cancel": "Mégse",
+      "submit": "Összekapcsolás",
+      "submitting": "Összekapcsolás...",
+      "footer": "A Google fiókod össze lesz kapcsolva a meglévő felhasználói fiókoddal. Ezután mindkét módon be tudsz jelentkezni.",
+      "error_generic": "Hiba történt a fiók összekapcsolása során"
+    },
+    "magyar_x1es": "Magyar",
+    "english_1097": "English",
+    "googleCallback": {
+      "processing": "Google bejelentkezés feldolgozása...",
+      "loginFailed": "A Google bejelentkezés sikertelen.",
+      "loginError": "Hiba történt a bejelentkezés során.",
+      "errorTitle": "Bejelentkezési hiba",
+      "backToLogin": "Vissza a bejelentkezéshez"
+    }
   },
-  "NotFound": {
-    "title": "Oldal nem található",
-    "description": "A keresett oldal nem létezik vagy áthelyezésre került.",
-    "help_text": "Ellenőrizd az URL-t vagy használd a navigációs menüket a megfelelő oldal eléréséhez.",
-    "back_home": "Főoldal",
-    "search_tournaments": "Versenyek Keresése",
-    "need_help": "Segítségre van szükséged?",
-    "common_pages": "Gyakori oldalak:",
-    "useful_links": "Hasznos linkek:",
-    "how_it_works": "Hogyan működik",
-    "login": "Bejelentkezés",
-    "register": "Regisztráció",
-    "club_search": "Klub keresése"
+  "Admin": {
+    "layout": {
+      "sidebar": {
+        "dashboard": "Vezérlőpult",
+        "users": "Felhasználók",
+        "clubs": "Klubok",
+        "tournaments": "Versenyek",
+        "leagues": "Ligák",
+        "feedback": "Visszajelzések",
+        "errors": "Hibák",
+        "announcements": "Hírek",
+        "todos": "Teendők",
+        "emails": "Email Sablonok",
+        "settings": "Beállítások",
+        "telemetry": "Telemetria",
+        "collapse": "Összecsukás",
+        "title": "tDarts Admin"
+      },
+      "status": {
+        "checking": "Admin jogosultság ellenőrzése...",
+        "welcome": "Szia, {name}! 👋",
+        "stable": "A rendszer jelenleg stabilan üzemel.",
+        "search": "keresés",
+        "menu": "menü",
+        "hello": "Szia,"
+      },
+      "tdarts_f0pi": "tDarts",
+      "back_to_home": "Vissza a főoldalra"
+    },
+    "dashboard": {
+      "title": "Szia, {name}! 👋",
+      "refresh": "Frissítés",
+      "last_update": "Utolsó frissítés",
+      "system_stable": "A rendszer jelenleg stabilan üzemel.",
+      "search_hint": "keresés",
+      "menu_hint": "menü",
+      "loading": "Betöltés...",
+      "error_loading": "Hiba történt az adatok betöltése során",
+      "stats": {
+        "users": "Felhasználók",
+        "clubs": "Klubok",
+        "tournaments": "Versenyek",
+        "errors": "Nyitott Hibák",
+        "last_24h": "+{count} az elmúlt 24 órában"
+      },
+      "activities": {
+        "title": "Friss Tevékenységek",
+        "no_data": "Nincs friss tevékenység"
+      },
+      "alerts": {
+        "title": "Figyelmeztetések",
+        "errors": "Rendszerhibák",
+        "errors_desc": "Az elmúlt 24 órában",
+        "feedback": "Visszajelzések",
+        "feedback_desc": "Olvasatlan üzenetek",
+        "api_anomalies": "API anomáliák",
+        "api_anomalies_desc": "Jelentős hívás/forgalom/késleltetés növekedés"
+      },
+      "charts": {
+        "users": "Felhasználói aktivitás (Havi)",
+        "tournaments": "Versenyek száma (Havi)"
+      },
+      "quick_access": {
+        "title": "Gyorselérés",
+        "desc": "A leggyakrabban használt adminisztrációs felületek",
+        "new_post": "Új Hír",
+        "create_tournament": "Verseny Létrehozása",
+        "users": "Felhasználók",
+        "tournaments": "Versenyek",
+        "clubs": "Klubok",
+        "todos": "Teendők",
+        "news": "Hírek",
+        "settings": "Beállítások",
+        "telemetry": "API telemetria"
+      },
+      "telemetry": {
+        "title": "API telemetry részletek",
+        "description": "Nyisd meg a dedikált telemetry oldalt útvonal szintű forgalom, késleltetés és payload elemzéshez.",
+        "open_page": "Telemetry oldal megnyitása"
+      },
+      "announcements": {
+        "title": "Hírek Kezelése",
+        "search_placeholder": "Keresés...",
+        "new_btn": "Új Hír",
+        "table": {
+          "title": "Cím",
+          "type": "Típus",
+          "status": "Státusz",
+          "expires": "Lejárat",
+          "actions": "Műveletek",
+          "loading": "Betöltés...",
+          "no_results": "Nincs találat.",
+          "active": "Aktív",
+          "inactive": "Inaktív",
+          "menu_sr": "Menü"
+        },
+        "actions": {
+          "activate": "Aktiválás",
+          "deactivate": "Deaktiválás",
+          "edit": "Szerkesztés",
+          "delete": "Törlés",
+          "confirm_delete": "Biztosan törölni szeretnéd?",
+          "save": "Mentés",
+          "saving": "Mentés...",
+          "create": "Létrehozás",
+          "cancel": "Mégse"
+        },
+        "toasts": {
+          "fetch_error": "Nem sikerült betölteni a híreket",
+          "delete_success": "Hír törölve",
+          "delete_error": "Hiba a törlés során",
+          "status_success": "Státusz frissítve",
+          "status_error": "Hiba a státusz frissítésekor",
+          "update_success": "Hír frissítve",
+          "create_success": "Hír létrehozva",
+          "save_error": "Hiba a mentés során"
+        },
+        "pagination": {
+          "info": "{total} hír összesen • {current} / {total_pages} oldal",
+          "prev": "Előző",
+          "next": "Következő"
+        },
+        "dialog": {
+          "edit_title": "Hír Szerkesztése",
+          "create_title": "Új Hír Létrehozása",
+          "edit_desc": "Módosítsd a hír részleteit.",
+          "create_desc": "Add meg az új hír adatait.",
+          "form": {
+            "title": "Cím",
+            "title_placeholder": "Hír címe",
+            "type": "Típus",
+            "types": {
+              "info": "Infó (Kék)",
+              "success": "Siker (Zöld)",
+              "warning": "Figyelem (Sárga)",
+              "error": "Hiba (Piros)"
+            },
+            "duration": "Időtartam (ms)",
+            "expires": "Lejárat",
+            "description": "Leírás",
+            "description_placeholder": "Hír szövege...",
+            "show_button": "Gomb megjelenítése",
+            "button_text": "Gomb felirata",
+            "button_text_placeholder": "Pl: Részletek",
+            "button_action": "Gomb link (URL)",
+            "button_action_placeholder": "Pl: /results vagy https://..."
+          }
+        }
+      },
+      "feedback": {
+        "title": "Visszajelzések",
+        "search_placeholder": "Keresés címben, leírásban...",
+        "filters": {
+          "category": "Kategória",
+          "all_categories": "Összes Kat.",
+          "status": "Státusz",
+          "all_statuses": "Összes Stát.",
+          "priority": "Prioritás",
+          "all_priorities": "Összes Prio."
+        },
+        "categories": {
+          "bug": "Hiba",
+          "feature": "Funkció",
+          "improvement": "Javítás",
+          "other": "Egyéb"
+        },
+        "statuses": {
+          "pending": "Függőben",
+          "in-progress": "Folyamatban",
+          "resolved": "Megoldva",
+          "rejected": "Elutasítva",
+          "closed": "Lezárva"
+        },
+        "priorities": {
+          "low": "Alacsony",
+          "medium": "Közepes",
+          "high": "Magas",
+          "critical": "Kritikus"
+        },
+        "table": {
+          "category": "Kat.",
+          "title_sender": "Cím & Beküldő",
+          "priority": "Prioritás",
+          "status": "Státusz",
+          "date": "Dátum",
+          "actions": "Műveletek",
+          "loading": "Betöltés...",
+          "no_results": "Nincs találat.",
+          "new_badge": "Új",
+          "menu_sr": "Menü"
+        },
+        "actions": {
+          "copy_id": "ID másolása",
+          "create_todo": "Teendő Létrehozása",
+          "edit": "Szerkesztés",
+          "delete": "Törlés",
+          "confirm_delete": "Biztosan törölni szeretnéd?"
+        },
+        "toasts": {
+          "fetch_error": "Nem sikerült betölteni a visszajelzéseket",
+          "delete_success": "Visszajelzés törölve",
+          "delete_error": "Hiba a törlés során",
+          "todo_success": "Teendő létrehozva a visszajelzésből!",
+          "todo_error": "Hiba a teendő létrehozásakor"
+        },
+        "pagination": {
+          "info": "{total} visszajelzés összesen • {current} / {total_pages} oldal",
+          "prev": "Előző",
+          "next": "Következő"
+        }
+      },
+      "leagues": {
+        "title": "Liga Kezelés",
+        "new_btn": "Új Liga",
+        "errors": {
+          "check_feature": "Hiba történt a funkció ellenőrzésekor",
+          "save_error": "Hiba történt a liga mentésekor",
+          "delete_error": "Hiba történt a liga törlésekor"
+        },
+        "actions": {
+          "confirm_delete": "Biztosan törölni szeretnéd ezt a ligát?",
+          "edit": "Szerkesztés",
+          "delete": "Törlés",
+          "add_player": "Játékos hozzáadása",
+          "view_standings": "Állás",
+          "view_standings_title": "Liga Állás Megtekintése"
+        },
+        "promo": {
+          "title": "Liga Rendszer",
+          "desc": "Indíts ligákat a klubodban! Versenyzők pontozása, rangsorok és automatikus pontszámítás.",
+          "requires_subscription": "Előfizetés szükséges",
+          "subscription_desc": "A ligák rendszer használatához Pro előfizetés szükséges.",
+          "subscription_btn": "Előfizetés",
+          "details_btn": "Részletek",
+          "disclaimer": "* A Pro csomag tartalmazza a ligák rendszert és további prémium funkciókat"
+        },
+        "empty": {
+          "title": "Nincsenek ligák",
+          "desc": "Hozz létre egy új ligát a versenyzők pontozásához",
+          "first_btn": "Első Liga Létrehozása"
+        },
+        "card": {
+          "group_dropout": "Csoportkör kiesők:",
+          "points": "{count} pont",
+          "winner": "Győztes:",
+          "multiplier": "Szorzó:",
+          "tournaments": "Versenyek:",
+          "players": "Játékosok:"
+        },
+        "player_modal": {
+          "title": "Liga játékosainak szerkesztése",
+          "add_player": "Játékos hozzáadása",
+          "search_placeholder": "Keress játékost név vagy felhasználónév alapján...",
+          "list_title": "Játékosok a ligában",
+          "table": {
+            "name": "Név",
+            "points": "Pontok",
+            "action": "Művelet"
+          },
+          "remove_title": "Játékos eltávolítása",
+          "empty_list": "Nincs játékos a ligában.",
+          "close_btn": "Bezárás"
+        },
+        "dialog": {
+          "edit_title": "Liga Szerkesztése",
+          "create_title": "Új Liga Létrehozása",
+          "form": {
+            "name": "Név *",
+            "name_placeholder": "Liga neve",
+            "description": "Leírás",
+            "description_placeholder": "Opcionális leírás",
+            "point_system": "Pontozási Rendszer",
+            "group_dropout": "Csoportkörben kiesők pontja",
+            "group_dropout_help": "Alap pont minden csoportkörben kieső játékosnak",
+            "winner_points": "Győztes pontja",
+            "winner_points_help": "A győztes játékos pontszáma (legmagasabb pont)",
+            "multiplier": "Szorzó (mértani sorozat)",
+            "multiplier_help": "0.1 - 2.0 között. Kisebb érték = nagyobb különbség a körök között",
+            "preview": "Pontok előnézet",
+            "preview_desc": "Mértani sorozat alapján számított pontok (dinamikusan frissül):",
+            "rounds": {
+              "round_1": "1. kör",
+              "round_2": "2. kör",
+              "round_3": "3. kör",
+              "semi_final": "Elődöntő",
+              "final": "Döntő",
+              "winner": "Győztes"
+            },
+            "geometric_rule": "Mértani sorozat: 1. körből a győztesig növekednek a pontok ({val}-szorosával)"
+          },
+          "actions": {
+            "cancel": "Mégse",
+            "save": "Mentés",
+            "create": "Létrehozás",
+            "saving": "Mentés..."
+          },
+          "validation": {
+            "name_required": "Név megadása kötelező",
+            "name_max": "Név maximum 100 karakter lehet",
+            "desc_max": "Leírás maximum 500 karakter lehet",
+            "points_negative": "Pontok nem lehetnek negatívak",
+            "multiplier_min": "Szorzó minimum 0.1",
+            "multiplier_max": "Szorzó maximum 2"
+          }
+        }
+      },
+      "tickets": {
+        "detail": {
+          "title": "Visszajelzés részletei",
+          "no_messages": "Még nincs üzenet ebben a ticketben",
+          "system_sender": "Rendszer",
+          "status": "Státusz",
+          "priority": "Prioritás",
+          "save_status": "Státusz mentése",
+          "reply_placeholder": "Írj egy üzenetet...",
+          "send_btn": "Küldés"
+        },
+        "toasts": {
+          "empty_message": "Az üzenet nem lehet üres",
+          "reply_success": "Válasz elküldve",
+          "reply_error": "Hiba történt az üzenet küldése során",
+          "no_change": "Nincs változás",
+          "status_updated": "Státusz frissítve",
+          "status_error": "Hiba a státusz frissítése során"
+        }
+      },
+      "todos": {
+        "title": "Feladatok",
+        "smart_title": "Okos Todo",
+        "smart_help": "Írd be természetes nyelven: \"Szerver karbantartás !!! holnap #dev\"",
+        "loading": "Todo-k betöltése...",
+        "stats": {
+          "total": "Összes Todo",
+          "pending": "Függőben",
+          "in_progress": "Folyamatban",
+          "completed": "Befejezve"
+        },
+        "toolbar": {
+          "view_kanban": "Kanban",
+          "view_list": "Lista",
+          "all_priorities": "Minden prioritás",
+          "all_categories": "Minden kategória",
+          "search_placeholder": "Keresés...",
+          "new_btn": "Új Todo"
+        },
+        "kanban": {
+          "pending": "Függőben",
+          "in_progress": "Folyamatban",
+          "completed": "Befejezve",
+          "cancelled": "Törölve",
+          "empty": "Nincs {status}"
+        },
+        "list": {
+          "count": "Todo-k ({count})",
+          "empty": "Nincsenek todo-k a kiválasztott szűrőkkel"
+        },
+        "smart": {
+          "all": "Összes",
+          "active": "Aktív",
+          "completed": "Kész",
+          "sort_label": "Rendezés",
+          "sort_smart": "✨ Okos rendezés (Urgency)",
+          "sort_date": "📅 Határidő szerint",
+          "sort_priority": "🔥 Prioritás szerint",
+          "sort_smart_short": "Okos rendezés",
+          "sort_date_short": "Határidő szerint",
+          "sort_priority_short": "Prioritás szerint",
+          "empty_title": "Nincs megjeleníthető feladat",
+          "empty_desc": "Adj hozzá egy újat a fenti mező segítségével!",
+          "placeholder": "Írj egy feladatot... (pl. 'Szerver hiba javítása !!! #bug ma')"
+        },
+        "smart_input": {
+          "placeholder": "Írj egy feladatot... (pl. 'Szerver hiba javítása !!! #bug ma')",
+          "press_enter": "Nyomj {key} a hozzáadáshoz",
+          "tags": "Címkék:"
+        },
+        "dialog": {
+          "create_title": "Új Todo létrehozása",
+          "edit_title": "Todo szerkesztése",
+          "title_label": "Cím *",
+          "title_placeholder": "Todo címe...",
+          "category_label": "Kategória",
+          "priority_label": "Prioritás",
+          "status_label": "Státusz",
+          "due_date_label": "Határidő",
+          "desc_label": "Leírás",
+          "desc_placeholder": "Részletes leírás...",
+          "tags_label": "Címkék",
+          "tags_placeholder": "Címke hozzáadása (Enter)",
+          "actions": {
+            "create": "Létrehozás",
+            "save": "Mentés",
+            "cancel": "Mégse"
+          }
+        },
+        "statuses": {
+          "pending": "Függőben",
+          "in-progress": "Folyamatban",
+          "completed": "Befejezve",
+          "cancelled": "Törölve"
+        },
+        "priorities": {
+          "low": "Alacsony",
+          "medium": "Közepes",
+          "high": "Magas",
+          "critical": "Kritikus"
+        },
+        "categories": {
+          "bug": "Hiba",
+          "feature": "Új funkció",
+          "improvement": "Fejlesztés",
+          "maintenance": "Karbantartás",
+          "other": "Egyéb"
+        },
+        "toasts": {
+          "delete_confirm": "Biztosan törölni szeretnéd ezt a todo-t?",
+          "delete_confirm_short": "Biztosan törölni szeretnéd?",
+          "fetch_error": "Nem sikerült betölteni a feladatokat",
+          "create_success": "Feladat hozzáadva!",
+          "create_error": "Hiba történt a feladat létrehozásakor",
+          "update_status_error": "Nem sikerült frissíteni a státuszt",
+          "delete_success": "Feladat törölve",
+          "delete_error": "Nem sikerült törölni a feladatot"
+        }
+      },
+      "settings": "settings",
+      "users": "users"
+    },
+    "tickets": {},
+    "announcements": {
+      "announcement_kezelő": "Announcement Kezelő",
+      "rendszerüzenetek_létrehozása_és": "Rendszerüzenetek létrehozása és kezelése"
+    },
+    "feedback": {
+      "felhasználói_visszajelzések_és": "Felhasználói visszajelzések és javaslatok kezelése",
+      "hibabejelentések_kezelése": "Hibabejelentések Kezelése",
+      "visszajelzések_napi_beérkezése": "Visszajelzések napi beérkezése"
+    },
+    "leagues": {
+      "hiba_történt_a_14": "Hiba történt a meccs befejezése során!",
+      "hitelesített_oac": "Hitelesített (OAC)",
+      "inaktív": "Inaktív",
+      "keresés_név_vagy": "Keresés név vagy klub alapján...",
+      "liga_neve": "Liga Neve",
+      "ligák": "Ligák",
+      "ligák_kezelése_statisztikák": "Ligák kezelése, statisztikák és áttekintés",
+      "minden_típus": "Minden típus",
+      "oac_liga": "OAC Liga",
+      "platform": "Platform",
+      "platform_liga": "Platform Liga",
+      "platform_ligák": "Platform Ligák",
+      "pontozási_rendszer": "Pontozási Rendszer",
+      "szűrés_típusra": "Szűrés típusra",
+      "verified_oac": "Verified (OAC)",
+      "összes_liga": "Összes Liga",
+      "frissítés": "frissítés",
+      "nincs_találat_a": "nincs találat a",
+      "státusz": "státusz"
+    },
+    "todos": {
+      "feladatok_és_észrevételek": "Feladatok és észrevételek követése",
+      "todo_kezelés": "Todo Kezelés"
+    },
+    "common": {
+      "hiba_történt_az": "Hiba történt az adatok betöltése során",
+      "létrehozva": "Létrehozva",
+      "találat_oldal": "találat (Oldal:",
+      "törölve": "TÖRÖLVE",
+      "versenyek": "Versenyek",
+      "összesen": "Összesen",
+      "aktív": "Aktív",
+      "játékosok": "Játékosok",
+      "klub": "Klub"
+    },
+    "clubs": {
+      "aktív_klubok": "Aktív Klubok",
+      "basic_122s": "Basic",
+      "csak_hitelesített": "Csak Hitelesített",
+      "csak_nem_hitelesített": "Csak Nem Hitelesített",
+      "csomag": "Csomag",
+      "enterprise_joxf": "Enterprise",
+      "free_1b43": "Free",
+      "helyszín": "Helyszín",
+      "hitelesített": "Hitelesített",
+      "keresés_név_helyszín": "Keresés név, helyszín vagy leírás alapján...",
+      "klub_név": "Klub Név",
+      "klubok": "Klubok",
+      "klubok_kezelése_statisztikák": "Klubok kezelése, statisztikák és áttekintés",
+      "klubok_napi_létrehozása": "Klubok napi létrehozása",
+      "minden_klub": "Minden klub",
+      "normál": "Normál",
+      "pro_1q4t": "Pro",
+      "szűrés_státuszra": "Szűrés státuszra",
+      "tagok": "Tagok",
+      "törölt": "Törölt",
+      "összes_klub": "Összes Klub",
+      "találat_oldal": "találat oldal",
+      "összesen": "összesen"
+    },
+    "tournaments": {
+      "aktiv_11ph": "Aktív",
+      "befejezett": "Befejezett",
+      "befejezett_x25b": "Befejezett",
+      "csoportkor_yqu8": "Csoportkör",
+      "csoportkör": "Csoportkör",
+      "csoportos_cksc": "Csoportos",
+      "dátum": "Dátum",
+      "fuggoben_ddvf": "Függőben",
+      "függőben": "Függőben",
+      "keresés_név_klub": "Keresés név, klub vagy leírás alapján...",
+      "kieseses_c2i5": "Kieséses",
+      "kieséses": "Kieséses",
+      "minden_mód": "Minden mód",
+      "minden_típus": "Minden típus",
+      "mód": "Mód",
+      "oac": "OAC",
+      "platform": "Platform",
+      "sandbox": "Sandbox",
+      "típus": "Típus",
+      "vegyes_spt0": "Vegyes",
+      "verified_oac": "Verified (OAC)",
+      "verseny_név": "Verseny Név",
+      "versenyek_kezelése_statisztikák": "Versenyek kezelése, statisztikák és áttekintés",
+      "versenyek_napi_indítása": "Versenyek napi indítása",
+      "éles": "Éles",
+      "összes": "Összes",
+      "összes_státusz": "Összes státusz",
+      "frissítés": "frissítés",
+      "műveletek": "műveletek",
+      "nincs_találat_a": "nincs találat a",
+      "státusz": "státusz",
+      "title": "title"
+    },
+    "users": {
+      "admin": "Admin",
+      "adminisztrátorok": "Adminisztrátorok",
+      "angol": "Angol",
+      "csak_adminok": "Csak Adminok",
+      "csak_felhasználók": "Csak Felhasználók",
+      "csatlakozott": "Csatlakozott",
+      "előző": "Előző",
+      "email": "Email",
+      "email_küldése": "Email küldése",
+      "email_küldése_59": "Email küldése:",
+      "email_sikeresen_elküldve": "Email sikeresen elküldve!",
+      "felhasználó": "Felhasználó",
+      "felhasználó_deaktiválva": "Felhasználó deaktiválva",
+      "felhasználói_fiókok_kezelése": "Felhasználói fiókok kezelése és adminisztrációja",
+      "felhasználók": "Felhasználók",
+      "fiók_felfüggesztése": "Fiók felfüggesztése",
+      "hiba_történt_a_29": "Hiba történt a deaktiválás során",
+      "hiba_történt_a_39": "Hiba történt a művelet során",
+      "hiba_történt_az_9": "Hiba történt az email küldése során",
+      "keresés_név_email": "Keresés név, email vagy felhasználónév alapján...",
+      "következő": "Következő",
+      "magyar": "Magyar",
+      "minden_felhasználó": "Minden felhasználó",
+      "nem_megerősített": "Nem megerősített",
+      "nem_regisztrált": "Nem Regisztrált",
+      "nyelv": "Nyelv",
+      "regisztrált": "Regisztrált",
+      "szerepkör": "Szerepkör",
+      "szűrés_szerepkörre": "Szűrés szerepkörre",
+      "tárgy": "Tárgy",
+      "írja_be_az": "Írja be az üzenetet...",
+      "összes_felhasználó": "Összes Felhasználó",
+      "üzenet": "Üzenet",
+      "üzenet_tárgya": "Üzenet tárgya...",
+      "frissítés": "frissítés",
+      "mégse": "mégse",
+      "műveletek": "műveletek",
+      "nincs_találat_a": "nincs találat a",
+      "search": "search",
+      "státusz": "státusz",
+      "title": "title"
+    },
+    "errors": {
+      "api_1e62": "API",
+      "auth_17zr": "Auth",
+      "auth_hibák": "Auth hibák",
+      "club": "Club:",
+      "club_1932": "Club",
+      "database_unvz": "Database",
+      "error_details": "Error Details:",
+      "hiba_adatok_betöltése": "Hiba adatok betöltése…",
+      "hiba_kezelés": "Hiba Kezelés",
+      "hibák_kategóriánként": "Hibák Kategóriánként",
+      "hibák_napi_előfordulása": "Hibák napi előfordulása",
+      "hibák_szintenként": "Hibák Szintenként",
+      "időszak": "Időszak",
+      "kategória": "Kategória",
+      "legutóbbi_hibák": "Legutóbbi Hibák (",
+      "metadata": "Metadata:",
+      "nem_sikerült_betölteni": "Nem sikerült betölteni a hiba adatokat.",
+      "nincsenek_hibák": "Nincsenek hibák",
+      "player_vgc0": "Player",
+      "rendszer_hibák_monitorozása": "Rendszer hibák monitorozása és kezelése",
+      "stack_trace": "Stack Trace:",
+      "schema": {
+        "title": "Log séma",
+        "all": "Összes log",
+        "new": "Új strukturált",
+        "legacy": "Legacy"
+      },
+      "system_ttqf": "System",
+      "szint": "Szint",
+      "szűrők": "Szűrők",
+      "tournament": "Tournament:",
+      "tournament_ghva": "Tournament",
+      "user": "User:",
+      "user_1kpn": "User",
+      "utolsó_hónap": "Utolsó 3 hónap",
+      "utolsó_nap": "Utolsó 7 nap",
+      "utolsó_nap_94": "Utolsó 30 nap",
+      "utolsó_óra": "Utolsó 24 óra",
+      "összes_hiba": "Összes Hiba",
+      "összes_kategória": "Összes kategória",
+      "összes_szint": "Összes szint",
+      "frissítés": "frissítés",
+      "hiba_történt": "hiba történt",
+      "újrapróbálás": "újrapróbálás"
+    },
+    "settings": {
+      "adatbázis": "Adatbázis",
+      "adatbázis_információk": "Adatbázis Információk",
+      "aktuális_verzió_információk": "Aktuális verzió információk",
+      "dokumentumok": "Dokumentumok",
+      "előfizetés_rendszer": "Előfizetés rendszer",
+      "email_username": "EMAIL_USERNAME",
+      "funkciók": "Funkciók",
+      "kapcsolat": "Kapcsolat",
+      "kollekciók": "Kollekciók",
+      "környezeti_változók": "Környezeti Változók",
+      "ligák": "Ligák",
+      "memória": "Memória",
+      "működik": "Működik",
+      "nem_sikerült_betölteni_15": "Nem sikerült betölteni a rendszer információkat.",
+      "node_env": "NODE_ENV",
+      "online": "ONLINE",
+      "rendszer_beállítások": "Rendszer Beállítások",
+      "rendszer_információk_betöltése": "Rendszer információk betöltése…",
+      "rendszer_információk_és": "Rendszer információk és konfiguráció",
+      "rendszer_verzió": "Rendszer Verzió",
+      "rendszer_állapot": "Rendszer Állapot",
+      "részletes_statisztikák": "Részletes statisztikák",
+      "socket_kapcsolat": "Socket kapcsolat",
+      "socket_server_url": "SOCKET_SERVER_URL",
+      "subscription_enabled": "SUBSCRIPTION_ENABLED",
+      "változó": "Változó",
+      "érték": "Érték",
+      "üzemidő": "Üzemidő",
+      "frissítés": "frissítés",
+      "hiba_történt": "hiba történt",
+      "újrapróbálás": "újrapróbálás"
+    },
+    "emails": {
+      "a_teszt_emailt": "A teszt emailt a fent látható módon rendereljük, minta adatokkal feltöltve.",
+      "alapértelmezett": "Alapértelmezett:",
+      "címzett_email": "Címzett email",
+      "elérhető_változók": "Elérhető változók:",
+      "email_preview": "Email Preview",
+      "email_sablonok": "Email Sablonok",
+      "használd_ezeket_a": "Használd ezeket a változókat a sablonban, pl:",
+      "hiba_történt_a": "Hiba történt a sablonok betöltése során",
+      "hiba_történt_a_87": "Hiba történt a mentés során",
+      "html_tartalom": "HTML Tartalom",
+      "hálózati_hiba_történt": "Hálózati hiba történt",
+      "inaktív": "Inaktív",
+      "kezeld_az_email": "Kezeld az email sablonokat, amelyeket a platform küld a felhasználóknak",
+      "kulcs": "Kulcs:",
+      "kérjük_adj_meg": "Kérjük, adj meg egy email címet",
+      "küldés": "Küldés",
+      "nincs_kiválasztott_sablon": "Nincs kiválasztott sablon",
+      "sablon_sikeresen_mentve": "Sablon sikeresen mentve",
+      "sablonok": "Sablonok (",
+      "sablonok_betöltése": "Sablonok betöltése...",
+      "szerkesztés": "Szerkesztés",
+      "szöveges_tartalom_fallback": "Szöveges Tartalom (fallback)",
+      "teszt_email_elküldve": "Teszt email elküldve",
+      "teszt_email_küldése": "Teszt email küldése",
+      "tárgy": "Tárgy",
+      "utolsó_módosítás": "Utolsó módosítás:",
+      "vmi_pelda_hu": "vmi@pelda.hu",
+      "válassz_egy_sablont": "Válassz egy sablont a bal oldali listából a megtekintéshez és szerkesztéshez",
+      "mégse": "mégse"
+    },
+    "components": {
+      "a_hozzáadáshoz": "a hozzáadáshoz",
+      "a_jelenlegi_statisztikákat": "a jelenlegi statisztikákat és archiválja őket.",
+      "a_statisztikákat_a": "a statisztikákat a",
+      "adj_hozzá_egy": "Adj hozzá egy újat a fenti mező segítségével!",
+      "announcements_mk89": "Announcements",
+      "az_előző_nap": "Az előző 30 nap napi lebontású statisztikája",
+      "biztosan_le_akarod": "Biztosan le akarod zárni a",
+      "close": "Close",
+      "clubs_12tn": "Clubs",
+      "command_palette": "Command Palette",
+      "confirm_restore": "CONFIRM_RESTORE_",
+      "confirm_wrap": "CONFIRM_WRAP_",
+      "dashboard_ft8p": "Dashboard",
+      "enter": "Enter",
+      "errors_ygvm": "Errors",
+      "es_archívumból_és": "-es archívumból, és törli az archívumot.\n              Hasznos, ha véletlenül futtattad az Év Lezárását.",
+      "es_évet_ez": "-es évet? Ez a művelet",
+      "esc": "ESC",
+      "ez_a_művelet": "Ez a művelet alaphelyzetbe állítja az összes játékos statisztikáját, archiválja a jelenlegi adatokat és kiosztja a címeket.",
+      "ez_a_művelet_57": "Ez a művelet",
+      "feedback_23iz": "Feedback",
+      "feladat_gyorsan_hozzáadva": "Feladat gyorsan hozzáadva!",
+      "feladat_hozzáadva": "Feladat hozzáadva!",
+      "feladat_törölve": "Feladat törölve",
+      "gyors_feladat_létrehozása": "Gyors Feladat Létrehozása",
+      "ha_véletlenül_futtattad": "Ha véletlenül futtattad, a Visszaállítás gombbal visszavonhatod az utolsó zárást.",
+      "használd_a_természetes": "Használd a természetes nyelvet (pl. &quot;Hiba javítása !!! ma #bug&quot;)",
+      "határidő_szerint": "📅 Határidő szerint",
+      "hiba_tortent_az_adatok_qmk8": "Hiba történt az adatok betöltésekor",
+      "hiba_történt_a_78": "Hiba történt a beállítások mentése során!",
+      "hiba_történt_a_88": "Hiba történt a feladat létrehozásakor",
+      "hibás_megerősítő_kód": "Hibás megerősítő kód",
+      "ismeretlen_adatformatum_v65o": "Ismeretlen adatformátum",
+      "kritikus_rendszer_műveletek": "Kritikus rendszer műveletek",
+      "kész": "Kész",
+      "leagues_sd4t": "Leagues",
+      "megerősítés": "Megerősítés",
+      "navigate": "Navigate",
+      "nem_sikerült_betölteni_12": "Nem sikerült betölteni a feladatokat",
+      "nem_sikerült_frissíteni": "Nem sikerült frissíteni a státuszt",
+      "nem_sikerült_törölni": "Nem sikerült törölni a feladatot",
+      "nincs_megjeleníthető_feladat": "Nincs megjeleníthető feladat",
+      "no_results_found": "No results found.",
+      "nyomj": "Nyomj",
+      "okos_rendezés_urgency": "✨ Okos rendezés (Urgency)",
+      "prioritás_szerint": "🔥 Prioritás szerint",
+      "search_for_pages": "Search for pages and actions",
+      "select": "Select",
+      "settings_osmo": "Settings",
+      "smart_todo": "Smart Todo",
+      "tags": "Tags:",
+      "todos_1c7q": "Todos",
+      "tournaments_e65c": "Tournaments",
+      "telemetry_fm2a": "Telemetria",
+      "trend": "Trend",
+      "type_to_search": "Type to search...",
+      "törli": "törli",
+      "users_1cu3": "Users",
+      "veszélyzóna": "Veszélyzóna",
+      "visszaállítandó_év": "Visszaállítandó Év",
+      "visszaállítja": "VISSZAÁLLÍTJA",
+      "visszaállítás": "Visszaállítás:",
+      "visszaállítás_45": "Visszaállítás",
+      "visszaállítás_55": "Visszaállítás",
+      "visszaállítás_undo": "Visszaállítás (Undo) -",
+      "véglegesítés_és_reset": "Véglegesítés és Reset",
+      "átlagos_nap": "Átlagos/nap",
+      "év_kiválasztása": "Év kiválasztása",
+      "év_lezárása": "Év Lezárása",
+      "év_lezárása_85": "Év Lezárása -",
+      "éves_zárás_és": "Éves Zárás és Reset",
+      "írd_be_a": "Írd be a következőt a megerősítéshez:",
+      "írd_be_természetes": "Írd be természetes nyelven: &quot;Szerver karbantartás !!! holnap #dev&quot;",
+      "összes": "Összes",
+      "összesen_nap": "Összesen (30 nap)",
+      "aktív": "aktív",
+      "betöltés": "betöltés",
+      "hiba_történt": "hiba történt",
+      "mégse": "mégse",
+      "újrapróbálás": "újrapróbálás"
+    },
+    "telemetry": {
+      "title": "API telemetry",
+      "description": "Útvonalforgalom, késleltetés és payload trendek elemzése történeti szűrőkkel.",
+      "loading": "Telemetry adatok betöltése...",
+      "error_loading": "Nem sikerült betölteni a telemetry adatokat",
+      "export": {
+        "button": "JSON export",
+        "success": "Telemetry export letöltve.",
+        "error": "Nem sikerült exportálni a telemetry csomagot"
+      },
+      "refresh": "Telemetry frissítése",
+      "filters": {
+        "title": "Szűrők",
+        "description": "Válassz időtartományt, időzónát vagy egyedi intervallumot.",
+        "range": "Időtartomány",
+        "timezone": "Időzóna",
+        "method": "Metódus",
+        "all_methods": "Összes metódus",
+        "granularity": "Felbontás",
+        "granularity_minute": "Percenként",
+        "granularity_hour": "Óránként",
+        "granularity_day": "Naponként",
+        "route": "Útvonal",
+        "all_routes": "Összes útvonal",
+        "clear_route": "Útvonal törlése",
+        "only_error_apis": "Csak hibás API-k",
+        "min_calls": "Minimum hívás",
+        "min_traffic_kb": "Minimum forgalom (KB)",
+        "min_latency_ms": "Minimum átlag késleltetés (ms)",
+        "route_sort": "Összes útvonal rendezése",
+        "top_sort": "Top útvonal rendezése",
+        "sort_route_asc": "Útvonal (A-Z)",
+        "sort_calls_desc": "Hívások (csökkenő)",
+        "sort_errors_desc": "Hibák (csökkenő)",
+        "sort_traffic_desc": "Forgalom (csökkenő)",
+        "sort_latency_desc": "Késleltetés (csökkenő)",
+        "sort_last_seen_desc": "Utoljára látott (legújabb)",
+        "custom_start": "Egyedi kezdés",
+        "custom_end": "Egyedi zárás",
+        "apply": "Alkalmaz"
+      },
+      "ranges": {
+        "24h": "Utolsó 24 óra",
+        "7d": "Utolsó 7 nap",
+        "30d": "Utolsó 30 nap",
+        "90d": "Utolsó 90 nap",
+        "custom": "Egyedi intervallum"
+      },
+      "charts": {
+        "requests": "API hívások",
+        "latency": "Átlag késleltetés (ms)",
+        "payload": "Payload (KB)",
+        "throughput": "Forgalmi átfolyás (byte)"
+      },
+      "metrics": {
+        "incoming_total_kb": "Bejövő összesen (KB)",
+        "outgoing_total_kb": "Kimenő összesen (KB)",
+        "total_moved": "Összes mozgatott adat",
+        "avg_package_size": "Átlagos csomagméret",
+        "avg_incoming_package": "Átlagos bejövő csomag",
+        "avg_outgoing_package": "Átlagos kimenő csomag"
+      },
+      "top_routes": {
+        "title": "Top API route-ok",
+        "description": "A kiválasztott időablak legaktívabb és legterheltebb útvonalai.",
+        "empty": "Még nincs API telemetry adat.",
+        "calls": "hívás",
+        "avg": "átlag",
+        "max": "max",
+        "error_rate": "hiba",
+        "incoming": "bejövő",
+        "outgoing": "kimenő",
+        "total": "összes"
+      },
+      "all_routes": {
+        "title": "Összes regisztrált útvonal",
+        "description": "A telemetria adatbázisban szereplő összes útvonal.",
+        "search_placeholder": "Útvonal keresése...",
+        "empty": "Nincs találat az aktuális szűrőkhöz.",
+        "calls": "Hívások",
+        "errors": "Hibák",
+        "traffic": "Forgalom",
+        "latency": "Átlag késleltetés",
+        "select": "Kiválaszt"
+      },
+      "error_calls": {
+        "title": "Hibás hívások",
+        "description": "A szűrők alapján pontos 4xx/5xx kérés-válasz párok vizsgálata.",
+        "total": "Összes: {count}",
+        "status_filter": "Státusz szűrő",
+        "status_all": "Összes státusz",
+        "clear_filters": "Hiba szűrők törlése",
+        "mark_fixed": "Kiválasztott útvonal hibáinak lezárása",
+        "mark_fixed_need_route": "Először válassz útvonalat.",
+        "mark_fixed_success": "A régi hibák lezárva, a hibaarány alaphelyzetbe állítva.",
+        "mark_fixed_error": "Nem sikerült a hibákat lezárni.",
+        "mark_fixed_hint": "Válassz útvonalat a szűrőkből vagy az összes útvonal listából.",
+        "select_error": "Hibasor kiválasztása",
+        "select_page": "Oldal kijelölése",
+        "delete_selected": "Kijelölt logok törlése",
+        "delete_route": "Kiválasztott útvonal logjainak törlése",
+        "delete_selected_need_selection": "Válassz ki legalább egy hibalogot.",
+        "delete_route_need_selection": "Először válassz útvonalat.",
+        "delete_selected_confirm": "Biztosan törlöd a kijelölt {count} hibalogot?",
+        "delete_route_confirm": "Biztosan törlöd az összes hibalogot ehhez: {method} {route}?",
+        "delete_success": "{count} hibalog törölve.",
+        "delete_error": "Nem sikerült törölni a hibalogokat.",
+        "empty": "Nincs hibás hívás a jelenlegi szűrőkre.",
+        "duration": "Időtartam",
+        "request_bytes": "Kérés",
+        "response_bytes": "Válasz",
+        "request": "Kérés részletek",
+        "response": "Válasz részletek",
+        "copy": "JSON másolása",
+        "prev": "Előző",
+        "next": "Következő",
+        "page": "{page}. oldal / {totalPages}"
+      }
+    },
+    "kpi": {
+      "activeTournaments": "activeTournaments",
+      "activeUsers": "activeUsers",
+      "totalClubs": "totalClubs",
+      "totalMatches": "totalMatches",
+      "totalTournaments": "totalTournaments",
+      "totalUsers": "totalUsers"
+    }
   },
   "Tournament": {
     "players": {
@@ -663,7 +1635,10 @@
       "tagok": "Tagok:",
       "hc": "HC:",
       "standing_top": "Top {standing}",
-      "matches_btn": "Meccsek"
+      "matches_btn": "Meccsek",
+      "rank_label": "Rang",
+      "registration_open": "Nevezés nyitva",
+      "full_capacity": "Betelt"
     },
     "registration": {
       "sign_up": "Jelentkezés a tornára",
@@ -742,17 +1717,26 @@
       "részletek": "Részletek"
     },
     "status": {
-      "pending": "Függőben",
+      "pending": {
+        "label": "label"
+      },
       "active": "Aktív",
-      "finished": "Befejezett",
+      "finished": {
+        "label": "label"
+      },
       "group_stage": "Csoportkör",
-      "knockout": "Kieséses szakasz",
+      "knockout": {
+        "label": "label"
+      },
       "applied": "Jelentkezett",
       "checked_in": "Check-in",
       "has_free_spots": "Van szabad hely",
       "full": "Megtelt",
       "ongoing": "Folyamatban",
-      "all": "Összes"
+      "all": "Összes",
+      "group-stage": {
+        "label": "label"
+      }
     },
     "teams": {
       "pair": "Páros",
@@ -976,7 +1960,7 @@
         "description_step1": "Első megerősítés: a knockout szakasz visszavonásra kerül. Tovább a végső megerősítéshez?",
         "description_step2": "Végső megerősítés: 20 másodperces biztonsági ablak indul. Ezalatt visszavonhatod (Undo), vagy azonnal futtathatod (Skip now).",
         "step2_title": "Nagy hatású művelet",
-        "step2_desc": "A végrehajtás után a knockout meccsek törlődnek. Csak akkor folytasd, ha biztos vagy benne.",
+        "step2_desc": "A végrehajtás után a knockout meccsek törl��dnek. Csak akkor folytasd, ha biztos vagy benne.",
         "pending_title": "Knockout visszavonás ütemezve",
         "pending_desc": "A visszavonás {seconds} mp múlva lefut. Addig még visszavonhatod.",
         "btn_continue": "Tovább",
@@ -1132,6 +2116,8 @@
     },
     "legs_modal": {
       "title": "Legek részletei",
+      "leg_by_leg_detail": "Legenkénti részletek",
+      "live": "Élő",
       "vs": "vs",
       "back": "Vissza",
       "hide_charts": "Grafikonok elrejtése",
@@ -1140,6 +2126,16 @@
       "error_loading": "Nem sikerült betölteni a legek adatát",
       "error_generic": "Hiba történt a legek betöltésekor",
       "no_stats": "Ehhez a meccshez még nem érkeztek részletes statisztikák.",
+      "loading_logs": "Betöltés...",
+      "player_one": "1. játékos",
+      "player_two": "2. játékos",
+      "legs_won": "Nyert legek",
+      "in_progress": "Folyamatban...",
+      "winner": "Győztes",
+      "live_updates": "Élő frissítések",
+      "no_throws": "Még nincs rögzített dobás...",
+      "match_pulse": "Meccs Pulzus",
+      "one_eighties": "180-ak",
       "tabs_legs": "Legek",
       "tabs_stats": "Statisztikák",
       "leg": "Leg",
@@ -1231,19 +2227,27 @@
       "remove": "Eltávolítás"
     },
     "player_matches_modal": {
+      "title": "Játékos Profil",
       "event_matches": "Esemény Meccsei",
       "played_matches": "{count} lejátszott meccs",
+      "avg_score": "Átlag",
       "loading": "Meccsek betöltése...",
       "wins": "Győzelmek",
       "losses": "Vereségek",
       "win_rate": "Győzelmi Arány",
       "list_title": "Mérkőzések Listája",
+      "tournament_match": "Torna Meccs",
       "result_win": "Győzelem",
       "result_loss": "Vereség",
       "result_ongoing": "Folyamatban",
       "avg": "Átlag",
       "checkout": "Kiszálló",
       "details": "Részletek",
+      "scoring_trends": "Dobási Trendek",
+      "last_n_matches": "Utolsó {count} meccs",
+      "trend_max": "Maximum",
+      "tournament_average": "Torna Átlag",
+      "overall_across_played": "Összesítés a lejátszott meccsek alapján",
       "close": "Bezárás",
       "no_data": "Nincs mérkőzés adat",
       "error_missing": "Hiányzó játékos azonosító vagy torna kód",
@@ -1402,6 +2406,16 @@
         "legs": "Leg részletek"
       },
       "overview": {
+        "comp_title": "Összesített Mutatók",
+        "comp_subtitle": "Részletes statisztikai bontás",
+        "table_avg": "Átlag",
+        "table_first9": "First 9 Átlag",
+        "table_180s": "180-as Dobások",
+        "table_140s": "140+ Dobások",
+        "table_100s": "100+ Dobások",
+        "table_highout": "Legmagasabb Kiszálló",
+        "table_bestleg": "Legjobb Leg Átlag",
+        "metric": "Mutató",
         "running_avg_suffix": "futó átlag",
         "final_avg": "Végső átlag",
         "max_leg_avg": "Legjobb leg átlag",
@@ -1602,6 +2616,8 @@
       "mmr": "MMR",
       "oac_mmr": "OAC MMR",
       "nem_sikerült_betölteni_76": "Nem sikerült betölteni a játékos statisztikákat",
+      "player_profile": "Játékos profil",
+      "recent_honors": "Eredmények és infó",
       "legjobb_helyezes_i1t1": "Legjobb helyezés",
       "atlagos_helyezes_ctvu": "Átlagos helyezés",
       "gyozelmi_arany_vqqj": "Győzelmi arány",
@@ -1638,8 +2654,260 @@
       "first_nine_avg": "First 9 Avg",
       "pair": "Páros",
       "team": "Csapat",
-      "one_eighties": "180-ak"
+      "one_eighties": "180-ak",
+      "active_matches": "active matches",
+      "completion": "completion",
+      "leaderboard": "leaderboard",
+      "ongoing": "ongoing",
+      "progress": "progress",
+      "top_players": "top players",
+      "total_players": "total players"
+    },
+    "organized_by": "organized by"
+  },
+  "Map": {
+    "title": "Torna térkép",
+    "toggleMap": "Térkép nézet váltása",
+    "search": "Helyszín keresése...",
+    "filters": "Szűrők",
+    "noTournaments": "Nincsenek tornák ezen a területen",
+    "zoomIn": "Nagyítás",
+    "zoomOut": "Kicsinyítés",
+    "currentLocation": "Jelenlegi helyszín"
+  },
+  "Modal": {
+    "delete": {
+      "title": "Törlés megerősítése",
+      "message": "Ez a művelet nem vonható vissza.",
+      "cancel": "Mégse",
+      "delete": "Törlés"
+    },
+    "confirm": {
+      "title": "Megerősítés",
+      "cancel": "Mégse",
+      "confirm": "Megerősítés"
+    },
+    "close": "Bezárás"
+  },
+  "Features": {
+    "badge": "Funkciók",
+    "title": "Miért tDarts?",
+    "description": "A legmodernebb darts verseny platform minden funkcióval, amit csak elképzelhetsz. Egyszerű, gyors, professzionális.",
+    "items": {
+      "search": {
+        "title": "Verseny Keresés",
+        "description": "Könnyedén találj versenyt lokáció, szint és időpont alapján. Szűrd az eredményeket és jelentkezz egy kattintással.",
+        "badge": "Népszerű"
+      },
+      "draw": {
+        "title": "Verseny Kiírás",
+        "description": "Hozz létre saját versenyeket egyedi szabályokkal és formátumokkal. Automatikus csoportbeosztás és párosítás.",
+        "badge": "Új"
+      },
+      "club": {
+        "title": "Klub Kezelés",
+        "description": "Alapíts vagy csatlakozz darts klubokhoz, szervezz közösségi eseményeket. Teljes tagság kezelés."
+      },
+      "stats": {
+        "title": "Statisztikai Követés",
+        "description": "Részletes statisztikák minden játékoshoz: átlagok, 180-ak, legmagasabb kiszállók, form grafikon.",
+        "badge": "Pro"
+      },
+      "realtime": {
+        "title": "Valós Idejű Követés",
+        "description": "Kövesd élőben a meccseket és eredményeket. Automatikus frissítés és értesítések."
+      },
+      "custom": {
+        "title": "Teljes Testreszabás",
+        "description": "Minden versenyforma támogatva: 501, 301, Cricket és egyedi szabályok. Testre szabható táblák."
+      },
+      "qr": {
+        "title": "QR Kódos Csatlakozás",
+        "description": "Játékosok QR kóddal és jelszóval csatlakozhatnak, regisztráció nélkül. Gyors és egyszerű."
+      },
+      "tablet": {
+        "title": "Tablet Támogatás",
+        "description": "Támogatja a táblákhoz kihelyezett tableteket. Optimalizált író felület és érintésvezérlés."
+      },
+      "secure": {
+        "title": "Jelszó Védett",
+        "description": "Minden torna saját jelszóval védett. Biztonságos hozzáférés és adatvédelem."
+      }
+    },
+    "cta": {
+      "title": "Készen állsz az indulásra?",
+      "description": "Tudd meg hogyan működik a rendszer, és hozd létre az első tornádat percek alatt.",
+      "how_it_works": "Hogyan Működik?",
+      "register": "Ingyenes Regisztráció"
     }
+  },
+  "Pricing": {
+    "badge": "Árazás",
+    "title": "Válaszd ki a Tökéletes Csomagot",
+    "description": "Minden méretű klub és verseny szervezőnek megfelelő árazás",
+    "popular": "Legnépszerűbb",
+    "period": "Ft/hó",
+    "period_alt": "/hó",
+    "cta_free": "Kezdés Most",
+    "cta_test": "Teszt Üzem",
+    "test_note": "* Egyelőre teszt üzemben működik az oldal. Az előfizetői model hamarosan elérhető lesz.",
+    "packages": {
+      "free": {
+        "name": "Ingyenes",
+        "description": "Alapvető funkciók kis csapatoknak"
+      },
+      "basic": {
+        "name": "Alap",
+        "description": "Tökéletes választás a rendszer kipróbálására"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "Kiválló aktív kluboknak"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Korlátlan hozzáférés nagyobb szervezeteknek"
+      }
+    },
+    "features": {
+      "one_tournament": "Havi 1 verseny/klub",
+      "two_tournaments": "Havi 2 verseny/klub",
+      "four_tournaments": "Havi 4 verseny/klub",
+      "unlimited_tournaments": "Korlátlan havi verseny",
+      "unlimited_users": "Korlátlan felhasználó",
+      "live_tracking": "Élő meccs követés",
+      "league_start": "Liga indítási lehetőség",
+      "detailed_stats": "Részletes leg statisztikák"
+    }
+  },
+  "Footer": {
+    "legal_title": "Információk",
+    "privacy": "Adatkezelési tájékoztató",
+    "terms": "Általános Szerződési Feltételek",
+    "contact": "Kapcsolat / Visszajelzés",
+    "all_rights_reserved": "Minden jog fenntartva.",
+    "network_title": "Hálózat",
+    "maintainer": "Fenntartó: ",
+    "sironic": "Sironic Rendszerház",
+    "oac_info": "Tudj meg többet az Országos Amatőr Ligáról!",
+    "oac_button": "OAC - Amatőr Darts",
+    "partners_title": "Partnereink",
+    "partners_note": "Kiemelt partnereink, akik támogatják a magyar darts fejlődését.",
+    "copy_jk6j": "&copy;",
+    "tdarts_vlt8": "tDarts.",
+    "magyar_darts_szovetseg_1x63": "Magyar Darts Szövetség",
+    "dartsbarlang_slgh": "DartsBarlang",
+    "remiz_sport_es_esemenykozpont_7fgn": "Remiz Sport- és Eseményközpont",
+    "efott_partner": "EFOTT"
+  },
+  "Index": {
+    "title": "tDarts - A darts versenykezelő"
+  },
+  "Hero": {
+    "badge": "Professzionális Darts Verseny Levezető Platform",
+    "subtitle_badge": "Verseny Platform",
+    "subtitle": "A következő generációs darts verseny platform. Versenykeresés, klub létrehozás, valós idejű eredmények és teljes testreszabhatóság.",
+    "features": {
+      "organize": "Verseny szervezés percek alatt",
+      "results": "Valós idejű eredmények",
+      "pairing": "Automatikus párosítás",
+      "stats": "Részletes statisztikák"
+    },
+    "cta_start": "Kezdés Most",
+    "cta_create": "Verseny Létrehozása",
+    "stats_labels": {
+      "clubs": "Aktív Klub",
+      "clubs_sub": "országszerte",
+      "tournaments": "Verseny",
+      "tournaments_sub": "havonta",
+      "realtime": "Valós Idejű",
+      "realtime_sub": "követés"
+    },
+    "trust": {
+      "free": "Ingyenes regisztráció",
+      "no_hidden": "Nincs rejtett költség",
+      "support": "24/7 támogatás"
+    },
+    "tdarts_u6qj": "TDARTS"
+  },
+  "HowItWorks": {
+    "hero": {
+      "badge": "Útmutató és Dokumentáció",
+      "title_part1": "Hogyan Működik a",
+      "title_part2": "tDarts Platform?",
+      "subtitle": "Teljes körű útmutató a regisztrációtól a versenyindításig. Minden, amit tudnod kell a tDarts használatához.",
+      "search_placeholder": "Keress a témakörök között..."
+    },
+    "grid": {
+      "title": "Válassz témakört",
+      "items_count": "{count} témakör érhető el",
+      "details_btn": "Részletek",
+      "no_results": "Nincs találat",
+      "no_results_desc": "Próbálj meg más keresési kifejezést használni"
+    },
+    "detail": {
+      "back_btn": "Vissza a témakörökhöz",
+      "prev_btn": "Előző",
+      "next_btn": "Következő",
+      "aria_jump": "Ugrás a {title} témához"
+    },
+    "loading": "Betöltés..."
+  },
+  "ContentRenderer": {
+    "notes": {
+      "info": "Info:",
+      "warning": "Fontos:",
+      "tip": "Tipp:",
+      "important": "Kiemelt:",
+      "default": "Megjegyzés:"
+    }
+  },
+  "Auto": {
+    "club_not_found_ecjo": "Klub nem található",
+    "hogyan_mukodik_247b": "Hogyan működik",
+    "élő_meccs_követés": "Élő meccs követés",
+    "ez_a_klub": "Ez a klub nem rendelkezik élő követés funkcióval.",
+    "pro_előfizetés_előnyei": "Pro előfizetés előnyei",
+    "élő_meccs_követés_59": "Élő meccs követés",
+    "dobásonkénti_statisztikák": "Dobásonkénti statisztikák",
+    "speciális_elemző_eszközök": "Speciális elemző eszközök",
+    "részletes_játékos_adatok": "Részletes játékos adatok",
+    "vissza_a_tornához": "Vissza a tornához",
+    "kapcsolat": "Kapcsolat",
+    "ha_már_pro": "Ha már Pro előfizető vagy, vedd fel velünk a kapcsolatot.",
+    "hiba_történt_20": "Hiba történt",
+    "nem_sikerült_betölteni_8": "Nem sikerült betölteni az élő oldalt"
+  },
+  "Carousel": {
+    "management": "Világszínvonalú Versenykezelés",
+    "targeting": "Precíz Célkövetés",
+    "results": "Professzionális Eredmények",
+    "experience": "Kiváló Felhasználói Élmény",
+    "speed": "Villámgyors Feldolgozás",
+    "platform": "Bajnoki Szintű Platform"
+  },
+  "Metadata": {
+    "title": "tDarts - Darts Tournament Levezető Rendszer",
+    "description": "A legjobb darts tournament levezető rendszer. Klubok létrehozása, versenyek szervezése, élő követés és statisztikák.",
+    "keywords": "darts, tournament, verseny, klub, statisztika, élő követés",
+    "og_title": "tDarts - Darts Tournament Rendszer",
+    "twitter_description": "A legjobb darts tournament levezető rendszer",
+    "tdarts_f0pi": "tDarts",
+    "tdarts_team_wsgu": "tDarts Team"
+  },
+  "NotFound": {
+    "title": "Oldal nem található",
+    "description": "A keresett oldal nem létezik vagy áthelyezésre került.",
+    "help_text": "Ellenőrizd az URL-t vagy használd a navigációs menüket a megfelelő oldal eléréséhez.",
+    "back_home": "Főoldal",
+    "search_tournaments": "Versenyek Keresése",
+    "need_help": "Segítségre van szükséged?",
+    "common_pages": "Gyakori oldalak:",
+    "useful_links": "Hasznos linkek:",
+    "how_it_works": "Hogyan működik",
+    "login": "Bejelentkezés",
+    "register": "Regisztráció",
+    "club_search": "Klub keresése"
   },
   "Club": {
     "layout": {
@@ -2154,7 +3422,12 @@
       "átlag_hely": "Átlag hely",
       "érvénytelen_pontszám_formátum": "Érvénytelen pontszám formátum",
       "új_liga_létrehozása": "Új liga létrehozása",
-      "új_verseny_létrehozásakor": "• Új verseny létrehozásakor válaszd ki ezt a ligát (automatikus pontszámítás)."
+      "új_verseny_létrehozásakor": "• Új verseny létrehozásakor válaszd ki ezt a ligát (automatikus pontszámítás).",
+      "betöltés": "betöltés",
+      "létrehozás": "létrehozás",
+      "mégse": "mégse",
+      "műveletek": "műveletek",
+      "státusz": "státusz"
     },
     "create_tournament_modal": {
       "title": "Új torna létrehozása",
@@ -2313,1054 +3586,6 @@
   "Tickets": {
     "toast_title": "Új válasz érkezett",
     "unread_messages": "{count} olvasatlan üzeneted"
-  },
-  "Admin": {
-    "layout": {
-      "sidebar": {
-        "dashboard": "Vezérlőpult",
-        "users": "Felhasználók",
-        "clubs": "Klubok",
-        "tournaments": "Versenyek",
-        "leagues": "Ligák",
-        "feedback": "Visszajelzések",
-        "errors": "Hibák",
-        "announcements": "Hírek",
-        "todos": "Teendők",
-        "emails": "Email Sablonok",
-        "settings": "Beállítások",
-        "telemetry": "Telemetria",
-        "collapse": "Összecsukás",
-        "title": "tDarts Admin"
-      },
-      "status": {
-        "checking": "Admin jogosultság ellenőrzése...",
-        "welcome": "Szia, {name}! 👋",
-        "stable": "A rendszer jelenleg stabilan üzemel.",
-        "search": "keresés",
-        "menu": "menü",
-        "hello": "Szia,"
-      },
-      "tdarts_f0pi": "tDarts"
-    },
-    "dashboard": {
-      "title": "Szia, {name}! 👋",
-      "refresh": "Frissítés",
-      "last_update": "Utolsó frissítés",
-      "system_stable": "A rendszer jelenleg stabilan üzemel.",
-      "search_hint": "keresés",
-      "menu_hint": "menü",
-      "loading": "Betöltés...",
-      "error_loading": "Hiba történt az adatok betöltése során",
-      "stats": {
-        "users": "Felhasználók",
-        "clubs": "Klubok",
-        "tournaments": "Versenyek",
-        "errors": "Nyitott Hibák",
-        "last_24h": "+{count} az elmúlt 24 órában"
-      },
-      "activities": {
-        "title": "Friss Tevékenységek",
-        "no_data": "Nincs friss tevékenység"
-      },
-      "alerts": {
-        "title": "Figyelmeztetések",
-        "errors": "Rendszerhibák",
-        "errors_desc": "Az elmúlt 24 órában",
-        "feedback": "Visszajelzések",
-        "feedback_desc": "Olvasatlan üzenetek",
-        "api_anomalies": "API anomáliák",
-        "api_anomalies_desc": "Jelentős hívás/forgalom/késleltetés növekedés"
-      },
-      "charts": {
-        "users": "Felhasználói aktivitás (Havi)",
-        "tournaments": "Versenyek száma (Havi)"
-      },
-      "quick_access": {
-        "title": "Gyorselérés",
-        "desc": "A leggyakrabban használt adminisztrációs felületek",
-        "new_post": "Új Hír",
-        "create_tournament": "Verseny Létrehozása",
-        "users": "Felhasználók",
-        "tournaments": "Versenyek",
-        "clubs": "Klubok",
-        "todos": "Teendők",
-        "news": "Hírek",
-        "settings": "Beállítások",
-        "telemetry": "API telemetria"
-      },
-      "telemetry": {
-        "title": "API telemetry részletek",
-        "description": "Nyisd meg a dedikált telemetry oldalt útvonal szintű forgalom, késleltetés és payload elemzéshez.",
-        "open_page": "Telemetry oldal megnyitása"
-      },
-      "announcements": {
-        "title": "Hírek Kezelése",
-        "search_placeholder": "Keresés...",
-        "new_btn": "Új Hír",
-        "table": {
-          "title": "Cím",
-          "type": "Típus",
-          "status": "Státusz",
-          "expires": "Lejárat",
-          "actions": "Műveletek",
-          "loading": "Betöltés...",
-          "no_results": "Nincs találat.",
-          "active": "Aktív",
-          "inactive": "Inaktív",
-          "menu_sr": "Menü"
-        },
-        "actions": {
-          "activate": "Aktiválás",
-          "deactivate": "Deaktiválás",
-          "edit": "Szerkesztés",
-          "delete": "Törlés",
-          "confirm_delete": "Biztosan törölni szeretnéd?",
-          "save": "Mentés",
-          "saving": "Mentés...",
-          "create": "Létrehozás",
-          "cancel": "Mégse"
-        },
-        "toasts": {
-          "fetch_error": "Nem sikerült betölteni a híreket",
-          "delete_success": "Hír törölve",
-          "delete_error": "Hiba a törlés során",
-          "status_success": "Státusz frissítve",
-          "status_error": "Hiba a státusz frissítésekor",
-          "update_success": "Hír frissítve",
-          "create_success": "Hír létrehozva",
-          "save_error": "Hiba a mentés során"
-        },
-        "pagination": {
-          "info": "{total} hír összesen • {current} / {total_pages} oldal",
-          "prev": "Előző",
-          "next": "Következő"
-        },
-        "dialog": {
-          "edit_title": "Hír Szerkesztése",
-          "create_title": "Új Hír Létrehozása",
-          "edit_desc": "Módosítsd a hír részleteit.",
-          "create_desc": "Add meg az új hír adatait.",
-          "form": {
-            "title": "Cím",
-            "title_placeholder": "Hír címe",
-            "type": "Típus",
-            "types": {
-              "info": "Infó (Kék)",
-              "success": "Siker (Zöld)",
-              "warning": "Figyelem (Sárga)",
-              "error": "Hiba (Piros)"
-            },
-            "duration": "Időtartam (ms)",
-            "expires": "Lejárat",
-            "description": "Leírás",
-            "description_placeholder": "Hír szövege...",
-            "show_button": "Gomb megjelenítése",
-            "button_text": "Gomb felirata",
-            "button_text_placeholder": "Pl: Részletek",
-            "button_action": "Gomb link (URL)",
-            "button_action_placeholder": "Pl: /results vagy https://..."
-          }
-        }
-      },
-      "feedback": {
-        "title": "Visszajelzések",
-        "search_placeholder": "Keresés címben, leírásban...",
-        "filters": {
-          "category": "Kategória",
-          "all_categories": "Összes Kat.",
-          "status": "Státusz",
-          "all_statuses": "Összes Stát.",
-          "priority": "Prioritás",
-          "all_priorities": "Összes Prio."
-        },
-        "categories": {
-          "bug": "Hiba",
-          "feature": "Funkció",
-          "improvement": "Javítás",
-          "other": "Egyéb"
-        },
-        "statuses": {
-          "pending": "Függőben",
-          "in-progress": "Folyamatban",
-          "resolved": "Megoldva",
-          "rejected": "Elutasítva",
-          "closed": "Lezárva"
-        },
-        "priorities": {
-          "low": "Alacsony",
-          "medium": "Közepes",
-          "high": "Magas",
-          "critical": "Kritikus"
-        },
-        "table": {
-          "category": "Kat.",
-          "title_sender": "Cím & Beküldő",
-          "priority": "Prioritás",
-          "status": "Státusz",
-          "date": "Dátum",
-          "actions": "Műveletek",
-          "loading": "Betöltés...",
-          "no_results": "Nincs találat.",
-          "new_badge": "Új",
-          "menu_sr": "Menü"
-        },
-        "actions": {
-          "copy_id": "ID másolása",
-          "create_todo": "Teendő Létrehozása",
-          "edit": "Szerkesztés",
-          "delete": "Törlés",
-          "confirm_delete": "Biztosan törölni szeretnéd?"
-        },
-        "toasts": {
-          "fetch_error": "Nem sikerült betölteni a visszajelzéseket",
-          "delete_success": "Visszajelzés törölve",
-          "delete_error": "Hiba a törlés során",
-          "todo_success": "Teendő létrehozva a visszajelzésből!",
-          "todo_error": "Hiba a teendő létrehozásakor"
-        },
-        "pagination": {
-          "info": "{total} visszajelzés összesen • {current} / {total_pages} oldal",
-          "prev": "Előző",
-          "next": "Következő"
-        }
-      },
-      "leagues": {
-        "title": "Liga Kezelés",
-        "new_btn": "Új Liga",
-        "errors": {
-          "check_feature": "Hiba történt a funkció ellenőrzésekor",
-          "save_error": "Hiba történt a liga mentésekor",
-          "delete_error": "Hiba történt a liga törlésekor"
-        },
-        "actions": {
-          "confirm_delete": "Biztosan törölni szeretnéd ezt a ligát?",
-          "edit": "Szerkesztés",
-          "delete": "Törlés",
-          "add_player": "Játékos hozzáadása",
-          "view_standings": "Állás",
-          "view_standings_title": "Liga Állás Megtekintése"
-        },
-        "promo": {
-          "title": "Liga Rendszer",
-          "desc": "Indíts ligákat a klubodban! Versenyzők pontozása, rangsorok és automatikus pontszámítás.",
-          "requires_subscription": "Előfizetés szükséges",
-          "subscription_desc": "A ligák rendszer használatához Pro előfizetés szükséges.",
-          "subscription_btn": "Előfizetés",
-          "details_btn": "Részletek",
-          "disclaimer": "* A Pro csomag tartalmazza a ligák rendszert és további prémium funkciókat"
-        },
-        "empty": {
-          "title": "Nincsenek ligák",
-          "desc": "Hozz létre egy új ligát a versenyzők pontozásához",
-          "first_btn": "Első Liga Létrehozása"
-        },
-        "card": {
-          "group_dropout": "Csoportkör kiesők:",
-          "points": "{count} pont",
-          "winner": "Győztes:",
-          "multiplier": "Szorzó:",
-          "tournaments": "Versenyek:",
-          "players": "Játékosok:"
-        },
-        "player_modal": {
-          "title": "Liga játékosainak szerkesztése",
-          "add_player": "Játékos hozzáadása",
-          "search_placeholder": "Keress játékost név vagy felhasználónév alapján...",
-          "list_title": "Játékosok a ligában",
-          "table": {
-            "name": "Név",
-            "points": "Pontok",
-            "action": "Művelet"
-          },
-          "remove_title": "Játékos eltávolítása",
-          "empty_list": "Nincs játékos a ligában.",
-          "close_btn": "Bezárás"
-        },
-        "dialog": {
-          "edit_title": "Liga Szerkesztése",
-          "create_title": "Új Liga Létrehozása",
-          "form": {
-            "name": "Név *",
-            "name_placeholder": "Liga neve",
-            "description": "Leírás",
-            "description_placeholder": "Opcionális leírás",
-            "point_system": "Pontozási Rendszer",
-            "group_dropout": "Csoportkörben kiesők pontja",
-            "group_dropout_help": "Alap pont minden csoportkörben kieső játékosnak",
-            "winner_points": "Győztes pontja",
-            "winner_points_help": "A győztes játékos pontszáma (legmagasabb pont)",
-            "multiplier": "Szorzó (mértani sorozat)",
-            "multiplier_help": "0.1 - 2.0 között. Kisebb érték = nagyobb különbség a körök között",
-            "preview": "Pontok előnézet",
-            "preview_desc": "Mértani sorozat alapján számított pontok (dinamikusan frissül):",
-            "rounds": {
-              "round_1": "1. kör",
-              "round_2": "2. kör",
-              "round_3": "3. kör",
-              "semi_final": "Elődöntő",
-              "final": "Döntő",
-              "winner": "Győztes"
-            },
-            "geometric_rule": "Mértani sorozat: 1. körből a győztesig növekednek a pontok ({val}-szorosával)"
-          },
-          "actions": {
-            "cancel": "Mégse",
-            "save": "Mentés",
-            "create": "Létrehozás",
-            "saving": "Mentés..."
-          },
-          "validation": {
-            "name_required": "Név megadása kötelező",
-            "name_max": "Név maximum 100 karakter lehet",
-            "desc_max": "Leírás maximum 500 karakter lehet",
-            "points_negative": "Pontok nem lehetnek negatívak",
-            "multiplier_min": "Szorzó minimum 0.1",
-            "multiplier_max": "Szorzó maximum 2"
-          }
-        }
-      },
-      "tickets": {
-        "detail": {
-          "title": "Visszajelzés részletei",
-          "no_messages": "Még nincs üzenet ebben a ticketben",
-          "system_sender": "Rendszer",
-          "status": "Státusz",
-          "priority": "Prioritás",
-          "save_status": "Státusz mentése",
-          "reply_placeholder": "Írj egy üzenetet...",
-          "send_btn": "Küldés"
-        },
-        "toasts": {
-          "empty_message": "Az üzenet nem lehet üres",
-          "reply_success": "Válasz elküldve",
-          "reply_error": "Hiba történt az üzenet küldése során",
-          "no_change": "Nincs változás",
-          "status_updated": "Státusz frissítve",
-          "status_error": "Hiba a státusz frissítése során"
-        }
-      },
-      "todos": {
-        "title": "Feladatok",
-        "smart_title": "Okos Todo",
-        "smart_help": "Írd be természetes nyelven: \"Szerver karbantartás !!! holnap #dev\"",
-        "loading": "Todo-k betöltése...",
-        "stats": {
-          "total": "Összes Todo",
-          "pending": "Függőben",
-          "in_progress": "Folyamatban",
-          "completed": "Befejezve"
-        },
-        "toolbar": {
-          "view_kanban": "Kanban",
-          "view_list": "Lista",
-          "all_priorities": "Minden prioritás",
-          "all_categories": "Minden kategória",
-          "search_placeholder": "Keresés...",
-          "new_btn": "Új Todo"
-        },
-        "kanban": {
-          "pending": "Függőben",
-          "in_progress": "Folyamatban",
-          "completed": "Befejezve",
-          "cancelled": "Törölve",
-          "empty": "Nincs {status}"
-        },
-        "list": {
-          "count": "Todo-k ({count})",
-          "empty": "Nincsenek todo-k a kiválasztott szűrőkkel"
-        },
-        "smart": {
-          "all": "Összes",
-          "active": "Aktív",
-          "completed": "Kész",
-          "sort_label": "Rendezés",
-          "sort_smart": "✨ Okos rendezés (Urgency)",
-          "sort_date": "📅 Határidő szerint",
-          "sort_priority": "🔥 Prioritás szerint",
-          "sort_smart_short": "Okos rendezés",
-          "sort_date_short": "Határidő szerint",
-          "sort_priority_short": "Prioritás szerint",
-          "empty_title": "Nincs megjeleníthető feladat",
-          "empty_desc": "Adj hozzá egy újat a fenti mező segítségével!",
-          "placeholder": "Írj egy feladatot... (pl. 'Szerver hiba javítása !!! #bug ma')"
-        },
-        "smart_input": {
-          "placeholder": "Írj egy feladatot... (pl. 'Szerver hiba javítása !!! #bug ma')",
-          "press_enter": "Nyomj {key} a hozzáadáshoz",
-          "tags": "Címkék:"
-        },
-        "dialog": {
-          "create_title": "Új Todo létrehozása",
-          "edit_title": "Todo szerkesztése",
-          "title_label": "Cím *",
-          "title_placeholder": "Todo címe...",
-          "category_label": "Kategória",
-          "priority_label": "Prioritás",
-          "status_label": "Státusz",
-          "due_date_label": "Határidő",
-          "desc_label": "Leírás",
-          "desc_placeholder": "Részletes leírás...",
-          "tags_label": "Címkék",
-          "tags_placeholder": "Címke hozzáadása (Enter)",
-          "actions": {
-            "create": "Létrehozás",
-            "save": "Mentés",
-            "cancel": "Mégse"
-          }
-        },
-        "statuses": {
-          "pending": "Függőben",
-          "in-progress": "Folyamatban",
-          "completed": "Befejezve",
-          "cancelled": "Törölve"
-        },
-        "priorities": {
-          "low": "Alacsony",
-          "medium": "Közepes",
-          "high": "Magas",
-          "critical": "Kritikus"
-        },
-        "categories": {
-          "bug": "Hiba",
-          "feature": "Új funkció",
-          "improvement": "Fejlesztés",
-          "maintenance": "Karbantartás",
-          "other": "Egyéb"
-        },
-        "toasts": {
-          "delete_confirm": "Biztosan törölni szeretnéd ezt a todo-t?",
-          "delete_confirm_short": "Biztosan törölni szeretnéd?",
-          "fetch_error": "Nem sikerült betölteni a feladatokat",
-          "create_success": "Feladat hozzáadva!",
-          "create_error": "Hiba történt a feladat létrehozásakor",
-          "update_status_error": "Nem sikerült frissíteni a státuszt",
-          "delete_success": "Feladat törölve",
-          "delete_error": "Nem sikerült törölni a feladatot"
-        }
-      }
-    },
-    "tickets": {},
-    "announcements": {
-      "announcement_kezelő": "Announcement Kezelő",
-      "rendszerüzenetek_létrehozása_és": "Rendszerüzenetek létrehozása és kezelése"
-    },
-    "feedback": {
-      "felhasználói_visszajelzések_és": "Felhasználói visszajelzések és javaslatok kezelése",
-      "hibabejelentések_kezelése": "Hibabejelentések Kezelése",
-      "visszajelzések_napi_beérkezése": "Visszajelzések napi beérkezése"
-    },
-    "leagues": {
-      "hiba_történt_a_14": "Hiba történt a meccs befejezése során!",
-      "hitelesített_oac": "Hitelesített (OAC)",
-      "inaktív": "Inaktív",
-      "keresés_név_vagy": "Keresés név vagy klub alapján...",
-      "liga_neve": "Liga Neve",
-      "ligák": "Ligák",
-      "ligák_kezelése_statisztikák": "Ligák kezelése, statisztikák és áttekintés",
-      "minden_típus": "Minden típus",
-      "oac_liga": "OAC Liga",
-      "platform": "Platform",
-      "platform_liga": "Platform Liga",
-      "platform_ligák": "Platform Ligák",
-      "pontozási_rendszer": "Pontozási Rendszer",
-      "szűrés_típusra": "Szűrés típusra",
-      "verified_oac": "Verified (OAC)",
-      "összes_liga": "Összes Liga"
-    },
-    "todos": {
-      "feladatok_és_észrevételek": "Feladatok és észrevételek követése",
-      "todo_kezelés": "Todo Kezelés"
-    },
-    "common": {
-      "hiba_történt_az": "Hiba történt az adatok betöltése során",
-      "létrehozva": "Létrehozva",
-      "találat_oldal": "találat (Oldal:",
-      "törölve": "TÖRÖLVE",
-      "versenyek": "Versenyek",
-      "összesen": "Összesen",
-      "aktív": "Aktív",
-      "játékosok": "Játékosok",
-      "klub": "Klub"
-    },
-    "clubs": {
-      "aktív_klubok": "Aktív Klubok",
-      "basic_122s": "Basic",
-      "csak_hitelesített": "Csak Hitelesített",
-      "csak_nem_hitelesített": "Csak Nem Hitelesített",
-      "csomag": "Csomag",
-      "enterprise_joxf": "Enterprise",
-      "free_1b43": "Free",
-      "helyszín": "Helyszín",
-      "hitelesített": "Hitelesített",
-      "keresés_név_helyszín": "Keresés név, helyszín vagy leírás alapján...",
-      "klub_név": "Klub Név",
-      "klubok": "Klubok",
-      "klubok_kezelése_statisztikák": "Klubok kezelése, statisztikák és áttekintés",
-      "klubok_napi_létrehozása": "Klubok napi létrehozása",
-      "minden_klub": "Minden klub",
-      "normál": "Normál",
-      "pro_1q4t": "Pro",
-      "szűrés_státuszra": "Szűrés státuszra",
-      "tagok": "Tagok",
-      "törölt": "Törölt",
-      "összes_klub": "Összes Klub"
-    },
-    "tournaments": {
-      "aktiv_11ph": "Aktív",
-      "befejezett": "Befejezett",
-      "befejezett_x25b": "Befejezett",
-      "csoportkor_yqu8": "Csoportkör",
-      "csoportkör": "Csoportkör",
-      "csoportos_cksc": "Csoportos",
-      "dátum": "Dátum",
-      "fuggoben_ddvf": "Függőben",
-      "függőben": "Függőben",
-      "keresés_név_klub": "Keresés név, klub vagy leírás alapján...",
-      "kieseses_c2i5": "Kieséses",
-      "kieséses": "Kieséses",
-      "minden_mód": "Minden mód",
-      "minden_típus": "Minden típus",
-      "mód": "Mód",
-      "oac": "OAC",
-      "platform": "Platform",
-      "sandbox": "Sandbox",
-      "típus": "Típus",
-      "vegyes_spt0": "Vegyes",
-      "verified_oac": "Verified (OAC)",
-      "verseny_név": "Verseny Név",
-      "versenyek_kezelése_statisztikák": "Versenyek kezelése, statisztikák és áttekintés",
-      "versenyek_napi_indítása": "Versenyek napi indítása",
-      "éles": "Éles",
-      "összes": "Összes",
-      "összes_státusz": "Összes státusz"
-    },
-    "users": {
-      "admin": "Admin",
-      "adminisztrátorok": "Adminisztrátorok",
-      "angol": "Angol",
-      "csak_adminok": "Csak Adminok",
-      "csak_felhasználók": "Csak Felhasználók",
-      "csatlakozott": "Csatlakozott",
-      "előző": "Előző",
-      "email": "Email",
-      "email_küldése": "Email küldése",
-      "email_küldése_59": "Email küldése:",
-      "email_sikeresen_elküldve": "Email sikeresen elküldve!",
-      "felhasználó": "Felhasználó",
-      "felhasználó_deaktiválva": "Felhasználó deaktiválva",
-      "felhasználói_fiókok_kezelése": "Felhasználói fiókok kezelése és adminisztrációja",
-      "felhasználók": "Felhasználók",
-      "fiók_felfüggesztése": "Fiók felfüggesztése",
-      "hiba_történt_a_29": "Hiba történt a deaktiválás során",
-      "hiba_történt_a_39": "Hiba történt a művelet során",
-      "hiba_történt_az_9": "Hiba történt az email küldése során",
-      "keresés_név_email": "Keresés név, email vagy felhasználónév alapján...",
-      "következő": "Következő",
-      "magyar": "Magyar",
-      "minden_felhasználó": "Minden felhasználó",
-      "nem_megerősített": "Nem megerősített",
-      "nem_regisztrált": "Nem Regisztrált",
-      "nyelv": "Nyelv",
-      "regisztrált": "Regisztrált",
-      "szerepkör": "Szerepkör",
-      "szűrés_szerepkörre": "Szűrés szerepkörre",
-      "tárgy": "Tárgy",
-      "írja_be_az": "Írja be az üzenetet...",
-      "összes_felhasználó": "Összes Felhasználó",
-      "üzenet": "Üzenet",
-      "üzenet_tárgya": "Üzenet tárgya..."
-    },
-    "errors": {
-      "api_1e62": "API",
-      "auth_17zr": "Auth",
-      "auth_hibák": "Auth hibák",
-      "club": "Club:",
-      "club_1932": "Club",
-      "database_unvz": "Database",
-      "error_details": "Error Details:",
-      "hiba_adatok_betöltése": "Hiba adatok betöltése…",
-      "hiba_kezelés": "Hiba Kezelés",
-      "hibák_kategóriánként": "Hibák Kategóriánként",
-      "hibák_napi_előfordulása": "Hibák napi előfordulása",
-      "hibák_szintenként": "Hibák Szintenként",
-      "időszak": "Időszak",
-      "kategória": "Kategória",
-      "legutóbbi_hibák": "Legutóbbi Hibák (",
-      "metadata": "Metadata:",
-      "nem_sikerült_betölteni": "Nem sikerült betölteni a hiba adatokat.",
-      "nincsenek_hibák": "Nincsenek hibák",
-      "player_vgc0": "Player",
-      "rendszer_hibák_monitorozása": "Rendszer hibák monitorozása és kezelése",
-      "stack_trace": "Stack Trace:",
-      "schema": {
-        "title": "Log séma",
-        "all": "Összes log",
-        "new": "Új strukturált",
-        "legacy": "Legacy"
-      },
-      "system_ttqf": "System",
-      "szint": "Szint",
-      "szűrők": "Szűrők",
-      "tournament": "Tournament:",
-      "tournament_ghva": "Tournament",
-      "user": "User:",
-      "user_1kpn": "User",
-      "utolsó_hónap": "Utolsó 3 hónap",
-      "utolsó_nap": "Utolsó 7 nap",
-      "utolsó_nap_94": "Utolsó 30 nap",
-      "utolsó_óra": "Utolsó 24 óra",
-      "összes_hiba": "Összes Hiba",
-      "összes_kategória": "Összes kategória",
-      "összes_szint": "Összes szint"
-    },
-    "settings": {
-      "adatbázis": "Adatbázis",
-      "adatbázis_információk": "Adatbázis Információk",
-      "aktuális_verzió_információk": "Aktuális verzió információk",
-      "dokumentumok": "Dokumentumok",
-      "előfizetés_rendszer": "Előfizetés rendszer",
-      "email_username": "EMAIL_USERNAME",
-      "funkciók": "Funkciók",
-      "kapcsolat": "Kapcsolat",
-      "kollekciók": "Kollekciók",
-      "környezeti_változók": "Környezeti Változók",
-      "ligák": "Ligák",
-      "memória": "Memória",
-      "működik": "Működik",
-      "nem_sikerült_betölteni_15": "Nem sikerült betölteni a rendszer információkat.",
-      "node_env": "NODE_ENV",
-      "online": "ONLINE",
-      "rendszer_beállítások": "Rendszer Beállítások",
-      "rendszer_információk_betöltése": "Rendszer információk betöltése…",
-      "rendszer_információk_és": "Rendszer információk és konfiguráció",
-      "rendszer_verzió": "Rendszer Verzió",
-      "rendszer_állapot": "Rendszer Állapot",
-      "részletes_statisztikák": "Részletes statisztikák",
-      "socket_kapcsolat": "Socket kapcsolat",
-      "socket_server_url": "SOCKET_SERVER_URL",
-      "subscription_enabled": "SUBSCRIPTION_ENABLED",
-      "változó": "Változó",
-      "érték": "Érték",
-      "üzemidő": "Üzemidő"
-    },
-    "emails": {
-      "a_teszt_emailt": "A teszt emailt a fent látható módon rendereljük, minta adatokkal feltöltve.",
-      "alapértelmezett": "Alapértelmezett:",
-      "címzett_email": "Címzett email",
-      "elérhető_változók": "Elérhető változók:",
-      "email_preview": "Email Preview",
-      "email_sablonok": "Email Sablonok",
-      "használd_ezeket_a": "Használd ezeket a változókat a sablonban, pl:",
-      "hiba_történt_a": "Hiba történt a sablonok betöltése során",
-      "hiba_történt_a_87": "Hiba történt a mentés során",
-      "html_tartalom": "HTML Tartalom",
-      "hálózati_hiba_történt": "Hálózati hiba történt",
-      "inaktív": "Inaktív",
-      "kezeld_az_email": "Kezeld az email sablonokat, amelyeket a platform küld a felhasználóknak",
-      "kulcs": "Kulcs:",
-      "kérjük_adj_meg": "Kérjük, adj meg egy email címet",
-      "küldés": "Küldés",
-      "nincs_kiválasztott_sablon": "Nincs kiválasztott sablon",
-      "sablon_sikeresen_mentve": "Sablon sikeresen mentve",
-      "sablonok": "Sablonok (",
-      "sablonok_betöltése": "Sablonok betöltése...",
-      "szerkesztés": "Szerkesztés",
-      "szöveges_tartalom_fallback": "Szöveges Tartalom (fallback)",
-      "teszt_email_elküldve": "Teszt email elküldve",
-      "teszt_email_küldése": "Teszt email küldése",
-      "tárgy": "Tárgy",
-      "utolsó_módosítás": "Utolsó módosítás:",
-      "vmi_pelda_hu": "vmi@pelda.hu",
-      "válassz_egy_sablont": "Válassz egy sablont a bal oldali listából a megtekintéshez és szerkesztéshez"
-    },
-    "components": {
-      "a_hozzáadáshoz": "a hozzáadáshoz",
-      "a_jelenlegi_statisztikákat": "a jelenlegi statisztikákat és archiválja őket.",
-      "a_statisztikákat_a": "a statisztikákat a",
-      "adj_hozzá_egy": "Adj hozzá egy újat a fenti mező segítségével!",
-      "announcements_mk89": "Announcements",
-      "az_előző_nap": "Az előző 30 nap napi lebontású statisztikája",
-      "biztosan_le_akarod": "Biztosan le akarod zárni a",
-      "close": "Close",
-      "clubs_12tn": "Clubs",
-      "command_palette": "Command Palette",
-      "confirm_restore": "CONFIRM_RESTORE_",
-      "confirm_wrap": "CONFIRM_WRAP_",
-      "dashboard_ft8p": "Dashboard",
-      "enter": "Enter",
-      "errors_ygvm": "Errors",
-      "es_archívumból_és": "-es archívumból, és törli az archívumot.\n              Hasznos, ha véletlenül futtattad az Év Lezárását.",
-      "es_évet_ez": "-es évet? Ez a művelet",
-      "esc": "ESC",
-      "ez_a_művelet": "Ez a művelet alaphelyzetbe állítja az összes játékos statisztikáját, archiválja a jelenlegi adatokat és kiosztja a címeket.",
-      "ez_a_művelet_57": "Ez a művelet",
-      "feedback_23iz": "Feedback",
-      "feladat_gyorsan_hozzáadva": "Feladat gyorsan hozzáadva!",
-      "feladat_hozzáadva": "Feladat hozzáadva!",
-      "feladat_törölve": "Feladat törölve",
-      "gyors_feladat_létrehozása": "Gyors Feladat Létrehozása",
-      "ha_véletlenül_futtattad": "Ha véletlenül futtattad, a Visszaállítás gombbal visszavonhatod az utolsó zárást.",
-      "használd_a_természetes": "Használd a természetes nyelvet (pl. &quot;Hiba javítása !!! ma #bug&quot;)",
-      "határidő_szerint": "📅 Határidő szerint",
-      "hiba_tortent_az_adatok_qmk8": "Hiba történt az adatok betöltésekor",
-      "hiba_történt_a_78": "Hiba történt a beállítások mentése során!",
-      "hiba_történt_a_88": "Hiba történt a feladat létrehozásakor",
-      "hibás_megerősítő_kód": "Hibás megerősítő kód",
-      "ismeretlen_adatformatum_v65o": "Ismeretlen adatformátum",
-      "kritikus_rendszer_műveletek": "Kritikus rendszer műveletek",
-      "kész": "Kész",
-      "leagues_sd4t": "Leagues",
-      "megerősítés": "Megerősítés",
-      "navigate": "Navigate",
-      "nem_sikerült_betölteni_12": "Nem sikerült betölteni a feladatokat",
-      "nem_sikerült_frissíteni": "Nem sikerült frissíteni a státuszt",
-      "nem_sikerült_törölni": "Nem sikerült törölni a feladatot",
-      "nincs_megjeleníthető_feladat": "Nincs megjeleníthető feladat",
-      "no_results_found": "No results found.",
-      "nyomj": "Nyomj",
-      "okos_rendezés_urgency": "✨ Okos rendezés (Urgency)",
-      "prioritás_szerint": "🔥 Prioritás szerint",
-      "search_for_pages": "Search for pages and actions",
-      "select": "Select",
-      "settings_osmo": "Settings",
-      "smart_todo": "Smart Todo",
-      "tags": "Tags:",
-      "todos_1c7q": "Todos",
-      "tournaments_e65c": "Tournaments",
-      "telemetry_fm2a": "Telemetria",
-      "trend": "Trend",
-      "type_to_search": "Type to search...",
-      "törli": "törli",
-      "users_1cu3": "Users",
-      "veszélyzóna": "Veszélyzóna",
-      "visszaállítandó_év": "Visszaállítandó Év",
-      "visszaállítja": "VISSZAÁLLÍTJA",
-      "visszaállítás": "Visszaállítás:",
-      "visszaállítás_45": "Visszaállítás",
-      "visszaállítás_55": "Visszaállítás",
-      "visszaállítás_undo": "Visszaállítás (Undo) -",
-      "véglegesítés_és_reset": "Véglegesítés és Reset",
-      "átlagos_nap": "Átlagos/nap",
-      "év_kiválasztása": "Év kiválasztása",
-      "év_lezárása": "Év Lezárása",
-      "év_lezárása_85": "Év Lezárása -",
-      "éves_zárás_és": "Éves Zárás és Reset",
-      "írd_be_a": "Írd be a következőt a megerősítéshez:",
-      "írd_be_természetes": "Írd be természetes nyelven: &quot;Szerver karbantartás !!! holnap #dev&quot;",
-      "összes": "Összes",
-      "összesen_nap": "Összesen (30 nap)"
-    },
-    "telemetry": {
-      "title": "API telemetry",
-      "description": "Útvonalforgalom, késleltetés és payload trendek elemzése történeti szűrőkkel.",
-      "loading": "Telemetry adatok betöltése...",
-      "error_loading": "Nem sikerült betölteni a telemetry adatokat",
-      "export": {
-        "button": "JSON export",
-        "success": "Telemetry export letöltve.",
-        "error": "Nem sikerült exportálni a telemetry csomagot"
-      },
-      "refresh": "Telemetry frissítése",
-      "filters": {
-        "title": "Szűrők",
-        "description": "Válassz időtartományt, időzónát vagy egyedi intervallumot.",
-        "range": "Időtartomány",
-        "timezone": "Időzóna",
-        "method": "Metódus",
-        "all_methods": "Összes metódus",
-        "granularity": "Felbontás",
-        "granularity_minute": "Percenként",
-        "granularity_hour": "Óránként",
-        "granularity_day": "Naponként",
-        "route": "Útvonal",
-        "all_routes": "Összes útvonal",
-        "clear_route": "Útvonal törlése",
-        "only_error_apis": "Csak hibás API-k",
-        "min_calls": "Minimum hívás",
-        "min_traffic_kb": "Minimum forgalom (KB)",
-        "min_latency_ms": "Minimum átlag késleltetés (ms)",
-        "route_sort": "Összes útvonal rendezése",
-        "top_sort": "Top útvonal rendezése",
-        "sort_route_asc": "Útvonal (A-Z)",
-        "sort_calls_desc": "Hívások (csökkenő)",
-        "sort_errors_desc": "Hibák (csökkenő)",
-        "sort_traffic_desc": "Forgalom (csökkenő)",
-        "sort_latency_desc": "Késleltetés (csökkenő)",
-        "sort_last_seen_desc": "Utoljára látott (legújabb)",
-        "custom_start": "Egyedi kezdés",
-        "custom_end": "Egyedi zárás",
-        "apply": "Alkalmaz"
-      },
-      "ranges": {
-        "24h": "Utolsó 24 óra",
-        "7d": "Utolsó 7 nap",
-        "30d": "Utolsó 30 nap",
-        "90d": "Utolsó 90 nap",
-        "custom": "Egyedi intervallum"
-      },
-      "charts": {
-        "requests": "API hívások",
-        "latency": "Átlag késleltetés (ms)",
-        "payload": "Payload (KB)",
-        "throughput": "Forgalmi átfolyás (byte)"
-      },
-      "metrics": {
-        "incoming_total_kb": "Bejövő összesen (KB)",
-        "outgoing_total_kb": "Kimenő összesen (KB)",
-        "total_moved": "Összes mozgatott adat",
-        "avg_package_size": "Átlagos csomagméret",
-        "avg_incoming_package": "Átlagos bejövő csomag",
-        "avg_outgoing_package": "Átlagos kimenő csomag"
-      },
-      "top_routes": {
-        "title": "Top API route-ok",
-        "description": "A kiválasztott időablak legaktívabb és legterheltebb útvonalai.",
-        "empty": "Még nincs API telemetry adat.",
-        "calls": "hívás",
-        "avg": "átlag",
-        "max": "max",
-        "error_rate": "hiba",
-        "incoming": "bejövő",
-        "outgoing": "kimenő",
-        "total": "összes"
-      },
-      "all_routes": {
-        "title": "Összes regisztrált útvonal",
-        "description": "A telemetria adatbázisban szereplő összes útvonal.",
-        "search_placeholder": "Útvonal keresése...",
-        "empty": "Nincs találat az aktuális szűrőkhöz.",
-        "calls": "Hívások",
-        "errors": "Hibák",
-        "traffic": "Forgalom",
-        "latency": "Átlag késleltetés",
-        "select": "Kiválaszt"
-      },
-      "error_calls": {
-        "title": "Hibás hívások",
-        "description": "A szűrők alapján pontos 4xx/5xx kérés-válasz párok vizsgálata.",
-        "total": "Összes: {count}",
-        "status_filter": "Státusz szűrő",
-        "status_all": "Összes státusz",
-        "clear_filters": "Hiba szűrők törlése",
-        "mark_fixed": "Kiválasztott útvonal hibáinak lezárása",
-        "mark_fixed_need_route": "Először válassz útvonalat.",
-        "mark_fixed_success": "A régi hibák lezárva, a hibaarány alaphelyzetbe állítva.",
-        "mark_fixed_error": "Nem sikerült a hibákat lezárni.",
-        "mark_fixed_hint": "Válassz útvonalat a szűrőkből vagy az összes útvonal listából.",
-        "select_error": "Hibasor kiválasztása",
-        "select_page": "Oldal kijelölése",
-        "delete_selected": "Kijelölt logok törlése",
-        "delete_route": "Kiválasztott útvonal logjainak törlése",
-        "delete_selected_need_selection": "Válassz ki legalább egy hibalogot.",
-        "delete_route_need_selection": "Először válassz útvonalat.",
-        "delete_selected_confirm": "Biztosan törlöd a kijelölt {count} hibalogot?",
-        "delete_route_confirm": "Biztosan törlöd az összes hibalogot ehhez: {method} {route}?",
-        "delete_success": "{count} hibalog törölve.",
-        "delete_error": "Nem sikerült törölni a hibalogokat.",
-        "empty": "Nincs hibás hívás a jelenlegi szűrőkre.",
-        "duration": "Időtartam",
-        "request_bytes": "Kérés",
-        "response_bytes": "Válasz",
-        "request": "Kérés részletek",
-        "response": "Válasz részletek",
-        "copy": "JSON másolása",
-        "prev": "Előző",
-        "next": "Következő",
-        "page": "{page}. oldal / {totalPages}"
-      }
-    }
-  },
-  "Profile": {
-    "loading_data": "Felhasználói adatok betöltése...",
-    "header": {
-      "title": "Felhasználói Profil",
-      "subtitle": "Kezeld személyes adataidat és tekintsd meg statisztikáidat"
-    },
-    "tabs": {
-      "details": "Adatok",
-      "stats": "Statisztika",
-      "tickets": "Visszajelzések"
-    },
-    "countries": {
-      "hu": "Magyarország",
-      "at": "Ausztria",
-      "de": "Németország",
-      "sk": "Szlovákia",
-      "ro": "Románia",
-      "hr": "Horvátország",
-      "si": "Szlovénia"
-    },
-    "info": {
-      "title": "Személyes Információk",
-      "email": "E-mail cím",
-      "verified": "Ellenőrizve",
-      "not_verified": "Nincs ellenőrizve",
-      "name": "Név",
-      "username": "Felhasználónév",
-      "country": "Ország"
-    },
-    "edit": {
-      "title": "Profil Szerkesztése",
-      "email": "E-mail cím",
-      "name": "Név",
-      "username": "Felhasználónév",
-      "country": "Ország",
-      "password": "Új jelszó",
-      "confirm_password": "Új jelszó megerősítése",
-      "placeholders": {
-        "email": "Példa: john@example.com",
-        "name": "Teljes név",
-        "username": "Felhasználónév",
-        "password": "Hagyd üresen, ha nem változtatod meg"
-      },
-      "updating": "Frissítés...",
-      "update_button": "Adatok mentése",
-      "validation": {
-        "email": "Érvénytelen e-mail cím",
-        "name_required": "Név megadása kötelező",
-        "username_required": "Felhasználónév megadása kötelező",
-        "password_mismatch": "A két jelszó nem egyezik"
-      }
-    },
-    "verification": {
-      "title": "E-mail Megerősítése",
-      "alert": "Kérjük, erősítsd meg az e-mail címedet a biztonságos használat érdekében.",
-      "code_label": "Ellenőrző kód",
-      "code_placeholder": "6 számjegyű kód",
-      "verifying": "Ellenőrzés...",
-      "verify_button": "Megerősítés",
-      "resending": "Küldés...",
-      "resend_button": "Kód újraküldése",
-      "validation": {
-        "code_required": "Az ellenőrző kód megadása kötelező"
-      }
-    },
-    "actions": {
-      "title": "Műveletek",
-      "logging_out": "Kijelentkezés...",
-      "logout": "Kijelentkezés",
-      "my_club": "Klubom",
-      "admin": "Adminisztráció"
-    },
-    "stats": {
-      "title": "Játékos Statisztikák",
-      "period": "Időszak:",
-      "seasons": {
-        "current": "Aktuális szezon",
-        "all_time": "Összesített",
-        "previous": "Korábbi szezonok"
-      },
-      "mmr": {
-        "current": "Aktuális MMR",
-        "season_end": "Szezonvégi MMR",
-        "archived": "Archivált MMR"
-      },
-      "mmr_1n02": "MMR",
-      "oac_mmr_g66r": "OAC MMR",
-      "rank": "Helyezés",
-      "rank_end": "Vezetői helyezés",
-      "global_list": "Globális ranglista",
-      "tournaments": "Versenyek",
-      "career": "Pályafutás",
-      "term": "Időszak",
-      "win_rate": "Győzelmi arány",
-      "wins": "Győzelem",
-      "charts": {
-        "form": "Forma (Átlag)",
-        "no_data": "Nincs elég adat a grafikonhoz",
-        "mmr_history": "MMR Történet",
-        "no_history": "Nincs MMR történet"
-      },
-      "metrics": {
-        "title": "Részletes Adatok",
-        "avg": "Átlag",
-        "one_eighties": "Összes 180",
-        "best_pos": "Legjobb helyezés",
-        "avg_pos": "Átlagos helyezés",
-        "max_checkout": "Legmagasabb kiszálló"
-      },
-      "matches": {
-        "title": "Legutóbbi meccsek"
-      },
-      "teams": {
-        "title": "Csapataim",
-        "pair": "Páros",
-        "team": "Csapat"
-      },
-      "history": {
-        "title": "Verseny Történet",
-        "tournaments_count": "{count} verseny",
-        "open_button": "Megnyitás",
-        "matches": "Meccsek",
-        "legs": "Legek",
-        "avg": "Átlag",
-        "one_eighties": "180-asok",
-        "checkout": "Kiszálló",
-        "date": "Dátum",
-        "empty": "Nincs regisztrált verseny ebben az időszakban"
-      }
-    },
-    "history": {
-      "title": "Liga Történet",
-      "points": "Pontok",
-      "tournaments": "Versenyek",
-      "position": "Helyezés",
-      "last_activity": "Utolsó aktivitás: {date}"
-    },
-    "tickets": {
-      "title": "Visszajelzéseim (Tickets)",
-      "new_ticket": "Új hibajegy",
-      "new_ticket_desc": "Kérdésed vagy észrevételed van? Írj nekünk!",
-      "status": {
-        "open": "Nyitott",
-        "replied": "Válasz érkezett",
-        "closed": "Lezárt"
-      },
-      "priority": {
-        "high": "Magas",
-        "medium": "Közepes",
-        "low": "Alacsony"
-      },
-      "id_prefix": "Ticket #",
-      "updated_at": "Frissítve: {date}",
-      "empty": "Még nincsenek visszajelzéseid.",
-      "reply_placeholder": "Válasz írása...",
-      "send_button": "Küldés",
-      "closed_message": "Ez a hibajegy le lett zárva.",
-      "toasts": {
-        "closed_error": "Lezárt hibajegyhez nem lehet hozzászólni",
-        "reply_error": "Hiba az üzenet küldésekor"
-      }
-    },
-    "toasts": {
-      "updating": "Profil frissítése...",
-      "update_success": "Profil sikeresen frissítve!",
-      "update_error": "Hiba történt a frissítés során",
-      "verification_success": "E-mail cím sikeresen megerősítve!",
-      "verification_error": "Érvénytelen ellenőrző kód",
-      "resending": "Kód újraküldése...",
-      "resend_success": "Új kód elküldve!",
-      "resend_error": "Hiba a kód újraküldése során",
-      "logout_success": "Sikeres kijelentkezés!",
-      "logout_error": "Hiba a kijelentkezés során"
-    },
-    "picture": {
-      "profilkep_giiz": "Profilkép",
-      "consent_error": "A kép nyilvánossá tételéhez hozzá kell járulnod",
-      "success_update": "Profilkép sikeresen frissítve",
-      "error_update": "Hiba a profilkép frissítésekor",
-      "remove_confirm": "Biztosan törölni szeretnéd a profilképedet?",
-      "success_remove": "Profilkép sikeresen eltávolítva",
-      "error_remove": "Hiba a profilkép eltávolításakor",
-      "removing": "Eltávolítás...",
-      "remove_button": "Profilkép törlése",
-      "dialog_title": "Profilkép Szerkesztése",
-      "zoom": "Nagyítás",
-      "consent_label": "Hozzájárulok, hogy a profilképem megjelenjen a játékoslistákban és a versenyeken.",
-      "cancel": "Mégse",
-      "saving": "Mentés...",
-      "save": "Profilkép mentése"
-    }
   },
   "Board": {
     "a_bull_t": "A bull-t a bal oldali játékos kezdi",
@@ -3547,5 +3772,79 @@
     "válassz_eszközt": "Válassz eszközt",
     "érintett_oldal_opcionális": "Érintett oldal (opcionális)",
     "írd_le_részletesen": "Írd le részletesen, mi történt..."
+  },
+  "HomeDashboard": {
+    "welcome": "Meccsnap",
+    "headline": "Üdv újra, {name}",
+    "subheadline": "A klubod, a tornák és a tábla funkciók egy érintésre vannak.",
+    "joinTournament": "Csatlakozás tornához",
+    "viewStats": "Statisztikáim",
+    "header": {
+      "title": "Torna áttekintés",
+      "openActiveTournament": "Aktív torna megnyitása",
+      "daysUntil": "{count} nap a következő tornáig",
+      "noDate": "A dátum később érkezik",
+      "noTournament": "Még nincs nevezésed tornára. Csatlakozz egyhez, és itt látod a menetrendet.",
+      "players": "Játékosok",
+      "entryFee": "Nevezési díj",
+      "notificationsWarning": "{count} aktív értesítésed van",
+      "performance": "Teljesítményed",
+      "matchRecord": "Meccsek: {wins} győzelem / {losses} vereség",
+      "legRecord": "Legek: {won} nyert / {lost} vesztett",
+      "boardNumber": "{number}. tábla",
+      "boardTbd": "Tábla hamarosan",
+      "nextPlaying": "Jelenleg játszol: {board}",
+      "nextScoring": "Jelenleg számolsz: {board}",
+      "nextPending": "Következő feladatod: {board}",
+      "nextUnknown": "Még nincs következő tábla hozzárendelés"
+    },
+    "stats": {
+      "matches": "Lejátszott meccsek",
+      "winRate": "Győzelmi arány",
+      "tournaments": "Tornák száma",
+      "checkout": "Átlag kiszálló",
+      "ranking": "Jelenlegi rang"
+    },
+    "calendar": {
+      "title": "Közelgő naptár",
+      "export": "Exportálás naptárba"
+    },
+    "notifications": {
+      "title": "Értesítési központ",
+      "unread": "{count} olvasatlan",
+      "profileActions": "Profil teendők",
+      "profileActionsHint": "Egészítsd ki a profil adataidat és beállításaidat",
+      "feedbackResponses": "Visszajelzés válaszok",
+      "feedbackUnread": "{count} olvasatlan visszajelzés szál",
+      "tournamentReminders": "Közelgő torna emlékeztetők",
+      "reminderCount": "{count} torna a következő 7 napban",
+      "spotAvailability": "Felszabaduló helyek",
+      "spotHint": "{count} elérhető hely értesítés"
+    },
+    "currentTournament": {
+      "title": "Aktuális torna áttekintés",
+      "empty": "Nincs aktív vagy közelgő tornád.",
+      "boardStatusActive": "Tábla állapot: élő és elérhető",
+      "boardStatusUpcoming": "Tábla állapot: a torna napján nyílik",
+      "openOverview": "Áttekintés megnyitása",
+      "openBoard": "Tábla megnyitása",
+      "players": "Játékosok",
+      "entryFee": "Nevezési díj"
+    },
+    "league": {
+      "title": "Liga állás",
+      "empty": "Nincs aktív liga rangsor.",
+      "points": "pont",
+      "open": "Liga részletek megnyitása"
+    },
+    "upcomingTitle": "Közelgő tornák",
+    "seeAll": "Összes",
+    "loading": "Adatok betöltése...",
+    "emptyTournaments": "Nincs közelgő torna.",
+    "quickActions": "Gyors műveletek",
+    "actions": {
+      "openBoard": "Live tábla megnyitása",
+      "myClub": "Saját klub"
+    }
   }
 }

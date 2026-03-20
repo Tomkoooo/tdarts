@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import axios from "axios"
 import toast from "react-hot-toast"
 import {
   Table,
@@ -46,6 +45,7 @@ import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import AdminTicketDetail from "@/components/admin/AdminTicketDetail"
 import { useTranslations } from "next-intl"
+import { adminFeedbackActions, adminTodosActions } from "@/features/admin/actions/adminDomains.action"
 
 interface FeedbackHistory {
   action: string
@@ -97,8 +97,8 @@ export default function FeedbackTable() {
         category: categoryFilter !== "all" ? categoryFilter : undefined,
       }
 
-      const response = await axios.get("/api/admin/feedback", { params })
-      if (response.data.success) {
+      const response = await adminFeedbackActions.list(params)
+      if (response.data?.success) {
         setData(response.data.feedback)
         setTotal(response.data.total)
         setTotalPages(response.data.totalPages)
@@ -126,7 +126,7 @@ export default function FeedbackTable() {
   const deleteFeedback = async (id: string) => {
     if (!confirm(t("actions.confirm_delete"))) return
     try {
-      await axios.delete(`/api/admin/feedback/${id}`)
+      await adminFeedbackActions.delete(id)
       toast.success(t("toasts.delete_success"))
       fetchData()
     } catch {
@@ -170,7 +170,7 @@ export default function FeedbackTable() {
   
   const createTodoFromFeedback = async (feedback: Feedback) => {
       try {
-          await axios.post('/api/admin/todos', {
+          await adminTodosActions.create({
               title: `[Feedback] ${feedback.title}`,
               description: feedback.description,
               priority: feedback.priority === 'critical' ? 'high' : 'medium',
@@ -180,7 +180,7 @@ export default function FeedbackTable() {
           toast.success(t("toasts.todo_success"));
       } catch(e: any) {
           console.error(e)
-          toast.error(e.response?.data?.error || t("toasts.todo_error"));
+          toast.error(e?.message || t("toasts.todo_error"));
       }
   }
 

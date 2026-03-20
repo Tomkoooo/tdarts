@@ -1,589 +1,733 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
-import { useFormatter, useTranslations } from "next-intl";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TelemetryFilterBar } from "./TelemetryFilterBar";
-import { TelemetryHealthStrip } from "./TelemetryHealthStrip";
-import { TelemetryIncidentsPanel } from "./TelemetryIncidentsPanel";
-import { TelemetryRouteDetailsDrawer } from "./TelemetryRouteDetailsDrawer";
-import { TelemetryRoutesPanel } from "./TelemetryRoutesPanel";
-import { TelemetryTrendPanel } from "./TelemetryTrendPanel";
 import {
-  IncidentsData,
-  OverviewData,
-  RouteDetailsData,
-  RouteRow,
-  TelemetryGranularity,
-  TelemetryMetric,
-  TelemetryRange,
-  TrendPoint,
-} from "./types";
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { adminTelemetryActions } from "@/features/admin/actions/adminDomains.action";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-type SortKey = "route" | "calls" | "errors" | "errorrate" | "latency" | "traffic" | "lastseen";
+type TelemetryRange = "24h" | "7d" | "30d" | "90d" | "custom";
+type TelemetryGranularity = "minute" | "hour" | "day";
+type TelemetrySource = "all" | "api" | "action" | "page";
+type Delta = { direction: "up" | "down" | "flat"; deltaPct: number };
+type EntitySortKey =
+  | "source"
+  | "entity"
+  | "calls"
+  | "callsPerSecond"
+  | "avgLatencyMs"
+  | "errorRate"
+  | "timeouts"
+  | "traffic"
+  | "avgPacket";
 type SortDir = "asc" | "desc";
-type InsightView = "all" | "high-latency" | "regressed" | "large-packets" | "rising-errors";
+
+function formatNumber(value: number, decimals = 3): string {
+  if (!Number.isFinite(value)) return "0";
+  return value.toFixed(Math.min(3, Math.max(0, decimals)));
+}
+
+function formatLatency(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "0 ms";
+  if (ms >= 1000) return `${formatNumber(ms / 1000)} s`;
+  return `${formatNumber(ms)} ms`;
+}
 
 function formatBytes(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
   if (bytes < 1024) return `${Math.round(bytes)} B`;
-  if (bytes < 1024 * 1024) return `${Math.round((bytes / 1024) * 100) / 100} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 100) / 100} MB`;
-  return `${Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100} GB`;
+  if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${formatNumber(bytes / (1024 * 1024))} MB`;
+  return `${formatNumber(bytes / (1024 * 1024 * 1024))} GB`;
 }
 
-function buildCommonParams(
-  range: TelemetryRange,
-  granularity: TelemetryGranularity,
-  method: string,
-  routeKey: string,
-  customStart: string,
-  customEnd: string
-) {
-  const params = new URLSearchParams({
-    range,
-    granularity,
+function trendBadgeVariant(delta?: Delta, inverseBad = false): "secondary" | "warning" | "success" {
+  if (!delta || delta.direction === "flat") return "secondary";
+  const isWorsening = inverseBad ? delta.direction === "up" : delta.direction === "down";
+  return isWorsening ? "warning" : "success";
+}
+
+function trendBadge(delta?: Delta, inverseBad = false) {
+  if (!delta) return <Badge variant="secondary">flat</Badge>;
+  const sign = delta.deltaPct > 0 ? "+" : "";
+  return <Badge variant={trendBadgeVariant(delta, inverseBad)}>{`${delta.direction} (${sign}${formatNumber(delta.deltaPct, 2)}%)`}</Badge>;
+}
+
+const tooltipTheme = {
+  contentStyle: {
+    backgroundColor: "#fefce8",
+    borderColor: "#d6d3d1",
+    borderRadius: 8,
+  },
+  labelStyle: {
+    color: "#000000",
+    fontWeight: 600,
+  },
+  itemStyle: {
+    color: "#000000",
+  },
+} as const;
+
+function buildParams(args: {
+  range: TelemetryRange;
+  granularity: TelemetryGranularity;
+  source: TelemetrySource;
+  method: string;
+  search: string;
+  customStart: string;
+  customEnd: string;
+}) {
+  const p = new URLSearchParams({
+    range: args.range,
+    granularity: args.granularity,
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    source: args.source,
   });
-  if (method !== "ALL") params.set("method", method);
-  if (routeKey.trim()) params.set("routeKey", routeKey.trim());
-  if (range === "custom" && customStart && customEnd) {
-    params.set("start", new Date(customStart).toISOString());
-    params.set("end", new Date(customEnd).toISOString());
+  if (args.method !== "ALL") p.set("method", args.method);
+  if (args.search.trim()) p.set("search", args.search.trim());
+  if (args.range === "custom" && args.customStart && args.customEnd) {
+    p.set("start", new Date(args.customStart).toISOString());
+    p.set("end", new Date(args.customEnd).toISOString());
   }
-  return params;
+  return Object.fromEntries(p.entries());
 }
-
-const INSIGHT_TABS: Array<{ value: InsightView; label: string }> = [
-  { value: "all", label: "All routes" },
-  { value: "high-latency", label: "High latency" },
-  { value: "regressed", label: "Latency regressed" },
-  { value: "large-packets", label: "Large packets" },
-  { value: "rising-errors", label: "Rising errors" },
-];
 
 export default function TelemetryDashboardV2() {
-  const t = useTranslations("Admin.telemetry");
-  const format = useFormatter();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
   const [range, setRange] = useState<TelemetryRange>("24h");
   const [granularity, setGranularity] = useState<TelemetryGranularity>("hour");
+  const [source, setSource] = useState<TelemetrySource>("all");
   const [method, setMethod] = useState("ALL");
-  const [routeSearch, setRouteSearch] = useState("");
-  const [debouncedRouteSearch, setDebouncedRouteSearch] = useState("");
-  const [metric, setMetric] = useState<TelemetryMetric>("calls");
-  const [onlyProblematic, setOnlyProblematic] = useState(false);
+  const [search, setSearch] = useState("");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<SortKey>("errors");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [insightView, setInsightView] = useState<InsightView>("all");
+  const [importedSnapshot, setImportedSnapshot] = useState<any | null>(null);
+  const [selectedError, setSelectedError] = useState<any | null>(null);
+  const [selectedErrorDetail, setSelectedErrorDetail] = useState<any | null>(null);
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
+  const [isErrorDetailLoading, setIsErrorDetailLoading] = useState(false);
+  const [entitySortKey, setEntitySortKey] = useState<EntitySortKey>("traffic");
+  const [entitySortDir, setEntitySortDir] = useState<SortDir>("desc");
 
-  const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [trendPoints, setTrendPoints] = useState<TrendPoint[]>([]);
-  const [incidents, setIncidents] = useState<IncidentsData | null>(null);
-  const [routes, setRoutes] = useState<RouteRow[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [routeInsights, setRouteInsights] = useState<{
-    highBaselineLatency: RouteRow[];
-    latencyRegressed: RouteRow[];
-    largestIncomingPackets: RouteRow[];
-    largestOutgoingPackets: RouteRow[];
-    risingErrorRate: RouteRow[];
-  } | null>(null);
+  const [overview, setOverview] = useState<any>(null);
+  const [trends, setTrends] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<any>(null);
+  const [entities, setEntities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [selectedRoute, setSelectedRoute] = useState<RouteRow | null>(null);
-  const [routeDetails, setRouteDetails] = useState<RouteDetailsData | null>(null);
-  const [selectedErrorId, setSelectedErrorId] = useState("");
-  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
-
-  const [isOverviewLoading, setIsOverviewLoading] = useState(true);
-  const [isTrendLoading, setIsTrendLoading] = useState(true);
-  const [isIncidentsLoading, setIsIncidentsLoading] = useState(true);
-  const [isRoutesLoading, setIsRoutesLoading] = useState(true);
-  const [isAiExporting, setIsAiExporting] = useState(false);
-  const [isAiCopying, setIsAiCopying] = useState(false);
-  const [isApplyFixesOpen, setIsApplyFixesOpen] = useState(false);
-  const [fixesJsonInput, setFixesJsonInput] = useState("");
-  const [isApplyingFixes, setIsApplyingFixes] = useState(false);
-  const hasInitializedFilters = useRef(false);
-
-  useEffect(() => {
-    if (hasInitializedFilters.current) return;
-    const rangeFromUrl = (searchParams.get("range") || "") as TelemetryRange;
-    const metricFromUrl = (searchParams.get("metric") || "") as TelemetryMetric;
-    const granularityFromUrl = (searchParams.get("granularity") || "") as TelemetryGranularity;
-    const methodFromUrl = searchParams.get("method") || "ALL";
-    const routeSearchFromUrl = searchParams.get("search") || "";
-    const localRange = (localStorage.getItem("telemetry.v2.range") || "") as TelemetryRange;
-    const localMetric = (localStorage.getItem("telemetry.v2.metric") || "") as TelemetryMetric;
-    const localGranularity = (localStorage.getItem("telemetry.v2.granularity") || "") as TelemetryGranularity;
-    const localMethod = localStorage.getItem("telemetry.v2.method") || "ALL";
-    const localProblematic = localStorage.getItem("telemetry.v2.onlyProblematic") === "true";
-
-    if (rangeFromUrl || localRange) setRange(rangeFromUrl || localRange);
-    if (metricFromUrl || localMetric) setMetric(metricFromUrl || localMetric);
-    if (granularityFromUrl || localGranularity) setGranularity(granularityFromUrl || localGranularity);
-    if (methodFromUrl || localMethod) setMethod(methodFromUrl || localMethod);
-    if (routeSearchFromUrl) setRouteSearch(routeSearchFromUrl);
-    setOnlyProblematic(localProblematic);
-    hasInitializedFilters.current = true;
-  }, [searchParams]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedRouteSearch(routeSearch.trim());
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [routeSearch]);
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-    params.set("range", range);
-    params.set("metric", metric);
-    params.set("granularity", granularity);
-    params.set("method", method);
-    if (debouncedRouteSearch) params.set("search", debouncedRouteSearch);
-    const nextQuery = params.toString();
-    if (nextQuery !== searchParams.toString()) {
-      router.replace(`${pathname}?${nextQuery}`, { scroll: false });
-    }
-
-    localStorage.setItem("telemetry.v2.range", range);
-    localStorage.setItem("telemetry.v2.metric", metric);
-    localStorage.setItem("telemetry.v2.granularity", granularity);
-    localStorage.setItem("telemetry.v2.method", method);
-    localStorage.setItem("telemetry.v2.onlyProblematic", String(onlyProblematic));
-  }, [range, metric, granularity, method, onlyProblematic, debouncedRouteSearch, pathname, router, searchParams]);
-
-  const refreshDashboard = async () => {
-    try {
-      const common = buildCommonParams(range, granularity, method, "", customStart, customEnd);
-      if (debouncedRouteSearch) common.set("search", debouncedRouteSearch);
-      const routesParams = new URLSearchParams(common.toString());
-      routesParams.set("onlyProblematic", onlyProblematic ? "true" : "false");
-      routesParams.set("page", String(page));
-      routesParams.set("limit", "20");
-      routesParams.set("sortBy", sortBy);
-      routesParams.set("sortDir", sortDir);
-
-      if (!overview) setIsOverviewLoading(true);
-      if (trendPoints.length === 0) setIsTrendLoading(true);
-      if (!incidents) setIsIncidentsLoading(true);
-      if (routes.length === 0) setIsRoutesLoading(true);
-
-      const [overviewRes, trendsRes, incidentsRes, routesRes] = await Promise.all([
-        axios.get(`/api/admin/charts/api-traffic/v2/overview?${common.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/v2/trends?${common.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/v2/incidents?${common.toString()}`),
-        axios.get(`/api/admin/charts/api-traffic/v2/routes?${routesParams.toString()}`),
-      ]);
-
-      setOverview(overviewRes.data?.data || null);
-      setTrendPoints(trendsRes.data?.data?.points || []);
-      setIncidents(incidentsRes.data?.data || null);
-      setRoutes(routesRes.data?.data || []);
-      setTotalPages(routesRes.data?.pagination?.totalPages || 1);
-      setRouteInsights(routesRes.data?.insights || null);
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || t("error_loading"));
-    } finally {
-      setIsOverviewLoading(false);
-      setIsTrendLoading(false);
-      setIsIncidentsLoading(false);
-      setIsRoutesLoading(false);
-    }
-  };
-
-  const fetchRouteDetails = async (row: RouteRow, errorId?: string) => {
-    if (!selectedRoute || selectedRoute.routeKey !== row.routeKey || selectedRoute.method !== row.method) {
-      setSelectedErrorId("");
-    }
-    setSelectedRoute(row);
-    setIsDetailsLoading(true);
-    try {
-      const common = buildCommonParams(range, granularity, row.method, row.routeKey, customStart, customEnd);
-      if (errorId) common.set("errorId", errorId);
-      const response = await axios.get(`/api/admin/charts/api-traffic/v2/route-details?${common.toString()}`);
-      setRouteDetails(response.data?.data || null);
-      setSelectedErrorId(errorId || "");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to load route details");
-    } finally {
-      setIsDetailsLoading(false);
-    }
-  };
-
-  const markRouteFixed = async () => {
-    if (!selectedRoute) return;
-    try {
-      await axios.post("/api/admin/charts/api-traffic/error-resets", {
-        routeKey: selectedRoute.routeKey,
-        method: selectedRoute.method,
-      });
-      toast.success("Route baseline reset and old errors marked fixed.");
-      await Promise.all([refreshDashboard(), fetchRouteDetails(selectedRoute)]);
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to mark route fixed");
-    }
-  };
-
-  const fetchAiPromptPayload = async () => {
-    const params = buildCommonParams(range, granularity, method, "", customStart, customEnd);
-    if (debouncedRouteSearch) params.set("search", debouncedRouteSearch);
-    params.set("mode", "ai_prompt");
-    const response = await axios.get(`/api/admin/charts/api-traffic/export?${params.toString()}`);
-    return response.data;
-  };
-
-  const exportAiPromptJson = async () => {
-    try {
-      setIsAiExporting(true);
-      const payload = await fetchAiPromptPayload();
-      const filename = `api-telemetry-ai-prompt-${Date.now()}.json`;
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success("AI prompt JSON exported.");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to export AI prompt JSON");
-    } finally {
-      setIsAiExporting(false);
-    }
-  };
-
-  const copyAiPromptJson = async () => {
-    try {
-      setIsAiCopying(true);
-      const payload = await fetchAiPromptPayload();
-      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-      toast.success("AI prompt JSON copied.");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to copy AI prompt JSON");
-    } finally {
-      setIsAiCopying(false);
-    }
-  };
-
-  const applyFixesFromJson = async () => {
-    try {
-      setIsApplyingFixes(true);
-      const parsed = JSON.parse(fixesJsonInput || "{}");
-      const fixes = Array.isArray(parsed?.fixes) ? parsed.fixes : [];
-      const routes = fixes
-        .map((item: any) => ({
-          routeKey: typeof item?.routeKey === "string" ? item.routeKey.trim() : "",
-          method: typeof item?.method === "string" ? item.method.trim().toUpperCase() : "ALL",
-        }))
-        .filter((item: { routeKey: string; method: string }) => item.routeKey);
-
-      if (routes.length === 0) {
-        toast.error("No valid fixes found. Expected { fixes: [{ routeKey, method }] }");
-        return;
-      }
-
-      const response = await axios.post("/api/admin/charts/api-traffic/error-resets", { routes });
-      const processed = response.data?.data?.totalRoutesProcessed || routes.length;
-      const resolved = response.data?.data?.totalResolvedCount || 0;
-      toast.success(`Applied fixes to ${processed} routes (${resolved} errors resolved).`);
-      setIsApplyFixesOpen(false);
-      setFixesJsonInput("");
-      await refreshDashboard();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Invalid JSON or failed applying fixes");
-    } finally {
-      setIsApplyingFixes(false);
-    }
-  };
-
-  const inspectError = async (errorId: string) => {
-    if (!selectedRoute) return;
-    if (!errorId) {
-      setSelectedErrorId("");
-      if (routeDetails) {
-        setRouteDetails({ ...routeDetails, selectedError: null });
-      }
-      return;
-    }
-    await fetchRouteDetails(selectedRoute, errorId);
-  };
-
-  const handleIncidentErrorClick = async (routeKey: string, method: string, errorId: string) => {
-    const syntheticRow: RouteRow = {
-      routeKey,
-      method,
-      totalCalls: 0,
-      totalErrors: 0,
-      errorRate: 0,
-      avgLatencyMs: 0,
-      totalRequestBytes: 0,
-      totalResponseBytes: 0,
-      totalTrafficBytes: 0,
-      avgPacketBytes: 0,
-      baselineAvgLatencyMs: 0,
-      latencyRatio: 0,
-      baselineErrorRate: 0,
-      errorRateRatio: 0,
-      avgIncomingPacketBytes: 0,
-      avgOutgoingPacketBytes: 0,
-      lastSeen: "",
-    };
-    await fetchRouteDetails(syntheticRow, errorId);
-  };
-
-  useEffect(() => {
+  const loadData = async () => {
     if (range === "custom" && (!customStart || !customEnd)) return;
-    refreshDashboard();
-  }, [range, granularity, method, debouncedRouteSearch, onlyProblematic, page, customStart, customEnd, sortBy, sortDir]);
+    const params = buildParams({ range, granularity, source, method, search, customStart, customEnd });
+    try {
+      setIsLoading(true);
+      const [o, t, i, r] = await Promise.all([
+        adminTelemetryActions.overview(params),
+        adminTelemetryActions.trends(params),
+        adminTelemetryActions.incidents(params),
+        adminTelemetryActions.routes({ ...params, page: "1", limit: "25", sortBy: "traffic", sortDir: "desc" }),
+      ]);
+      setOverview(o.data?.data || null);
+      setTrends(t.data?.data?.points || []);
+      setIncidents(i.data?.data || null);
+      setEntities(r.data?.data || []);
+      setImportedSnapshot(null);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to load telemetry");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const common = buildCommonParams(range, granularity, method, "", customStart, customEnd);
-      if (debouncedRouteSearch) common.set("search", debouncedRouteSearch);
-      axios
-        .all([
-          axios.get(`/api/admin/charts/api-traffic/v2/overview?${common.toString()}`),
-          axios.get(`/api/admin/charts/api-traffic/v2/incidents?${common.toString()}`),
-        ])
-        .then(([overviewRes, incidentsRes]) => {
-          setOverview(overviewRes.data?.data || null);
-          setIncidents(incidentsRes.data?.data || null);
-        })
-        .catch(() => {});
-    }, 60_000);
-    return () => clearInterval(timer);
-  }, [range, granularity, method, debouncedRouteSearch, customStart, customEnd]);
+    loadData();
+  }, [range, granularity, source, method]);
 
-  const isRefreshing = useMemo(
-    () => isOverviewLoading || isTrendLoading || isIncidentsLoading || isRoutesLoading,
-    [isOverviewLoading, isTrendLoading, isIncidentsLoading, isRoutesLoading]
+  const activeOverview = importedSnapshot?.overview?.data || overview;
+  const activeIncidents = importedSnapshot?.incidents?.data || incidents;
+  const activeEntities = importedSnapshot?.routes?.data || entities;
+
+  const chartData = useMemo(() => {
+    const points = importedSnapshot?.trends?.data?.points || trends;
+    return points.map((p: any) => ({
+      label: p.label,
+      callsPerSecond: Number(p.callsPerSecond || 0),
+      avgLatencyMs: Number(p.avgLatencyMs || 0),
+      errorRatePct: Number(p.errorRate || 0) * 100,
+      timeoutRatePct: Number(p.timeoutRate || 0) * 100,
+      totalBytesMb: Number(p.totalBytes || 0) / 1024 / 1024,
+      avgPacketKb: Number(p.avgPacketBytes || 0) / 1024,
+      avgTtfbMs: Number(p.pageLoad?.avgTtfbMs || 0),
+      avgLcpMs: Number(p.pageLoad?.avgLcpMs || 0),
+    }));
+  }, [trends, importedSnapshot]);
+
+  const topHeavy = useMemo(
+    () => [...(activeEntities || [])].sort((a: any, b: any) => Number(b.totalCalls || 0) - Number(a.totalCalls || 0)).slice(0, 10),
+    [activeEntities]
+  );
+  const topErrors = useMemo(
+    () => [...(activeEntities || [])].sort((a: any, b: any) => Number(b.totalErrors || 0) - Number(a.totalErrors || 0)).slice(0, 10),
+    [activeEntities]
   );
 
-  const displayedRoutes = useMemo(() => {
-    if (!routeInsights || insightView === "all") return routes;
-    switch (insightView) {
-      case "high-latency":
-        return routeInsights.highBaselineLatency;
-      case "regressed":
-        return routeInsights.latencyRegressed;
-      case "large-packets":
-        return [...routeInsights.largestIncomingPackets, ...routeInsights.largestOutgoingPackets]
-          .filter((r, i, arr) => arr.findIndex((x) => x.routeKey === r.routeKey && x.method === r.method) === i)
-          .sort((a, b) => b.avgPacketBytes - a.avgPacketBytes);
-      case "rising-errors":
-        return routeInsights.risingErrorRate;
-      default:
-        return routes;
-    }
-  }, [insightView, routes, routeInsights]);
+  const sortedEntities = useMemo(() => {
+    const rows = [...(activeEntities || [])];
+    const getSortValue = (row: any) => {
+      switch (entitySortKey) {
+        case "source":
+          return String(row.sourceType || "");
+        case "entity":
+          return `${String(row.method || "")} ${String(row.routeKey || "")}`;
+        case "calls":
+          return Number(row.totalCalls || 0);
+        case "callsPerSecond":
+          return activeOverview?.window?.seconds
+            ? Number(row.totalCalls || 0) / Number(activeOverview.window.seconds || 1)
+            : 0;
+        case "avgLatencyMs":
+          return Number(row.avgLatencyMs || 0);
+        case "errorRate":
+          return Number(row.errorRate || 0);
+        case "timeouts":
+          return Number(row.totalTimeouts || 0);
+        case "traffic":
+          return Number(row.totalTrafficBytes || 0);
+        case "avgPacket":
+          return Number(row.avgPacketBytes || 0);
+        default:
+          return 0;
+      }
+    };
+    rows.sort((a: any, b: any) => {
+      const av = getSortValue(a);
+      const bv = getSortValue(b);
+      const cmp =
+        typeof av === "string" || typeof bv === "string"
+          ? String(av).localeCompare(String(bv))
+          : Number(av) - Number(bv);
+      return entitySortDir === "asc" ? cmp : -cmp;
+    });
+    return rows;
+  }, [activeEntities, activeOverview?.window?.seconds, entitySortDir, entitySortKey]);
 
-  const displayedTotalPages = insightView === "all" ? totalPages : 1;
+  const toggleEntitySort = (key: EntitySortKey) => {
+    if (entitySortKey === key) {
+      setEntitySortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setEntitySortKey(key);
+    setEntitySortDir(key === "source" || key === "entity" ? "asc" : "desc");
+  };
+
+  const sortLabel = (key: EntitySortKey, label: string) =>
+    `${label}${entitySortKey === key ? (entitySortDir === "asc" ? " ↑" : " ↓") : ""}`;
+
+  const exportSnapshot = async () => {
+    try {
+      const params = buildParams({ range, granularity, source, method, search, customStart, customEnd });
+      const res = await adminTelemetryActions.export(params);
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        filters: params,
+        overview: res.data?.overview,
+        incidents: res.data?.incidents,
+        routes: res.data?.routes,
+        trends: { data: { points: trends } },
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `telemetry-v3-${Date.now()}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Telemetry snapshot exported.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to export snapshot");
+    }
+  };
+
+  const exportErrorsCsv = () => {
+    try {
+      const rows = activeIncidents?.errors || [];
+      const header = [
+        "occurredAt",
+        "sourceType",
+        "method",
+        "routeKey",
+        "status",
+        "durationMs",
+        "requestBytes",
+        "responseBytes",
+        "errorMessage",
+      ];
+      const csv = [
+        header.join(","),
+        ...rows.map((r: any) =>
+          [
+            r.occurredAt,
+            r.sourceType || "",
+            r.method,
+            `"${String(r.routeKey || "").replace(/"/g, '""')}"`,
+            r.status,
+            formatNumber(Number(r.durationMs || 0)),
+            Number(r.requestBytes || 0),
+            Number(r.responseBytes || 0),
+            `"${String(r.errorMessage || "").replace(/"/g, '""')}"`,
+          ].join(",")
+        ),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `telemetry-errors-${Date.now()}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Error logs exported.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to export error logs");
+    }
+  };
+
+  const importSnapshot = async (file?: File) => {
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const serverValidation = await adminTelemetryActions.importSnapshot({ snapshot: parsed });
+      setImportedSnapshot(serverValidation.data?.snapshot || parsed);
+      toast.success("Snapshot imported for local view.");
+    } catch (error: any) {
+      toast.error(error?.message || "Invalid snapshot file");
+    }
+  };
+
+  const openErrorDetails = async (errorItem: any) => {
+    setSelectedError(errorItem);
+    setSelectedErrorDetail(null);
+    setIsErrorDialogOpen(true);
+    setIsErrorDetailLoading(true);
+    try {
+      const params = buildParams({
+        range,
+        granularity,
+        source,
+        method: errorItem.method || method,
+        search: "",
+        customStart,
+        customEnd,
+      });
+      const details = await adminTelemetryActions.routeDetails({
+        ...params,
+        routeKey: errorItem.routeKey,
+        method: errorItem.method,
+        errorId: errorItem.id,
+        source: errorItem.sourceType || source,
+      });
+      setSelectedErrorDetail(details.data?.data?.selectedError || null);
+    } catch {
+      setSelectedErrorDetail(null);
+    } finally {
+      setIsErrorDetailLoading(false);
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-[1650px] space-y-4 p-3 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t("description")} &middot; {format.dateTime(new Date(), { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={copyAiPromptJson}
-            disabled={isAiCopying}
-            className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-secondary-foreground disabled:opacity-60"
-          >
-            {isAiCopying ? "Copying..." : "Copy AI Prompt JSON"}
-          </button>
-          <button
-            type="button"
-            onClick={exportAiPromptJson}
-            disabled={isAiExporting}
-            className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-secondary-foreground disabled:opacity-60"
-          >
-            {isAiExporting ? "Exporting..." : "Download AI Prompt JSON"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsApplyFixesOpen(true)}
-            className="rounded-md border border-border bg-primary px-3 py-2 text-xs text-primary-foreground"
-          >
-            Apply Fixes JSON
-          </button>
-        </div>
-      </div>
-
-      <TelemetryFilterBar
-        range={range}
-        granularity={granularity}
-        method={method}
-        routeSearch={routeSearch}
-        metric={metric}
-        onlyProblematic={onlyProblematic}
-        customStart={customStart}
-        customEnd={customEnd}
-        isLoading={isRefreshing}
-        onRangeChange={(value) => { setRange(value); setPage(1); }}
-        onGranularityChange={setGranularity}
-        onMethodChange={(value) => { setMethod(value); setPage(1); }}
-        onRouteSearchChange={(value) => { setRouteSearch(value); setPage(1); }}
-        onMetricChange={setMetric}
-        onOnlyProblematicChange={(value) => { setOnlyProblematic(value); setPage(1); }}
-        onCustomStartChange={setCustomStart}
-        onCustomEndChange={setCustomEnd}
-        onApplyCustom={() => {
-          if (!customStart || !customEnd) { toast.error("Select both custom range dates."); return; }
-          refreshDashboard();
-        }}
-        onRefresh={refreshDashboard}
-      />
-
-      <TelemetryHealthStrip overview={overview} formatBytes={formatBytes} />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          {isTrendLoading ? (
-            <div className="h-[320px] animate-pulse rounded-xl border border-border bg-muted/30" />
-          ) : (
-            <TelemetryTrendPanel metric={metric} points={trendPoints} formatBytes={formatBytes} />
+    <div className="mx-auto max-w-[1700px] space-y-4 p-3 sm:p-6">
+      <Card className="border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xl">Telemetry V3</CardTitle>
+          <CardDescription>Better readability with filters, drill-down and report export.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-6">
+            <Select value={range} onValueChange={(v) => setRange(v as TelemetryRange)}>
+              <SelectTrigger><SelectValue placeholder="Range" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24h">24h</SelectItem>
+                <SelectItem value="7d">7d</SelectItem>
+                <SelectItem value="30d">30d</SelectItem>
+                <SelectItem value="90d">90d</SelectItem>
+                <SelectItem value="custom">custom</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={granularity} onValueChange={(v) => setGranularity(v as TelemetryGranularity)}>
+              <SelectTrigger><SelectValue placeholder="Granularity" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="minute">minute</SelectItem>
+                <SelectItem value="hour">hour</SelectItem>
+                <SelectItem value="day">day</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={source} onValueChange={(v) => setSource(v as TelemetrySource)}>
+              <SelectTrigger><SelectValue placeholder="Source" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">all sources</SelectItem>
+                <SelectItem value="api">api</SelectItem>
+                <SelectItem value="action">actions</SelectItem>
+                <SelectItem value="page">pages</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={method} onValueChange={setMethod}>
+              <SelectTrigger><SelectValue placeholder="Method" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">all methods</SelectItem>
+                <SelectItem value="GET">GET</SelectItem>
+                <SelectItem value="POST">POST</SelectItem>
+                <SelectItem value="PUT">PUT</SelectItem>
+                <SelectItem value="PATCH">PATCH</SelectItem>
+                <SelectItem value="DELETE">DELETE</SelectItem>
+                <SelectItem value="ACTION">ACTION</SelectItem>
+                <SelectItem value="PAGE_LOAD">PAGE_LOAD</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="route/page/action search" />
+            <Button onClick={loadData}>Apply filters</Button>
+          </div>
+          {range === "custom" && (
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <Input type="datetime-local" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+              <Input type="datetime-local" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+            </div>
           )}
-        </div>
-        <div>
-          {isIncidentsLoading ? (
-            <div className="h-[320px] animate-pulse rounded-xl border border-border bg-muted/30" />
-          ) : (
-            <TelemetryIncidentsPanel
-              incidents={incidents}
-              formatBytes={formatBytes}
-              onErrorClick={handleIncidentErrorClick}
-            />
-          )}
-        </div>
-      </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={exportSnapshot}>Export snapshot JSON</Button>
+            <Button variant="secondary" onClick={exportErrorsCsv}>Export error logs CSV</Button>
+            <label className="inline-flex">
+              <Button asChild variant="secondary"><span>Import snapshot</span></Button>
+              <input type="file" accept="application/json" className="hidden" onChange={(e) => importSnapshot(e.target.files?.[0])} />
+            </label>
+            {importedSnapshot && <Button variant="outline" onClick={() => setImportedSnapshot(null)}>Back to live data</Button>}
+          </div>
+          {importedSnapshot && <Badge variant="warning">Viewing imported snapshot only (not persisted).</Badge>}
+        </CardContent>
+      </Card>
 
-      {/* Dedicated secondary latency chart row (always visible). */}
-      {!isTrendLoading && (
-        <div>
-          <TelemetryTrendPanel metric="latency" points={trendPoints} formatBytes={formatBytes} />
-        </div>
-      )}
-
-      {/* Route table with insight view tabs */}
-      {isRoutesLoading ? (
-        <div className="h-[400px] animate-pulse rounded-xl border border-border bg-muted/30" />
+      {isLoading || !activeOverview ? (
+        <div className="h-40 animate-pulse rounded-xl border border-border bg-muted/30" />
       ) : (
-        <div className="space-y-2">
-          <Tabs value={insightView} onValueChange={(v) => { setInsightView(v as InsightView); setPage(1); }}>
-            <TabsList>
-              {INSIGHT_TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
-                  {tab.label}
-                  {tab.value !== "all" && routeInsights && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">
-                      ({tab.value === "high-latency" ? routeInsights.highBaselineLatency.length
-                        : tab.value === "regressed" ? routeInsights.latencyRegressed.length
-                          : tab.value === "large-packets"
-                            ? [...routeInsights.largestIncomingPackets, ...routeInsights.largestOutgoingPackets]
-                                .filter((r, i, arr) => arr.findIndex((x) => x.routeKey === r.routeKey && x.method === r.method) === i).length
-                            : routeInsights.risingErrorRate.length})
-                    </span>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          <TelemetryRoutesPanel
-            rows={displayedRoutes}
-            page={insightView === "all" ? page : 1}
-            totalPages={displayedTotalPages}
-            sortBy={sortBy}
-            sortDir={sortDir}
-            onPrevPage={() => setPage((prev) => Math.max(1, prev - 1))}
-            onNextPage={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            onOpenRoute={fetchRouteDetails}
-            onSortChange={(newSort, newDir) => { setSortBy(newSort); setSortDir(newDir); setPage(1); }}
-            formatBytes={formatBytes}
-            compact={insightView !== "all"}
-          />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Card className="border-blue-400/30">
+            <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Calls / sec</p>
+            <p className="text-2xl font-semibold">{formatNumber(Number(activeOverview.kpis.callsPerSecond || 0))}</p>
+            {trendBadge(activeOverview.deltas?.callsPerSecond)}
+            </CardContent>
+          </Card>
+          <Card className="border-amber-400/30">
+            <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Latency avg/min/peak</p>
+            <p className="text-lg font-semibold">
+              {formatLatency(Number(activeOverview.kpis.avgLatencyMs || 0))} / {formatLatency(Number(activeOverview.kpis.minLatencyMs || 0))} / {formatLatency(Number(activeOverview.kpis.peakLatencyMs || 0))}
+            </p>
+            {trendBadge(activeOverview.deltas?.latency, true)}
+            </CardContent>
+          </Card>
+          <Card className="border-red-400/30">
+            <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Errors / Timeouts</p>
+            <p className="text-lg font-semibold">
+              {formatNumber(Number(activeOverview.kpis.errorRate || 0) * 100)}% / {formatNumber(Number(activeOverview.kpis.timeoutRate || 0) * 100)}%
+            </p>
+            <div className="flex gap-3">
+              {trendBadge(activeOverview.deltas?.errors, true)}
+              {trendBadge(activeOverview.deltas?.timeouts, true)}
+            </div>
+            </CardContent>
+          </Card>
+          <Card className="border-emerald-400/30">
+            <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Traffic / Avg packet</p>
+            <p className="text-lg font-semibold">{formatBytes(Number(activeOverview.kpis.totalMovedBytes || 0))}</p>
+            <p className="text-xs text-muted-foreground">avg {formatBytes(Number(activeOverview.kpis.avgPacketBytes || 0))}</p>
+            {trendBadge(activeOverview.deltas?.traffic)}
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      <TelemetryRouteDetailsDrawer
-        open={Boolean(selectedRoute)}
-        isLoading={isDetailsLoading}
-        details={routeDetails}
-        selectedErrorId={selectedErrorId}
-        formatBytes={formatBytes}
-        onClose={() => {
-          setSelectedRoute(null);
-          setRouteDetails(null);
-          setSelectedErrorId("");
-        }}
-        onMarkFixed={markRouteFixed}
-        onInspectError={inspectError}
-      />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold">System trends</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" minTickGap={20} />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip
+                  {...tooltipTheme}
+                  formatter={(value: any, name: any) => {
+                    if (String(name).includes("Rate")) return `${formatNumber(Number(value))}%`;
+                    if (String(name).toLowerCase().includes("latency")) return formatLatency(Number(value));
+                    return formatNumber(Number(value));
+                  }}
+                />
+                <Legend />
+                <Line yAxisId="left" type="monotone" dataKey="callsPerSecond" stroke="#2563eb" dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="avgLatencyMs" stroke="#f97316" dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="errorRatePct" stroke="#ef4444" dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="timeoutRatePct" stroke="#a855f7" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold">Page-load trends (RUM)</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" minTickGap={20} />
+                <YAxis />
+                <Tooltip
+                  {...tooltipTheme}
+                  formatter={(value: any, name: any) => {
+                    if (String(name).toLowerCase().includes("packet")) return `${formatNumber(Number(value))} KB`;
+                    return formatLatency(Number(value));
+                  }}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="avgTtfbMs" stroke="#14b8a6" dot={false} />
+                <Line type="monotone" dataKey="avgLcpMs" stroke="#22c55e" dot={false} />
+                <Line type="monotone" dataKey="avgPacketKb" stroke="#0ea5e9" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
 
-      <Dialog open={isApplyFixesOpen} onOpenChange={setIsApplyFixesOpen}>
-        <DialogContent className="max-w-2xl">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold">Most used pages/routes/actions</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topHeavy.map((row: any) => ({ key: `${row.sourceType}:${row.method} ${row.routeKey}`, calls: row.totalCalls }))}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="key" hide />
+                <YAxis />
+                <Tooltip {...tooltipTheme} />
+                <Bar dataKey="calls" fill="#2563eb" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold">Most error-prone entities</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topErrors.map((row: any) => ({ key: `${row.sourceType}:${row.method} ${row.routeKey}`, errors: row.totalErrors }))}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="key" hide />
+                <YAxis />
+                <Tooltip {...tooltipTheme} />
+                <Bar dataKey="errors" fill="#ef4444" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-4 xl:col-span-2">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Heavy entity table</h3>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEntitySortKey("traffic");
+                setEntitySortDir("desc");
+              }}
+            >
+              Reset sort
+            </Button>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("source")} className="hover:text-foreground">
+                    {sortLabel("source", "source")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("entity")} className="hover:text-foreground">
+                    {sortLabel("entity", "entity")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("calls")} className="hover:text-foreground">
+                    {sortLabel("calls", "calls")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("callsPerSecond")} className="hover:text-foreground">
+                    {sortLabel("callsPerSecond", "calls/sec")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("avgLatencyMs")} className="hover:text-foreground">
+                    {sortLabel("avgLatencyMs", "avg latency")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("errorRate")} className="hover:text-foreground">
+                    {sortLabel("errorRate", "error %")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("timeouts")} className="hover:text-foreground">
+                    {sortLabel("timeouts", "timeouts")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("traffic")} className="hover:text-foreground">
+                    {sortLabel("traffic", "traffic")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => toggleEntitySort("avgPacket")} className="hover:text-foreground">
+                    {sortLabel("avgPacket", "avg packet")}
+                  </button>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedEntities.map((row: any, idx: number) => (
+                <TableRow key={`${row.sourceType}-${row.method}-${row.routeKey}-${idx}`}>
+                  <TableCell><Badge variant="secondary">{row.sourceType || "api"}</Badge></TableCell>
+                  <TableCell className="max-w-[340px] truncate">{row.method} {row.routeKey}</TableCell>
+                  <TableCell>{formatNumber(Number(row.totalCalls || 0), 0)}</TableCell>
+                  <TableCell>{activeOverview?.window?.seconds ? formatNumber(Number(row.totalCalls || 0) / Number(activeOverview.window.seconds || 1)) : "0.000"}</TableCell>
+                  <TableCell>{formatLatency(Number(row.avgLatencyMs || 0))}</TableCell>
+                  <TableCell>{formatNumber((Number(row.errorRate || 0) * 100))}%</TableCell>
+                  <TableCell>{formatNumber(Number(row.totalTimeouts || 0), 0)}</TableCell>
+                  <TableCell>{formatBytes(Number(row.totalTrafficBytes || 0))}</TableCell>
+                  <TableCell>{formatBytes(Number(row.avgPacketBytes || 0))}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold">Incidents and latest errors</h3>
+          <div className="space-y-2 text-xs">
+            <p className="text-muted-foreground">Active anomalies: {activeIncidents?.anomalies?.length || 0}</p>
+            {(activeIncidents?.anomalies || []).slice(0, 8).map((a: any, idx: number) => (
+              <div key={`${a.routeKey}-${a.signal}-${idx}`} className="rounded border border-border p-2">
+                <div className="font-medium">[{a.sourceType || "api"}] {a.method} {a.routeKey}</div>
+                <div className="text-muted-foreground">{a.signal}: {Number(a.ratio || 0).toFixed(2)}x baseline</div>
+              </div>
+            ))}
+            <p className="pt-2 text-muted-foreground">Latest errors:</p>
+            {(activeIncidents?.errors || []).slice(0, 8).map((e: any) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => openErrorDetails(e)}
+                className="w-full rounded border border-border p-2 text-left hover:bg-muted/40"
+              >
+                <div className="font-medium">[{e.sourceType || "api"}] {e.method} {e.routeKey}</div>
+                <div className="text-muted-foreground">{e.status} • {formatLatency(Number(e.durationMs || 0))} • {e.errorMessage || "error"}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Apply Fixes JSON</DialogTitle>
+            <DialogTitle>Error details</DialogTitle>
             <DialogDescription>
-              Paste AI output JSON with a top-level <code>fixes</code> array. Each item must include <code>routeKey</code> and <code>method</code>.
+              {selectedError
+                ? `[${selectedError.sourceType || "api"}] ${selectedError.method} ${selectedError.routeKey}`
+                : "Selected error"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <textarea
-              value={fixesJsonInput}
-              onChange={(e) => setFixesJsonInput(e.target.value)}
-              placeholder={`{\n  \"fixes\": [\n    { \"routeKey\": \"/api/foo\", \"method\": \"GET\" }\n  ]\n}`}
-              className="h-64 w-full rounded-md border border-border bg-background p-3 text-xs font-mono"
-            />
-            <input
-              type="file"
-              accept="application/json,.json,text/plain"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const content = await file.text();
-                setFixesJsonInput(content);
-              }}
-              className="text-xs"
-            />
-          </div>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setIsApplyFixesOpen(false)}
-              className="rounded-md border border-border px-3 py-2 text-xs"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={applyFixesFromJson}
-              disabled={isApplyingFixes}
-              className="rounded-md bg-primary px-3 py-2 text-xs text-primary-foreground disabled:opacity-60"
-            >
-              {isApplyingFixes ? "Applying..." : "Apply fixes"}
-            </button>
-          </DialogFooter>
+          {isErrorDetailLoading ? (
+            <div className="h-24 animate-pulse rounded-md bg-muted/40" />
+          ) : (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <div className="rounded border p-2">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="font-medium">{selectedError?.status || selectedErrorDetail?.status || "-"}</p>
+                </div>
+                <div className="rounded border p-2">
+                  <p className="text-xs text-muted-foreground">Latency</p>
+                  <p className="font-medium">{formatLatency(Number(selectedError?.durationMs || selectedErrorDetail?.durationMs || 0))}</p>
+                </div>
+                <div className="rounded border p-2">
+                  <p className="text-xs text-muted-foreground">Traffic</p>
+                  <p className="font-medium">
+                    {formatBytes(
+                      Number(selectedError?.requestBytes || selectedErrorDetail?.requestBytes || 0) +
+                        Number(selectedError?.responseBytes || selectedErrorDetail?.responseBytes || 0)
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded border p-2">
+                <p className="mb-1 text-xs text-muted-foreground">Error message</p>
+                <p className="wrap-break-word">{selectedError?.errorMessage || selectedErrorDetail?.response?.errorMessage || "N/A"}</p>
+              </div>
+              {selectedErrorDetail?.request && (
+                <div className="rounded border p-2">
+                  <p className="mb-1 text-xs text-muted-foreground">Request payload/query</p>
+                  <pre className="max-h-60 overflow-auto text-xs">
+{JSON.stringify(
+  {
+    query: selectedErrorDetail.request.query,
+    body: selectedErrorDetail.request.body,
+  },
+  null,
+  2
+)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

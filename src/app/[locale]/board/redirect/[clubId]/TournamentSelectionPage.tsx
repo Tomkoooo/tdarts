@@ -55,26 +55,21 @@ const TournamentSelectionPage: React.FC<TournamentSelectionPageProps> = ({ tourn
     setError('');
 
     try {
-      const response = await fetch(`/api/tournaments/${selectedTournament}/validate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
+      const { validateTournamentAction } = await import(
+        "@/features/tournaments/actions/validateTournament.action"
+      );
+      const result = await validateTournamentAction({
+        tournamentCode: selectedTournament,
+        password,
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (result.success) {
         router.push(`/board/${selectedTournament}`);
       } else {
-        setError(data.error || 'Hibás jelszó.');
+        setError(result.error || t("hibás_jelszó"));
       }
     } catch (err) {
-
-      console.log(err);
-
-
+      console.error(err);
       setError(t("hiba_tortent_a_kapcsolodas_j6nr"));
     } finally {
       setLoading(false);

@@ -41,7 +41,7 @@ export const showErrorToast = (message: string, options: ErrorToastOptions = {})
           <Button
             variant="outline"
             size="sm"
-            className="w-full gap-2 text-white"
+            className="w-full gap-2 text-black"
             onClick={() => {
               window.location.href = reportUrl.toString();
               toast.dismiss(toastObj.id);
@@ -100,7 +100,7 @@ export const showLocationReviewToast = (message: string, actionLabel: string, on
         <Button
           variant="outline"
           size="sm"
-          className="w-full text-white"
+          className="w-full text-black"
           onClick={() => {
             onAction();
             toast.dismiss(t.id);

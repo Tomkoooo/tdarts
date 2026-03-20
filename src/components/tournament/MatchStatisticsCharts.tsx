@@ -21,13 +21,14 @@ import {
   IconTarget,
   IconTargetArrow,
   IconTrendingDown,
+  IconDeviceAnalytics,
 } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Badge } from "@/components/ui/Badge"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
+import { cn } from "@/lib/utils"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
@@ -62,7 +63,6 @@ interface MatchStatisticsChartsProps {
   player2Name: string
 }
 
-
 const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, player1Name, player2Name }) => {
   const tTour = useTranslations("Tournament")
   const t = (key: string, values?: any) => tTour(`match_stats.${key}`, values)
@@ -78,26 +78,19 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
         labels: {
           boxWidth: 12,
           padding: 8,
-          font: {
-            size: 11,
-          },
+          font: { family: "Inter", size: 11, weight: "bold" },
           color: "rgba(255, 255, 255, 0.7)",
         },
       },
-      title: {
-        display: false,
-      },
+      title: { display: false },
       tooltip: {
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-        borderColor: "rgba(255, 255, 255, 0.1)",
+        backgroundColor: "rgba(20, 15, 18, 0.9)",
+        borderColor: "rgba(255, 180, 166, 0.2)", // primary/20
         borderWidth: 1,
-        titleFont: {
-          size: 12,
-        },
-        bodyFont: {
-          size: 11,
-        },
-        padding: 8,
+        titleFont: { family: "Space Grotesk", size: 12, weight: "bold" },
+        bodyFont: { family: "Inter", size: 11 },
+        padding: 12,
+        cornerRadius: 8,
       },
     },
     scales: {
@@ -105,67 +98,37 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
         beginAtZero: false,
         title: {
           display: true,
-          text: t("charts.avg_axis"),
-          font: {
-            size: 11,
-          },
-          color: "rgba(255, 255, 255, 0.7)",
+          text: t("charts.avg_axis") || "Average",
+          font: { family: "Space Grotesk", size: 10, weight: "bold" },
+          color: "rgba(255, 255, 255, 0.5)",
         },
-        grid: {
-          color: "rgba(255, 255, 255, 0.1)",
-        },
-        ticks: {
-          font: {
-            size: 10,
-          },
-          color: "rgba(255, 255, 255, 0.6)",
-        },
+        grid: { color: "rgba(255, 255, 255, 0.05)" },
+        ticks: { font: { family: "Inter", size: 10 }, color: "rgba(255, 255, 255, 0.5)" },
+        border: { dash: [4, 4] },
       },
       x: {
         title: {
           display: true,
-          text: t("charts.leg_axis"),
-          font: {
-            size: 11,
-          },
-          color: "rgba(255, 255, 255, 0.7)",
+          text: t("charts.leg_axis") || "Legs",
+          font: { family: "Space Grotesk", size: 10, weight: "bold" },
+          color: "rgba(255, 255, 255, 0.5)",
         },
-        grid: {
-          color: "rgba(255, 255, 255, 0.1)",
-        },
-        ticks: {
-          font: {
-            size: 10,
-          },
-          color: "rgba(255, 255, 255, 0.6)",
-          maxRotation: 45,
-          minRotation: 0,
-        },
+        grid: { display: false },
+        ticks: { font: { family: "Inter", size: 10 }, color: "rgba(255, 255, 255, 0.5)" },
       },
     },
     elements: {
-      point: {
-        radius: 3,
-        hoverRadius: 5,
-      },
-      line: {
-        borderWidth: 2,
-        tension: 0.1,
-      },
+      point: { radius: 0, hitRadius: 10, hoverRadius: 6 },
+      line: { borderWidth: 3, tension: 0.4 },
     },
   }), [t])
 
-  // Calculate 3-dart average for each leg - uses totalDarts if available
   const calculateLegAverages = (throws: Throw[], totalDarts?: number) => {
     if (throws.length === 0) return 0
     const totalScore = throws.reduce((sum, t) => sum + t.score, 0)
-    
-    // Use stored totalDarts if available (new matches)
     if (totalDarts !== undefined && totalDarts !== null && totalDarts > 0) {
       return Math.round(((totalScore / totalDarts) * 3) * 100) / 100
     }
-    
-    // Fallback for older matches: sum up darts from each throw
     const calculatedDarts = throws.reduce((sum, t) => sum + (t.darts || 3), 0)
     return calculatedDarts > 0 ? Math.round(((totalScore / calculatedDarts) * 3) * 100) / 100 : 0
   }
@@ -178,372 +141,284 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
     return darts > 0 ? Math.round(((score / darts) * 3) * 100) / 100 : 0
   }
 
-  // Calculate throw-by-throw 3-dart averages within each leg
-  const calculateThrowByThrowAverages = (throws: Throw[]) => {
-    const averages: number[] = []
-    let totalScore = 0
-
-    throws.forEach((throwData, index) => {
-      totalScore += throwData.score
-      const average = (index + 1) > 0 ? Math.round((totalScore / (index + 1)) * 100) / 100 : 0
-      averages.push(average)
-    })
-
-    return averages
-  }
-
-  // Calculate cumulative 3-dart averages across the match
   const calculateCumulativeAverages = () => {
-    const player1Cumulative: number[] = []
-    const player2Cumulative: number[] = []
-
-    let player1TotalScore = 0
-    let player1TotalDarts = 0
-    let player2TotalScore = 0
-    let player2TotalDarts = 0
+    const p1C: number[] = []
+    const p2C: number[] = []
+    let p1Sum = 0, p1Darts = 0, p2Sum = 0, p2Darts = 0
 
     legs.forEach((leg) => {
-      // Player 1 - use stored totalDarts if available
-      const p1LegTotalScore = leg.player1Throws.reduce((sum, t) => sum + t.score, 0)
-      player1TotalScore += p1LegTotalScore
-      
-      if ((leg as any).player1TotalDarts !== undefined && (leg as any).player1TotalDarts !== null) {
-        // New match with totalDarts field
-        player1TotalDarts += (leg as any).player1TotalDarts
-      } else {
-        // Fallback for older matches
-        player1TotalDarts += leg.player1Throws.reduce((sum, t) => sum + (t.darts || 3), 0)
-      }
-      
-      const player1Avg = player1TotalDarts > 0 
-        ? Math.round(((player1TotalScore / player1TotalDarts) * 3) * 100) / 100 
-        : 0
-      player1Cumulative.push(player1Avg)
+      p1Sum += leg.player1Throws.reduce((sum, t) => sum + t.score, 0)
+      p1Darts += ((leg as any).player1TotalDarts !== undefined && (leg as any).player1TotalDarts !== null)
+        ? (leg as any).player1TotalDarts
+        : leg.player1Throws.reduce((sum, t) => sum + (t.darts || 3), 0)
+      p1C.push(p1Darts > 0 ? Math.round(((p1Sum / p1Darts) * 3) * 100) / 100 : 0)
 
-      // Player 2 - use stored totalDarts if available
-      const p2LegTotalScore = leg.player2Throws.reduce((sum, t) => sum + t.score, 0)
-      player2TotalScore += p2LegTotalScore
-      
-      if ((leg as any).player2TotalDarts !== undefined && (leg as any).player2TotalDarts !== null) {
-        // New match with totalDarts field
-        player2TotalDarts += (leg as any).player2TotalDarts
-      } else {
-        // Fallback for older matches
-        player2TotalDarts += leg.player2Throws.reduce((sum, t) => sum + (t.darts || 3), 0)
-      }
-      
-      const player2Avg = player2TotalDarts > 0 
-        ? Math.round(((player2TotalScore / player2TotalDarts) * 3) * 100) / 100 
-        : 0
-      player2Cumulative.push(player2Avg)
+      p2Sum += leg.player2Throws.reduce((sum, t) => sum + t.score, 0)
+      p2Darts += ((leg as any).player2TotalDarts !== undefined && (leg as any).player2TotalDarts !== null)
+        ? (leg as any).player2TotalDarts
+        : leg.player2Throws.reduce((sum, t) => sum + (t.darts || 3), 0)
+      p2C.push(p2Darts > 0 ? Math.round(((p2Sum / p2Darts) * 3) * 100) / 100 : 0)
     })
-
-    return { player1Cumulative, player2Cumulative }
+    return { p1C, p2C }
   }
 
-  const legAverages = useMemo(
-    () =>
-      legs.map((leg) => {
-        return {
-          legNumber: leg.legNumber,
-          player1Average: calculateLegAverages(leg.player1Throws, (leg as any).player1TotalDarts),
-          player2Average: calculateLegAverages(leg.player2Throws, (leg as any).player2TotalDarts),
-        }
-      }),
-    [legs]
-  )
+  const legAverages = useMemo(() => legs.map((leg) => ({
+    legNumber: leg.legNumber,
+    player1Average: calculateLegAverages(leg.player1Throws, (leg as any).player1TotalDarts),
+    player2Average: calculateLegAverages(leg.player2Throws, (leg as any).player2TotalDarts),
+  })), [legs])
 
-  const { player1Cumulative, player2Cumulative } = useMemo(() => calculateCumulativeAverages(), [legs])
+  const { p1C, p2C } = useMemo(() => calculateCumulativeAverages(), [legs])
 
-  // Leg-by-leg averages chart data
-  const legByLegData = useMemo(
-    () => ({
-      labels: legAverages.map((_, index) => t("legs.leg_title", { number: index + 1 })),
-      datasets: [
-        {
-          label: player1Name,
-          data: legAverages.map((leg) => leg.player1Average),
-          borderColor: "rgb(59, 130, 246)",
-          backgroundColor: "rgba(59, 130, 246, 0.2)",
-          tension: 0.1,
-          fill: false,
-        },
-        {
-          label: player2Name,
-          data: legAverages.map((leg) => leg.player2Average),
-          borderColor: "rgb(239, 68, 68)",
-          backgroundColor: "rgba(239, 68, 68, 0.2)",
-          tension: 0.1,
-          fill: false,
-        },
-      ],
-    }),
-    [legAverages, player1Name, player2Name, t]
-  )
-
-  // Cumulative averages chart data
-  const cumulativeData = useMemo(
-    () => ({
-      labels: legs.map((_, index) => t("legs.leg_title", { number: index + 1 })),
-      datasets: [
-        {
-          label: `${player1Name} ${t("overview.running_avg_suffix")}`,
-          data: player1Cumulative,
-          borderColor: "rgb(139, 92, 246)",
-          backgroundColor: "rgba(139, 92, 246, 0.2)",
-          tension: 0.1,
-          fill: false,
-        },
-        {
-          label: `${player2Name} ${t("overview.running_avg_suffix")}`,
-          data: player2Cumulative,
-          borderColor: "rgb(236, 72, 153)",
-          backgroundColor: "rgba(236, 72, 153, 0.2)",
-          tension: 0.1,
-          fill: false,
-        },
-      ],
-    }),
-    [player1Cumulative, player2Cumulative, legs, player1Name, player2Name, t]
-  )
-
-  // Create throw-by-throw data for a leg
-  const createThrowByThrowData = (legIndex: number) => {
-    const leg = legs[legIndex]
-    if (!leg) return null
-
-    const player1ThrowAverages = calculateThrowByThrowAverages(leg.player1Throws)
-    const player2ThrowAverages = calculateThrowByThrowAverages(leg.player2Throws)
-
-    const throwLabels = Array.from(
-      { length: Math.max(player1ThrowAverages.length, player2ThrowAverages.length) },
-      (_, i) => t("legs.throw_label", { number: i + 1 })
-    )
-
-    return {
-      labels: throwLabels,
-      datasets: [
-        {
-          label: player1Name,
-          data: player1ThrowAverages,
-          borderColor: "rgb(59, 130, 246)",
-          backgroundColor: "rgba(59, 130, 246, 0.2)",
-          tension: 0.1,
-          fill: false,
-        },
-        {
-          label: player2Name,
-          data: player2ThrowAverages,
-          borderColor: "rgb(239, 68, 68)",
-          backgroundColor: "rgba(239, 68, 68, 0.2)",
-          tension: 0.1,
-          fill: false,
-        },
-      ],
-    }
-  }
+  const cumulativeData = useMemo(() => ({
+    labels: legs.map((_, index) => t("legs.leg_title", { number: index + 1 }) || `Leg ${index + 1}`),
+    datasets: [
+      {
+        label: player1Name,
+        data: p1C,
+        borderColor: "#ffb4a6", // primary
+        backgroundColor: "rgba(255, 180, 166, 0.2)",
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: player2Name,
+        data: p2C,
+        borderColor: "#a78a85", // outline
+        backgroundColor: "rgba(167, 138, 133, 0.1)",
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  }), [p1C, p2C, legs, player1Name, player2Name, t])
 
   const toggleLeg = (legIndex: number) => {
     setExpandedLegs((prev) => {
       const clone = new Set(prev)
-      if (clone.has(legIndex)) {
-        clone.delete(legIndex)
-      } else {
-        clone.add(legIndex)
-      }
+      if (clone.has(legIndex)) clone.delete(legIndex)
+      else clone.add(legIndex)
       return clone
     })
   }
 
-  const latestPlayer1Average = player1Cumulative[player1Cumulative.length - 1] ?? 0
-  const latestPlayer2Average = player2Cumulative[player2Cumulative.length - 1] ?? 0
-  const bestLegPlayer1 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
-  const bestLegPlayer2 = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
-  const player1FirstNineAvg = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player1Throws), 0) / legs.length) * 100) / 100 : 0
-  const player2FirstNineAvg = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player2Throws), 0) / legs.length) * 100) / 100 : 0
+  const createThrowRows = (leg: Leg, startingScore: number) => {
+    let p1Remaining = startingScore
+    let p2Remaining = startingScore
+    const visits = Math.max(leg.player1Throws.length, leg.player2Throws.length)
+
+    return Array.from({ length: visits }, (_, throwIndex) => {
+      const p1Throw = leg.player1Throws[throwIndex]
+      const p2Throw = leg.player2Throws[throwIndex]
+      const p1Before = p1Throw ? p1Remaining : null
+      const p2Before = p2Throw ? p2Remaining : null
+
+      if (p1Throw) p1Remaining = Math.max(0, p1Remaining - Number(p1Throw.score || 0))
+      if (p2Throw) p2Remaining = Math.max(0, p2Remaining - Number(p2Throw.score || 0))
+
+      return {
+        throwIndex,
+        p1Throw,
+        p2Throw,
+        p1Before,
+        p2Before,
+        arrowCount: (throwIndex + 1) * 3,
+      }
+    })
+  }
+
+  // Derived Stats for Comparison Table
+  const {
+    p1Avg,
+    p2Avg,
+    p1BestLeg,
+    p2BestLeg,
+    p1F9,
+    p2F9,
+    p1_180s,
+    p2_180s,
+    p1_140s,
+    p2_140s,
+    p1_100s,
+    p2_100s,
+    p1HighestOut,
+    p2HighestOut,
+  } = useMemo(() => {
+    const nextP1Avg = p1C[p1C.length - 1] ?? 0
+    const nextP2Avg = p2C[p2C.length - 1] ?? 0
+    const nextP1BestLeg = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player1Average)) : 0
+    const nextP2BestLeg = legAverages.length ? Math.max(...legAverages.map((leg) => leg.player2Average)) : 0
+    const nextP1F9 = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player1Throws), 0) / legs.length) * 100) / 100 : 0
+    const nextP2F9 = legs.length > 0 ? Math.round((legs.reduce((sum, leg) => sum + calculateFirstNineAverage(leg.player2Throws), 0) / legs.length) * 100) / 100 : 0
+    const nextP1_180s = legs.reduce((count, leg) => count + leg.player1Throws.filter((t) => t.score === 180).length, 0)
+    const nextP2_180s = legs.reduce((count, leg) => count + leg.player2Throws.filter((t) => t.score === 180).length, 0)
+    const nextP1_140s = legs.reduce((count, leg) => count + leg.player1Throws.filter((t) => t.score >= 140 && t.score < 180).length, 0)
+    const nextP2_140s = legs.reduce((count, leg) => count + leg.player2Throws.filter((t) => t.score >= 140 && t.score < 180).length, 0)
+    const nextP1_100s = legs.reduce((count, leg) => count + leg.player1Throws.filter((t) => t.score >= 100 && t.score < 140).length, 0)
+    const nextP2_100s = legs.reduce((count, leg) => count + leg.player2Throws.filter((t) => t.score >= 100 && t.score < 140).length, 0)
+
+    let nextP1HighestOut = 0
+    let nextP2HighestOut = 0
+    legs.forEach((leg) => {
+      if (leg.winnerId?.name === player1Name && leg.checkoutScore && leg.checkoutScore > nextP1HighestOut) nextP1HighestOut = leg.checkoutScore
+      if (leg.winnerId?.name === player2Name && leg.checkoutScore && leg.checkoutScore > nextP2HighestOut) nextP2HighestOut = leg.checkoutScore
+    })
+
+    return {
+      p1Avg: nextP1Avg,
+      p2Avg: nextP2Avg,
+      p1BestLeg: nextP1BestLeg,
+      p2BestLeg: nextP2BestLeg,
+      p1F9: nextP1F9,
+      p2F9: nextP2F9,
+      p1_180s: nextP1_180s,
+      p2_180s: nextP2_180s,
+      p1_140s: nextP1_140s,
+      p2_140s: nextP2_140s,
+      p1_100s: nextP1_100s,
+      p2_100s: nextP2_100s,
+      p1HighestOut: nextP1HighestOut,
+      p2HighestOut: nextP2HighestOut,
+    }
+  }, [calculateFirstNineAverage, legAverages, legs, p1C, p2C, player1Name, player2Name])
+
+  const ComparisonRow = ({ label, left, right, highlight, bg }: any) => (
+    <div className={cn("grid grid-cols-3 items-center py-4 px-4 rounded-lg transition-colors hover:bg-muted/50", bg && "bg-muted/20")}>
+      <div className="text-left font-label text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+      <div className={cn("text-center text-xl sm:text-2xl font-headline font-bold truncate", highlight === 'left' ? "text-primary shadow-glow-primary-sm" : "text-foreground")}>{left}</div>
+      <div className={cn("text-right text-xl sm:text-2xl font-headline font-bold truncate", highlight === 'right' ? "text-primary shadow-glow-primary-sm" : "text-foreground")}>{right}</div>
+    </div>
+  )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "overview" | "legs")} className="flex flex-col h-full">
-        <TabsList className="mb-4 shrink-0">
-          <TabsTrigger value="overview" className="gap-2">
+        <TabsList className="mb-6 inline-flex w-full justify-start overflow-x-auto bg-muted/30 p-1 border border-border/50">
+          <TabsTrigger value="overview" className="shrink-0 gap-2 text-[10px] sm:text-xs uppercase tracking-wider font-bold rounded-md px-3 sm:px-6">
             <IconChartLine className="h-4 w-4" />
-            {t("tabs.overview")}
+            {t("tabs.overview") || "Overview"}
           </TabsTrigger>
-          <TabsTrigger value="legs" className="gap-2">
+          <TabsTrigger value="legs" className="shrink-0 gap-2 text-[10px] sm:text-xs uppercase tracking-wider font-bold rounded-md px-3 sm:px-6">
             <IconTarget className="h-4 w-4" />
-            {t("tabs.legs")}
+            {t("tabs.legs") || "Leg Details"}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
-          <div className="space-y-4 pb-4">
-          {/* Statistics summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="bg-linear-to-br from-primary/10 to-primary/5 border-0">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg text-primary truncate" title={player1Name}>
-                    {player1Name}
-                  </CardTitle>
-                  <Badge variant="default" className="text-xs">P1</Badge>
+        {/* OVERVIEW TAB */}
+        <TabsContent value="overview" className="mt-0 space-y-8 min-h-0">
+          
+          {/* Comparison Table */}
+          <div className="bg-card rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-2xl shadow-black border border-border">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none"></div>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-8 relative z-10 gap-4">
+              <div>
+                <h3 className="font-headline text-2xl font-bold uppercase tracking-tight text-foreground">{t("overview.comp_title") || "Összesített Mutatók"}</h3>
+                <p className="text-muted-foreground text-xs uppercase tracking-widest mt-2">{t("overview.comp_subtitle") || "Detailed statistical breakdown"}</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-4 bg-muted/40 px-4 py-2 rounded-lg border border-border/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary"></div>
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground truncate max-w-[100px]">{player1Name}</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.final_avg")}</div>
-                    <div className="text-2xl font-bold text-primary">
-                      {latestPlayer1Average.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.max_leg_avg")}</div>
-                    <div className="text-2xl font-bold text-info">
-                      {bestLegPlayer1.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">First 9 Avg</div>
-                    <div className="text-2xl font-bold text-primary">
-                      {player1FirstNineAvg.toFixed(1)}
-                    </div>
-                  </div>
+                <div className="w-px h-4 bg-border"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground truncate max-w-[100px]">{player2Name}</span>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-linear-to-br from-destructive/10 to-destructive/5 border-0">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg text-destructive truncate" title={player2Name}>
-                    {player2Name}
-                  </CardTitle>
-                  <Badge variant="destructive" className="text-xs">P2</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.final_avg")}</div>
-                    <div className="text-2xl font-bold text-destructive">
-                      {latestPlayer2Average.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">{t("overview.max_leg_avg")}</div>
-                    <div className="text-2xl font-bold text-info">
-                      {bestLegPlayer2.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-card rounded-lg p-3 text-center">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">First 9 Avg</div>
-                    <div className="text-2xl font-bold text-destructive">
-                      {player2FirstNineAvg.toFixed(1)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+            
+            <div className="mb-2 grid grid-cols-3 rounded-lg border border-border/40 bg-muted/15 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <span>{t("overview.metric") || "Metric"}</span>
+              <span className="text-center truncate">{player1Name}</span>
+              <span className="text-right truncate">{player2Name}</span>
+            </div>
+            <div className="space-y-1 relative z-10">
+              <ComparisonRow label={t("overview.table_avg") || "Avg Score"} left={p1Avg.toFixed(2)} right={p2Avg.toFixed(2)} highlight={p1Avg > p2Avg ? 'left' : p2Avg > p1Avg ? 'right' : 'none'} />
+              <ComparisonRow label={t("overview.table_first9") || "First 9 Avg"} left={p1F9.toFixed(2)} right={p2F9.toFixed(2)} highlight={p1F9 > p2F9 ? 'left' : p2F9 > p1F9 ? 'right' : 'none'} bg />
+              <ComparisonRow label={t("overview.table_180s") || "180s Thrown"} left={p1_180s} right={p2_180s} highlight={p1_180s > p2_180s ? 'left' : p2_180s > p1_180s ? 'right' : 'none'} />
+              <ComparisonRow label={t("overview.table_140s") || "140+ Thrown"} left={p1_140s} right={p2_140s} highlight={p1_140s > p2_140s ? 'left' : p2_140s > p1_140s ? 'right' : 'none'} bg />
+              <ComparisonRow label={t("overview.table_100s") || "100+ Thrown"} left={p1_100s} right={p2_100s} highlight={p1_100s > p2_100s ? 'left' : p2_100s > p1_100s ? 'right' : 'none'} />
+              <ComparisonRow label={t("overview.table_highout") || "Highest Out"} left={p1HighestOut} right={p2HighestOut} highlight={p1HighestOut > p2HighestOut ? 'left' : p2HighestOut > p1HighestOut ? 'right' : 'none'} bg />
+              <ComparisonRow label={t("overview.table_bestleg") || "Best Leg Avg"} left={p1BestLeg.toFixed(2)} right={p2BestLeg.toFixed(2)} highlight={p1BestLeg > p2BestLeg ? 'left' : p2BestLeg > p1BestLeg ? 'right' : 'none'} />
+            </div>
           </div>
-
-          {/* Leg-by-leg averages chart */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <IconChartLine className="h-5 w-5 text-primary" />
-                {t("overview.perf_title")}
-              </CardTitle>
-              <CardDescription>
-                {t("overview.perf_desc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="h-64">
-                <Line options={chartOptions} data={legByLegData} />
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-semibold">📊 {t("overview.perf_note").split(': ')[0]}:</span> {t("overview.perf_note").split(': ')[1]}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Cumulative averages chart */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <IconTrendingDown className="h-5 w-5 text-info" />
-                {t("overview.cum_title")}
-              </CardTitle>
-              <CardDescription>
-                {t("overview.cum_desc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="h-64">
-                <Line options={chartOptions} data={cumulativeData} />
+          <div className="bg-card rounded-2xl p-6 sm:p-8 border border-border relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row justify-between mb-8 gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 font-headline uppercase tracking-wider text-lg">
+                  <IconTrendingDown className="h-5 w-5 text-primary" />
+                  {t("overview.cum_title") || "Match Flow"}
+                </CardTitle>
+                <CardDescription className="mt-2 text-xs uppercase tracking-widest font-bold text-muted-foreground">
+                  {t("overview.cum_desc") || "Cumulative Running Average"}
+                </CardDescription>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-semibold">💡 {t("overview.cum_note").split(': ')[0]}:</span> {t("overview.cum_note").split(': ')[1]}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="h-72 w-full">
+              <Line options={chartOptions} data={cumulativeData} />
+            </div>
           </div>
+
         </TabsContent>
 
-        <TabsContent value="legs" className="mt-0 flex-1 min-h-0 overflow-y-scroll">
-          <div className="space-y-3 pb-4">
-          {legs.map((leg, legIndex) => {
-            const throwData = createThrowByThrowData(legIndex)
-            if (!throwData || (leg.player1Throws.length === 0 && leg.player2Throws.length === 0)) return null
+        {/* LEGS TAB */}
+        <TabsContent value="legs" className="mt-0 space-y-4 min-h-0">
+          {legs.length === 0 ? (
+            <div className="p-12 text-center border border-dashed border-border/50 rounded-xl bg-card">
+              <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{t("legs.no_data") || "No leg data available"}</p>
+            </div>
+          ) : (
+            legs.map((leg, legIndex) => {
+              if (leg.player1Throws.length === 0 && leg.player2Throws.length === 0) return null
 
-            const isExpanded = expandedLegs.has(legIndex)
-            const player1LegAvg = calculateLegAverages(leg.player1Throws, (leg as any).player1TotalDarts)
-            const player2LegAvg = calculateLegAverages(leg.player2Throws, (leg as any).player2TotalDarts)
+              const isExpanded = expandedLegs.has(legIndex)
+              const player1LegAvg = calculateLegAverages(leg.player1Throws, (leg as any).player1TotalDarts)
+              const player2LegAvg = calculateLegAverages(leg.player2Throws, (leg as any).player2TotalDarts)
+              const p1Won = leg.winnerId?.name === player1Name
+              const p2Won = leg.winnerId?.name === player2Name
 
-            return (
-              <Card key={legIndex} className="overflow-hidden border-0">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
-                        <span className="text-base font-bold text-primary">{legIndex + 1}</span>
+              return (
+                <div key={legIndex} className="bg-card rounded-xl overflow-hidden border border-border shadow-sm group">
+                  <div 
+                    className="p-4 sm:p-6 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={() => toggleLeg(legIndex)}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className={cn(
+                        "w-12 h-12 rounded-lg flex items-center justify-center font-headline font-black text-xl italic shrink-0",
+                        "bg-muted text-muted-foreground"
+                      )}>
+                        {legIndex + 1}
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-muted-foreground mb-1">{t("legs.leg_avgs")}</div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm font-bold text-primary">{player1LegAvg.toFixed(1)}</span>
-                            {leg.winnerId?._id && leg.winnerId.name === player1Name && (
-                              <span className="text-xs">🏆</span>
-                            )}
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold mb-1">{t("legs.leg_avgs") || "Leg Averages"}</div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("text-lg font-headline font-bold", p1Won ? "text-primary" : "text-foreground")}>{player1LegAvg.toFixed(1)}</span>
+                            {p1Won && <span className="text-xs">🎯</span>}
                           </div>
-                          <span className="text-xs text-muted-foreground">vs</span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm font-bold text-destructive">{player2LegAvg.toFixed(1)}</span>
-                            {leg.winnerId?._id && leg.winnerId.name === player2Name && (
-                              <span className="text-xs">🏆</span>
-                            )}
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">vs</span>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("text-lg font-headline font-bold", p2Won ? "text-primary" : "text-foreground")}>{player2LegAvg.toFixed(1)}</span>
+                            {p2Won && <span className="text-xs">🎯</span>}
                           </div>
                         </div>
 
                         {leg.winnerId?._id && (
-                          <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-2">
+                          <div className="mt-2 text-[10px] text-muted-foreground flex flex-wrap items-center gap-3">
                             {leg.winnerArrowCount && (
-                              <div className="flex items-center gap-1">
-                                <IconTarget className="h-3 w-3" />
-                                <span>{t("legs.arrows", { count: leg.winnerArrowCount })}</span>
+                              <div className="flex items-center gap-1 font-bold">
+                                <IconTarget className="h-3 w-3 text-primary" />
+                                <span>{leg.winnerArrowCount} Darts</span>
                               </div>
                             )}
                             {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
-                              <div className="flex items-center gap-1">
-                                <IconTrendingDown className="h-3 w-3" />
-                                <span>{t("legs.points", { count: leg.loserRemainingScore })}</span>
+                              <div className="flex items-center gap-1 font-bold">
+                                <IconTrendingDown className="h-3 w-3 text-muted-foreground" />
+                                <span>{leg.loserRemainingScore} Left</span>
                               </div>
                             )}
                           </div>
@@ -551,98 +426,58 @@ const MatchStatisticsCharts: React.FC<MatchStatisticsChartsProps> = ({ legs, pla
                       </div>
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => toggleLeg(legIndex)}
-                    >
-                      {isExpanded ? (
-                        <>
-                          <IconArrowUp className="h-4 w-4" />
-                          {t("legs.collapse")}
-                        </>
-                      ) : (
-                        <>
-                          <IconArrowDown className="h-4 w-4" />
-                          {t("legs.details")}
-                        </>
-                      )}
-                    </Button>
+                    <div className="shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+                      {isExpanded ? <IconArrowUp className="h-5 w-5" /> : <IconArrowDown className="h-5 w-5" />}
+                    </div>
                   </div>
-                </CardHeader>
 
-                {isExpanded && (
-                  <CardContent className="pt-0">
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <div className="mb-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <IconTargetArrow className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-semibold">{t("legs.throw_avgs")}</span>
-                        </div>
-                  </div>
-                      <div className="h-64">
-                        <Line
-                          options={{
-                            ...chartOptions,
-                            scales: {
-                              ...chartOptions.scales,
-                              x: {
-                                ...chartOptions.scales?.x,
-                                title: {
-                                  display: true,
-                                  text: t("charts.throw_axis"),
-                                  font: {
-                                    size: 10,
-                                  },
-                                  color: "rgba(255, 255, 255, 0.7)",
-                                },
-                              },
-                            },
-                          }}
-                          data={throwData}
-                        />
+                  {isExpanded && (
+                    <div className="px-4 pb-6 sm:px-6 pt-0 border-t border-border/50 bg-muted/10">
+                      <div className="mt-6 flex items-center gap-2 mb-4">
+                        <IconTargetArrow className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-foreground">{t("legs.throw_avgs") || "Throw by Throw"}</span>
                       </div>
-                      <div className="mt-3 rounded-lg bg-info/10 p-3">
-                        <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
-                          <p>
-                            💡 <span className="font-semibold">{t("legs.tip_title")}:</span> {t("legs.tip_desc")}
-                          </p>
-                          {leg.winnerId?._id && (
-                            <div className="flex items-center gap-4 pt-1">
-                              {leg.winnerArrowCount && (
-                                <div className="flex items-center gap-1">
-                                  <IconTarget className="h-3 w-3" />
-                                  <span className="font-medium">
-                                    {t("legs.checkout_desc", { name: leg.winnerId.name, count: leg.winnerArrowCount })}
-                                  </span>
+                      <div className="rounded-xl border border-border/40 bg-card p-2.5 sm:p-3 overflow-hidden">
+                        <div className="grid grid-cols-[minmax(0,3rem)_minmax(0,3rem)_auto_minmax(0,3rem)_minmax(0,3rem)] items-center gap-1 border-b border-border/40 pb-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <span className="min-w-0 text-left truncate">{player1Name}</span>
+                          <span className="text-center">S</span>
+                          <span className="text-center">D</span>
+                          <span className="text-center">S</span>
+                          <span className="min-w-0 text-right truncate">{player2Name}</span>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {createThrowRows(leg, 501).map(({ throwIndex, p1Throw, p2Throw, p1Before, p2Before, arrowCount }) => {
+                            return (
+                              <div
+                                key={`${legIndex}-visit-${throwIndex}`}
+                                className="grid grid-cols-[minmax(0,3rem)_minmax(0,3rem)_auto_minmax(0,3rem)_minmax(0,3rem)] items-center gap-1 rounded-md border border-border/30 bg-muted/10 px-1 py-1"
+                              >
+                                <div className="rounded px-1 py-0.5 text-center font-headline text-[11px] sm:text-xs font-bold text-muted-foreground bg-background/40">
+                                  {p1Before ?? "—"}
                                 </div>
-                              )}
-                              {leg.loserRemainingScore !== undefined && leg.loserRemainingScore > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <IconTrendingDown className="h-3 w-3" />
-                                  <span className="font-medium">{t("legs.remaining_desc", { count: leg.loserRemainingScore })}</span>
+                                <div className="rounded px-1 py-0.5 text-center font-headline text-[11px] sm:text-xs font-bold text-foreground bg-muted/30">
+                                  {p1Throw ? p1Throw.score : "—"}
                                 </div>
-                              )}
-                            </div>
-                          )}
+                                <div className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                                  {arrowCount}
+                                </div>
+                                <div className="rounded px-1 py-0.5 text-center font-headline text-[11px] sm:text-xs font-bold text-foreground bg-muted/30">
+                                  {p2Throw ? p2Throw.score : "—"}
+                                </div>
+                                <div className="rounded px-1 py-0.5 text-center font-headline text-[11px] sm:text-xs font-bold text-muted-foreground bg-background/40">
+                                  {p2Before ?? "—"}
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     </div>
-                </CardContent>
-                )}
-              </Card>
-            )
-          })}
-
-          {legs.filter((leg) => leg.player1Throws.length > 0 || leg.player2Throws.length > 0).length === 0 && (
-            <Card className="border-0">
-              <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                {t("legs.no_data")}
-              </CardContent>
-            </Card>
+                  )}
+                </div>
+              )
+            })
           )}
-          </div>
         </TabsContent>
       </Tabs>
     </div>

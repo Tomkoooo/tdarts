@@ -127,5 +127,11 @@ clubSchema.virtual('tournaments', {
 clubSchema.set('toObject', { virtuals: true });
 clubSchema.set('toJSON', { virtuals: true });
 
+clubSchema.index({ verified: 1, isActive: 1, createdAt: -1 });
+clubSchema.index({ 'billingInfo.country': 1, verified: 1, createdAt: -1 });
+clubSchema.index({ members: 1 });
+clubSchema.index({ admin: 1 });
+clubSchema.index({ moderators: 1 });
+
 export const ClubModel =
   mongoose.models.Club || mongoose.model<ClubDocument>('Club', clubSchema);

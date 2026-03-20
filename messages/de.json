@@ -118,7 +118,9 @@
     "válassz_egy_egyedi": "Wählen Sie einen einzigartigen, ausdrucksstarken Namen für Ihre Konkurrenz",
     "válaszd_ki_a_78": "Wählen Sie das Turnierformat und die Regeln",
     "átlag_19": "Durchschnitt",
-    "újrapróbálkozás": "Erneuter Versuch"
+    "újrapróbálkozás": "Erneuter Versuch",
+    "pleaseWait": "Bitte warten Sie, die Seite wird geladen.",
+    "loading": "Laden..."
   },
   "Index": {
     "title": "tDarts – Der Darts-Turniermanager"
@@ -294,7 +296,13 @@
     "tdarts_logo_wslq": "tDarts-Logo",
     "language": "Sprache",
     "select_language": "Sprache auswählen",
-    "coming_soon": "Bald verfügbar"
+    "coming_soon": "Bald verfügbar",
+    "home": "Startseite",
+    "landing": "Landing",
+    "settings": "Einstellungen",
+    "statistics": "Statistiken",
+    "active_tournament": "Turnier",
+    "collapse_sidebar": "Seitenleiste einklappen"
   },
   "Footer": {
     "legal_title": "Information",
@@ -323,7 +331,7 @@
       "email_label": "E-Mail-Adresse",
       "email_placeholder": "email@example.com",
       "password_label": "Passwort",
-      "password_placeholder": null,
+      "password_placeholder": "••••••••",
       "show_password": "Passwort anzeigen",
       "hide_password": "Passwort verbergen",
       "forgot_password": "Passwort vergessen?",
@@ -335,7 +343,15 @@
       "register_link": "Registrieren Sie sich hier",
       "language": "Sprache",
       "success": "Erfolgreiche Anmeldung!",
-      "error_generic": "Beim Anmelden ist ein Fehler aufgetreten"
+      "error_generic": "Beim Anmelden ist ein Fehler aufgetreten",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "email@example.com",
+      "forgotPassword": "Forgot your password?",
+      "hidePassword": "Hide password",
+      "noAccount": "Don't have an account yet?",
+      "passwordLabel": "Password",
+      "registerLink": "Register here",
+      "showPassword": "Show password"
     },
     "register": {
       "title": "Anmeldung",
@@ -347,7 +363,7 @@
       "email_label": "E-Mail-Adresse",
       "email_placeholder": "email@example.com",
       "password_label": "Passwort",
-      "password_placeholder": null,
+      "password_placeholder": "••••••••",
       "confirm_password_label": "Passwort bestätigen",
       "show_password": "Passwort anzeigen",
       "hide_password": "Passwort verbergen",
@@ -361,7 +377,18 @@
       "error_generic": "Bei der Registrierung ist ein Fehler aufgetreten",
       "error_google": "Bei der Google-Registrierung ist ein Fehler aufgetreten",
       "loading": "Anmeldung läuft...",
-      "success": "Erfolgreiche Registrierung! Überprüfen Sie Ihre E-Mail-Adresse auf den Bestätigungscode."
+      "success": "Erfolgreiche Registrierung! Überprüfen Sie Ihre E-Mail-Adresse auf den Bestätigungscode.",
+      "confirmPasswordLabel": "Confirm password",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "email@example.com",
+      "errorGeneric": "An error occurred during registration",
+      "firstNameLabel": "First Name",
+      "hasAccount": "Already have an account?",
+      "hidePassword": "Hide password",
+      "lastNameLabel": "Last Name",
+      "loginLink": "Log in here",
+      "passwordLabel": "Password",
+      "showPassword": "Show password"
     },
     "forgot_password": {
       "title": "Passwort zurücksetzen",
@@ -419,7 +446,13 @@
       "name_min": "Der Name muss mindestens 2 Zeichen lang sein",
       "confirm_password_required": "Die Bestätigung des Passworts ist obligatorisch",
       "passwords_mismatch": "Die Passwörter stimmen nicht überein",
-      "code_required": "Ein Bestätigungscode ist erforderlich"
+      "code_required": "Ein Bestätigungscode ist erforderlich",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "emailInvalid": "Enter a valid email address",
+      "emailRequired": "Email is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordRequired": "Password is required",
+      "passwordsMismatch": "Passwords do not match"
     },
     "link": {
       "title": "Verknüpfen Sie Ihr Google-Konto",
@@ -435,7 +468,14 @@
       "error_generic": "Beim Verbinden des Kontos ist ein Fehler aufgetreten"
     },
     "magyar_x1es": "ungarisch",
-    "english_1097": "Englisch"
+    "english_1097": "Englisch",
+    "googleCallback": {
+      "processing": "Google-Anmeldung wird verarbeitet...",
+      "loginFailed": "Google-Anmeldung fehlgeschlagen.",
+      "loginError": "Beim Anmelden ist ein Fehler aufgetreten.",
+      "errorTitle": "Anmeldefehler",
+      "backToLogin": "Zurück zur Anmeldung"
+    }
   },
   "Carousel": {
     "management": "Weltklasse-Wettbewerbsmanagement",
@@ -459,10 +499,12 @@
       "clear_filters": "Filter löschen"
     },
     "tabs": {
+      "global": "Alle",
       "tournaments": "Wettbewerbe",
       "players": "Spieler",
       "clubs": "Vereine",
-      "leagues": "Ligen"
+      "leagues": "Ligen",
+      "map": "Karte"
     },
     "filter_bar": {
       "popular_cities": "Beliebte Städte",
@@ -593,7 +635,31 @@
       "status_active": "Aktive Saison",
       "status_closed": "Geschlossen",
       "details": "Einzelheiten"
-    }
+    },
+    "filters": {
+      "all": "Alle",
+      "countryLabel": "Land",
+      "currentSeason": "Aktuelle Saison",
+      "filterLabel": "Filter",
+      "seasonLabel": "Saison",
+      "timeLabel": "Datum",
+      "typeAll": "Alle Typen",
+      "typeAmateur": "Amateur",
+      "typeLabel": "Typ",
+      "typeOpen": "Offen",
+      "upcoming": "Bevorstehend",
+      "past": "Vergangen",
+      "clear": "Zurücksetzen",
+      "activeFilters": "{count} aktiv",
+      "countries": {
+        "hu": "Ungarn",
+        "de": "Deutschland",
+        "at": "Österreich",
+        "sk": "Slowakei",
+        "ro": "Rumänien"
+      }
+    },
+    "noResults": "There are no results matching your search criteria."
   },
   "Metadata": {
     "title": "tDarts – Abzugssystem für Darts-Turniere",
@@ -647,7 +713,10 @@
       "tagok": "Mitglieder:",
       "hc": "HC:",
       "standing_top": "Oben {standing}",
-      "matches_btn": "Streichhölzer"
+      "matches_btn": "Streichhölzer",
+      "rank_label": "Rang",
+      "registration_open": "Anmeldung offen",
+      "full_capacity": "Ausgebucht"
     },
     "registration": {
       "sign_up": "Anmeldung zum Turnier",
@@ -726,17 +795,26 @@
       "részletek": "Details"
     },
     "status": {
-      "pending": "Ausstehend",
+      "pending": {
+        "label": "label"
+      },
       "active": "Aktiv",
-      "finished": "Fertig",
+      "finished": {
+        "label": "label"
+      },
       "group_stage": "Gruppenrunde",
-      "knockout": "Eliminierungsphase",
+      "knockout": {
+        "label": "label"
+      },
       "applied": "Er hat sich beworben",
       "checked_in": "Einchecken",
       "has_free_spots": "Es ist Platz vorhanden",
       "full": "Es ist voll",
       "ongoing": "Im Gange",
-      "all": "Alle"
+      "all": "Alle",
+      "group-stage": {
+        "label": "label"
+      }
     },
     "teams": {
       "pair": "Paar",
@@ -822,7 +900,7 @@
         "lost": "V",
         "legs_won": "L GY",
         "legs_lost": "L V",
-        "leg_diff": null,
+        "leg_diff": "+/-",
         "average": "Durchschnitt",
         "180s": "180",
         "max_checkout": "HC",
@@ -1116,6 +1194,8 @@
     },
     "legs_modal": {
       "title": "Beindetails",
+      "leg_by_leg_detail": "Leg-für-Leg Details",
+      "live": "Live",
       "vs": "vs",
       "back": "Zurück",
       "hide_charts": "Diagramme ausblenden",
@@ -1124,6 +1204,16 @@
       "error_loading": "Die Streckendaten konnten nicht geladen werden",
       "error_generic": "Beim Laden der Felder ist ein Fehler aufgetreten",
       "no_stats": "Für dieses Spiel liegen noch keine detaillierten Statistiken vor.",
+      "loading_logs": "Laden...",
+      "player_one": "Spieler 1",
+      "player_two": "Spieler 2",
+      "legs_won": "Legs gewonnen",
+      "in_progress": "Läuft...",
+      "winner": "Sieger",
+      "live_updates": "Live-Updates",
+      "no_throws": "Noch keine Würfe erfasst...",
+      "match_pulse": "Match Pulse",
+      "one_eighties": "180er",
       "tabs_legs": "Ich werde",
       "tabs_stats": "Statistiken",
       "leg": "Bein",
@@ -1215,19 +1305,27 @@
       "remove": "Entfernung"
     },
     "player_matches_modal": {
+      "title": "Spielerprofil",
       "event_matches": "Event-Matches",
       "played_matches": "{count} hat ein Spiel gespielt",
+      "avg_score": "Durchschnitt",
       "loading": "Spiele werden geladen...",
       "wins": "Siege",
       "losses": "Niederlagen",
       "win_rate": "Gewinnrate",
       "list_title": "Liste der Übereinstimmungen",
+      "tournament_match": "Turniermatch",
       "result_win": "Sieg",
       "result_loss": "Verlust",
       "result_ongoing": "Im Gange",
       "avg": "Durchschnitt",
       "checkout": "Ausfahrt",
       "details": "Einzelheiten",
+      "scoring_trends": "Durchschnittstrends",
+      "last_n_matches": "Letzte {count} Matches",
+      "trend_max": "Maximum",
+      "tournament_average": "Turnierdurchschnitt",
+      "overall_across_played": "Gesamtwert aus allen gespielten Matches",
       "close": "Schließung",
       "no_data": "Keine Übereinstimmungsdaten",
       "error_missing": "Fehlende Spieler-ID oder Turniercode",
@@ -1386,6 +1484,16 @@
         "legs": "Leg-Details"
       },
       "overview": {
+        "comp_title": "Gesamtvergleich",
+        "comp_subtitle": "Detaillierte Statistikübersicht",
+        "table_avg": "Durchschnitt",
+        "table_first9": "First 9 Durchschnitt",
+        "table_180s": "180er Würfe",
+        "table_140s": "140+ Würfe",
+        "table_100s": "100+ Würfe",
+        "table_highout": "Höchstes Checkout",
+        "table_bestleg": "Bestes Leg-Durchschnitt",
+        "metric": "Metrik",
         "running_avg_suffix": "laufender Schnitt",
         "final_avg": "Endschnitt",
         "max_leg_avg": "Bester Leg-Schnitt",
@@ -1586,6 +1694,8 @@
       "mmr": "MMR",
       "oac_mmr": "OAC MMR",
       "nem_sikerült_betölteni_76": "Spielerstatistiken konnten nicht geladen werden",
+      "player_profile": "Spielerprofil",
+      "recent_honors": "Erfolge und Infos",
       "legjobb_helyezes_i1t1": "Beste Platzierung",
       "atlagos_helyezes_ctvu": "Durchschnittliche Platzierung",
       "gyozelmi_arany_vqqj": "Siegquote",
@@ -1607,7 +1717,7 @@
       "események": "Ereignisse",
       "torna_13": "Turnier",
       "kiszálló_62": "Checkout",
-      "átlag_39": "Durchschnitt",
+      "��tlag_39": "Durchschnitt",
       "esemény_rögzítve": "Ereignis aufgezeichnet",
       "megtekintés": "Ansehen",
       "nincsenek_eredmények": "Keine Ergebnisse",
@@ -1622,8 +1732,16 @@
       "first_nine_avg": "First 9 Avg",
       "pair": "Paar",
       "team": "Team",
-      "one_eighties": "180er"
-    }
+      "one_eighties": "180er",
+      "active_matches": "active matches",
+      "completion": "completion",
+      "leaderboard": "leaderboard",
+      "ongoing": "ongoing",
+      "progress": "progress",
+      "top_players": "top players",
+      "total_players": "total players"
+    },
+    "organized_by": "organized by"
   },
   "Club": {
     "layout": {
@@ -2138,7 +2256,12 @@
       "átlag_hely": "Durchschnittlicher Ort",
       "érvénytelen_pontszám_formátum": "Ungültiges Bewertungsformat",
       "új_liga_létrehozása": "Erstelle eine neue Liga",
-      "új_verseny_létrehozásakor": "• Wählen Sie diese Liga aus, wenn Sie einen neuen Wettbewerb erstellen (automatische Wertung)."
+      "új_verseny_létrehozásakor": "• Wählen Sie diese Liga aus, wenn Sie einen neuen Wettbewerb erstellen (automatische Wertung).",
+      "betöltés": "betöltés",
+      "létrehozás": "létrehozás",
+      "mégse": "mégse",
+      "műveletek": "műveletek",
+      "státusz": "státusz"
     },
     "create_tournament_modal": {
       "title": "Erstellen Sie ein neues Turnier",
@@ -2335,7 +2458,8 @@
       "sidebar_todos_arz2": "sidebar.todos",
       "sidebar_emails_dxiv": "sidebar.emails",
       "sidebar_settings_psqa": "Seitenleisteneinstellungen",
-      "tdarts_f0pi": "tDarts"
+      "tdarts_f0pi": "tDarts",
+      "back_to_home": "Zurück zur Startseite"
     },
     "dashboard": {
       "title": "Hallo {name}! 👋",
@@ -2732,7 +2856,9 @@
           "delete_success": "Aufgabe gelöscht",
           "delete_error": "Aufgabe konnte nicht gelöscht werden"
         }
-      }
+      },
+      "settings": "settings",
+      "users": "users"
     },
     "tickets": {},
     "announcements": {
@@ -2760,7 +2886,10 @@
       "pontozási_rendszer": "Punktesystem",
       "szűrés_típusra": "Nach Typ filtern",
       "verified_oac": "Verifiziert (OAC)",
-      "összes_liga": "Alle Ligen"
+      "összes_liga": "Alle Ligen",
+      "frissítés": "frissítés",
+      "nincs_találat_a": "nincs találat a",
+      "státusz": "státusz"
     },
     "todos": {
       "feladatok_és_észrevételek": "Verfolgen Sie Aufgaben und Kommentare",
@@ -2798,7 +2927,9 @@
       "szűrés_státuszra": "Nach Status filtern",
       "tagok": "Mitglieder",
       "törölt": "Gelöscht",
-      "összes_klub": "Alle Clubs"
+      "összes_klub": "Alle Clubs",
+      "találat_oldal": "találat oldal",
+      "összesen": "összesen"
     },
     "tournaments": {
       "aktiv_11ph": "Aktiv",
@@ -2827,7 +2958,12 @@
       "versenyek_napi_indítása": "Täglicher Beginn der Wettkämpfe",
       "éles": "Scharf",
       "összes": "Alle",
-      "összes_státusz": "Alle Status"
+      "összes_státusz": "Alle Status",
+      "frissítés": "frissítés",
+      "műveletek": "műveletek",
+      "nincs_találat_a": "nincs találat a",
+      "státusz": "státusz",
+      "title": "title"
     },
     "users": {
       "admin": "Admin",
@@ -2863,7 +2999,14 @@
       "írja_be_az": "Geben Sie Ihre Nachricht ein...",
       "összes_felhasználó": "Alle Benutzer",
       "üzenet": "Nachricht",
-      "üzenet_tárgya": "Betreff der Nachricht..."
+      "üzenet_tárgya": "Betreff der Nachricht...",
+      "frissítés": "frissítés",
+      "mégse": "mégse",
+      "műveletek": "műveletek",
+      "nincs_találat_a": "nincs találat a",
+      "search": "search",
+      "státusz": "státusz",
+      "title": "title"
     },
     "errors": {
       "api_1e62": "API",
@@ -2906,7 +3049,10 @@
       "utolsó_óra": "Letzte 24 Stunden",
       "összes_hiba": "Alle Fehler",
       "összes_kategória": "Alle Kategorien",
-      "összes_szint": "Alle Ebenen"
+      "összes_szint": "Alle Ebenen",
+      "frissítés": "frissítés",
+      "hiba_történt": "hiba történt",
+      "újrapróbálás": "újrapróbálás"
     },
     "settings": {
       "adatbázis": "Datenbank",
@@ -2936,7 +3082,10 @@
       "subscription_enabled": "SUBSCRIPTION_ENABLED",
       "változó": "Variable",
       "érték": "Wert",
-      "üzemidő": "Betriebszeit"
+      "üzemidő": "Betriebszeit",
+      "frissítés": "frissítés",
+      "hiba_történt": "hiba történt",
+      "újrapróbálás": "újrapróbálás"
     },
     "emails": {
       "a_teszt_emailt": "Die Test-E-Mail wird wie oben gezeigt gerendert und mit Beispieldaten gefüllt.",
@@ -2966,7 +3115,8 @@
       "tárgy": "Objekt",
       "utolsó_módosítás": "Letzte Änderung:",
       "vmi_pelda_hu": "vmi@pelda.hu",
-      "válassz_egy_sablont": "Wählen Sie eine Vorlage aus der Liste links aus, um sie anzuzeigen und zu bearbeiten"
+      "válassz_egy_sablont": "Wählen Sie eine Vorlage aus der Liste links aus, um sie anzuzeigen und zu bearbeiten",
+      "mégse": "mégse"
     },
     "components": {
       "a_hozzáadáshoz": "hinzufügen",
@@ -3043,7 +3193,12 @@
       "írd_be_a": "Geben Sie zur Bestätigung Folgendes ein:",
       "írd_be_természetes": "Geben Sie in natürlicher Sprache ein: &quot;Serverwartung !!! morgen #dev&quot;",
       "összes": "Alle",
-      "összesen_nap": "Gesamt (30 Tage)"
+      "összesen_nap": "Gesamt (30 Tage)",
+      "aktív": "aktív",
+      "betöltés": "betöltés",
+      "hiba_történt": "hiba történt",
+      "mégse": "mégse",
+      "újrapróbálás": "újrapróbálás"
     },
     "telemetry": {
       "title": "API-Telemetrie",
@@ -3163,6 +3318,14 @@
         "next": "Weiter",
         "page": "Seite {page} / {totalPages}"
       }
+    },
+    "kpi": {
+      "activeTournaments": "activeTournaments",
+      "activeUsers": "activeUsers",
+      "totalClubs": "totalClubs",
+      "totalMatches": "totalMatches",
+      "totalTournaments": "totalTournaments",
+      "totalUsers": "totalUsers"
     }
   },
   "Profile": {
@@ -3174,7 +3337,11 @@
     "tabs": {
       "details": "Daten",
       "stats": "Statistiken",
-      "tickets": "Rückmeldung"
+      "tickets": "Rückmeldung",
+      "achievements": "achievements",
+      "overview": "overview",
+      "settings": "settings",
+      "statistics": "statistics"
     },
     "countries": {
       "hu": "Ungarn",
@@ -3355,6 +3522,26 @@
       "cancel": "Nicht stornieren",
       "saving": "Rettung...",
       "save": "Profilbild speichern"
+    },
+    "editForm": {
+      "city": "city",
+      "country": "country",
+      "email": "email",
+      "firstName": "firstName",
+      "save": "save"
+    },
+    "settings": {
+      "dataExport": "dataExport",
+      "emailNotifications": "emailNotifications",
+      "privacySettings": "privacySettings",
+      "pushNotifications": "pushNotifications"
+    },
+    "statistics": {
+      "avgScore": "avgScore",
+      "title": "title",
+      "total180": "total180",
+      "totalMatches": "totalMatches",
+      "winRate": "winRate"
     }
   },
   "Board": {
@@ -3543,6 +3730,80 @@
     "érintett_oldal_opcionális": "Betroffene Seite (optional)",
     "írd_le_részletesen": "Beschreiben Sie im Detail, was passiert ist..."
   },
+  "HomeDashboard": {
+    "welcome": "Spieltag",
+    "headline": "Willkommen zurück, {name}",
+    "subheadline": "Dein Club, Turniere und Board-Aktionen sind nur einen Tipp entfernt.",
+    "joinTournament": "Turnier beitreten",
+    "viewStats": "Statistiken ansehen",
+    "header": {
+      "title": "Turnier-Status",
+      "openActiveTournament": "Aktives Turnier öffnen",
+      "daysUntil": "{count} Tage bis zu deinem nächsten Turnier",
+      "noDate": "Termin folgt",
+      "noTournament": "Noch keine Turnieranmeldung. Tritt einem Turnier bei und dein Plan erscheint hier.",
+      "players": "Spieler",
+      "entryFee": "Startgeld",
+      "notificationsWarning": "Du hast {count} aktive Benachrichtigungen",
+      "performance": "Deine Leistung",
+      "matchRecord": "Matches: {wins} S / {losses} N",
+      "legRecord": "Legs: {won} S / {lost} N",
+      "boardNumber": "Board {number}",
+      "boardTbd": "Board offen",
+      "nextPlaying": "Du spielst gerade auf {board}",
+      "nextScoring": "Du schreibst gerade auf {board}",
+      "nextPending": "Dein nächster Einsatz ist auf {board}",
+      "nextUnknown": "Noch keine nächste Board-Zuweisung"
+    },
+    "stats": {
+      "matches": "Gespielte Matches",
+      "winRate": "Siegquote",
+      "tournaments": "Teilgenommene Turniere",
+      "checkout": "Durchschn. Checkout",
+      "ranking": "Aktuelles Ranking"
+    },
+    "calendar": {
+      "title": "Kommender Kalender",
+      "export": "In Kalender exportieren"
+    },
+    "notifications": {
+      "title": "Benachrichtigungscenter",
+      "unread": "{count} ungelesen",
+      "profileActions": "Profilaktionen",
+      "profileActionsHint": "Vervollständige deine Profildaten und Einstellungen",
+      "feedbackResponses": "Feedback-Antworten",
+      "feedbackUnread": "{count} ungelesene Feedback-Threads",
+      "tournamentReminders": "Turniererinnerungen",
+      "reminderCount": "{count} Turniere in den nächsten 7 Tagen",
+      "spotAvailability": "Freie Turnierplätze",
+      "spotHint": "{count} Verfügbarkeitsmeldungen"
+    },
+    "currentTournament": {
+      "title": "Aktuelle Turnierübersicht",
+      "empty": "Kein aktives oder kommendes Turnier vorhanden.",
+      "boardStatusActive": "Board-Status: live und verfügbar",
+      "boardStatusUpcoming": "Board-Status: öffnet am Turniertag",
+      "openOverview": "Übersicht öffnen",
+      "openBoard": "Board öffnen",
+      "players": "Spieler",
+      "entryFee": "Startgeld"
+    },
+    "league": {
+      "title": "Liga Tabelle",
+      "empty": "Keine aktive Ligatabelle verfügbar.",
+      "points": "Pkt",
+      "open": "Liga-Details öffnen"
+    },
+    "upcomingTitle": "Bevorstehende Turniere",
+    "seeAll": "Alle anzeigen",
+    "loading": "Daten werden geladen...",
+    "emptyTournaments": "Noch keine bevorstehenden Turniere.",
+    "quickActions": "Schnellaktionen",
+    "actions": {
+      "openBoard": "Live-Board öffnen",
+      "myClub": "Zu Mein Club"
+    }
+  },
   "Auto": {
     "club_not_found_ecjo": "Club nicht gefunden",
     "hogyan_mukodik_247b": "Wie es funktioniert",
@@ -3558,5 +3819,17 @@
     "ha_már_pro": "Wenn Sie bereits Pro haben, kontaktieren Sie den Support.",
     "hiba_történt_20": "Es ist ein Fehler aufgetreten",
     "nem_sikerült_betölteni_8": "Live-Seite konnte nicht geladen werden"
+  },
+  "Map": {
+    "currentLocation": "Current Location",
+    "noTournaments": "No tournaments in this area",
+    "search": "Search location...",
+    "title": "Tournament Map"
+  },
+  "Modal": {
+    "confirm": {
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
   }
 }

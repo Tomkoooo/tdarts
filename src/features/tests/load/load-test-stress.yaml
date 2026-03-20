@@ -1,0 +1,71 @@
+config:
+  target: "http://localhost:3000"
+  processor: "./load.processor.js"
+  maxVusers: 150
+  phases:
+    - duration: 20
+      arrivalRate: 20
+      name: warmup_20
+    - duration: 70
+      arrivalRate: 50
+      rampTo: 120
+      name: ramp_50_to_120
+    - duration: 180
+      arrivalRate: 120
+      name: sustained_120
+    - duration: 30
+      arrivalRate: 150
+      name: spike_150
+  defaults:
+    headers:
+      x-load-test-secret: "{{ $processEnvironment.LOAD_TEST_SECRET }}"
+  http:
+    timeout: 30
+    pool: 1200
+
+before:
+  flow:
+    - function: "bootstrapTournaments"
+
+scenarios:
+  - name: browse_platform_pages_stress
+    weight: 60
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "browsePrep"
+      - get:
+          url: "/en/home"
+          afterResponse: "capturePageMetrics"
+      - think: "{{ thinkSec }}"
+      - get:
+          url: "/en/tournaments/{{ tournamentCode }}"
+          afterResponse: "capturePageMetrics"
+      - think: "{{ thinkSec }}"
+      - get:
+          url: "/en/tournaments/{{ tournamentCode }}/live"
+          afterResponse: "capturePageMetrics"
+      - think: "{{ thinkSec }}"
+      - get:
+          url: "/en/profile"
+          afterResponse: "capturePageMetrics"
+
+  - name: tournament_lifecycle_parallel_stress
+    weight: 30
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "pickTournamentContext"
+      - function: "lifecycleStep"
+      - think: 1
+
+  - name: live_board_polling_stress
+    weight: 10
+    flow:
+      - function: "setupLoadTestAuth"
+      - function: "pickTournamentContext"
+      - get:
+          url: "/en/board/{{ tournamentCode }}"
+          afterResponse: "capturePageMetrics"
+      - think: 1
+      - get:
+          url: "/en/tournaments/{{ tournamentCode }}/live"
+          afterResponse: "capturePageMetrics"

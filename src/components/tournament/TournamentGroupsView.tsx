@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import LegsViewModal from './LegsViewModal';
 import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { showErrorToast } from '@/lib/toastUtils';
-import { useUserContext } from '@/hooks/useUser';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +16,8 @@ import { Input } from '@/components/ui/Input';
 import{ Label } from '@/components/ui/Label';
 import { IconChevronDown, IconEye, IconEdit } from '@tabler/icons-react';
 import { coerceNumericValue } from '@/lib/number-input';
+import { moveTournamentPlayerInGroupAction } from '@/features/tournaments/actions/manageTournament.action';
+import { finishBoardMatchAction } from '@/features/board/actions/boardPage.action';
 
 interface Player {
   playerId: {
@@ -58,10 +58,10 @@ interface Match {
 interface TournamentGroupsViewProps {
   tournament: any;
   userClubRole?: 'admin' | 'moderator' | 'member' | 'none';
+  onDataChanged?: () => void | Promise<void>;
 }
 
-const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament, userClubRole }) => {
-  const { user } = useUserContext();
+const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament, userClubRole, onDataChanged }) => {
   const t = useTranslations("Tournament.components");
   const tTour = useTranslations("Tournament");
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -90,6 +90,26 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
   const [selectedMatchForLegs, setSelectedMatchForLegs] = useState<Match | null>(null);
 
   const isAdminOrModerator = userClubRole === 'admin' || userClubRole === 'moderator';
+  const playersByGroup = useMemo(() => {
+    const grouped = new Map<string, any[]>();
+    const allPlayers = Array.isArray(tournament?.tournamentPlayers)
+      ? tournament.tournamentPlayers
+      : [];
+    allPlayers.forEach((player: any) => {
+      const groupId = player.groupId;
+      if (!groupId) return;
+      const current = grouped.get(groupId) || [];
+      current.push(player);
+      grouped.set(groupId, current);
+    });
+    grouped.forEach((entries, key) => {
+      grouped.set(
+        key,
+        [...entries].sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0))
+      );
+    });
+    return grouped;
+  }, [tournament?.tournamentPlayers]);
 
   const toggleGroup = (groupId: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -150,16 +170,20 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     }
 
     try {
-      const response = await axios.patch(`/api/tournaments/${tournament.tournamentId}/groups/${groupId}/move-player`, {
+      const response = await moveTournamentPlayerInGroupAction({
+        code: tournament.tournamentId,
+        groupId,
         playerId,
-        direction
+        direction,
       });
 
-      if (response.data.success) {
+      if ((response as any)?.success) {
         toast.success(tTour('groups.success_moved'), {
           duration: 4000,
         });
-        window.location.reload();
+        if (onDataChanged) {
+          await onDataChanged();
+        }
       } else {
         toast.error(tTour('groups.error_moving'));
       }
@@ -180,39 +204,38 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/matches/${selectedMatch._id}/finish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player1LegsWon: coerceNumericValue(player1Legs),
-          player2LegsWon: coerceNumericValue(player2Legs),
-          player1Stats: {
-            ...player1Stats,
-            oneEightiesCount: coerceNumericValue(player1Stats.oneEightiesCount),
-            highestCheckout: coerceNumericValue(player1Stats.highestCheckout),
-            average: coerceNumericValue(player1Stats.average),
-          },
-          player2Stats: {
-            ...player2Stats,
-            oneEightiesCount: coerceNumericValue(player2Stats.oneEightiesCount),
-            highestCheckout: coerceNumericValue(player2Stats.highestCheckout),
-            average: coerceNumericValue(player2Stats.average),
-          },
-          allowManualFinish: true,
-          isManual: true,
-          adminId: user?._id
-        })
+      const response = await finishBoardMatchAction({
+        matchId: selectedMatch._id,
+        player1LegsWon: coerceNumericValue(player1Legs),
+        player2LegsWon: coerceNumericValue(player2Legs),
+        player1Stats: {
+          ...player1Stats,
+          oneEightiesCount: coerceNumericValue(player1Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(player1Stats.highestCheckout),
+          average: coerceNumericValue(player1Stats.average),
+        },
+        player2Stats: {
+          ...player2Stats,
+          oneEightiesCount: coerceNumericValue(player2Stats.oneEightiesCount),
+          highestCheckout: coerceNumericValue(player2Stats.highestCheckout),
+          average: coerceNumericValue(player2Stats.average),
+        },
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data?.error || 'Hiba történt a mentés során');
+      if (!(response as any)?.success) {
+        const maybeGuardMessage =
+          (response as any)?.message ||
+          (response as any)?.error ||
+          tTour('groups.error_save');
+        throw new Error(maybeGuardMessage);
       }
 
       setShowAdminModal(false);
       setSelectedMatch(null);
       toast.success(tTour('groups.dialog.success_saved'));
-      window.location.reload();
+      if (onDataChanged) {
+        await onDataChanged();
+      }
     } catch (err: any) {
       showErrorToast(err?.message || tTour('groups.error_save'), {
         error: err?.message,
@@ -238,9 +261,7 @@ const TournamentGroupsView: React.FC<TournamentGroupsViewProps> = ({ tournament,
       <h2 className="text-xl font-bold text-foreground">{tTour('groups.title')}</h2>
       
       {tournament.groups.map((group: any, groupIndex: number) => {
-        const groupPlayers = tournament.tournamentPlayers
-          .filter((player: any) => player.groupId === group._id)
-          .sort((a: any, b: any) => (a.groupStanding || 0) - (b.groupStanding || 0));
+        const groupPlayers = playersByGroup.get(group._id) || [];
         
         const isExpanded = expandedGroups.has(group._id);
         const isMatchesExpanded = expandedMatches.has(group._id);

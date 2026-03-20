@@ -12,6 +12,12 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/Button';
+import { finishBoardMatchAction } from '@/features/board/actions/boardPage.action';
+import {
+  finishMatchLegAction,
+  undoMatchLegAction,
+  updateMatchGameplaySettingsAction,
+} from '@/features/matches/actions/matchGameplay.action';
 
 interface PlayerData {
   playerId: {
@@ -692,25 +698,21 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       });
     }
     
-    // Save leg to API
+    // Save leg via server action
     try {
-      const response = await fetch(`/api/matches/${match._id}/finish-leg`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          winner: pendingLegWinner,
-          player1Throws: player1.allThrows,
-          player2Throws: player2.allThrows,
-          winnerArrowCount: arrowCount,
-          legNumber: currentLeg
-        })
+      const response = await finishMatchLegAction({
+        matchId: match._id,
+        winner: pendingLegWinner,
+        player1Throws: player1.allThrows,
+        player2Throws: player2.allThrows,
+        winnerArrowCount: arrowCount,
+        legNumber: currentLeg,
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error saving leg:', errorData);
+      if (!(response as any)?.success) {
+        console.error('Error saving leg:', response);
         showErrorToast(t("hiba_történt_a_57"), {
-          error: errorData?.error,
+          error: (response as any)?.error || (response as any)?.message,
           context: 'Leg mentése',
           errorName: 'Leg mentése sikertelen',
         });
@@ -776,22 +778,17 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       
       console.log("confirmMatchEnd - Final Legs Won:", { p1: finalPlayer1LegsWon, p2: finalPlayer2LegsWon });
 
-      // Finish match - simplified, only send leg counts
-      const response = await fetch(`/api/matches/${match._id}/finish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player1LegsWon: finalPlayer1LegsWon,
-          player2LegsWon: finalPlayer2LegsWon,
-          fromScoreboard: true
-        })
+      // Finish match via server action
+      const response = await finishBoardMatchAction({
+        matchId: match._id,
+        player1LegsWon: finalPlayer1LegsWon,
+        player2LegsWon: finalPlayer2LegsWon,
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error finishing match:', errorData);
+      if (!(response as any)?.success) {
+        console.error('Error finishing match:', response);
         showErrorToast(t("hiba_történt_a_51"), {
-          error: errorData?.error,
+          error: (response as any)?.error || (response as any)?.message,
           context: 'Meccs lezárása',
           errorName: 'Meccs lezárása sikertelen',
         });
@@ -879,12 +876,10 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     
     setIsSavingMatch(true);
     try {
-      // Call API to undo the last saved leg
-      const response = await fetch(`/api/matches/${match._id}/undo-leg`, {
-        method: 'POST'
-      });
+      // Undo the last saved leg via server action
+      const response = await undoMatchLegAction({ matchId: match._id });
       
-      if (!response.ok) {
+      if (!(response as any)?.success) {
          throw new Error('Nem sikerült törölni az utolsó leget a szerverről.');
       }
 
@@ -952,13 +947,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
       setLegsToWin(tempLegsToWin);
       
       try {
-        const response = await fetch(`/api/matches/${match._id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ legsToWin: tempLegsToWin })
+        const response = await updateMatchGameplaySettingsAction({
+          matchId: match._id,
+          legsToWin: tempLegsToWin,
         });
 
-        if (!response.ok) {
+        if (!(response as any)?.success) {
           showErrorToast(t("hiba_történt_a_6"), {
             context: 'Meccs beállítások',
             errorName: 'Beállítás mentése sikertelen',
@@ -977,13 +971,12 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
     }
 
     try {
-      const response = await fetch(`/api/matches/${match._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ legsToWin: tempLegsToWin })
+      const response = await updateMatchGameplaySettingsAction({
+        matchId: match._id,
+        legsToWin: tempLegsToWin,
       });
 
-      if (response.ok) {
+      if ((response as any)?.success) {
         setLegsToWin(tempLegsToWin);
         setShowSettingsModal(false);
         toast.success(t("beállítások_mentve"));
@@ -1386,12 +1379,11 @@ const MatchGame: React.FC<MatchGameProps> = ({ match, onBack, onMatchFinished, c
                       setCurrentPlayer(tempStartingPlayer);
                       setLegStartingPlayer(tempStartingPlayer);
                       
-                      // Update match starting player via API
+                      // Update match starting player via server action
                       try {
-                        await fetch(`/api/matches/${match._id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ startingPlayer: tempStartingPlayer })
+                        await updateMatchGameplaySettingsAction({
+                          matchId: match._id,
+                          startingPlayer: tempStartingPlayer,
                         });
                       } catch (error) {
                         console.error('Error updating starting player:', error);

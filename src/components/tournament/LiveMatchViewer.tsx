@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { getMatchState } from '@/lib/socketApi';
 import { IconEye, IconArrowLeft, IconPencil, IconShare } from '@tabler/icons-react';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { getMatchByIdClientAction } from '@/features/tournaments/actions/tournamentRoster.action';
 
 interface LiveMatchViewerProps {
   matchId: string;
@@ -84,6 +85,7 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
   const [currentPlayer1, setCurrentPlayer1] = useState(player1);
   const [currentPlayer2, setCurrentPlayer2] = useState(player2);
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const fetchInFlightRef = useRef(false);
 
   const { socket } = useSocket({ 
     tournamentId: tournamentCode, 
@@ -102,10 +104,11 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     }
   }, [matchData]);
 
-  const fetchMatchData = async () => {
+  const fetchMatchData = useCallback(async () => {
+    if (fetchInFlightRef.current) return;
+    fetchInFlightRef.current = true;
     try {
-      const response = await fetch(`/api/matches/${matchId}`);
-      const data = await response.json();
+      const data = await getMatchByIdClientAction({ matchId });
       
       if (data.success && data.match) {
         setMatchData(data.match);
@@ -126,8 +129,10 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       }
     } catch (error) {
       console.error('Failed to fetch match data:', error);
+    } finally {
+      fetchInFlightRef.current = false;
     }
-  };
+  }, [matchId]);
 
   useEffect(() => {
     setCurrentPlayer1(player1);
@@ -136,10 +141,6 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
 
   useEffect(() => {
     fetchMatchData();
-    if (socket.connected) {
-      socket.emit('join-tournament', tournamentCode);
-      socket.emit('join-match', matchId);
-    }
     
     getMatchState(matchId)
     .then(data => {
@@ -192,12 +193,20 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
       }));
     }
 
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void fetchMatchData();
+      }, 500);
+    };
+
     function onLegComplete() {
-      fetchMatchData();
+      scheduleRefresh();
     }
 
     function onFetchMatchData() {
-      fetchMatchData();
+      scheduleRefresh();
     }
 
     socket.on('match-state', onMatchState);
@@ -206,12 +215,15 @@ const LiveMatchViewer: React.FC<LiveMatchViewerProps> = ({ matchId, tournamentCo
     socket.on('fetch-match-data', onFetchMatchData);
 
     return () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
       socket.off('match-state', onMatchState);
       socket.off('throw-update', onThrowUpdate);
       socket.off('leg-complete', onLegComplete);
       socket.off('fetch-match-data', onFetchMatchData);
     };
-  }, [matchId, tournamentCode, currentPlayer1?._id, currentPlayer2?._id, socket.connected]);
+  }, [matchId, currentPlayer1?._id, currentPlayer2?._id, socket, fetchMatchData]);
 
   const getCurrentLegStarter = (): number => {
     if (!matchData) return 1;

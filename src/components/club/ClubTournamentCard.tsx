@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useFormatter, useTranslations } from 'next-intl'
 import { getUserTimeZone } from '@/lib/date-time'
+import { buildTournamentInvoiceDownloadUrl } from '@/features/tournaments/lib/readFlowPolicy'
 
 interface ClubTournamentCardProps {
   tournament: {
@@ -35,6 +36,7 @@ interface ClubTournamentCardProps {
     name?: string
     startDate?: string
     tournamentPlayers?: Array<any>
+    playerCount?: number
     clubId?: {
       name: string
     } | string
@@ -79,7 +81,9 @@ export default function ClubTournamentCard({
   }
 
   const status = tournament.tournamentSettings?.status || 'pending'
-  const playerCount = tournament.tournamentPlayers?.length || 0
+  const playerCount = typeof tournament.playerCount === 'number'
+    ? tournament.playerCount
+    : (tournament.tournamentPlayers?.length || 0)
   const maxPlayers = tournament.tournamentSettings?.maxPlayers || 0
   const isFull = maxPlayers > 0 && playerCount >= maxPlayers
   const entryFee = tournament.tournamentSettings?.entryFee || 0
@@ -196,7 +200,10 @@ export default function ClubTournamentCard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  window.open(`/api/tournaments/${tournament.tournamentId}/invoice`, '_blank');
+                  window.open(
+                    buildTournamentInvoiceDownloadUrl(String(tournament.tournamentId || tournament._id)),
+                    '_blank'
+                  );
                 }}
               >
                 <IconFileInvoice className="w-3.5 h-3.5" />

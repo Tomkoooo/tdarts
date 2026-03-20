@@ -102,12 +102,24 @@ const NavbarNew = () => {
     { name: t("tournaments"), icon: IconTournament, href: "/search?tab=tournaments" },
     { name: t("clubs"), icon: IconUsers, href: "/search?tab=clubs" },
     { name: isOnline ? t("board") : t("board_offline"), icon: IconDeviceDesktop, href: "/board" },
-    { name: t("search"), icon: IconSearch, href: "/search" },
+    { name: t("search"), icon: IconSearch, href: "/search?tab=global" },
     { name: t("how_it_works"), icon: IconHelp, href: "/how-it-works" },
   ];
 
   const normalizedPath = stripLocalePrefix(pathname || "/");
-  const currentSearchTab = searchParams.get("tab");
+  const currentSearchTab = searchParams.get("tab") || "global";
+
+  const resolveNavHref = (href: string): string => {
+    const [itemPath, itemQuery] = href.split("?");
+    if ((itemPath || "/") !== "/search") {
+      return toLocalizedHref(href);
+    }
+    const targetTab = new URLSearchParams(itemQuery || "").get("tab") || "global";
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", targetTab);
+    params.delete("page");
+    return toLocalizedHref(`/search?${params.toString()}`);
+  };
 
   const isNavItemActive = (href: string) => {
     const [itemPath, itemQuery] = href.split("?");
@@ -172,7 +184,7 @@ const NavbarNew = () => {
               return (
                 <Link
                   key={item.name}
-                  href={toLocalizedHref(item.href)}
+                  href={resolveNavHref(item.href)}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium",
                     isActive 
@@ -386,7 +398,7 @@ const NavbarNew = () => {
                       return (
                         <Link
                           key={item.name}
-                          href={toLocalizedHref(item.href)}
+                          href={resolveNavHref(item.href)}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium",
