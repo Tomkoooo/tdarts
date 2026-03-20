@@ -256,6 +256,12 @@ export async function finishBoardMatchAction(input: {
         isManual: true,
         adminId,
       });
+      const canonicalTournamentId = String((match as any)?.tournamentCode || (match as any)?.tournamentId || '');
+      if (canonicalTournamentId) {
+        revalidateTag(`tournament:${canonicalTournamentId}`, 'max');
+        revalidateTag(`tournament:stable:${canonicalTournamentId}`, 'max');
+        revalidateTag(`tournament:volatile:${canonicalTournamentId}`, 'max');
+      }
       revalidateTag('home:stats', 'max');
       revalidateTag('home:tournaments', 'max');
       revalidateTag('home:leagues', 'max');

@@ -118,6 +118,9 @@ export async function createManualGroupsAction(input: {
       const authResult = await authorizeUserResult();
       if (!authResult.ok) return authResult;
       await TournamentService.createManualGroups(code, authResult.data.userId, payload.groups);
+      revalidateTournamentTags(code);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return { success: true };
     },
     {
@@ -236,6 +239,9 @@ export async function cancelKnockoutAction(input: { code: string }) {
     async (payload: { code: string }) => {
       const { code } = codeSchema.parse(payload);
       await TournamentService.cancelKnockout(code);
+      revalidateTournamentTags(code);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return { success: true };
     },
     {
@@ -324,6 +330,9 @@ export async function moveTournamentPlayerInGroupAction(input: {
         parsed.playerId,
         parsed.direction
       );
+      revalidateTournamentTags(parsed.code);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return { success };
     },
     {
@@ -369,6 +378,9 @@ export async function updateTournamentBoardAction(input: {
         scoliaSerialNumber: parsed.scoliaSerialNumber,
         scoliaAccessToken: parsed.scoliaAccessToken,
       });
+      revalidateTournamentTags(parsed.code);
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, tournament });
     },
     {

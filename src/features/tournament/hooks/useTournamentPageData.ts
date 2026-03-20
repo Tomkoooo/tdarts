@@ -13,7 +13,14 @@ import { perfFlags } from "@/features/performance/lib/perfFlags";
 type UserClubRole = "admin" | "moderator" | "member" | "none";
 type UserPlayerStatus = "applied" | "checked-in" | "none";
 type TournamentView = "overview" | "players" | "boards" | "groups" | "bracket" | "full";
+type TournamentSection = "overview" | "players" | "boards" | "groups" | "bracket";
+type PrefetchedSectionMap = Partial<Record<Exclude<TournamentView, "full">, any>>;
 const SSE_DEBUG = process.env.NEXT_PUBLIC_SSE_DEBUG === "true";
+
+const hasPlayerStatusData = (list: any[]): boolean =>
+  Array.isArray(list) &&
+  list.length > 0 &&
+  list.every((player: any) => typeof player?.status === "string" && player.status.length > 0);
 
 const toNumericBoardNumber = (value: unknown): number | null => {
   const parsed = Number(value);
@@ -149,7 +156,8 @@ export function useTournamentPageData(
   code: string | string[] | undefined,
   user: SimplifiedUser | undefined,
   errorMessage: string,
-  initialData?: any
+  initialData?: any,
+  initialSections?: PrefetchedSectionMap
 ) {
   const [tournament, setTournament] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
@@ -161,6 +169,7 @@ export function useTournamentPageData(
   const [players, setPlayers] = useState<any[]>([]);
   const [hasFullData, setHasFullData] = useState(false);
   const currentViewRef = useRef<TournamentView>("overview");
+  const initialDataHydratedCodeRef = useRef<string | null>(null);
   const [lastLoadedSection, setLastLoadedSection] = useState<
     "overview" | "players" | "boards" | "groups" | "bracket"
   >("overview");
@@ -171,8 +180,30 @@ export function useTournamentPageData(
     setUserPlayerId,
   };
 
+  const applySectionPayload = useCallback(
+    (view: TournamentSection, payload: NonNullable<ReturnType<typeof extractTournamentPayload>>) => {
+      setTournament((prev: any) => mergeTournamentByView(prev, payload.tournament, view));
+      setPlayers((prev: any[]) => {
+        const incomingPlayers = payload.players;
+        if (view === "players" || view === "groups" || view === "bracket") {
+          return incomingPlayers.length > 0 ? incomingPlayers : prev;
+        }
+        if (view === "overview") {
+          if (hasPlayerStatusData(incomingPlayers)) {
+            return incomingPlayers;
+          }
+          return prev;
+        }
+        return incomingPlayers.length > 0 ? incomingPlayers : prev;
+      });
+      setLastLoadedSection(view);
+    },
+    []
+  );
+
   const fetchAll = useCallback(async (
-    view: TournamentView = "overview"
+    view: TournamentView = "overview",
+    options?: { bypassCache?: boolean }
   ) => {
     if (!code || typeof code !== "string") return;
     currentViewRef.current = view;
@@ -191,17 +222,19 @@ export function useTournamentPageData(
         code,
         includeViewer: Boolean(user?._id),
         view,
+        bypassCache: options?.bypassCache ?? true,
+        freshness: options?.bypassCache === false ? "default" : "force-fresh",
       });
       const payload = extractTournamentPayload(data);
       if (!payload) {
         throw new Error("Tournament not found");
       }
-      setTournament((prev: any) => mergeTournamentByView(prev, payload.tournament, view));
-      setPlayers((prev: any[]) =>
-        payload.players.length > 0 || view === "overview" || view === "full"
-          ? payload.players
-          : prev
-      );
+      if (view === "full") {
+        setTournament(payload.tournament);
+        setPlayers(payload.players);
+      } else {
+        applySectionPayload(view, payload);
+      }
       setHasFullData(view === "full");
       setLastLoadedSection(section);
 
@@ -217,7 +250,7 @@ export function useTournamentPageData(
     } finally {
       setLoading(false);
     }
-  }, [code, user?._id, errorMessage]);
+  }, [code, user?._id, errorMessage, applySectionPayload]);
 
   const resyncLiteData = useCallback(async (options?: { bypassCache?: boolean }) => {
     if (!code || typeof code !== "string") return false;
@@ -225,7 +258,8 @@ export function useTournamentPageData(
     try {
       const data = await getTournamentPageLiteAction({
         code,
-        bypassCache: options?.bypassCache ?? false,
+        bypassCache: options?.bypassCache ?? true,
+        freshness: options?.bypassCache === false ? "default" : "force-fresh",
       });
       const tournamentLite = (data as { tournament?: any })?.tournament;
       if (!tournamentLite) {
@@ -288,6 +322,7 @@ export function useTournamentPageData(
         includeViewer: Boolean(user?._id),
         view,
         bypassCache: options?.bypassCache ?? true,
+        freshness: options?.bypassCache === false ? "default" : "force-fresh",
       });
       const payload = extractTournamentPayload(data);
       if (!payload) return;
@@ -447,20 +482,32 @@ export function useTournamentPageData(
   }, []);
 
   useEffect(() => {
+    const normalizedCode = typeof code === "string" ? code : String(code || "");
     const payload = extractTournamentPayload(initialData);
-    if (payload) {
-      setTournament(payload.tournament);
-      setPlayers(payload.players);
+    if (payload && initialDataHydratedCodeRef.current !== normalizedCode) {
+      applySectionPayload("overview", payload);
       applyTournamentData(
         { ...payload.tournament, viewer: payload.viewer },
         user?._id,
-        String(code || ""),
+        normalizedCode,
         setters
       );
+      if (initialSections) {
+        const sectionEntries: TournamentSection[] = ["players", "boards", "groups", "bracket"];
+        sectionEntries.forEach((section) => {
+          const sectionPayload = extractTournamentPayload(initialSections[section]);
+          if (!sectionPayload) return;
+          applySectionPayload(section, sectionPayload);
+        });
+      }
+      initialDataHydratedCodeRef.current = normalizedCode;
       return;
     }
-    fetchAll("overview");
-  }, [code, fetchAll, initialData, user?._id]);
+    if (initialDataHydratedCodeRef.current !== normalizedCode) {
+      initialDataHydratedCodeRef.current = normalizedCode;
+      fetchAll("overview");
+    }
+  }, [code, fetchAll, initialData, initialSections, user?._id, applySectionPayload]);
 
   return {
     tournament,

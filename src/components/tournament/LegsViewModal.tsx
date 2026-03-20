@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react"
 import { useFeatureFlag } from "@/hooks/useFeatureFlag"
 import { getMatchByIdClientAction, getMatchLegsClientAction } from "@/features/tournaments/actions/tournamentRoster.action"
 import MatchStatisticsCharts from "./MatchStatisticsCharts"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
@@ -271,6 +271,7 @@ const LegsViewModal: React.FC<LegsViewModalProps> = ({ isOpen, onClose, match: i
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="max-w-[1040px] max-h-[95vh] w-[94vw] p-0 flex flex-col overflow-hidden bg-background border-border font-body text-foreground shadow-glow-primary">
+          <DialogTitle className="sr-only">{t('title') || 'Match Analysis'}</DialogTitle>
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-8 py-8 relative custom-scrollbar">
           {/* Ambient Glows */}
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>

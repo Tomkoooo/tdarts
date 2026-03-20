@@ -22,7 +22,7 @@ import {
   IconReceipt,
   IconCreditCard,
 } from "@tabler/icons-react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 
 import { TournamentSettings } from "@/interface/tournament.interface"
 import { BillingInfo } from "@/interface/club.interface"
@@ -325,12 +325,12 @@ export default function CreateTournamentModal({
         return
       }
 
-      onTournamentCreated()
-      onClose()
-
       if (data.tournamentId || data.code) {
         router.push(`/tournaments/${data.tournamentId || data.code}`)
       }
+
+      onTournamentCreated()
+      onClose()
     } catch (err: any) {
       const errorMsg = err.message || t('errors.default')
       setError(errorMsg)
@@ -344,15 +344,15 @@ export default function CreateTournamentModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden bg-linear-to-br from-card/98 to-card/95 backdrop-blur-xl p-0 shadow-2xl shadow-primary/20"
+        className="flex h-dvh max-h-dvh w-screen max-w-none flex-col overflow-hidden rounded-none border-0 bg-linear-to-br from-card/98 to-card/95 p-0 shadow-2xl shadow-primary/20 sm:h-auto sm:max-h-[90vh] sm:w-[calc(100vw-2rem)] sm:max-w-3xl sm:rounded-lg sm:border"
       >
         <DialogHeader className="bg-linear-to-r from-primary/10 to-transparent px-4 md:px-6 py-3 md:py-4 shadow-sm shadow-primary/10">
           <DialogTitle className="text-xl md:text-2xl text-foreground">{t('title')}</DialogTitle>
           <DialogDescription className="text-sm">{t('subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
-          <div className="mb-4 flex items-center justify-between gap-2 md:mb-6">
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-6">
+          <div className="mb-4 flex items-center justify-between gap-1.5 md:mb-6 md:gap-2">
             {visibleSteps.map((step, idx) => {
               const StepIcon = step.icon
               const isActive = currentStep === step.id
@@ -366,23 +366,23 @@ export default function CreateTournamentModal({
                     key={step.id}
                     onClick={() => setCurrentStep(step.id as Step)}
                     className={cn(
-                      "flex items-center gap-1.5 md:gap-2 text-xs md:text-sm transition-all duration-200",
+                      "flex min-w-0 items-center gap-1 md:gap-2 text-xs md:text-sm transition-all duration-200",
                       isActive ? "text-primary scale-105" : isCompleted ? "text-success" : "text-muted-foreground",
                     )}
                   >
                     <div
                       className={cn(
                         "flex items-center justify-center rounded-full transition-all duration-200",
-                        "size-9 md:size-11",
+                        "size-8 md:size-11",
                         isActive && "bg-primary shadow-lg shadow-primary/40",
                         !isActive && !isCompleted && "bg-muted/60",
                         isCompleted && "bg-success shadow-lg shadow-success/40",
                       )}
                     >
                       {isCompleted ? (
-                        <IconCheck size={20} className="text-white" />
+                        <IconCheck size={18} className="text-white md:size-5" />
                       ) : (
-                        <StepIcon size={20} className={isActive ? "text-white" : "text-current"} />
+                        <StepIcon size={18} className={cn("md:size-5", isActive ? "text-white" : "text-current")} />
                       )}
                     </div>
                     <span className="hidden text-xs md:text-sm font-medium sm:inline">{step.label}</span>
@@ -400,7 +400,7 @@ export default function CreateTournamentModal({
 
           {/* Error Alert removed as per user request to show it in footer */}
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="grid gap-4">
             <Card className="bg-linear-to-br from-card/95 to-card/80 backdrop-blur-sm shadow-lg shadow-primary/10">
               <CardContent className="pt-6">
                 {currentStep === "details" && (
@@ -794,77 +794,45 @@ export default function CreateTournamentModal({
               </CardContent>
             </Card>
 
-            <aside className="hidden lg:block">
-              <Card className="sticky top-0 bg-linear-to-b from-primary/12 to-card/60 shadow-lg shadow-primary/15">
-                <CardContent className="space-y-4 pt-6">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t('steps.details')}
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-foreground">
-                      {settings.name || t('details.name_placeholder')}
-                    </p>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t('boards.title')}</span>
-                      <span className="font-semibold">{boards.length}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t('settings.max_players_label')}</span>
-                      <span className="font-semibold">{settings.maxPlayers || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t('settings.format_label')}</span>
-                      <span className="font-semibold">{settings.format}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t('settings.mode_label')}</span>
-                      <span className="font-semibold">{settings.participationMode || 'individual'}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </aside>
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col gap-2 bg-linear-to-r from-transparent to-primary/5 px-4 md:px-6 py-3 md:py-4 sm:flex-row sm:items-center sm:justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="md:size-default">
+        <DialogFooter className="sticky bottom-0 z-20 flex flex-col gap-2 border-t border-border/60 bg-card/95 px-4 py-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between md:px-6 md:py-4">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto md:size-default">
             {t('footer.cancel')}
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             {error ? (
-              <div className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                 <span className="text-sm font-semibold text-destructive max-w-[250px] md:max-w-xs text-right leading-tight">
+              <div className="flex w-full flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300 sm:w-auto sm:min-w-[300px] sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                 <span className="text-sm font-semibold text-destructive sm:max-w-xs sm:text-right leading-tight">
                    {error}
                  </span>
-                 <Button onClick={() => setError("")} size="sm" variant="secondary">
+                 <Button onClick={() => setError("")} size="sm" variant="secondary" className="w-full sm:w-auto">
                    OK
                  </Button>
               </div>
             ) : (
               <>
                 {getCurrentStepIndex() > 0 && (
-                  <Button variant="outline" size="sm" onClick={handleBack} disabled={isSubmitting} className="md:size-default">
+                  <Button variant="outline" size="sm" onClick={handleBack} disabled={isSubmitting} className="w-full sm:w-auto md:size-default">
                     {t('footer.back')}
                   </Button>
                 )}
                 {currentStep !== visibleSteps[visibleSteps.length - 1].id ? (
-                  <div className="flex flex-col items-end gap-1">
-                  <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="md:size-default gap-1">
+                  <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+                  <Button onClick={handleNext} disabled={!canProceed() || isSubmitting} size="sm" className="w-full gap-1 md:size-default sm:w-auto">
                     {t('footer.next')}
                     <IconChevronRight size={16} />
                     
                   </Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
                     <Button 
                       onClick={handleSubmit} 
                       disabled={!canProceed() || isSubmitting || (isOac && !isOacCreationEnabled)} 
                       size="sm" 
-                      className={cn("md:size-default gap-1.5 shadow-lg shadow-primary/30", isOac && "bg-primary hover:bg-primary/90")}
+                      className={cn("w-full gap-1.5 shadow-lg shadow-primary/30 md:size-default sm:w-auto", isOac && "bg-primary hover:bg-primary/90")}
                     >
                       {isSubmitting ? (
                         <>
@@ -879,7 +847,7 @@ export default function CreateTournamentModal({
                       )}
                     </Button>
                      {isOac && !isOacCreationEnabled && (
-                      <span className="text-xs font-medium text-destructive mb-1 animate-pulse">
+                      <span className="text-xs font-medium text-destructive sm:mb-1 animate-pulse">
                         {t('footer.oac_not_available')}
                       </span>
                     )}

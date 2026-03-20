@@ -4,6 +4,7 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import type { AppModalProps, AppModalSize } from "./types";
 
@@ -29,6 +30,7 @@ export function AppModal({
       <DialogContent
         className={`${sizeClass} border-border/70 bg-card/90 backdrop-blur-xl max-h-[90vh] overflow-hidden flex flex-col p-0 shadow-2xl shadow-black/25 ${className}`}
       >
+        <DialogTitle className="sr-only">Dialog</DialogTitle>
         {children}
       </DialogContent>
     </Dialog>

@@ -29,25 +29,25 @@ export default function LandingCtaSection() {
           >
             <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-primary">
               <IconTarget size={14} />
-              Indulasra kesz
+              Indulásra kész
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Emeld premium szintre minden darts estedet
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              Kezeld a jatekosokat, sorsolasokat, merkozeseket es statisztikakat egyetlen folyamatban az elso dobastol a dontoig.
+              Kezeld a játékosokat, sorsolásokat, mérkőzéseket és statisztikákat egyetlen folyamatban az első dobástól a döntőig.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" className="min-w-[220px]" asChild>
                 <Link href={user ? "/search" : "/auth/login"}>
-                  {user ? "Versenyek bongeszese" : tNavbar("login")}
+                  {user ? "Versenyek böngészése" : tNavbar("login")}
                   <IconArrowRight size={18} className="ml-2" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="min-w-[220px]" asChild>
                 <Link href={user ? "/myclub" : "/auth/register"}>
                   <IconCalendarEvent size={18} className="mr-2" />
-                  {user ? "Klub inditasa" : (tNavbar.has("register") ? tNavbar("register") : "Register")}
+                  {user ? "Klub indítása" : (tNavbar.has("register") ? tNavbar("register") : "Register")}
                 </Link>
               </Button>
             </div>

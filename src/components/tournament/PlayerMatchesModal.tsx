@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IconTrophy, IconTarget, IconLoader2, IconAlertCircle, IconDeviceAnalytics, IconChartBar } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { getTournamentPlayerMatchesClientAction } from "@/features/tournaments/actions/tournamentRoster.action";
@@ -138,6 +138,9 @@ const PlayerMatchesModal: React.FC<PlayerMatchesModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
       <DialogContent className="max-w-[1200px] w-[95vw] p-0 flex flex-col overflow-hidden bg-background border-border shadow-glow-primary sm:rounded-2xl h-[90vh]">
+        <DialogTitle className="sr-only">
+          {t('title') || 'Player Profile'} - {playerName}
+        </DialogTitle>
         {/* Abstract Background Glows */}
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-accent/10 rounded-full blur-[120px] pointer-events-none"></div>

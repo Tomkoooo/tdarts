@@ -21,8 +21,8 @@ export function useTournamentRealtimeRefresh(
   tournament: any,
   tournamentId: string | undefined,
   applyDelta: (delta: SseDeltaPayload<any>) => boolean,
-  refreshLite: () => Promise<boolean>,
-  resyncFullData: () => Promise<void>
+  refreshLite: (options?: { bypassCache?: boolean }) => Promise<boolean>,
+  resyncFullData: (options?: { bypassCache?: boolean }) => Promise<void>
 ) {
   const isRealtimeEnabled = LIVE_TOURNAMENT_STATUSES.has(
     tournament?.tournamentSettings?.status
@@ -55,7 +55,7 @@ export function useTournamentRealtimeRefresh(
       }
       const resyncJob = async () => {
         if (mode === "lite") {
-          const liteOk = await refreshLite();
+          const liteOk = await refreshLite({ bypassCache: true });
           if (liteOk) {
             liteFailureCountRef.current = 0;
             return;
@@ -67,7 +67,7 @@ export function useTournamentRealtimeRefresh(
           return;
         }
         liteFailureCountRef.current = 0;
-        await resyncFullData();
+        await resyncFullData({ bypassCache: true });
       };
       void resyncJob().finally(() => {
         resyncInFlightRef.current = false;

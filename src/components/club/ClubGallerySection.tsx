@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import * as React from "react"
 import { getClubGalleriesAction } from "@/features/clubs/actions/getClubGalleries.action"
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/Button"
 import { ChevronLeft, ChevronRight, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -203,6 +203,9 @@ export default function ClubGallerySection({ clubId, deferUntilVisible = false }
 
       <Dialog open={!!selectedGallery} onOpenChange={(open) => !open && closeGallery()}>
         <DialogContent className="max-w-4xl w-full p-0 bg-black/95 text-white border-none overflow-hidden h-[80vh] flex flex-col md:flex-row">
+            <DialogTitle className="sr-only">
+              {selectedGallery?.name || t("gallery_preview")}
+            </DialogTitle>
             {selectedGallery && (
                 <>
                  <div className="relative flex-1 h-full flex items-center justify-center p-4">

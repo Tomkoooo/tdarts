@@ -9,6 +9,7 @@ import { UserModel } from '@/database/models/user.model';
 import { connectMongo } from '@/lib/mongoose';
 import { BadRequestError } from '@/middleware/errorHandle';
 import { serializeForClient } from '@/shared/lib/serializeForClient';
+import { revalidateTag } from 'next/cache';
 
 const schema = z.object({
   code: z.string().min(1),
@@ -38,6 +39,11 @@ export async function reopenTournamentAction(input: z.infer<typeof schema>) {
       }
 
       const tournament = await TournamentService.reopenTournament(parsed.data.code, authResult.data.userId);
+      revalidateTag(`tournament:${parsed.data.code}`, 'max');
+      revalidateTag(`tournament:stable:${parsed.data.code}`, 'max');
+      revalidateTag(`tournament:volatile:${parsed.data.code}`, 'max');
+      revalidateTag('search', 'max');
+      revalidateTag('home:tournaments', 'max');
       return serializeForClient({ success: true, tournament });
     },
     {

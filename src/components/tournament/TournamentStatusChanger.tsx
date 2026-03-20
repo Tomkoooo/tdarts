@@ -28,7 +28,7 @@ import { showErrorToast } from "@/lib/toastUtils"
 interface TournamentStatusManagerProps {
   tournament: Tournament
   userClubRole: "admin" | "moderator" | "member" | "none"
-  onRefetch: () => void
+  onRefetch: () => void | Promise<void>
   section?: "all" | "groups" | "knockout"
 }
 
@@ -90,17 +90,19 @@ export default function TournamentStatusChanger({
   )
   const availablePlayers = checkedInPlayers.length
   const boardCount = tournament?.tournamentSettings?.boardCount ?? 0
+  const groupCount = Array.isArray(tournament?.groups) ? tournament.groups.length : 0
+  const effectiveBoardCount = boardCount > 0 ? boardCount : groupCount
 
-  const minPlayersRequired = boardCount * MIN_PLAYERS_PER_GROUP
-  const maxPlayersAllowed = boardCount * MAX_PLAYERS_PER_GROUP
+  const minPlayersRequired = effectiveBoardCount * MIN_PLAYERS_PER_GROUP
+  const maxPlayersAllowed = effectiveBoardCount * MAX_PLAYERS_PER_GROUP
 
   const isGroupGenerationAllowed =
-    boardCount > 0 && availablePlayers >= minPlayersRequired && availablePlayers <= maxPlayersAllowed
+    effectiveBoardCount > 0 && availablePlayers >= minPlayersRequired && availablePlayers <= maxPlayersAllowed
 
   const isAutomaticKnockoutAllowed =
-    boardCount === 0 ||
+    effectiveBoardCount === 0 ||
     tournamentFormat === "knockout" ||
-    (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(boardCount))
+    (tournamentFormat === "group_knockout" && [2, 4, 8, 16].includes(effectiveBoardCount))
   const showGroupsControls = section === "all" || section === "groups"
   const showKnockoutControls = section === "all" || section === "knockout"
 
@@ -113,7 +115,7 @@ export default function TournamentStatusChanger({
 
       try {
         await request()
-        onRefetch()
+        await onRefetch()
       } catch (err: any) {
         const message = err?.message || tTour('status_changer.error_unknown')
         setError(message)
@@ -863,7 +865,7 @@ export default function TournamentStatusChanger({
                   {tTour('status_changer.knockout_dialog.qualifiers_desc')}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[2, 3, 4].filter(count => !(boardCount >= 16 && count === 4)).map((count) => (
+                  {[2, 3, 4].filter(count => !(effectiveBoardCount >= 16 && count === 4)).map((count) => (
                     <Button
                       key={count}
                       type="button"
@@ -875,7 +877,7 @@ export default function TournamentStatusChanger({
                   ))}
                 </div>
                 <div className="text-sm text-muted-foreground mt-2">
-                  {tTour('status_changer.knockout_dialog.bracket_size', { size: boardCount * selectedPlayers, boards: boardCount })}
+                  {tTour('status_changer.knockout_dialog.bracket_size', { size: effectiveBoardCount * selectedPlayers, boards: effectiveBoardCount })}
                 </div>
 
                 <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-3 border border-border">

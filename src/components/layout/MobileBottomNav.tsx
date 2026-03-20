@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
+  IconBolt,
   IconDeviceDesktop,
   IconHome,
   IconLanguage,
@@ -37,6 +38,7 @@ interface NavItem {
 
 export const MobileBottomNav: React.FC = () => {
   const { user } = useUserContext();
+  const isGlobalAdmin = user?.isAdmin === true;
   const t = useTranslations("Navbar");
   const pathname = usePathname();
   const router = useRouter();
@@ -106,6 +108,17 @@ export const MobileBottomNav: React.FC = () => {
               label: t("my_club"),
               match: (path) => path.startsWith("/myclub") || path.startsWith("/clubs"),
             },
+            ...(isGlobalAdmin
+              ? [
+                  {
+                    id: "admin",
+                    href: "/admin",
+                    icon: IconBolt,
+                    label: t("admin"),
+                    match: (path: string) => path.startsWith("/admin"),
+                  },
+                ]
+              : []),
           ]
         : [
             {
@@ -144,7 +157,7 @@ export const MobileBottomNav: React.FC = () => {
               match: (path) => path.startsWith("/auth/register"),
             },
           ],
-    [user, hasQuickTournament, ongoingTournament?.code, t]
+    [user, isGlobalAdmin, hasQuickTournament, ongoingTournament?.code, t]
   );
 
   const isActive = (item: NavItem): boolean => {

@@ -622,7 +622,7 @@ export class TournamentService {
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const tournament = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId groups tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name verified paymentStatus isSandbox'
+                'tournamentId clubId groups tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.boardCount verified paymentStatus isSandbox'
             )
             .populate('clubId', 'name location contact')
             .populate({
@@ -660,7 +660,7 @@ export class TournamentService {
         const filter = this.buildCodeOrIdFilter(tournamentId);
         const tournament = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId knockout tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.knockoutMethod verified paymentStatus isSandbox'
+                'tournamentId clubId groups knockout tournamentPlayers tournamentSettings.status tournamentSettings.format tournamentSettings.name tournamentSettings.boardCount tournamentSettings.knockoutMethod verified paymentStatus isSandbox'
             )
             .populate('clubId', 'name location contact')
             .populate({
@@ -786,7 +786,7 @@ export class TournamentService {
 
         const tournament: any = await TournamentModel.findOne(filter)
             .select(
-                'tournamentId clubId tournamentPlayers.playerReference waitingList.playerReference boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
+                'tournamentId clubId tournamentPlayers.playerReference tournamentPlayers.status waitingList.playerReference waitingList.addedAt boards.boardNumber boards.name boards.status boards.isActive tournamentSettings createdAt updatedAt isActive isDeleted isArchived isCancelled isSandbox verified paymentStatus'
             )
             .populate('clubId', 'name location contact')
             .populate({

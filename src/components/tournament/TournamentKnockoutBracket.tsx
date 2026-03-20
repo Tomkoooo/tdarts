@@ -150,6 +150,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   const { user } = useUserContext()
   const t = useTranslations("Tournament.components");
   const tTour = useTranslations("Tournament");
+  const KO_DEBUG =
+    process.env.NEXT_PUBLIC_KNOCKOUT_DEBUG === "true" ||
+    process.env.NEXT_PUBLIC_SSE_DEBUG === "true";
   const isAdmin = userClubRole === "admin" || userClubRole === "moderator"
   const fullscreenContainerRef = useRef<HTMLDivElement>(null)
   const [knockoutData, setKnockoutData] = useState<KnockoutRound[]>([])
@@ -213,6 +216,24 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     }
 
     const knockoutRounds = (response as { knockout?: any[] }).knockout || []
+    if (KO_DEBUG) {
+      const firstRound = knockoutRounds[0];
+      const firstMatch = firstRound?.matches?.[0];
+      console.log("[Knockout][debug] applyKnockoutViewData", {
+        rounds: knockoutRounds.length,
+        firstRound: firstRound?.round,
+        firstMatchShape: firstMatch
+          ? {
+              player1Type: typeof firstMatch.player1,
+              player2Type: typeof firstMatch.player2,
+              hasMatchReference: Boolean(firstMatch.matchReference),
+              matchReferencePlayer1: firstMatch.matchReference?.player1,
+              matchReferencePlayer2: firstMatch.matchReference?.player2,
+              scorer: firstMatch.matchReference?.scorer,
+            }
+          : null,
+      })
+    }
     knockoutRounds.forEach((round: any) => {
       if (!round.matches) {
         round.matches = []
@@ -235,13 +256,32 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   }
 
   useEffect(() => {
-    if (Array.isArray(tournament?.knockout) && tournament.knockout.length > 0) {
-      setKnockoutData(tournament.knockout)
+    if (Array.isArray(tournament?.knockout)) {
+      if (KO_DEBUG) {
+        const firstRound = tournament.knockout[0];
+        const firstMatch = firstRound?.matches?.[0];
+        console.log("[Knockout][debug] hydrateFromTournamentProp", {
+          rounds: tournament.knockout.length,
+          firstRound: firstRound?.round,
+          firstMatchShape: firstMatch
+            ? {
+                player1Type: typeof firstMatch.player1,
+                player2Type: typeof firstMatch.player2,
+                hasMatchReference: Boolean(firstMatch.matchReference),
+                matchReferencePlayer1: firstMatch.matchReference?.player1,
+                matchReferencePlayer2: firstMatch.matchReference?.player2,
+                scorer: firstMatch.matchReference?.scorer,
+              }
+            : null,
+        })
+      }
+      setKnockoutData(tournament.knockout || [])
       setAvailableBoards(Array.isArray(tournament?.boards) ? tournament.boards : [])
       setTournamentStatus(tournament?.tournamentSettings?.status || null)
       setCurrentKnockoutMethod(
         (tournament?.tournamentSettings?.knockoutMethod as "automatic" | "manual" | undefined) || knockoutMethod
       )
+      setLoading(false)
       return
     }
     void fetchKnockoutData()
@@ -839,10 +879,114 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     return `Tábla ${boardNumber}`
   }
 
+  const extractPlayerId = (value: any): string | null => {
+    const normalizeId = (raw: unknown): string | null => {
+      if (raw === null || raw === undefined) return null
+      const normalized = String(raw).trim()
+      if (!normalized) return null
+      if (
+        normalized === "[Circular]" ||
+        normalized === "[object Object]" ||
+        normalized.toLowerCase() === "undefined" ||
+        normalized.toLowerCase() === "null"
+      ) {
+        return null
+      }
+      return normalized
+    }
+
+    if (!value) return null
+    if (typeof value === "string" || typeof value === "number") return normalizeId(value)
+    if (typeof value === "object") {
+      if (value._id) return normalizeId(value._id)
+      if (value.playerId) return extractPlayerId(value.playerId)
+      if (typeof value.toString === "function") {
+        const normalized = normalizeId(value.toString())
+        if (normalized) return normalized
+      }
+    }
+    return null
+  }
+
+  const extractPlayerName = (value: any): string | null => {
+    if (!value || typeof value !== "object") return null
+    if (typeof value.name === "string" && value.name.trim().length > 0) return value.name
+    if (value.playerId && typeof value.playerId === "object" && typeof value.playerId.name === "string") {
+      return value.playerId.name
+    }
+    return null
+  }
+
+  const getTournamentPlayerId = (player: any): string | null =>
+    extractPlayerId(player?.playerReference) || extractPlayerId(player?._id)
+
+  const getTournamentPlayerName = (player: any): string =>
+    player?.playerReference?.name || player?.name || "Ismeretlen játékos"
+
+  const resolvePlayerNameById = (playerId: string | null): string | null => {
+    if (!playerId) return null
+    const pool = [...availablePlayers, ...(Array.isArray(tournamentPlayers) ? tournamentPlayers : [])]
+    const found = pool.find((player: any) => getTournamentPlayerId(player) === playerId)
+    if (found) return getTournamentPlayerName(found)
+
+    for (const round of knockoutData) {
+      for (const match of round.matches || []) {
+        const matchRef = match?.matchReference as any
+        const p1 = matchRef?.player1?.playerId
+        const p2 = matchRef?.player2?.playerId
+        if (extractPlayerId(p1) === playerId) {
+          const name = extractPlayerName(p1)
+          if (name) return name
+        }
+        if (extractPlayerId(p2) === playerId) {
+          const name = extractPlayerName(p2)
+          if (name) return name
+        }
+      }
+    }
+
+    return null
+  }
+
+  const resolveMatchPlayerName = (match: KnockoutMatch, side: "player1" | "player2"): string => {
+    const slot = side === "player1" ? match.player1 : match.player2
+    const directSlotName = extractPlayerName(slot)
+    if (directSlotName) return directSlotName
+
+    const legacyName = side === "player1" ? match.player1Name : match.player2Name
+    if (typeof legacyName === "string" && legacyName.trim().length > 0) return legacyName
+
+    const matchRef = match.matchReference as any
+    const matchRefSlot = side === "player1"
+      ? matchRef?.player1?.playerId
+      : matchRef?.player2?.playerId
+    const matchRefName = extractPlayerName(matchRefSlot)
+    if (matchRefName) return matchRefName
+
+    const slotId = extractPlayerId(slot) || extractPlayerId(matchRefSlot)
+    const lookedUpName = resolvePlayerNameById(slotId)
+    if (lookedUpName) return lookedUpName
+
+    if (KO_DEBUG) {
+      console.log("[Knockout][debug] unresolvedPlayerName", {
+        side,
+        slot,
+        matchRefSlot,
+        extractedSlotId: extractPlayerId(slot),
+        extractedMatchRefSlotId: extractPlayerId(matchRefSlot),
+        lookedUpName,
+        winnerId: match?.matchReference?.winnerId,
+        scorer: match?.matchReference?.scorer,
+      })
+    }
+
+    return "TBD"
+  }
+
   const getAvailablePlayersForSelection = (searchTerm: string, players: any[]) => {
     const term = searchTerm.toLowerCase()
     return players.filter((player: any) => {
-      const playerName = player.playerReference?.name || player.name || ""
+      const playerName = getTournamentPlayerName(player)
       return playerName.toLowerCase().includes(term)
     })
   }
@@ -859,11 +1003,11 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     const editingPlayerIds = new Set<string>()
     if (editingMatch) {
       if (editingMatch.player1) {
-        const id = editingMatch.player1._id || editingMatch.player1
+        const id = extractPlayerId(editingMatch.player1)
         if (id) editingPlayerIds.add(id.toString())
       }
       if (editingMatch.player2) {
-        const id = editingMatch.player2._id || editingMatch.player2
+        const id = extractPlayerId(editingMatch.player2)
         if (id) editingPlayerIds.add(id.toString())
       }
     }
@@ -872,8 +1016,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     roundData?.matches.forEach((match) => {
       const isEditingThisMatch = editingMatch && (match === editingMatch || match.matchReference?._id === editingMatch.matchReference?._id)
       if (isEditingThisMatch) return
-      const p1 = match.player1?._id || match.player1
-      const p2 = match.player2?._id || match.player2
+      const p1 = extractPlayerId(match.player1)
+      const p2 = extractPlayerId(match.player2)
       if (p1) playersInRound.add(p1.toString())
       if (p2) playersInRound.add(p2.toString())
     })
@@ -881,13 +1025,13 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     knockoutData.forEach((round) => {
       if (round.round < roundNumber) {
         round.matches.forEach((match) => {
-          const p1 = match.player1?._id || match.player1
-          const p2 = match.player2?._id || match.player2
+          const p1 = extractPlayerId(match.player1)
+          const p2 = extractPlayerId(match.player2)
           if (p1) playersInPreviousRounds.add(p1.toString())
           if (p2) playersInPreviousRounds.add(p2.toString())
 
           if (!match.player2 && match.player1) {
-            const byeId = match.player1._id || match.player1
+            const byeId = extractPlayerId(match.player1)
             if (byeId) {
               byePlayersInPreviousRounds.add(byeId.toString())
               winnersInPreviousRounds.add(byeId.toString())
@@ -916,7 +1060,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     })
 
     return availablePlayers.filter((player: any) => {
-      const playerId = (player.playerReference?._id || player.playerReference || player._id)?.toString()
+      const playerId = getTournamentPlayerId(player)?.toString()
       if (!playerId) return false
       if (playersInRound.has(playerId)) return false
       if (losersInPreviousRounds.has(playerId)) return false
@@ -941,9 +1085,10 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   }
 
   const determineMatchWinner = (match: KnockoutMatch): "team1" | "team2" | null => {
-    const player1Id = match.player1?._id || match.player1
-    const player2Id = match.player2?._id || match.player2
-    const winnerId = match.matchReference?.winnerId
+    const matchRef = match.matchReference as any
+    const player1Id = extractPlayerId(match.player1) || extractPlayerId(matchRef?.player1?.playerId)
+    const player2Id = extractPlayerId(match.player2) || extractPlayerId(matchRef?.player2?.playerId)
+    const winnerId = matchRef?.winnerId
     if (winnerId) {
       if (player1Id && winnerId.toString() === player1Id.toString()) return "team1"
       if (player2Id && winnerId.toString() === player2Id.toString()) return "team2"
@@ -965,8 +1110,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
 
     return roundsWithMatches.map((round, roundIndex) =>
       round.matches.map((match, matchIndex) => {
-        const team1Name = match.player1?.name || "TBD"
-        const team2Name = match.player2?.name || "TBD"
+        const team1Name = resolveMatchPlayerName(match, "player1")
+        const team2Name = resolveMatchPlayerName(match, "player2")
         const score1 = match.matchReference?.player1?.legsWon ?? null
         const score2 = match.matchReference?.player2?.legsWon ?? null
         const boardRef = match.matchReference?.boardReference
@@ -985,7 +1130,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
         } as DiagramMatch
       })
     )
-  }, [roundsWithMatches, availableBoards])
+  }, [roundsWithMatches, availableBoards, availablePlayers, tournamentPlayers])
 
   const isTournamentLocked = tournamentStatus === "finished" || tournamentStatus === "archived" || tournamentStatus === "cancelled"
   const roundSummaries: RoundSummary[] = useMemo(() => {
@@ -1012,7 +1157,8 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
   )
 
   const openMatchPlayerEditor = (match: KnockoutMatch, round: KnockoutRound) => {
-    const status = match.matchReference?.status
+    const matchRef = match.matchReference as any
+    const status = matchRef?.status
     const hasPlayers = Boolean(match.player1 && match.player2)
     if (isTournamentLocked) return
     if (status === "finished" && hasPlayers) return
@@ -1021,16 +1167,16 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
     setEditingMatch(match)
     setSelectedRound(round.round)
 
-    const player1Id = match.player1?._id || match.player1 || ""
+    const player1Id = extractPlayerId(match.player1) || extractPlayerId(matchRef?.player1?.playerId) || ""
     if (player1Id) {
       setEditPairPlayer1(player1Id.toString())
-      setEditPairPlayer1Search(match.player1?.name || match.player1Name || "")
+      setEditPairPlayer1Search(resolveMatchPlayerName(match, "player1"))
     }
 
-    const player2Id = match.player2?._id || match.player2 || ""
+    const player2Id = extractPlayerId(match.player2) || extractPlayerId(matchRef?.player2?.playerId) || ""
     if (player2Id) {
       setEditPairPlayer2(player2Id.toString())
-      setEditPairPlayer2Search(match.player2?.name || match.player2Name || "")
+      setEditPairPlayer2Search(resolveMatchPlayerName(match, "player2"))
     }
 
     const scorerId = match.matchReference?.scorer?._id || match.matchReference?.scorer || ""
@@ -1411,8 +1557,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
               <ScrollArea className="h-60 rounded-xl border border-border/40 bg-card/80 p-3">
                 <div className="space-y-2">
                   {filteredPlayers.map((player: any) => {
-                    const playerId = player.playerReference?._id || player.playerReference || player._id
-                    const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                    const playerId = getTournamentPlayerId(player)
+                    if (!playerId) return null
+                    const playerName = getTournamentPlayerName(player)
                     const selected = selectedPlayersForPairing.includes(playerId)
                     return (
                       <button
@@ -1468,8 +1615,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
                         {getAvailablePlayersForSelection(player1SearchTerm, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
-                          const playerId = player.playerReference?._id || player.playerReference || player._id
-                          const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                          const playerId = getTournamentPlayerId(player)
+                          if (!playerId) return null
+                          const playerName = getTournamentPlayerName(player)
                           return (
                             <button
                               key={playerId}
@@ -1508,8 +1656,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
                         {getAvailablePlayersForSelection(player2SearchTerm, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
-                          const playerId = player.playerReference?._id || player.playerReference || player._id
-                          const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                          const playerId = getTournamentPlayerId(player)
+                          if (!playerId) return null
+                          const playerName = getTournamentPlayerName(player)
                           return (
                             <button
                               key={playerId}
@@ -1548,8 +1697,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
                         {getAvailablePlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).map((player: any) => {
-                          const playerId = player.playerReference?._id || player.playerReference || player._id
-                          const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                          const playerId = getTournamentPlayerId(player)
+                          if (!playerId) return null
+                          const playerName = getTournamentPlayerName(player)
                           return (
                             <button
                               key={playerId}
@@ -1615,14 +1765,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             {selectedMatch && (
               <div className="p-6">
                   <div className="text-center text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground">{selectedMatch.player1?.name || "TBD"}</span>
+                    <span className="font-semibold text-foreground">{resolveMatchPlayerName(selectedMatch, "player1")}</span>
                     <span className="mx-2 text-muted-foreground">vs</span>
-                    <span className="font-semibold text-foreground">{selectedMatch.player2?.name || "TBD"}</span>
+                    <span className="font-semibold text-foreground">{resolveMatchPlayerName(selectedMatch, "player2")}</span>
                   </div>
 
                   <div className="mt-5 grid gap-6 md:grid-cols-2">
                     <div className="space-y-4 p-1">
-                      <h4 className="text-sm font-semibold text-foreground">{selectedMatch.player1?.name || "Player 1"}</h4>
+                      <h4 className="text-sm font-semibold text-foreground">{resolveMatchPlayerName(selectedMatch, "player1") || "Player 1"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
                           <Label>{t("nyert_legek_es4r")}</Label>
@@ -1691,7 +1841,7 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     </div>
 
                     <div className="space-y-4 p-1">
-                      <h4 className="text-sm font-semibold text-foreground">{selectedMatch.player2?.name || "Player 2"}</h4>
+                      <h4 className="text-sm font-semibold text-foreground">{resolveMatchPlayerName(selectedMatch, "player2") || "Player 2"}</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
                           <Label>{t("nyert_legek_es4r")}</Label>
@@ -1794,8 +1944,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
                         {getAvailablePlayersForSelection(editPairPlayer1Search, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
-                          const playerId = player.playerReference?._id || player.playerReference || player._id
-                          const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                          const playerId = getTournamentPlayerId(player)
+                          if (!playerId) return null
+                          const playerName = getTournamentPlayerName(player)
                           return (
                             <button
                               key={playerId}
@@ -1834,8 +1985,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
                         {getAvailablePlayersForSelection(editPairPlayer2Search, getAvailablePlayersForRound(selectedRound)).map((player: any) => {
-                          const playerId = player.playerReference?._id || player.playerReference || player._id
-                          const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                          const playerId = getTournamentPlayerId(player)
+                          if (!playerId) return null
+                          const playerName = getTournamentPlayerName(player)
                           return (
                             <button
                               key={playerId}
@@ -1874,8 +2026,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/30">
                         {getAvailablePlayersForSelection(editPairScorerSearch, getAllTournamentPlayers()).map((player: any) => {
-                          const playerId = player.playerReference?._id || player.playerReference || player._id
-                          const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                          const playerId = getTournamentPlayerId(player)
+                          if (!playerId) return null
+                          const playerName = getTournamentPlayerName(player)
                           return (
                             <button
                               key={playerId}
@@ -1950,8 +2103,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       <CardContent className="p-0">
                         <div className="divide-y divide-border/30">
                           {getAvailablePlayersForSelection(player1SearchTerm, getAllTournamentPlayers()).map((player: any) => {
-                            const playerId = player.playerReference?._id || player.playerReference || player._id
-                            const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                            const playerId = getTournamentPlayerId(player)
+                            if (!playerId) return null
+                            const playerName = getTournamentPlayerName(player)
                             return (
                               <button
                                 key={playerId}
@@ -1990,8 +2144,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       <CardContent className="p-0">
                         <div className="divide-y divide-border/30">
                           {getAvailablePlayersForSelection(player2SearchTerm, getAllTournamentPlayers()).map((player: any) => {
-                            const playerId = player.playerReference?._id || player.playerReference || player._id
-                            const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                            const playerId = getTournamentPlayerId(player)
+                            if (!playerId) return null
+                            const playerName = getTournamentPlayerName(player)
                             return (
                               <button
                                 key={playerId}
@@ -2030,8 +2185,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                       <CardContent className="p-0">
                         <div className="divide-y divide-border/30">
                           {getAvailablePlayersForSelection(scorerSearchTerm, getAllTournamentPlayers()).map((player: any) => {
-                            const playerId = player.playerReference?._id || player.playerReference || player._id
-                            const playerName = player.playerReference?.name || player.name || "Ismeretlen játékos"
+                            const playerId = getTournamentPlayerId(player)
+                            if (!playerId) return null
+                            const playerName = getTournamentPlayerName(player)
                             return (
                               <button
                                 key={playerId}
@@ -2087,7 +2243,9 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
             </DialogHeader>
             {matchToDelete?.match && (
               <Alert className="bg-destructive/10 text-destructive">
-                <AlertTitle>{matchToDelete.match.player1?.name} vs {matchToDelete.match.player2?.name || "Üres"}</AlertTitle>
+                <AlertTitle>
+                  {resolveMatchPlayerName(matchToDelete.match, "player1")} vs {resolveMatchPlayerName(matchToDelete.match, "player2")}
+                </AlertTitle>
                 <AlertDescription>{matchToDelete.round}{t("kor_pxc6")}</AlertDescription>
               </Alert>
             )}
@@ -2129,14 +2287,14 @@ const TournamentKnockoutBracketContent: React.FC<TournamentKnockoutBracketProps>
                   _id: selectedMatchForLegs.matchReference._id,
                   player1: {
                     playerId: {
-                      _id: selectedMatchForLegs.player1?._id || "",
-                      name: selectedMatchForLegs.player1?.name || "TBD",
+                      _id: extractPlayerId(selectedMatchForLegs.player1) || "",
+                      name: resolveMatchPlayerName(selectedMatchForLegs, "player1"),
                     },
                   },
                   player2: {
                     playerId: {
-                      _id: selectedMatchForLegs.player2?._id || "",
-                      name: selectedMatchForLegs.player2?.name || "TBD",
+                      _id: extractPlayerId(selectedMatchForLegs.player2) || "",
+                      name: resolveMatchPlayerName(selectedMatchForLegs, "player2"),
                     },
                   },
                   clubId,

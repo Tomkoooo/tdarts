@@ -22,7 +22,14 @@ export async function GET(_: NextRequest, context: Params) {
       imageUrl = (user?.profilePicture as string | undefined) || null;
     }
 
-    return NextResponse.json({ success: true, imageUrl });
+    return NextResponse.json(
+      { success: true, imageUrl },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
     const handled = handleError(error);
     return NextResponse.json(handled.body, { status: handled.status });

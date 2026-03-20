@@ -182,7 +182,7 @@ export function ClubTournamentsSection({
   return (
     <div className="space-y-6 pb-16 md:pb-4">
       <div className="rounded-3xl border border-border/60 bg-linear-to-br from-card/95 via-card/80 to-card/65 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.3)] backdrop-blur-xl md:p-6">
-        <div className="flex items-start justify-between gap-4 md:items-center">
+        <div className="flex flex-wrap items-start justify-between gap-4 md:items-center">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20">
@@ -227,19 +227,23 @@ export function ClubTournamentsSection({
           </div>
 
           {(userRole === 'admin' || userRole === 'moderator') && (
-            <div className="flex gap-2">
+            <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
               {isVerified && onCreateOacTournament && viewMode === 'active' && (
                 <Button
                   onClick={onCreateOacTournament}
                   size="sm"
                   variant="outline"
-                  className="h-10 border-warning text-warning hover:bg-warning/10"
+                  className="h-10 flex-1 min-w-[180px] border-warning text-warning hover:bg-warning/10 md:flex-none"
                 >
                   <IconTrophy className="mr-2 h-4 w-4" />
                   {t('new_oac')}
                 </Button>
               )}
-              <Button onClick={() => onCreateTournament(viewMode === 'sandbox')} size="sm" className="h-10">
+              <Button
+                onClick={() => onCreateTournament(viewMode === 'sandbox')}
+                size="sm"
+                className="h-10 flex-1 min-w-[180px] md:flex-none"
+              >
                 <IconPlus className="mr-2 h-4 w-4" />
                 {viewMode === 'sandbox' ? t('new_test') : t('new_tournament')}
               </Button>

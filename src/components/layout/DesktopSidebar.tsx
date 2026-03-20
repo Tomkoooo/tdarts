@@ -90,7 +90,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         href: "/",
         icon: IconHome,
         label: t("home"),
-        match: (path) => path === "/" || path === "/home" || path === "/landing",
+        match: (path) => path === "/" || path === "/home",
       },
       {
         href: "/landing",
@@ -103,19 +103,6 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         icon: IconSearch,
         label: t("search"),
         match: (path, params) => path === "/search" && params.get("tab") !== "clubs" && params.get("tab") !== "tournaments",
-      },
-      {
-        href: "/search?tab=tournaments",
-        icon: IconTrophy,
-        label: t("tournaments"),
-        match: (path, params) => path === "/search" && params.get("tab") === "tournaments",
-      },
-      {
-        href: "/search?tab=clubs",
-        icon: IconUsers,
-        label: t("clubs"),
-        match: (path, params) =>
-          (path === "/search" && params.get("tab") === "clubs") || path.startsWith("/clubs"),
       },
       { href: "/board", icon: IconTargetArrow, label: t("board") },
       { href: "/how-it-works", icon: IconInfoCircle, label: t("how_it_works") },

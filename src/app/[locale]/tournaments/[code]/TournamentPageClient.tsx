@@ -33,10 +33,17 @@ const TournamentBoardsView = dynamic(
 const TournamentKnockoutBracket = dynamic(
   () => import("@/components/tournament/TournamentKnockoutBracket")
 );
+const TournamentStatusChanger = dynamic(
+  () => import("@/components/tournament/TournamentStatusChanger")
+);
 
 type TournamentPageClientProps = {
   initialData?: any;
+  initialSections?: Partial<Record<"players" | "boards" | "groups" | "bracket", any>>;
 };
+
+type TournamentSectionView = "overview" | "players" | "boards" | "groups" | "bracket";
+const SECTION_FRESHNESS_MS = 8_000;
 
 const getStatusMeta = (t: (key: string) => string) => ({
   pending: {
@@ -82,6 +89,7 @@ const toReadableFormatLabel = (format?: string) => {
 
 const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   initialData,
+  initialSections,
 }) => {
   const { code } = useParams();
   const searchParams = useSearchParams();
@@ -110,7 +118,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
     resyncLiteData,
     applySseDelta,
     resyncFullData,
-  } = useTournamentPageData(code, user, t("error.retry"), initialData);
+  } = useTournamentPageData(code, user, t("error.retry"), initialData, initialSections);
 
   useTournamentRealtimeRefresh(
     tournament,
@@ -124,9 +132,17 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   const [isReopening, setIsReopening] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
-  const loadedViewsRef = useRef<Set<string>>(new Set(["overview"]));
+  const lastFetchedAtRef = useRef<Record<TournamentSectionView, number>>({
+    overview: Date.now(),
+    players: 0,
+    boards: 0,
+    groups: 0,
+    bracket: 0,
+  });
+  const invalidatedSectionsRef = useRef<Set<TournamentSectionView>>(new Set());
+  const previousTournamentStateRef = useRef<{ status: string; groupCount: number; knockoutRounds: number } | null>(null);
   const getViewForTab = useCallback(
-    (tab: string): "overview" | "players" | "boards" | "groups" | "bracket" =>
+    (tab: string): TournamentSectionView =>
       tab === "players" ||
       tab === "boards" ||
       tab === "groups" ||
@@ -144,17 +160,61 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   }, [searchParams, tabs]);
 
   useEffect(() => {
-    loadedViewsRef.current = new Set(["overview"]);
-  }, [code]);
+    const now = Date.now();
+    lastFetchedAtRef.current = {
+      overview: now,
+      players: initialSections?.players ? now : 0,
+      boards: initialSections?.boards ? now : 0,
+      groups: initialSections?.groups ? now : 0,
+      bracket: initialSections?.bracket ? now : 0,
+    };
+    invalidatedSectionsRef.current.clear();
+    previousTournamentStateRef.current = null;
+  }, [code, initialSections]);
 
   useEffect(() => {
-    if (activeTab === "overview") return;
-    if (loadedViewsRef.current.has(activeTab)) return;
+    const status = String(tournament?.tournamentSettings?.status || "");
+    const groupCount = Array.isArray(tournament?.groups) ? tournament.groups.length : 0;
+    const knockoutRounds = Array.isArray(tournament?.knockout) ? tournament.knockout.length : 0;
+    const previous = previousTournamentStateRef.current;
+
+    if (previous) {
+      const enteredGroupStage = status === "group-stage" && previous.status !== "group-stage";
+      const enteredKnockout = status === "knockout" && previous.status !== "knockout";
+      const groupStructureChanged = groupCount > previous.groupCount;
+      const knockoutStructureChanged = knockoutRounds > previous.knockoutRounds;
+
+      if (enteredGroupStage || groupStructureChanged) {
+        invalidatedSectionsRef.current.add("groups");
+        lastFetchedAtRef.current.groups = 0;
+      }
+      if (enteredKnockout || knockoutStructureChanged) {
+        invalidatedSectionsRef.current.add("bracket");
+        lastFetchedAtRef.current.bracket = 0;
+      }
+    }
+
+    previousTournamentStateRef.current = { status, groupCount, knockoutRounds };
+  }, [tournament?.groups, tournament?.knockout, tournament?.tournamentSettings?.status]);
+
+  useEffect(() => {
+    if (activeTab === "overview") {
+      return;
+    }
     const view = getViewForTab(activeTab);
+    const now = Date.now();
+    const lastFetchedAt = lastFetchedAtRef.current[view];
+    const isInvalidated = invalidatedSectionsRef.current.has(view);
+    const isStale = now - lastFetchedAt >= SECTION_FRESHNESS_MS;
+    const shouldFetch = lastFetchedAt === 0 || isInvalidated || isStale;
+    if (!shouldFetch) {
+      return;
+    }
     void (async () => {
       try {
-        await fetchAll(view);
-        loadedViewsRef.current.add(activeTab);
+        await fetchAll(view, { bypassCache: true });
+        lastFetchedAtRef.current[view] = Date.now();
+        invalidatedSectionsRef.current.delete(view);
       } catch (error) {
         console.error("Tab hydration failed:", error);
       }
@@ -164,14 +224,31 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
   const handleRefetch = useCallback(() => {
     const view = getViewForTab(activeTab);
     void (async () => {
-      await fetchAll(view);
-      loadedViewsRef.current.add(activeTab);
+      await fetchAll(view, { bypassCache: true });
+      lastFetchedAtRef.current[view] = Date.now();
+      invalidatedSectionsRef.current.delete(view);
     })();
   }, [activeTab, fetchAll, getViewForTab]);
 
-  const handleTournamentRefresh = useCallback(async () => {
-    await fetchAll(getViewForTab(activeTab));
-  }, [activeTab, fetchAll, getViewForTab]);
+  const handleTournamentRefresh = useCallback(
+    async (options?: { bypassCache?: boolean }) => {
+      const view = getViewForTab(activeTab);
+      await fetchAll(view, { bypassCache: options?.bypassCache ?? true });
+      lastFetchedAtRef.current[view] = Date.now();
+      invalidatedSectionsRef.current.delete(view);
+    },
+    [activeTab, fetchAll, getViewForTab]
+  );
+
+  const handleTournamentRefreshFresh = useCallback(async () => {
+    await handleTournamentRefresh({ bypassCache: true });
+  }, [handleTournamentRefresh]);
+
+  const handlePlayersRefresh = useCallback(async () => {
+    await fetchAll("players", { bypassCache: true });
+    lastFetchedAtRef.current.players = Date.now();
+    invalidatedSectionsRef.current.delete("players");
+  }, [fetchAll]);
 
   const handleReopenTournament = useCallback(async () => {
     if (!user || !user._id || user.isAdmin !== true) {
@@ -360,7 +437,7 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 userPlayerStatus={userPlayerStatus}
                 userPlayerId={userPlayerId}
                 status={tournament.tournamentSettings?.status}
-                onRefresh={fetchAll}
+                onRefresh={handlePlayersRefresh}
               />
             </TabsContent>
 
@@ -370,16 +447,28 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
 
             {tournament?.tournamentSettings?.format !== "knockout" && (
               <TabsContent value="groups" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+                <TournamentStatusChanger
+                  tournament={tournament}
+                  userClubRole={userClubRole}
+                  onRefetch={handleTournamentRefreshFresh}
+                  section="groups"
+                />
                 <TournamentGroupsView
                   tournament={tournament}
                   userClubRole={userClubRole}
-                  onDataChanged={handleTournamentRefresh}
+                  onDataChanged={handleTournamentRefreshFresh}
                 />
               </TabsContent>
             )}
 
             {tournament?.tournamentSettings?.format !== "group" && (
               <TabsContent value="bracket" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+                <TournamentStatusChanger
+                  tournament={tournament}
+                  userClubRole={userClubRole}
+                  onRefetch={handleTournamentRefreshFresh}
+                  section="knockout"
+                />
                 <TournamentKnockoutBracket
                   tournamentCode={tournament.tournamentId}
                   tournament={tournament}
@@ -390,6 +479,15 @@ const TournamentPageClient: React.FC<TournamentPageClientProps> = ({
                 />
               </TabsContent>
             )}
+
+            <TabsContent value="admin" className="mt-0 space-y-4 rounded-2xl border border-border/60 bg-card/55 p-3 backdrop-blur-lg md:p-4">
+              <TournamentStatusChanger
+                tournament={tournament}
+                userClubRole={userClubRole}
+                onRefetch={handleTournamentRefreshFresh}
+                section="all"
+              />
+            </TabsContent>
           </div>
         </Tabs>
       </div>

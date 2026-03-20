@@ -54,7 +54,7 @@ export type CreateTournamentInput = {
 };
 
 export type CreateTournamentActionResult =
-  | Awaited<ReturnType<typeof TournamentService.createTournament>>
+  | { tournamentId: string; code: string; id: string }
   | { checkoutUrl: string | null }
   | GuardFailureResult;
 
@@ -233,7 +233,12 @@ export async function createTournamentAction(input: CreateTournamentInput): Prom
         }
       }
 
-      return newTournament;
+      const createdTournamentCode = String(newTournament.tournamentId || newTournament._id);
+      return {
+        tournamentId: createdTournamentCode,
+        code: createdTournamentCode,
+        id: newTournament._id.toString(),
+      };
     },
     {
       method: 'ACTION',

@@ -74,7 +74,7 @@ interface TournamentPlayersProps {
   userPlayerStatus: 'applied' | 'checked-in' | 'none'
   userPlayerId: string | null
   status: 'pending' | 'active' | 'finished' | 'group-stage' | 'knockout'
-  onRefresh?: () => void
+  onRefresh?: () => void | Promise<void>
 }
 
 const playerStatusBadge: Record<string, { labelKey?: string; variant: "default" | "outline" | "secondary" | "destructive" }> = {
@@ -82,6 +82,33 @@ const playerStatusBadge: Record<string, { labelKey?: string; variant: "default" 
   "checked-in": { variant: "default" },
   none: { variant: "default" },
 }
+
+const getPlayerIdentity = (player: any): string =>
+  player?.playerReference?._id?.toString() ||
+  player?.playerReference?.toString?.() ||
+  player?._id?.toString() ||
+  player?.name ||
+  "";
+
+const sortPlayers = (list: any[], isFinished: boolean) => {
+  if (isFinished) {
+    return [...list].sort((a: any, b: any) => {
+      const posA = a.tournamentStanding ?? Number.MAX_SAFE_INTEGER
+      const posB = b.tournamentStanding ?? Number.MAX_SAFE_INTEGER
+      return posA - posB
+    })
+  }
+  return [...list].sort((a: any, b: any) => {
+    const nameA = (a.playerReference?.name || a.name || "").toLowerCase()
+    const nameB = (b.playerReference?.name || b.name || "").toLowerCase()
+    return nameA.localeCompare(nameB)
+  })
+}
+
+const playersSignature = (list: any[]) =>
+  list
+    .map((player) => `${getPlayerIdentity(player)}:${player?.status || "applied"}:${player?.tournamentStanding ?? "-"}`)
+    .join("|")
 
 const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   tournament,
@@ -149,23 +176,15 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const autoJoinHandledRef = React.useRef(false)
+  const lastSyncedPlayersSignatureRef = React.useRef("")
 
   React.useEffect(() => {
-    console.log(tournament)
-    if(tournament.tournamentSettings.status === 'finished') {
-      // If the tournament is finished, sort by tournament position (ascending)
-      setLocalPlayers([...players].sort((a: any, b: any) => {
-        const posA = a.tournamentStanding ?? Number.MAX_SAFE_INTEGER
-        const posB = b.tournamentStanding ?? Number.MAX_SAFE_INTEGER
-        return posA - posB
-      }))
-    } else {
-      // Sort alphabetically by player name when tournament is not finished
-      setLocalPlayers([...players].sort((a: any, b: any) => {
-        const nameA = (a.playerReference?.name || a.name || '').toLowerCase()
-        const nameB = (b.playerReference?.name || b.name || '').toLowerCase()
-        return nameA.localeCompare(nameB)
-      }))
+    const isFinished = tournament?.tournamentSettings?.status === "finished"
+    const sortedPlayers = sortPlayers(players, isFinished)
+    const nextSignature = playersSignature(sortedPlayers)
+    if (nextSignature !== lastSyncedPlayersSignatureRef.current) {
+      setLocalPlayers(sortedPlayers)
+      lastSyncedPlayersSignatureRef.current = nextSignature
     }
     setLocalUserPlayerStatus(userPlayerStatus)
     setLocalUserPlayerId(userPlayerId)
@@ -223,14 +242,20 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
           },
           status: 'applied'
         }
-        setLocalPlayers([...localPlayers, newPlayer])
+        setLocalPlayers((prev) => {
+          const newPlayerId = getPlayerIdentity(newPlayer)
+          if (prev.some((existing) => getPlayerIdentity(existing) === newPlayerId)) {
+            return prev
+          }
+          return [...prev, newPlayer]
+        })
         // Update user status locally if it was the current user
         if (payload.userRef === user?._id || (player._id && userPlayerId === player._id)) {
            setLocalUserPlayerStatus('applied')
            setLocalUserPlayerId(newPlayer._id)
         }
         toast.success(tp("successfully_added"))
-        if (onRefresh) onRefresh()
+        if (onRefresh) void onRefresh()
       }
     } catch (error: any) {
       console.error("Error adding player:", error)
@@ -271,9 +296,10 @@ const TournamentPlayers: React.FC<TournamentPlayersProps> = ({
       })
       if (response && typeof response === 'object' && 'success' in response && response.success) {
         setLocalPlayers((prev) =>
-          prev.map((p) => (p.playerReference._id === playerId ? { ...p, status: 'checked-in' } : p)),
+          prev.map((p) => (p.playerReference?._id === playerId ? { ...p, status: 'checked-in' } : p)),
         )
         toast.success(tp("successfully_checked_in"))
+        if (onRefresh) void onRefresh()
       } else {
         showErrorToast('Nem sikerült check-inelni a játékost.', {
           error: 'updateTournamentPlayerStatusClientAction returned unsuccessful result',

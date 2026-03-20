@@ -13,7 +13,7 @@ export async function GET(_: NextRequest, context: Params) {
     return new NextResponse(body, {
       headers: {
         'Content-Type': media.mimeType || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=600, s-maxage=600, stale-while-revalidate=120',
       },
     });
   } catch (error) {

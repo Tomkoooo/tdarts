@@ -16,17 +16,13 @@ function isObjectIdLike(value: unknown): value is { toString: () => string } {
 }
 
 export function serializeForClient<T>(value: T): T {
-  const seen = new WeakSet<object>();
+  const ancestors = new WeakSet<object>();
 
   const walk = (input: unknown): Serializable => {
     if (input === null || input === undefined) return null;
     if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') return input;
     if (typeof input === 'bigint') return input.toString();
     if (input instanceof Date) return input.toISOString();
-
-    if (Array.isArray(input)) {
-      return input.map((item) => walk(item));
-    }
 
     if (typeof input !== 'object') {
       return String(input);
@@ -48,22 +44,38 @@ export function serializeForClient<T>(value: T): T {
     }
 
     if (obj.constructor?.name === 'Map' && typeof obj.entries === 'function') {
+      if (ancestors.has(input as object)) {
+        return '[Circular]';
+      }
+      ancestors.add(input as object);
       const mapped: Record<string, Serializable> = {};
       for (const [key, val] of obj.entries()) {
         mapped[String(key)] = walk(val);
       }
+      ancestors.delete(input as object);
       return mapped;
     }
 
-    if (seen.has(input as object)) {
+    if (Array.isArray(input)) {
+      if (ancestors.has(input as object)) {
+        return '[Circular]';
+      }
+      ancestors.add(input as object);
+      const mapped = (input as unknown[]).map((item) => walk(item));
+      ancestors.delete(input as object);
+      return mapped;
+    }
+
+    if (ancestors.has(input as object)) {
       return '[Circular]';
     }
-    seen.add(input as object);
+    ancestors.add(input as object);
 
     const out: Record<string, Serializable> = {};
     for (const [key, val] of Object.entries(obj)) {
       out[key] = walk(val);
     }
+    ancestors.delete(input as object);
     return out;
   };
 

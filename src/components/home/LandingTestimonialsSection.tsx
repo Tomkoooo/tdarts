@@ -14,9 +14,9 @@ export default function LandingTestimonialsSection({ enabled = false }: LandingT
     <section id="testimonials" className="px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <GlassmorphismCard intensity="strong" className="rounded-3xl border-primary/30 p-8 text-center">
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Velemenyek hamarosan</h2>
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Vélemények hamarosan</h2>
           <p className="mt-4 text-muted-foreground">
-            Ez a szekcio mar elokeszitve varja a jovahagyott ugyfel-visszajelzeseket.
+            Ez a szekció már előkészítve várja a jóváhagyott ügyfél-visszajelzéseket.
           </p>
         </GlassmorphismCard>
       </div>

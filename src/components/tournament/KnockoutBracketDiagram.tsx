@@ -178,7 +178,7 @@ const KnockoutBracketDiagram: React.FC<KnockoutBracketDiagramProps> = ({
         const left = roundIndex * (cardWidth + columnGap)
         return (
           <div
-            key={round.roundNumber}
+            key={`${round.roundNumber}-${roundIndex}-${round.label}`}
             className="pointer-events-none absolute -top-16 z-20 flex w-[240px] items-center justify-between rounded-xl bg-card/95 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-md shadow-black/25 backdrop-blur"
             style={{ left }}
           >
