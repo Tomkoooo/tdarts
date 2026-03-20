@@ -45,7 +45,7 @@ export async function issueSocketAuthToken(input: { token?: string; clubId?: str
   }
 
   const issuedAt = Math.floor(Date.now() / 1000);
-  const ttlSeconds = 60 * 60 * 24;
+  const ttlSeconds = 60 * 60 * 4; // 4 hours (reduced from 24 hours for security)
   const expiresAt = issuedAt + ttlSeconds;
   const socketToken = jwt.sign(
     {

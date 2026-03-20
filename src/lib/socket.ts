@@ -62,8 +62,8 @@ export const socket = io(socketServerUrl, {
 // Export function to check if auth has failed
 export const hasSocketAuthFailed = () => authFailed;
 
-// Global debug object for production
-if (typeof window !== 'undefined') {
+// Global debug object only in development mode
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   (window as any).socketDebug = {
     socket,
     isConnected: () => socket.connected,

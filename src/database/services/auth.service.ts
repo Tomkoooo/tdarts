@@ -4,6 +4,14 @@ import { BadRequestError, ValidationError } from '@/middleware/errorHandle';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongoose';
 
+// Utility function to mask email for privacy/GDPR compliance
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!local || !domain) return '***';
+  const maskedLocal = local.length > 2 ? `${local[0]}***${local[local.length - 1]}` : '***';
+  return `${maskedLocal}@${domain}`;
+}
+
 export class AuthService {
   static async register(user: {
     email: string;
@@ -18,7 +26,7 @@ export class AuthService {
       });
       if (existingUser) {
         throw new ValidationError('Email or username already exists', 'auth', {
-          email: user.email,
+          email: maskEmail(user.email),
           username: user.username
         });
       }
@@ -30,7 +38,7 @@ export class AuthService {
     } catch (error: any) {
       if (error.code === 11000) {
         throw new ValidationError('Email or username already exists', 'auth', {
-          email: user.email,
+          email: maskEmail(user.email),
           username: user.username
         });
       }
@@ -43,7 +51,7 @@ export class AuthService {
     const user = await UserModel.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password)) || user.isDeleted) {
       throw new BadRequestError('Invalid email or password', 'auth', {
-        email,
+        email: maskEmail(email),
         errorCode: 'AUTH_INVALID_CREDENTIALS',
         expected: true,
         operation: 'auth.login',
@@ -59,7 +67,7 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
-        email,
+        email: maskEmail(email),
         errorCode: 'AUTH_USER_NOT_FOUND',
         expected: true,
         operation: 'auth.verifyEmail',
@@ -127,7 +135,7 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
-        email,
+        email: maskEmail(email),
         errorCode: 'AUTH_USER_NOT_FOUND',
         expected: true,
         operation: 'auth.forgotPassword',
@@ -148,7 +156,7 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestError('User not found', 'auth', {
-        email,
+        email: maskEmail(email),
         errorCode: 'AUTH_USER_NOT_FOUND',
         expected: true,
         operation: 'auth.resetPassword',
@@ -156,7 +164,7 @@ export class AuthService {
     }
     if (user.codes.reset_password !== code) {
       throw new BadRequestError('Invalid reset code', 'auth', {
-        email,
+        email: maskEmail(email),
         errorCode: 'AUTH_INVALID_RESET_CODE',
         expected: true,
         operation: 'auth.resetPassword',

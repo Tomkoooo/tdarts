@@ -403,28 +403,30 @@ export class MatchService {
         }
 
         // --- Post-update side effects (non-critical if they repeat, but ideally idempotent) ---
-        
-        // Update tournament player statistics immediately
-        await this.updateTournamentPlayerStats(
-            updatedMatch.tournamentRef.toString(),
-            updatedMatch.player1.playerId.toString(),
-            {
-                highestCheckout: player1HighestCheckout,
-                oneEightiesCount: player1OneEighties,
-                average: newP1Average,
-                firstNineAvg: newP1FirstNineAverage
-            }
-        );
-        await this.updateTournamentPlayerStats(
-            updatedMatch.tournamentRef.toString(),
-            updatedMatch.player2.playerId.toString(),
-            {
-                highestCheckout: player2HighestCheckout,
-                oneEightiesCount: player2OneEighties,
-                average: newP2Average,
-                firstNineAvg: newP2FirstNineAverage
-            }
-        );
+
+        // Update tournament player statistics in parallel for better performance
+        await Promise.all([
+            this.updateTournamentPlayerStats(
+                updatedMatch.tournamentRef.toString(),
+                updatedMatch.player1.playerId.toString(),
+                {
+                    highestCheckout: player1HighestCheckout,
+                    oneEightiesCount: player1OneEighties,
+                    average: newP1Average,
+                    firstNineAvg: newP1FirstNineAverage
+                }
+            ),
+            this.updateTournamentPlayerStats(
+                updatedMatch.tournamentRef.toString(),
+                updatedMatch.player2.playerId.toString(),
+                {
+                    highestCheckout: player2HighestCheckout,
+                    oneEightiesCount: player2OneEighties,
+                    average: newP2Average,
+                    firstNineAvg: newP2FirstNineAverage
+                }
+            )
+        ]);
 
         // Emit match update event
         const tournament = await TournamentModel.findById(updatedMatch.tournamentRef);
@@ -744,27 +746,29 @@ export class MatchService {
         match.status = 'finished';
         await match.save();
 
-        // Update tournament player statistics
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player1.playerId.toString(),
-            {
-                highestCheckout: player1HighestCheckoutFinal,
-                oneEightiesCount: player1OneEightiesFinal,
-                average: match.player1.average,
-                firstNineAvg: match.player1.firstNineAvg || 0
-            }
-        );
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player2.playerId.toString(),
-            {
-                highestCheckout: player2HighestCheckoutFinal,
-                oneEightiesCount: player2OneEightiesFinal,
-                average: match.player2.average,
-                firstNineAvg: match.player2.firstNineAvg || 0
-            }
-        );
+        // Update tournament player statistics in parallel for better performance
+        await Promise.all([
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player1.playerId.toString(),
+                {
+                    highestCheckout: player1HighestCheckoutFinal,
+                    oneEightiesCount: player1OneEightiesFinal,
+                    average: match.player1.average,
+                    firstNineAvg: match.player1.firstNineAvg || 0
+                }
+            ),
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player2.playerId.toString(),
+                {
+                    highestCheckout: player2HighestCheckoutFinal,
+                    oneEightiesCount: player2OneEightiesFinal,
+                    average: match.player2.average,
+                    firstNineAvg: match.player2.firstNineAvg || 0
+                }
+            )
+        ]);
 
         let nextMatchForSse: any = null;
 
@@ -978,27 +982,29 @@ export class MatchService {
 
         await match.save();
 
-        // Update tournament player statistics
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player1.playerId.toString(),
-            {
-                highestCheckout: player1HighestCheckout,
-                oneEightiesCount: player1OneEighties,
-                average: match.player1.average,
-                firstNineAvg: match.player1.firstNineAvg || 0
-            }
-        );
-        await this.updateTournamentPlayerStats(
-            match.tournamentRef.toString(),
-            match.player2.playerId.toString(),
-            {
-                highestCheckout: player2HighestCheckout,
-                oneEightiesCount: player2OneEighties,
-                average: match.player2.average,
-                firstNineAvg: match.player2.firstNineAvg || 0
-            }
-        );
+        // Update tournament player statistics in parallel for better performance
+        await Promise.all([
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player1.playerId.toString(),
+                {
+                    highestCheckout: player1HighestCheckout,
+                    oneEightiesCount: player1OneEighties,
+                    average: match.player1.average,
+                    firstNineAvg: match.player1.firstNineAvg || 0
+                }
+            ),
+            this.updateTournamentPlayerStats(
+                match.tournamentRef.toString(),
+                match.player2.playerId.toString(),
+                {
+                    highestCheckout: player2HighestCheckout,
+                    oneEightiesCount: player2OneEighties,
+                    average: match.player2.average,
+                    firstNineAvg: match.player2.firstNineAvg || 0
+                }
+            )
+        ]);
 
         return match;
     }

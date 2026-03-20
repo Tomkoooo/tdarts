@@ -93,6 +93,11 @@ export class AuthorizationService {
   }
 
   static async checkAdminOrModerator(userId: string, clubId: string): Promise<boolean> {
+    if (process.env.NODE_ENV === 'production' && process.env.LOAD_TEST_MODE === 'true') {
+      console.error('CRITICAL: LOAD_TEST_MODE cannot be enabled in production environment');
+      return false;
+    }
+
     if (
       process.env.LOAD_TEST_MODE === 'true' &&
       userId === process.env.LOAD_TEST_USER_ID &&
